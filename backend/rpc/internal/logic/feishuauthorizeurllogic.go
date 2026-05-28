@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewFeishuAuthorizeURLLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &FeishuAuthorizeURLLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *FeishuAuthorizeURLLogic) FeishuAuthorizeURL(in *super.FeishuAuthorizeURLReq) (*super.FeishuAuthorizeURLResp, error) {
+func (l *FeishuAuthorizeURLLogic) FeishuAuthorizeURL(in *moe.FeishuAuthorizeURLReq) (*moe.FeishuAuthorizeURLResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).FeishuAuthorizeURL(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

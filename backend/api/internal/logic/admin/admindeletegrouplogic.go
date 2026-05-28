@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminDeleteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminDeleteGroupLogic) AdminDeleteGroup(req *types.AdminDeleteGroupReq) (resp *types.AdminDeleteGroupResp, err error) {
-	_, err = l.svcCtx.AdminGW.AdminDeleteGroup(l.ctx, &super.AdminDeleteGroupReq{
+	_, err = l.svcCtx.AdminGW.AdminDeleteGroup(l.ctx, &moe.AdminDeleteGroupReq{
 		GroupId: req.GroupId,
 	})
 	if err != nil {

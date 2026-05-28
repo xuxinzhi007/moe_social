@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,9 +26,9 @@ func NewUpdatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Update
 }
 
 func (l *UpdatePostLogic) UpdatePost(req *types.UpdatePostReq) (resp *types.UpdatePostResp, err error) {
-	rpcTopicTags := make([]*super.TopicTag, 0, len(req.TopicTags))
+	rpcTopicTags := make([]*moe.TopicTag, 0, len(req.TopicTags))
 	for _, tag := range req.TopicTags {
-		rpcTopicTags = append(rpcTopicTags, &super.TopicTag{
+		rpcTopicTags = append(rpcTopicTags, &moe.TopicTag{
 			Id:        tag.Id,
 			Name:      tag.Name,
 			Color:     tag.Color,
@@ -36,7 +36,7 @@ func (l *UpdatePostLogic) UpdatePost(req *types.UpdatePostReq) (resp *types.Upda
 		})
 	}
 
-	rpcResp, err := l.svcCtx.PostGW.UpdatePost(l.ctx, &super.UpdatePostReq{
+	rpcResp, err := l.svcCtx.PostGW.UpdatePost(l.ctx, &moe.UpdatePostReq{
 		PostId:          req.PostId,
 		UserId:          req.UserId,
 		Content:         req.Content,

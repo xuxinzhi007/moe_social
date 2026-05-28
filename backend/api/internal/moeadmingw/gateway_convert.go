@@ -11,7 +11,7 @@ import (
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/toolaudit"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 func runtimeModelFromProto(item *moepb.AgentRuntime) model.MoeAgentRuntime {
@@ -111,7 +111,7 @@ func pipelineFromProto(d *moepb.GetBrainPipelineReply) moebiz.PipelineSnapshot {
 	return snap
 }
 
-func pipelineFromSuper(d *super.AdminGetMoeBrainPipelineResp) moebiz.PipelineSnapshot {
+func pipelineFromSuper(d *moe.AdminGetMoeBrainPipelineResp) moebiz.PipelineSnapshot {
 	if d == nil {
 		return moebiz.PipelineSnapshot{}
 	}

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 
 func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginResp, err error) {
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.Login(l.ctx, &super.LoginReq{
+	rpcResp, err := l.svcCtx.UserGW.Login(l.ctx, &moe.LoginReq{
 		Username: req.Username,
 		Password: req.Password,
 		Email:    req.Email,

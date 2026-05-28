@@ -4,10 +4,10 @@ import (
 	"strconv"
 
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func RpcPostToTypes(p *super.Post) types.Post {
+func RpcPostToTypes(p *moe.Post) types.Post {
 	if p == nil {
 		return types.Post{}
 	}
@@ -40,7 +40,7 @@ func RpcPostToTypes(p *super.Post) types.Post {
 	}
 }
 
-func RpcCommentToTypes(c *super.Comment) types.Comment {
+func RpcCommentToTypes(c *moe.Comment) types.Comment {
 	if c == nil {
 		return types.Comment{}
 	}
@@ -59,7 +59,7 @@ func RpcCommentToTypes(c *super.Comment) types.Comment {
 	}
 }
 
-func RpcGroupToTypes(g *super.Group) types.Group {
+func RpcGroupToTypes(g *moe.Group) types.Group {
 	if g == nil {
 		return types.Group{}
 	}
@@ -80,7 +80,7 @@ func RpcGroupToTypes(g *super.Group) types.Group {
 	}
 }
 
-func RpcVipOrderToTypes(o *super.VipOrder) types.VipOrder {
+func RpcVipOrderToTypes(o *moe.VipOrder) types.VipOrder {
 	if o == nil {
 		return types.VipOrder{}
 	}
@@ -97,7 +97,7 @@ func RpcVipOrderToTypes(o *super.VipOrder) types.VipOrder {
 	}
 }
 
-func RpcGiftPurchaseOrderToTypes(o *super.GiftPurchaseOrder) types.GiftPurchaseOrder {
+func RpcGiftPurchaseOrderToTypes(o *moe.GiftPurchaseOrder) types.GiftPurchaseOrder {
 	if o == nil {
 		return types.GiftPurchaseOrder{}
 	}

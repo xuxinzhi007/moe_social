@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewAdminListMenusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ad
 	return &AdminListMenusLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListMenusLogic) AdminListMenus(in *super.AdminListMenusReq) (*super.AdminListMenusResp, error) {
+func (l *AdminListMenusLogic) AdminListMenus(in *moe.AdminListMenusReq) (*moe.AdminListMenusResp, error) {
 	return adminapp.New(l.svcCtx.DB).ListMenus(l.ctx, in)
 }

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewUpsertUserMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *UpsertUserMemoryLogic) UpsertUserMemory(req *types.UpsertUserMemoryReq) (resp *types.UpsertUserMemoryResp, err error) {
-	rpcResp, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &super.UpsertUserMemoryReq{
+	rpcResp, err := l.svcCtx.LLMGW.UpsertUserMemory(l.ctx, &moe.UpsertUserMemoryReq{
 		UserId:      req.UserId,
 		Key:         req.Key,
 		Value:       req.Value,

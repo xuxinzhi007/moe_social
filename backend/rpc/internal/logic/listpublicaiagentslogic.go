@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewListPublicAiAgentsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &ListPublicAiAgentsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ListPublicAiAgentsLogic) ListPublicAiAgents(in *super.ListPublicAiAgentsReq) (*super.ListAiResourceResp, error) {
+func (l *ListPublicAiAgentsLogic) ListPublicAiAgents(in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
 	resp, err := aiApp(l.svcCtx).ListPublicAiAgents(l.ctx, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

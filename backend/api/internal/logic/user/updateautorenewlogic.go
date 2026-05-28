@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewUpdateAutoRenewLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 
 func (l *UpdateAutoRenewLogic) UpdateAutoRenew(req *types.UpdateAutoRenewReq) (resp *types.EmptyResp, err error) {
 	// 调用RPC服务更新自动续费状态
-	_, err = l.svcCtx.UserGW.UpdateAutoRenew(l.ctx, &super.UpdateAutoRenewReq{
+	_, err = l.svcCtx.UserGW.UpdateAutoRenew(l.ctx, &moe.UpdateAutoRenewReq{
 		UserId:    req.UserId,
 		AutoRenew: req.AutoRenew,
 	})

@@ -6,7 +6,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +19,7 @@ type UserPage struct {
 }
 
 // ListUsers Admin 用户列表。
-func ListUsers(ctx context.Context, db *gorm.DB, in UserPage) ([]*super.User, int32, error) {
+func ListUsers(ctx context.Context, db *gorm.DB, in UserPage) ([]*moe.User, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -52,7 +52,7 @@ func ListUsers(ctx context.Context, db *gorm.DB, in UserPage) ([]*super.User, in
 		return nil, 0, err
 	}
 
-	out := make([]*super.User, 0, len(users))
+	out := make([]*moe.User, 0, len(users))
 	for i := range users {
 		out = append(out, userbiz.ModelToProto(&users[i]))
 	}

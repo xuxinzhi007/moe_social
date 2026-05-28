@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetUserLevel 用户等级信息。
-func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.UserLevelInfo, error) {
+func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.UserLevelInfo, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -54,7 +54,7 @@ func GetUserLevel(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.Us
 		}
 	}
 
-	return &super.UserLevelInfo{
+	return &moe.UserLevelInfo{
 		Level: int32(userLevel.Level), Experience: int32(userLevel.Experience),
 		TotalExp: int32(userLevel.TotalExp), NextLevelExp: int32(nextLevelExp),
 		LevelTitle: levelConfig.Title, BadgeUrl: levelConfig.BadgeUrl, Progress: progress,

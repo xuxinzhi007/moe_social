@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminDeleteMemoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	return &AdminDeleteMemoryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminDeleteMemoryLogic) AdminDeleteMemory(in *super.AdminDeleteMemoryReq) (*super.AdminDeleteMemoryResp, error) {
+func (l *AdminDeleteMemoryLogic) AdminDeleteMemory(in *moe.AdminDeleteMemoryReq) (*moe.AdminDeleteMemoryResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).DeleteMemory(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminModerationErr(err)

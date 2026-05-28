@@ -11,18 +11,18 @@ import (
 	"backend/pkg/moe/port"
 	"backend/pkg/moe/runtime"
 	"backend/pkg/moe/tools"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库；Super 走 gRPC 客户端）。
-func NewAPIAdminService(superClient super.SuperClient) (*moeadmin.AdminService, error) {
+func NewAPIAdminService(superClient moe.SuperClient) (*moeadmin.AdminService, error) {
 	if superClient == nil {
 		return nil, nil
 	}
-	// api_in_process 需在 API 进程连库；未配置库时返回 error，由 super.go 降级为纯 RPC。
+	// api_in_process 需在 API 进程连库；未配置库时返回 error，由 moe.go 降级为纯 RPC。
 	if err := utils.EnsureDB(); err != nil {
 		return nil, err
 	}

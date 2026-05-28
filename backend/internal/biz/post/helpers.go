@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -44,8 +44,8 @@ func moderationStatusOrDefault(s string) string {
 	return s
 }
 
-// BuildProtoPost 将帖子与用户转为 super.Post。
-func BuildProtoPost(post model.Post, user model.User, isLiked bool) *super.Post {
+// BuildProtoPost 将帖子与用户转为 moe.Post。
+func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 	var images []string
 	if post.Images != "" {
 		_ = json.Unmarshal([]byte(post.Images), &images)
@@ -62,9 +62,9 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *super.Post 
 		avatar = user.Avatar
 	}
 
-	topicTags := make([]*super.TopicTag, 0, len(post.TopicTags))
+	topicTags := make([]*moe.TopicTag, 0, len(post.TopicTags))
 	for _, tag := range post.TopicTags {
-		topicTags = append(topicTags, &super.TopicTag{
+		topicTags = append(topicTags, &moe.TopicTag{
 			Id:        strconv.FormatUint(uint64(tag.ID), 10),
 			Name:      tag.Name,
 			Color:     tag.Color,
@@ -72,7 +72,7 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *super.Post 
 		})
 	}
 
-	return &super.Post{
+	return &moe.Post{
 		Id:                strconv.FormatUint(uint64(post.ID), 10),
 		UserId:            strconv.FormatUint(uint64(post.UserID), 10),
 		UserName:          username,

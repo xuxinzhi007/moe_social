@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func NewAdminGetUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Admi
 }
 
 func (l *AdminGetUserLogic) AdminGetUser(req *types.AdminGetUserReq) (resp *types.AdminGetUserResp, err error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminGetUser(l.ctx, &super.AdminGetUserReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetUser(l.ctx, &moe.AdminGetUserReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminCreateAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminCreateAnnouncementLogic) AdminCreateAnnouncement(req *types.AdminCreateAnnouncementReq) (*types.AdminCreateAnnouncementResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminCreateAnnouncement(l.ctx, &super.AdminCreateAnnouncementReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminCreateAnnouncement(l.ctx, &moe.AdminCreateAnnouncementReq{
 		Title:   req.Title,
 		Content: req.Content,
 	})

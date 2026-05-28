@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListFriendRequestsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminListFriendRequestsLogic) AdminListFriendRequests(req *types.AdminListFriendRequestsReq) (*types.AdminListFriendRequestsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListFriendRequests(l.ctx, &super.AdminListFriendRequestsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListFriendRequests(l.ctx, &moe.AdminListFriendRequestsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Status:   req.Status,

@@ -8,7 +8,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	checkinbiz "backend/internal/biz/checkin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetUserLevelLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 	return &GetUserLevelLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUserLevelLogic) GetUserLevel(in *super.GetUserLevelReq) (*super.GetUserLevelResp, error) {
+func (l *GetUserLevelLogic) GetUserLevel(in *moe.GetUserLevelReq) (*moe.GetUserLevelResp, error) {
 	app := checkinapp.New(l.svcCtx.DB)
 	resp, err := app.GetUserLevel(l.ctx, in)
 	if err != nil {

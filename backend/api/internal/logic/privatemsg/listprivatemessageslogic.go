@@ -8,7 +8,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,7 +33,7 @@ func (l *ListPrivateMessagesLogic) ListPrivateMessages(req *types.ListPrivateMes
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.ChatGW.ListPrivateMessages(l.ctx, &super.ListPrivateMessagesReq{
+	rpcResp, err := l.svcCtx.ChatGW.ListPrivateMessages(l.ctx, &moe.ListPrivateMessagesReq{
 		ViewerId: viewerID,
 		PeerId:   req.PeerUserId,
 		BeforeId: req.BeforeId,

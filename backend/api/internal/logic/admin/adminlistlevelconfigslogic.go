@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewAdminListLevelConfigsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminListLevelConfigsLogic) AdminListLevelConfigs(_ *types.EmptyReq) (*types.AdminListLevelConfigsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListLevelConfigs(l.ctx, &super.AdminListLevelConfigsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminListLevelConfigs(l.ctx, &moe.AdminListLevelConfigsReq{})
 	if err != nil {
 		return &types.AdminListLevelConfigsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

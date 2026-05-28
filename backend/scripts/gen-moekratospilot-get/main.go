@@ -36,6 +36,9 @@ var skipExactPaths = map[string]struct{}{
 	"/api/admin/vip/plans":               {},
 	"/api/llm/models":                    {},
 	"/api/llm/local-models/catalog":      {},
+	"/api/landing/feedback":              {},
+	"/api/ops/landing/feedback":          {},
+	"/api/admin/landing/feedback":        {},
 }
 
 func main() {

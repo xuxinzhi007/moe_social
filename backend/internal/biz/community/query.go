@@ -6,13 +6,13 @@ import (
 
 	postbiz "backend/internal/biz/post"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListGroups 群组列表。
-func ListGroups(ctx context.Context, db *gorm.DB, in *super.GetGroupsReq) (*super.GetGroupsResp, error) {
+func ListGroups(ctx context.Context, db *gorm.DB, in *moe.GetGroupsReq) (*moe.GetGroupsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -41,30 +41,30 @@ func ListGroups(ctx context.Context, db *gorm.DB, in *super.GetGroupsReq) (*supe
 	if err := q.Offset(offset).Limit(int(pageSize)).Find(&groups).Error; err != nil {
 		return nil, err
 	}
-	out := make([]*super.Group, len(groups))
+	out := make([]*moe.Group, len(groups))
 	for i, group := range groups {
 		out[i] = groupToProto(db.WithContext(ctx), group, in.GetUserId(), "2006-01-02 15:04:05")
 	}
-	return &super.GetGroupsResp{Groups: out, Total: int32(total)}, nil
+	return &moe.GetGroupsResp{Groups: out, Total: int32(total)}, nil
 }
 
 // GetGroup 群组详情。
-func GetGroup(ctx context.Context, db *gorm.DB, in *super.GetGroupReq) (*super.GetGroupResp, error) {
+func GetGroup(ctx context.Context, db *gorm.DB, in *moe.GetGroupReq) (*moe.GetGroupResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil {
-		return &super.GetGroupResp{Success: false, Message: "invalid group id"}, nil
+		return &moe.GetGroupResp{Success: false, Message: "invalid group id"}, nil
 	}
 	var group model.Group
 	if err := db.WithContext(ctx).First(&group, groupID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &super.GetGroupResp{Success: false, Message: "group not found"}, nil
+			return &moe.GetGroupResp{Success: false, Message: "group not found"}, nil
 		}
 		return nil, err
 	}
-	return &super.GetGroupResp{
+	return &moe.GetGroupResp{
 		Success: true,
 		Message: "success",
 		Group:   groupToProto(db.WithContext(ctx), group, in.GetUserId(), "2006-01-02 15:04:05"),
@@ -72,13 +72,13 @@ func GetGroup(ctx context.Context, db *gorm.DB, in *super.GetGroupReq) (*super.G
 }
 
 // ListUserGroups 用户已加入群组。
-func ListUserGroups(ctx context.Context, db *gorm.DB, in *super.GetUserGroupsReq) (*super.GetUserGroupsResp, error) {
+func ListUserGroups(ctx context.Context, db *gorm.DB, in *moe.GetUserGroupsReq) (*moe.GetUserGroupsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(in.GetUserId())
 	if err != nil {
-		return &super.GetUserGroupsResp{}, nil
+		return &moe.GetUserGroupsResp{}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -110,23 +110,23 @@ func ListUserGroups(ctx context.Context, db *gorm.DB, in *super.GetUserGroupsReq
 			groupMap[g.ID] = g
 		}
 	}
-	out := make([]*super.Group, 0, len(members))
+	out := make([]*moe.Group, 0, len(members))
 	for _, member := range members {
 		if group, ok := groupMap[member.GroupID]; ok {
 			out = append(out, groupToProtoWithMember(db.WithContext(ctx), group, member))
 		}
 	}
-	return &super.GetUserGroupsResp{Groups: out, Total: int32(total)}, nil
+	return &moe.GetUserGroupsResp{Groups: out, Total: int32(total)}, nil
 }
 
 // ListGroupMembers 群组成员。
-func ListGroupMembers(ctx context.Context, db *gorm.DB, in *super.GetGroupMembersReq) (*super.GetGroupMembersResp, error) {
+func ListGroupMembers(ctx context.Context, db *gorm.DB, in *moe.GetGroupMembersReq) (*moe.GetGroupMembersResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil {
-		return &super.GetGroupMembersResp{}, nil
+		return &moe.GetGroupMembersResp{}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -146,21 +146,21 @@ func ListGroupMembers(ctx context.Context, db *gorm.DB, in *super.GetGroupMember
 	if err := q.Offset(offset).Limit(int(pageSize)).Find(&members).Error; err != nil {
 		return nil, err
 	}
-	out := make([]*super.GroupMember, len(members))
+	out := make([]*moe.GroupMember, len(members))
 	for i, member := range members {
 		out[i] = memberToProto(db.WithContext(ctx), member)
 	}
-	return &super.GetGroupMembersResp{Members: out, Total: int32(total)}, nil
+	return &moe.GetGroupMembersResp{Members: out, Total: int32(total)}, nil
 }
 
 // ListGroupPosts 群组帖子。
-func ListGroupPosts(ctx context.Context, db *gorm.DB, in *super.GetGroupPostsReq) (*super.GetGroupPostsResp, error) {
+func ListGroupPosts(ctx context.Context, db *gorm.DB, in *moe.GetGroupPostsReq) (*moe.GetGroupPostsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil || groupID == 0 {
-		return &super.GetGroupPostsResp{Posts: []*super.GroupPost{}, Total: 0}, nil
+		return &moe.GetGroupPostsResp{Posts: []*moe.GroupPost{}, Total: 0}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -185,7 +185,7 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *super.GetGroupPostsReq
 		return nil, err
 	}
 	if len(links) == 0 {
-		return &super.GetGroupPostsResp{Posts: []*super.GroupPost{}, Total: int32(total)}, nil
+		return &moe.GetGroupPostsResp{Posts: []*moe.GroupPost{}, Total: int32(total)}, nil
 	}
 	postIDs := make([]uint, 0, len(links))
 	for _, link := range links {
@@ -218,14 +218,14 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *super.GetGroupPostsReq
 		visiblePostIDs = append(visiblePostIDs, id)
 	}
 	liked := postbiz.LikedTargetIDSet(db.WithContext(ctx), viewerUID, "post", visiblePostIDs)
-	out := make([]*super.GroupPost, 0, len(links))
+	out := make([]*moe.GroupPost, 0, len(links))
 	for _, link := range links {
 		post, ok := postMap[link.PostID]
 		if !ok {
 			continue
 		}
 		user := userMap[post.UserID]
-		out = append(out, &super.GroupPost{
+		out = append(out, &moe.GroupPost{
 			Id:        uint64(link.ID),
 			GroupId:   uint64(link.GroupID),
 			PostId:    uint64(link.PostID),
@@ -233,5 +233,5 @@ func ListGroupPosts(ctx context.Context, db *gorm.DB, in *super.GetGroupPostsReq
 			CreatedAt: link.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &super.GetGroupPostsResp{Posts: out, Total: int32(total)}, nil
+	return &moe.GetGroupPostsResp{Posts: out, Total: int32(total)}, nil
 }

@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,7 +30,7 @@ func NewAdminUpdateUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 }
 
 func (l *AdminUpdateUserLogic) AdminUpdateUser(req *types.AdminUpdateUserReq) (*types.AdminUpdateUserResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateUser(l.ctx, &super.AdminUpdateUserReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateUser(l.ctx, &moe.AdminUpdateUserReq{
 		UserId:          req.UserId,
 		Role:            req.Role,
 		IsVip:           req.IsVip,

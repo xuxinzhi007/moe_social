@@ -6,7 +6,7 @@ import (
 
 	commentbiz "backend/internal/biz/comment"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewGetPostCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	return &GetPostCommentsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*super.GetPostCommentsResp, error) {
+func (l *GetPostCommentsLogic) GetPostComments(in *moe.GetPostCommentsReq) (*moe.GetPostCommentsResp, error) {
 	items, total, err := commentbiz.ListByPost(l.ctx, l.svcCtx.DB, commentbiz.ListFilter{
 		PostID: in.GetPostId(), Page: in.GetPage(), PageSize: in.GetPageSize(),
 		ViewerUserID: in.GetViewerUserId(),
@@ -33,5 +33,5 @@ func (l *GetPostCommentsLogic) GetPostComments(in *super.GetPostCommentsReq) (*s
 		l.Error("查询评论列表失败:", err)
 		return nil, err
 	}
-	return &super.GetPostCommentsResp{Comments: items, Total: total}, nil
+	return &moe.GetPostCommentsResp{Comments: items, Total: total}, nil
 }

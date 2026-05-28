@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -73,14 +73,14 @@ func memberStatus(db *gorm.DB, groupID uint, viewerUserID string) (bool, string)
 	return true, member.Role
 }
 
-func groupToProto(db *gorm.DB, group model.Group, viewerUserID string, createdAtLayout string) *super.Group {
+func groupToProto(db *gorm.DB, group model.Group, viewerUserID string, createdAtLayout string) *moe.Group {
 	if createdAtLayout == "" {
 		createdAtLayout = "2006-01-02 15:04:05"
 	}
 	var creator model.User
 	_ = db.First(&creator, group.CreatorID).Error
 	isJoined, userRole := memberStatus(db, group.ID, viewerUserID)
-	return &super.Group{
+	return &moe.Group{
 		Id:          uint64(group.ID),
 		Name:        group.Name,
 		Description: group.Description,
@@ -97,10 +97,10 @@ func groupToProto(db *gorm.DB, group model.Group, viewerUserID string, createdAt
 	}
 }
 
-func memberToProto(db *gorm.DB, member model.GroupMember) *super.GroupMember {
+func memberToProto(db *gorm.DB, member model.GroupMember) *moe.GroupMember {
 	var user model.User
 	_ = db.First(&user, member.UserID).Error
-	return &super.GroupMember{
+	return &moe.GroupMember{
 		Id:         uint64(member.ID),
 		GroupId:    uint64(member.GroupID),
 		UserId:     uint64(member.UserID),
@@ -112,7 +112,7 @@ func memberToProto(db *gorm.DB, member model.GroupMember) *super.GroupMember {
 	}
 }
 
-func groupToProtoWithMember(db *gorm.DB, group model.Group, member model.GroupMember) *super.Group {
+func groupToProtoWithMember(db *gorm.DB, group model.Group, member model.GroupMember) *moe.Group {
 	g := groupToProto(db, group, strconv.FormatUint(uint64(member.UserID), 10), "2006-01-02 15:04:05")
 	g.IsJoined = true
 	g.UserRole = member.Role

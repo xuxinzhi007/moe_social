@@ -5,11 +5,10 @@ cd "$(dirname "$0")/.."
 
 echo "== verify-kratos-rollout-regression (light) =="
 
-bash scripts/verify-kratos-rollout-pk0.sh
 bash scripts/verify-kratos-rollout-pk34.sh
-bash scripts/verify-kratos-100.sh
-bash scripts/verify-kratos-pure-50.sh
-bash scripts/verify-kratos-pure-90.sh
+bash scripts/verify-kratos-pure-100.sh
+bash scripts/verify-kratos-rollout-pk11.sh
+bash scripts/verify-sprint-fs9b.sh
 bash scripts/verify-sprint-fs9.sh
 
 echo "OK: PK regression light (pk34 + kratos-100 + fs9)"

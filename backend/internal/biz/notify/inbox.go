@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -34,7 +34,7 @@ func parseNotificationID(raw string) (uint, error) {
 }
 
 // ListInbox 用户通知列表。
-func ListInbox(ctx context.Context, db *gorm.DB, userIDRaw string, page InboxPage) ([]*super.Notification, int32, error) {
+func ListInbox(ctx context.Context, db *gorm.DB, userIDRaw string, page InboxPage) ([]*moe.Notification, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -62,7 +62,7 @@ func ListInbox(ctx context.Context, db *gorm.DB, userIDRaw string, page InboxPag
 	if err := base.Order("created_at desc").Offset(offset).Limit(int(ps)).Preload("Sender").Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	out := make([]*super.Notification, 0, len(rows))
+	out := make([]*moe.Notification, 0, len(rows))
 	for _, n := range rows {
 		out = append(out, modelToProto(&n))
 	}
@@ -120,7 +120,7 @@ func MarkAllRead(ctx context.Context, db *gorm.DB, userIDRaw string) error {
 }
 
 // CreateInbox 写入一条用户通知（等同 CreateNotification RPC）。
-func CreateInbox(ctx context.Context, db *gorm.DB, in *super.CreateNotificationReq) error {
+func CreateInbox(ctx context.Context, db *gorm.DB, in *moe.CreateNotificationReq) error {
 	if db == nil {
 		return gorm.ErrInvalidDB
 	}
@@ -165,7 +165,7 @@ func CreateInbox(ctx context.Context, db *gorm.DB, in *super.CreateNotificationR
 	return createDB.Create(&notification).Error
 }
 
-func modelToProto(n *model.Notification) *super.Notification {
+func modelToProto(n *model.Notification) *moe.Notification {
 	if n == nil {
 		return nil
 	}
@@ -175,7 +175,7 @@ func modelToProto(n *model.Notification) *super.Notification {
 	} else if n.Sender.Email != "" {
 		senderName = n.Sender.Email
 	}
-	return &super.Notification{
+	return &moe.Notification{
 		Id:           strconv.FormatUint(uint64(n.ID), 10),
 		UserId:       strconv.FormatUint(uint64(n.UserID), 10),
 		SenderId:     strconv.FormatUint(uint64(n.SenderID), 10),

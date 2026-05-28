@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminBootstrapLevelsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	return &AdminBootstrapLevelsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminBootstrapLevelsLogic) AdminBootstrapLevels(in *super.AdminBootstrapLevelsReq) (*super.AdminBootstrapLevelsResp, error) {
+func (l *AdminBootstrapLevelsLogic) AdminBootstrapLevels(in *moe.AdminBootstrapLevelsReq) (*moe.AdminBootstrapLevelsResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).BootstrapLevels(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminGrowthErr(err)

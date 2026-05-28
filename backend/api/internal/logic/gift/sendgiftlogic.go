@@ -7,7 +7,7 @@ import (
 	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewSendGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendGift
 	}
 }
 
-func rpcGiftRecordToAPI(r *super.GiftRecord) types.GiftRecord {
+func rpcGiftRecordToAPI(r *moe.GiftRecord) types.GiftRecord {
 	if r == nil {
 		return types.GiftRecord{}
 	}
@@ -52,7 +52,7 @@ func rpcGiftRecordToAPI(r *super.GiftRecord) types.GiftRecord {
 }
 
 func (l *SendGiftLogic) SendGift(req *types.SendGiftReq) (resp *types.SendGiftResp, err error) {
-	rpcResp, err := l.svcCtx.GiftGW.SendGift(l.ctx, &super.SendGiftReq{
+	rpcResp, err := l.svcCtx.GiftGW.SendGift(l.ctx, &moe.SendGiftReq{
 		FromUserId: req.UserId,
 		ToUserId:   req.ToUserId,
 		GiftId:     req.GiftId,

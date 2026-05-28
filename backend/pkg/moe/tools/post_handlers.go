@@ -9,7 +9,7 @@ import (
 	"backend/model"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/postpulse"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -55,7 +55,7 @@ func (e *Executor) execPostGet(ctx context.Context, req core.ExecuteRequest) cor
 	if err := parseArgs(req.ArgumentsJSON, &args); err != nil {
 		return fail(err.Error())
 	}
-	resp, err := e.deps.RPC.GetPost(ctx, &super.GetPostReq{
+	resp, err := e.deps.RPC.GetPost(ctx, &moe.GetPostReq{
 		PostId: args.PostID,
 	})
 	if err != nil || resp == nil || resp.Post == nil {
@@ -106,7 +106,7 @@ func (e *Executor) execPostCreate(ctx context.Context, req core.ExecuteRequest) 
 	}
 
 	uid := strconv.FormatUint(uint64(botUID), 10)
-	createResp, err := e.deps.RPC.CreatePost(ctx, &super.CreatePostReq{
+	createResp, err := e.deps.RPC.CreatePost(ctx, &moe.CreatePostReq{
 		UserId:  uid,
 		Content: content,
 		MoodTag: strings.TrimSpace(args.MoodTag),

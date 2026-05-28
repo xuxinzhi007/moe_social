@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/pkg/achievement"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ func parseUserID(raw string) (uint, error) {
 }
 
 // ListBadges 用户成就列表（含未解锁）。
-func ListBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*super.AchievementBadgeItem, error) {
+func ListBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -37,7 +37,7 @@ func ListBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*super.Ac
 }
 
 // ListUnlockedBadges 已解锁成就。
-func ListUnlockedBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*super.AchievementBadgeItem, error) {
+func ListUnlockedBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementBadgeItem, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -60,7 +60,7 @@ func ListUnlockedBadges(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*
 }
 
 // GetSummary 成就汇总。
-func GetSummary(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.AchievementSummary, error) {
+func GetSummary(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.AchievementSummary, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -73,14 +73,14 @@ func GetSummary(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.Achi
 	if err != nil {
 		return nil, err
 	}
-	return &super.AchievementSummary{
+	return &moe.AchievementSummary{
 		TotalBadges: int32(summary.TotalBadges), UnlockedBadges: int32(summary.UnlockedBadges),
 		CompletionPercentage: summary.CompletionPercentage,
 	}, nil
 }
 
 // EnsureInitialized 初始化用户成就（welcome 等）。
-func EnsureInitialized(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*super.AchievementUnlock, error) {
+func EnsureInitialized(ctx context.Context, db *gorm.DB, userIDRaw string) ([]*moe.AchievementUnlock, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

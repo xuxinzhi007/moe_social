@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,7 +35,7 @@ func (l *AdminListPostReportsLogic) AdminListPostReports(req *types.AdminListPos
 		pageSize = 50
 	}
 
-	rpcResp, err := l.svcCtx.AdminGW.AdminListPostReports(l.ctx, &super.AdminListPostReportsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListPostReports(l.ctx, &moe.AdminListPostReportsReq{
 		Page:     int32(page),
 		PageSize: int32(pageSize),
 	})

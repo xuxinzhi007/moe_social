@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewUpsertUserMemoryEmbeddingLogic(ctx context.Context, svcCtx *svc.ServiceC
 	}
 }
 
-func (l *UpsertUserMemoryEmbeddingLogic) UpsertUserMemoryEmbedding(in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+func (l *UpsertUserMemoryEmbeddingLogic) UpsertUserMemoryEmbedding(in *moe.UpsertUserMemoryEmbeddingReq) (*moe.UpsertUserMemoryEmbeddingResp, error) {
 	resp, err := newLLMApp(l.svcCtx.DB).UpsertUserMemoryEmbedding(l.ctx, in)
 	return resp, mapMemoryWriteErr(err)
 }

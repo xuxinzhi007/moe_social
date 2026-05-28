@@ -5,7 +5,7 @@ import (
 
 	userapp "backend/internal/service/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewResetPasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Res
 	return &ResetPasswordLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ResetPasswordLogic) ResetPassword(in *super.ResetPasswordReq) (*super.ResetPasswordResp, error) {
+func (l *ResetPasswordLogic) ResetPassword(in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
 	resp, err := userapp.New(l.svcCtx.DB).ResetPassword(l.ctx, in)
 	return resp, mapUserBizErr(err)
 }

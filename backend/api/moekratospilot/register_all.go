@@ -21,6 +21,7 @@ func RegisterAll(srv *khttp.Server, d PilotDeps) {
 	}
 	if d.Svc != nil {
 		RegisterLlmReadCompat(srv, d.Svc)
+		RegisterLandingCompat(srv, d.Svc)
 		RegisterNativeDomainHTTPHandlers(srv, d.Svc)
 		RegisterBridgeHTTPHandlers(srv, d.Svc)
 	}

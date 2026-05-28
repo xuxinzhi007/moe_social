@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewSyncUserDeviceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sy
 }
 
 func (l *SyncUserDeviceLogic) SyncUserDevice(req *types.SyncUserDeviceReq) (resp *types.SyncUserDeviceResp, err error) {
-	rpcResp, err := l.svcCtx.UserGW.SyncUserDevice(l.ctx, &super.SyncUserDeviceReq{
+	rpcResp, err := l.svcCtx.UserGW.SyncUserDevice(l.ctx, &moe.SyncUserDeviceReq{
 		UserId:      req.UserId,
 		DeviceId:    req.DeviceId,
 		Platform:    req.Platform,

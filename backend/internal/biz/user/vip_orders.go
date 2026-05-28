@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -17,7 +17,7 @@ type VipOrdersPage struct {
 }
 
 // ListVipOrders 用户 VIP 订单列表。
-func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipOrdersPage) ([]*super.VipOrder, int32, error) {
+func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipOrdersPage) ([]*moe.VipOrder, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -48,7 +48,7 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipO
 		return nil, 0, err
 	}
 
-	out := make([]*super.VipOrder, len(orders))
+	out := make([]*moe.VipOrder, len(orders))
 	for i, order := range orders {
 		paidAt := ""
 		if order.Status == "paid" {
@@ -58,7 +58,7 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page VipO
 		if order.Plan.ID > 0 {
 			planName = order.Plan.Name
 		}
-		out[i] = &super.VipOrder{
+		out[i] = &moe.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    userIDRaw,
 			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),

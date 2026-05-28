@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListAccountsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *AdminListAccountsLogic) AdminListAccounts(req *types.AdminListAccountsReq) (*types.AdminListAccountsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListAccounts(l.ctx, &super.AdminListAccountsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListAccounts(l.ctx, &moe.AdminListAccountsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

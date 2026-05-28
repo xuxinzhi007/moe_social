@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetTransactionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 
 func (l *GetTransactionsLogic) GetTransactions(req *types.GetTransactionsReq) (resp *types.GetTransactionsResp, err error) {
 	// 调用RPC接口
-	rpcResp, err := l.svcCtx.UserGW.GetTransactions(l.ctx, &super.GetTransactionsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetTransactions(l.ctx, &moe.GetTransactionsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

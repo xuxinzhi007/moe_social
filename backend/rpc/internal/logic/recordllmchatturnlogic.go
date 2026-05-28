@@ -5,7 +5,7 @@ import (
 
 	llmbiz "backend/internal/biz/llm"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,6 +24,6 @@ func NewRecordLlmChatTurnLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-func (l *RecordLlmChatTurnLogic) RecordLlmChatTurn(in *super.RecordLlmChatTurnReq) (*super.RecordLlmChatTurnResp, error) {
+func (l *RecordLlmChatTurnLogic) RecordLlmChatTurn(in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
 	return llmbiz.RecordChatTurn(l.ctx, l.svcCtx.DB, in)
 }

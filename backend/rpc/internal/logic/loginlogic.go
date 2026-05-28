@@ -9,7 +9,7 @@ import (
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/logutil"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 	}
 }
 
-func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
+func (l *LoginLogic) Login(in *moe.LoginReq) (*moe.LoginResp, error) {
 	email := strings.TrimSpace(in.GetEmail())
 	username := strings.TrimSpace(in.GetUsername())
 	attempt := logutil.LoginAttemptTag(email, username)
@@ -56,7 +56,7 @@ func (l *LoginLogic) Login(in *super.LoginReq) (*super.LoginResp, error) {
 	l.Infof("[认证] 登录成功 用户ID=%d 用户名=%s Moe号=%s 邮箱=%s %s",
 		user.ID, user.Username, user.MoeNo, logutil.MaskEmail(user.Email), attempt)
 
-	return &super.LoginResp{
+	return &moe.LoginResp{
 		User:  modelUserToProto(&user),
 		Token: token,
 	}, nil

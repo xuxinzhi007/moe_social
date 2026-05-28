@@ -6,7 +6,7 @@ import (
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetV
 	}
 }
 
-func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
+func (l *GetVipOrdersLogic) GetVipOrders(in *moe.GetVipOrdersReq) (*moe.GetVipOrdersResp, error) {
 	orders, total, err := userbiz.ListVipOrders(l.ctx, l.svcCtx.DB, in.GetUserId(), userbiz.VipOrdersPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -37,5 +37,5 @@ func (l *GetVipOrdersLogic) GetVipOrders(in *super.GetVipOrdersReq) (*super.GetV
 		}
 		return nil, errorx.Internal("获取订单列表失败: " + err.Error())
 	}
-	return &super.GetVipOrdersResp{Orders: orders, Total: total}, nil
+	return &moe.GetVipOrdersResp{Orders: orders, Total: total}, nil
 }

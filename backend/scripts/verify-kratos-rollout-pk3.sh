@@ -23,6 +23,6 @@ go test ./internal/platform/kratosprogress/... -count=1
 go test ./api/internal/admingw/... -count=1
 go test ./api/moekratospilot/... -count=1
 
-go build -o /dev/null ./cmd/moe-kratos
+go build -o /dev/null ./cmd/moe-social-stack/...
 
 echo "OK: PK-3 pilot domains on moekratospilot (RegisterAll)"

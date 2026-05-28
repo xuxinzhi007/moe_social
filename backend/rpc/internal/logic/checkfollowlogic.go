@@ -5,7 +5,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,11 +24,11 @@ func NewCheckFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Check
 	}
 }
 
-func (l *CheckFollowLogic) CheckFollow(in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
+func (l *CheckFollowLogic) CheckFollow(in *moe.CheckFollowReq) (*moe.CheckFollowResp, error) {
 	ok, err := userbiz.IsFollowingByStringID(l.ctx, l.svcCtx.DB, in.GetFollowerId(), in.GetFollowingId())
 	if err != nil {
 		l.Error("检查关注状态失败:", err)
 		return nil, err
 	}
-	return &super.CheckFollowResp{IsFollowing: ok}, nil
+	return &moe.CheckFollowResp{IsFollowing: ok}, nil
 }

@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,7 +34,7 @@ func (l *ListPrivateConversationsLogic) ListPrivateConversations(req *types.List
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.ChatGW.ListPrivateConversations(l.ctx, &super.ListPrivateConversationsReq{
+	rpcResp, err := l.svcCtx.ChatGW.ListPrivateConversations(l.ctx, &moe.ListPrivateConversationsReq{
 		ViewerId: viewerID,
 		Limit:    int32(req.Limit),
 		Offset:   int32(req.Offset),

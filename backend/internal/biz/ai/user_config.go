@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetAiUserConfig 读取用户 AI 配置（persona + preferences JSON）。
-func GetAiUserConfig(ctx context.Context, db *gorm.DB, in *super.GetAiUserConfigReq) (*super.GetAiUserConfigResp, error) {
+func GetAiUserConfig(ctx context.Context, db *gorm.DB, in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
 	if db == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -22,14 +22,14 @@ func GetAiUserConfig(ctx context.Context, db *gorm.DB, in *super.GetAiUserConfig
 	if err != nil {
 		return nil, fmt.Errorf("read ai user config: %w", err)
 	}
-	return &super.GetAiUserConfigResp{
+	return &moe.GetAiUserConfigResp{
 		UserPersona:     cfg.UserPersona,
 		PreferencesJson: cfg.PreferencesJSON,
 	}, nil
 }
 
 // UpsertAiUserConfig 更新用户 AI 配置。
-func UpsertAiUserConfig(ctx context.Context, db *gorm.DB, in *super.UpsertAiUserConfigReq) (*super.UpsertAiUserConfigResp, error) {
+func UpsertAiUserConfig(ctx context.Context, db *gorm.DB, in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
 	if db == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -50,7 +50,7 @@ func UpsertAiUserConfig(ctx context.Context, db *gorm.DB, in *super.UpsertAiUser
 	if err := db.WithContext(ctx).Save(cfg).Error; err != nil {
 		return nil, fmt.Errorf("save ai user config: %w", err)
 	}
-	return &super.UpsertAiUserConfigResp{
+	return &moe.UpsertAiUserConfigResp{
 		UserPersona:     cfg.UserPersona,
 		PreferencesJson: cfg.PreferencesJSON,
 	}, nil

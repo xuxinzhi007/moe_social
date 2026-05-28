@@ -4,10 +4,10 @@ import (
 	"context"
 
 	moebiz "backend/internal/biz/moe"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func (g *Gateway) MoeExecuteTool(ctx context.Context, in *super.MoeExecuteToolReq) (*super.MoeExecuteToolResp, error) {
+func (g *Gateway) MoeExecuteTool(ctx context.Context, in *moe.MoeExecuteToolReq) (*moe.MoeExecuteToolResp, error) {
 	if g == nil {
 		return nil, errNoBackend
 	}
@@ -23,7 +23,7 @@ func (g *Gateway) MoeExecuteTool(ctx context.Context, in *super.MoeExecuteToolRe
 		if err != nil {
 			return nil, err
 		}
-		return &super.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
+		return &moe.MoeExecuteToolResp{Ok: res.OK, Result: res.Result, Error: res.Error}, nil
 	}
 	if g.super != nil {
 		return g.super.MoeExecuteTool(ctx, in)

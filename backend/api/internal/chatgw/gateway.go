@@ -4,7 +4,7 @@ import (
 	"context"
 
 	chatapp "backend/internal/service/chat"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
@@ -12,11 +12,11 @@ import (
 // Gateway Chat HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *chatapp.AppService
-	super super.SuperClient
+	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *chatapp.AppService, legacy super.SuperClient) *Gateway {
+func New(local *chatapp.AppService, legacy moe.SuperClient) *Gateway {
 	return &Gateway{local: local, super: legacy}
 }
 
@@ -35,7 +35,7 @@ func (g *Gateway) Route() string {
 }
 
 // SendPrivateMessage 发送私信。
-func (g *Gateway) SendPrivateMessage(ctx context.Context, in *super.SendPrivateMessageReq, opts ...grpc.CallOption) (*super.SendPrivateMessageResp, error) {
+func (g *Gateway) SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq, opts ...grpc.CallOption) (*moe.SendPrivateMessageResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.SendPrivateMessage(ctx, in)
 	}
@@ -43,7 +43,7 @@ func (g *Gateway) SendPrivateMessage(ctx context.Context, in *super.SendPrivateM
 }
 
 // ListPrivateMessages 私信历史。
-func (g *Gateway) ListPrivateMessages(ctx context.Context, in *super.ListPrivateMessagesReq, opts ...grpc.CallOption) (*super.ListPrivateMessagesResp, error) {
+func (g *Gateway) ListPrivateMessages(ctx context.Context, in *moe.ListPrivateMessagesReq, opts ...grpc.CallOption) (*moe.ListPrivateMessagesResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.ListPrivateMessages(ctx, in)
 	}
@@ -51,7 +51,7 @@ func (g *Gateway) ListPrivateMessages(ctx context.Context, in *super.ListPrivate
 }
 
 // ListPrivateConversations 会话列表。
-func (g *Gateway) ListPrivateConversations(ctx context.Context, in *super.ListPrivateConversationsReq, opts ...grpc.CallOption) (*super.ListPrivateConversationsResp, error) {
+func (g *Gateway) ListPrivateConversations(ctx context.Context, in *moe.ListPrivateConversationsReq, opts ...grpc.CallOption) (*moe.ListPrivateConversationsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.ListPrivateConversations(ctx, in)
 	}

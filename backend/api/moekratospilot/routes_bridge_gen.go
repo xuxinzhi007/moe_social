@@ -10,7 +10,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// bridgeRouteCount 与 nativeDomainRouteCount 合计应覆盖 routes.go（compat 另计 13 条）。
+// bridgeRouteCount 与 nativeDomainRouteCount 合计应覆盖 routes.go（compat 另计 16 条）。
 const bridgeRouteCount = 2
 
 // RegisterBridgeHTTPHandlers swagger 等遗留 bridge。

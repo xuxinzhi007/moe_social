@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,9 +30,9 @@ func NewResourceLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Resource
 }
 
 func (l *ResourceLogic) list(userID uint, kind string) ([]map[string]interface{}, types.BaseResp) {
-	req := &super.ListAiResourceReq{UserId: strconv.FormatUint(uint64(userID), 10)}
+	req := &moe.ListAiResourceReq{UserId: strconv.FormatUint(uint64(userID), 10)}
 	var (
-		resp *super.ListAiResourceResp
+		resp *moe.ListAiResourceResp
 		err  error
 	)
 
@@ -66,7 +66,7 @@ func (l *ResourceLogic) upsert(userID uint, kind string, item map[string]interfa
 	if err != nil {
 		return []map[string]interface{}{}, common.HandleError(fmt.Errorf("marshal resource payload: %w", err))
 	}
-	req := &super.UpsertAiResourceReq{
+	req := &moe.UpsertAiResourceReq{
 		UserId:      strconv.FormatUint(uint64(userID), 10),
 		Id:          id,
 		PayloadJson: string(raw),
@@ -91,7 +91,7 @@ func (l *ResourceLogic) upsert(userID uint, kind string, item map[string]interfa
 }
 
 func (l *ResourceLogic) delete(userID uint, kind, id string) ([]map[string]interface{}, types.BaseResp) {
-	req := &super.DeleteAiResourceReq{
+	req := &moe.DeleteAiResourceReq{
 		UserId: strconv.FormatUint(uint64(userID), 10),
 		Id:     id,
 	}

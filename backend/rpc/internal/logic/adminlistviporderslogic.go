@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminListVipOrdersLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	return &AdminListVipOrdersLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListVipOrdersLogic) AdminListVipOrders(in *super.AdminListVipOrdersReq) (*super.AdminListVipOrdersResp, error) {
+func (l *AdminListVipOrdersLogic) AdminListVipOrders(in *moe.AdminListVipOrdersReq) (*moe.AdminListVipOrdersResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).ListVipOrders(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminOrdersErr(err)

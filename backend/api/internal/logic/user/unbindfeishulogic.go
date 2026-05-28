@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,7 +33,7 @@ func (l *UnbindFeishuLogic) UnbindFeishu(req *types.EmptyReq) (resp *types.Unbin
 	if err != nil {
 		return nil, err
 	}
-	rpcResp, rpcErr := l.svcCtx.UserGW.UnbindFeishu(l.ctx, &super.UnbindFeishuReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.UnbindFeishu(l.ctx, &moe.UnbindFeishuReq{
 		UserId: userID,
 	})
 	if rpcErr != nil {

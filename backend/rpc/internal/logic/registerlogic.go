@@ -9,7 +9,7 @@ import (
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/logutil"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 	}
 }
 
-func (l *RegisterLogic) Register(in *super.RegisterReq) (*super.RegisterResp, error) {
+func (l *RegisterLogic) Register(in *moe.RegisterReq) (*moe.RegisterResp, error) {
 	username := strings.TrimSpace(in.GetUsername())
 	emailNorm := strings.ToLower(strings.TrimSpace(in.GetEmail()))
 	if username == "" {
@@ -54,7 +54,7 @@ func (l *RegisterLogic) Register(in *super.RegisterReq) (*super.RegisterResp, er
 	l.Infof("[认证] 注册成功 用户ID=%d 用户名=%s Moe号=%s 邮箱=%s",
 		user.ID, user.Username, user.MoeNo, logutil.MaskEmail(user.Email))
 
-	return &super.RegisterResp{
+	return &moe.RegisterResp{
 		User:  modelUserToProto(&user),
 		Token: token,
 	}, nil

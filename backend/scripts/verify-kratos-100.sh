@@ -3,7 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-bash scripts/verify-kratos-80.sh
+bash scripts/verify-kratos-pure-100.sh
+bash scripts/verify-kratos-rollout-100.sh
 
 echo "== Phase 5: VIP read biz + pilot HTTP =="
 test -f internal/biz/vip/plans.go

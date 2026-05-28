@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminUpdateAnnouncementLogic(ctx context.Context, svcCtx *svc.ServiceCon
 }
 
 func (l *AdminUpdateAnnouncementLogic) AdminUpdateAnnouncement(req *types.AdminUpdateAnnouncementReq) (*types.AdminUpdateAnnouncementResp, error) {
-	rpcReq := &super.AdminUpdateAnnouncementReq{AnnouncementId: req.AnnouncementId}
+	rpcReq := &moe.AdminUpdateAnnouncementReq{AnnouncementId: req.AnnouncementId}
 	if title := strings.TrimSpace(req.Title); title != "" {
 		rpcReq.Title = title
 		rpcReq.UpdateTitle = true

@@ -8,7 +8,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewReportPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Report
 	return &ReportPostLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ReportPostLogic) ReportPost(in *super.ReportPostReq) (*super.ReportPostResp, error) {
+func (l *ReportPostLogic) ReportPost(in *moe.ReportPostReq) (*moe.ReportPostResp, error) {
 	app := postapp.New(l.svcCtx.DB, l.svcCtx.Config.HandDrawRequireModeration)
 	resp, err := app.ReportPost(l.ctx, in)
 	if err != nil {

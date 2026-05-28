@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *GetFollowingsLogic) GetFollowings(req *types.GetFollowingsReq) (resp *t
 	l.Debug("获取关注列表请求:", req)
 	
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.GetFollowings(l.ctx, &super.GetFollowingsReq{
+	rpcResp, err := l.svcCtx.UserGW.GetFollowings(l.ctx, &moe.GetFollowingsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

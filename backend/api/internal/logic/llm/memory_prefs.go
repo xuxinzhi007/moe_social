@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"backend/api/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // UserMemoryAutoLearnEnabled 读取用户是否开启回合后自动提取记忆（默认 true）。
@@ -14,7 +14,7 @@ func UserMemoryAutoLearnEnabled(ctx context.Context, svcCtx *svc.ServiceContext,
 	if svcCtx == nil || svcCtx.LLMGW == nil || userID == "" {
 		return true
 	}
-	resp, err := svcCtx.LLMGW.GetAiUserConfig(ctx, &super.GetAiUserConfigReq{UserId: userID})
+	resp, err := svcCtx.LLMGW.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: userID})
 	if err != nil || resp == nil {
 		return true
 	}

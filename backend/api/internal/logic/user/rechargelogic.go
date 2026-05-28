@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewRechargeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Recharge
 }
 
 func (l *RechargeLogic) Recharge(req *types.RechargeReq) (resp *types.RechargeResp, err error) {
-	_, err = l.svcCtx.UserGW.Recharge(l.ctx, &super.RechargeReq{
+	_, err = l.svcCtx.UserGW.Recharge(l.ctx, &moe.RechargeReq{
 		UserId:      req.UserId,
 		Amount:      float32(req.Amount),
 		Description: req.Description,

@@ -7,7 +7,7 @@ import (
 	vipbiz "backend/internal/biz/vip"
 	vipadmin "backend/internal/service/vip"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 var errNoBackend = errors.New("VIP 后端未配置")
@@ -16,11 +16,11 @@ var errNoBackend = errors.New("VIP 后端未配置")
 type Gateway struct {
 	kratos *KratosHTTPClient
 	local  *vipadmin.AdminService
-	super  super.SuperClient
+	super  moe.SuperClient
 }
 
 // New 构造网关；kratos 非 nil 且启用时，ListPlans 走纯 Kratos HTTP（PK-2）。
-func New(local *vipadmin.AdminService, legacy super.SuperClient, kratos *KratosHTTPClient) *Gateway {
+func New(local *vipadmin.AdminService, legacy moe.SuperClient, kratos *KratosHTTPClient) *Gateway {
 	return &Gateway{local: local, super: legacy, kratos: kratos}
 }
 
@@ -63,7 +63,7 @@ func (g *Gateway) ListPlans(ctx context.Context, f vipbiz.ListPlansFilter) ([]mo
 	if g.super == nil {
 		return nil, 0, errNoBackend
 	}
-	rep, err := g.super.AdminListVipPlans(ctx, &super.AdminListVipPlansReq{
+	rep, err := g.super.AdminListVipPlans(ctx, &moe.AdminListVipPlansReq{
 		Page:           int32(f.Page),
 		PageSize:       int32(f.PageSize),
 		Keyword:        f.Keyword,
@@ -89,7 +89,7 @@ func (g *Gateway) ListAllPlans(ctx context.Context) ([]model.VipPlan, error) {
 	if g.super == nil {
 		return nil, errNoBackend
 	}
-	rep, err := g.super.GetVipPlans(ctx, &super.GetVipPlansReq{})
+	rep, err := g.super.GetVipPlans(ctx, &moe.GetVipPlansReq{})
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (g *Gateway) GetPlan(ctx context.Context, planID string) (model.VipPlan, er
 	if g.super == nil {
 		return model.VipPlan{}, errNoBackend
 	}
-	rep, err := g.super.AdminGetVipPlan(ctx, &super.AdminGetVipPlanReq{PlanId: planID})
+	rep, err := g.super.AdminGetVipPlan(ctx, &moe.AdminGetVipPlanReq{PlanId: planID})
 	if err != nil {
 		return model.VipPlan{}, err
 	}
@@ -131,7 +131,7 @@ func (g *Gateway) CreatePlan(ctx context.Context, in vipbiz.CreatePlanInput) (mo
 	if g.super == nil {
 		return model.VipPlan{}, errNoBackend
 	}
-	rep, err := g.super.CreateVipPlan(ctx, &super.CreateVipPlanReq{
+	rep, err := g.super.CreateVipPlan(ctx, &moe.CreateVipPlanReq{
 		Name:         in.Name,
 		Description:  in.Description,
 		Price:        float32(in.Price),
@@ -157,7 +157,7 @@ func (g *Gateway) UpdatePlan(ctx context.Context, planID string, patch vipbiz.Up
 	if g.super == nil {
 		return model.VipPlan{}, errNoBackend
 	}
-	rep, err := g.super.AdminUpdateVipPlan(ctx, &super.AdminUpdateVipPlanReq{
+	rep, err := g.super.AdminUpdateVipPlan(ctx, &moe.AdminUpdateVipPlanReq{
 		PlanId:             planID,
 		Name:               patch.Name,
 		Description:        patch.Description,
@@ -188,7 +188,7 @@ func (g *Gateway) DeletePlan(ctx context.Context, planID string) error {
 	if g.super == nil {
 		return errNoBackend
 	}
-	_, err := g.super.AdminDeleteVipPlan(ctx, &super.AdminDeleteVipPlanReq{PlanId: planID})
+	_, err := g.super.AdminDeleteVipPlan(ctx, &moe.AdminDeleteVipPlanReq{PlanId: planID})
 	return err
 }
 
@@ -202,7 +202,7 @@ func (g *Gateway) BootstrapPlans(ctx context.Context) (int, error) {
 	if g.super == nil {
 		return 0, errNoBackend
 	}
-	rep, err := g.super.AdminBootstrapVipPlans(ctx, &super.AdminBootstrapVipPlansReq{})
+	rep, err := g.super.AdminBootstrapVipPlans(ctx, &moe.AdminBootstrapVipPlansReq{})
 	if err != nil {
 		return 0, err
 	}

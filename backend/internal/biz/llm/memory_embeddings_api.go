@@ -7,13 +7,13 @@ import (
 	"backend/model"
 	"backend/pkg/memory"
 	"backend/pkg/memory/embed"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // RebuildUserMemoryEmbeddings 全量重建用户记忆向量。
-func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.RebuildUserMemoryEmbeddingsReq, inferenceBaseURL string) (*super.RebuildUserMemoryEmbeddingsResp, error) {
+func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.RebuildUserMemoryEmbeddingsReq, inferenceBaseURL string) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.Reb
 	}
 	if len(texts) == 0 {
 		_ = deleteEmbeddingsForUser(db, userID)
-		return &super.RebuildUserMemoryEmbeddingsResp{Indexed: 0}, nil
+		return &moe.RebuildUserMemoryEmbeddingsResp{Indexed: 0}, nil
 	}
 
 	chain := embed.NewChain(embed.LoadProviders(inferenceBaseURL))
@@ -58,7 +58,7 @@ func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.Reb
 
 	go syncMemoryRelationsAsync(db, userID)
 
-	return &super.RebuildUserMemoryEmbeddingsResp{
+	return &moe.RebuildUserMemoryEmbeddingsResp{
 		Indexed:  int32(len(vecs)),
 		Provider: provider,
 		Model:    embedModel,
@@ -66,7 +66,7 @@ func RebuildUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.Reb
 }
 
 // ListUserMemoryEmbeddings 列出用户记忆向量。
-func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.ListUserMemoryEmbeddingsReq) (*super.ListUserMemoryEmbeddingsResp, error) {
+func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *moe.ListUserMemoryEmbeddingsReq) (*moe.ListUserMemoryEmbeddingsResp, error) {
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -75,20 +75,20 @@ func ListUserMemoryEmbeddings(ctx context.Context, db *gorm.DB, in *super.ListUs
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*super.UserMemoryEmbeddingItem, 0, len(m))
+	items := make([]*moe.UserMemoryEmbeddingItem, 0, len(m))
 	for key, vec := range m {
 		vals := make([]float32, len(vec))
 		copy(vals, vec)
-		items = append(items, &super.UserMemoryEmbeddingItem{
+		items = append(items, &moe.UserMemoryEmbeddingItem{
 			MemoryKey: key,
 			Values:    vals,
 		})
 	}
-	return &super.ListUserMemoryEmbeddingsResp{Items: items}, nil
+	return &moe.ListUserMemoryEmbeddingsResp{Items: items}, nil
 }
 
 // UpsertUserMemoryEmbedding 直接写入单条记忆向量（供 RPC/调试）。
-func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *super.UpsertUserMemoryEmbeddingReq) (*super.UpsertUserMemoryEmbeddingResp, error) {
+func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *moe.UpsertUserMemoryEmbeddingReq) (*moe.UpsertUserMemoryEmbeddingResp, error) {
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -103,11 +103,11 @@ func UpsertUserMemoryEmbedding(ctx context.Context, db *gorm.DB, in *super.Upser
 	if err := upsertMemoryEmbedding(db.WithContext(ctx), userID, in.GetMemoryKey(), in.GetChunkText(), in.GetProvider(), in.GetModel(), vec); err != nil {
 		return nil, err
 	}
-	return &super.UpsertUserMemoryEmbeddingResp{}, nil
+	return &moe.UpsertUserMemoryEmbeddingResp{}, nil
 }
 
 // ListUserMemoryRelations 列出用户记忆关系边。
-func ListUserMemoryRelations(ctx context.Context, db *gorm.DB, in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
+func ListUserMemoryRelations(ctx context.Context, db *gorm.DB, in *moe.ListUserMemoryRelationsReq) (*moe.ListUserMemoryRelationsResp, error) {
 	userID, err := parseUserIDUint(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -116,14 +116,14 @@ func ListUserMemoryRelations(ctx context.Context, db *gorm.DB, in *super.ListUse
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*super.UserMemoryRelationItem, 0, len(rels))
+	items := make([]*moe.UserMemoryRelationItem, 0, len(rels))
 	for _, r := range rels {
-		items = append(items, &super.UserMemoryRelationItem{
+		items = append(items, &moe.UserMemoryRelationItem{
 			FromKey:  r.FromKey,
 			ToKey:    r.ToKey,
 			Relation: r.Relation,
 			Weight:   r.Weight,
 		})
 	}
-	return &super.ListUserMemoryRelationsResp{Items: items}, nil
+	return &moe.ListUserMemoryRelationsResp{Items: items}, nil
 }

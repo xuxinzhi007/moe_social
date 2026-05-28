@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewAdminUpdateLevelConfigLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *AdminUpdateLevelConfigLogic) AdminUpdateLevelConfig(req *types.AdminUpdateLevelConfigReq) (*types.AdminUpdateLevelConfigResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateLevelConfig(l.ctx, &super.AdminUpdateLevelConfigReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminUpdateLevelConfig(l.ctx, &moe.AdminUpdateLevelConfigReq{
 		Id:               req.LevelId,
 		Title:            req.Title,
 		MinExp:           int32(req.MinExp),

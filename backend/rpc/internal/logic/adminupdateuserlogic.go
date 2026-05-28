@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewAdminUpdateUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *A
 	return &AdminUpdateUserLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateUserLogic) AdminUpdateUser(in *super.AdminUpdateUserReq) (*super.AdminUpdateUserResp, error) {
+func (l *AdminUpdateUserLogic) AdminUpdateUser(in *moe.AdminUpdateUserReq) (*moe.AdminUpdateUserResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).UpdateUser(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminUserWriteErr(err)

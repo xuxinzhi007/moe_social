@@ -6,7 +6,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetUserVipStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *GetUserVipStatusLogic) GetUserVipStatus(in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
+func (l *GetUserVipStatusLogic) GetUserVipStatus(in *moe.GetUserVipStatusReq) (*moe.GetUserVipStatusResp, error) {
 	uid, err := strconv.ParseUint(in.GetUserId(), 10, 64)
 	if err != nil || uid == 0 {
 		return nil, mapUserBizErr(userbiz.ErrInvalidArgument)
@@ -34,7 +34,7 @@ func (l *GetUserVipStatusLogic) GetUserVipStatus(in *super.GetUserVipStatusReq) 
 	if err != nil {
 		return nil, mapUserBizErr(err)
 	}
-	return &super.GetUserVipStatusResp{
+	return &moe.GetUserVipStatusResp{
 		IsVip:     st.IsVip,
 		ExpiresAt: st.ExpiresAt,
 		AutoRenew: st.AutoRenew,

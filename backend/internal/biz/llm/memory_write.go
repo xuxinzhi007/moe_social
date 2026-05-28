@@ -8,7 +8,7 @@ import (
 
 	"backend/internal/adapter/moeconfig"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +27,7 @@ type MemoryWriteOptions struct {
 }
 
 // UpsertUserMemory 创建或更新用户记忆（含冲突策略与异步索引）。
-func UpsertUserMemory(ctx context.Context, db *gorm.DB, in *super.UpsertUserMemoryReq, opts MemoryWriteOptions) (*super.UpsertUserMemoryResp, error) {
+func UpsertUserMemory(ctx context.Context, db *gorm.DB, in *moe.UpsertUserMemoryReq, opts MemoryWriteOptions) (*moe.UpsertUserMemoryResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -103,7 +103,7 @@ func UpsertUserMemory(ctx context.Context, db *gorm.DB, in *super.UpsertUserMemo
 		}
 	} else {
 		if isManualSource(memory.Source) && !isManualSource(source) && in.GetValue() != memory.Value && confidence <= memory.Confidence {
-			return &super.UpsertUserMemoryResp{Memory: userMemoryToProto(memory)}, nil
+			return &moe.UpsertUserMemoryResp{Memory: userMemoryToProto(memory)}, nil
 		}
 		memory.Value = in.GetValue()
 		memory.MemoryType = memoryType
@@ -129,11 +129,11 @@ func UpsertUserMemory(ctx context.Context, db *gorm.DB, in *super.UpsertUserMemo
 	}
 	triggerAfterMemoryWrite(db, uint(userID), memory, baseURL)
 
-	return &super.UpsertUserMemoryResp{Memory: userMemoryToProto(memory)}, nil
+	return &moe.UpsertUserMemoryResp{Memory: userMemoryToProto(memory)}, nil
 }
 
-func userMemoryToProto(memory model.UserMemory) *super.UserMemory {
-	return &super.UserMemory{
+func userMemoryToProto(memory model.UserMemory) *moe.UserMemory {
+	return &moe.UserMemory{
 		Id:          strconv.Itoa(int(memory.ID)),
 		UserId:      strconv.Itoa(int(memory.UserID)),
 		Key:         memory.Key,

@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 func TestUserMemoryCache_HitAndExpire(t *testing.T) {
 	userID := "u-cache-test"
 	invalidateCachedUserMemories(userID)
 
-	items := []*super.UserMemory{
+	items := []*moe.UserMemory{
 		{Key: "hobby", Value: "画画"},
 	}
 	setCachedUserMemories(userID, items)
@@ -38,7 +38,7 @@ func TestUserMemoryCache_HitAndExpire(t *testing.T) {
 }
 
 func TestSelectRelevantMemoryLines_FallbackToRecentWhenNoKeywordHit(t *testing.T) {
-	memories := []*super.UserMemory{
+	memories := []*moe.UserMemory{
 		{Key: "hobby", Value: "画画"},
 		{Key: "food", Value: "拉面"},
 		{Key: "music", Value: "轻音乐"},
@@ -57,7 +57,7 @@ func TestSelectRelevantMemoryLines_FallbackToRecentWhenNoKeywordHit(t *testing.T
 }
 
 func TestSelectRelevantMemoryLines_KeywordHitPrefersRelevantMemories(t *testing.T) {
-	memories := []*super.UserMemory{
+	memories := []*moe.UserMemory{
 		{Key: "hobby", Value: "画画"},
 		{Key: "pet", Value: "猫"},
 		{Key: "food", Value: "拉面"},

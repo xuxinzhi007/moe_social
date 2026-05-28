@@ -7,7 +7,7 @@ import (
 	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewGetUnreadCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	return &GetUnreadCountLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUnreadCountLogic) GetUnreadCount(in *super.GetUnreadCountReq) (*super.GetUnreadCountResp, error) {
+func (l *GetUnreadCountLogic) GetUnreadCount(in *moe.GetUnreadCountReq) (*moe.GetUnreadCountResp, error) {
 	count, err := notifybiz.UnreadCount(l.ctx, l.svcCtx.DB, in.GetUserId())
 	if err != nil {
 		if errors.Is(err, notifybiz.ErrInvalidUserID) {
@@ -31,5 +31,5 @@ func (l *GetUnreadCountLogic) GetUnreadCount(in *super.GetUnreadCountReq) (*supe
 		l.Error("查询未读数失败:", err)
 		return nil, errorx.Internal("查询未读数失败")
 	}
-	return &super.GetUnreadCountResp{Count: count}, nil
+	return &moe.GetUnreadCountResp{Count: count}, nil
 }

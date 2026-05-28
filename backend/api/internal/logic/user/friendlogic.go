@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -53,7 +53,7 @@ func parsePathUint(s string) (uint, error) {
 	return uint(v), nil
 }
 
-func rpcUserToTypes(u *super.User) types.User {
+func rpcUserToTypes(u *moe.User) types.User {
 	if u == nil {
 		return types.User{}
 	}
@@ -86,7 +86,7 @@ func rpcUserToTypes(u *super.User) types.User {
 	}
 }
 
-func rpcFriendViewToTypes(v *super.FriendRequestView) types.FriendRequestView {
+func rpcFriendViewToTypes(v *moe.FriendRequestView) types.FriendRequestView {
 	if v == nil {
 		return types.FriendRequestView{}
 	}
@@ -113,7 +113,7 @@ func (l *FriendLogic) SendFriendRequest(r *http.Request, req *types.SendFriendRe
 		return &types.SendFriendRequestResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.UserGW.SendFriendRequest(l.ctx, &super.SendFriendRequestReq{
+	rpcResp, err := l.svcCtx.UserGW.SendFriendRequest(l.ctx, &moe.SendFriendRequestReq{
 		ActorUserId: actorString(me),
 		ToUserId:    strings.TrimSpace(req.ToUserId),
 		ToMoeNo:     strings.TrimSpace(req.ToMoeNo),
@@ -139,7 +139,7 @@ func (l *FriendLogic) ListIncoming(r *http.Request, userIDPath string) (*types.L
 		return &types.ListFriendRequestsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.UserGW.ListIncomingFriendRequests(l.ctx, &super.ListIncomingFriendRequestsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListIncomingFriendRequests(l.ctx, &moe.ListIncomingFriendRequestsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
@@ -166,7 +166,7 @@ func (l *FriendLogic) ListOutgoing(r *http.Request, userIDPath string) (*types.L
 		return &types.ListFriendRequestsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.UserGW.ListOutgoingFriendRequests(l.ctx, &super.ListOutgoingFriendRequestsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListOutgoingFriendRequests(l.ctx, &moe.ListOutgoingFriendRequestsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
@@ -193,7 +193,7 @@ func (l *FriendLogic) AcceptFriendRequest(r *http.Request, req *types.FriendRequ
 		return &types.FriendRequestActionResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	_, err = l.svcCtx.UserGW.AcceptFriendRequest(l.ctx, &super.AcceptFriendRequestReq{
+	_, err = l.svcCtx.UserGW.AcceptFriendRequest(l.ctx, &moe.AcceptFriendRequestReq{
 		ActorUserId: actorString(me),
 		RequestId:   req.RequestId,
 	})
@@ -217,7 +217,7 @@ func (l *FriendLogic) RejectFriendRequest(r *http.Request, req *types.FriendRequ
 		return &types.FriendRequestActionResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	_, err = l.svcCtx.UserGW.RejectFriendRequest(l.ctx, &super.RejectFriendRequestReq{
+	_, err = l.svcCtx.UserGW.RejectFriendRequest(l.ctx, &moe.RejectFriendRequestReq{
 		ActorUserId: actorString(me),
 		RequestId:   req.RequestId,
 	})
@@ -241,7 +241,7 @@ func (l *FriendLogic) ListFriends(r *http.Request, userIDPath string) (*types.Li
 		return &types.ListFriendsResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.UserGW.ListFriends(l.ctx, &super.ListFriendsReq{
+	rpcResp, err := l.svcCtx.UserGW.ListFriends(l.ctx, &moe.ListFriendsReq{
 		ActorUserId: actorString(me),
 	})
 	if err != nil {
@@ -268,7 +268,7 @@ func (l *FriendLogic) FriendStatus(r *http.Request, userIDPath, otherIDPath stri
 		return &types.FriendStatusResp{BaseResp: types.BaseResp{Code: 403, Message: "无权操作", Success: false}}, nil
 	}
 
-	rpcResp, err := l.svcCtx.UserGW.GetFriendRelation(l.ctx, &super.GetFriendRelationReq{
+	rpcResp, err := l.svcCtx.UserGW.GetFriendRelation(l.ctx, &moe.GetFriendRelationReq{
 		ActorUserId: actorString(me),
 		OtherUserId: strings.TrimSpace(otherIDPath),
 	})

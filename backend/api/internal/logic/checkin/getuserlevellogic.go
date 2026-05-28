@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetUserLevelLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 
 func (l *GetUserLevelLogic) GetUserLevel(req *types.GetUserLevelReq) (resp *types.GetUserLevelResp, err error) {
 	// 调用RPC服务获取用户等级
-	rpcResp, err := l.svcCtx.CheckInGW.GetUserLevel(l.ctx, &super.GetUserLevelReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetUserLevel(l.ctx, &moe.GetUserLevelReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

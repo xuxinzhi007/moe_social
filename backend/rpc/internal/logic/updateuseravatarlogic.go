@@ -5,7 +5,7 @@ import (
 
 	userbiz "backend/internal/biz/user"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,6 +24,6 @@ func NewUpdateUserAvatarLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *UpdateUserAvatarLogic) UpdateUserAvatar(in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+func (l *UpdateUserAvatarLogic) UpdateUserAvatar(in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
 	return userbiz.UpdateUserAvatar(l.ctx, l.svcCtx.DB, in)
 }

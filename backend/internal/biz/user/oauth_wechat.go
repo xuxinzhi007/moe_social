@@ -8,7 +8,7 @@ import (
 	"unicode"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -16,7 +16,7 @@ import (
 )
 
 // WechatLogin 微信 OAuth 登录。
-func WechatLogin(ctx context.Context, db *gorm.DB, in *super.WechatLoginReq) (*super.WechatLoginResp, error) {
+func WechatLogin(ctx context.Context, db *gorm.DB, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
 	if !viper.GetBool("wechat.enabled") {
 		if !viper.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
@@ -50,7 +50,7 @@ func WechatLogin(ctx context.Context, db *gorm.DB, in *super.WechatLoginReq) (*s
 	if err != nil {
 		return nil, err
 	}
-	return &super.WechatLoginResp{
+	return &moe.WechatLoginResp{
 		User:      ModelToProto(&user),
 		Token:     token,
 		IsNewUser: isNew,
@@ -58,7 +58,7 @@ func WechatLogin(ctx context.Context, db *gorm.DB, in *super.WechatLoginReq) (*s
 }
 
 // WechatAuthorizeURL 微信授权 URL。
-func WechatAuthorizeURL(_ context.Context, in *super.WechatAuthorizeURLReq) (*super.WechatAuthorizeURLResp, error) {
+func WechatAuthorizeURL(_ context.Context, in *moe.WechatAuthorizeURLReq) (*moe.WechatAuthorizeURLResp, error) {
 	if !viper.GetBool("wechat.enabled") {
 		if !viper.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
@@ -73,7 +73,7 @@ func WechatAuthorizeURL(_ context.Context, in *super.WechatAuthorizeURLReq) (*su
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	return &super.WechatAuthorizeURLResp{AuthorizeUrl: url}, nil
+	return &moe.WechatAuthorizeURLResp{AuthorizeUrl: url}, nil
 }
 
 func findOrCreateWechatUser(ctx context.Context, db *gorm.DB, info utils.WechatOAuthUserInfo) (model.User, bool, error) {

@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -33,7 +33,7 @@ func (l *BindFeishuLogic) BindFeishu(req *types.BindFeishuReq) (resp *types.Bind
 	if err != nil {
 		return nil, err
 	}
-	rpcResp, rpcErr := l.svcCtx.UserGW.BindFeishu(l.ctx, &super.BindFeishuReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.BindFeishu(l.ctx, &moe.BindFeishuReq{
 		UserId:      userID,
 		FeishuEmail: req.FeishuEmail,
 	})

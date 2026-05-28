@@ -10,7 +10,7 @@ import (
 	"backend/internal/platform/moewiring"
 	adminapp "backend/internal/service/admin"
 	moeadmin "backend/internal/service/moe"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"google.golang.org/grpc"
@@ -101,7 +101,7 @@ func buildMoeAdmin(superRPC string, db *gorm.DB) (*moeadmin.AdminService, error)
 	if err != nil {
 		return nil, fmt.Errorf("super rpc dial %s: %w", superRPC, err)
 	}
-	client := super.NewSuperClient(conn)
+	client := moe.NewSuperClient(conn)
 	admin, err := moewiring.NewAPIAdminService(client)
 	if err != nil {
 		_ = conn.Close()

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	llmapp "backend/internal/service/llm"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"google.golang.org/grpc"
 )
@@ -12,11 +12,11 @@ import (
 // Gateway LLM HTTP → biz 或 super RPC 回退。
 type Gateway struct {
 	local *llmapp.AppService
-	super super.SuperClient
+	super moe.SuperClient
 }
 
 // New 构造网关。
-func New(local *llmapp.AppService, legacy super.SuperClient) *Gateway {
+func New(local *llmapp.AppService, legacy moe.SuperClient) *Gateway {
 	return &Gateway{local: local, super: legacy}
 }
 
@@ -33,17 +33,17 @@ func (g *Gateway) Route() string {
 	return "none"
 }
 
-func (g *Gateway) RecordLlmChatTurn(ctx context.Context, in *super.RecordLlmChatTurnReq, opts ...grpc.CallOption) (*super.RecordLlmChatTurnResp, error) {
+func (g *Gateway) RecordLlmChatTurn(ctx context.Context, in *moe.RecordLlmChatTurnReq, opts ...grpc.CallOption) (*moe.RecordLlmChatTurnResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.RecordLlmChatTurn(ctx, in)
 	}
 	if g == nil || g.super == nil {
-		return &super.RecordLlmChatTurnResp{Ok: false}, nil
+		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
 	}
 	return g.super.RecordLlmChatTurn(ctx, in, opts...)
 }
 
-func (g *Gateway) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfigReq, opts ...grpc.CallOption) (*super.GetAiUserConfigResp, error) {
+func (g *Gateway) GetAiUserConfig(ctx context.Context, in *moe.GetAiUserConfigReq, opts ...grpc.CallOption) (*moe.GetAiUserConfigResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetAiUserConfig(ctx, in)
 	}
@@ -53,7 +53,7 @@ func (g *Gateway) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfig
 	return g.super.GetAiUserConfig(ctx, in, opts...)
 }
 
-func (g *Gateway) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUserConfigReq, opts ...grpc.CallOption) (*super.UpsertAiUserConfigResp, error) {
+func (g *Gateway) UpsertAiUserConfig(ctx context.Context, in *moe.UpsertAiUserConfigReq, opts ...grpc.CallOption) (*moe.UpsertAiUserConfigResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.UpsertAiUserConfig(ctx, in)
 	}
@@ -63,7 +63,7 @@ func (g *Gateway) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUser
 	return g.super.UpsertAiUserConfig(ctx, in, opts...)
 }
 
-func (g *Gateway) GetUserMemories(ctx context.Context, in *super.GetUserMemoriesReq, opts ...grpc.CallOption) (*super.GetUserMemoriesResp, error) {
+func (g *Gateway) GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq, opts ...grpc.CallOption) (*moe.GetUserMemoriesResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetUserMemories(ctx, in)
 	}
@@ -73,7 +73,7 @@ func (g *Gateway) GetUserMemories(ctx context.Context, in *super.GetUserMemories
 	return g.super.GetUserMemories(ctx, in, opts...)
 }
 
-func (g *Gateway) GetUserMemoryProfiles(ctx context.Context, in *super.GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*super.GetUserMemoryProfilesResp, error) {
+func (g *Gateway) GetUserMemoryProfiles(ctx context.Context, in *moe.GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*moe.GetUserMemoryProfilesResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.GetUserMemoryProfiles(ctx, in)
 	}
@@ -83,7 +83,7 @@ func (g *Gateway) GetUserMemoryProfiles(ctx context.Context, in *super.GetUserMe
 	return g.super.GetUserMemoryProfiles(ctx, in, opts...)
 }
 
-func (g *Gateway) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemoryReq, opts ...grpc.CallOption) (*super.DeleteUserMemoryResp, error) {
+func (g *Gateway) DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq, opts ...grpc.CallOption) (*moe.DeleteUserMemoryResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.DeleteUserMemory(ctx, in)
 	}
@@ -93,7 +93,7 @@ func (g *Gateway) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemo
 	return g.super.DeleteUserMemory(ctx, in, opts...)
 }
 
-func (g *Gateway) SubmitUserMemoryFeedback(ctx context.Context, in *super.SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*super.SubmitUserMemoryFeedbackResp, error) {
+func (g *Gateway) SubmitUserMemoryFeedback(ctx context.Context, in *moe.SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*moe.SubmitUserMemoryFeedbackResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.SubmitUserMemoryFeedback(ctx, in)
 	}
@@ -103,7 +103,7 @@ func (g *Gateway) SubmitUserMemoryFeedback(ctx context.Context, in *super.Submit
 	return g.super.SubmitUserMemoryFeedback(ctx, in, opts...)
 }
 
-func (g *Gateway) RebuildUserMemoryEmbeddings(ctx context.Context, in *super.RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*super.RebuildUserMemoryEmbeddingsResp, error) {
+func (g *Gateway) RebuildUserMemoryEmbeddings(ctx context.Context, in *moe.RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*moe.RebuildUserMemoryEmbeddingsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.RebuildUserMemoryEmbeddings(ctx, in)
 	}
@@ -113,7 +113,7 @@ func (g *Gateway) RebuildUserMemoryEmbeddings(ctx context.Context, in *super.Reb
 	return g.super.RebuildUserMemoryEmbeddings(ctx, in, opts...)
 }
 
-func (g *Gateway) ListUserMemoryEmbeddings(ctx context.Context, in *super.ListUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*super.ListUserMemoryEmbeddingsResp, error) {
+func (g *Gateway) ListUserMemoryEmbeddings(ctx context.Context, in *moe.ListUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*moe.ListUserMemoryEmbeddingsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.ListUserMemoryEmbeddings(ctx, in)
 	}
@@ -123,7 +123,7 @@ func (g *Gateway) ListUserMemoryEmbeddings(ctx context.Context, in *super.ListUs
 	return g.super.ListUserMemoryEmbeddings(ctx, in, opts...)
 }
 
-func (g *Gateway) ListUserMemoryRelations(ctx context.Context, in *super.ListUserMemoryRelationsReq, opts ...grpc.CallOption) (*super.ListUserMemoryRelationsResp, error) {
+func (g *Gateway) ListUserMemoryRelations(ctx context.Context, in *moe.ListUserMemoryRelationsReq, opts ...grpc.CallOption) (*moe.ListUserMemoryRelationsResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.ListUserMemoryRelations(ctx, in)
 	}
@@ -133,7 +133,7 @@ func (g *Gateway) ListUserMemoryRelations(ctx context.Context, in *super.ListUse
 	return g.super.ListUserMemoryRelations(ctx, in, opts...)
 }
 
-func (g *Gateway) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq, opts ...grpc.CallOption) (*super.UpsertUserMemoryResp, error) {
+func (g *Gateway) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq, opts ...grpc.CallOption) (*moe.UpsertUserMemoryResp, error) {
 	if g != nil && g.local != nil {
 		return g.local.UpsertUserMemory(ctx, in)
 	}

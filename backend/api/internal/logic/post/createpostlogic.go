@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,9 +28,9 @@ func NewCreatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Create
 
 func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.CreatePostResp, err error) {
 	// 转换topic_tags格式
-	rpcTopicTags := make([]*super.TopicTag, 0, len(req.TopicTags))
+	rpcTopicTags := make([]*moe.TopicTag, 0, len(req.TopicTags))
 	for _, tag := range req.TopicTags {
-		rpcTopicTags = append(rpcTopicTags, &super.TopicTag{
+		rpcTopicTags = append(rpcTopicTags, &moe.TopicTag{
 			Id:        tag.Id,
 			Name:      tag.Name,
 			Color:     tag.Color,
@@ -39,7 +39,7 @@ func (l *CreatePostLogic) CreatePost(req *types.CreatePostReq) (resp *types.Crea
 	}
 
 	// 调用RPC服务创建帖子
-	rpcResp, err := l.svcCtx.PostGW.CreatePost(l.ctx, &super.CreatePostReq{
+	rpcResp, err := l.svcCtx.PostGW.CreatePost(l.ctx, &moe.CreatePostReq{
 		UserId:           req.UserId,
 		Content:          req.Content,
 		Images:           req.Images,

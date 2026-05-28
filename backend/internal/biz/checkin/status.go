@@ -9,13 +9,13 @@ import (
 
 	"backend/model"
 	"backend/pkg/achievement"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetStatus 返回用户签到状态。
-func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.CheckInStatus, error) {
+func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*moe.CheckInStatus, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -65,7 +65,7 @@ func GetStatus(ctx context.Context, db *gorm.DB, userIDRaw string) (*super.Check
 	}
 	nextDayReward = calcCheckInReward(db.WithContext(ctx), user, nextFuture)
 
-	return &super.CheckInStatus{
+	return &moe.CheckInStatus{
 		HasCheckedToday: hasCheckedToday,
 		ConsecutiveDays: int32(consecutiveDays),
 		TodayReward:     int32(todayReward),

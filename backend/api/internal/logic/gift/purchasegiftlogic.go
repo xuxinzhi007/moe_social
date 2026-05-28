@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *PurchaseGiftLogic) PurchaseGift(req *types.PurchaseGiftReq) (resp *type
 	if qty <= 0 {
 		qty = 1
 	}
-	rpcResp, err := l.svcCtx.GiftGW.PurchaseGift(l.ctx, &super.PurchaseGiftReq{
+	rpcResp, err := l.svcCtx.GiftGW.PurchaseGift(l.ctx, &moe.PurchaseGiftReq{
 		UserId:   req.UserId,
 		GiftId:   req.GiftId,
 		Quantity: qty,

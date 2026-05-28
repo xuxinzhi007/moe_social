@@ -8,7 +8,7 @@ import (
 	llmlogic "backend/api/internal/logic/llm"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -31,7 +31,7 @@ func (l *PutAiMemorySettingsLogic) PutAiMemorySettings(req *types.AiMemorySettin
 	uid := strconv.FormatUint(uint64(userID), 10)
 	existing := map[string]interface{}{}
 	if l.svcCtx.LLMGW != nil {
-		if cur, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{UserId: uid}); err == nil && cur != nil {
+		if cur, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &moe.GetAiUserConfigReq{UserId: uid}); err == nil && cur != nil {
 			existing = decodePrefsMap(cur.GetPreferencesJson())
 		}
 	}
@@ -39,7 +39,7 @@ func (l *PutAiMemorySettingsLogic) PutAiMemorySettings(req *types.AiMemorySettin
 	if l.svcCtx.LLMGW == nil {
 		return &types.AiMemorySettingsResp{BaseResp: common.HandleError(nil), Data: types.AiMemorySettingsData{AutoLearn: req.AutoLearn}}, nil
 	}
-	_, rpcErr := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
+	_, rpcErr := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &moe.UpsertAiUserConfigReq{
 		UserId:          uid,
 		PreferencesJson: prefsJSON,
 	})

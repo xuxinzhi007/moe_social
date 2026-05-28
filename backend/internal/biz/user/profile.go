@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // UpdateUserInfo 更新用户资料字段。
-func UpdateUserInfo(ctx context.Context, db *gorm.DB, in *super.UpdateUserInfoReq) (*super.UpdateUserInfoResp, error) {
+func UpdateUserInfo(ctx context.Context, db *gorm.DB, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
 	var user model.User
 	if err := db.WithContext(ctx).First(&user, in.GetUserId()).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -115,11 +115,11 @@ func UpdateUserInfo(ctx context.Context, db *gorm.DB, in *super.UpdateUserInfoRe
 
 	if len(updates) == 0 {
 		_ = db.WithContext(ctx).First(&user, user.ID).Error
-		return &super.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
+		return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
 	}
 	if err := db.WithContext(ctx).Model(&user).Updates(updates).Error; err != nil {
 		return nil, err
 	}
 	_ = db.WithContext(ctx).First(&user, user.ID).Error
-	return &super.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
+	return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
 }

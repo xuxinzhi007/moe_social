@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetGiftPurchaseOrdersLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *GetGiftPurchaseOrdersLogic) GetGiftPurchaseOrders(req *types.GetGiftPurchaseOrdersReq) (resp *types.GetGiftPurchaseOrdersResp, err error) {
-	rpcResp, err := l.svcCtx.GiftGW.GetGiftPurchaseOrders(l.ctx, &super.GetGiftPurchaseOrdersReq{
+	rpcResp, err := l.svcCtx.GiftGW.GetGiftPurchaseOrders(l.ctx, &moe.GetGiftPurchaseOrdersReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

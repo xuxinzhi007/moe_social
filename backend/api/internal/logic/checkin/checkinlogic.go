@@ -6,7 +6,7 @@ import (
 	achlogic "backend/api/internal/logic/achievement"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewCheckInLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CheckInLo
 
 func (l *CheckInLogic) CheckIn(req *types.CheckInReq) (resp *types.CheckInResp, err error) {
 	// 调用RPC服务进行签到
-	rpcResp, err := l.svcCtx.CheckInGW.CheckIn(l.ctx, &super.CheckInReq{
+	rpcResp, err := l.svcCtx.CheckInGW.CheckIn(l.ctx, &moe.CheckInReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

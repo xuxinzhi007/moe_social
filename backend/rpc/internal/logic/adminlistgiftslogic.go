@@ -6,7 +6,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewAdminListGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ad
 	}
 }
 
-func (l *AdminListGiftsLogic) AdminListGifts(in *super.AdminListGiftsReq) (*super.AdminListGiftsResp, error) {
+func (l *AdminListGiftsLogic) AdminListGifts(in *moe.AdminListGiftsReq) (*moe.AdminListGiftsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).AdminListGifts(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] list gifts: %v", err)

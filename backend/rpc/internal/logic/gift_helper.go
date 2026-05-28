@@ -6,7 +6,7 @@ import (
 
 	"backend/model"
 	"backend/rpc/internal/errorx"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 func parseGiftID(raw string) (uint, error) {
@@ -21,8 +21,8 @@ func parseGiftID(raw string) (uint, error) {
 	return uint(n), nil
 }
 
-func giftModelToProto(gift model.Gift) *super.Gift {
-	return &super.Gift{
+func giftModelToProto(gift model.Gift) *moe.Gift {
+	return &moe.Gift{
 		Id:          uint64(gift.ID),
 		Name:        gift.Name,
 		Price:       int32(gift.Price),

@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // SubmitUserMemoryFeedback 处理 accept/reject/correct 反馈。
-func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *super.SubmitUserMemoryFeedbackReq) (*super.SubmitUserMemoryFeedbackResp, error) {
+func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
 	if strings.TrimSpace(in.GetUserId()) == "" {
 		return nil, ErrMemoryEmptyUserID
 	}
@@ -76,7 +76,7 @@ func SubmitUserMemoryFeedback(ctx context.Context, db *gorm.DB, in *super.Submit
 
 	go func() { _ = RebuildUserMemoryProfileCache(db, memory.UserID) }()
 
-	return &super.SubmitUserMemoryFeedbackResp{Memory: userMemoryToProto(memory)}, nil
+	return &moe.SubmitUserMemoryFeedbackResp{Memory: userMemoryToProto(memory)}, nil
 }
 
 func minFloat(a, b float64) float64 {

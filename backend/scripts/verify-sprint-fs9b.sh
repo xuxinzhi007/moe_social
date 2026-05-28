@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "== verify-sprint-fs9b (phase 1) =="
+echo "== verify-sprint-fs9b =="
 
 grep -q 'backend/rpc/pb/moe' rpc/defs/common.proto
 grep -q 'backend/rpc/pb/moe' rpc/moe.proto
@@ -19,4 +19,16 @@ go build -o /dev/null ./rpc/pb/moe/...
 go build -o /dev/null ./rpc/pb/super/...
 go build -o /dev/null ./rpc/superclient/...
 
-echo "OK: FS-9b phase 1 (pb/moe + super shim)"
+# phase 2: 业务代码直引 pb/moe（垫片 scripts/、shim 目录除外）
+super_imports=$(grep -r --include='*.go' -l '"backend/rpc/pb/super"' . 2>/dev/null \
+  | grep -v 'rpc/pb/super/' \
+  | grep -v '/scripts/' || true)
+if [ -n "$super_imports" ]; then
+  echo "FS-9b phase2: unexpected pb/super imports:" >&2
+  echo "$super_imports" >&2
+  exit 1
+fi
+
+go build -o /dev/null ./rpc/... ./api/... ./internal/...
+
+echo "OK: FS-9b (pb/moe + shim; internal imports migrated)"

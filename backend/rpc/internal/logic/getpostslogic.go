@@ -5,7 +5,7 @@ import (
 
 	postbiz "backend/internal/biz/post"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewGetPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPosts
 	return &GetPostsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, error) {
+func (l *GetPostsLogic) GetPosts(in *moe.GetPostsReq) (*moe.GetPostsResp, error) {
 	posts, total, err := postbiz.List(l.ctx, l.svcCtx.DB, postbiz.ListFilter{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), ViewerUserID: in.GetViewerUserId(),
 		FeedMode: in.GetFeedMode(), TopicTagID: in.GetTopicTagId(), AuthorUserID: in.GetAuthorUserId(),
@@ -28,5 +28,5 @@ func (l *GetPostsLogic) GetPosts(in *super.GetPostsReq) (*super.GetPostsResp, er
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetPostsResp{Posts: posts, Total: total}, nil
+	return &moe.GetPostsResp{Posts: posts, Total: total}, nil
 }

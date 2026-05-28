@@ -6,7 +6,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetGiftRecordsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetGiftRecordsLogic) GetGiftRecords(req *types.GetGiftRecordsReq) (resp *types.GetGiftRecordsResp, err error) {
-	rpcResp, err := l.svcCtx.GiftGW.GetGiftRecords(l.ctx, &super.GetGiftRecordsReq{
+	rpcResp, err := l.svcCtx.GiftGW.GetGiftRecords(l.ctx, &moe.GetGiftRecordsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

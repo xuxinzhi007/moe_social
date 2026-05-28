@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUs
 
 func (l *GetUserInfoLogic) GetUserInfo(req *types.GetUserInfoReq) (resp *types.GetUserInfoResp, err error) {
 	// 调用RPC服务获取用户信息
-	rpcResp, err := l.svcCtx.UserGW.GetUserInfo(l.ctx, &super.GetUserInfoReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUserInfo(l.ctx, &moe.GetUserInfoReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	landingbiz "backend/internal/biz/landing"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewListLandingFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	}
 }
 
-func (l *ListLandingFeedbackLogic) ListLandingFeedback(in *super.ListLandingFeedbackReq) (*super.ListLandingFeedbackResp, error) {
+func (l *ListLandingFeedbackLogic) ListLandingFeedback(in *moe.ListLandingFeedbackReq) (*moe.ListLandingFeedbackResp, error) {
 	result, err := landingbiz.List(l.ctx, l.svcCtx.DB, landingbiz.ListFilter{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -36,7 +36,7 @@ func (l *ListLandingFeedbackLogic) ListLandingFeedback(in *super.ListLandingFeed
 		return nil, errorx.Internal("服务器内部错误")
 	}
 
-	return &super.ListLandingFeedbackResp{
+	return &moe.ListLandingFeedbackResp{
 		Items: landingbiz.FeedbackItemsToProto(result.Rows),
 		Total: int32(result.Total),
 	}, nil

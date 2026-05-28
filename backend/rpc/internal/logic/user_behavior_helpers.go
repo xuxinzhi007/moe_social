@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
-func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSummary {
+func loadUserBehaviorSummary(db *gorm.DB, uid uint) *moe.AdminUserBehaviorSummary {
 	if db == nil || uid == 0 {
 		return nil
 	}
@@ -57,9 +57,9 @@ func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSumm
 		rankedList = rankedList[:8]
 	}
 
-	topScreens := make([]*super.AdminUserBehaviorScreenStat, 0, len(rankedList))
+	topScreens := make([]*moe.AdminUserBehaviorScreenStat, 0, len(rankedList))
 	for _, item := range rankedList {
-		topScreens = append(topScreens, &super.AdminUserBehaviorScreenStat{
+		topScreens = append(topScreens, &moe.AdminUserBehaviorScreenStat{
 			Screen:            item.screen,
 			Label:             utils.BehaviorScreenLabel(item.screen),
 			VisitCount:        int32(item.visits),
@@ -78,7 +78,7 @@ func loadUserBehaviorSummary(db *gorm.DB, uid uint) *super.AdminUserBehaviorSumm
 		lastActiveAt = lastEvent.CreatedAt.UTC().Format(time.RFC3339)
 	}
 
-	return &super.AdminUserBehaviorSummary{
+	return &moe.AdminUserBehaviorSummary{
 		TopScreens:    topScreens,
 		Tags:          utils.BuildBehaviorTags(dailyRows),
 		LastActiveAt:  lastActiveAt,

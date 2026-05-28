@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -37,7 +37,7 @@ type UpsertMenuInput struct {
 }
 
 // UpsertMenu 创建或更新菜单项。
-func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*super.AdminMenuItem, error) {
+func UpsertMenu(ctx context.Context, db *gorm.DB, in UpsertMenuInput) (*moe.AdminMenuItem, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

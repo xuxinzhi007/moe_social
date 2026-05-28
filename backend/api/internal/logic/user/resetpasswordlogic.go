@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -40,7 +40,7 @@ func (l *ResetPasswordLogic) ResetPassword(req *types.ResetPasswordReq) (resp *t
 	}
 
 	// 2. 调用 RPC 服务重置密码
-	_, err = l.svcCtx.UserGW.ResetPassword(l.ctx, &super.ResetPasswordReq{
+	_, err = l.svcCtx.UserGW.ResetPassword(l.ctx, &moe.ResetPasswordReq{
 		Email:       req.Email,
 		NewPassword: req.NewPassword,
 	})

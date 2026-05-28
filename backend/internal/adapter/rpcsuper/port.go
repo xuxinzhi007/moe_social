@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 type superPort struct {
@@ -19,26 +19,26 @@ func NewSuperPort(_ context.Context, bridge Bridge) port.SuperPort {
 	return superPort{bridge: bridge}
 }
 
-func (p superPort) GetUserMemories(ctx context.Context, in *super.GetUserMemoriesReq) (*super.GetUserMemoriesResp, error) {
+func (p superPort) GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
 	return p.bridge.GetUserMemories(ctx, in)
 }
 
-func (p superPort) UpsertUserMemory(ctx context.Context, in *super.UpsertUserMemoryReq) (*super.UpsertUserMemoryResp, error) {
+func (p superPort) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
 	return p.bridge.UpsertUserMemory(ctx, in)
 }
 
-func (p superPort) DeleteUserMemory(ctx context.Context, in *super.DeleteUserMemoryReq) (*super.DeleteUserMemoryResp, error) {
+func (p superPort) DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
 	return p.bridge.DeleteUserMemory(ctx, in)
 }
 
-func (p superPort) CreatePost(ctx context.Context, in *super.CreatePostReq) (*super.CreatePostResp, error) {
+func (p superPort) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error) {
 	return p.bridge.CreatePost(ctx, in)
 }
 
-func (p superPort) UpdatePost(ctx context.Context, in *super.UpdatePostReq) (*super.UpdatePostResp, error) {
+func (p superPort) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
 	return p.bridge.UpdatePost(ctx, in)
 }
 
-func (p superPort) GetPost(ctx context.Context, in *super.GetPostReq) (*super.GetPostResp, error) {
+func (p superPort) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	return p.bridge.GetPost(ctx, in)
 }

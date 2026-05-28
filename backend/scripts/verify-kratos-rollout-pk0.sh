@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# PK-0: 纯 Kratos 落地基线（试点存在 + Hybrid 契约 + 关键文档）。
+# PK-0: 纯 Kratos 落地基线（生产 moe-social-stack + Hybrid 契约 + 关键文档）。
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
 
 echo "== verify-kratos-rollout-pk0 =="
 
-test -f cmd/moe-kratos/main.go
-test -f internal/platform/moekratos/run.go
+test -f cmd/moe-social-stack/main.go
+test -f internal/platform/moesocial/run.go
 test -f internal/platform/moekratos/wire_gen.go
 test -f api/moe/v1/moe.proto
 test -f ../docs/dev/kratos-pure-rollout.md
@@ -26,6 +26,6 @@ if [ -f api/etc/super.yaml ] || [ -f rpc/etc/super.yaml ]; then
   exit 1
 fi
 
-bash scripts/verify-kratos-pilot.sh
+go build -o /dev/null ./cmd/moe-social-stack/...
 
-echo "OK: PK-0 pure Kratos rollout baseline"
+echo "OK: PK-0 pure Kratos rollout baseline (moe-social-stack)"

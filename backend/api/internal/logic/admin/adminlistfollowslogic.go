@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListFollowsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *AdminListFollowsLogic) AdminListFollows(req *types.AdminListFollowsReq) (*types.AdminListFollowsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListFollows(l.ctx, &super.AdminListFollowsReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminListFollows(l.ctx, &moe.AdminListFollowsReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 		Keyword:  req.Keyword,

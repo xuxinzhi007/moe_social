@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,12 +23,12 @@ func NewAdminDeleteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *AdminDeleteGroupLogic) AdminDeleteGroup(in *super.AdminDeleteGroupReq) (*super.AdminDeleteGroupResp, error) {
-	_, err := NewDeleteGroupLogic(l.ctx, l.svcCtx).DeleteGroup(&super.DeleteGroupReq{
+func (l *AdminDeleteGroupLogic) AdminDeleteGroup(in *moe.AdminDeleteGroupReq) (*moe.AdminDeleteGroupResp, error) {
+	_, err := NewDeleteGroupLogic(l.ctx, l.svcCtx).DeleteGroup(&moe.DeleteGroupReq{
 		GroupId: in.GetGroupId(),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &super.AdminDeleteGroupResp{}, nil
+	return &moe.AdminDeleteGroupResp{}, nil
 }

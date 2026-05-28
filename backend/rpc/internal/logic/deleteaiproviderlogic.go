@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewDeleteAiProviderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &DeleteAiProviderLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *DeleteAiProviderLogic) DeleteAiProvider(in *super.DeleteAiResourceReq) (*super.DeleteAiResourceResp, error) {
+func (l *DeleteAiProviderLogic) DeleteAiProvider(in *moe.DeleteAiResourceReq) (*moe.DeleteAiResourceResp, error) {
 	resp, err := aiApp(l.svcCtx).DeleteAiProvider(l.ctx, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

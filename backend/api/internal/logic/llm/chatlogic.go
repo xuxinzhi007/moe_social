@@ -14,7 +14,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -40,7 +40,7 @@ var ctxSafeRatio = 0.7
 var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
 
 type cachedMemories struct {
-	items     []*super.UserMemory
+	items     []*moe.UserMemory
 	expiresAt time.Time
 }
 
@@ -116,7 +116,7 @@ func estimateTokens(s string) int {
 	return len([]rune(s))
 }
 
-func getCachedUserMemories(userID string) ([]*super.UserMemory, bool) {
+func getCachedUserMemories(userID string) ([]*moe.UserMemory, bool) {
 	now := time.Now()
 	userMemoryCache.RLock()
 	entry, ok := userMemoryCache.data[userID]
@@ -133,7 +133,7 @@ func getCachedUserMemories(userID string) ([]*super.UserMemory, bool) {
 	return entry.items, true
 }
 
-func setCachedUserMemories(userID string, items []*super.UserMemory) {
+func setCachedUserMemories(userID string, items []*moe.UserMemory) {
 	userMemoryCache.Lock()
 	defer userMemoryCache.Unlock()
 	evictUserMemoryCacheLocked()
@@ -235,7 +235,7 @@ func normalizeMemoryText(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.LlmMessage) []string {
+func selectRelevantMemoryLines(memories []*moe.UserMemory, messages []types.LlmMessage) []string {
 	if len(memories) == 0 {
 		return nil
 	}
@@ -340,7 +340,7 @@ func selectRelevantMemoryLines(memories []*super.UserMemory, messages []types.Ll
 	return lines
 }
 
-func isPersonaMemory(m *super.UserMemory) bool {
+func isPersonaMemory(m *moe.UserMemory) bool {
 	if m == nil {
 		return false
 	}
@@ -430,12 +430,12 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 		if v := l.ctx.Value("user_id"); v != nil {
 			if userID, ok := v.(string); ok && userID != "" {
 				userIDForLog = userID
-				var memories []*super.UserMemory
+				var memories []*moe.UserMemory
 				if cached, hit := getCachedUserMemories(userID); hit {
 					memories = cached
 					l.Infof("memory cache hit user_id=%s total=%d", userID, len(cached))
 				} else {
-					rpcResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+					rpcResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &moe.GetUserMemoriesReq{
 						UserId: userID,
 					})
 					if err != nil {
@@ -446,8 +446,8 @@ func (l *ChatLogic) Chat(req *types.LlmChatReq) (resp *types.LlmChatResp, err er
 						l.Infof("memory cache miss user_id=%s total=%d", userID, len(memories))
 					}
 				}
-				var profiles []*super.UserMemoryProfile
-				if profResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+				var profiles []*moe.UserMemoryProfile
+				if profResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &moe.GetUserMemoryProfilesReq{
 					UserId: userID,
 					Limit:  8,
 				}); err != nil {
@@ -881,7 +881,7 @@ func (l *ChatLogic) extractAndSaveMemoriesWithSource(ctx context.Context, userID
 			if item.Key == "" || item.Value == "" {
 				continue
 			}
-			_, err := l.svcCtx.LLMGW.UpsertUserMemory(ctx, &super.UpsertUserMemoryReq{
+			_, err := l.svcCtx.LLMGW.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,

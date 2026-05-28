@@ -7,7 +7,7 @@ import (
 	commentapp "backend/internal/service/comment"
 	commentbiz "backend/internal/biz/comment"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewCreateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cre
 	return &CreateCommentLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *CreateCommentLogic) CreateComment(in *super.CreateCommentReq) (*super.CreateCommentResp, error) {
+func (l *CreateCommentLogic) CreateComment(in *moe.CreateCommentReq) (*moe.CreateCommentResp, error) {
 	app := commentapp.New(l.svcCtx.DB)
 	resp, err := app.CreateComment(l.ctx, in)
 	if err != nil {

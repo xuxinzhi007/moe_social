@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUsersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUsers
 
 func (l *GetUsersLogic) GetUsers(req *types.GetUsersReq) (resp *types.GetUsersResp, err error) {
 	// 调用RPC服务获取用户列表
-	rpcResp, err := l.svcCtx.UserGW.GetUsers(l.ctx, &super.GetUsersReq{
+	rpcResp, err := l.svcCtx.UserGW.GetUsers(l.ctx, &moe.GetUsersReq{
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),
 	})

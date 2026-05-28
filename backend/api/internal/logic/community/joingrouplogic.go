@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewJoinGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *JoinGro
 }
 
 func (l *JoinGroupLogic) JoinGroup(req *types.JoinGroupReq) (resp *types.BaseResp, err error) {
-	rpcResp, err := l.svcCtx.CommunityGW.JoinGroup(l.ctx, &super.JoinGroupReq{
+	rpcResp, err := l.svcCtx.CommunityGW.JoinGroup(l.ctx, &moe.JoinGroupReq{
 		GroupId: req.GroupId,
 		UserId:  req.UserId,
 	})

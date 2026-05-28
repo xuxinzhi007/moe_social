@@ -7,7 +7,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	"backend/internal/platform/socialhook"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -23,22 +23,22 @@ func New(db *gorm.DB, handDrawRequireModeration bool) *AppService {
 	return &AppService{db: db, handDrawRequireModeration: handDrawRequireModeration}
 }
 
-func (s *AppService) MoeSearchPosts(ctx context.Context, in *super.MoeSearchPostsReq) (*super.MoeSearchPostsResp, error) {
+func (s *AppService) MoeSearchPosts(ctx context.Context, in *moe.MoeSearchPostsReq) (*moe.MoeSearchPostsResp, error) {
 	return postbiz.Search(ctx, s.db, postbiz.SearchInput{
 		Query: in.GetQuery(), Limit: in.GetLimit(),
 		ViewerUserID: in.GetViewerUserId(), MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),
 	})
 }
 
-func (s *AppService) GetPost(ctx context.Context, in *super.GetPostReq) (*super.GetPostResp, error) {
+func (s *AppService) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
 	post, err := postbiz.GetByID(ctx, s.db, in.GetPostId(), in.GetViewerUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetPostResp{Post: post}, nil
+	return &moe.GetPostResp{Post: post}, nil
 }
 
-func (s *AppService) GetPosts(ctx context.Context, in *super.GetPostsReq) (*super.GetPostsResp, error) {
+func (s *AppService) GetPosts(ctx context.Context, in *moe.GetPostsReq) (*moe.GetPostsResp, error) {
 	posts, total, err := postbiz.List(ctx, s.db, postbiz.ListFilter{
 		Page: in.GetPage(), PageSize: in.GetPageSize(), ViewerUserID: in.GetViewerUserId(),
 		FeedMode: in.GetFeedMode(), TopicTagID: in.GetTopicTagId(), AuthorUserID: in.GetAuthorUserId(),
@@ -46,10 +46,10 @@ func (s *AppService) GetPosts(ctx context.Context, in *super.GetPostsReq) (*supe
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetPostsResp{Posts: posts, Total: total}, nil
+	return &moe.GetPostsResp{Posts: posts, Total: total}, nil
 }
 
-func (s *AppService) CreatePost(ctx context.Context, in *super.CreatePostReq) (*super.CreatePostResp, error) {
+func (s *AppService) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error) {
 	tagInputs := make([]postbiz.TopicTagInput, 0, len(in.GetTopicTags()))
 	for _, tag := range in.GetTopicTags() {
 		if tag == nil {
@@ -78,12 +78,12 @@ func (s *AppService) CreatePost(ctx context.Context, in *super.CreatePostReq) (*
 	rpcPost := postbiz.BuildProtoPost(result.Post, result.User, false)
 	rpcPost.Images = result.Images
 	rpcPost.TopicTags = protoTags
-	return &super.CreatePostResp{
+	return &moe.CreatePostResp{
 		Post: rpcPost, NewAchievements: achUnlocks,
 	}, nil
 }
 
-func (s *AppService) LikePost(ctx context.Context, in *super.LikePostReq) (*super.LikePostResp, error) {
+func (s *AppService) LikePost(ctx context.Context, in *moe.LikePostReq) (*moe.LikePostResp, error) {
 	result, err := postbiz.Like(ctx, s.db, in.GetPostId(), in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -95,17 +95,17 @@ func (s *AppService) LikePost(ctx context.Context, in *super.LikePostReq) (*supe
 		})
 	}
 	rpcPost := postbiz.BuildProtoPost(result.Post, result.User, result.IsLiked)
-	return &super.LikePostResp{Post: rpcPost}, nil
+	return &moe.LikePostResp{Post: rpcPost}, nil
 }
 
-func (s *AppService) DeletePost(ctx context.Context, in *super.DeletePostReq) (*super.DeletePostResp, error) {
+func (s *AppService) DeletePost(ctx context.Context, in *moe.DeletePostReq) (*moe.DeletePostResp, error) {
 	if err := postbiz.Delete(ctx, s.db, in.GetPostId(), in.GetUserId()); err != nil {
 		return nil, err
 	}
-	return &super.DeletePostResp{}, nil
+	return &moe.DeletePostResp{}, nil
 }
 
-func (s *AppService) UpdatePost(ctx context.Context, in *super.UpdatePostReq) (*super.UpdatePostResp, error) {
+func (s *AppService) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
 	tagInputs := make([]postbiz.TopicTagInput, 0, len(in.GetTopicTags()))
 	for _, tag := range in.GetTopicTags() {
 		if tag == nil {
@@ -122,22 +122,22 @@ func (s *AppService) UpdatePost(ctx context.Context, in *super.UpdatePostReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &super.UpdatePostResp{
+	return &moe.UpdatePostResp{
 		Post: postbiz.BuildProtoPost(result.Post, result.User, result.IsLiked),
 	}, nil
 }
 
-func (s *AppService) ReportPost(ctx context.Context, in *super.ReportPostReq) (*super.ReportPostResp, error) {
+func (s *AppService) ReportPost(ctx context.Context, in *moe.ReportPostReq) (*moe.ReportPostResp, error) {
 	if err := postbiz.Report(ctx, s.db, in.GetPostId(), in.GetReporterUserId(), in.GetReason()); err != nil {
 		return nil, err
 	}
-	return &super.ReportPostResp{}, nil
+	return &moe.ReportPostResp{}, nil
 }
 
-func topicTagsToProto(tags []model.TopicTag) []*super.TopicTag {
-	out := make([]*super.TopicTag, 0, len(tags))
+func topicTagsToProto(tags []model.TopicTag) []*moe.TopicTag {
+	out := make([]*moe.TopicTag, 0, len(tags))
 	for _, tag := range tags {
-		out = append(out, &super.TopicTag{
+		out = append(out, &moe.TopicTag{
 			Id: strconv.FormatUint(uint64(tag.ID), 10), Name: tag.Name, Color: tag.Color,
 			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
 		})

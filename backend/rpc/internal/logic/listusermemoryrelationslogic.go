@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewListUserMemoryRelationsLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	return &ListUserMemoryRelationsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ListUserMemoryRelationsLogic) ListUserMemoryRelations(in *super.ListUserMemoryRelationsReq) (*super.ListUserMemoryRelationsResp, error) {
+func (l *ListUserMemoryRelationsLogic) ListUserMemoryRelations(in *moe.ListUserMemoryRelationsReq) (*moe.ListUserMemoryRelationsResp, error) {
 	resp, err := newLLMApp(l.svcCtx.DB).ListUserMemoryRelations(l.ctx, in)
 	return resp, mapMemoryWriteErr(err)
 }

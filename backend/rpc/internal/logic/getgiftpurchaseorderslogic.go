@@ -8,7 +8,7 @@ import (
 	giftbiz "backend/internal/biz/gift"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetGiftPurchaseOrdersLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	return &GetGiftPurchaseOrdersLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetGiftPurchaseOrdersLogic) GetGiftPurchaseOrders(in *super.GetGiftPurchaseOrdersReq) (*super.GetGiftPurchaseOrdersResp, error) {
+func (l *GetGiftPurchaseOrdersLogic) GetGiftPurchaseOrders(in *moe.GetGiftPurchaseOrdersReq) (*moe.GetGiftPurchaseOrdersResp, error) {
 	resp, err := giftapp.New(l.svcCtx.DB).GetGiftPurchaseOrders(l.ctx, in)
 	if err != nil {
 		switch {

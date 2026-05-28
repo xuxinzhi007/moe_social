@@ -2,10 +2,10 @@ package privatemsg
 
 import (
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func privateMessageItemFromProto(m *super.PrivateMessage) types.PrivateMessageItem {
+func privateMessageItemFromProto(m *moe.PrivateMessage) types.PrivateMessageItem {
 	paths := m.GetImagePaths()
 	if paths == nil {
 		paths = []string{}
@@ -24,7 +24,7 @@ func privateMessageItemFromProto(m *super.PrivateMessage) types.PrivateMessageIt
 	}
 }
 
-func privateConversationItemFromProto(c *super.PrivateConversation) types.PrivateConversationItem {
+func privateConversationItemFromProto(c *moe.PrivateConversation) types.PrivateConversationItem {
 	last := types.PrivateMessageItem{}
 	if c != nil && c.LastMessage != nil {
 		last = privateMessageItemFromProto(c.LastMessage)

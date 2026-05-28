@@ -7,7 +7,7 @@ import (
 	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewAdminBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(req *types.AdminBroadcastNotificationReq) (*types.AdminBroadcastNotificationResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminBroadcastNotification(l.ctx, &super.AdminBroadcastNotificationReq{
+	rpcResp, err := l.svcCtx.AdminGW.AdminBroadcastNotification(l.ctx, &moe.AdminBroadcastNotificationReq{
 		Title:   req.Title,
 		Content: req.Content,
 	})

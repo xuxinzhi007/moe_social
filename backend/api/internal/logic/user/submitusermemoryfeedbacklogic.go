@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func NewSubmitUserMemoryFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceCo
 }
 
 func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(req *types.SubmitUserMemoryFeedbackReq) (resp *types.SubmitUserMemoryFeedbackResp, err error) {
-	rpcResp, err := l.svcCtx.LLMGW.SubmitUserMemoryFeedback(l.ctx, &super.SubmitUserMemoryFeedbackReq{
+	rpcResp, err := l.svcCtx.LLMGW.SubmitUserMemoryFeedback(l.ctx, &moe.SubmitUserMemoryFeedbackReq{
 		UserId:         req.UserId,
 		Key:            req.Key,
 		FeedbackType:   req.FeedbackType,

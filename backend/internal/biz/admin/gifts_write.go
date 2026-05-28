@@ -7,7 +7,7 @@ import (
 
 	giftbiz "backend/internal/biz/gift"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -38,7 +38,7 @@ type UpdateGiftInput struct {
 }
 
 // CreateGift 创建礼物。
-func CreateGift(ctx context.Context, db *gorm.DB, in *super.AdminCreateGiftReq) (*super.Gift, error) {
+func CreateGift(ctx context.Context, db *gorm.DB, in *moe.AdminCreateGiftReq) (*moe.Gift, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -74,7 +74,7 @@ func CreateGift(ctx context.Context, db *gorm.DB, in *super.AdminCreateGiftReq) 
 }
 
 // UpdateGift 更新礼物。
-func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*super.Gift, error) {
+func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*moe.Gift, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

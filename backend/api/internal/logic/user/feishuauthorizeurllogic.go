@@ -10,7 +10,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -30,7 +30,7 @@ func NewFeishuAuthorizeURLLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *FeishuAuthorizeURLLogic) FeishuAuthorizeURL(req *types.FeishuAuthorizeURLReq) (resp *types.FeishuAuthorizeURLResp, err error) {
-	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuAuthorizeURL(l.ctx, &super.FeishuAuthorizeURLReq{
+	rpcResp, rpcErr := l.svcCtx.UserGW.FeishuAuthorizeURL(l.ctx, &moe.FeishuAuthorizeURLReq{
 		State: strings.TrimSpace(req.State),
 	})
 	if rpcErr != nil {

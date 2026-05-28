@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *UnfollowUserLogic) UnfollowUser(req *types.UnfollowUserReq) (resp *type
 	l.Debug("取消关注请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.UnfollowUser(l.ctx, &super.UnfollowUserReq{
+	rpcResp, err := l.svcCtx.UserGW.UnfollowUser(l.ctx, &moe.UnfollowUserReq{
 		UserId:      req.UserId,
 		FollowingId: req.FollowingId,
 	})

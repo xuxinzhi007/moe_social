@@ -9,7 +9,7 @@ import (
 	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,7 +34,7 @@ func (l *SendPrivateMessageLogic) SendPrivateMessage(req *types.SendPrivateMessa
 		return nil, err
 	}
 
-	rpcResp, err := l.svcCtx.ChatGW.SendPrivateMessage(l.ctx, &super.SendPrivateMessageReq{
+	rpcResp, err := l.svcCtx.ChatGW.SendPrivateMessage(l.ctx, &moe.SendPrivateMessageReq{
 		SenderId:    senderID,
 		ReceiverId:  req.ReceiverId,
 		Body:        req.Body,

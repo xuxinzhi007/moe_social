@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminBootstrapLevelsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *AdminBootstrapLevelsLogic) AdminBootstrapLevels(_ *types.EmptyReq) (*types.AdminBootstrapLevelsResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapLevels(l.ctx, &super.AdminBootstrapLevelsReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapLevels(l.ctx, &moe.AdminBootstrapLevelsReq{})
 	if err != nil {
 		return &types.AdminBootstrapLevelsResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

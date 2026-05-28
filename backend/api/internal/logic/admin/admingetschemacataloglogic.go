@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminGetSchemaCatalogLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminGetSchemaCatalogLogic) AdminGetSchemaCatalog(_ *types.EmptyReq) (*types.AdminSchemaCatalogResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminGetSchemaCatalog(l.ctx, &super.AdminGetSchemaCatalogReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminGetSchemaCatalog(l.ctx, &moe.AdminGetSchemaCatalogReq{})
 	if err != nil {
 		return &types.AdminSchemaCatalogResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

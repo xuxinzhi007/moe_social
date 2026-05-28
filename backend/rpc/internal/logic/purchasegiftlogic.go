@@ -5,7 +5,7 @@ import (
 
 	giftapp "backend/internal/service/gift"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,6 +20,6 @@ func NewPurchaseGiftLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Purc
 	return &PurchaseGiftLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *PurchaseGiftLogic) PurchaseGift(in *super.PurchaseGiftReq) (*super.PurchaseGiftResp, error) {
+func (l *PurchaseGiftLogic) PurchaseGift(in *moe.PurchaseGiftReq) (*moe.PurchaseGiftResp, error) {
 	return giftapp.New(l.svcCtx.DB).PurchaseGift(l.ctx, in)
 }

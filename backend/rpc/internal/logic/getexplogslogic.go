@@ -8,7 +8,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	checkinbiz "backend/internal/biz/checkin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetExpLogsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetExp
 	return &GetExpLogsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetExpLogsLogic) GetExpLogs(in *super.GetExpLogsReq) (*super.GetExpLogsResp, error) {
+func (l *GetExpLogsLogic) GetExpLogs(in *moe.GetExpLogsReq) (*moe.GetExpLogsResp, error) {
 	app := checkinapp.New(l.svcCtx.DB)
 	resp, err := app.GetExpLogs(l.ctx, in)
 	if err != nil {

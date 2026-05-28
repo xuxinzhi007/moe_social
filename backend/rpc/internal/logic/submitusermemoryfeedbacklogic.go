@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewSubmitUserMemoryFeedbackLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	return &SubmitUserMemoryFeedbackLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(in *super.SubmitUserMemoryFeedbackReq) (*super.SubmitUserMemoryFeedbackResp, error) {
+func (l *SubmitUserMemoryFeedbackLogic) SubmitUserMemoryFeedback(in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
 	resp, err := newLLMApp(l.svcCtx.DB).SubmitUserMemoryFeedback(l.ctx, in)
 	return resp, mapMemoryWriteErr(err)
 }

@@ -6,7 +6,7 @@ import (
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,7 +21,7 @@ func NewAdminBootstrapGiftsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminBootstrapGiftsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminBootstrapGiftsLogic) AdminBootstrapGifts(in *super.AdminBootstrapGiftsReq) (*super.AdminBootstrapGiftsResp, error) {
+func (l *AdminBootstrapGiftsLogic) AdminBootstrapGifts(in *moe.AdminBootstrapGiftsReq) (*moe.AdminBootstrapGiftsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).AdminBootstrapGifts(l.ctx, in)
 	if err != nil {
 		l.Errorf("[admin] bootstrap gifts: %v", err)

@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,7 @@ func NewGetUserAchievementSummaryLogic(ctx context.Context, svcCtx *svc.ServiceC
 }
 
 func (l *GetUserAchievementSummaryLogic) GetUserAchievementSummary(req *types.GetUserAchievementSummaryReq) (*types.GetUserAchievementSummaryResp, error) {
-	rpcResp, err := l.svcCtx.AchievementGW.GetUserAchievementSummary(l.ctx, &super.GetUserAchievementSummaryReq{
+	rpcResp, err := l.svcCtx.AchievementGW.GetUserAchievementSummary(l.ctx, &moe.GetUserAchievementSummaryReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

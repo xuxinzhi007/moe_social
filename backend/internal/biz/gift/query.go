@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListGifts 礼物列表（含 viewer 库存）。
-func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUserID string) ([]*super.Gift, int32, error) {
+func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUserID string) ([]*moe.Gift, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -47,7 +47,7 @@ func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUse
 			}
 		}
 	}
-	out := make([]*super.Gift, len(gifts))
+	out := make([]*moe.Gift, len(gifts))
 	for i, gift := range gifts {
 		out[i] = GiftToProto(gift, stockByGift[gift.ID])
 	}
@@ -55,28 +55,28 @@ func ListGifts(ctx context.Context, db *gorm.DB, page, pageSize int32, viewerUse
 }
 
 // GetGift 单个礼物详情。
-func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*super.GetGiftResp, error) {
+func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*moe.GetGiftResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	giftID, err := ParseGiftID(giftIDRaw)
 	if err != nil {
-		return &super.GetGiftResp{Success: false, Message: "invalid gift id"}, nil
+		return &moe.GetGiftResp{Success: false, Message: "invalid gift id"}, nil
 	}
 	var gift model.Gift
 	if err := db.WithContext(ctx).First(&gift, giftID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &super.GetGiftResp{Success: false, Message: "gift not found"}, nil
+			return &moe.GetGiftResp{Success: false, Message: "gift not found"}, nil
 		}
 		return nil, err
 	}
-	return &super.GetGiftResp{
+	return &moe.GetGiftResp{
 		Success: true, Message: "success", Gift: GiftToProto(gift, 0),
 	}, nil
 }
 
 // ListRecords 用户礼物赠送记录。
-func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*super.GiftRecord, int32, error) {
+func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.GiftRecord, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -102,14 +102,14 @@ func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 		Preload("Gift").Order("created_at DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	out := make([]*super.GiftRecord, len(rows))
+	out := make([]*moe.GiftRecord, len(rows))
 	for i, record := range rows {
 		var fromUser, toUser model.User
 		db.WithContext(ctx).First(&fromUser, record.FromUserID)
 		db.WithContext(ctx).First(&toUser, record.ToUserID)
-		var giftProto *super.Gift
+		var giftProto *moe.Gift
 		if record.Gift.ID != 0 {
-			giftProto = &super.Gift{
+			giftProto = &moe.Gift{
 				Id: uint64(record.Gift.ID), Name: record.Gift.Name,
 				Price: int32(record.Gift.Price), Icon: record.Gift.Icon,
 				Description: record.Gift.Description,
@@ -121,7 +121,7 @@ func ListRecords(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageS
 }
 
 // ListPurchaseOrders 用户礼物购买订单。
-func ListPurchaseOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*super.GiftPurchaseOrder, int32, error) {
+func ListPurchaseOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page, pageSize int32) ([]*moe.GiftPurchaseOrder, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -152,9 +152,9 @@ func ListPurchaseOrders(ctx context.Context, db *gorm.DB, userIDRaw string, page
 		Order("created_at DESC").Offset(int(offset)).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	out := make([]*super.GiftPurchaseOrder, 0, len(rows))
+	out := make([]*moe.GiftPurchaseOrder, 0, len(rows))
 	for _, o := range rows {
-		out = append(out, &super.GiftPurchaseOrder{
+		out = append(out, &moe.GiftPurchaseOrder{
 			Id: strconv.FormatUint(uint64(o.ID), 10), UserId: userIDRaw,
 			OrderNo: o.OrderNo, GiftId: strconv.FormatUint(uint64(o.GiftID), 10),
 			GiftName: o.GiftName, Quantity: int32(o.Quantity), UnitPrice: o.UnitPrice,

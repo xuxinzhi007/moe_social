@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewAdminListMenusLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ad
 }
 
 func (l *AdminListMenusLogic) AdminListMenus(_ *types.EmptyReq) (*types.AdminListMenusResp, error) {
-	rpcResp, err := l.svcCtx.AdminGW.AdminListMenus(l.ctx, &super.AdminListMenusReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminListMenus(l.ctx, &moe.AdminListMenusReq{})
 	if err != nil {
 		return &types.AdminListMenusResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

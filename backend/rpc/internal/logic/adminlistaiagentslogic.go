@@ -5,7 +5,7 @@ import (
 
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -20,7 +20,7 @@ func NewAdminListAiAgentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	return &AdminListAiAgentsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminListAiAgentsLogic) AdminListAiAgents(in *super.AdminListAiAgentsReq) (*super.AdminListAiAgentsResp, error) {
+func (l *AdminListAiAgentsLogic) AdminListAiAgents(in *moe.AdminListAiAgentsReq) (*moe.AdminListAiAgentsResp, error) {
 	resp, err := adminapp.New(l.svcCtx.DB).ListAiAgents(l.ctx, in)
 	if err != nil {
 		if mapped := mapAIResourceErr(err); mapped != nil {

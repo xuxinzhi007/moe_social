@@ -5,7 +5,7 @@ import (
 
 	chatapp "backend/internal/service/chat"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -24,7 +24,7 @@ func NewListPrivateConversationsLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *ListPrivateConversationsLogic) ListPrivateConversations(in *super.ListPrivateConversationsReq) (*super.ListPrivateConversationsResp, error) {
+func (l *ListPrivateConversationsLogic) ListPrivateConversations(in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
 	resp, err := chatapp.New(l.svcCtx.DB).ListPrivateConversations(l.ctx, in)
 	if err != nil {
 		l.Errorf("ListPrivateConversations: %v", err)

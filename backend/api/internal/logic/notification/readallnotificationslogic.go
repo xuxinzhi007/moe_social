@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewReadAllNotificationsLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *ReadAllNotificationsLogic) ReadAllNotifications(req *types.ReadAllNotificationsReq) (resp *types.BaseResp, err error) {
-	_, err = l.svcCtx.UserGW.ReadAllNotifications(l.ctx, &super.ReadAllNotificationsReq{
+	_, err = l.svcCtx.UserGW.ReadAllNotifications(l.ctx, &moe.ReadAllNotificationsReq{
 		UserId: req.UserId,
 	})
 	if err != nil {

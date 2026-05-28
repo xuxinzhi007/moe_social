@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func NewExecuteMoeToolLogic(ctx context.Context, svcCtx *svc.ServiceContext, act
 }
 
 func (l *ExecuteMoeToolLogic) ExecuteMoeTool(req *types.MoeToolExecuteReq) (*types.MoeToolExecuteResp, error) {
-	rpcResp, err := l.svcCtx.MoeGW.MoeExecuteTool(l.ctx, &super.MoeExecuteToolReq{
+	rpcResp, err := l.svcCtx.MoeGW.MoeExecuteTool(l.ctx, &moe.MoeExecuteToolReq{
 		Tool:           req.Tool,
 		ArgumentsJson:  req.Arguments,
 		AgentKey:       req.AgentKey,

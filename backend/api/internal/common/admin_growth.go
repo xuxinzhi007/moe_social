@@ -2,10 +2,10 @@ package common
 
 import (
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
-func RpcAdminLevelConfigToTypes(item *super.AdminLevelConfigItem) types.AdminLevelConfigItem {
+func RpcAdminLevelConfigToTypes(item *moe.AdminLevelConfigItem) types.AdminLevelConfigItem {
 	if item == nil {
 		return types.AdminLevelConfigItem{}
 	}
@@ -20,7 +20,7 @@ func RpcAdminLevelConfigToTypes(item *super.AdminLevelConfigItem) types.AdminLev
 	}
 }
 
-func RpcAdminCheckInRewardToTypes(item *super.AdminCheckInRewardItem) types.AdminCheckInRewardItem {
+func RpcAdminCheckInRewardToTypes(item *moe.AdminCheckInRewardItem) types.AdminCheckInRewardItem {
 	if item == nil {
 		return types.AdminCheckInRewardItem{}
 	}
@@ -32,7 +32,7 @@ func RpcAdminCheckInRewardToTypes(item *super.AdminCheckInRewardItem) types.Admi
 	}
 }
 
-func RpcAdminUserProfileToTypes(data *super.AdminUserProfileData) types.AdminUserProfileData {
+func RpcAdminUserProfileToTypes(data *moe.AdminUserProfileData) types.AdminUserProfileData {
 	if data == nil {
 		return types.AdminUserProfileData{}
 	}

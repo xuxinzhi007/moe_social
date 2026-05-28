@@ -7,7 +7,7 @@ import (
 	notifybiz "backend/internal/biz/notify"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -22,7 +22,7 @@ func NewReadNotificationLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &ReadNotificationLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *ReadNotificationLogic) ReadNotification(in *super.ReadNotificationReq) (*super.ReadNotificationResp, error) {
+func (l *ReadNotificationLogic) ReadNotification(in *moe.ReadNotificationReq) (*moe.ReadNotificationResp, error) {
 	if err := notifybiz.MarkRead(l.ctx, l.svcCtx.DB, in.GetUserId(), in.GetId()); err != nil {
 		switch {
 		case errors.Is(err, notifybiz.ErrInvalidUserID), errors.Is(err, notifybiz.ErrInvalidNotificationID):
@@ -32,5 +32,5 @@ func (l *ReadNotificationLogic) ReadNotification(in *super.ReadNotificationReq) 
 			return nil, errorx.Internal("标记通知已读失败")
 		}
 	}
-	return &super.ReadNotificationResp{}, nil
+	return &moe.ReadNotificationResp{}, nil
 }

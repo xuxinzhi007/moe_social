@@ -5,7 +5,7 @@ import (
 
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,7 +26,7 @@ func NewGetExpLogsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetExp
 
 func (l *GetExpLogsLogic) GetExpLogs(req *types.GetExpLogsReq) (resp *types.GetExpLogsResp, err error) {
 	// 调用RPC服务获取经验日志
-	rpcResp, err := l.svcCtx.CheckInGW.GetExpLogs(l.ctx, &super.GetExpLogsReq{
+	rpcResp, err := l.svcCtx.CheckInGW.GetExpLogs(l.ctx, &moe.GetExpLogsReq{
 		UserId:   req.UserId,
 		Page:     int32(req.Page),
 		PageSize: int32(req.PageSize),

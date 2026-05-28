@@ -8,7 +8,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	achievementbiz "backend/internal/biz/achievement"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -23,7 +23,7 @@ func NewGetUserAchievementSummaryLogic(ctx context.Context, svcCtx *svc.ServiceC
 	return &GetUserAchievementSummaryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *GetUserAchievementSummaryLogic) GetUserAchievementSummary(in *super.GetUserAchievementSummaryReq) (*super.GetUserAchievementSummaryResp, error) {
+func (l *GetUserAchievementSummaryLogic) GetUserAchievementSummary(in *moe.GetUserAchievementSummaryReq) (*moe.GetUserAchievementSummaryResp, error) {
 	app := achievementapp.New(l.svcCtx.DB)
 	resp, err := app.GetUserAchievementSummary(l.ctx, in)
 	if err != nil {

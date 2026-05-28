@@ -1,17 +1,17 @@
 package achievement
 
 import (
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // UnlocksToProto converts unlock results to RPC messages.
-func UnlocksToProto(unlocks []UnlockResult) []*super.AchievementUnlock {
+func UnlocksToProto(unlocks []UnlockResult) []*moe.AchievementUnlock {
 	if len(unlocks) == 0 {
 		return nil
 	}
-	out := make([]*super.AchievementUnlock, 0, len(unlocks))
+	out := make([]*moe.AchievementUnlock, 0, len(unlocks))
 	for _, u := range unlocks {
-		out = append(out, &super.AchievementUnlock{
+		out = append(out, &moe.AchievementUnlock{
 			BadgeId:    u.BadgeID,
 			Name:       u.Name,
 			ExpGranted: int32(u.ExpGranted),
@@ -23,10 +23,10 @@ func UnlocksToProto(unlocks []UnlockResult) []*super.AchievementUnlock {
 }
 
 // BadgesToProto converts badge DTOs to RPC messages.
-func BadgesToProto(badges []BadgeDTO) []*super.AchievementBadgeItem {
-	out := make([]*super.AchievementBadgeItem, 0, len(badges))
+func BadgesToProto(badges []BadgeDTO) []*moe.AchievementBadgeItem {
+	out := make([]*moe.AchievementBadgeItem, 0, len(badges))
 	for _, b := range badges {
-		out = append(out, &super.AchievementBadgeItem{
+		out = append(out, &moe.AchievementBadgeItem{
 			Id:            b.ID,
 			Name:          b.Name,
 			Description:   b.Description,

@@ -1,8 +1,8 @@
 # 纯 Kratos 完整迁移方案（PK-5 → PK-9）
 
-> **状态**：已立项 · **前置**：PK-0～4 ✅ · F ~100% · B（试点）100%  
-> **当前 G**：~93%（PK-6 GET 批量后；`curl …/migration`）· **HTTP 路由覆盖 ~50%**（133/267 GET）  
-> **目标 G**：**100%** — `make moe-social` 仅 Kratos `transport/http` + `transport/grpc`，无 go-zero `rest`/`zrpc` 生产路径  
+> **状态**：**PK-12 生产终态 ✅** · **前置**：PK-0～11 ✅ · F ~100%  
+> **当前**：`make moe-social` — Kratos `transport/http` :8888 + `transport/grpc` :8080；`curl :8888/migration` → `percent=100`  
+> **验收**：`make verify-kratos-pure-100`  
 > **阶段手册**：[kratos-pure-rollout.md](./kratos-pure-rollout.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
@@ -54,7 +54,7 @@ percent = 40%×http_native_handler
 - **http_native_handler**：`moekratospilot` 原生 handler / 267（非 bridge）
 - **grpc_service_native**：`moegrpc` / (Super+zrpc logic) 占比
 - **grpc_transport_kratos**：须 `kratos/transport/grpc` 替代 zrpc（当前 Super 仍为 0 分）
-- **当前约 23%**（传输已纯、实现层仍 bridge）
+- **纯 Kratos 生产（`kratos_pure_enabled=true`）**：四项均可达 **100%**（HTTP 全挂 Kratos；bridge 仅 swagger；gRPC 走 kratos/transport/grpc）
 
 ### rollout_percent — PK 传输铺轨（可达 100%）
 

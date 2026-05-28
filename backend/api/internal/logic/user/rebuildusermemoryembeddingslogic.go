@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"backend/api/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +28,7 @@ func (l *RebuildUserMemoryEmbeddingsLogic) RebuildUserMemoryEmbeddings(userID st
 	if userID == "" {
 		return nil, errors.New("user_id 不能为空")
 	}
-	resp, err := l.svcCtx.LLMGW.RebuildUserMemoryEmbeddings(l.ctx, &super.RebuildUserMemoryEmbeddingsReq{
+	resp, err := l.svcCtx.LLMGW.RebuildUserMemoryEmbeddings(l.ctx, &moe.RebuildUserMemoryEmbeddingsReq{
 		UserId: userID,
 	})
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -29,7 +29,7 @@ func (l *CheckFollowLogic) CheckFollow(req *types.CheckFollowReq) (resp *types.C
 	l.Debug("检查关注状态请求:", req)
 
 	// 调用RPC服务
-	rpcResp, err := l.svcCtx.UserGW.CheckFollow(l.ctx, &super.CheckFollowReq{
+	rpcResp, err := l.svcCtx.UserGW.CheckFollow(l.ctx, &moe.CheckFollowReq{
 		FollowerId:  req.FollowerId,
 		FollowingId: req.FollowingId,
 	})

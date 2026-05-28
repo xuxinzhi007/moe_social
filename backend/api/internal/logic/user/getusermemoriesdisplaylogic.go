@@ -6,7 +6,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,7 +27,7 @@ func NewGetUserMemoriesDisplayLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 func (l *GetUserMemoriesDisplayLogic) GetUserMemoriesDisplay(req *types.GetUserMemoriesReq) (*UserMemoryDisplayData, error) {
 	const listLimit = 200
-	memResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &super.GetUserMemoriesReq{
+	memResp, err := l.svcCtx.LLMGW.GetUserMemories(l.ctx, &moe.GetUserMemoriesReq{
 		UserId: req.UserId,
 		Limit:  listLimit,
 		Offset: 0,
@@ -36,7 +36,7 @@ func (l *GetUserMemoriesDisplayLogic) GetUserMemoriesDisplay(req *types.GetUserM
 		return nil, err
 	}
 
-	profResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &super.GetUserMemoryProfilesReq{
+	profResp, err := l.svcCtx.LLMGW.GetUserMemoryProfiles(l.ctx, &moe.GetUserMemoryProfilesReq{
 		UserId: req.UserId,
 		Limit:  12,
 	})

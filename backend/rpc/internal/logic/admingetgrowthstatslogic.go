@@ -6,7 +6,7 @@ import (
 	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -21,11 +21,11 @@ func NewAdminGetGrowthStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	return &AdminGetGrowthStatsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminGetGrowthStatsLogic) AdminGetGrowthStats(_ *super.AdminGetGrowthStatsReq) (*super.AdminGetGrowthStatsResp, error) {
+func (l *AdminGetGrowthStatsLogic) AdminGetGrowthStats(_ *moe.AdminGetGrowthStatsReq) (*moe.AdminGetGrowthStatsResp, error) {
 	stats, err := adminbiz.GrowthStats(l.ctx, l.svcCtx.DB)
 	if err != nil {
 		l.Errorf("[admin] growth stats: %v", err)
 		return nil, errorx.Internal("查询成长统计失败")
 	}
-	return &super.AdminGetGrowthStatsResp{Stats: stats}, nil
+	return &moe.AdminGetGrowthStatsResp{Stats: stats}, nil
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 )
 
 // ParseGiftID 解析礼物 ID。
@@ -22,8 +22,8 @@ func ParseGiftID(raw string) (uint, error) {
 }
 
 // GiftToProto 礼物模型转 proto。
-func GiftToProto(gift model.Gift, ownedQty int32) *super.Gift {
-	return &super.Gift{
+func GiftToProto(gift model.Gift, ownedQty int32) *moe.Gift {
+	return &moe.Gift{
 		Id:            uint64(gift.ID),
 		Name:          gift.Name,
 		Price:         int32(gift.Price),
@@ -38,8 +38,8 @@ func GiftToProto(gift model.Gift, ownedQty int32) *super.Gift {
 }
 
 // RecordToProto 赠送记录转 proto。
-func RecordToProto(record model.GiftRecord, fromUser, toUser model.User, gift *super.Gift) *super.GiftRecord {
-	return &super.GiftRecord{
+func RecordToProto(record model.GiftRecord, fromUser, toUser model.User, gift *moe.Gift) *moe.GiftRecord {
+	return &moe.GiftRecord{
 		Id:           uint64(record.ID),
 		FromUserId:   uint64(record.FromUserID),
 		FromUserName: fromUser.Username,

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"backend/rpc/internal/svc"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -19,7 +19,7 @@ func NewAdminUpdateCheckInRewardLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	return &AdminUpdateCheckInRewardLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *AdminUpdateCheckInRewardLogic) AdminUpdateCheckInReward(in *super.AdminUpdateCheckInRewardReq) (*super.AdminUpdateCheckInRewardResp, error) {
+func (l *AdminUpdateCheckInRewardLogic) AdminUpdateCheckInReward(in *moe.AdminUpdateCheckInRewardReq) (*moe.AdminUpdateCheckInRewardResp, error) {
 	resp, err := newAdminApp(l.svcCtx.DB).UpdateCheckInReward(l.ctx, in)
 	if err != nil {
 		return nil, mapAdminGrowthErr(err)

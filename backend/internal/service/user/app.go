@@ -8,7 +8,7 @@ import (
 	userbiz "backend/internal/biz/user"
 	notifybiz "backend/internal/biz/notify"
 	"backend/model"
-	"backend/rpc/pb/super"
+	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -24,24 +24,24 @@ func New(db *gorm.DB) *AppService {
 }
 
 // Login 登录。
-func (s *AppService) Login(ctx context.Context, in *super.LoginReq) (*super.LoginResp, error) {
+func (s *AppService) Login(ctx context.Context, in *moe.LoginReq) (*moe.LoginResp, error) {
 	user, token, err := userbiz.Login(ctx, s.db, in.GetEmail(), in.GetUsername(), in.GetPassword())
 	if err != nil {
 		return nil, err
 	}
-	return &super.LoginResp{
+	return &moe.LoginResp{
 		User:  userbiz.ModelToProto(&user),
 		Token: token,
 	}, nil
 }
 
 // Register 注册。
-func (s *AppService) Register(ctx context.Context, in *super.RegisterReq) (*super.RegisterResp, error) {
+func (s *AppService) Register(ctx context.Context, in *moe.RegisterReq) (*moe.RegisterResp, error) {
 	user, token, err := userbiz.Register(ctx, s.db, in.GetUsername(), in.GetEmail(), in.GetPassword())
 	if err != nil {
 		return nil, err
 	}
-	return &super.RegisterResp{
+	return &moe.RegisterResp{
 		User:  userbiz.ModelToProto(&user),
 		Token: token,
 	}, nil
@@ -56,7 +56,7 @@ func parseUserID(raw string) (uint, error) {
 }
 
 // GetUserInfo 按 ID 查询。
-func (s *AppService) GetUserInfo(ctx context.Context, in *super.GetUserInfoReq) (*super.GetUserInfoResp, error) {
+func (s *AppService) GetUserInfo(ctx context.Context, in *moe.GetUserInfoReq) (*moe.GetUserInfoResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -65,11 +65,11 @@ func (s *AppService) GetUserInfo(ctx context.Context, in *super.GetUserInfoReq) 
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetUserInfoResp{User: userbiz.ModelToProto(&user)}, nil
+	return &moe.GetUserInfoResp{User: userbiz.ModelToProto(&user)}, nil
 }
 
 // GetUser 同 GetUserInfo（super 契约）。
-func (s *AppService) GetUser(ctx context.Context, in *super.GetUserReq) (*super.GetUserResp, error) {
+func (s *AppService) GetUser(ctx context.Context, in *moe.GetUserReq) (*moe.GetUserResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -78,11 +78,11 @@ func (s *AppService) GetUser(ctx context.Context, in *super.GetUserReq) (*super.
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetUserResp{User: userbiz.ModelToProto(&user)}, nil
+	return &moe.GetUserResp{User: userbiz.ModelToProto(&user)}, nil
 }
 
 // GetUserVipStatus VIP 状态。
-func (s *AppService) GetUserVipStatus(ctx context.Context, in *super.GetUserVipStatusReq) (*super.GetUserVipStatusResp, error) {
+func (s *AppService) GetUserVipStatus(ctx context.Context, in *moe.GetUserVipStatusReq) (*moe.GetUserVipStatusResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (s *AppService) GetUserVipStatus(ctx context.Context, in *super.GetUserVipS
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetUserVipStatusResp{
+	return &moe.GetUserVipStatusResp{
 		IsVip:     st.IsVip,
 		ExpiresAt: st.ExpiresAt,
 		AutoRenew: st.AutoRenew,
@@ -99,7 +99,7 @@ func (s *AppService) GetUserVipStatus(ctx context.Context, in *super.GetUserVipS
 }
 
 // CheckUserVip 是否有效 VIP。
-func (s *AppService) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq) (*super.CheckUserVipResp, error) {
+func (s *AppService) CheckUserVip(ctx context.Context, in *moe.CheckUserVipReq) (*moe.CheckUserVipResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -108,11 +108,11 @@ func (s *AppService) CheckUserVip(ctx context.Context, in *super.CheckUserVipReq
 	if err != nil {
 		return nil, err
 	}
-	return &super.CheckUserVipResp{IsVip: active}, nil
+	return &moe.CheckUserVipResp{IsVip: active}, nil
 }
 
 // GetVipOrders VIP 订单列表。
-func (s *AppService) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq) (*super.GetVipOrdersResp, error) {
+func (s *AppService) GetVipOrders(ctx context.Context, in *moe.GetVipOrdersReq) (*moe.GetVipOrdersResp, error) {
 	orders, total, err := userbiz.ListVipOrders(ctx, s.db, in.GetUserId(), userbiz.VipOrdersPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -120,11 +120,11 @@ func (s *AppService) GetVipOrders(ctx context.Context, in *super.GetVipOrdersReq
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetVipOrdersResp{Orders: orders, Total: total}, nil
+	return &moe.GetVipOrdersResp{Orders: orders, Total: total}, nil
 }
 
 // GetNotifications 通知列表。
-func (s *AppService) GetNotifications(ctx context.Context, in *super.GetNotificationsReq) (*super.GetNotificationsResp, error) {
+func (s *AppService) GetNotifications(ctx context.Context, in *moe.GetNotificationsReq) (*moe.GetNotificationsResp, error) {
 	items, total, err := notifybiz.ListInbox(ctx, s.db, in.GetUserId(), notifybiz.InboxPage{
 		Page:     in.GetPage(),
 		PageSize: in.GetPageSize(),
@@ -132,41 +132,41 @@ func (s *AppService) GetNotifications(ctx context.Context, in *super.GetNotifica
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetNotificationsResp{Notifications: items, Total: total}, nil
+	return &moe.GetNotificationsResp{Notifications: items, Total: total}, nil
 }
 
 // GetUnreadCount 未读数。
-func (s *AppService) GetUnreadCount(ctx context.Context, in *super.GetUnreadCountReq) (*super.GetUnreadCountResp, error) {
+func (s *AppService) GetUnreadCount(ctx context.Context, in *moe.GetUnreadCountReq) (*moe.GetUnreadCountResp, error) {
 	count, err := notifybiz.UnreadCount(ctx, s.db, in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetUnreadCountResp{Count: count}, nil
+	return &moe.GetUnreadCountResp{Count: count}, nil
 }
 
 // ReadNotification 标记已读。
-func (s *AppService) ReadNotification(ctx context.Context, in *super.ReadNotificationReq) (*super.ReadNotificationResp, error) {
+func (s *AppService) ReadNotification(ctx context.Context, in *moe.ReadNotificationReq) (*moe.ReadNotificationResp, error) {
 	if err := notifybiz.MarkRead(ctx, s.db, in.GetUserId(), in.GetId()); err != nil {
 		return nil, err
 	}
-	return &super.ReadNotificationResp{}, nil
+	return &moe.ReadNotificationResp{}, nil
 }
 
 // ReadAllNotifications 全部已读。
-func (s *AppService) ReadAllNotifications(ctx context.Context, in *super.ReadAllNotificationsReq) (*super.ReadAllNotificationsResp, error) {
+func (s *AppService) ReadAllNotifications(ctx context.Context, in *moe.ReadAllNotificationsReq) (*moe.ReadAllNotificationsResp, error) {
 	if err := notifybiz.MarkAllRead(ctx, s.db, in.GetUserId()); err != nil {
 		return nil, err
 	}
-	return &super.ReadAllNotificationsResp{}, nil
+	return &moe.ReadAllNotificationsResp{}, nil
 }
 
 // GetUserAvatar 获取用户虚拟形象。
-func (s *AppService) GetUserAvatar(ctx context.Context, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
+func (s *AppService) GetUserAvatar(ctx context.Context, in *moe.GetUserAvatarReq) (*moe.GetUserAvatarResp, error) {
 	return userbiz.GetUserAvatar(ctx, s.db, in)
 }
 
 // UpdateUserAvatar 更新用户虚拟形象。
-func (s *AppService) UpdateUserAvatar(ctx context.Context, in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+func (s *AppService) UpdateUserAvatar(ctx context.Context, in *moe.UpdateUserAvatarReq) (*moe.UpdateUserAvatarResp, error) {
 	return userbiz.UpdateUserAvatar(ctx, s.db, in)
 }
 
@@ -181,7 +181,7 @@ func (s *AppService) EnsureUser(ctx context.Context, userID uint) (model.User, e
 }
 
 // Follow 关注用户。
-func (s *AppService) Follow(ctx context.Context, in *super.FollowUserReq) (*super.FollowUserResp, error) {
+func (s *AppService) Follow(ctx context.Context, in *moe.FollowUserReq) (*moe.FollowUserResp, error) {
 	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())
 	if err != nil {
 		return nil, err
@@ -189,11 +189,11 @@ func (s *AppService) Follow(ctx context.Context, in *super.FollowUserReq) (*supe
 	if err := userbiz.Follow(ctx, s.db, followerID, followingID); err != nil {
 		return nil, err
 	}
-	return &super.FollowUserResp{Success: true}, nil
+	return &moe.FollowUserResp{Success: true}, nil
 }
 
 // Unfollow 取消关注。
-func (s *AppService) Unfollow(ctx context.Context, in *super.UnfollowUserReq) (*super.FollowUserResp, error) {
+func (s *AppService) Unfollow(ctx context.Context, in *moe.UnfollowUserReq) (*moe.FollowUserResp, error) {
 	followerID, followingID, err := userbiz.ParseFollowPair(in.GetUserId(), in.GetFollowingId())
 	if err != nil {
 		return nil, err
@@ -201,20 +201,20 @@ func (s *AppService) Unfollow(ctx context.Context, in *super.UnfollowUserReq) (*
 	if err := userbiz.Unfollow(ctx, s.db, followerID, followingID); err != nil {
 		return nil, err
 	}
-	return &super.FollowUserResp{Success: true}, nil
+	return &moe.FollowUserResp{Success: true}, nil
 }
 
 // CheckFollow 是否关注。
-func (s *AppService) CheckFollow(ctx context.Context, in *super.CheckFollowReq) (*super.CheckFollowResp, error) {
+func (s *AppService) CheckFollow(ctx context.Context, in *moe.CheckFollowReq) (*moe.CheckFollowResp, error) {
 	ok, err := userbiz.IsFollowingByStringID(ctx, s.db, in.GetFollowerId(), in.GetFollowingId())
 	if err != nil {
 		return nil, err
 	}
-	return &super.CheckFollowResp{IsFollowing: ok}, nil
+	return &moe.CheckFollowResp{IsFollowing: ok}, nil
 }
 
 // GetFollowers 粉丝列表。
-func (s *AppService) GetFollowers(ctx context.Context, in *super.GetFollowersReq) (*super.GetFollowersResp, error) {
+func (s *AppService) GetFollowers(ctx context.Context, in *moe.GetFollowersReq) (*moe.GetFollowersResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (s *AppService) GetFollowers(ctx context.Context, in *super.GetFollowersReq
 }
 
 // GetFollowings 关注列表。
-func (s *AppService) GetFollowings(ctx context.Context, in *super.GetFollowingsReq) (*super.GetFollowingsResp, error) {
+func (s *AppService) GetFollowings(ctx context.Context, in *moe.GetFollowingsReq) (*moe.GetFollowingsResp, error) {
 	uid, err := parseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
@@ -243,11 +243,11 @@ func (s *AppService) GetFollowings(ctx context.Context, in *super.GetFollowingsR
 		return nil, err
 	}
 	resp := followListToProto(result)
-	return &super.GetFollowingsResp{Users: resp.Users, Total: resp.Total}, nil
+	return &moe.GetFollowingsResp{Users: resp.Users, Total: resp.Total}, nil
 }
 
 // SendFriendRequest 发起好友申请。
-func (s *AppService) SendFriendRequest(ctx context.Context, in *super.SendFriendRequestReq) (*super.SendFriendRequestResp, error) {
+func (s *AppService) SendFriendRequest(ctx context.Context, in *moe.SendFriendRequestReq) (*moe.SendFriendRequestResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -256,11 +256,11 @@ func (s *AppService) SendFriendRequest(ctx context.Context, in *super.SendFriend
 	if err != nil {
 		return nil, err
 	}
-	return &super.SendFriendRequestResp{Data: view}, nil
+	return &moe.SendFriendRequestResp{Data: view}, nil
 }
 
 // ListIncomingFriendRequests 收到的申请。
-func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *super.ListIncomingFriendRequestsReq) (*super.ListIncomingFriendRequestsResp, error) {
+func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *moe.ListIncomingFriendRequestsReq) (*moe.ListIncomingFriendRequestsResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -269,11 +269,11 @@ func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *super.L
 	if err != nil {
 		return nil, err
 	}
-	return &super.ListIncomingFriendRequestsResp{Data: data}, nil
+	return &moe.ListIncomingFriendRequestsResp{Data: data}, nil
 }
 
 // ListOutgoingFriendRequests 发出的申请。
-func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *super.ListOutgoingFriendRequestsReq) (*super.ListOutgoingFriendRequestsResp, error) {
+func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *moe.ListOutgoingFriendRequestsReq) (*moe.ListOutgoingFriendRequestsResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -282,11 +282,11 @@ func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *super.L
 	if err != nil {
 		return nil, err
 	}
-	return &super.ListOutgoingFriendRequestsResp{Data: data}, nil
+	return &moe.ListOutgoingFriendRequestsResp{Data: data}, nil
 }
 
 // AcceptFriendRequest 同意申请。
-func (s *AppService) AcceptFriendRequest(ctx context.Context, in *super.AcceptFriendRequestReq) (*super.AcceptFriendRequestResp, error) {
+func (s *AppService) AcceptFriendRequest(ctx context.Context, in *moe.AcceptFriendRequestReq) (*moe.AcceptFriendRequestResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -294,11 +294,11 @@ func (s *AppService) AcceptFriendRequest(ctx context.Context, in *super.AcceptFr
 	if err := userbiz.AcceptFriendRequest(ctx, s.db, me, in.GetRequestId()); err != nil {
 		return nil, err
 	}
-	return &super.AcceptFriendRequestResp{Ok: true}, nil
+	return &moe.AcceptFriendRequestResp{Ok: true}, nil
 }
 
 // RejectFriendRequest 拒绝申请。
-func (s *AppService) RejectFriendRequest(ctx context.Context, in *super.RejectFriendRequestReq) (*super.RejectFriendRequestResp, error) {
+func (s *AppService) RejectFriendRequest(ctx context.Context, in *moe.RejectFriendRequestReq) (*moe.RejectFriendRequestResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -306,11 +306,11 @@ func (s *AppService) RejectFriendRequest(ctx context.Context, in *super.RejectFr
 	if err := userbiz.RejectFriendRequest(ctx, s.db, me, in.GetRequestId()); err != nil {
 		return nil, err
 	}
-	return &super.RejectFriendRequestResp{Ok: true}, nil
+	return &moe.RejectFriendRequestResp{Ok: true}, nil
 }
 
 // ListFriends 好友列表。
-func (s *AppService) ListFriends(ctx context.Context, in *super.ListFriendsReq) (*super.ListFriendsResp, error) {
+func (s *AppService) ListFriends(ctx context.Context, in *moe.ListFriendsReq) (*moe.ListFriendsResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -319,11 +319,11 @@ func (s *AppService) ListFriends(ctx context.Context, in *super.ListFriendsReq) 
 	if err != nil {
 		return nil, err
 	}
-	return &super.ListFriendsResp{Users: users}, nil
+	return &moe.ListFriendsResp{Users: users}, nil
 }
 
 // GetFriendRelation 好友关系状态。
-func (s *AppService) GetFriendRelation(ctx context.Context, in *super.GetFriendRelationReq) (*super.GetFriendRelationResp, error) {
+func (s *AppService) GetFriendRelation(ctx context.Context, in *moe.GetFriendRelationReq) (*moe.GetFriendRelationResp, error) {
 	me, err := userbiz.ParseActorUserID(in.GetActorUserId())
 	if err != nil {
 		return nil, err
@@ -336,16 +336,16 @@ func (s *AppService) GetFriendRelation(ctx context.Context, in *super.GetFriendR
 	if err != nil {
 		return nil, err
 	}
-	return &super.GetFriendRelationResp{Relation: rel}, nil
+	return &moe.GetFriendRelationResp{Relation: rel}, nil
 }
 
-func followListToProto(result userbiz.FollowListResult) *super.GetFollowersResp {
-	users := make([]*super.User, 0, len(result.Users))
+func followListToProto(result userbiz.FollowListResult) *moe.GetFollowersResp {
+	users := make([]*moe.User, 0, len(result.Users))
 	for i := range result.Users {
 		u := result.Users[i]
 		users = append(users, userbiz.ModelToProto(&u))
 	}
-	return &super.GetFollowersResp{
+	return &moe.GetFollowersResp{
 		Users: users,
 		Total: int32(result.Total),
 	}
