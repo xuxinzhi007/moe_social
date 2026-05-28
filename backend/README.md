@@ -1,6 +1,30 @@
 # Backend Service
 
-基于 go-zero 框架开发的用户管理和 VIP 会员系统后端服务。
+Moe Social 后端：**生产默认纯 Kratos 单进程**（`make moe-social`）。
+
+## 启动（推荐）
+
+```bash
+cd backend
+make moe-social          # Kratos HTTP :8888 + gRPC :8080
+make moe-social-stop     # 释放端口
+
+# 开发（附带 deploy-agent :19010 + RPC debug :19011）
+make moe-social-dev
+```
+
+- **配置 SSOT**：`config/config.yaml`（`-f`，可省略）
+- **入口 SSOT**：`cmd/moe-social`（`cmd/moe-social-stack` 仅开发附加 agent/monitor）
+- **迁移进度**：`curl -s http://127.0.0.1:8888/migration`
+- **验收**：`make verify`（同 `verify-kratos-pure-100`）
+- **布局**：见 [LAYOUT.md](LAYOUT.md)（`api/` + `rpc/` 目录 vs 单进程 Kratos）
+- **脚本**：见 [scripts/README.md](scripts/README.md)
+
+历史 `make api` / `make rpc` 分离启动仅用于紧急回滚或调试，日常不必使用。
+
+---
+
+基于 go-zero 生成链 + Kratos 传输层的用户管理与 VIP 会员系统。
 
 ## 📋 项目简介
 
@@ -125,23 +149,9 @@ cd backend/api
 goctl api go -api super.api -dir ./
 ```
 
-### 运行服务
+### 运行服务（遗留说明）
 
-#### 运行 RPC 服务
-
-```bash
-cd rpc
-go run super.go -f etc/super.yaml
-```
-
-#### 运行 API 服务
-
-```bash
-cd api
-go run super.go -f etc/super.yaml
-```
-
-API 服务默认运行在 `http://localhost:8080`
+日常请使用上文 **`make moe-social`**。下列分离启动仅在 Hybrid 回滚（`kratos_pure_enabled: false`）时使用。
 
 ## 📚 API 文档
 

@@ -1,8 +1,9 @@
-// 开发用：单进程 moe-social + 可选 deploy-agent（:19010）。
+// 开发专用：在 cmd/moe-social 基础上附加 deploy-agent (:19010) 与 RPC debug (:19011)。
 //
-//	make moe-social 默认走本入口；生产二进制仍用 cmd/moe-social。
+//	make moe-social-dev
+//	go run ./cmd/moe-social-stack
 //
-//	go run ./cmd/moe-social-stack -agent=false  # 仅 :8888+:8080
+// 生产请用 cmd/moe-social 或 make moe-social。
 package main
 
 import (
@@ -18,11 +19,12 @@ import (
 )
 
 var (
-	apiConfig = flag.String("f-api", "api/etc/moe.yaml", "API config (go-zero rest)")
-	rpcConfig = flag.String("f-rpc", "rpc/etc/moe.yaml", "RPC config (go-zero zrpc)")
-	migrate   = flag.Bool("migrate", false, "run schema migrate before starting")
+	configFile  = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
+	apiConfig   = flag.String("f-api", "", "Optional override: API struct fragment YAML")
+	rpcConfig   = flag.String("f-rpc", "", "Optional override: RPC struct fragment YAML")
+	migrate     = flag.Bool("migrate", false, "run schema migrate before starting")
 	withAgent   = flag.Bool("agent", true, "start deploy-agent on :19010 (devtools / deploy proxy)")
-	withMonitor = flag.Bool("monitor", true, "RPC debug API on :19011 for moe-admin RPC 监控")
+	withMonitor = flag.Bool("monitor", true, "RPC debug API on :19011 for moe-admin RPC monitor")
 )
 
 func main() {
@@ -56,10 +58,11 @@ func main() {
 	}
 
 	if err := moesocial.Run(moesocial.Options{
-		APIConfigFile:    *apiConfig,
-		RPCConfigFile:    *rpcConfig,
-		Migrate:          utils.MigrateOptions{Enabled: *migrate},
-		EnableRPCMonitor: *withMonitor,
+		UnifiedConfigFile: *configFile,
+		APIConfigFile:     *apiConfig,
+		RPCConfigFile:     *rpcConfig,
+		Migrate:           utils.MigrateOptions{Enabled: *migrate},
+		EnableRPCMonitor:  *withMonitor,
 	}); err != nil {
 		log.Fatal(err)
 	}

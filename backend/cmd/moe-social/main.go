@@ -1,9 +1,9 @@
-// 单进程入口：HTTP :8888 + gRPC :8080（Kratos 编排，Moe 迁移终态推荐开发方式）。
+// 生产 SSOT：Kratos 单进程 HTTP :8888 + gRPC :8080。
 //
 //	go run ./cmd/moe-social
-//	或 make moe-social
+//	make moe-social
 //
-// 等价于同进程内 make rpc + make api，但只起一个 OS 进程。
+// 配置 SSOT：config/config.yaml（-f）；API/RPC 结构片段由 runtime 段指向。
 package main
 
 import (
@@ -15,17 +15,19 @@ import (
 )
 
 var (
-	apiConfig = flag.String("f-api", "api/etc/moe.yaml", "API config (go-zero rest)")
-	rpcConfig = flag.String("f-rpc", "rpc/etc/moe.yaml", "RPC config (go-zero zrpc)")
-	migrate   = flag.Bool("migrate", false, "run schema migrate before starting")
+	configFile = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
+	apiConfig  = flag.String("f-api", "", "Optional override: API struct fragment YAML")
+	rpcConfig  = flag.String("f-rpc", "", "Optional override: RPC struct fragment YAML")
+	migrate    = flag.Bool("migrate", false, "run schema migrate before starting")
 )
 
 func main() {
 	flag.Parse()
 	if err := moesocial.Run(moesocial.Options{
-		APIConfigFile: *apiConfig,
-		RPCConfigFile: *rpcConfig,
-		Migrate:       utils.MigrateOptions{Enabled: *migrate},
+		UnifiedConfigFile: *configFile,
+		APIConfigFile:     *apiConfig,
+		RPCConfigFile:     *rpcConfig,
+		Migrate:           utils.MigrateOptions{Enabled: *migrate},
 	}); err != nil {
 		log.Fatal(err)
 	}

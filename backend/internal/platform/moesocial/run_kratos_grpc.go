@@ -15,6 +15,7 @@ import (
 )
 
 func runWithKratosGRPC(opts Options) error {
+	opts.NormalizeOptions()
 	kratosRPC, rpcMonitor, err := rpcrun.StartKratos(rpcrun.Options{
 		ConfigFile:    opts.RPCConfigFile,
 		Migrate:       opts.Migrate,
@@ -30,7 +31,7 @@ func runWithKratosGRPC(opts Options) error {
 		}
 	}()
 
-	if err := waitRPCListen(opts.RPCConfigFile, 15*time.Second); err != nil {
+	if err := waitRPCListen(opts.UnifiedConfigFile, opts.RPCConfigFile, 15*time.Second); err != nil {
 		_ = kratosRPC.Server.Stop(context.Background())
 		return err
 	}
@@ -74,7 +75,7 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 			}
 			return nil, "", fmt.Errorf("api wire: %w", err)
 		}
-		port := externalHTTPPort(opts.APIConfigFile)
+		port := externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile)
 		pure, err := newKratosPureHTTPServer(apiRes, "0.0.0.0", port)
 		if err != nil {
 			if rpcMonitor != nil {
@@ -97,7 +98,7 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 			}
 			return nil, "", fmt.Errorf("api start: %w", err)
 		}
-		front, err := newKratosFrontServer(apiRes, "0.0.0.0", externalHTTPPort(opts.APIConfigFile))
+		front, err := newKratosFrontServer(apiRes, "0.0.0.0", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
 		if err != nil {
 			if apiRes.Server != nil {
 				apiRes.Server.Stop()
@@ -107,7 +108,7 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 			}
 			return nil, "", fmt.Errorf("kratos front: %w", err)
 		}
-		addr := fmt.Sprintf("0.0.0.0:%d", externalHTTPPort(opts.APIConfigFile))
+		addr := fmt.Sprintf("0.0.0.0:%d", externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile))
 		log.Printf("moe-social: PK-4 enabled — Kratos HTTP %s, go-zero 127.0.0.1:%d (fallback)", addr, internalPort)
 		return front, addr, nil
 	}
