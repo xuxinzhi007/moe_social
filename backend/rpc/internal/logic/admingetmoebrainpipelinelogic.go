@@ -63,6 +63,9 @@ func pipelineSnapshotToProto(snap moebiz.PipelineSnapshot) *super.AdminGetMoeBra
 			DurationMs: s.DurationMS,
 		})
 	}
+	out.StabilityScore = int32(snap.StabilityScore)
+	out.StabilityDelta = int32(snap.StabilityDelta)
+	out.RunFeedback = snap.RunFeedback
 	return out
 }
 

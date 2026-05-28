@@ -13,7 +13,7 @@ go test ./internal/biz/moe/... -count=1
 echo "== go test internal/adapter/rpcsuper =="
 go test ./internal/adapter/rpcsuper/... -count=1 2>/dev/null || true
 
-echo "== Moe Admin RPC 已注册（super.proto） =="
+echo "== Moe Admin RPC 已注册（moe.proto） =="
 for method in \
   AdminListMoeRuntimes \
   AdminUpsertMoeRuntime \
@@ -28,8 +28,8 @@ for method in \
   AdminListMoeToolCalls \
   MoeExecuteTool \
   MoeSearchPosts; do
-  if ! grep -q "rpc ${method}" rpc/super.proto; then
-    echo "MISSING rpc ${method} in super.proto" >&2
+  if ! grep -q "rpc ${method}" rpc/moe.proto; then
+    echo "MISSING rpc ${method} in moe.proto" >&2
     exit 1
   fi
 done

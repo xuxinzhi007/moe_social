@@ -44,10 +44,23 @@ func (g *Gateway) RecordLlmChatTurn(ctx context.Context, in *super.RecordLlmChat
 }
 
 func (g *Gateway) GetAiUserConfig(ctx context.Context, in *super.GetAiUserConfigReq, opts ...grpc.CallOption) (*super.GetAiUserConfigResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.GetAiUserConfig(ctx, in)
+	}
 	if g == nil || g.super == nil {
 		return nil, nil
 	}
 	return g.super.GetAiUserConfig(ctx, in, opts...)
+}
+
+func (g *Gateway) UpsertAiUserConfig(ctx context.Context, in *super.UpsertAiUserConfigReq, opts ...grpc.CallOption) (*super.UpsertAiUserConfigResp, error) {
+	if g != nil && g.local != nil {
+		return g.local.UpsertAiUserConfig(ctx, in)
+	}
+	if g == nil || g.super == nil {
+		return nil, nil
+	}
+	return g.super.UpsertAiUserConfig(ctx, in, opts...)
 }
 
 func (g *Gateway) GetUserMemories(ctx context.Context, in *super.GetUserMemoriesReq, opts ...grpc.CallOption) (*super.GetUserMemoriesResp, error) {

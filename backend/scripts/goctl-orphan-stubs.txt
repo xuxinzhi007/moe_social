@@ -1,0 +1,14 @@
+# goctl 会再生成的已知孤儿文件（handler 已改用手写/合并 Logic）。
+# prune-api-logic-shells.sh 在 make gen-api 后删除；勿在此列仍被 handler 引用的文件。
+
+api/internal/logic/user/sendfriendrequestlogic.go
+api/internal/logic/user/acceptfriendrequestlogic.go
+api/internal/logic/user/rejectfriendrequestlogic.go
+api/internal/logic/user/listfriendslogic.go
+api/internal/logic/user/listincomingfriendrequestslogic.go
+api/internal/logic/user/listoutgoingfriendrequestslogic.go
+api/internal/logic/user/getfriendstatuslogic.go
+api/internal/logic/llm/configlogic.go
+api/internal/logic/admin/admingetmoebotflowlogic.go
+api/internal/logic/admin/adminupsertmoebotflowlogic.go
+api/internal/logic/admin/admindeletemoebotflowlogic.go

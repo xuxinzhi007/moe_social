@@ -1,0 +1,316 @@
+// FS-8: admin 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: admin_public
+)
+service Super {
+	@handler adminLogin
+	post /api/admin/login (AdminLoginReq) returns (AdminLoginResp)
+
+	@handler adminBootstrapAccount
+	post /api/admin/bootstrap/account (EmptyReq) returns (AdminBootstrapAccountResp)
+}
+
+@server (
+	group: admin
+)
+service Super {
+	@handler adminMe
+	get /api/admin/me (EmptyReq) returns (AdminMeResp)
+
+	@handler adminDashboard
+	get /api/admin/dashboard (EmptyReq) returns (AdminDashboardResp)
+
+	@handler adminListUsers
+	get /api/admin/users (AdminListUsersReq) returns (AdminListUsersResp)
+
+	@handler adminGetUser
+	get /api/admin/users/:user_id (AdminGetUserReq) returns (AdminGetUserResp)
+
+	@handler adminGetUserProfile
+	get /api/admin/users/:user_id/profile (AdminGetUserProfileReq) returns (AdminGetUserProfileResp)
+
+	@handler adminUpdateUser
+	put /api/admin/users/:user_id (AdminUpdateUserReq) returns (AdminUpdateUserResp)
+
+	@handler adminListLandingFeedback
+	get /api/admin/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
+
+	@handler adminListVipPlans
+	get /api/admin/vip/plans (AdminListVipPlansReq) returns (AdminListVipPlansResp)
+
+	@handler adminGetVipPlan
+	get /api/admin/vip/plans/:plan_id (AdminGetVipPlanReq) returns (AdminGetVipPlanResp)
+
+	@handler adminCreateVipPlan
+	post /api/admin/vip/plans (AdminCreateVipPlanReq) returns (AdminCreateVipPlanResp)
+
+	@handler adminUpdateVipPlan
+	put /api/admin/vip/plans/:plan_id (AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp)
+
+	@handler adminDeleteVipPlan
+	delete /api/admin/vip/plans/:plan_id (AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp)
+
+	@handler adminBootstrapVipPlans
+	post /api/admin/vip/plans/bootstrap (EmptyReq) returns (AdminBootstrapVipPlansResp)
+
+	@handler adminBootstrapAchievements
+	post /api/admin/achievements/bootstrap (EmptyReq) returns (AdminBootstrapAchievementsResp)
+
+	@handler adminListGifts
+	get /api/admin/gifts (AdminListGiftsReq) returns (AdminListGiftsResp)
+
+	@handler adminGetGift
+	get /api/admin/gifts/:gift_id (AdminGetGiftReq) returns (AdminGetGiftResp)
+
+	@handler adminCreateGift
+	post /api/admin/gifts (AdminCreateGiftReq) returns (AdminCreateGiftResp)
+
+	@handler adminUpdateGift
+	put /api/admin/gifts/:gift_id (AdminUpdateGiftReq) returns (AdminUpdateGiftResp)
+
+	@handler adminDeleteGift
+	delete /api/admin/gifts/:gift_id (AdminDeleteGiftReq) returns (AdminDeleteGiftResp)
+
+	@handler adminBootstrapGifts
+	post /api/admin/gifts/bootstrap (EmptyReq) returns (AdminBootstrapGiftsResp)
+
+	@handler adminDedupeGifts
+	post /api/admin/gifts/dedupe (EmptyReq) returns (AdminDedupeGiftsResp)
+
+	@handler adminListVipOrders
+	get /api/admin/orders/vip (AdminListVipOrdersReq) returns (AdminListVipOrdersResp)
+
+	@handler adminListGiftPurchaseOrders
+	get /api/admin/orders/gift-purchase (AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp)
+
+	@handler adminListPosts
+	get /api/admin/posts (AdminListPostsReq) returns (AdminListPostsResp)
+
+	@handler adminDeletePost
+	delete /api/admin/posts/:post_id (AdminDeletePostReq) returns (AdminDeletePostResp)
+
+	@handler adminListComments
+	get /api/admin/comments (AdminListCommentsReq) returns (AdminListCommentsResp)
+
+	@handler adminDeleteComment
+	delete /api/admin/comments/:comment_id (AdminDeleteCommentReq) returns (AdminDeleteCommentResp)
+
+	@handler adminListPostReports
+	get /api/admin/post-reports (AdminListPostReportsReq) returns (AdminListPostReportsResp)
+
+	@handler adminListGroups
+	get /api/admin/community/groups (AdminListGroupsReq) returns (AdminListGroupsResp)
+
+	@handler adminDeleteGroup
+	delete /api/admin/community/groups/:group_id (AdminDeleteGroupReq) returns (AdminDeleteGroupResp)
+
+	@handler adminListAchievements
+	get /api/admin/growth/achievements (AdminListAchievementsReq) returns (AdminListAchievementsResp)
+
+	@handler adminBootstrapLevels
+	post /api/admin/growth/levels/bootstrap (EmptyReq) returns (AdminBootstrapLevelsResp)
+
+	@handler adminGetGrowthStats
+	get /api/admin/growth/stats (EmptyReq) returns (AdminGetGrowthStatsResp)
+
+	@handler adminListLevelConfigs
+	get /api/admin/growth/levels (EmptyReq) returns (AdminListLevelConfigsResp)
+
+	@handler adminUpdateLevelConfig
+	put /api/admin/growth/levels/:level_id (AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp)
+
+	@handler adminListCheckInRewards
+	get /api/admin/growth/check-in-rewards (EmptyReq) returns (AdminListCheckInRewardsResp)
+
+	@handler adminUpdateCheckInReward
+	put /api/admin/growth/check-in-rewards/:reward_id (AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp)
+
+	@handler adminUpdateAchievement
+	put /api/admin/growth/achievements/:achievement_id (AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp)
+
+	@handler adminListAnnouncements
+	get /api/admin/announcements (AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp)
+
+	@handler adminGetAnnouncement
+	get /api/admin/announcements/:announcement_id (AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp)
+
+	@handler adminCreateAnnouncement
+	post /api/admin/announcements (AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp)
+
+	@handler adminUpdateAnnouncement
+	put /api/admin/announcements/:announcement_id (AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp)
+
+	@handler adminDeleteAnnouncement
+	delete /api/admin/announcements/:announcement_id (AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp)
+
+	@handler adminPublishAnnouncement
+	post /api/admin/announcements/:announcement_id/publish (AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp)
+
+	@handler adminBroadcastNotification
+	post /api/admin/notifications/broadcast (AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp)
+
+	@handler adminSendNotification
+	post /api/admin/notifications/send (AdminSendNotificationReq) returns (AdminSendNotificationResp)
+
+	@handler adminListAiAgents
+	get /api/admin/ai/agents (AdminListAiAgentsReq) returns (AdminListAiAgentsResp)
+
+	@handler adminDeleteAiAgent
+	delete /api/admin/ai/agents (AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp)
+
+	@handler adminUpdateAiAgent
+	put /api/admin/ai/agents (AdminUpdateAiAgentReq) returns (AdminUpdateAiAgentResp)
+
+	@handler adminListFollows
+	get /api/admin/social/follows (AdminListFollowsReq) returns (AdminListFollowsResp)
+
+	@handler adminListFriendRequests
+	get /api/admin/social/friend-requests (AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp)
+
+	@handler adminDeleteFollow
+	delete /api/admin/social/follows/:follow_id (AdminDeleteFollowReq) returns (AdminDeleteFollowResp)
+
+	@handler adminListAccounts
+	get /api/admin/accounts (AdminListAccountsReq) returns (AdminListAccountsResp)
+
+	@handler adminCreateAccount
+	post /api/admin/accounts (AdminCreateAccountReq) returns (AdminCreateAccountResp)
+
+	@handler adminUpdateAccount
+	put /api/admin/accounts/:account_id (AdminUpdateAccountReq) returns (AdminUpdateAccountResp)
+
+	@handler adminDeleteAccount
+	delete /api/admin/accounts/:account_id (AdminDeleteAccountReq) returns (AdminDeleteAccountResp)
+
+	@handler adminListMenus
+	get /api/admin/menus (EmptyReq) returns (AdminListMenusResp)
+
+	@handler adminUpsertMenu
+	put /api/admin/menus (AdminUpsertMenuReq) returns (AdminUpsertMenuResp)
+
+	@handler adminDeleteMenu
+	delete /api/admin/menus/:menu_key (AdminDeleteMenuReq) returns (AdminDeleteMenuResp)
+
+	@handler adminBootstrapMenus
+	post /api/admin/menus/bootstrap (EmptyReq) returns (AdminBootstrapMenusResp)
+
+	@handler adminGetSchemaCatalog
+	get /api/admin/schema/catalog (EmptyReq) returns (AdminSchemaCatalogResp)
+
+	@handler adminListAuditLogs
+	get /api/admin/audit-logs (AdminListAuditLogsReq) returns (AdminListAuditLogsResp)
+
+	@handler adminGetRuntimeConfig
+	get /api/admin/runtime-config (EmptyReq) returns (AdminRuntimeConfigResp)
+
+	@handler adminUpdateRuntimeConfig
+	put /api/admin/runtime-config (AdminUpdateRuntimeConfigReq) returns (AdminUpdateRuntimeConfigResp)
+
+	@handler adminListMediaImages
+	get /api/admin/media/images (AdminListMediaImagesReq) returns (AdminListMediaImagesResp)
+
+	@handler adminDeleteMediaImage
+	delete /api/admin/media/images/:filename (AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp)
+
+	@handler adminListMemories
+	get /api/admin/memories (AdminListMemoriesReq) returns (AdminListMemoriesResp)
+
+	@handler adminGetMemoryStats
+	get /api/admin/memories/stats (EmptyReq) returns (AdminGetMemoryStatsResp)
+
+	@handler adminDeleteMemory
+	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
+
+	@handler adminListAiChatSessions
+	get /api/admin/ai/chat/sessions (AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp)
+
+	@handler adminListAiChatMessages
+	get /api/admin/ai/chat/messages (AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp)
+
+	@handler adminExportAiChatMessages
+	get /api/admin/ai/chat/messages/export (AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp)
+
+	@handler adminAnalyticsOverview
+	get /api/admin/analytics/overview (EmptyReq) returns (AdminAnalyticsOverviewResp)
+
+	@handler adminRuntimeOverview
+	get /api/admin/runtime/overview (EmptyReq) returns (AdminRuntimeOverviewResp)
+
+	@handler adminListTopicTags
+	get /api/admin/topic-tags (AdminListTopicTagsReq) returns (AdminListTopicTagsResp)
+
+	@handler adminCreateTopicTag
+	post /api/admin/topic-tags (AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp)
+
+	@handler adminUpdateTopicTag
+	put /api/admin/topic-tags/:tag_id (AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp)
+
+	@handler adminDeleteTopicTag
+	delete /api/admin/topic-tags/:tag_id (AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp)
+
+	@handler adminBootstrapTopicTags
+	post /api/admin/topic-tags/bootstrap (EmptyReq) returns (AdminBootstrapTopicTagsResp)
+
+	@handler adminListTagDictionary
+	get /api/admin/tag-dictionary (AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp)
+
+	@handler adminCreateTagDictionary
+	post /api/admin/tag-dictionary (AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp)
+
+	@handler adminUpdateTagDictionary
+	put /api/admin/tag-dictionary/:entry_id (AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp)
+
+	@handler adminDeleteTagDictionary
+	delete /api/admin/tag-dictionary/:entry_id (AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp)
+
+	@handler adminGetMoeInferenceStatus
+	get /api/admin/moe/inference/status (AdminGetMoeInferenceStatusReq) returns (AdminGetMoeInferenceStatusResp)
+
+	@handler adminGetMoeBrainPipeline
+	get /api/admin/moe/brain/pipeline (AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp)
+
+	@handler adminListMoeRuntimes
+	get /api/admin/moe/runtimes returns (AdminListMoeRuntimesResp)
+
+	@handler adminUpsertMoeRuntime
+	post /api/admin/moe/runtimes (AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp)
+
+	@handler adminRunMoeAgentOnce
+	post /api/admin/moe/runtimes/:agent_key/run-once (AdminRunMoeAgentReq) returns (AdminRunMoeAgentResp)
+
+	@handler adminGetMoeBrain
+	get /api/admin/moe/runtimes/:agent_key/brain (AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp)
+
+	@handler adminGetMoeBotFlow
+	get /api/admin/moe/runtimes/:agent_key/flow (AdminGetMoeBotFlowReq) returns (AdminGetMoeBotFlowResp)
+
+	@handler adminUpsertMoeBotFlow
+	put /api/admin/moe/runtimes/:agent_key/flow (AdminUpsertMoeBotFlowReq) returns (AdminUpsertMoeBotFlowResp)
+
+	@handler adminDeleteMoeBotFlow
+	delete /api/admin/moe/runtimes/:agent_key/flow (AdminDeleteMoeBotFlowReq) returns (AdminDeleteMoeBotFlowResp)
+
+	@handler adminUpdateMoeBrainPolicy
+	put /api/admin/moe/runtimes/:agent_key/brain/policy (AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp)
+
+	@handler adminDeleteMoeBrainEpisode
+	delete /api/admin/moe/brain/episodes/:id (AdminDeleteMoeBrainEpisodeReq) returns (BaseResp)
+
+	@handler AdminRefineMoeBrainEpisode
+	post /api/admin/moe/brain/episodes/:id/refine (AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp)
+
+	@handler AdminCurateMoeBrain
+	post /api/admin/moe/runtimes/:agent_key/brain/curate (AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp)
+
+	@handler adminGetMoeToolsSchema
+	get /api/admin/moe/tools/schema (EmptyReq) returns (AdminGetMoeToolsSchemaResp)
+
+	@handler adminGetMoeToolStats
+	get /api/admin/moe/tools/stats (AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp)
+
+	@handler adminListMoeToolCalls
+	get /api/admin/moe/tools/calls (AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp)
+}

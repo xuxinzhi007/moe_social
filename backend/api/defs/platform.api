@@ -1,0 +1,88 @@
+// FS-8: platform 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: doc
+)
+service Super {
+	@handler swaggerUi
+	get /swagger (EmptyReq)
+
+	@handler swaggerDoc
+	get /swagger/doc.json (EmptyReq)
+}
+
+@server (
+	group: image
+)
+service Super {
+	// 上传图片
+	@handler uploadImage
+	post /api/upload (UploadImageReq) returns (UploadImageResp)
+
+	// 获取图片列表
+	@handler getImageList
+	get /api/images (GetImageListReq) returns (GetImageListResp)
+
+	// 删除图片
+	@handler deleteImage
+	delete /api/images/:filename (DeleteImageReq) returns (DeleteImageResp)
+
+	// 查看图片（直接返回图片文件）
+	@handler getImage
+	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
+}
+
+@server (
+	group: appcfg
+)
+service Super {
+	@handler publicClientConfig
+	get /api/public/client-config (EmptyReq) returns (PublicClientConfigResp)
+}
+
+@server (
+	group: checkin
+)
+service Super {
+	@handler checkIn
+	post /api/user/:user_id/check-in (CheckInReq) returns (CheckInResp)
+
+	@handler getUserLevel
+	get /api/user/:user_id/level (GetUserLevelReq) returns (GetUserLevelResp)
+
+	@handler getCheckInStatus
+	get /api/user/:user_id/check-in/status (GetCheckInStatusReq) returns (GetCheckInStatusResp)
+
+	@handler getCheckInHistory
+	get /api/user/:user_id/check-in/history (GetCheckInHistoryReq) returns (GetCheckInHistoryResp)
+
+	@handler getExpLogs
+	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
+}
+
+@server (
+	group: achievement
+)
+service Super {
+	@handler getUserAchievements
+	get /api/user/:user_id/achievements (GetUserAchievementsReq) returns (GetUserAchievementsResp)
+
+	@handler getUserUnlockedAchievements
+	get /api/user/:user_id/achievements/unlocked (GetUserUnlockedAchievementsReq) returns (GetUserUnlockedAchievementsResp)
+
+	@handler getUserAchievementSummary
+	get /api/user/:user_id/achievements/summary (GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp)
+
+	@handler ensureUserAchievements
+	post /api/user/:user_id/achievements/ensure (EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp)
+}
+
+@server (
+	group: behavior
+)
+service Super {
+	@handler trackUserBehaviorEvents
+	post /api/user/:user_id/behavior/events (TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp)
+}

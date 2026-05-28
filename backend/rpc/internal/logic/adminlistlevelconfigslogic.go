@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 
-	"backend/model"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -17,21 +16,13 @@ type AdminListLevelConfigsLogic struct {
 }
 
 func NewAdminListLevelConfigsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminListLevelConfigsLogic {
-	return &AdminListLevelConfigsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AdminListLevelConfigsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *AdminListLevelConfigsLogic) AdminListLevelConfigs(in *super.AdminListLevelConfigsReq) (*super.AdminListLevelConfigsResp, error) {
-	var rows []model.LevelConfig
-	if err := l.svcCtx.DB.Order("level ASC").Find(&rows).Error; err != nil {
-		return nil, err
+	resp, err := newAdminApp(l.svcCtx.DB).ListLevelConfigs(l.ctx, in)
+	if err != nil {
+		return nil, mapAdminGrowthErr(err)
 	}
-	items := make([]*super.AdminLevelConfigItem, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, levelConfigToProto(row))
-	}
-	return &super.AdminListLevelConfigsResp{Items: items}, nil
+	return resp, nil
 }

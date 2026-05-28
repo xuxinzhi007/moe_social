@@ -2,10 +2,7 @@ package logic
 
 import (
 	"context"
-	"errors"
 
-	notifybiz "backend/internal/biz/notify"
-	"backend/rpc/internal/errorx"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -23,15 +20,9 @@ func NewAdminBroadcastNotificationLogic(ctx context.Context, svcCtx *svc.Service
 }
 
 func (l *AdminBroadcastNotificationLogic) AdminBroadcastNotification(in *super.AdminBroadcastNotificationReq) (*super.AdminBroadcastNotificationResp, error) {
-	created, err := notifybiz.Broadcast(l.ctx, l.svcCtx.DB, in.GetTitle(), in.GetContent())
+	resp, err := newAdminApp(l.svcCtx.DB).BroadcastNotification(l.ctx, in)
 	if err != nil {
-		switch {
-		case errors.Is(err, notifybiz.ErrEmptyContent):
-			return nil, errorx.InvalidArgument("通知内容不能为空")
-		default:
-			l.Errorf("[admin] broadcast notification: %v", err)
-			return nil, errorx.Internal("广播通知失败")
-		}
+		return nil, mapAdminNotifyErr(err)
 	}
-	return &super.AdminBroadcastNotificationResp{NotificationsCreated: created}, nil
+	return resp, nil
 }

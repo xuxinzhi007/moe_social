@@ -13,7 +13,7 @@ test -f internal/server/moekratoshttp/register.go
 test -f ../docs/dev/kratos-pure-migration-plan.md
 
 echo "== kratos gRPC registration =="
-grep -q 'RegisterMoeAdminServer' internal/platform/moekratos/run.go
+grep -q 'RegisterMoeAdminServer' internal/platform/moekratos/app.go
 grep -q 'kratos/v1/moe/runtimes' internal/server/moekratoshttp/register.go
 
 echo ""

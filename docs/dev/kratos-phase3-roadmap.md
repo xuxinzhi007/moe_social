@@ -1,7 +1,7 @@
 # Phase 3+ 路线图索引
 
-> **更新：2026-05-28** · **当前阶段：F109 完成** · **F ~98%**  
-> **勾选 SSOT**：[kratos-migration-status.md](./kratos-migration-status.md)
+> **更新：2026-05-27** · **F/FS 完成** · **当前执行：PK 纯 Kratos 落地**  
+> **行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
 
@@ -12,15 +12,16 @@
 | Hybrid Moe | **A** | **100%** | [kratos-migration.md](./kratos-migration.md) |
 | 纯 Kratos 试点方案 | **B** | **100%** | [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) |
 | VIP / User / Admin HTTP | FS-2～4 | **100%** | [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) |
-| **全站迁移 biz+GW** | **F** | **~98%** | [kratos-migration-status.md](./kratos-migration-status.md) |
-| 工程就绪度 | **G** | **~78%** | [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) §1.4 |
-| 契约拆分 / 退役 super | FS-8/9 | **~15%** | stub 已有；goctl 仍 `super.*` |
+| **全站迁移 biz+GW** | **F** | **~100%** | [kratos-migration-status.md](./kratos-migration-status.md) |
+| 契约 FS-8/8b/9/10 | **FS** | **✅** | `make verify-sprint-fs9` |
+| **纯 Kratos 落地 PK** | **PK** | **PK-0 ✅** | [kratos-pure-rollout.md](./kratos-pure-rollout.md) |
+| 工程终态 G | **G** | **~82%** | 传输仍 Hybrid；PK-4+ 换 go-zero |
 
 ---
 
-## 当前阶段：F110（计划）
+## 当前阶段：PK-1（纯 Kratos 契约纪律）
 
-**目标**：HTTP 层零 `SuperRpcClient`（~8 文件）→ 见 status 清单。
+**目标**：新接口只进 `api/<domain>/v1/*.proto`；扩展现有 `moekratos` 注册。见 [kratos-pure-rollout.md §3](./kratos-pure-rollout.md#3-pk-阶段执行顺序)。
 
 **已完成（F108–F109）**：
 

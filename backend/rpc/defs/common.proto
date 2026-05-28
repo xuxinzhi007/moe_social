@@ -1,0 +1,2905 @@
+// FS-8b: 全站 RPC message（各域 rpcfrag 共用；禁止重复定义）
+syntax = "proto3";
+
+package super;
+
+option go_package = "backend/rpc/pb/super";
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string created_at = 8;
+  string updated_at = 9;
+  bool is_vip = 10;
+  string vip_expires_at = 11;
+  bool auto_renew = 12;
+  float balance = 13; // 钱包余额
+  string inventory = 14;
+  string equipped_frame_id = 15;
+  string moe_no = 16;
+  // 收到他人赠送礼物累计：魅力点（与礼物标价挂钩）与面值总和（展示用）
+  int32 gift_charm = 17;
+  double received_gift_value = 18;
+  // 与 moe_no 相同，个人中心等「对外展示账号」请用本字段或 moe_no；业务主键仍为 id
+  string display_user_id = 19;
+  // 0=自动（YAML+VIP）；7 或 30 为用户在设置里自选的私信保留天数（仅影响新消息）
+  int32 message_retention_choice = 20;
+  // 绑定的企业飞书邮箱（receive_id_type=email）
+  string feishu_email = 21;
+  // 飞书 OAuth 显示名（通知卡片「操作者」会附带）
+  string feishu_name = 22;
+  // 是否已通过飞书 OAuth 绑定
+  bool feishu_bound = 23;
+  string role = 24; // App 用户角色 user | admin | super_admin
+  // 微信 OAuth 昵称
+  string wechat_nickname = 25;
+  // 是否已通过微信 OAuth 绑定
+  bool wechat_bound = 26;
+  // 社区 AI Bot 账号（由 moe_agent_runtimes 绑定）
+  bool is_bot = 27;
+  string bot_agent_key = 28;
+}
+
+message FeishuAuthorizeURLReq {
+  string state = 1;
+}
+
+message FeishuAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message FeishuLoginReq {
+  string code = 1;
+}
+
+message FeishuLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
+message WechatAuthorizeURLReq {
+  string state = 1;
+  // website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
+  string flow = 2;
+}
+
+message WechatAuthorizeURLResp {
+  string authorize_url = 1;
+}
+
+message WechatLoginReq {
+  string code = 1;
+  // app=移动应用 SDK；website=网站应用扫码；mp=公众号
+  string flow = 2;
+}
+
+message WechatLoginResp {
+  User user = 1;
+  string token = 2;
+  bool is_new_user = 3;
+}
+
+message BindFeishuReq {
+  string user_id = 1;
+  string feishu_email = 2;
+}
+
+message BindFeishuResp {
+  User user = 1;
+}
+
+message UnbindFeishuReq {
+  string user_id = 1;
+}
+
+message UnbindFeishuResp {
+  User user = 1;
+}
+
+message SendFeishuTestCardReq {
+  string user_id = 1;
+}
+
+message SendFeishuTestCardResp {}
+
+message RegisterReq {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+message RegisterResp {
+  User user = 1;
+  string token = 2;
+}
+
+message LoginReq {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+}
+
+message LoginResp {
+  User user = 1;
+  string token = 2;
+}
+
+message GetUserInfoReq {
+  string user_id = 1;
+}
+
+message GetUserInfoResp {
+  User user = 1;
+}
+
+message GetUserReq {
+  string user_id = 1;
+}
+
+message GetUserResp {
+  User user = 1;
+}
+
+message GetUserByEmailReq {
+  string email = 1;
+}
+
+message GetUserByEmailResp {
+  User user = 1;
+}
+
+message UpdateUserInfoReq {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string avatar = 4;
+  string signature = 5;   // 个性签名
+  string gender = 6;      // 性别
+  string birthday = 7;    // 生日
+  string inventory = 8;
+  string equipped_frame_id = 9;
+  bool clear_equipped_frame = 10;
+  // 空=不修改。auto=恢复自动；7 / 30 为自选保存天数（写入 users.message_retention_choice）
+  string message_retention = 11;
+}
+
+message UpdateUserInfoResp {
+  User user = 1;
+}
+
+message UpdateUserPasswordReq {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message UpdateUserPasswordResp {
+}
+
+message ResetPasswordReq {
+  string email = 1;
+  string new_password = 2;
+}
+
+message ResetPasswordResp {
+}
+
+message DeleteUserReq {
+  string user_id = 1;
+}
+
+message DeleteUserResp {
+}
+
+message UpdateUserVipReq {
+  string user_id = 1;
+  bool is_vip = 2;
+  string vip_expires = 3;
+}
+
+message UpdateUserVipResp {
+  User user = 1;
+}
+
+message GetUsersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message GetUsersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetUserCountReq {
+}
+
+message GetUserCountResp {
+  int32 count = 1;
+}
+
+message VipPlan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int32 duration_days = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message GetVipPlanReq {
+  string plan_id = 1;
+}
+
+message GetVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message CreateVipPlanReq {
+  string name = 1;
+  string description = 2;
+  float price = 3;
+  int32 duration_days = 4;
+}
+
+message CreateVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message GetVipPlansReq {
+}
+
+message GetVipPlansResp {
+  repeated VipPlan plans = 1;
+}
+
+message VipOrder {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  float amount = 5;
+  string status = 6;
+  string created_at = 7;
+  string paid_at = 8;
+  string order_no = 9;
+}
+
+message CreateVipOrderReq {
+  string user_id = 1;
+  string plan_id = 2;
+}
+
+message CreateVipOrderResp {
+  VipOrder order = 1;
+  repeated AchievementUnlock new_achievements = 2;
+}
+
+message GetVipOrdersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipOrdersResp {
+  repeated VipOrder orders = 1;
+  int32 total = 2;
+}
+
+message VipRecord {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  string plan_name = 4;
+  string start_at = 5;
+  string end_at = 6;
+  string status = 7;
+  string created_at = 8;
+}
+
+message GetVipRecordsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetVipRecordsResp {
+  repeated VipRecord records = 1;
+  int32 total = 2;
+}
+
+message GetUserActiveVipRecordReq {
+  string user_id = 1;
+}
+
+message GetUserActiveVipRecordResp {
+  VipRecord record = 1;
+}
+
+message GetUserVipStatusReq {
+  string user_id = 1;
+}
+
+message GetUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+  bool auto_renew = 3;
+}
+
+message CheckUserVipReq {
+  string user_id = 1;
+}
+
+message CheckUserVipResp {
+  bool is_vip = 1;
+}
+
+message UpdateAutoRenewReq {
+  string user_id = 1;
+  bool auto_renew = 2;
+}
+
+message UpdateAutoRenewResp {
+}
+
+message SyncUserVipStatusReq {
+  string user_id = 1;
+}
+
+message SyncUserVipStatusResp {
+  bool is_vip = 1;
+  string expires_at = 2;
+}
+
+message RechargeReq {
+  string user_id = 1;
+  float amount = 2;
+  string description = 3;
+}
+
+message RechargeResp {
+  string message = 1;
+  float new_balance = 2;
+}
+
+message GetTransactionsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message Transaction {
+  string id = 1;
+  string user_id = 2;
+  float amount = 3;
+  string type = 4;
+  string status = 5;
+  string description = 6;
+  string created_at = 7;
+}
+
+message GetTransactionsResp {
+  repeated Transaction transactions = 1;
+  int32 total = 2;
+}
+
+message GetTransactionReq {
+  string id = 1;
+}
+
+message GetTransactionResp {
+  Transaction transaction = 1;
+}
+
+message TopicTag {
+  string id = 1;
+  string name = 2;
+  string color = 3;
+  // 标签在库中的创建时间（与帖子 created_at 相同本地格式，便于 Flutter 复用解析）
+  string created_at = 4;
+}
+
+message Post {
+  string id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string user_avatar = 4;
+  string content = 5;
+  repeated string images = 6;
+  repeated TopicTag topic_tags = 7;
+  int32 likes = 8;
+  int32 comments = 9;
+  bool is_liked = 10;
+  string created_at = 11;
+  string hand_draw_card = 12;
+  string hand_draw_thumb_url = 13;
+  string moderation_status = 14;
+  bool author_is_bot = 15;
+  string author_bot_agent_key = 16;
+}
+
+message GetPostsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string viewer_user_id = 3;
+  // latest | hot | following（空则按 latest）
+  string feed_mode = 4;
+  // 按话题标签 ID 筛选（与 post_topics 关联）
+  string topic_tag_id = 5;
+  // 仅返回该作者发布的动态（与 feed_mode=following 互斥，优先按作者筛选）
+  string author_user_id = 6;
+}
+
+message GetPostsResp {
+  repeated Post posts = 1;
+  int32 total = 2;
+}
+
+message GetPostReq {
+  string post_id = 1;
+  string viewer_user_id = 2;
+}
+
+message GetPostResp {
+  Post post = 1;
+}
+
+message CreatePostReq {
+  string user_id = 1;
+  string content = 2;
+  repeated string images = 3;
+  repeated TopicTag topic_tags = 4;
+  string hand_draw_card = 5;
+  string hand_draw_thumb_url = 6;
+  string mood_tag = 7;
+  // 可选：创建后自动关联到该群组（需已是群成员）
+  string group_id = 8;
+}
+
+message UpdatePostReq {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+  repeated string images = 4;
+  repeated TopicTag topic_tags = 5;
+  string hand_draw_card = 6;
+  string hand_draw_thumb_url = 7;
+}
+
+message UpdatePostResp {
+  Post post = 1;
+}
+
+message DeletePostReq {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+message DeletePostResp {}
+
+message ReportPostReq {
+  string post_id = 1;
+  string reporter_user_id = 2;
+  string reason = 3;
+}
+
+message ReportPostResp {
+}
+
+message CreatePostResp {
+  Post post = 1;
+  repeated AchievementUnlock new_achievements = 2;
+}
+
+message LikePostReq {
+  string post_id = 1;
+  string user_id = 2;
+}
+
+message LikePostResp {
+  Post post = 1;
+}
+
+message GetPostCommentsReq {
+  string post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string viewer_user_id = 4;
+}
+
+message GetPostCommentsResp {
+  repeated Comment comments = 1;
+  int32 total = 2;
+}
+
+message Comment {
+  string id = 1;
+  string post_id = 2;
+  string user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string content = 6;
+  int32 likes = 7;
+  bool is_liked = 8;
+  string created_at = 9;
+  string parent_id = 10;
+  string reply_to_user_name = 11;
+}
+
+message CreateCommentReq {
+  string post_id = 1;
+  string user_id = 2;
+  string content = 3;
+  string parent_id = 4;
+}
+
+message CreateCommentResp {
+  Comment comment = 1;
+  repeated AchievementUnlock new_achievements = 2;
+}
+
+message LikeCommentReq {
+  string comment_id = 1;
+  string user_id = 2;
+}
+
+message LikeCommentResp {
+  Comment comment = 1;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string sender_id = 3;
+  string sender_name = 4;
+  string sender_avatar = 5;
+  int32 type = 6;
+  string post_id = 7;
+  string content = 8;
+  bool is_read = 9;
+  string created_at = 10;
+}
+
+message GetNotificationsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetNotificationsResp {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+}
+
+message GetUnreadCountReq {
+  string user_id = 1;
+}
+
+message GetUnreadCountResp {
+  int32 count = 1;
+}
+
+message ReadNotificationReq {
+  string id = 1;
+  string user_id = 2;
+}
+
+message ReadNotificationResp {
+}
+
+message ReadAllNotificationsReq {
+  string user_id = 1;
+}
+
+message ReadAllNotificationsResp {
+}
+
+message CreateNotificationReq {
+  string user_id = 1;
+  string sender_id = 2;
+  int32 type = 3;
+  string post_id = 4;
+  string content = 5;
+}
+
+message CreateNotificationResp {
+  Notification notification = 1;
+}
+
+message PrivateMessage {
+  string id = 1;
+  string sender_id = 2;
+  string receiver_id = 3;
+  string body = 4;
+  repeated string image_paths = 5;
+  int32 retention_days = 6;
+  string created_at = 7;
+  string expires_at = 8;
+  // 展示用 Moe 号（10 位）；查询入参仍用 sender_id/receiver_id 主键
+  string sender_moe_no = 9;
+  string receiver_moe_no = 10;
+}
+
+message SendPrivateMessageReq {
+  string sender_id = 1;
+  string receiver_id = 2;
+  string body = 3;
+  repeated string image_paths = 4;
+}
+
+message SendPrivateMessageResp {
+  PrivateMessage message = 1;
+}
+
+message ListPrivateMessagesReq {
+  string viewer_id = 1;
+  string peer_id = 2;
+  string before_id = 3;
+  int32 limit = 4;
+}
+
+message ListPrivateMessagesResp {
+  repeated PrivateMessage messages = 1;
+  bool has_more = 2;
+}
+
+message PrivateConversation {
+  string peer_id = 1;
+  string peer_name = 2;
+  string peer_avatar = 3;
+  string peer_moe_no = 4;
+  string peer_display_user_id = 5;
+  PrivateMessage last_message = 6;
+  int32 unread_count = 7;
+}
+
+message ListPrivateConversationsReq {
+  string viewer_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListPrivateConversationsResp {
+  repeated PrivateConversation conversations = 1;
+  int32 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UserMemory {
+  string id = 1;
+  string user_id = 2;
+  string key = 3;
+  string value = 4;
+  string memory_type = 5;
+  double confidence = 6;
+  string source = 7;
+  string created_at = 8;
+  string updated_at = 9;
+  string source_msg_id = 10;
+  string session_id = 11;
+}
+
+message UpsertUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+  string value = 3;
+  string memory_type = 4;
+  double confidence = 5;
+  string source = 6;
+  string source_msg_id = 7;
+  string session_id = 8;
+}
+
+message UpsertUserMemoryResp {
+  UserMemory memory = 1;
+}
+
+message GetUserMemoriesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetUserMemoriesResp {
+  repeated UserMemory memories = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UserMemoryProfile {
+  string memory_type = 1;
+  string summary = 2;
+  int32 item_count = 3;
+  double confidence = 4;
+}
+
+message GetUserMemoryProfilesReq {
+  string user_id = 1;
+  int32 limit = 2;
+}
+
+message GetUserMemoryProfilesResp {
+  repeated UserMemoryProfile profiles = 1;
+}
+
+message DeleteUserMemoryReq {
+  string user_id = 1;
+  string key = 2;
+}
+
+message DeleteUserMemoryResp {
+}
+
+message SubmitUserMemoryFeedbackReq {
+  string user_id = 1;
+  string key = 2;
+  // accept | reject | correct
+  string feedback_type = 3;
+  string corrected_value = 4;
+  string reason = 5;
+}
+
+message SubmitUserMemoryFeedbackResp {
+  UserMemory memory = 1;
+}
+
+message UserDeviceRecord {
+  string id = 1;
+  string user_id = 2;
+  string device_id = 3;
+  string platform = 4;
+  string os_version = 5;
+  string app_version = 6;
+  string device_name = 7;
+  string payload_json = 8;
+  string last_seen = 9;
+  string created_at = 10;
+  string updated_at = 11;
+}
+
+message SyncUserDeviceReq {
+  string user_id = 1;
+  string device_id = 2;
+  string platform = 3;
+  string os_version = 4;
+  string app_version = 5;
+  string device_name = 6;
+  string payload_json = 7;
+  string last_seen = 8;
+}
+
+message SyncUserDeviceResp {
+  UserDeviceRecord device = 1;
+}
+
+message ListUserDevicesReq {
+  string user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message ListUserDevicesResp {
+  repeated UserDeviceRecord devices = 1;
+  int64 total = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+}
+
+message UserMemoryEmbeddingItem {
+  string memory_key = 1;
+  repeated float values = 2;
+  string provider = 3;
+  string model = 4;
+}
+
+message ListUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message ListUserMemoryEmbeddingsResp {
+  repeated UserMemoryEmbeddingItem items = 1;
+}
+
+message UpsertUserMemoryEmbeddingReq {
+  string user_id = 1;
+  string memory_key = 2;
+  repeated float values = 3;
+  string provider = 4;
+  string model = 5;
+  string chunk_text = 6;
+}
+
+message UpsertUserMemoryEmbeddingResp {
+}
+
+message RebuildUserMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message RebuildUserMemoryEmbeddingsResp {
+  int32 indexed = 1;
+  string provider = 2;
+  string model = 3;
+}
+
+message UserMemoryRelationItem {
+  string from_key = 1;
+  string to_key = 2;
+  string relation = 3;
+  double weight = 4;
+}
+
+message ListUserMemoryRelationsReq {
+  string user_id = 1;
+}
+
+message ListUserMemoryRelationsResp {
+  repeated UserMemoryRelationItem items = 1;
+}
+
+message AiJsonResourceItem {
+  string id = 1;
+  string payload_json = 2;
+}
+
+message ListAiResourceReq {
+  string user_id = 1;
+}
+
+message ListAiResourceResp {
+  repeated AiJsonResourceItem items = 1;
+}
+
+message ListPublicAiAgentsReq {
+  int32 limit = 1;
+}
+
+message UpsertAiResourceReq {
+  string user_id = 1;
+  string id = 2;
+  string payload_json = 3;
+}
+
+message UpsertAiResourceResp {
+  AiJsonResourceItem item = 1;
+}
+
+message DeleteAiResourceReq {
+  string user_id = 1;
+  string id = 2;
+}
+
+message DeleteAiResourceResp {
+  bool ok = 1;
+}
+
+message GetAiUserConfigReq {
+  string user_id = 1;
+}
+
+message GetAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
+message UpsertAiUserConfigReq {
+  string user_id = 1;
+  string user_persona = 2;
+  bool has_user_persona = 3;
+  string preferences_json = 4;
+}
+
+message UpsertAiUserConfigResp {
+  string user_persona = 1;
+  string preferences_json = 2;
+}
+
+message FriendRequestView {
+  string id = 1;
+  User from_user = 2;
+  User to_user = 3;
+  string status = 4;
+  string created_at = 5;
+}
+
+message SendFriendRequestReq {
+  string actor_user_id = 1;
+  string to_user_id = 2;
+  string to_moe_no = 3;
+}
+
+message SendFriendRequestResp {
+  FriendRequestView data = 1;
+}
+
+message ListIncomingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListIncomingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message ListOutgoingFriendRequestsReq {
+  string actor_user_id = 1;
+}
+
+message ListOutgoingFriendRequestsResp {
+  repeated FriendRequestView data = 1;
+}
+
+message AcceptFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message AcceptFriendRequestResp {
+  bool ok = 1;
+}
+
+message RejectFriendRequestReq {
+  string actor_user_id = 1;
+  string request_id = 2;
+}
+
+message RejectFriendRequestResp {
+  bool ok = 1;
+}
+
+message ListFriendsReq {
+  string actor_user_id = 1;
+}
+
+message ListFriendsResp {
+  repeated User users = 1;
+}
+
+message GetFriendRelationReq {
+  string actor_user_id = 1;
+  string other_user_id = 2;
+}
+
+message GetFriendRelationResp {
+  string relation = 1;
+}
+
+message SubmitLandingFeedbackReq {
+  string email = 1;
+  string category = 2;
+  string content = 3;
+  string source = 4;
+  string client_ip = 5;
+  string user_agent = 6;
+}
+
+message SubmitLandingFeedbackResp {
+  uint64 id = 1;
+}
+
+message LandingFeedbackItem {
+  uint64 id = 1;
+  string email = 2;
+  string category = 3;
+  string content = 4;
+  string source = 5;
+  string client_ip = 6;
+  string user_agent = 7;
+  string created_at = 8;
+}
+
+message ListLandingFeedbackReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string category = 3;
+}
+
+message ListLandingFeedbackResp {
+  repeated LandingFeedbackItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDashboardReq {}
+
+message AdminDashboardResp {
+  int32 landing_feedback_total = 1;
+  int32 user_total = 2;
+  string server_time = 3;
+  bool feishu_enabled = 4;
+}
+
+message AdminLoginReq {
+  string username = 1;
+  string password = 2;
+}
+
+message AdminLoginResp {
+  string token = 1;
+  uint64 admin_id = 2;
+  string username = 3;
+  string role = 4;
+  int64 expire_at = 5;
+}
+
+message AdminListUsersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListUsersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message AdminGetUserReq {
+  uint64 user_id = 1;
+}
+
+message AdminGetUserResp {
+  User user = 1;
+}
+
+message AdminUpdateUserReq {
+  uint64 user_id = 1;
+  string role = 2;
+  bool is_vip = 3;
+  bool update_is_vip = 4;
+  string signature = 5;
+  bool update_signature = 6;
+  string avatar = 7;
+  bool update_avatar = 8;
+}
+
+message AdminUpdateUserResp {
+  User user = 1;
+}
+
+message AdminListVipPlansReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  bool include_deleted = 4;
+}
+
+message AdminListVipPlansResp {
+  repeated VipPlan plans = 1;
+  int32 total = 2;
+}
+
+message AdminGetVipPlanReq {
+  string plan_id = 1;
+}
+
+message AdminGetVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message AdminUpdateVipPlanReq {
+  string plan_id = 1;
+  string name = 2;
+  string description = 3;
+  float price = 4;
+  int32 duration_days = 5;
+  bool update_name = 6;
+  bool update_description = 7;
+  bool update_price = 8;
+  bool update_duration_days = 9;
+}
+
+message AdminUpdateVipPlanResp {
+  VipPlan plan = 1;
+}
+
+message AdminDeleteVipPlanReq {
+  string plan_id = 1;
+}
+
+message AdminDeleteVipPlanResp {}
+
+message AdminBootstrapVipPlansReq {}
+
+message AdminBootstrapVipPlansResp {
+  int32 created = 1;
+}
+
+message AdminBootstrapAccountReq {}
+
+message AdminBootstrapAccountResp {
+  int32 created = 1;
+}
+
+message AdminBootstrapAchievementsReq {}
+
+message AdminBootstrapAchievementsResp {
+  int32 created = 1;
+}
+
+message AdminListGiftsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string category = 4;
+}
+
+message AdminListGiftsResp {
+  repeated Gift gifts = 1;
+  int32 total = 2;
+}
+
+message AdminGetGiftReq {
+  string gift_id = 1;
+}
+
+message AdminGetGiftResp {
+  Gift gift = 1;
+}
+
+message AdminCreateGiftReq {
+  string name = 1;
+  int32 price = 2;
+  string icon = 3;
+  string description = 4;
+  string category = 5;
+  int32 sort_order = 6;
+}
+
+message AdminCreateGiftResp {
+  Gift gift = 1;
+}
+
+message AdminUpdateGiftReq {
+  string gift_id = 1;
+  string name = 2;
+  int32 price = 3;
+  string icon = 4;
+  string description = 5;
+  string category = 6;
+  int32 sort_order = 7;
+  bool update_name = 8;
+  bool update_price = 9;
+  bool update_icon = 10;
+  bool update_description = 11;
+  bool update_category = 12;
+  bool update_sort_order = 13;
+}
+
+message AdminUpdateGiftResp {
+  Gift gift = 1;
+}
+
+message AdminDeleteGiftReq {
+  string gift_id = 1;
+}
+
+message AdminDeleteGiftResp {}
+
+message AdminBootstrapGiftsReq {}
+
+message AdminBootstrapGiftsResp {
+  int32 created = 1;
+}
+
+message AdminDedupeGiftsReq {}
+
+message AdminDedupeGiftsResp {
+  int32 removed = 1;
+}
+
+message AdminListVipOrdersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string status = 5;
+}
+
+message AdminListVipOrdersResp {
+  repeated VipOrder orders = 1;
+  int32 total = 2;
+}
+
+message AdminListGiftPurchaseOrdersReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string status = 5;
+}
+
+message AdminListGiftPurchaseOrdersResp {
+  repeated GiftPurchaseOrder orders = 1;
+  int32 total = 2;
+}
+
+message AdminListPostsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string moderation_status = 4;
+  bool include_deleted = 5;
+}
+
+message AdminListPostsResp {
+  repeated Post posts = 1;
+  int32 total = 2;
+}
+
+message AdminDeletePostReq {
+  string post_id = 1;
+}
+
+message AdminDeletePostResp {}
+
+message AdminListCommentsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string post_id = 4;
+}
+
+message AdminListCommentsResp {
+  repeated Comment comments = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteCommentReq {
+  string comment_id = 1;
+}
+
+message AdminDeleteCommentResp {}
+
+message AdminPostReportItem {
+  string id = 1;
+  string post_id = 2;
+  string reporter_user_id = 3;
+  string reason = 4;
+  string created_at = 5;
+  string post_content_preview = 6;
+}
+
+message AdminListPostReportsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message AdminListPostReportsResp {
+  repeated AdminPostReportItem reports = 1;
+  int32 total = 2;
+}
+
+message AdminListGroupsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteGroupReq {
+  string group_id = 1;
+}
+
+message AdminDeleteGroupResp {}
+
+message AdminAchievementItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition_text = 6;
+  string rule_type = 7;
+  int32 required_count = 8;
+  string rule_params = 9;
+  int32 exp_reward = 10;
+  bool enabled = 11;
+  int32 sort_order = 12;
+  string created_at = 13;
+}
+
+message AdminListAchievementsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string category = 4;
+}
+
+message AdminListAchievementsResp {
+  repeated AdminAchievementItem items = 1;
+  int32 total = 2;
+}
+
+message AdminBootstrapLevelsReq {}
+
+message AdminBootstrapLevelsResp {
+  int32 level_configs_created = 1;
+  int32 check_in_rewards_created = 2;
+}
+
+message AdminGrowthStats {
+  int32 achievement_definitions = 1;
+  int32 unlocked_progress_records = 2;
+  int32 level_configs = 3;
+  int32 check_in_rewards = 4;
+  int32 user_levels = 5;
+  int32 check_ins_today = 6;
+  int32 total_check_ins = 7;
+}
+
+message AdminGetGrowthStatsReq {}
+
+message AdminGetGrowthStatsResp {
+  AdminGrowthStats stats = 1;
+}
+
+message AdminLevelConfigItem {
+  string id = 1;
+  int32 level = 2;
+  string title = 3;
+  int32 min_exp = 4;
+  int32 max_exp = 5;
+  string privileges = 6;
+  string badge_url = 7;
+}
+
+message AdminListLevelConfigsReq {}
+
+message AdminListLevelConfigsResp {
+  repeated AdminLevelConfigItem items = 1;
+}
+
+message AdminUpdateLevelConfigReq {
+  uint64 id = 1;
+  string title = 2;
+  int32 min_exp = 3;
+  int32 max_exp = 4;
+  string privileges = 5;
+  string badge_url = 6;
+  bool update_title = 7;
+  bool update_min_exp = 8;
+  bool update_max_exp = 9;
+  bool update_privileges = 10;
+  bool update_badge_url = 11;
+}
+
+message AdminUpdateLevelConfigResp {
+  AdminLevelConfigItem item = 1;
+}
+
+message AdminCheckInRewardItem {
+  string id = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  string extra_reward = 4;
+}
+
+message AdminListCheckInRewardsReq {}
+
+message AdminListCheckInRewardsResp {
+  repeated AdminCheckInRewardItem items = 1;
+}
+
+message AdminUpdateCheckInRewardReq {
+  uint64 id = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  string extra_reward = 4;
+  bool update_consecutive_days = 5;
+  bool update_exp_reward = 6;
+  bool update_extra_reward = 7;
+}
+
+message AdminUpdateCheckInRewardResp {
+  AdminCheckInRewardItem item = 1;
+}
+
+message AdminUpdateAchievementReq {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  bool enabled = 4;
+  int32 exp_reward = 5;
+  int32 sort_order = 6;
+  bool update_name = 7;
+  bool update_description = 8;
+  bool update_enabled = 9;
+  bool update_exp_reward = 10;
+  bool update_sort_order = 11;
+}
+
+message AdminUpdateAchievementResp {
+  AdminAchievementItem item = 1;
+}
+
+message AdminUserRelationCounts {
+  int32 posts = 1;
+  int32 comments = 2;
+  int32 following = 3;
+  int32 followers = 4;
+  int32 check_ins = 5;
+  int32 achievements_unlocked = 6;
+  int32 vip_orders = 7;
+  int32 gift_sent = 8;
+  int32 gift_received = 9;
+  int32 gift_stocks = 10;
+  int32 transactions = 11;
+  int32 ai_agents = 12;
+  int32 groups_joined = 13;
+}
+
+message AdminUserLevelSnapshot {
+  int32 level = 1;
+  int32 experience = 2;
+  int32 total_exp = 3;
+  string level_title = 4;
+}
+
+message AdminUserRelationLink {
+  string label = 1;
+  string admin_route = 2;
+  string hint = 3;
+}
+
+message AdminUserProfileData {
+  User user = 1;
+  AdminUserRelationCounts counts = 2;
+  AdminUserLevelSnapshot level = 3;
+  repeated AdminUserRelationLink links = 4;
+  AdminUserBehaviorSummary behavior = 5;
+}
+
+message AdminUserBehaviorScreenStat {
+  string screen = 1;
+  string label = 2;
+  int32 visit_count = 3;
+  int64 total_duration_ms = 4;
+}
+
+message AdminUserBehaviorSummary {
+  repeated AdminUserBehaviorScreenStat top_screens = 1;
+  repeated string tags = 2;
+  string last_active_at = 3;
+  int32 total_events_7d = 4;
+}
+
+message UserBehaviorEventInput {
+  string event = 1;
+  string screen = 2;
+  string params_json = 3;
+  int64 duration_ms = 4;
+  string session_id = 5;
+  int64 client_ts_ms = 6;
+}
+
+message TrackUserBehaviorEventsReq {
+  uint64 user_id = 1;
+  repeated UserBehaviorEventInput events = 2;
+}
+
+message TrackUserBehaviorEventsResp {
+  int32 accepted = 1;
+}
+
+message AdminGetUserProfileReq {
+  uint64 user_id = 1;
+}
+
+message AdminGetUserProfileResp {
+  AdminUserProfileData data = 1;
+}
+
+message AdminAnnouncementItem {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string status = 4;
+  string published_at = 5;
+  string created_by = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message AdminListAnnouncementsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string status = 4;
+}
+
+message AdminListAnnouncementsResp {
+  repeated AdminAnnouncementItem items = 1;
+  int32 total = 2;
+}
+
+message AdminGetAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminGetAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminCreateAnnouncementReq {
+  string title = 1;
+  string content = 2;
+  string created_by = 3;
+}
+
+message AdminCreateAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminUpdateAnnouncementReq {
+  string announcement_id = 1;
+  string title = 2;
+  string content = 3;
+  bool update_title = 4;
+  bool update_content = 5;
+}
+
+message AdminUpdateAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminDeleteAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminDeleteAnnouncementResp {}
+
+message AdminPublishAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message AdminPublishAnnouncementResp {
+  AdminAnnouncementItem announcement = 1;
+}
+
+message AdminBroadcastNotificationReq {
+  string title = 1;
+  string content = 2;
+}
+
+message AdminBroadcastNotificationResp {
+  int32 notifications_created = 1;
+}
+
+message AdminSendNotificationReq {
+  string user_id = 1;
+  string title = 2;
+  string content = 3;
+}
+
+message AdminSendNotificationResp {
+  string notification_id = 1;
+}
+
+message AdminAiAgentItem {
+  string id = 1;
+  string owner_user_id = 2;
+  string owner_name = 3;
+  string payload_json = 4;
+}
+
+message AdminListAiAgentsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListAiAgentsResp {
+  repeated AdminAiAgentItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteAiAgentReq {
+  string user_id = 1;
+  string agent_id = 2;
+}
+
+message AdminDeleteAiAgentResp {}
+
+message AdminFollowItem {
+  string id = 1;
+  string follower_id = 2;
+  string follower_name = 3;
+  string following_id = 4;
+  string following_name = 5;
+  string created_at = 6;
+}
+
+message AdminListFollowsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string user_id = 4;
+}
+
+message AdminListFollowsResp {
+  repeated AdminFollowItem items = 1;
+  int32 total = 2;
+}
+
+message AdminFriendRequestItem {
+  string id = 1;
+  string from_user_id = 2;
+  string from_user_name = 3;
+  string to_user_id = 4;
+  string to_user_name = 5;
+  string status = 6;
+  string created_at = 7;
+}
+
+message AdminListFriendRequestsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string status = 3;
+  string keyword = 4;
+}
+
+message AdminListFriendRequestsResp {
+  repeated AdminFriendRequestItem items = 1;
+  int32 total = 2;
+}
+
+message AdminDeleteFollowReq {
+  string follow_id = 1;
+}
+
+message AdminDeleteFollowResp {}
+
+message AdminAccountItem {
+  string id = 1;
+  string username = 2;
+  string role = 3;
+  string last_login_at = 4;
+  string created_at = 5;
+}
+
+message AdminListAccountsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListAccountsResp {
+  repeated AdminAccountItem items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateAccountReq {
+  string username = 1;
+  string password = 2;
+  string role = 3;
+}
+
+message AdminCreateAccountResp {
+  AdminAccountItem account = 1;
+}
+
+message AdminUpdateAccountReq {
+  string account_id = 1;
+  string username = 2;
+  string password = 3;
+  string role = 4;
+  bool update_username = 5;
+  bool update_password = 6;
+  bool update_role = 7;
+}
+
+message AdminUpdateAccountResp {
+  AdminAccountItem account = 1;
+}
+
+message AdminDeleteAccountReq {
+  string account_id = 1;
+}
+
+message AdminDeleteAccountResp {}
+
+message AdminMenuItem {
+  string id = 1;
+  string key = 2;
+  string kind = 3;
+  string parent_key = 4;
+  string path = 5;
+  string label = 6;
+  string icon = 7;
+  string caption = 8;
+  string status = 9;
+  string app_domain = 10;
+  int32 sort_order = 11;
+  bool default_open = 12;
+  bool end = 13;
+  string external_href = 14;
+  bool enabled = 15;
+}
+
+message AdminListMenusReq {}
+
+message AdminListMenusResp {
+  repeated AdminMenuItem items = 1;
+}
+
+message AdminUpsertMenuReq {
+  string key = 1;
+  string kind = 2;
+  string parent_key = 3;
+  string path = 4;
+  string label = 5;
+  string icon = 6;
+  string caption = 7;
+  string status = 8;
+  string app_domain = 9;
+  int32 sort_order = 10;
+  bool default_open = 11;
+  bool end = 12;
+  string external_href = 13;
+  bool enabled = 14;
+}
+
+message AdminUpsertMenuResp {
+  AdminMenuItem menu = 1;
+}
+
+message AdminDeleteMenuReq {
+  string menu_key = 1;
+}
+
+message AdminDeleteMenuResp {}
+
+message AdminBootstrapMenusReq {}
+
+message AdminBootstrapMenusResp {
+  int32 created = 1;
+}
+
+message AdminSchemaTableItem {
+  string key = 1;
+  string table_name = 2;
+  string label = 3;
+  string domain = 4;
+  string coverage = 5;
+  repeated string capabilities = 6;
+  string admin_route = 7;
+  string bootstrap_key = 8;
+  int64 row_count = 9;
+  string note = 10;
+}
+
+message AdminSchemaCatalogSummary {
+  int32 total_tables = 1;
+  int32 managed_full = 2;
+  int32 managed_partial = 3;
+  int32 unmanaged = 4;
+  int64 total_rows = 5;
+}
+
+message AdminGetSchemaCatalogReq {}
+
+message AdminMemoryItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string key = 4;
+  string value = 5;
+  string memory_type = 6;
+  double confidence = 7;
+  string source = 8;
+  string updated_at = 9;
+}
+
+message AdminMemoryTypeStat {
+  string memory_type = 1;
+  int32 count = 2;
+}
+
+message AdminMemoryStats {
+  int32 total_memories = 1;
+  int32 users_with_memories = 2;
+  int32 total_feedbacks = 3;
+  int32 total_embeddings = 4;
+  repeated AdminMemoryTypeStat by_type = 5;
+}
+
+message AdminListMemoriesReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string keyword = 4;
+  string memory_type = 5;
+}
+
+message AdminListMemoriesResp {
+  repeated AdminMemoryItem items = 1;
+  int32 total = 2;
+}
+
+message AdminGetMemoryStatsReq {}
+
+message AdminGetMemoryStatsResp {
+  AdminMemoryStats stats = 1;
+}
+
+message AdminDeleteMemoryReq {
+  uint64 memory_id = 1;
+}
+
+message AdminDeleteMemoryResp {}
+
+message AdminAiChatSessionItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string session_id = 4;
+  string model = 5;
+  int32 message_count = 6;
+  string last_message_at = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message AdminListAiChatSessionsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string session_id = 4;
+  string from = 5;
+  string to = 6;
+}
+
+message AdminListAiChatSessionsResp {
+  repeated AdminAiChatSessionItem items = 1;
+  int32 total = 2;
+}
+
+message AdminAiChatMessageItem {
+  string id = 1;
+  string user_id = 2;
+  string username = 3;
+  string session_id = 4;
+  string source_msg_id = 5;
+  string role = 6;
+  string content = 7;
+  string model = 8;
+  string created_at = 9;
+}
+
+message AdminListAiChatMessagesReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string user_id = 3;
+  string session_id = 4;
+  string role = 5;
+  string keyword = 6;
+  string from = 7;
+  string to = 8;
+}
+
+message AdminListAiChatMessagesResp {
+  repeated AdminAiChatMessageItem items = 1;
+  int32 total = 2;
+}
+
+message AdminExportAiChatMessagesReq {
+  string user_id = 1;
+  string session_id = 2;
+  string role = 3;
+  string keyword = 4;
+  string from = 5;
+  string to = 6;
+  int32 limit = 7;
+}
+
+message AdminExportAiChatMessagesResp {
+  string csv = 1;
+  int32 row_count = 2;
+  bool truncated = 3;
+}
+
+message AdminDayStat {
+  string date = 1;
+  int32 count = 2;
+}
+
+message AdminAnalyticsOverviewResp {
+  int32 user_total = 1;
+  int32 users_new_7d = 2;
+  repeated AdminDayStat users_by_day = 3;
+  int32 memory_total = 4;
+  int32 memory_users = 5;
+  repeated AdminDayStat memories_by_day = 6;
+  repeated AdminMemoryTypeStat memory_by_type = 7;
+  int32 moe_tool_calls_7d = 8;
+  double moe_tool_success_rate = 9;
+  repeated AdminDayStat moe_tools_by_day = 10;
+  int32 chat_sessions_total = 11;
+  int32 chat_messages_7d = 12;
+  repeated AdminDayStat chat_messages_by_day = 13;
+}
+
+message AdminListTopicTagsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+}
+
+message AdminListTopicTagsResp {
+  repeated TopicTag items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateTopicTagReq {
+  string name = 1;
+  string color = 2;
+}
+
+message AdminCreateTopicTagResp {
+  TopicTag item = 1;
+}
+
+message AdminUpdateTopicTagReq {
+  uint64 tag_id = 1;
+  string name = 2;
+  string color = 3;
+}
+
+message AdminUpdateTopicTagResp {
+  TopicTag item = 1;
+}
+
+message AdminDeleteTopicTagReq {
+  uint64 tag_id = 1;
+}
+
+message AdminDeleteTopicTagResp {}
+
+message AdminBootstrapTopicTagsReq {}
+
+message AdminBootstrapTopicTagsResp {
+  int32 created = 1;
+}
+
+message AdminTagDictionaryItem {
+  string id = 1;
+  string category = 2;
+  string tag = 3;
+  string label = 4;
+  string note = 5;
+  int32 sort_order = 6;
+  bool enabled = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message AdminListTagDictionaryReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string category = 3;
+  string keyword = 4;
+}
+
+message AdminListTagDictionaryResp {
+  repeated AdminTagDictionaryItem items = 1;
+  int32 total = 2;
+}
+
+message AdminCreateTagDictionaryReq {
+  string category = 1;
+  string tag = 2;
+  string label = 3;
+  string note = 4;
+  int32 sort_order = 5;
+  bool enabled = 6;
+}
+
+message AdminCreateTagDictionaryResp {
+  AdminTagDictionaryItem item = 1;
+}
+
+message AdminUpdateTagDictionaryReq {
+  uint64 entry_id = 1;
+  string category = 2;
+  string tag = 3;
+  string label = 4;
+  string note = 5;
+  int32 sort_order = 6;
+  bool enabled = 7;
+  bool update_enabled = 8;
+}
+
+message AdminUpdateTagDictionaryResp {
+  AdminTagDictionaryItem item = 1;
+}
+
+message AdminDeleteTagDictionaryReq {
+  uint64 entry_id = 1;
+}
+
+message AdminDeleteTagDictionaryResp {}
+
+message AdminGetSchemaCatalogResp {
+  AdminSchemaCatalogSummary summary = 1;
+  repeated AdminSchemaTableItem items = 2;
+}
+
+message AdminAuditLogItem {
+  string id = 1;
+  string admin_id = 2;
+  string admin_name = 3;
+  string action = 4;
+  string resource = 5;
+  string resource_id = 6;
+  string detail = 7;
+  string ip = 8;
+  string created_at = 9;
+}
+
+message AdminListAuditLogsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string action = 3;
+  string resource = 4;
+  string admin_id = 5;
+}
+
+message AdminListAuditLogsResp {
+  repeated AdminAuditLogItem items = 1;
+  int32 total = 2;
+}
+
+message RecordAdminAuditLogReq {
+  uint64 admin_id = 1;
+  string admin_name = 2;
+  string action = 3;
+  string resource = 4;
+  string resource_id = 5;
+  string detail = 6;
+  string ip = 7;
+}
+
+message RecordAdminAuditLogResp {}
+
+message MoeAgentRuntimeItem {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  int32 posts_today = 9;
+  bool enabled = 10;
+  string last_run_at = 11;
+  string last_post_id = 12;
+  string post_schedule_mode = 13;
+  string schedule_cron = 14;
+  string next_run_at = 15;
+  string system_prompt = 16;
+  string post_rules = 17;
+  string forbidden_tags = 18;
+  string preferred_tags = 19;
+}
+
+message AdminListMoeRuntimesReq {}
+
+message AdminListMoeRuntimesResp {
+  repeated MoeAgentRuntimeItem items = 1;
+}
+
+message AdminUpsertMoeRuntimeReq {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  string capability_tier = 4;
+  string model_name = 5;
+  string provider_profile_id = 6;
+  bool tools_enabled = 7;
+  int32 post_quota_daily = 8;
+  bool enabled = 9;
+  string system_prompt = 10;
+  string post_rules = 11;
+  string forbidden_tags = 12;
+  string preferred_tags = 13;
+  string post_schedule_mode = 14;
+  string schedule_cron = 15;
+}
+
+message AdminUpsertMoeRuntimeResp {
+  MoeAgentRuntimeItem item = 1;
+}
+
+message AdminRunMoeAgentOnceReq {
+  string agent_key = 1;
+}
+
+message AdminRunMoeAgentOnceResp {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string post_id = 4;
+}
+
+message MoeBrainTagStat {
+  string tag = 1;
+  int32 count = 2;
+}
+
+message MoeBrainEpisodeItem {
+  uint64 id = 1;
+  string post_id = 2;
+  string content = 3;
+  repeated string tags = 4;
+  string mood_tag = 5;
+  int32 style_score = 6;
+  int32 quality_score = 7;
+  bool approved = 8;
+  int32 revision_count = 9;
+  string memory_key = 10;
+  string source = 11;
+  string created_at = 12;
+}
+
+message MoeBrainMemoryItem {
+  string key = 1;
+  string value = 2;
+  string memory_type = 3;
+  string updated_at = 4;
+}
+
+message MoeBrainGenerationMeta {
+  bool post_uses_tool_memory = 1;
+  int32 memories_synced = 2;
+  int32 episodes_in_prompt = 3;
+  int32 prompt_memory_lines = 4;
+  string prompt_preview = 5;
+  string note = 6;
+  int32 prompt_est_tokens = 7;
+  int32 context_limit = 8;
+  double context_used_pct = 9;
+}
+
+message MoePipelineStepItem {
+  string key = 1;
+  string label = 2;
+  string status = 3;
+  string detail = 4;
+  string at = 5;
+  int64 duration_ms = 6;
+}
+
+message MoeHostMetrics {
+  int64 proc_alloc_mb = 1;
+  int64 proc_sys_mb = 2;
+  int32 num_cpu = 3;
+  int32 num_goroutine = 4;
+  bool inference_online = 5;
+  string inference_base_url = 6;
+  int32 inference_models = 7;
+  string gpu_note = 8;
+}
+
+message MoeGenAttemptItem {
+  int32 attempt = 1;
+  string outcome = 2;
+  string snippet = 3;
+  string note = 4;
+}
+
+message AdminGetMoeBrainPipelineReq {
+  string agent_key = 1;
+}
+
+message AdminGetMoeBrainPipelineResp {
+  string agent_key = 1;
+  bool ok = 2;
+  string detail = 3;
+  string run_at = 4;
+  repeated MoePipelineStepItem steps = 5;
+  int64 total_duration_ms = 6;
+  MoeHostMetrics host_metrics = 7;
+  string post_id = 8;
+  repeated MoeGenAttemptItem generate_attempts = 9;
+  int32 stability_score = 10;
+  int32 stability_delta = 11;
+  string run_feedback = 12;
+}
+
+message RecordLlmChatTurnReq {
+  uint64 user_id = 1;
+  string session_id = 2;
+  string source_msg_id = 3;
+  string model = 4;
+  string role = 5;
+  string content = 6;
+}
+
+message RecordLlmChatTurnResp {
+  bool ok = 1;
+}
+
+message AdminGetMoeBrainReq {
+  string agent_key = 1;
+}
+
+message AdminGetMoeBrainResp {
+  string agent_key = 1;
+  string display_name = 2;
+  string bot_user_id = 3;
+  repeated string forbidden_tags = 4;
+  repeated string preferred_tags = 5;
+  repeated MoeBrainTagStat tag_stats = 6;
+  repeated MoeBrainEpisodeItem episodes = 7;
+  repeated MoeBrainMemoryItem memories = 8;
+  MoeBrainGenerationMeta generation_meta = 9;
+  int32 stability_score = 10;
+  int32 stability_delta = 11;
+  int32 avg_episode_quality = 12;
+}
+
+message AdminUpdateMoeBrainPolicyReq {
+  string agent_key = 1;
+  repeated string forbidden_tags = 2;
+  repeated string preferred_tags = 3;
+}
+
+message AdminDeleteMoeBrainEpisodeReq {
+  uint64 id = 1;
+}
+
+message AdminDeleteMoeBrainEpisodeResp {}
+
+message AdminRefineMoeBrainEpisodeReq {
+  uint64 id = 1;
+  int32 max_attempts = 2;
+}
+
+message AdminRefineMoeBrainEpisodeResp {
+  uint64 episode_id = 1;
+  bool ok = 2;
+  bool approved = 3;
+  int32 quality_score = 4;
+  string before_content = 5;
+  string after_content = 6;
+  int32 attempts = 7;
+  string detail = 8;
+}
+
+message AdminCurateMoeBrainReq {
+  string agent_key = 1;
+  int32 max_episodes = 2;
+  int32 max_attempts = 3;
+  int32 min_quality = 4;
+  bool force = 5;
+}
+
+message AdminCurateMoeBrainResp {
+  string agent_key = 1;
+  int32 total = 2;
+  int32 approved = 3;
+  repeated AdminRefineMoeBrainEpisodeResp results = 4;
+}
+
+message AdminMoeToolStatRow {
+  string tool = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+  int64 failed_calls = 4;
+}
+
+message AdminMoeToolDayStat {
+  string date = 1;
+  int64 total_calls = 2;
+  int64 success_calls = 3;
+}
+
+message AdminGetMoeToolStatsReq {
+  string from = 1;
+  string to = 2;
+  string agent_key = 3;
+  string tool = 4;
+}
+
+message AdminGetMoeToolStatsResp {
+  int64 total_calls = 1;
+  int64 success_calls = 2;
+  int64 failed_calls = 3;
+  repeated AdminMoeToolStatRow by_tool = 4;
+  repeated AdminMoeToolDayStat by_day = 5;
+}
+
+message AdminMoeToolCallItem {
+  string id = 1;
+  string tool = 2;
+  string actor_user_id = 3;
+  string agent_key = 4;
+  bool ok = 5;
+  string error_msg = 6;
+  int32 latency_ms = 7;
+  string source = 8;
+  string arguments_preview = 9;
+  string created_at = 10;
+}
+
+message AdminListMoeToolCallsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string tool = 3;
+  string agent_key = 4;
+  string actor_user_id = 5;
+  string source = 6;
+  bool ok_only = 7;
+  bool failed_only = 8;
+  string from = 9;
+  string to = 10;
+}
+
+message AdminListMoeToolCallsResp {
+  repeated AdminMoeToolCallItem items = 1;
+  int64 total = 2;
+}
+
+message MoeExecuteToolReq {
+  string tool = 1;
+  string arguments_json = 2;
+  string agent_key = 3;
+  uint64 actor_user_id = 4;
+  string idempotency_key = 5;
+  string source = 6;
+}
+
+message MoeExecuteToolResp {
+  bool ok = 1;
+  string result = 2;
+  string error = 3;
+}
+
+message MoeSearchPostsReq {
+  string query = 1;
+  int32 limit = 2;
+  uint64 viewer_user_id = 3;
+  string mood_tag = 4;
+  uint64 topic_tag_id = 5;
+}
+
+message MoeSearchPostHit {
+  string post_id = 1;
+  string user_id = 2;
+  string user_name = 3;
+  string content = 4;
+  string snippet = 5;
+  string mood_tag = 6;
+  int32 likes = 7;
+  int32 comments = 8;
+  string created_at = 9;
+  double score = 10;
+  string score_reason = 11;
+}
+
+message MoeSearchPostsResp {
+  repeated MoeSearchPostHit items = 1;
+  int32 total = 2;
+}
+
+message FollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message FollowUserResp {
+  bool success = 1;
+}
+
+message UnfollowUserReq {
+  string user_id = 1;
+  string following_id = 2;
+}
+
+message GetFollowingsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowingsResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message GetFollowersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetFollowersResp {
+  repeated User users = 1;
+  int32 total = 2;
+}
+
+message CheckFollowReq {
+  string follower_id = 1;
+  string following_id = 2;
+}
+
+message CheckFollowResp {
+  bool is_following = 1;
+}
+
+message AvatarBaseConfig {
+  string face_shape = 1;
+  string skin_color = 2;
+  string eye_type = 3;
+  string hair_style = 4;
+  string hair_color = 5;
+}
+
+message AvatarOutfitConfig {
+  string clothes = 1;
+  repeated string accessories = 2;
+  string background = 3;
+}
+
+message UserAvatarData {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+  repeated string owned_outfits = 4;
+}
+
+message GetUserAvatarReq {
+  string user_id = 1;
+}
+
+message GetUserAvatarResp {
+  UserAvatarData avatar = 1;
+}
+
+message UpdateUserAvatarReq {
+  string user_id = 1;
+  AvatarBaseConfig base_config = 2;
+  AvatarOutfitConfig current_outfit = 3;
+}
+
+message UpdateUserAvatarResp {
+  UserAvatarData avatar = 1;
+}
+
+message UserLevelInfo {
+  int32 level = 1;
+  int32 experience = 2;
+  int32 total_exp = 3;
+  int32 next_level_exp = 4;
+  string level_title = 5;
+  string badge_url = 6;
+  double progress = 7;
+}
+
+message CheckInStatus {
+  bool has_checked_today = 1;
+  int32 consecutive_days = 2;
+  int32 today_reward = 3;
+  int32 next_day_reward = 4;
+  bool can_check_in = 5;
+}
+
+message CheckInRecord {
+  string check_in_date = 1;
+  int32 consecutive_days = 2;
+  int32 exp_reward = 3;
+  bool is_special_reward = 4;
+  string special_reward_desc = 5;
+}
+
+message ExpLogRecord {
+  string id = 1;
+  int32 exp_change = 2;
+  string source = 3;
+  string description = 4;
+  string created_at = 5;
+}
+
+message CheckInReq {
+  string user_id = 1;
+}
+
+message AchievementUnlock {
+  string badge_id = 1;
+  string name = 2;
+  int32 exp_granted = 3;
+  bool level_up = 4;
+  int32 new_level = 5;
+}
+
+message CheckInResp {
+  int32 exp_gained = 1;
+  int32 new_level = 2;
+  int32 consecutive_days = 3;
+  bool level_up = 4;
+  string special_reward = 5;
+  repeated AchievementUnlock new_achievements = 6;
+}
+
+message GetUserLevelReq {
+  string user_id = 1;
+}
+
+message GetUserLevelResp {
+  UserLevelInfo level_info = 1;
+}
+
+message GetCheckInStatusReq {
+  string user_id = 1;
+}
+
+message GetCheckInStatusResp {
+  CheckInStatus status = 1;
+}
+
+message GetCheckInHistoryReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetCheckInHistoryResp {
+  repeated CheckInRecord records = 1;
+  int32 total = 2;
+}
+
+message GetExpLogsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetExpLogsResp {
+  repeated ExpLogRecord logs = 1;
+  int32 total = 2;
+}
+
+message AchievementBadgeItem {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string rarity = 5;
+  string condition = 6;
+  int32 required_count = 7;
+  int32 current_count = 8;
+  double progress = 9;
+  bool is_unlocked = 10;
+  string unlocked_at = 11;
+}
+
+message AchievementSummary {
+  int32 total_badges = 1;
+  int32 unlocked_badges = 2;
+  double completion_percentage = 3;
+}
+
+message GetUserAchievementsReq {
+  string user_id = 1;
+}
+
+message GetUserAchievementsResp {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserUnlockedAchievementsReq {
+  string user_id = 1;
+}
+
+message GetUserUnlockedAchievementsResp {
+  repeated AchievementBadgeItem badges = 1;
+}
+
+message GetUserAchievementSummaryReq {
+  string user_id = 1;
+}
+
+message GetUserAchievementSummaryResp {
+  AchievementSummary summary = 1;
+}
+
+message EnsureUserAchievementsReq {
+  string user_id = 1;
+}
+
+message EnsureUserAchievementsResp {
+  repeated AchievementUnlock new_achievements = 1;
+}
+
+message Group {
+  uint64 id = 1;
+  string name = 2;
+  string description = 3;
+  string avatar = 4;
+  string cover = 5;
+  uint64 creator_id = 6;
+  string creator_name = 7;
+  int32 member_count = 8;
+  bool is_public = 9;
+  string status = 10;
+  string created_at = 11;
+  bool is_joined = 12;
+  string user_role = 13;
+}
+
+message GroupMember {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 user_id = 3;
+  string user_name = 4;
+  string user_avatar = 5;
+  string role = 6;
+  string join_at = 7;
+  string created_at = 8;
+}
+
+message CreateGroupReq {
+  string name = 1;
+  string description = 2;
+  string avatar = 3;
+  string cover = 4;
+  string user_id = 5;
+  bool is_public = 6;
+}
+
+message CreateGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message GetGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message GetGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message GetGroupsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  bool is_public = 4;
+  string user_id = 5;
+}
+
+message GetGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message UpdateGroupReq {
+  string group_id = 1;
+  string name = 2;
+  string description = 3;
+  string avatar = 4;
+  string cover = 5;
+  bool is_public = 6;
+}
+
+message UpdateGroupResp {
+  bool success = 1;
+  string message = 2;
+  Group group = 3;
+}
+
+message DeleteGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message DeleteGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message JoinGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message JoinGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message LeaveGroupReq {
+  string group_id = 1;
+  string user_id = 2;
+}
+
+message LeaveGroupResp {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetGroupMembersReq {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGroupMembersResp {
+  repeated GroupMember members = 1;
+  int32 total = 2;
+}
+
+message GetUserGroupsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetUserGroupsResp {
+  repeated Group groups = 1;
+  int32 total = 2;
+}
+
+message GroupPost {
+  uint64 id = 1;
+  uint64 group_id = 2;
+  uint64 post_id = 3;
+  Post post = 4;
+  string created_at = 5;
+}
+
+message CreateGroupPostReq {
+  string group_id = 1;
+  string post_id = 2;
+  string user_id = 3;
+}
+
+message CreateGroupPostResp {
+  bool success = 1;
+  string message = 2;
+  GroupPost group_post = 3;
+}
+
+message GetGroupPostsReq {
+  string group_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+  string user_id = 4;
+}
+
+message GetGroupPostsResp {
+  repeated GroupPost posts = 1;
+  int32 total = 2;
+}
+
+message Gift {
+  uint64 id = 1;
+  string name = 2;
+  int32 price = 3;
+  string icon = 4;
+  string description = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  // 当 GetGiftsReq.viewer_user_id 传入时，为该用户在本礼物的背包数量
+  int32 owned_quantity = 8;
+  // 展示分类：emotion / food / luxury / special
+  string category = 9;
+  int32 sort_order = 10;
+}
+
+message GiftRecord {
+  uint64 id = 1;
+  uint64 from_user_id = 2;
+  string from_user_name = 3;
+  uint64 to_user_id = 4;
+  string to_user_name = 5;
+  uint64 gift_id = 6;
+  Gift gift = 7;
+  int32 quantity = 8;
+  string created_at = 9;
+}
+
+message GetGiftsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  // 可选：传入则在每个 Gift 上填充 owned_quantity（背包）
+  string viewer_user_id = 3;
+}
+
+message GetGiftsResp {
+  repeated Gift gifts = 1;
+  int32 total = 2;
+}
+
+message GetGiftReq {
+  string gift_id = 1;
+}
+
+message GetGiftResp {
+  bool success = 1;
+  string message = 2;
+  Gift gift = 3;
+}
+
+message SendGiftReq {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string gift_id = 3;
+  int32 quantity = 4;
+}
+
+message SendGiftResp {
+  bool success = 1;
+  string message = 2;
+  GiftRecord record = 3;
+  repeated AchievementUnlock new_achievements = 4;
+}
+
+message GetGiftRecordsReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftRecordsResp {
+  repeated GiftRecord records = 1;
+  int32 total = 2;
+}
+
+message PurchaseGiftReq {
+  string user_id = 1;
+  string gift_id = 2;
+  int32 quantity = 3;
+}
+
+message PurchaseGiftResp {
+  bool success = 1;
+  string message = 2;
+  double new_balance = 3;
+  int32 owned_quantity = 4;
+  string order_no = 5;
+}
+
+message GiftPurchaseOrder {
+  string id = 1;
+  string user_id = 2;
+  string order_no = 3;
+  string gift_id = 4;
+  string gift_name = 5;
+  int32 quantity = 6;
+  double unit_price = 7;
+  double total_amount = 8;
+  string pay_method = 9;
+  string status = 10;
+  string created_at = 11;
+}
+
+message GetGiftPurchaseOrdersReq {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetGiftPurchaseOrdersResp {
+  repeated GiftPurchaseOrder orders = 1;
+  int32 total = 2;
+}

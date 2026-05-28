@@ -91,8 +91,10 @@ type PilotMoe struct {
 	SingleProcess          bool                   `protobuf:"varint,4,opt,name=single_process,json=singleProcess,proto3" json:"single_process,omitempty"`
 	KratosAdminHttpEnabled bool                   `protobuf:"varint,5,opt,name=kratos_admin_http_enabled,json=kratosAdminHttpEnabled,proto3" json:"kratos_admin_http_enabled,omitempty"`
 	KratosAdminBaseUrl     string                 `protobuf:"bytes,6,opt,name=kratos_admin_base_url,json=kratosAdminBaseUrl,proto3" json:"kratos_admin_base_url,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// PK-2: VIP ListPlans 灰度到试点 HTTP（同 kratos_admin_base_url）
+	KratosVipHttpEnabled bool `protobuf:"varint,7,opt,name=kratos_vip_http_enabled,json=kratosVipHttpEnabled,proto3" json:"kratos_vip_http_enabled,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PilotMoe) Reset() {
@@ -165,6 +167,13 @@ func (x *PilotMoe) GetKratosAdminBaseUrl() string {
 		return x.KratosAdminBaseUrl
 	}
 	return ""
+}
+
+func (x *PilotMoe) GetKratosVipHttpEnabled() bool {
+	if x != nil {
+		return x.KratosVipHttpEnabled
+	}
+	return false
 }
 
 // ProductionPorts 对外与对内端口（生产不变 :8888）。
@@ -366,7 +375,7 @@ const file_internal_conf_moe_v1_pilot_proto_rawDesc = "" +
 	"\vPilotServer\x12\x1b\n" +
 	"\tgrpc_addr\x18\x01 \x01(\tR\bgrpcAddr\x12\x1b\n" +
 	"\thttp_addr\x18\x02 \x01(\tR\bhttpAddr\x12,\n" +
-	"\x12super_rpc_endpoint\x18\x03 \x01(\tR\x10superRpcEndpoint\"\x93\x02\n" +
+	"\x12super_rpc_endpoint\x18\x03 \x01(\tR\x10superRpcEndpoint\"\xca\x02\n" +
 	"\bPilotMoe\x12$\n" +
 	"\x0eapi_in_process\x18\x01 \x01(\bR\fapiInProcess\x12*\n" +
 	"\x11register_moe_grpc\x18\x02 \x01(\bR\x0fregisterMoeGrpc\x12 \n" +
@@ -374,7 +383,8 @@ const file_internal_conf_moe_v1_pilot_proto_rawDesc = "" +
 	"useMoeGrpc\x12%\n" +
 	"\x0esingle_process\x18\x04 \x01(\bR\rsingleProcess\x129\n" +
 	"\x19kratos_admin_http_enabled\x18\x05 \x01(\bR\x16kratosAdminHttpEnabled\x121\n" +
-	"\x15kratos_admin_base_url\x18\x06 \x01(\tR\x12kratosAdminBaseUrl\"\xe2\x01\n" +
+	"\x15kratos_admin_base_url\x18\x06 \x01(\tR\x12kratosAdminBaseUrl\x125\n" +
+	"\x17kratos_vip_http_enabled\x18\a \x01(\bR\x14kratosVipHttpEnabled\"\xe2\x01\n" +
 	"\x0fProductionPorts\x12#\n" +
 	"\runified_entry\x18\x01 \x01(\tR\funifiedEntry\x12,\n" +
 	"\x12external_http_port\x18\x02 \x01(\tR\x10externalHttpPort\x12,\n" +

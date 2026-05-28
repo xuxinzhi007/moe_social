@@ -231,10 +231,13 @@ func Start(opts Options) (*rest.Server, error) {
 	}
 	ctx.CommunityGW = communitygw.New(ctx.CommunityApp, ctx.SuperRpcClient)
 	log.Printf("community gateway route: %s", ctx.CommunityGW.Route())
-	ctx.VipGW = vipadmingw.New(ctx.VipAdmin, ctx.SuperRpcClient)
+	ctx.VipGW = vipadmingw.NewConfigured(ctx.VipAdmin, ctx.SuperRpcClient)
 	log.Printf("vip gateway route: %s", ctx.VipGW.Route())
 	if moewiring.KratosAdminHTTPEnabled() {
-		log.Printf("moe kratos admin http: enabled → %s (ListRuntimes, GetBrainPipeline)", moewiring.KratosAdminBaseURL())
+		log.Printf("moe kratos admin http: enabled → %s (ListRuntimes, GetBrainPipeline)", moewiring.KratosPilotBaseURL())
+	}
+	if moewiring.KratosVipHTTPEnabled() {
+		log.Printf("vip kratos http: enabled → %s (ListPlans)", moewiring.KratosPilotBaseURL())
 	}
 	handler.RegisterHandlers(server, ctx)
 

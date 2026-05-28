@@ -1,8 +1,8 @@
 # Kratos 混合架构说明（SSOT）
 
-> **更新：2026-05-28**  
-> **当前阶段：F109 完成** · **全站迁移 F：~98%** · **对外 HTTP：:8888**（`make moe-social`）  
-> 全站方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md) · 路线图：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) · 试点：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)
+> **更新：2026-05-27**  
+> **当前阶段：FS-9 ✅ · F ~100% · PK 纯 Kratos 落地已开工** · **对外 HTTP：:8888**（`make moe-social`）  
+> **纯 Kratos 行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md) · 全站方案：[kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md) · 运行时：[moe-social-runtime.md](./moe-social-runtime.md) · 试点 B：[kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md)
 
 ---
 
@@ -17,9 +17,11 @@
 | **FS-3 User 域** | ✅ 100% — F109：`usergw` 含 OAuth/设备/钱包/CRUD 尾巴 |
 | **FS-4 Admin 域** | ✅ 100% — F108：`admingw` 全 HTTP in_process |
 | **FS-5 社交 / AI / Chat** | ✅ ~95% — post/comment/community/gift + `aigw`/`chatgw`/`llmgw` |
-| **F · 全站 biz+GW** | **~98%** — `make verify-sprint-f109-user-tail` |
-| **G · 工程就绪** | **~78%** — Hybrid 可上线；FS-9 契约未退役 |
-| **下一里程碑** | **F110**：~8 个 logic 零 SuperRpc → FS-8 goctl 切域 |
+| **F · 全站 biz+GW** | **~100%** — `make verify-sprint-f112` |
+| **FS · 契约** | **FS-8/8b/9/10 ✅** — `make verify-sprint-fs9` |
+| **PK · 纯 Kratos** | **PK-1/2 ✅** — [kratos-pure-rollout.md](./kratos-pure-rollout.md) · `make verify-kratos-rollout-pk12` |
+| **G · 工程终态** | **~85%** — 传输仍 Hybrid；PK-3+ 扩域 |
+| **下一里程碑** | **PK-3**：按域扩 `moekratos` HTTP |
 
 **`make moe-social` 启动成功标志**（节选）：
 
@@ -39,16 +41,18 @@ moe-social: 单进程已就绪 — gRPC …:8080 + HTTP …:8888
 
 | 名称 | 含义 |
 |------|------|
-| **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**运行时仍为 go-zero**（`rest` + `zrpc`）+ `super.api` / `super.proto` |
-| **不是纯 Kratos** | 生产未使用 `kratos.App` 替代双传输；未退役 `super.*` |
+| **Hybrid（混合）** | 业务按 Kratos 分层（`biz` / `service` / `data`），**运行时仍为 go-zero**（`rest` + `zrpc`）；契约入口 **`moe.api` / `moe.proto`** + `defs/` |
+| **不是纯 Kratos 传输** | 生产 HTTP/gRPC 仍 go-zero；`kratos.App` 仅编排 REST 生命周期（见 `wrapREST`） |
+| **纯 Kratos 试点** | `make moe-kratos` → :19031/:19032；PK 落地见 [kratos-pure-rollout.md](./kratos-pure-rollout.md) |
 | **Moe 域（A）** | `biz/moe` + `MoeGW` + `moe.proto` → **100%** |
 | **VIP 套餐域** | `biz/vip` + `VipGW` → **100%**（用户 VIP **订单**仍属 User 域） |
 | **User** | `biz/user` + `UserGW` → **100%**（F109） |
 | **Admin（非 Moe）** | `biz/admin` + `AdminGW` → **100%**（F108） |
 | **AI / LLM / Chat** | `aigw` / `llmgw` / `chatgw` → **~97%**（AI 用户配置 HTTP 仍 SuperRpc） |
 | **纯 Kratos 试点（B）** | Phase 0～6 → **100%**；`:19031/:19032` **非对外** |
-| **全站迁移（F）** | 各域下沉 `biz` + GW → **~98%**；退役 `super.*` 见 FS-9 |
-| **工程就绪度（G）** | **~78%** — Hybrid 可上线；契约拆分未完成 |
+| **全站迁移（F）** | 各域下沉 `biz` + GW → **~100%** |
+| **契约 FS-9** | 退役 `super.api` / `super.proto` / `super.yaml` 文件名 ✅；`pb/super` 包名保留 |
+| **工程就绪度（G）** | **~82%** — 传输 PK 进行中；见 PK 手册 |
 
 进度口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义)。
 
@@ -56,7 +60,7 @@ moe-social: 单进程已就绪 — gRPC …:8080 + HTTP …:8888
 
 ```text
   Flutter / moe-admin / 第三方
-           │  HTTP :8888  （super.api 路径不变）
+           │  HTTP :8888  （moe.api / goctl 路径不变）
            ▼
   ┌──────────────────────────────────────────────────────────┐
   │  API 进程（go-zero rest）— api/runserver                  │
@@ -221,7 +225,7 @@ curl -s http://127.0.0.1:19032/migration    # 纯 Kratos 试点进度（需 make
 | `kratos_admin_http_enabled` | `false` | Admin 两接口 HTTP 灰度到 `moe-kratos` |
 | `kratos_admin_base_url` | `http://127.0.0.1:19032` | 灰度目标（需 `make moe-kratos`） |
 
-API→RPC 地址：`api/etc/super.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0.0.1:8080`）；Docker 用 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`。
+API→RPC 地址：`api/etc/moe.yaml` 的 `SuperRpc.Endpoints`（本机 `127.0.0.1:8080`）；Docker 用 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`。
 
 ---
 
@@ -310,12 +314,12 @@ backend/
 | 维度 | 当前 Hybrid | 纯 Kratos（目标） |
 |------|-------------|-------------------|
 | 进程入口 | `moe-social` 或 api+rpc 两个 main | 单一 `kratos.App` |
-| HTTP | go-zero `rest` + `super.api` | Kratos HTTP / grpc-gateway |
-| gRPC | go-zero `zrpc` + `super.proto` | Kratos gRPC + 分域 `api/*/v1` |
+| HTTP | go-zero `rest` + `moe.api` | Kratos HTTP + 分域 `api/*/v1` |
+| gRPC | go-zero `zrpc` + `moe.proto` | Kratos gRPC + 分域 proto |
 | 配置 | yaml + viper | `conf.proto` + Wire（可选） |
 | 生成 | goctl + protoc | 以 protoc 为主 |
 | Moe / VIP / User / Admin / 社交 / AI | ✅ 多数 `biz/*` + 多网关 | ✅ 复用并扩展 |
-| HTTP SuperRpc 残留 / FS-9 | ~8 文件；super 未删 | F110 + FS-8/9 |
+| HTTP SuperRpc / FS-9 文件名 | ✅ F110 + FS-9 | PK：传输与 goctl 退役 |
 
 ---
 
@@ -357,7 +361,8 @@ FS-4         Admin 非 Moe                 ✅ F108
 FS-5～FS-7   社交 / AI / LLM / Chat       ✅ ~95%+
 F109         User 尾巴 + LLM 记忆读       ✅
 F110         HTTP 零 SuperRpc             ← 当前
-FS-8/9       域 proto + 退役 super        🔄 stub / deprecated
+PK-1～3      域 proto + moekratos 扩域     🔄 [kratos-pure-rollout.md](./kratos-pure-rollout.md)
+PK-4～5      替换 go-zero 传输 / 退役 goctl  ⬜ 未排期
 ```
 
 进度勾选：[kratos-migration-status.md](./kratos-migration-status.md) · 路线图：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)。
@@ -386,6 +391,7 @@ FS-8/9       域 proto + 退役 super        🔄 stub / deprecated
 | [kratos-migration-status.md](./kratos-migration-status.md) | **当前进度勾选（F109 · F ~98%）** |
 | [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) | F70→F109 路线图 |
 | [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | 全站 F 公式与域权重 |
-| [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | 纯 Kratos 试点（B 100%） |
+| [kratos-pure-rollout.md](./kratos-pure-rollout.md) | **纯 Kratos 落地 PK 手册（当前执行）** |
+| [kratos-pure-migration-plan.md](./kratos-pure-migration-plan.md) | 纯 Kratos 试点 B（Phase 0～6 ✅） |
 | [kratos-phase3-roadmap.md](./kratos-phase3-roadmap.md) | 里程碑索引 |
 | [docs/guidelines/Codex启动指南-后端.md](../guidelines/Codex启动指南-后端.md) | 日常命令 |

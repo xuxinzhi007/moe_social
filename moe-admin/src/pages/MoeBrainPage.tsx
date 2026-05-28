@@ -41,6 +41,9 @@ type BrainData = {
     updated_at: string
   }>
   generation_meta?: MoeBrainGenerationMeta
+  stability_score?: number
+  stability_delta?: number
+  avg_episode_quality?: number
 }
 
 const DEFAULT_FORBIDDEN = `risk:诗意腔
@@ -260,12 +263,16 @@ export function MoeBrainPage() {
 
   const activeKey = brain?.agent_key || agentKey
   const riskTags = (brain?.tag_stats || []).filter((tag) => tag.tag.startsWith('risk:'))
-  const avgQuality = brain?.episodes.length
-    ? Math.round(
-        brain.episodes.reduce((sum, episode) => sum + (episode.quality_score || 0), 0) /
-          brain.episodes.length,
-      )
-    : 0
+  const avgEpisodeQuality =
+    brain?.avg_episode_quality ??
+    (brain?.episodes.length
+      ? Math.round(
+          brain.episodes.reduce((sum, episode) => sum + (episode.quality_score || 0), 0) /
+            brain.episodes.length,
+        )
+      : 0)
+  const stabilityScore = brain?.stability_score ?? 70
+  const stabilityDelta = brain?.stability_delta ?? 0
   const approvedCount = (brain?.episodes || []).filter((episode) => episode.approved).length
 
   return (
@@ -354,16 +361,34 @@ export function MoeBrainPage() {
               <span className="summary-note">质量达标条数</span>
             </div>
             <div className="summary-card">
-              <span className="summary-label">平均质量</span>
-              <strong className="summary-value">{avgQuality}</strong>
-              <span className="summary-note">生成稳定度</span>
+              <span className="summary-label">稳定度评分</span>
+              <strong className="summary-value">{stabilityScore}</strong>
+              <span className="summary-note">
+                试跑奖惩
+                {stabilityDelta !== 0 ? (
+                  <AdminTag
+                    label={`${stabilityDelta > 0 ? '+' : ''}${stabilityDelta}`}
+                    tone={stabilityDelta > 0 ? 'ok' : 'fail'}
+                  />
+                ) : (
+                  ' · 末次无变化'
+                )}
+              </span>
             </div>
             <div className="summary-card">
-              <span className="summary-label">记忆注入</span>
+              <span className="summary-label">自传均分</span>
+              <strong className="summary-value">{avgEpisodeQuality}</strong>
+              <span className="summary-note">已发内容质量</span>
+            </div>
+            <div className="summary-card">
+              <span className="summary-label">记忆块行数</span>
               <strong className="summary-value">
                 {brain?.generation_meta?.prompt_memory_lines ?? 0}
               </strong>
-              <span className="summary-note">提示词行 · 自传 {brain?.generation_meta?.episodes_in_prompt ?? 0}</span>
+              <span className="summary-note">
+                注入 prompt 行数 · 自传 {brain?.generation_meta?.episodes_in_prompt ?? 0} · 库{' '}
+                {brain?.generation_meta?.memories_synced ?? 0}
+              </span>
             </div>
           </div>
         </div>

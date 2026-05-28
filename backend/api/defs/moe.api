@@ -1,0 +1,14 @@
+// FS-8: moe 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: moe
+)
+service Super {
+	@handler getMoeToolsSchema
+	get /api/moe/tools/schema returns (MoeToolSchemaResp)
+
+	@handler executeMoeTool
+	post /api/moe/tools/execute (MoeToolExecuteReq) returns (MoeToolExecuteResp)
+}

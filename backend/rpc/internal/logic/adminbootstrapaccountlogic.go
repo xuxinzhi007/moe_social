@@ -3,9 +3,9 @@ package logic
 import (
 	"context"
 
+	adminbiz "backend/internal/biz/admin"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
-	"backend/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -25,7 +25,5 @@ func NewAdminBootstrapAccountLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminBootstrapAccountLogic) AdminBootstrapAccount(in *super.AdminBootstrapAccountReq) (*super.AdminBootstrapAccountResp, error) {
-	_ = in
-	created := utils.BootstrapAdminAccount(l.svcCtx.DB)
-	return &super.AdminBootstrapAccountResp{Created: created}, nil
+	return adminbiz.BootstrapAdminAccount(l.ctx, l.svcCtx.DB, in)
 }

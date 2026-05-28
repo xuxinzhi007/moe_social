@@ -1,0 +1,283 @@
+// FS-8: user 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: user
+)
+service Super {
+	@handler register
+	post /api/user/register (RegisterReq) returns (RegisterResp)
+
+	@handler login
+	post /api/user/login (LoginReq) returns (LoginResp)
+
+	@handler refreshToken
+	post /api/user/refresh-token (EmptyReq) returns (RefreshTokenResp)
+
+	@handler getUserInfo
+	get /api/user/:user_id (GetUserInfoReq) returns (GetUserInfoResp)
+
+	@handler getUser
+	get /api/user/:user_id/detail (GetUserReq) returns (GetUserResp)
+
+	@handler updateUserInfo
+	put /api/user/:user_id (UpdateUserInfoReq) returns (UpdateUserInfoResp)
+
+	@handler updateUserPassword
+	put /api/user/:user_id/password (UpdateUserPasswordReq) returns (UpdateUserPasswordResp)
+
+	@handler checkUserByEmail
+	post /api/user/check-email (GetUserByEmailReq) returns (GetUserByEmailResp)
+
+	@handler resetPassword
+	post /api/user/reset-password (ResetPasswordReq) returns (ResetPasswordResp)
+
+	@handler deleteUser
+	delete /api/user/:user_id (DeleteUserReq) returns (DeleteUserResp)
+
+	@handler updateUserVip
+	post /api/user/:user_id/vip (UpdateUserVipReq) returns (UpdateUserVipResp)
+
+	@handler getUsers
+	get /api/users (GetUsersReq) returns (GetUsersResp)
+
+	@handler getUserCount
+	get /api/users/count (EmptyReq) returns (GetUserCountResp)
+
+	// VIP相关用户API
+	@handler getUserVipStatus
+	get /api/user/:user_id/vip (GetUserInfoReq) returns (GetUserVipStatusResp)
+
+	@handler checkUserVip
+	get /api/user/:user_id/vip/check (CheckUserVipReq) returns (CheckUserVipResp)
+
+	@handler updateAutoRenew
+	put /api/user/:user_id/vip/auto-renew (UpdateAutoRenewReq) returns (BaseResp)
+
+	@handler syncUserVipStatus
+	post /api/user/:user_id/vip/sync (SyncUserVipStatusReq) returns (SyncUserVipStatusResp)
+
+	@handler getVipOrders
+	get /api/user/:user_id/vip/orders (GetVipOrdersReq) returns (GetVipOrdersResp)
+
+	@handler getVipHistory
+	get /api/user/:user_id/vip/records (GetVipHistoryReq) returns (GetVipHistoryResp)
+
+	@handler createVipOrder
+	post /api/user/:user_id/vip/orders (CreateVipOrderReq) returns (CreateVipOrderResp)
+
+	@handler getUserActiveVipRecord
+	get /api/user/:user_id/vip/active (GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp)
+
+	// 钱包相关API
+	@handler getTransactions
+	get /api/user/:user_id/transactions (GetTransactionsReq) returns (GetTransactionsResp)
+
+	@handler getTransaction
+	get /api/transactions/:transaction_id (GetTransactionReq) returns (GetTransactionResp)
+
+	@handler recharge
+	post /api/user/:user_id/wallet/recharge (RechargeReq) returns (RechargeResp)
+
+	// 用户记忆相关API（需登录，从JWT中获取真实用户ID）
+	@handler upsertUserMemory
+	post /api/user/:user_id/memories (UpsertUserMemoryReq) returns (UpsertUserMemoryResp)
+
+	@handler getUserMemories
+	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
+
+	@handler searchUserMemories
+	get /api/user/:user_id/memories/search (SearchUserMemoriesReq) returns (SearchUserMemoriesResp)
+
+	@handler getUserMemoriesDisplay
+	get /api/user/:user_id/memories/display (GetUserMemoriesReq) returns (GetUserMemoriesDisplayResp)
+
+	@handler rebuildUserMemoryEmbeddings
+	post /api/user/:user_id/memories/reindex (RebuildUserMemoryEmbeddingsReq)
+
+	@handler getUserMemoryProfiles
+	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
+
+	@handler deleteUserMemory
+	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
+
+	@handler submitUserMemoryFeedback
+	post /api/user/:user_id/memories/feedback (SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp)
+
+	@handler syncUserDevice
+	post /api/user/:user_id/devices/sync (SyncUserDeviceReq) returns (SyncUserDeviceResp)
+
+	@handler listUserDevices
+	get /api/user/:user_id/devices (ListUserDevicesReq) returns (ListUserDevicesResp)
+
+	// 飞书 OAuth（无需 JWT）
+	@handler feishuAuthorizeURL
+	get /api/auth/feishu/authorize-url (FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp)
+
+	@handler feishuLogin
+	post /api/auth/feishu/login (FeishuLoginReq) returns (FeishuLoginResp)
+
+	@handler wechatAuthorizeURL
+	get /api/auth/wechat/authorize-url (WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp)
+
+	@handler wechatLogin
+	post /api/auth/wechat/login (WechatLoginReq) returns (WechatLoginResp)
+
+	@handler wechatOAuthCallback
+	get /api/auth/wechat/callback (WechatOAuthCallbackReq)
+
+	@handler feishuOAuthCallback
+	get /api/auth/feishu/callback (FeishuOAuthCallbackReq)
+
+	@handler feishuPublicConfig
+	get /api/auth/feishu/public-config (EmptyReq) returns (FeishuPublicConfigResp)
+
+	// 关注相关API
+	@handler followUser
+	post /api/user/:user_id/follow (FollowUserReq) returns (FollowUserResp)
+
+	@handler unfollowUser
+	delete /api/user/:user_id/follow (UnfollowUserReq) returns (FollowUserResp)
+
+	@handler getFollowings
+	get /api/user/:user_id/following (GetFollowingsReq) returns (GetFollowingsResp)
+
+	@handler getFollowers
+	get /api/user/:user_id/followers (GetFollowersReq) returns (GetFollowersResp)
+
+	@handler checkFollow
+	get /api/user/:follower_id/follow/:following_id/check (CheckFollowReq) returns (CheckFollowResp)
+
+	// 好友（申请制），需 Authorization Bearer（业务逻辑见 friendlogic）
+	@handler sendFriendRequest
+	post /api/user/:user_id/friend-requests (SendFriendRequestReq) returns (SendFriendRequestResp)
+
+	@handler listIncomingFriendRequests
+	get /api/user/:user_id/friend-requests/incoming (FriendUserPathReq) returns (ListFriendRequestsResp)
+
+	@handler listOutgoingFriendRequests
+	get /api/user/:user_id/friend-requests/outgoing (FriendUserPathReq) returns (ListFriendRequestsResp)
+
+	@handler acceptFriendRequest
+	post /api/user/:user_id/friend-requests/:request_id/accept (FriendRequestActionReq) returns (FriendRequestActionResp)
+
+	@handler rejectFriendRequest
+	post /api/user/:user_id/friend-requests/:request_id/reject (FriendRequestActionReq) returns (FriendRequestActionResp)
+
+	@handler listFriends
+	get /api/user/:user_id/friends (FriendUserPathReq) returns (ListFriendsResp)
+
+	@handler getFriendStatus
+	get /api/user/:user_id/friends/status/:other_user_id (FriendStatusPathReq) returns (FriendStatusResp)
+}
+
+@server (
+	group: notification
+)
+service Super {
+	@handler getNotifications
+	get /api/notifications (GetNotificationsReq) returns (GetNotificationsResp)
+
+	@handler getUnreadCount
+	get /api/notifications/unread (GetUnreadCountReq) returns (GetUnreadCountResp)
+
+	@handler readNotification
+	post /api/notifications/:id/read (ReadNotificationReq) returns (BaseResp)
+
+	@handler readAllNotifications
+	post /api/notifications/read-all (ReadAllNotificationsReq) returns (BaseResp)
+
+	// 推送通知相关API
+	@handler sendNotification
+	post /api/notification/send (SendNotificationReq) returns (BaseResp)
+
+	@handler sendBatchNotification
+	post /api/notification/send-batch (SendBatchNotificationReq) returns (BaseResp)
+
+	@handler broadcastNotification
+	post /api/notification/broadcast (BroadcastNotificationReq) returns (BaseResp)
+}
+
+@server (
+	group: avatar
+)
+service Super {
+	// 获取用户形象
+	@handler getUserAvatar
+	get /api/avatar/:user_id (GetUserAvatarReq) returns (GetUserAvatarResp)
+
+	// 更新用户形象
+	@handler updateUserAvatar
+	put /api/avatar/:user_id (UpdateUserAvatarReq) returns (UpdateUserAvatarResp)
+
+	// 获取装扮物品列表
+	@handler getAvatarOutfits
+	get /api/avatar/outfits (GetAvatarOutfitsReq) returns (GetAvatarOutfitsResp)
+
+	// 获取装扮物品详情
+	@handler getAvatarOutfit
+	get /api/avatar/outfits/:outfit_id (GetAvatarOutfitReq) returns (GetAvatarOutfitResp)
+
+	// 购买装扮物品
+	@handler purchaseAvatarOutfit
+	post /api/avatar/outfits/:outfit_id/purchase (PurchaseAvatarOutfitReq) returns (PurchaseAvatarOutfitResp)
+}
+
+@server (
+	group: emoji
+)
+service Super {
+	// 获取表情包包列表
+	@handler getEmojiPacks
+	get /api/emoji/packs (GetEmojiPacksReq) returns (GetEmojiPacksResp)
+
+	// 获取表情包包详情
+	@handler getEmojiPack
+	get /api/emoji/packs/:pack_id (GetEmojiPackReq) returns (GetEmojiPackResp)
+
+	// 购买表情包包
+	@handler purchaseEmojiPack
+	post /api/emoji/packs/:pack_id/purchase (PurchaseEmojiPackReq) returns (PurchaseEmojiPackResp)
+
+	// 获取用户已拥有的表情包包
+	@handler getUserEmojiPacks
+	get /api/user/:user_id/emoji/packs (GetUserEmojiPacksReq) returns (GetUserEmojiPacksResp)
+
+	// 收藏表情包包
+	@handler favoriteEmojiPack
+	post /api/emoji/packs/:pack_id/favorite (FavoriteEmojiPackReq) returns (FavoriteEmojiPackResp)
+}
+
+@server (
+	group: user
+	jwt:   Auth
+)
+service Super {
+	@handler bindFeishu
+	put /api/user/feishu/bind (BindFeishuReq) returns (BindFeishuResp)
+
+	@handler unbindFeishu
+	delete /api/user/feishu/bind (EmptyReq) returns (UnbindFeishuResp)
+
+	@handler sendFeishuTestCard
+	post /api/user/feishu/test-card (EmptyReq) returns (SendFeishuTestCardResp)
+
+	@handler deleteMyAccount
+	delete /api/user/account (EmptyReq) returns (DeleteUserResp)
+}
+
+@server (
+	group: privatemsg
+	jwt:   Auth
+)
+service Super {
+	@handler sendPrivateMessage
+	post /api/private-messages (SendPrivateMessageReq) returns (SendPrivateMessageResp)
+
+	@handler listPrivateMessages
+	get /api/private-messages (ListPrivateMessagesReq) returns (ListPrivateMessagesResp)
+
+	@handler listPrivateConversations
+	get /api/private-messages/conversations (ListPrivateConversationsReq) returns (ListPrivateConversationsResp)
+}

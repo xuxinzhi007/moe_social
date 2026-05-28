@@ -35,8 +35,8 @@ COPY --from=builder /app/api /app/api
 COPY --from=builder /app/rpc /app/rpc
 
 # Copy configuration files
-COPY api/etc/super.yaml /app/etc/super.yaml
-COPY rpc/etc/super.yaml /app/rpc/etc/super.yaml
+COPY api/etc/moe.yaml /app/etc/moe.yaml
+COPY rpc/etc/moe.yaml /app/rpc/etc/moe.yaml
 COPY config/config.yaml /app/config/config.yaml
 
 # Create necessary directories
@@ -53,10 +53,10 @@ ENV GIN_MODE=release
 # Create start script
 RUN echo '#!/bin/sh
 # Start RPC service in background
-./rpc -f rpc/etc/super.yaml &
+./rpc -f rpc/etc/moe.yaml &
 
 # Start API service in foreground
-./api -f etc/super.yaml' > /app/start.sh && chmod +x /app/start.sh
+./api -f etc/moe.yaml' > /app/start.sh && chmod +x /app/start.sh
 
 # Run the start script
 CMD ["/app/start.sh"]

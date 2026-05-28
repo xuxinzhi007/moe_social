@@ -25,6 +25,9 @@ type RunLogBundle struct {
 	TotalMs          int64              `json:"total_ms"`
 	Metrics          HostMetrics        `json:"metrics,omitempty"`
 	GenerateAttempts []GenAttemptRecord `json:"generate_attempts,omitempty"`
+	StabilityScore   int                `json:"stability_score,omitempty"`
+	StabilityDelta   int                `json:"stability_delta,omitempty"`
+	RunFeedback      string             `json:"run_feedback,omitempty"`
 }
 
 // StepRecorder 记录 Bot 发帖流水线步骤与耗时。

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"backend/model"
@@ -13,7 +15,11 @@ import (
 	"backend/pkg/moe/brain"
 )
 
-var jsonFenceRe = regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)```")
+var (
+	jsonFenceRe    = regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)```")
+	contentFieldRe = regexp.MustCompile(`(?s)"content"\s*:\s*"((?:\\.|[^"\\])*)`)
+	moodFieldRe    = regexp.MustCompile(`"mood_tag"\s*:\s*"([^"\\]*)"`)
+)
 
 // GeneratedPost LLM 生成的发帖草稿。
 type GeneratedPost struct {
@@ -34,7 +40,14 @@ type postGenCandidate struct {
 }
 
 // generatePostContent 调用本地模型生成不重复的社区短帖；attempts 仅含本次试跑内的生成次数。
-func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntime) (GeneratedPost, []GenAttemptRecord, error) {
+// rec 非空时写入动态子步骤（话题画像、每次 LLM、质检结论），供管理台流水线展示。
+func generatePostContent(
+	ctx context.Context,
+	deps Deps,
+	rt model.MoeAgentRuntime,
+	rec *StepRecorder,
+) (GeneratedPost, []GenAttemptRecord, error) {
+	genPhaseStart := time.Now()
 	if !deps.Inference.Ready() {
 		return GeneratedPost{}, nil, fmt.Errorf("未配置 llm_inference.base_url，无法 AI 生成发帖")
 	}
@@ -48,18 +61,32 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 		episodes = brain.ListRecentEpisodes(deps.DB, rt.AgentKey, 12)
 	}
 
+	if rec != nil {
+		t0 := time.Now()
+		overused := brain.ListOverusedTopics(deps.DB, rt.AgentKey, 3, 10)
+		rec.Add("topic_profile", "分析话题画像", "ok",
+			fmt.Sprintf("近期帖 %d 条 · 过多话题 %d 项", len(recent), len(overused)), time.Since(t0))
+	}
+
 	ctxBlock := gatherPostContext(ctx, deps, rt)
 	modelName, pick, pickErr := ResolvePostModelForRuntime(ctx, deps, rt)
 	if pickErr != nil {
 		return GeneratedPost{}, nil, pickErr
 	}
 	_ = pick
+	if rec != nil {
+		rec.Add("resolve_model", "解析发帖模型", "ok", modelName, time.Since(genPhaseStart))
+	}
 	persona := sanitizePersona(rt.SystemPrompt, rt)
 	rulesBlock := formatPostRulesBlock(rt)
 	brainBlock := ""
 	if deps.DB != nil {
 		eps := brain.ListRecentEpisodes(deps.DB, rt.AgentKey, 20)
-		brainBlock = brain.PolicyBlock(rt, eps)
+		brainBlock = brain.PolicyBlock(rt, eps, deps.DB)
+	}
+	if rec != nil {
+		rec.Add("assemble_prompt", "组装发帖 Prompt", "ok",
+			fmt.Sprintf("自传 %d 条 · 策略块 %d 字", len(episodes), len(brainBlock)), time.Since(genPhaseStart))
 	}
 
 	var (
@@ -69,38 +96,51 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 		attempts    []GenAttemptRecord
 	)
 	for attempt := 1; attempt <= maxGenerateAttempts; attempt++ {
-		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel)
+		attemptStart := time.Now()
+		stability := brain.EffectiveStabilityScore(rt)
+		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability)
 		if err != nil {
 			lastErr = err
 			rejectNovel = ""
+			if strings.Contains(err.Error(), "无法解析 LLM JSON") {
+				rejectNovel = "json"
+				ctxBlock.topicHint = "只输出一行 JSON，不要 markdown、不要前缀说明、content 内不要用未转义换行"
+			}
 			attempts = append(attempts, GenAttemptRecord{
 				Attempt: attempt,
 				Outcome: GenOutcomeLLMError,
 				Note:    genAttemptNote(err),
 			})
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeLLMError, "", genAttemptNote(err), time.Since(attemptStart))
 			continue
 		}
 		if contentTooSimilar(gen.Content, recent) {
 			lastErr = fmt.Errorf("与近期帖重复")
 			ctxBlock.topicHint = "必须换全新角度，禁止复述【本 Bot 近期已发】里的任何句子"
 			rejectNovel = "duplicate"
+			brain.NoteRejectedContent(ctx, brain.Deps{DB: deps.DB, Inference: deps.Inference}, rt.AgentKey, gen.Content, gen.MoodTag, novelStyleScore(gen.Content))
+			ctxBlock.topicAvoid = appendTopicAvoid(ctxBlock.topicAvoid, gen.Content)
 			attempts = append(attempts, GenAttemptRecord{
 				Attempt: attempt,
 				Outcome: GenOutcomeDuplicate,
 				Snippet: genSnippet(gen.Content),
 			})
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeDuplicate, genSnippet(gen.Content), "与近期帖重复", time.Since(attemptStart))
 			continue
 		}
 		if meaningTooSimilar(gen.Content, recent, episodes) {
 			lastErr = fmt.Errorf("与近期动态意思太像")
 			ctxBlock.topicHint = "换场景：别写深夜星光抒情，改具体小事/吐槽/进度数字"
 			rejectNovel = "theme"
+			brain.NoteRejectedContent(ctx, brain.Deps{DB: deps.DB, Inference: deps.Inference}, rt.AgentKey, gen.Content, gen.MoodTag, novelStyleScore(gen.Content))
+			ctxBlock.topicAvoid = appendTopicAvoid(ctxBlock.topicAvoid, gen.Content)
 			fallback = append(fallback, postGenCandidate{gen: gen, score: 10, attempt: attempt})
 			attempts = append(attempts, GenAttemptRecord{
 				Attempt: attempt,
 				Outcome: GenOutcomeTheme,
 				Snippet: genSnippet(gen.Content),
 			})
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeTheme, genSnippet(gen.Content), "意思太像", time.Since(attemptStart))
 			continue
 		}
 		score := novelStyleScore(gen.Content)
@@ -117,6 +157,7 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 					Snippet: genSnippet(gen.Content),
 					Note:    strings.Join(hits, "、"),
 				})
+				recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart))
 				continue
 			}
 			gen.Source = fmt.Sprintf("llm#%d", attempt)
@@ -125,6 +166,11 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 				Outcome: GenOutcomeOK,
 				Snippet: genSnippet(gen.Content),
 			})
+			recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), fmt.Sprintf("质量分约 %d", score), time.Since(attemptStart))
+			if rec != nil {
+				rec.Add("generate_finalize", "生成质检汇总", "ok",
+					FormatGenStepDetail(attempts, true, gen.Source), time.Since(genPhaseStart))
+			}
 			return gen, attempts, nil
 		}
 		fallback = append(fallback, postGenCandidate{gen: gen, score: score, attempt: attempt})
@@ -137,6 +183,7 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 			Snippet: genSnippet(gen.Content),
 			Note:    fmt.Sprintf("得分 %d", score),
 		})
+		recordGenAttemptStep(rec, attempt, "fail", GenOutcomeNovel, genSnippet(gen.Content), fmt.Sprintf("剧本腔 %d", score), time.Since(attemptStart))
 	}
 
 	// 多次仍偏文艺：选得分最低且不与历史重复的一条发出，避免试跑永远失败
@@ -148,12 +195,40 @@ func generatePostContent(ctx context.Context, deps Deps, rt model.MoeAgentRuntim
 			Snippet: genSnippet(best.gen.Content),
 			Note:    "放宽质检后采用",
 		})
+		if rec != nil {
+			rec.Add("generate_finalize", "生成质检汇总", "ok",
+				FormatGenStepDetail(attempts, true, best.gen.Source)+"（放宽）", time.Since(genPhaseStart))
+		}
 		return best.gen, attempts, nil
+	}
+	if rec != nil {
+		rec.Add("generate_finalize", "生成质检汇总", "fail",
+			FormatGenStepDetail(attempts, false, ""), time.Since(genPhaseStart))
 	}
 	if lastErr != nil {
 		return GeneratedPost{}, attempts, lastErr
 	}
 	return GeneratedPost{}, attempts, fmt.Errorf("多次生成仍不符合要求，请调整发帖规则或检查 llama-server")
+}
+
+func recordGenAttemptStep(rec *StepRecorder, attempt int, status string, outcome GenAttemptOutcome, snippet, note string, dur time.Duration) {
+	if rec == nil {
+		return
+	}
+	detail := string(outcome)
+	if snippet != "" {
+		detail += " · " + snippet
+	}
+	if note != "" {
+		detail += "（" + note + "）"
+	}
+	rec.Add(
+		fmt.Sprintf("gen_attempt_%d", attempt),
+		fmt.Sprintf("LLM 生成 #%d", attempt),
+		status,
+		detail,
+		dur,
+	)
 }
 
 func pickBestNovelFallback(cands []postGenCandidate, recent []model.Post, episodes []model.MoeBotEpisode) *postGenCandidate {
@@ -187,6 +262,7 @@ func callPostLLM(
 	recent []model.Post,
 	attempt int,
 	rejectKind string,
+	stabilityScore int,
 ) (GeneratedPost, error) {
 	sys := strings.Join([]string{
 		communityPostGuardrails,
@@ -204,11 +280,16 @@ func callPostLLM(
 	}, "\n")
 
 	userParts := []string{
+		brain.StabilityGenerationHint(stabilityScore),
 		"【时段】" + ctxBlock.timeHint,
 		"【创作提示】" + ctxBlock.topicHint,
 		"",
 		ctxBlock.meaningBlock,
-		"",
+	}
+	if strings.TrimSpace(ctxBlock.topicAvoid) != "" {
+		userParts = append(userParts, "", ctxBlock.topicAvoid)
+	}
+	userParts = append(userParts, "",
 		"【本 Bot 近期已发 — 禁止重复】",
 		ctxBlock.ownPosts,
 		"",
@@ -217,7 +298,7 @@ func callPostLLM(
 		"",
 		"【Bot 记忆】",
 		ctxBlock.memories,
-	}
+	)
 	if attempt > 1 {
 		switch rejectKind {
 		case "novel":
@@ -229,6 +310,9 @@ func callPostLLM(
 		case "theme":
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次：与近期动态「意思太像」（同深夜抒情/同开头），请换场景：具体小事、数字、吐槽，禁止星光/灯火/夜空抒情）", attempt))
+		case "json":
+			userParts = append(userParts, "",
+				fmt.Sprintf("（第 %d 次：上次 JSON 非法，只输出 {\"content\":\"一句口语\",\"mood_tag\":\"calm\"}，不要其它字符）", attempt))
 		default:
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次重试，请换写法）", attempt))
@@ -240,6 +324,11 @@ func callPostLLM(
 	if rejectKind == "novel" && attempt > 1 {
 		temp = 0.75 // 文艺腔重试时降温，更贴口语
 	}
+	if rejectKind == "" && attempt > 1 {
+		// JSON 解析失败后的重试：强制更短、更稳
+		temp = 0.68
+	}
+	temp = brain.AdjustTemperatureForStability(stabilityScore, temp)
 	raw, err := llminference.Chat(ctx, deps.Inference, modelName, []llminference.Message{
 		{Role: "system", Content: sys},
 		{Role: "user", Content: strings.Join(userParts, "\n")},
@@ -282,7 +371,63 @@ func parsePostGenJSON(raw string) (postGenJSON, error) {
 			return out, nil
 		}
 	}
+	if loose, err := looseExtractPostJSON(raw); err == nil && strings.TrimSpace(loose.Content) != "" {
+		return loose, nil
+	}
 	return postGenJSON{}, fmt.Errorf("无法解析 LLM JSON: %s", truncateRunes(raw, 120))
+}
+
+// looseExtractPostJSON 小模型常输出截断/脏 JSON，尽量抽出 content 与 mood_tag。
+func looseExtractPostJSON(raw string) (postGenJSON, error) {
+	if m := contentFieldRe.FindStringSubmatch(raw); len(m) > 1 {
+		content, err := strconv.Unquote(`"` + m[1] + `"`)
+		if err != nil {
+			content = strings.ReplaceAll(m[1], `\"`, `"`)
+		}
+		content = strings.TrimSpace(content)
+		if content != "" {
+			out := postGenJSON{Content: content}
+			if mm := moodFieldRe.FindStringSubmatch(raw); len(mm) > 1 {
+				out.MoodTag = mm[1]
+			}
+			return out, nil
+		}
+	}
+	if content := extractTruncatedContentValue(raw); content != "" {
+		return postGenJSON{Content: content}, nil
+	}
+	return postGenJSON{}, fmt.Errorf("loose extract failed")
+}
+
+func extractTruncatedContentValue(raw string) string {
+	lower := strings.ToLower(raw)
+	idx := strings.Index(lower, `"content"`)
+	if idx < 0 {
+		return ""
+	}
+	rest := raw[idx+len(`"content"`):]
+	rest = strings.TrimSpace(rest)
+	if !strings.HasPrefix(rest, ":") {
+		return ""
+	}
+	rest = strings.TrimSpace(strings.TrimPrefix(rest, ":"))
+	if len(rest) == 0 || rest[0] != '"' {
+		return ""
+	}
+	rest = rest[1:]
+	var b strings.Builder
+	for i := 0; i < len(rest); i++ {
+		if rest[i] == '\\' && i+1 < len(rest) {
+			b.WriteByte(rest[i+1])
+			i++
+			continue
+		}
+		if rest[i] == '"' {
+			break
+		}
+		b.WriteByte(rest[i])
+	}
+	return strings.TrimSpace(b.String())
 }
 
 func normalizeMoodTag(raw string) string {

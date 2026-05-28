@@ -113,6 +113,21 @@ func (s *AdminService) GetBrainPipeline(ctx context.Context, agentKey string) (m
 	return moebiz.GetBrainPipeline(ctx, s.db, agentKey)
 }
 
+// GetBotFlowConfig 读取 Bot 编排画布配置。
+func (s *AdminService) GetBotFlowConfig(ctx context.Context, agentKey string) (moebiz.FlowConfig, error) {
+	return moebiz.GetFlowConfig(ctx, s.db, agentKey)
+}
+
+// UpsertBotFlowConfig 保存 Bot 编排画布配置。
+func (s *AdminService) UpsertBotFlowConfig(ctx context.Context, agentKey string, in moebiz.FlowConfig) (moebiz.FlowConfig, error) {
+	return moebiz.UpsertFlowConfig(ctx, s.db, agentKey, in)
+}
+
+// DeleteBotFlowConfig 重置为默认画布模板。
+func (s *AdminService) DeleteBotFlowConfig(ctx context.Context, agentKey string) (moebiz.FlowConfig, error) {
+	return moebiz.DeleteFlowConfig(ctx, s.db, agentKey)
+}
+
 // RunAgentOnce 执行一次 Bot 试跑。
 func (s *AdminService) RunAgentOnce(ctx context.Context, agentKey string) (runtime.RunOnceResult, error) {
 	deps, err := s.requireRuntimeDeps(ctx)

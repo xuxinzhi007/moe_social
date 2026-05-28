@@ -1,9 +1,9 @@
 # 全站 Kratos 迁移方案（Phase 4+）
 
-> **状态**：**F109 完成** · **F ~98%** · **G ~78%**  
-> **前置已完成**：Hybrid Moe **100%** · 纯 Kratos 试点 **100%** · Admin/User HTTP 主路径 in_process  
+> **状态**：**F ~100%** · **FS-9 ✅** · **PK 纯 Kratos 落地进行中** · **G ~82%**  
+> **前置已完成**：Hybrid Moe **100%** · 试点 B **100%** · FS-8/8b/9/10  
 > **生产对外仍** **:8888**（`moe-social`）  
-> **SSOT 总览**：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md) · **路线图**：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md)
+> **PK 行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md) · Hybrid：[kratos-migration.md](./kratos-migration.md) · **勾选**：[kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
 
@@ -15,8 +15,9 @@
 |------|------|-------------------|------|
 | Moe 域 Hybrid | **A** | **100%** | `biz/service/data` + `MoeGW` + `moe.proto`；`make verify-moe-complete` |
 | 纯 Kratos 试点方案 | **B** | **100%** | Phase 0～6（`moe-kratos`、Wire、VIP 只读试点）；`make verify-kratos-100` |
-| **全站迁移总进度** | **F** | **~98%** | 各业务域下沉 `biz` + GW；Admin/User HTTP 已 in_process |
-| 工程现代化就绪度 | **G** | **~78%** | Hybrid 可上线；FS-9 契约未退役 |
+| **全站迁移总进度** | **F** | **~100%** | 各业务域 `biz` + GW in_process |
+| **纯 Kratos 落地** | **PK** | **PK-0 ✅** | [kratos-pure-rollout.md](./kratos-pure-rollout.md) |
+| 工程终态 | **G** | **~82%** | 传输仍 go-zero；PK-4+ 对齐 co |
 
 **「100%」仅指 A 或 B**；**不等于全站已是纯 Kratos**。
 
@@ -90,7 +91,8 @@ F = Σ (域权重 × 域内进度)
 | Hybrid 生产可用 | **~95%+** | `make moe-social` 主路径 in_process |
 | F · biz+GW | **~98%** | Admin/User logic 零 SuperRpc；~8 文件残留 |
 | FS-8 域 proto | **~15%** | stub + DEPRECATED 头；goctl 仍 `super.*` |
-| FS-9 退役 super | **0%** | 未删除契约 |
+| FS-9 退役 super 文件名 | **✅** | `moe.api` / `moe.proto`；`pb/super` 保留 |
+| PK 纯 Kratos | **PK-0 ✅** | `make verify-kratos-rollout-pk0` |
 | RPC fat logic | **~30%** | 大量 RPC 仍直写 DB，仅 HTTP 薄层 |
 
 **下一里程碑 F110**：HTTP 零 SuperRpc → 见 [kratos-migration-status.md](./kratos-migration-status.md) 残留表。
@@ -137,7 +139,7 @@ G ≈ 30% (A) + 15% (B) + 33% (F 折算) ≈ 78%
 用于判断 **能否继续用 Hybrid 上线**；**不能**用 G 代替 F 汇报「全站迁完」。
 
 用于回答「能不能继续上线 / 开发」：**可以**（G 高）。  
-用于回答「全站迁完没有」：**没有**（F≈98%，FS-9 未退役 super）。
+用于回答「全站迁完没有」：**业务与契约文件名已完成**（F/FS）；**传输纯 Kratos 未完成**（PK-1～5，见 rollout）。
 
 ---
 
@@ -145,7 +147,7 @@ G ≈ 30% (A) + 15% (B) + 33% (F 折算) ≈ 78%
 
 ### 2.0 当前（Hybrid，2026-05-28）
 
-与 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-28) 一致：`moe-social` 单进程，**15+ 网关** in_process；契约仍以 `super.api` / `super.proto` 为主（FS-9 未退役）。
+与 [kratos-migration.md §1.1](./kratos-migration.md#11-生产架构图2026-05-28) 一致：`moe-social` 单进程，**15+ 网关** in_process；契约入口 **`moe.api` / `moe.proto`** + `defs/`；纯 Kratos 见 [kratos-pure-rollout.md](./kratos-pure-rollout.md)。
 
 | 层 | 技术 | 已迁域 |
 |----|------|--------|

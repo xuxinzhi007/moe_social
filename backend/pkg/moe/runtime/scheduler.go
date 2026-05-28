@@ -78,7 +78,7 @@ func runDueScheduled(ctx context.Context, deps Deps, smart SmartOpts) {
 	for i := range rows {
 		rt := rows[i]
 		logx.Infof("moe scheduler run agent=%s bot_user=%d", rt.AgentKey, rt.BotUserID)
-		result, runErr := RunOnce(ctx, deps, rt.AgentKey)
+		result, runErr := RunAgentForAgent(ctx, deps, rt.AgentKey, TriggerCron)
 		if runErr != nil {
 			logx.Errorf("moe scheduler run-once %s: %v", rt.AgentKey, runErr)
 			continue
@@ -135,7 +135,7 @@ func runDueSmart(ctx context.Context, deps Deps, smart SmartOpts, now time.Time)
 			continue
 		}
 		logx.Infof("moe smart post agent=%s reason=%s", rt.AgentKey, reason)
-		result, runErr := RunOnce(ctx, deps, rt.AgentKey)
+		result, runErr := RunAgentForAgent(ctx, deps, rt.AgentKey, TriggerCron)
 		if runErr != nil {
 			logx.Errorf("moe smart run-once %s: %v", rt.AgentKey, runErr)
 			continue

@@ -193,6 +193,13 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
       },
       {
         kind: 'item',
+        to: '/app/moe-flow?agent=moe_guide',
+        label: 'Bot 编排画布',
+        status: 'ready',
+        appDomain: 'moe / flow · OpenClaw 式',
+      },
+      {
+        kind: 'item',
         to: '/app/moe',
         label: 'Moe 工具与 Bot',
         status: 'ready',

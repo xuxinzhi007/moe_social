@@ -11,8 +11,6 @@ import (
 	"backend/api/internal/logic/chat"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	"backend/rpc/pb/super"
-
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -47,16 +45,7 @@ func (l *VoiceCallLogic) VoiceCall(req *types.VoiceCallReq) (resp *types.VoiceCa
 	callID := uuid.New().String()
 	channelName := fmt.Sprintf("call_%s", callID)
 
-	callerName := "用户"
-	callerAvatar := ""
-	if l.svcCtx.UserGW != nil {
-		if u, e := l.svcCtx.UserGW.GetUser(l.ctx, &super.GetUserReq{UserId: callerID}); e == nil && u.GetUser() != nil {
-			if n := strings.TrimSpace(u.GetUser().GetUsername()); n != "" {
-				callerName = n
-			}
-			callerAvatar = strings.TrimSpace(u.GetUser().GetAvatar())
-		}
-	}
+	callerName, callerAvatar := ResolveVoiceUserDisplay(l.ctx, l.svcCtx, callerID)
 
 	session := &callSession{
 		CallID:       callID,

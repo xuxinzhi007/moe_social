@@ -3,7 +3,6 @@ package logic
 import (
 	"context"
 
-	"backend/model"
 	"backend/rpc/internal/svc"
 	"backend/rpc/pb/super"
 
@@ -17,21 +16,13 @@ type AdminListCheckInRewardsLogic struct {
 }
 
 func NewAdminListCheckInRewardsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AdminListCheckInRewardsLogic {
-	return &AdminListCheckInRewardsLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AdminListCheckInRewardsLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
 func (l *AdminListCheckInRewardsLogic) AdminListCheckInRewards(in *super.AdminListCheckInRewardsReq) (*super.AdminListCheckInRewardsResp, error) {
-	var rows []model.CheckInReward
-	if err := l.svcCtx.DB.Order("consecutive_days ASC").Find(&rows).Error; err != nil {
-		return nil, err
+	resp, err := newAdminApp(l.svcCtx.DB).ListCheckInRewards(l.ctx, in)
+	if err != nil {
+		return nil, mapAdminGrowthErr(err)
 	}
-	items := make([]*super.AdminCheckInRewardItem, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, checkInRewardToProto(row))
-	}
-	return &super.AdminListCheckInRewardsResp{Items: items}, nil
+	return resp, nil
 }

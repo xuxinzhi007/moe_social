@@ -1,6 +1,6 @@
 # Voice / WebRTC 边界（Hybrid Kratos）
 
-> **更新：2026-05-28** · Sprint F107  
+> **更新：2026-05-28** · Sprint F112（F107 基线 + 展示名收口）  
 > SSOT 契约：`api/chat/v1/private_message.proto`（私信）；Voice 暂无独立 proto，HTTP 走 `super.api`。
 
 ---
@@ -12,7 +12,7 @@
 | **信令 HTTP** | `api/internal/logic/voice/*` | 发起/接听/拒绝/取消通话；签发 RTC token |
 | **实时推送** | `api/internal/logic/chat/*` WS | `incoming_call` 等 JSON 经 **Chat WS** 投递（`PushJSONToChatUser`） |
 | **会话状态** | `api/internal/logic/voice/call_registry.go` | 进程内 call session（非 DB） |
-| **用户资料** | `UserGW.GetUser` | 主叫昵称/头像（in_process 优先） |
+| **用户资料** | `UserGW.GetUser` via `ResolveVoiceUserDisplay` | 主叫昵称/头像（F112 统一 helper） |
 | **RTC** | Agora/配置 | `getrtctokenlogic` 读 `config.yaml` |
 
 **不经过 RPC**：Voice 信令不调用 `SuperRpcClient`（F107 已去掉 `GetUser` 直连 super）。

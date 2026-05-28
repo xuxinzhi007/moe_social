@@ -1,8 +1,9 @@
 # Kratos 迁移 — 进度清单
 
 > **更新：2026-05-28**
-> **当前阶段：Sprint F109 完成** → 下一批 **F110（HTTP 零 SuperRpc 收口）**
-> **全站迁移 F（biz+GW）：~98%** · **工程就绪度 G：~78%**
+> **当前阶段：PK 纯 Kratos 落地（PK-0 ✅）** · FS-9 / F 已完成  
+> **全站迁移 F（biz+GW）：~100%** · **工程终态 G：~82%**（传输 PK 进行中）  
+> **行动 SSOT**：[kratos-pure-rollout.md](./kratos-pure-rollout.md)
 > 口径：[kratos-full-site-migration-plan.md §1](./kratos-full-site-migration-plan.md#1-进度口径必读避免歧义) · 路线图：[kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) · 架构 SSOT：[kratos-migration.md](./kratos-migration.md)
 
 ---
@@ -13,12 +14,12 @@
 |------|------|------|
 | A · Hybrid Moe | **100%** | `make verify-moe-complete` |
 | B · 纯 Kratos 试点 | **100%** | `make verify-kratos-100` |
-| **F · biz+GW 下沉** | **~98%** | `make verify-sprint-f109-user-tail` |
+| **F · biz+GW 下沉** | **~100%** | `make verify-sprint-f112` |
 | G · 工程现代化就绪 | **~78%** | Hybrid 可上线；≠ 契约拆分完成 |
 
 **F=100% 定义**：各域 biz 100% + 域 proto 拆分（FS-8）+ 退役 `super.*`（FS-9）+ RPC logic 零直写 DB（FS-10）
 
-**≠ F109 已完成全站 100%**：HTTP 主路径已 in_process；仍有 **~8 个 logic 文件** 走 `SuperRpcClient`（见下表）；`super.api` / `super.proto` 仍为 goctl SSOT。
+**F 契约层完成**：`api/moe.api` + `rpc/moe.proto`（defs 分片 SSOT）；`make verify-sprint-fs9`。运行时 **单进程 Hybrid**：`make moe-social` → HTTP :8888 + 内网 gRPC :8080（见 [moe-social-runtime.md](./moe-social-runtime.md)）。
 
 ---
 
@@ -49,31 +50,28 @@
 | VIP 套餐 | **100%** | `biz/vip` + `vipadmingw` |
 | User | **100%** | F109：`user/` logic 零 SuperRpc；含 OAuth/设备/钱包 |
 | Admin（非 Moe） | **100%** | F108：admin logic 零 SuperRpc |
-| AI | **~92%** | F105 agents/resources；**AI 用户记忆配置** HTTP 仍 SuperRpc |
+| AI | **100%** | F110：用户记忆配置 HTTP → `llmgw` |
 | LLM | **100%** | 推理 + memory 写/读/向量/图谱 in_process |
-| 社交 | **~95%** | post/comment/community/gift；Moe 工具 execute 仍 SuperRpc |
-| 实时 / 通知 | **~90%** | chatgw 私信；Voice 边界已文档化；投递 notify 有 SuperRpc 回退 |
+| 社交 | **100%** | post/comment/community/gift；Moe 工具 execute → `moeadmingw` |
+| 实时 / 通知 | **100%** | F112：Voice UserGW 收口；离线通知 local-first |
 | 其它 | **100%** | landing/behavior/appcfg/checkin/achievement |
 | 平台 | **100%** | `moe-social` 单二进制编排 |
 
 ---
 
-## HTTP SuperRpc 残留（F110 目标）
+## HTTP SuperRpc（F110 ✅）
 
-`api/internal/logic` 中仍引用 `SuperRpcClient` 的文件（2026-05-28 实测）：
+`api/internal/logic/**` 已 **零 `SuperRpcClient`**（2026-05-28）。GW 透传/本地优先：
 
-| 路径 | 方法 | 建议归属 |
-|------|------|----------|
-| `avatar/getuseravatarlogic.go` | GetUserAvatar | `usergw` |
-| `avatar/updateuseravatarlogic.go` | UpdateUserAvatar | `usergw` |
-| `ai/userconfiglogic.go` | Get/UpsertAiUserConfig | `aigw` / `llmgw` |
-| `ai/putaimemorysettingslogic.go` | Get/UpsertAiUserConfig | 同上 |
-| `admin_public/adminloginlogic.go` | AdminLogin | `admingw` |
-| `admin_public/adminbootstrapaccountlogic.go` | AdminBootstrapAccount | `admingw` |
-| `moe/executemoetoollogic.go` | MoeExecuteTool | `moeadmingw` |
-| `chat/private_chat_delivery.go` | CreateNotification（回退分支） | `usergw` / notify biz |
+| 路径 | 归属 |
+|------|------|
+| `avatar/*` | `usergw`（`gateway_f110.go`） |
+| `ai/userconfiglogic.go` / `putaimemorysettingslogic.go` | `llmgw`（含 `UpsertAiUserConfig`） |
+| `admin_public/*` | `admingw`（`gateway_public.go`） |
+| `moe/executemoetoollogic.go` | `moeadmingw`（`gateway_tools.go`） |
+| `chat/private_chat_delivery.go` | `notifybiz` 或 `usergw.CreateNotification` |
 
-验收目标：`grep -r SuperRpcClient api/internal/logic/` → **0**（`make verify-sprint-f110` 待建）。
+验收：`make verify-sprint-f110`
 
 ---
 
@@ -92,11 +90,34 @@
 | **F107** | 05-28 | 私信 List* + Voice UserGW | `verify-sprint-f107-chat-read` |
 | **F108** | 05-28 | Admin 尾巴 29 接口 → `admingw` | `verify-sprint-f108-admin-tail` |
 | **F109** | 05-28 | User 尾巴 ~33 + LLM 记忆读 → `usergw`/`llmgw` | `verify-sprint-f109-user-tail` |
+| **F110** | 05-28 | HTTP logic 零 SuperRpc → GW 透传 | `verify-sprint-f110` |
+| **F111** | 05-28 | 审计写/虚拟形象/Moe 工具 local-first | `verify-sprint-f111` |
+| **F112** | 05-28 | Admin 登录/AI 配置 GW + Voice 收口；GW 零 super-only | `verify-sprint-f112` |
 | FS-8/9 | 05-28 | 域 proto stub + super deprecated 头 | `verify-sprint-f100-final` |
 
 ---
 
 ## 已完成 ✅（摘要）
+
+### F112 — HTTP/GW 收尾
+
+- [x] `admingw` AdminLogin / AdminBootstrapAccount → `biz/admin/auth`
+- [x] `llmgw` Get/UpsertAiUserConfig → `biz/ai` + `llmapp`
+- [x] Voice `ResolveVoiceUserDisplay` + UserGW（`verify-gw-local-first` 全 GW local-first）
+- [x] `make verify-sprint-f112`
+
+### F111 — GW 小域闭环
+
+- [x] 管理审计写 → `biz/admin` + `admingw`；`TryRecordAdminAudit` 不再走 `SuperRpcClient`
+- [x] 虚拟形象 → `biz/user/avatar` + `usergw` local-first；RPC 薄层
+- [x] Moe `ExecuteTool` → `moeadmingw` 进程内优先
+- [x] 剩余盘点：[kratos-migration-backlog.md](./kratos-migration-backlog.md)
+
+### F110 — HTTP 零 SuperRpc
+
+- [x] Avatar / Admin 公开登录 / Moe 工具 / AI 用户配置 → 对应 `*gw`
+- [x] 私信离线通知回退 → `usergw.CreateNotification`（本地 DB 优先 `notifybiz`）
+- [x] `api/internal/logic/**` 零 `SuperRpcClient` · `make verify-sprint-f110`
 
 ### F109 — User 尾巴
 
@@ -117,15 +138,25 @@
 
 ---
 
-## 待办 ⬜
+## 纯 Kratos 落地（PK）
+
+| 阶段 | 状态 | 验收 |
+|------|------|------|
+| PK-0 基线 | ✅ | `make verify-kratos-rollout-pk0` |
+| PK-1 契约纪律 | ✅ | `make verify-kratos-rollout-pk1` · `api/README.md` |
+| PK-2 Moe/VIP 灰度 | ✅ | `kratos_admin_http_enabled` + `kratos_vip_http_enabled` · `make verify-kratos-rollout-pk2` |
+| PK-3 按域扩 Kratos | ⬜ | 见 rollout §3 顺序 |
+| PK-4/5 换传输 / 退役 goctl | ⬜ | 未排期 |
+
+手册：[kratos-pure-rollout.md](./kratos-pure-rollout.md)
+
+---
+
+## 待办 ⬜（可选）
 
 | 优先级 | 项 | 说明 |
 |--------|-----|------|
-| **P0** | **F110** | 上表 ~8 文件 → 对应 GW；HTTP 零 SuperRpc |
-| P1 | RPC 清理 | 删除 `rpc/internal/logic` 中已无引用的 memory helper |
-| P1 | FS-8 | 按域切 goctl 至 `api/<domain>/v1/*.proto`（当前仅 stub） |
-| P2 | FS-9 | 物理删除 `super.api` / `super.proto`（需零 super 调用） |
-| P2 | FS-10 | RPC logic 薄层化 + 零直写 DB |
+| FS-9b | `pb/super` 包名重命名 | PK-5 或独立 sprint |
 | 可选 | `voicegw` | 信令 biz 化，见 [voice-ws-boundary.md](./voice-ws-boundary.md) |
 
 ---
@@ -135,7 +166,25 @@
 ```bash
 cd backend
 
-# 当前批次（F109 回归）
+# PK 纯 Kratos（PK-1 + PK-2 完成）
+make verify-kratos-rollout-pk12
+make verify-kratos-rollout-pk0
+make verify-kratos-100
+
+# FS-9 全契约 + 单进程回归
+make verify-sprint-fs9
+
+# FS-8 / FS-8b 分项
+make verify-sprint-fs8b
+make verify-sprint-fs8
+
+# FS-10 RPC 薄层
+make verify-sprint-fs10
+
+# F112 回归
+make verify-sprint-f112
+make verify-sprint-f111
+make verify-sprint-f110
 make verify-sprint-f109-user-tail
 make verify-sprint-f108-admin-tail
 

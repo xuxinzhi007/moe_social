@@ -19,6 +19,8 @@ message PilotMoe {
   bool single_process = 4;
   bool kratos_admin_http_enabled = 5;
   string kratos_admin_base_url = 6;
+  // PK-2: VIP ListPlans 灰度到试点 HTTP（同 kratos_admin_base_url）
+  bool kratos_vip_http_enabled = 7;
 }
 
 // ProductionPorts 对外与对内端口（生产不变 :8888）。

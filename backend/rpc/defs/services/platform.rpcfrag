@@ -1,0 +1,10 @@
+// FS-8b: platform 域 RPC（编入 service Super）
+  rpc TrackUserBehaviorEvents(TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp);
+  rpc CheckIn(CheckInReq) returns (CheckInResp);
+  rpc GetUserLevel(GetUserLevelReq) returns (GetUserLevelResp);
+  rpc GetCheckInStatus(GetCheckInStatusReq) returns (GetCheckInStatusResp);
+  rpc GetCheckInHistory(GetCheckInHistoryReq) returns (GetCheckInHistoryResp);
+  rpc GetExpLogs(GetExpLogsReq) returns (GetExpLogsResp);
+  rpc GetUserAchievements(GetUserAchievementsReq) returns (GetUserAchievementsResp);
+  rpc GetUserAchievementSummary(GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp);
+  rpc EnsureUserAchievements(EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp);

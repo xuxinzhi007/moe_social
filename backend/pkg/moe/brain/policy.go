@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"backend/model"
+
+	"gorm.io/gorm"
 )
 
 // PolicyBlock 注入 LLM 的标签策略文本。
-func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode) string {
+func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode, db *gorm.DB) string {
 	forbidden := ParseTagList(rt.ForbiddenTags)
 	preferred := ParseTagList(rt.PreferredTags)
 	if len(forbidden) == 0 {
@@ -21,6 +23,9 @@ func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode) string 
 	for tag, cnt := range stats {
 		th := 3
 		if strings.HasPrefix(tag, "type:") || strings.HasPrefix(tag, "tone:") || strings.HasPrefix(tag, "mood:") {
+			th = 2
+		}
+		if strings.HasPrefix(tag, "scene:") || strings.HasPrefix(tag, "activity:") || strings.HasPrefix(tag, "semantic:") {
 			th = 2
 		}
 		if cnt >= th {
@@ -38,6 +43,9 @@ func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode) string 
 	}
 	if len(overused) > 0 {
 		lines = append(lines, "近期已过多，请换角度："+strings.Join(overused, "、"))
+	}
+	if db != nil {
+		lines = append(lines, "", BuildTopicDiversityBlock(rt, recent, db))
 	}
 	return strings.Join(lines, "\n")
 }

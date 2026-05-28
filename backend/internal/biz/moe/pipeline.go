@@ -7,6 +7,7 @@ import (
 
 	"backend/internal/data/moedata"
 	"backend/pkg/moe/runtime"
+	"backend/pkg/moe/toolaudit"
 
 	"gorm.io/gorm"
 )
@@ -40,6 +41,14 @@ type GenAttemptView struct {
 	Note    string
 }
 
+// ToolInvokeView 时间窗内工具调用（供画布高亮）。
+type ToolInvokeView struct {
+	Tool      string
+	Ok        bool
+	LatencyMs int
+	CreatedAt time.Time
+}
+
 // PipelineSnapshot 最近一次试跑流水线。
 type PipelineSnapshot struct {
 	AgentKey         string
@@ -49,8 +58,12 @@ type PipelineSnapshot struct {
 	RunAt            time.Time
 	TotalDurationMS  int64
 	Steps            []PipelineStep
+	ToolsInvoked     []ToolInvokeView
 	Metrics          HostMetrics
 	GenerateAttempts []GenAttemptView
+	StabilityScore   int
+	StabilityDelta   int
+	RunFeedback      string
 	HasRun           bool
 }
 
@@ -85,8 +98,18 @@ func GetBrainPipeline(ctx context.Context, db *gorm.DB, agentKey string) (Pipeli
 	out.Detail = row.Detail
 	out.PostID = row.PostID
 	out.RunAt = row.CreatedAt
+	if invoked, err := toolaudit.ListInvokedSince(db, key, row.CreatedAt, 50); err == nil {
+		for _, t := range invoked {
+			out.ToolsInvoked = append(out.ToolsInvoked, ToolInvokeView{
+				Tool: t.Tool, Ok: t.Ok, LatencyMs: t.LatencyMs, CreatedAt: t.CreatedAt,
+			})
+		}
+	}
 	out.TotalDurationMS = bundle.TotalMs
 	out.Metrics = hostMetricsFromRuntime(bundle.Metrics)
+	out.StabilityScore = bundle.StabilityScore
+	out.StabilityDelta = bundle.StabilityDelta
+	out.RunFeedback = bundle.RunFeedback
 	if len(bundle.GenerateAttempts) > 0 {
 		out.GenerateAttempts = make([]GenAttemptView, 0, len(bundle.GenerateAttempts))
 		for _, a := range bundle.GenerateAttempts {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"backend/model"
+	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
 	"backend/rpc/pb/super"
 
@@ -16,8 +17,9 @@ import (
 
 // Deps 大脑写入依赖。
 type Deps struct {
-	DB  *gorm.DB
-	RPC port.SuperPort
+	DB        *gorm.DB
+	RPC       port.SuperPort
+	Inference llminference.Config
 }
 
 // RecordInput 发帖成功后记录自传。
@@ -36,8 +38,9 @@ func RecordEpisode(ctx context.Context, deps Deps, in RecordInput) error {
 	if deps.DB == nil || strings.TrimSpace(in.PostID) == "" {
 		return fmt.Errorf("brain: db or post_id missing")
 	}
-	tags := ExtractTags(in.Content, in.MoodTag, in.StyleScore)
+	tags := AnalyzeAndTagContent(ctx, deps, in.AgentKey, in.Content, in.MoodTag, in.StyleScore)
 	tagsJSON, _ := json.Marshal(tags)
+	_ = UpsertTopicStatsFromTags(ctx, deps.DB, in.AgentKey, tags, in.Content, "episode")
 	memKey := fmt.Sprintf("bot_post:%s", strings.TrimSpace(in.PostID))
 	src := strings.TrimSpace(in.Source)
 	if src == "" {

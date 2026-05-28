@@ -160,6 +160,16 @@ func (s *AppService) ReadAllNotifications(ctx context.Context, in *super.ReadAll
 	return &super.ReadAllNotificationsResp{}, nil
 }
 
+// GetUserAvatar 获取用户虚拟形象。
+func (s *AppService) GetUserAvatar(ctx context.Context, in *super.GetUserAvatarReq) (*super.GetUserAvatarResp, error) {
+	return userbiz.GetUserAvatar(ctx, s.db, in)
+}
+
+// UpdateUserAvatar 更新用户虚拟形象。
+func (s *AppService) UpdateUserAvatar(ctx context.Context, in *super.UpdateUserAvatarReq) (*super.UpdateUserAvatarResp, error) {
+	return userbiz.UpdateUserAvatar(ctx, s.db, in)
+}
+
 // DB 暴露给渐进迁移（仅 Hybrid 内部）。
 func (s *AppService) DB() *gorm.DB {
 	return s.db

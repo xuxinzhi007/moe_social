@@ -1,0 +1,40 @@
+{
+  "domain_order": [
+    "landing",
+    "user",
+    "admin",
+    "vip",
+    "social",
+    "ai_llm",
+    "platform",
+    "moe"
+  ],
+  "rules_comment": "RPC 方法按名称归类到域碎片；顺序在 domain_order。realtime 无独立 RPC（WS 走 HTTP）。",
+  "exact": {
+    "landing": ["SubmitLandingFeedback", "ListLandingFeedback"],
+    "admin": ["RecordAdminAuditLog"],
+    "vip": [
+      "UpdateAutoRenew",
+      "SyncUserVipStatus",
+      "CheckUserVip",
+      "CreateVipPlan",
+      "GetVipPlans",
+      "GetVipPlan"
+    ],
+    "ai_llm": ["RecordLlmChatTurn"]
+  },
+  "prefixes": {
+    "admin": ["Admin"],
+    "moe": ["Moe"],
+    "vip": ["GetVip", "CreateVip"],
+    "ai_llm": ["ListAi", "UpsertAi", "DeleteAi", "GetAi", "ListPublicAi"],
+    "platform": ["CheckIn", "GetCheckIn", "GetUserLevel", "GetExpLogs", "GetUserAchievement", "EnsureUserAchievement", "TrackUserBehavior"]
+  },
+  "contains": {
+    "moe": ["Moe"],
+    "ai_llm": ["UserMemory"],
+    "social": ["Post", "Comment", "Group", "Gift"],
+    "vip": ["Vip"]
+  },
+  "default": "user"
+}

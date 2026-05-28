@@ -1,0 +1,19 @@
+// FS-8: landing 域路由（goctl group → api/internal/logic/<group>）
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: landing
+)
+service Super {
+	@handler submitLandingFeedback
+	post /api/landing/feedback (SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp)
+}
+
+@server (
+	group: ops
+)
+service Super {
+	@handler listLandingFeedback
+	get /api/ops/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
+}

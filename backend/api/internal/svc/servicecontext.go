@@ -105,7 +105,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LLMGW:          llmgw.New(nil, superClient),
 		ChatGW:         chatgw.New(nil, superClient),
 		UserGW:         usergw.New(nil, superClient),
-		VipGW:          vipadmingw.New(nil, superClient),
+		VipGW:          vipadmingw.NewConfigured(nil, superClient),
 		ModelCache:     utils.NewModelCache(),
 	}
 }

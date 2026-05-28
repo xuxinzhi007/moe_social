@@ -26,7 +26,7 @@ func NewAdminBootstrapAccountLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 func (l *AdminBootstrapAccountLogic) AdminBootstrapAccount(_ *types.EmptyReq) (resp *types.AdminBootstrapAccountResp, err error) {
-	rpcResp, err := l.svcCtx.SuperRpcClient.AdminBootstrapAccount(l.ctx, &super.AdminBootstrapAccountReq{})
+	rpcResp, err := l.svcCtx.AdminGW.AdminBootstrapAccount(l.ctx, &super.AdminBootstrapAccountReq{})
 	if err != nil {
 		return &types.AdminBootstrapAccountResp{BaseResp: common.HandleRPCError(err, "")}, nil
 	}

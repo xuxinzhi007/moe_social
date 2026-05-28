@@ -3,14 +3,18 @@ package moewiring
 import (
 	"context"
 
+	moebiz "backend/internal/biz/moe"
 	"backend/internal/adapter/moeconfig"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
+	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/port"
 	"backend/pkg/moe/runtime"
 	"backend/pkg/moe/tools"
 	"backend/rpc/pb/super"
 	"backend/utils"
+
+	"gorm.io/gorm"
 )
 
 // NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库；Super 走 gRPC 客户端）。
@@ -32,7 +36,12 @@ func NewAPIAdminService(superClient super.SuperClient) (*moeadmin.AdminService, 
 
 	admin.AttachSuperPort(func(context.Context) port.SuperPort { return grpcPort })
 	admin.AttachRuntimeDeps(func(context.Context) runtime.Deps {
-		return runtime.Deps{DB: db, RPC: grpcPort, Inference: inf}
+		return runtime.Deps{
+			DB: db, RPC: grpcPort, Inference: inf,
+			ResolvePostingPlan: func(ctx context.Context, gdb *gorm.DB, agentKey string) (plan flowexec.Plan, err error) {
+				return moebiz.ResolvePostingPlan(ctx, gdb, agentKey)
+			},
+		}
 	})
 	admin.AttachBrainDeps(func(context.Context) brain.Deps {
 		return brain.Deps{DB: db, RPC: grpcPort}

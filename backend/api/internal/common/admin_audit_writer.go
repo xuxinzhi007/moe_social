@@ -12,7 +12,7 @@ import (
 
 // TryRecordAdminAudit 在管理写操作成功后异步写入审计日志（失败不影响主流程）。
 func TryRecordAdminAudit(ctx context.Context, svcCtx *svc.ServiceContext, action, resource, resourceID, detail string) {
-	if svcCtx == nil || svcCtx.SuperRpcClient == nil {
+	if svcCtx == nil || svcCtx.AdminGW == nil {
 		return
 	}
 	actor, ok := AdminActorFromContext(ctx)
@@ -35,7 +35,7 @@ func TryRecordAdminAudit(ctx context.Context, svcCtx *svc.ServiceContext, action
 		Ip:         actor.IP,
 	}
 	go func() {
-		if _, err := svcCtx.SuperRpcClient.RecordAdminAuditLog(context.Background(), req); err != nil {
+		if _, err := svcCtx.AdminGW.RecordAdminAuditLog(context.Background(), req); err != nil {
 			logx.Errorf("record admin audit action=%s resource=%s: %v", action, resource, err)
 		}
 	}()

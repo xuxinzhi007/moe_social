@@ -79,6 +79,8 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 
 ## `make gen` 后必查（避免重复 logic 与编译失败）
 
+> 根因与 FS-8 关系见 [goctl-generation-hygiene.md](../dev/goctl-generation-hygiene.md)。`make gen-api` / `make gen-rpc` 已自动执行 `prune-*-logic-shells.sh`；验收：`make verify-gen-hygiene`。
+
 `goctl` 会为**每个**带 `@handler` 的接口生成独立 `*_logic.go`。本仓库部分 Moe 管理接口已**手工合并**到：
 
 - API：`backend/api/internal/logic/admin/` 下已有完整实现的文件

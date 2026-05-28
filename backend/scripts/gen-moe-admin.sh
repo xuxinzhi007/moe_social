@@ -16,35 +16,21 @@ if [[ "$SKIP_GEN" -eq 0 ]]; then
   make gen-rpc gen-api
 fi
 
-# 与 rpc/internal/logic/moe_admin_logic.go 合并实现冲突的空壳（make gen-rpc 会再生，需再删）
-MOE_RPC_STUBS=(
-  rpc/internal/logic/admingetmoebrainlogic.go
-  rpc/internal/logic/adminupdatemoebrainpolicylogic.go
-  rpc/internal/logic/adminrefinemoebrainepisodelogic.go
-  rpc/internal/logic/admingetmoetoolstatslogic.go
-  rpc/internal/logic/adminlistmoeruntimeslogic.go
-  rpc/internal/logic/admincuratemoebrainlogic.go
-  rpc/internal/logic/adminrunmoeagentoncelogic.go
-  rpc/internal/logic/adminupsertmoeruntimelogic.go
-  rpc/internal/logic/admindeletemoebrainepisodelogic.go
-  rpc/internal/logic/adminlistmoetoolcallslogic.go
-  rpc/internal/logic/moeexecutetoollogic.go
-  rpc/internal/logic/moesearchpostslogic.go
-)
-
-# API：错误合并的 handler（两个 handler 写进一个文件）
+# prune 脚本已处理 RPC/API 空壳；此处仅删已知错误合并的 handler
 MOE_API_STUBS=(
   api/internal/handler/admin/adminrefinemoebrainhandler.go
 )
 
 removed=0
-for f in "${MOE_RPC_STUBS[@]}" "${MOE_API_STUBS[@]}"; do
+for f in "${MOE_API_STUBS[@]}"; do
   if [[ -f "$f" ]]; then
     rm -f "$f"
     echo "removed stub: $f"
     removed=$((removed + 1))
   fi
 done
+
+bash scripts/verify-gen-hygiene.sh
 
 echo "==> go build ./api ./rpc"
 go build -o /dev/null ./api ./rpc

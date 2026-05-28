@@ -107,7 +107,7 @@ func startAll(root string) ([]*managedProc, error) {
 		}
 	}
 
-	rpcArgs := []string{"-f", "rpc/etc/super.yaml"}
+	rpcArgs := []string{"-f", "rpc/etc/moe.yaml"}
 	if *withMonitor {
 		rpcArgs = append(rpcArgs, "-debug")
 	}
@@ -123,7 +123,7 @@ func startAll(root string) ([]*managedProc, error) {
 		stopAll(procs)
 		return nil, fmt.Errorf("build api: %w", err)
 	}
-	api, err := startProc("api", root, apiBin, "-f", "api/etc/super.yaml")
+	api, err := startProc("api", root, apiBin, "-f", "api/etc/moe.yaml")
 	if err != nil {
 		stopAll(procs)
 		return nil, fmt.Errorf("api: %w", err)

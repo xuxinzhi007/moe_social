@@ -1,0 +1,22 @@
+// FS-8b: ai_llm 域 RPC（编入 service Super）
+  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp);
+  rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp);
+  rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp);
+  rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp);
+  rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp);
+  rpc ListUserMemoryEmbeddings(ListUserMemoryEmbeddingsReq) returns (ListUserMemoryEmbeddingsResp);
+  rpc UpsertUserMemoryEmbedding(UpsertUserMemoryEmbeddingReq) returns (UpsertUserMemoryEmbeddingResp);
+  rpc RebuildUserMemoryEmbeddings(RebuildUserMemoryEmbeddingsReq) returns (RebuildUserMemoryEmbeddingsResp);
+  rpc ListUserMemoryRelations(ListUserMemoryRelationsReq) returns (ListUserMemoryRelationsResp);
+  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp);
+  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);
+  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp);
+  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp);
+  rpc UpsertAiUserConfig(UpsertAiUserConfigReq) returns (UpsertAiUserConfigResp);

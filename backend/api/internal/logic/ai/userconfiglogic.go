@@ -29,7 +29,7 @@ func NewUserConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UserCo
 }
 
 func (l *UserConfigLogic) Get(userID uint) (*types.AiUserConfigResp, error) {
-	resp, err := l.svcCtx.SuperRpcClient.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{
+	resp, err := l.svcCtx.LLMGW.GetAiUserConfig(l.ctx, &super.GetAiUserConfigReq{
 		UserId: strconv.FormatUint(uint64(userID), 10),
 	})
 	if err != nil {
@@ -59,7 +59,7 @@ func (l *UserConfigLogic) Upsert(userID uint, req *types.AiUserConfigReq) (*type
 		}
 		preferencesJSON = string(raw)
 	}
-	resp, err := l.svcCtx.SuperRpcClient.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
+	resp, err := l.svcCtx.LLMGW.UpsertAiUserConfig(l.ctx, &super.UpsertAiUserConfigReq{
 		UserId:          strconv.FormatUint(uint64(userID), 10),
 		UserPersona:     req.UserPersona,
 		HasUserPersona:  req.HasUserPersona,
