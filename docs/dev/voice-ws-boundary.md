@@ -46,5 +46,5 @@ biz/voice → service/voice → voicegw → moewiring/api_voice.go
 
 ## 验收
 
-- `make verify-sprint-f107-chat-read`（含 Voice UserGW 检查）
+- `make check`（含 Voice UserGW 相关编译）
 - 联调：`make moe-social-stop && make moe-social`，App 发起语音通话 + Chat WS 在线收 `incoming_call`

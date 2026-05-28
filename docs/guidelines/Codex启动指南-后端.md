@@ -79,7 +79,7 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 
 ## `make gen` 后必查（避免重复 logic 与编译失败）
 
-> 根因与 FS-8 关系见 [goctl-generation-hygiene.md](../dev/goctl-generation-hygiene.md)。`make gen-api` / `make gen-rpc` 已自动执行 `prune-*-logic-shells.sh`；验收：`make verify-gen-hygiene`。
+> 根因与 FS-8 关系见 [goctl-generation-hygiene.md](../dev/goctl-generation-hygiene.md)。`make gen-api` / `make gen-rpc` 已自动执行 `prune-*-logic-shells.sh`；验收：`make check`。
 
 `goctl` 会为**每个**带 `@handler` 的接口生成独立 `*_logic.go`。本仓库部分 Moe 管理接口已**手工合并**到：
 
@@ -98,8 +98,8 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 3. RPC 侧 Moe Brain 系列优先只维护 `moe_admin_logic.go`，删除重复的 `admin*moebrain*logic.go` 单文件。
 4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
-6. **Kratos（2026-05-28）**：**必读** [kratos-migration.md](../dev/kratos-migration.md)（架构 SSOT）；进度勾选 [kratos-migration-status.md](../dev/kratos-migration-status.md)（**F109 · F ~98%**）。**开发**：`make moe-social` / `make dev` 默认同时起 **deploy-agent :19010**；不要 Agent 时 `-agent=false`。**验收**：`make verify-sprint-f109-user-tail`、`make verify-sprint-regression`。
-7. **生成**：`make gen` = `gen-moe-proto` + `gen-rpc` + `gen-api`；已迁域写 `internal/biz|service`（moe/vip/user）。**验收**：`make verify-moe-complete`。
+6. **Kratos（2026-05-27）**：**必读** [kratos-migration.md](../dev/kratos-migration.md)、新接口 [new-api-kratos.md](../dev/new-api-kratos.md)。**开发**：`make moe-social`（纯 Kratos :8888+:8080）。**验收**：`make check` + `curl /migration`。
+7. **生成**：`make gen` = proto + conf + HTTP 路由同步（**不**跑 goctl api/rpc）；改 `api/defs` 用 `make gen-api`；新接口用域 proto + `internal/service`。
 8. **配置**（`moe`）：`api_in_process`、`vip_api_in_process`、`user_api_in_process`、`register_moe_grpc`、`use_moe_grpc`。**对外 :8888**；8080 仅后端 gRPC。开发启动 / RPC 监控 / 内存展示见 [docs/dev/admin-rpc-runtime-guide.md](../dev/admin-rpc-runtime-guide.md)。
 9. **部署**：开发可单进程；`make build` 默认仍产出 api+rpc 两个二进制，见迁移文档 §2.5。
 10. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。

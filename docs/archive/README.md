@@ -35,6 +35,14 @@
 | AutoGLM系统优化方案.md | 优化方案草稿 |
 | AutoGLM系统优化完成总结.md | 完成总结 |
 
+### dev/kratos/ — PK / F / FS 冲刺与 verify 手册（已废弃流程）
+
+| 说明 |
+|------|
+| 含 `kratos-full-site-migration-plan`、`kratos-migration-sprint-f*`、`make verify-*` 等 |
+
+**当前 SSOT：** [../dev/kratos-migration.md](../dev/kratos-migration.md) · [../dev/new-api-kratos.md](../dev/new-api-kratos.md)
+
 ### dev/
 
 | 文件 | 说明 |
