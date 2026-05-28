@@ -1,30 +1,48 @@
-# goctl 生成与空壳冲突说明
+# goctl 生成与合并 Logic 说明
 
-> **更新：2026-05-27** · 架构：[kratos-migration.md](./kratos-migration.md)
+> **更新：2026-05-27**
 
-## 问题是什么？
+## 核心原则（本仓库）
 
-`make gen-api` / `make gen-rpc` 会为每个 `@handler` / RPC 方法生成独立 `*logic.go`。  
-本仓库部分接口已**合并**到单个 `*_logic.go` 或迁到 `internal/biz` + `*gw`，goctl 可能再生成空壳 → `redeclared` / `not enough return values`。
+**不要把业务从合并文件搬到 goctl 单文件里。**  
+正确做法相反：
 
-## 当前做法
+| goctl 生成 | 本仓库做法 |
+|------------|------------|
+| 每接口一个 `admincreatetopictaglogic.go` 空壳 | **删掉空壳**，实现留在 **`admin_insights_logic.go`** |
+| `// todo: add your logic` | 在**合并文件**里写完整方法 |
+
+`make gen-api` 结束后会自动跑 `prune-api-logic-shells.sh`（已修复路径），删除与合并文件重复的 todo 壳。
+
+## 合并文件 SSOT（示例）
+
+| 域 | 合并实现文件 | goctl 会误生成的壳 |
+|----|--------------|-------------------|
+| Admin 洞察/标签 | `api/internal/logic/admin/admin_insights_logic.go` | `admin*topictag*logic.go`、`admin*aichat*logic.go` 等 |
+| Admin Moe Flow | `api/internal/logic/admin/admin_moe_flow_logic.go` | `admin*moebotflow*logic.go` |
+| User 好友 | `api/internal/logic/user/friendlogic.go` | `sendfriendrequestlogic.go` 等（handler 用 `NewFriendLogic`） |
+| LLM 配置 | handler 直调 `LLMApp` | `configlogic.go` |
+
+新增接口若与现有合并文件同域，**扩展现有 `*_logic.go`**，不要新建 goctl 单文件再迁代码。
+
+## 命令
 
 ```bash
 cd backend
-make gen-api    # 或 make gen-rpc / make gen-all
-# 自动执行 scripts/gen/prune-*-logic-shells.sh
+make gen-api          # goctl → 自动 prune → post-gen-check → gen-http-routes
 make check
 ```
 
-- 孤儿清单：`backend/scripts/goctl-orphan-stubs.txt`、`goctl-rpc-orphan-stubs.txt`
-- Moe Admin：`make gen-moe-admin`
+若 prune 漏删，登记 `scripts/goctl-orphan-stubs.txt`。
 
-## 新接口（Kratos 纪律）
+## 冲突症状
 
-**不要**为全新能力扩 `api/defs` → 见 [new-api-kratos.md](./new-api-kratos.md)（域 proto + `internal/service`）。
+- `redeclared in this block`：同一 `AdminCreateTopicTagLogic` 在两个 `.go` 里
+- `not enough return values`：空壳 `return` 无返回值
 
-存量维护仍可用 `make gen-api` + `api/internal/logic`。
+**处理**：保留 `admin_insights_logic.go` 中的实现，删除 `admincreatetopictaglogic.go` 等壳（或再跑 `bash scripts/gen/prune-api-logic-shells.sh`）。
 
-## 日常 `make gen`
+## 与 `make gen` 的关系
 
-**不会**跑 goctl api/rpc，**不会**覆盖已有 logic 实现；只更新域 `*.pb.go` 与 `api/moehttp/routes_*_gen.go`。
+- **`make gen`**：不跑 goctl api，**不会**产生这些壳
+- **`make gen-api`**：才会 goctl 生成；**必须**带 prune

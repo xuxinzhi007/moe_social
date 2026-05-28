@@ -22,6 +22,15 @@ func RegisterAll(srv *khttp.Server, d PilotDeps) {
 	if d.Svc != nil {
 		RegisterLlmReadCompat(srv, d.Svc)
 		RegisterLandingCompat(srv, d.Svc)
+		RegisterCheckinCompat(srv, d.Svc)
+		RegisterAchievementCompat(srv, d.Svc)
+		RegisterBehaviorCompat(srv, d.Svc)
+		RegisterGiftCompat(srv, d.Svc)
+		RegisterCommentCompat(srv, d.Svc)
+		RegisterUserLogicCompat(srv, d.Svc)
+		RegisterWave2LogicCompat(srv, d.Svc)
+		RegisterAdminLogicCompat(srv, d.Svc)
+		RegisterPlatformLogicCompat(srv, d.Svc)
 		RegisterNativeDomainHTTPHandlers(srv, d.Svc)
 		RegisterBridgeHTTPHandlers(srv, d.Svc)
 	}

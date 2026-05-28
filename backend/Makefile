@@ -63,6 +63,7 @@ gen-api:
 	bash scripts/gen/api-guard.sh
 	cd api && goctl api go -api moe.api -dir ./
 	bash scripts/gen/prune-api-logic-shells.sh
+	bash scripts/gen/post-gen-check.sh
 	$(MAKE) gen-http-routes
 
 

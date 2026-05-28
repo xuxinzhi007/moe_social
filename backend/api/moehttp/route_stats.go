@@ -17,8 +17,12 @@ func TotalGoZeroRoutes() int {
 	return nativeDomainRouteCount + bridgeRouteCount + PilotNativeCompatRoutes
 }
 
-// PilotNativeCompatRoutes internal/service 直挂（admin / insights / vip / llm / landing）。
-const PilotNativeCompatRoutes = 13 + PilotNativeLandingCompatRoutes
+// PilotNativeCompatRoutes internal/service 直挂 + logic 薄转 compat（波次1–3；native_gen=0）。
+const PilotNativeCompatRoutes = 13 + PilotNativeLandingCompatRoutes +
+	PilotNativeCheckinCompatRoutes + PilotNativeAchievementCompatRoutes +
+	PilotNativeBehaviorCompatRoutes + PilotNativeGiftCompatRoutes + PilotNativeCommentCompatRoutes +
+	PilotNativeUserCompatRoutes + PilotNativeWave2CompatRoutes +
+	PilotNativeAdminLogicCompatRoutes + PilotNativePlatformLogicCompatRoutes
 
 // TotalNativeHTTPRoutes 完整纯 Kratos 原生 HTTP 路由数（compat + 域原生生成）。
 func TotalNativeHTTPRoutes() int {
