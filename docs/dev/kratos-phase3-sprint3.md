@@ -1,5 +1,5 @@
-# 已合并
+# 已归档
 
-本 Sprint 内容已并入 **[kratos-migration.md](./kratos-migration.md)**（`MoeGW` + `use_moe_grpc` + Kratos 观测壳）。
+本文已迁至 [../archive/dev/kratos/kratos-phase3-sprint3.md](../archive/dev/kratos/kratos-phase3-sprint3.md)。
 
-验收：`make verify-moe-gateway`
+**当前有效文档**：[kratos-migration.md](./kratos-migration.md) · [kratos-migration-status.md](./kratos-migration-status.md) · [new-api-kratos.md](./new-api-kratos.md)

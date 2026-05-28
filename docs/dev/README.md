@@ -6,79 +6,56 @@
 
 | 文档 | 用途 |
 |------|------|
-| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层**（llama-server、配置键、产品对齐） |
-| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | 产品成熟度（官网 vs App、Admin） |
+| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层** |
+| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | 产品成熟度 |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |
 | [快速调试步骤.md](./快速调试步骤.md) | Flutter 模拟器与运行 |
-| [ports.md](./ports.md) | 本地端口（API 8888、Admin 5173、Agent 19010） |
+| [ports.md](./ports.md) | 本地端口（API 8888、Admin 5173） |
 | [API调试指南.md](./API调试指南.md) | 接口调试 |
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
-| [android-release-signing.md](./android-release-signing.md) | Android 签名 |
+
+## Kratos 后端（2026-05-27 当前阶段）
+
+| 文档 | 用途 |
+|------|------|
+| [kratos-migration.md](./kratos-migration.md) | **架构 SSOT**（纯 Kratos 生产、`make gen`） |
+| [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto，勿扩 defs） |
+| [kratos-migration-status.md](./kratos-migration-status.md) | 进度勾选 |
+| [moe-social-runtime.md](./moe-social-runtime.md) | `make moe-social` 运行时 |
+| [kratos-pure-rollout.md](./kratos-pure-rollout.md) | PK 摘要（详情已归档） |
+| [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
+
+历史冲刺 / `make verify-*`：[../archive/dev/kratos/](../archive/dev/kratos/)
 
 ## 记忆与智能栈
 
 | 文档 | 用途 |
 |------|------|
-| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | 推理配置与记忆「学习」路径 |
 | [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **记忆架构 SSOT** |
-| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1（工具 / Post Pulse / Bot Runtime） |
-| [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) | 近期变更与验收 |
-| [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) | OpenClaw / 酒馆对标 |
-| [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) | E2E 验收 |
-| [memory-system-dashboard.html](./memory-system-dashboard.html) | 记忆监控台 |
+| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1 |
 | [memory/README.md](./memory/README.md) | 代码模块地图 |
-| [local-llm-tools.md](./local-llm-tools.md) | App 内本机 GGUF + 工具调用 |
-| [local-model-download.md](./local-model-download.md) | 离线模型下载 |
+| [local-llm-tools.md](./local-llm-tools.md) | 本机 GGUF |
 
-历史 Ollama 记忆文档：`ollama用户级记忆*.md` 为跳转 stub，全文在 [../archive/memory/](../archive/memory/)。
+历史 Ollama：`../archive/memory/`
 
 ## 管理台与运维
 
 | 文档 | 用途 |
 |------|------|
-| [../../moe-admin/README.md](../../moe-admin/README.md) | Moe Admin 启动 |
-| [moe-admin.md](./moe-admin.md) | 管理台与 API/Agent 分工 |
-| [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | **开发启动、RPC 监控（React）、进程内存** |
-| [moe-admin-menu-map.md](./moe-admin-menu-map.md) | 菜单与路由 |
-| [../../moe-admin/docs/admin-design-system.md](../../moe-admin/docs/admin-design-system.md) | 管理台设计参考 |
-| [deploy-platform.md](./deploy-platform.md) | 部署分工 SSOT |
-| [devtools.html](./devtools.html) | 开发者工具台 |
-| [tools/rpc-monitor.html](./tools/rpc-monitor.html) | RPC 监控（遗留 HTML；管理台请用 [admin-rpc-runtime-guide](./admin-rpc-runtime-guide.md)） |
-
-## Kratos / 全站迁移（2026-05-27）
-
-| 文档 | 用途 |
-|------|------|
-| [kratos-pure-rollout.md](./kratos-pure-rollout.md) | **纯 Kratos 落地 PK 手册（当前执行）** |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **进度勾选**（F/FS ✅ · PK 进行中） |
-| [kratos-migration.md](./kratos-migration.md) | Hybrid 架构 SSOT、`make moe-social` |
-| [moe-social-runtime.md](./moe-social-runtime.md) | 单进程 Hybrid vs 试点 |
-| [kratos-migration-sprint-f100.md](./kratos-migration-sprint-f100.md) | F70→F109 路线图 |
-| [kratos-full-site-migration-plan.md](./kratos-full-site-migration-plan.md) | 进度公式与域权重 |
-| [voice-ws-boundary.md](./voice-ws-boundary.md) | Voice WebSocket 边界 |
+| [../../moe-admin/README.md](../../moe-admin/README.md) | Moe Admin |
+| [moe-admin.md](./moe-admin.md) | 管理台与 API 分工 |
+| [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | RPC 监控、进程内存 |
+| [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) | goctl 空壳清理 |
 
 ## 集成与专项
 
 | 文档 | 用途 |
 |------|------|
 | [飞书OAuth授权验证指南.md](./飞书OAuth授权验证指南.md) | 飞书登录 |
-| [飞书通知与绑定.md](./飞书通知与绑定.md) | 飞书通知 |
-| [flutter_private_messaging_frontend_workflow.md](./flutter_private_messaging_frontend_workflow.md) | 私信前端流程 |
-| [虚拟角色MVP接入说明.md](./虚拟角色MVP接入说明.md) | 虚拟角色 |
+| [flutter_private_messaging_frontend_workflow.md](./flutter_private_messaging_frontend_workflow.md) | 私信前端 |
 | [security-and-stability-backlog.md](./security-and-stability-backlog.md) | 安全待办 |
-| [个人开发可用性基线清单.md](./个人开发可用性基线清单.md) | 个人开发基线 |
 
-## 测试与质量
+## 已归档
 
-| 文档 | 用途 |
-|------|------|
-| [登录注册首页冒烟测试清单.md](./登录注册首页冒烟测试清单.md) | 冒烟 |
-| [响应式页面模板与检查清单.md](./响应式页面模板与检查清单.md) | 响应式 |
-| [调试闪退问题指南.md](./调试闪退问题指南.md) | 闪退排查 |
-| [Android真机调试说明.md](./Android真机调试说明.md) | 真机 |
-| [本地开发包与正式包隔离维护说明.md](./本地开发包与正式包隔离维护说明.md) | 包隔离 |
-
-## 已归档（勿作主维护）
-
-见 [../archive/dev/](../archive/dev/) 及根目录同名 stub 文件。
+见 [../archive/dev/](../archive/dev/) 及 `dev/` 下带「已归档」跳转的 stub。

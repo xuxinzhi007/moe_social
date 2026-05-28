@@ -1,3 +1,5 @@
-# 已合并
+# 已归档
 
-本 Sprint 内容已并入 **[kratos-migration.md](./kratos-migration.md)**（API 进程内 `api_in_process`）。
+本文已迁至 [../archive/dev/kratos/kratos-phase3-sprint1.md](../archive/dev/kratos/kratos-phase3-sprint1.md)。
+
+**当前有效文档**：[kratos-migration.md](./kratos-migration.md) · [kratos-migration-status.md](./kratos-migration-status.md) · [new-api-kratos.md](./new-api-kratos.md)
