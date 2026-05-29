@@ -19,37 +19,59 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationMoeAdminCompressBrainMemories = "/moe.v1.MoeAdmin/CompressBrainMemories"
 const OperationMoeAdminCurateBrain = "/moe.v1.MoeAdmin/CurateBrain"
 const OperationMoeAdminDeleteBotFlow = "/moe.v1.MoeAdmin/DeleteBotFlow"
 const OperationMoeAdminDeleteBrainEpisode = "/moe.v1.MoeAdmin/DeleteBrainEpisode"
+const OperationMoeAdminForgetBrainMemory = "/moe.v1.MoeAdmin/ForgetBrainMemory"
+const OperationMoeAdminGenerateBrainThought = "/moe.v1.MoeAdmin/GenerateBrainThought"
 const OperationMoeAdminGetBotFlow = "/moe.v1.MoeAdmin/GetBotFlow"
+const OperationMoeAdminGetBrainGraph = "/moe.v1.MoeAdmin/GetBrainGraph"
 const OperationMoeAdminGetBrainPipeline = "/moe.v1.MoeAdmin/GetBrainPipeline"
+const OperationMoeAdminGetBrainPresence = "/moe.v1.MoeAdmin/GetBrainPresence"
+const OperationMoeAdminGetBrainRpg = "/moe.v1.MoeAdmin/GetBrainRpg"
 const OperationMoeAdminGetBrainSnapshot = "/moe.v1.MoeAdmin/GetBrainSnapshot"
 const OperationMoeAdminGetInferenceStatus = "/moe.v1.MoeAdmin/GetInferenceStatus"
 const OperationMoeAdminGetToolsSchema = "/moe.v1.MoeAdmin/GetToolsSchema"
 const OperationMoeAdminListRuntimes = "/moe.v1.MoeAdmin/ListRuntimes"
 const OperationMoeAdminListToolCalls = "/moe.v1.MoeAdmin/ListToolCalls"
+const OperationMoeAdminLockBrainSkill = "/moe.v1.MoeAdmin/LockBrainSkill"
 const OperationMoeAdminQueryToolStats = "/moe.v1.MoeAdmin/QueryToolStats"
 const OperationMoeAdminRefineBrainEpisode = "/moe.v1.MoeAdmin/RefineBrainEpisode"
 const OperationMoeAdminRunAgentOnce = "/moe.v1.MoeAdmin/RunAgentOnce"
+const OperationMoeAdminRunBrainDream = "/moe.v1.MoeAdmin/RunBrainDream"
+const OperationMoeAdminTidyBrainFragments = "/moe.v1.MoeAdmin/TidyBrainFragments"
+const OperationMoeAdminUpdateBrainAutonomousMind = "/moe.v1.MoeAdmin/UpdateBrainAutonomousMind"
+const OperationMoeAdminUpdateBrainDreamSchedule = "/moe.v1.MoeAdmin/UpdateBrainDreamSchedule"
 const OperationMoeAdminUpdateBrainPolicy = "/moe.v1.MoeAdmin/UpdateBrainPolicy"
 const OperationMoeAdminUpsertBotFlow = "/moe.v1.MoeAdmin/UpsertBotFlow"
 const OperationMoeAdminUpsertRuntime = "/moe.v1.MoeAdmin/UpsertRuntime"
 
 type MoeAdminHTTPServer interface {
+	CompressBrainMemories(context.Context, *CompressBrainMemoriesRequest) (*CompressBrainMemoriesReply, error)
 	CurateBrain(context.Context, *CurateBrainRequest) (*CurateBrainReply, error)
 	DeleteBotFlow(context.Context, *DeleteBotFlowRequest) (*BotFlowReply, error)
 	DeleteBrainEpisode(context.Context, *DeleteBrainEpisodeRequest) (*DeleteBrainEpisodeReply, error)
+	ForgetBrainMemory(context.Context, *ForgetBrainMemoryRequest) (*ForgetBrainMemoryReply, error)
+	GenerateBrainThought(context.Context, *GenerateBrainThoughtRequest) (*GenerateBrainThoughtReply, error)
 	GetBotFlow(context.Context, *GetBotFlowRequest) (*BotFlowReply, error)
+	GetBrainGraph(context.Context, *GetBrainGraphRequest) (*GetBrainGraphReply, error)
 	GetBrainPipeline(context.Context, *GetBrainPipelineRequest) (*GetBrainPipelineReply, error)
+	GetBrainPresence(context.Context, *GetBrainPresenceRequest) (*GetBrainPresenceReply, error)
+	GetBrainRpg(context.Context, *GetBrainRpgRequest) (*GetBrainRpgReply, error)
 	GetBrainSnapshot(context.Context, *GetBrainSnapshotRequest) (*GetBrainSnapshotReply, error)
 	GetInferenceStatus(context.Context, *GetInferenceStatusRequest) (*GetInferenceStatusReply, error)
 	GetToolsSchema(context.Context, *GetToolsSchemaRequest) (*GetToolsSchemaReply, error)
 	ListRuntimes(context.Context, *ListRuntimesRequest) (*ListRuntimesReply, error)
 	ListToolCalls(context.Context, *ListToolCallsRequest) (*ListToolCallsReply, error)
+	LockBrainSkill(context.Context, *LockBrainSkillRequest) (*LockBrainSkillReply, error)
 	QueryToolStats(context.Context, *QueryToolStatsRequest) (*QueryToolStatsReply, error)
 	RefineBrainEpisode(context.Context, *RefineBrainEpisodeRequest) (*RefineBrainEpisodeReply, error)
 	RunAgentOnce(context.Context, *RunAgentOnceRequest) (*RunAgentOnceReply, error)
+	RunBrainDream(context.Context, *RunBrainDreamRequest) (*RunBrainDreamReply, error)
+	TidyBrainFragments(context.Context, *TidyBrainFragmentsRequest) (*TidyBrainFragmentsReply, error)
+	UpdateBrainAutonomousMind(context.Context, *UpdateBrainAutonomousMindRequest) (*UpdateBrainAutonomousMindReply, error)
+	UpdateBrainDreamSchedule(context.Context, *UpdateBrainDreamScheduleRequest) (*UpdateBrainDreamScheduleReply, error)
 	UpdateBrainPolicy(context.Context, *UpdateBrainPolicyRequest) (*GetBrainSnapshotReply, error)
 	UpsertBotFlow(context.Context, *UpsertBotFlowRequest) (*BotFlowReply, error)
 	UpsertRuntime(context.Context, *UpsertRuntimeRequest) (*UpsertRuntimeReply, error)
@@ -62,6 +84,17 @@ func RegisterMoeAdminHTTPServer(s *http.Server, srv MoeAdminHTTPServer) {
 	r.GET("/api/admin/moe/brain/pipeline", _MoeAdmin_GetBrainPipeline0_HTTP_Handler(srv))
 	r.POST("/api/admin/moe/runtimes/{agent_key}/run-once", _MoeAdmin_RunAgentOnce0_HTTP_Handler(srv))
 	r.GET("/api/admin/moe/runtimes/{agent_key}/brain", _MoeAdmin_GetBrainSnapshot0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/runtimes/{agent_key}/brain/graph", _MoeAdmin_GetBrainGraph0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/runtimes/{agent_key}/brain/rpg", _MoeAdmin_GetBrainRpg0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream", _MoeAdmin_RunBrainDream0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/compress", _MoeAdmin_CompressBrainMemories0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/tidy", _MoeAdmin_TidyBrainFragments0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/skills", _MoeAdmin_LockBrainSkill0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/forget", _MoeAdmin_ForgetBrainMemory0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/runtimes/{agent_key}/brain/presence", _MoeAdmin_GetBrainPresence0_HTTP_Handler(srv))
+	r.PUT("/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream-schedule", _MoeAdmin_UpdateBrainDreamSchedule0_HTTP_Handler(srv))
+	r.PUT("/api/admin/moe/runtimes/{agent_key}/brain/rpg/autonomous-mind", _MoeAdmin_UpdateBrainAutonomousMind0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/rpg/think", _MoeAdmin_GenerateBrainThought0_HTTP_Handler(srv))
 	r.PUT("/api/admin/moe/runtimes/{agent_key}/brain/policy", _MoeAdmin_UpdateBrainPolicy0_HTTP_Handler(srv))
 	r.DELETE("/api/admin/moe/brain/episodes/{id}", _MoeAdmin_DeleteBrainEpisode0_HTTP_Handler(srv))
 	r.POST("/api/admin/moe/brain/episodes/{id}/refine", _MoeAdmin_RefineBrainEpisode0_HTTP_Handler(srv))
@@ -178,6 +211,272 @@ func _MoeAdmin_GetBrainSnapshot0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx h
 			return err
 		}
 		reply := out.(*GetBrainSnapshotReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetBrainGraph0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetBrainGraphRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetBrainGraph)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetBrainGraph(ctx, req.(*GetBrainGraphRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetBrainGraphReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetBrainRpg0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetBrainRpgRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetBrainRpg)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetBrainRpg(ctx, req.(*GetBrainRpgRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetBrainRpgReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_RunBrainDream0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RunBrainDreamRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminRunBrainDream)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.RunBrainDream(ctx, req.(*RunBrainDreamRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RunBrainDreamReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_CompressBrainMemories0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CompressBrainMemoriesRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminCompressBrainMemories)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CompressBrainMemories(ctx, req.(*CompressBrainMemoriesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CompressBrainMemoriesReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_TidyBrainFragments0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in TidyBrainFragmentsRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminTidyBrainFragments)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.TidyBrainFragments(ctx, req.(*TidyBrainFragmentsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*TidyBrainFragmentsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_LockBrainSkill0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LockBrainSkillRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminLockBrainSkill)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LockBrainSkill(ctx, req.(*LockBrainSkillRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LockBrainSkillReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_ForgetBrainMemory0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ForgetBrainMemoryRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminForgetBrainMemory)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ForgetBrainMemory(ctx, req.(*ForgetBrainMemoryRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ForgetBrainMemoryReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetBrainPresence0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetBrainPresenceRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetBrainPresence)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetBrainPresence(ctx, req.(*GetBrainPresenceRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetBrainPresenceReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_UpdateBrainDreamSchedule0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateBrainDreamScheduleRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminUpdateBrainDreamSchedule)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateBrainDreamSchedule(ctx, req.(*UpdateBrainDreamScheduleRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateBrainDreamScheduleReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_UpdateBrainAutonomousMind0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateBrainAutonomousMindRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminUpdateBrainAutonomousMind)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateBrainAutonomousMind(ctx, req.(*UpdateBrainAutonomousMindRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateBrainAutonomousMindReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GenerateBrainThought0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GenerateBrainThoughtRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGenerateBrainThought)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GenerateBrainThought(ctx, req.(*GenerateBrainThoughtRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GenerateBrainThoughtReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -425,19 +724,30 @@ func _MoeAdmin_ListToolCalls0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http
 }
 
 type MoeAdminHTTPClient interface {
+	CompressBrainMemories(ctx context.Context, req *CompressBrainMemoriesRequest, opts ...http.CallOption) (rsp *CompressBrainMemoriesReply, err error)
 	CurateBrain(ctx context.Context, req *CurateBrainRequest, opts ...http.CallOption) (rsp *CurateBrainReply, err error)
 	DeleteBotFlow(ctx context.Context, req *DeleteBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
 	DeleteBrainEpisode(ctx context.Context, req *DeleteBrainEpisodeRequest, opts ...http.CallOption) (rsp *DeleteBrainEpisodeReply, err error)
+	ForgetBrainMemory(ctx context.Context, req *ForgetBrainMemoryRequest, opts ...http.CallOption) (rsp *ForgetBrainMemoryReply, err error)
+	GenerateBrainThought(ctx context.Context, req *GenerateBrainThoughtRequest, opts ...http.CallOption) (rsp *GenerateBrainThoughtReply, err error)
 	GetBotFlow(ctx context.Context, req *GetBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
+	GetBrainGraph(ctx context.Context, req *GetBrainGraphRequest, opts ...http.CallOption) (rsp *GetBrainGraphReply, err error)
 	GetBrainPipeline(ctx context.Context, req *GetBrainPipelineRequest, opts ...http.CallOption) (rsp *GetBrainPipelineReply, err error)
+	GetBrainPresence(ctx context.Context, req *GetBrainPresenceRequest, opts ...http.CallOption) (rsp *GetBrainPresenceReply, err error)
+	GetBrainRpg(ctx context.Context, req *GetBrainRpgRequest, opts ...http.CallOption) (rsp *GetBrainRpgReply, err error)
 	GetBrainSnapshot(ctx context.Context, req *GetBrainSnapshotRequest, opts ...http.CallOption) (rsp *GetBrainSnapshotReply, err error)
 	GetInferenceStatus(ctx context.Context, req *GetInferenceStatusRequest, opts ...http.CallOption) (rsp *GetInferenceStatusReply, err error)
 	GetToolsSchema(ctx context.Context, req *GetToolsSchemaRequest, opts ...http.CallOption) (rsp *GetToolsSchemaReply, err error)
 	ListRuntimes(ctx context.Context, req *ListRuntimesRequest, opts ...http.CallOption) (rsp *ListRuntimesReply, err error)
 	ListToolCalls(ctx context.Context, req *ListToolCallsRequest, opts ...http.CallOption) (rsp *ListToolCallsReply, err error)
+	LockBrainSkill(ctx context.Context, req *LockBrainSkillRequest, opts ...http.CallOption) (rsp *LockBrainSkillReply, err error)
 	QueryToolStats(ctx context.Context, req *QueryToolStatsRequest, opts ...http.CallOption) (rsp *QueryToolStatsReply, err error)
 	RefineBrainEpisode(ctx context.Context, req *RefineBrainEpisodeRequest, opts ...http.CallOption) (rsp *RefineBrainEpisodeReply, err error)
 	RunAgentOnce(ctx context.Context, req *RunAgentOnceRequest, opts ...http.CallOption) (rsp *RunAgentOnceReply, err error)
+	RunBrainDream(ctx context.Context, req *RunBrainDreamRequest, opts ...http.CallOption) (rsp *RunBrainDreamReply, err error)
+	TidyBrainFragments(ctx context.Context, req *TidyBrainFragmentsRequest, opts ...http.CallOption) (rsp *TidyBrainFragmentsReply, err error)
+	UpdateBrainAutonomousMind(ctx context.Context, req *UpdateBrainAutonomousMindRequest, opts ...http.CallOption) (rsp *UpdateBrainAutonomousMindReply, err error)
+	UpdateBrainDreamSchedule(ctx context.Context, req *UpdateBrainDreamScheduleRequest, opts ...http.CallOption) (rsp *UpdateBrainDreamScheduleReply, err error)
 	UpdateBrainPolicy(ctx context.Context, req *UpdateBrainPolicyRequest, opts ...http.CallOption) (rsp *GetBrainSnapshotReply, err error)
 	UpsertBotFlow(ctx context.Context, req *UpsertBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
 	UpsertRuntime(ctx context.Context, req *UpsertRuntimeRequest, opts ...http.CallOption) (rsp *UpsertRuntimeReply, err error)
@@ -449,6 +759,19 @@ type MoeAdminHTTPClientImpl struct {
 
 func NewMoeAdminHTTPClient(client *http.Client) MoeAdminHTTPClient {
 	return &MoeAdminHTTPClientImpl{client}
+}
+
+func (c *MoeAdminHTTPClientImpl) CompressBrainMemories(ctx context.Context, in *CompressBrainMemoriesRequest, opts ...http.CallOption) (*CompressBrainMemoriesReply, error) {
+	var out CompressBrainMemoriesReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/compress"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminCompressBrainMemories))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *MoeAdminHTTPClientImpl) CurateBrain(ctx context.Context, in *CurateBrainRequest, opts ...http.CallOption) (*CurateBrainReply, error) {
@@ -490,6 +813,32 @@ func (c *MoeAdminHTTPClientImpl) DeleteBrainEpisode(ctx context.Context, in *Del
 	return &out, nil
 }
 
+func (c *MoeAdminHTTPClientImpl) ForgetBrainMemory(ctx context.Context, in *ForgetBrainMemoryRequest, opts ...http.CallOption) (*ForgetBrainMemoryReply, error) {
+	var out ForgetBrainMemoryReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/forget"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminForgetBrainMemory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GenerateBrainThought(ctx context.Context, in *GenerateBrainThoughtRequest, opts ...http.CallOption) (*GenerateBrainThoughtReply, error) {
+	var out GenerateBrainThoughtReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/think"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminGenerateBrainThought))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *MoeAdminHTTPClientImpl) GetBotFlow(ctx context.Context, in *GetBotFlowRequest, opts ...http.CallOption) (*BotFlowReply, error) {
 	var out BotFlowReply
 	pattern := "/api/admin/moe/runtimes/{agent_key}/flow"
@@ -503,11 +852,50 @@ func (c *MoeAdminHTTPClientImpl) GetBotFlow(ctx context.Context, in *GetBotFlowR
 	return &out, nil
 }
 
+func (c *MoeAdminHTTPClientImpl) GetBrainGraph(ctx context.Context, in *GetBrainGraphRequest, opts ...http.CallOption) (*GetBrainGraphReply, error) {
+	var out GetBrainGraphReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/graph"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetBrainGraph))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *MoeAdminHTTPClientImpl) GetBrainPipeline(ctx context.Context, in *GetBrainPipelineRequest, opts ...http.CallOption) (*GetBrainPipelineReply, error) {
 	var out GetBrainPipelineReply
 	pattern := "/api/admin/moe/brain/pipeline"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationMoeAdminGetBrainPipeline))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GetBrainPresence(ctx context.Context, in *GetBrainPresenceRequest, opts ...http.CallOption) (*GetBrainPresenceReply, error) {
+	var out GetBrainPresenceReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/presence"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetBrainPresence))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GetBrainRpg(ctx context.Context, in *GetBrainRpgRequest, opts ...http.CallOption) (*GetBrainRpgReply, error) {
+	var out GetBrainRpgReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetBrainRpg))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -581,6 +969,19 @@ func (c *MoeAdminHTTPClientImpl) ListToolCalls(ctx context.Context, in *ListTool
 	return &out, nil
 }
 
+func (c *MoeAdminHTTPClientImpl) LockBrainSkill(ctx context.Context, in *LockBrainSkillRequest, opts ...http.CallOption) (*LockBrainSkillReply, error) {
+	var out LockBrainSkillReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/skills"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminLockBrainSkill))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *MoeAdminHTTPClientImpl) QueryToolStats(ctx context.Context, in *QueryToolStatsRequest, opts ...http.CallOption) (*QueryToolStatsReply, error) {
 	var out QueryToolStatsReply
 	pattern := "/api/admin/moe/tools/stats"
@@ -614,6 +1015,58 @@ func (c *MoeAdminHTTPClientImpl) RunAgentOnce(ctx context.Context, in *RunAgentO
 	opts = append(opts, http.Operation(OperationMoeAdminRunAgentOnce))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) RunBrainDream(ctx context.Context, in *RunBrainDreamRequest, opts ...http.CallOption) (*RunBrainDreamReply, error) {
+	var out RunBrainDreamReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminRunBrainDream))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) TidyBrainFragments(ctx context.Context, in *TidyBrainFragmentsRequest, opts ...http.CallOption) (*TidyBrainFragmentsReply, error) {
+	var out TidyBrainFragmentsReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/tidy"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminTidyBrainFragments))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) UpdateBrainAutonomousMind(ctx context.Context, in *UpdateBrainAutonomousMindRequest, opts ...http.CallOption) (*UpdateBrainAutonomousMindReply, error) {
+	var out UpdateBrainAutonomousMindReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/autonomous-mind"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminUpdateBrainAutonomousMind))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) UpdateBrainDreamSchedule(ctx context.Context, in *UpdateBrainDreamScheduleRequest, opts ...http.CallOption) (*UpdateBrainDreamScheduleReply, error) {
+	var out UpdateBrainDreamScheduleReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream-schedule"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminUpdateBrainDreamSchedule))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@
 | 我想… | 去看 |
 |--------|------|
 | 推理服务 + 记忆怎么配合 | [dev/llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) |
+| 记忆 RPG / Bot 观察 UI | [dev/moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) |
 | 记忆系统架构 / API | [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) |
 | 验收记忆 / 混合检索 | [dev/用户级记忆统一改造验收脚本.md](./dev/用户级记忆统一改造验收脚本.md) · [memory-system-dashboard.html](./dev/memory-system-dashboard.html) |
 | 本地跑起来 | [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md) · [dev/ports.md](./dev/ports.md) |
@@ -49,6 +50,7 @@ docs/
 |--------|------|------|
 | 1 | [llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) | **推理 + 记忆产品/配置 SSOT**（llama-server、`llm_inference.*`） |
 | 2 | [用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) | 记忆库架构、API、路径 A/B |
+| 2b | [moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) | **记忆 RPG**：标记-清扫压缩、自主思考、2D 开放世界 UI |
 | 3 | [记忆系统-2026-05-20-变更整理.md](./dev/记忆系统-2026-05-20-变更整理.md) | 近期变更与验收（增量） |
 | 4 | [memory/README.md](./dev/memory/README.md) | 代码目录地图 |
 

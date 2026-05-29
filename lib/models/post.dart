@@ -16,9 +16,11 @@ class Post {
   final bool isLiked;
   final DateTime createdAt;
   final List<TopicTag> topicTags;
-  /// 独立字段中的手绘 JSON（列表与详情均可能下发；无缩略图时依赖此字段回放）
+  /// 独立字段中的手绘 JSON（列表不下发；回放时懒加载 GET /hand-draw）
   final String handDrawCardJson;
   final String handDrawThumbUrl;
+  /// 服务端标记：帖子含手绘（列表仅下发此标志 + 缩略图 URL）
+  final bool hasHandDraw;
   /// ok | pending | rejected
   final String moderationStatus;
   final String moodTag;
@@ -39,6 +41,7 @@ class Post {
     this.topicTags = const [],
     this.handDrawCardJson = '',
     this.handDrawThumbUrl = '',
+    this.hasHandDraw = false,
     this.moderationStatus = '',
     this.moodTag = '',
     this.authorIsBot = false,
@@ -76,6 +79,7 @@ class Post {
     List<TopicTag>? topicTags,
     String? handDrawCardJson,
     String? handDrawThumbUrl,
+    bool? hasHandDraw,
     String? moderationStatus,
     String? moodTag,
     bool? authorIsBot,
@@ -95,6 +99,7 @@ class Post {
       topicTags: topicTags ?? this.topicTags,
       handDrawCardJson: handDrawCardJson ?? this.handDrawCardJson,
       handDrawThumbUrl: handDrawThumbUrl ?? this.handDrawThumbUrl,
+      hasHandDraw: hasHandDraw ?? this.hasHandDraw,
       moderationStatus: moderationStatus ?? this.moderationStatus,
       moodTag: moodTag ?? this.moodTag,
       authorIsBot: authorIsBot ?? this.authorIsBot,
@@ -213,6 +218,10 @@ class Post {
       final th = apiField(json, 'hand_draw_thumb_url', 'handDrawThumbUrl');
       final handDrawThumbUrl = th == null ? '' : th.toString();
 
+      final hasHandDraw = _parseBool(apiField(json, 'has_hand_draw', 'hasHandDraw')) ||
+          handDrawCardJson.isNotEmpty ||
+          handDrawThumbUrl.isNotEmpty;
+
       final ms = apiField(json, 'moderation_status', 'moderationStatus');
       final moderationStatus = ms == null ? '' : ms.toString();
 
@@ -230,6 +239,7 @@ class Post {
         topicTags: topicTags,
         handDrawCardJson: handDrawCardJson,
         handDrawThumbUrl: handDrawThumbUrl,
+        hasHandDraw: hasHandDraw,
         moderationStatus: moderationStatus,
         moodTag: apiString(json, 'mood_tag', 'moodTag'),
         authorIsBot: _parseBool(apiField(json, 'author_is_bot', 'authorIsBot')),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
+import 'notification_service.dart';
 import 'ws_channel_connector.dart';
 import '../auth_service.dart';
 import '../utils/chat_message_display.dart';
@@ -251,6 +252,16 @@ class ChatPushService {
     }
 
     final msgType = map['type']?.toString();
+    if (msgType == 'notification') {
+      final inner = map['data'];
+      if (inner is Map) {
+        final sub = Map<String, dynamic>.from(inner)['type']?.toString() ?? '';
+        if (sub == 'announcement_published' || sub == 'system_notification') {
+          NotificationService.onRealtimeRefresh?.call();
+        }
+      }
+      return;
+    }
     if (msgType == 'incoming_call') {
       _handleIncomingCall(map);
       return;

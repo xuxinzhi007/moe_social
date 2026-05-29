@@ -1,6 +1,7 @@
 package mediabiz
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -9,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"backend/utils"
 )
 
 // ImageConfig 本地图片存储配置。
@@ -55,11 +58,7 @@ type ImageFile struct {
 }
 
 func normalizeImageDir(cfg ImageConfig) string {
-	dir := strings.TrimSpace(cfg.LocalDir)
-	if dir == "" {
-		return "./data/images"
-	}
-	return dir
+	return utils.ResolveImageLocalDir(cfg.LocalDir)
 }
 
 func normalizeBaseURL(cfg ImageConfig) string {
@@ -223,4 +222,16 @@ func UploadImage(_ context.Context, cfg ImageConfig, in UploadInput) (ImageInfo,
 		Size:      info.Size(),
 		CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
 	}, nil
+}
+
+// SaveImageBytes 将内存中的图片写入用户目录（服务端生成缩略图等）。
+func SaveImageBytes(_ context.Context, cfg ImageConfig, userFolder, origName string, data []byte) (ImageInfo, error) {
+	if len(data) == 0 {
+		return ImageInfo{}, fmt.Errorf("empty image data")
+	}
+	return UploadImage(context.Background(), cfg, UploadInput{
+		UserFolder: userFolder,
+		OrigName:   origName,
+		Reader:     bytes.NewReader(data),
+	})
 }

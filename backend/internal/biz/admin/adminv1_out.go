@@ -26,8 +26,12 @@ func UpdateAnnouncementV1(item *adminv1.AdminAnnouncementItem) *adminv1.AdminUpd
 	return &adminv1.AdminUpdateAnnouncementResp{Announcement: item}
 }
 
-func PublishAnnouncementV1(item *adminv1.AdminAnnouncementItem) *adminv1.AdminPublishAnnouncementResp {
-	return &adminv1.AdminPublishAnnouncementResp{Announcement: item}
+func PublishAnnouncementV1(item *adminv1.AdminAnnouncementItem, notificationsCreated, wsSent int32) *adminv1.AdminPublishAnnouncementResp {
+	return &adminv1.AdminPublishAnnouncementResp{
+		Announcement:          item,
+		NotificationsCreated: notificationsCreated,
+		WsSent:               wsSent,
+	}
 }
 
 func ListAuditLogsV1(items []*adminv1.AdminAuditLogItem, total int32) *adminv1.AdminListAuditLogsResp {

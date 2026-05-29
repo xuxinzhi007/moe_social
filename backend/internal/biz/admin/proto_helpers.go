@@ -2,6 +2,7 @@ package adminbiz
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -113,10 +114,17 @@ func postModelToAdminV1(post model.Post, user model.User, isLiked bool) *adminv1
 		CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
 		HandDrawCard:      post.HandDrawCard,
 		HandDrawThumbUrl:  post.HandDrawThumbURL,
+		HasHandDraw:       post.HasHandDraw || post.HandDrawThumbURL != "" || post.HandDrawCard != "",
 		ModerationStatus:  moderationStatus,
 		AuthorIsBot:       user.IsBot,
 		AuthorBotAgentKey: strings.TrimSpace(user.BotAgentKey),
 	}
+}
+
+func postModelToAdminV1ForList(post model.Post, user model.User, isLiked bool) *adminv1.Post {
+	p := postModelToAdminV1(post, user, isLiked)
+	p.HandDrawCard = ""
+	return p
 }
 
 func adminAccountToProto(row model.AdminAccount) *adminv1.AdminAccountItem {
@@ -192,8 +200,25 @@ func adminUserDisplayName(db *gorm.DB, userID uint) string {
 	if err := db.First(&user, userID).Error; err != nil {
 		return ""
 	}
+	return adminUserLabel(user)
+}
+
+func adminUserLabel(user model.User) string {
 	if user.Username != "" {
 		return user.Username
 	}
-	return user.Email
+	if user.Email != "" {
+		return user.Email
+	}
+	if user.ID != 0 {
+		return fmt.Sprintf("用户#%d", user.ID)
+	}
+	return "未知用户"
+}
+
+func adminUserAvatar(user model.User) string {
+	if user.Avatar != "" {
+		return user.Avatar
+	}
+	return "https://picsum.photos/150"
 }

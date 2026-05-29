@@ -45,7 +45,7 @@ export function WalletOrdersPage() {
           setTotal(0)
           return
         }
-        setVipItems(res.data.items as unknown as OrderRow[])
+        setVipItems((res.data.items || []) as unknown as OrderRow[])
         setTotal(res.data.total)
       } else {
         const res = await client.listGiftPurchaseOrders({
@@ -60,7 +60,7 @@ export function WalletOrdersPage() {
           setTotal(0)
           return
         }
-        setGiftItems(res.data.items as unknown as OrderRow[])
+        setGiftItems((res.data.items || []) as unknown as OrderRow[])
         setTotal(res.data.total)
       }
     } catch (e) {

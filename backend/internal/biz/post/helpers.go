@@ -75,10 +75,25 @@ func BuildPostV1(post model.Post, user model.User, isLiked bool) *postv1.Post {
 		CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
 		HandDrawCard:      post.HandDrawCard,
 		HandDrawThumbUrl:  post.HandDrawThumbURL,
+		HasHandDraw:       post.HasHandDraw || post.HandDrawThumbURL != "" || post.HandDrawCard != "",
 		ModerationStatus:  moderationStatusOrDefault(post.ModerationStatus),
 		AuthorIsBot:       user.IsBot,
 		AuthorBotAgentKey: strings.TrimSpace(user.BotAgentKey),
 	}
+}
+
+// BuildPostV1ForList 列表项：不下发笔迹 JSON，仅保留缩略图与 has_hand_draw。
+func BuildPostV1ForList(post model.Post, user model.User, isLiked bool) *postv1.Post {
+	p := BuildPostV1(post, user, isLiked)
+	p.HandDrawCard = ""
+	return p
+}
+
+// BuildPostV1ForDetail 详情：笔迹 JSON 走懒加载接口，不下发大字段。
+func BuildPostV1ForDetail(post model.Post, user model.User, isLiked bool) *postv1.Post {
+	p := BuildPostV1(post, user, isLiked)
+	p.HandDrawCard = ""
+	return p
 }
 
 // BuildProtoPost 保留别名，返回 post.v1 Post。

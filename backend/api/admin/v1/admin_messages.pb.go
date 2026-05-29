@@ -1493,6 +1493,7 @@ func (x *AdminBroadcastNotificationReq) GetContent() string {
 type AdminBroadcastNotificationResp struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	NotificationsCreated int32                  `protobuf:"varint,1,opt,name=notifications_created,json=notificationsCreated,proto3" json:"notifications_created,omitempty"`
+	WsSent               int32                  `protobuf:"varint,2,opt,name=ws_sent,json=wsSent,proto3" json:"ws_sent,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1530,6 +1531,13 @@ func (*AdminBroadcastNotificationResp) Descriptor() ([]byte, []int) {
 func (x *AdminBroadcastNotificationResp) GetNotificationsCreated() int32 {
 	if x != nil {
 		return x.NotificationsCreated
+	}
+	return 0
+}
+
+func (x *AdminBroadcastNotificationResp) GetWsSent() int32 {
+	if x != nil {
+		return x.WsSent
 	}
 	return 0
 }
@@ -9210,6 +9218,15 @@ type AdminPostReportItem struct {
 	Reason             string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	CreatedAt          string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	PostContentPreview string                 `protobuf:"bytes,6,opt,name=post_content_preview,json=postContentPreview,proto3" json:"post_content_preview,omitempty"`
+	ReporterUserName   string                 `protobuf:"bytes,7,opt,name=reporter_user_name,json=reporterUserName,proto3" json:"reporter_user_name,omitempty"`
+	ReporterUserAvatar string                 `protobuf:"bytes,8,opt,name=reporter_user_avatar,json=reporterUserAvatar,proto3" json:"reporter_user_avatar,omitempty"`
+	PostAuthorId       string                 `protobuf:"bytes,9,opt,name=post_author_id,json=postAuthorId,proto3" json:"post_author_id,omitempty"`
+	PostAuthorName     string                 `protobuf:"bytes,10,opt,name=post_author_name,json=postAuthorName,proto3" json:"post_author_name,omitempty"`
+	PostContent        string                 `protobuf:"bytes,11,opt,name=post_content,json=postContent,proto3" json:"post_content,omitempty"`
+	PostImages         []string               `protobuf:"bytes,12,rep,name=post_images,json=postImages,proto3" json:"post_images,omitempty"`
+	HandDrawThumbUrl   string                 `protobuf:"bytes,13,opt,name=hand_draw_thumb_url,json=handDrawThumbUrl,proto3" json:"hand_draw_thumb_url,omitempty"`
+	PostAuthorAvatar   string                 `protobuf:"bytes,14,opt,name=post_author_avatar,json=postAuthorAvatar,proto3" json:"post_author_avatar,omitempty"`
+	HasHandDraw        bool                   `protobuf:"varint,15,opt,name=has_hand_draw,json=hasHandDraw,proto3" json:"has_hand_draw,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9286,6 +9303,69 @@ func (x *AdminPostReportItem) GetPostContentPreview() string {
 	return ""
 }
 
+func (x *AdminPostReportItem) GetReporterUserName() string {
+	if x != nil {
+		return x.ReporterUserName
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetReporterUserAvatar() string {
+	if x != nil {
+		return x.ReporterUserAvatar
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetPostAuthorId() string {
+	if x != nil {
+		return x.PostAuthorId
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetPostAuthorName() string {
+	if x != nil {
+		return x.PostAuthorName
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetPostContent() string {
+	if x != nil {
+		return x.PostContent
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetPostImages() []string {
+	if x != nil {
+		return x.PostImages
+	}
+	return nil
+}
+
+func (x *AdminPostReportItem) GetHandDrawThumbUrl() string {
+	if x != nil {
+		return x.HandDrawThumbUrl
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetPostAuthorAvatar() string {
+	if x != nil {
+		return x.PostAuthorAvatar
+	}
+	return ""
+}
+
+func (x *AdminPostReportItem) GetHasHandDraw() bool {
+	if x != nil {
+		return x.HasHandDraw
+	}
+	return false
+}
+
 type AdminPublishAnnouncementReq struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	AnnouncementId string                 `protobuf:"bytes,1,opt,name=announcement_id,json=announcementId,proto3" json:"announcement_id,omitempty"`
@@ -9331,10 +9411,12 @@ func (x *AdminPublishAnnouncementReq) GetAnnouncementId() string {
 }
 
 type AdminPublishAnnouncementResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Announcement  *AdminAnnouncementItem `protobuf:"bytes,1,opt,name=announcement,proto3" json:"announcement,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Announcement         *AdminAnnouncementItem `protobuf:"bytes,1,opt,name=announcement,proto3" json:"announcement,omitempty"`
+	NotificationsCreated int32                  `protobuf:"varint,2,opt,name=notifications_created,json=notificationsCreated,proto3" json:"notifications_created,omitempty"`
+	WsSent               int32                  `protobuf:"varint,3,opt,name=ws_sent,json=wsSent,proto3" json:"ws_sent,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *AdminPublishAnnouncementResp) Reset() {
@@ -9372,6 +9454,20 @@ func (x *AdminPublishAnnouncementResp) GetAnnouncement() *AdminAnnouncementItem 
 		return x.Announcement
 	}
 	return nil
+}
+
+func (x *AdminPublishAnnouncementResp) GetNotificationsCreated() int32 {
+	if x != nil {
+		return x.NotificationsCreated
+	}
+	return 0
+}
+
+func (x *AdminPublishAnnouncementResp) GetWsSent() int32 {
+	if x != nil {
+		return x.WsSent
+	}
+	return 0
 }
 
 type AdminRefineMoeBrainEpisodeReq struct {
@@ -13805,6 +13901,7 @@ type Post struct {
 	ModerationStatus  string                 `protobuf:"bytes,14,opt,name=moderation_status,json=moderationStatus,proto3" json:"moderation_status,omitempty"`
 	AuthorIsBot       bool                   `protobuf:"varint,15,opt,name=author_is_bot,json=authorIsBot,proto3" json:"author_is_bot,omitempty"`
 	AuthorBotAgentKey string                 `protobuf:"bytes,16,opt,name=author_bot_agent_key,json=authorBotAgentKey,proto3" json:"author_bot_agent_key,omitempty"`
+	HasHandDraw       bool                   `protobuf:"varint,17,opt,name=has_hand_draw,json=hasHandDraw,proto3" json:"has_hand_draw,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -13949,6 +14046,13 @@ func (x *Post) GetAuthorBotAgentKey() string {
 		return x.AuthorBotAgentKey
 	}
 	return ""
+}
+
+func (x *Post) GetHasHandDraw() bool {
+	if x != nil {
+		return x.HasHandDraw
+	}
+	return false
 }
 
 type RecordAdminAuditLogReq struct {
@@ -15966,9 +16070,10 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\acreated\x18\x01 \x01(\x05R\acreated\"O\n" +
 	"\x1dAdminBroadcastNotificationReq\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"U\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"n\n" +
 	"\x1eAdminBroadcastNotificationResp\x123\n" +
-	"\x15notifications_created\x18\x01 \x01(\x05R\x14notificationsCreated\"\x95\x01\n" +
+	"\x15notifications_created\x18\x01 \x01(\x05R\x14notificationsCreated\x12\x17\n" +
+	"\aws_sent\x18\x02 \x01(\x05R\x06wsSent\"\x95\x01\n" +
 	"\x16AdminCheckInRewardItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12)\n" +
 	"\x10consecutive_days\x18\x02 \x01(\x05R\x0fconsecutiveDays\x12\x1d\n" +
@@ -16495,7 +16600,7 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\vtotal_calls\x18\x02 \x01(\x03R\n" +
 	"totalCalls\x12#\n" +
 	"\rsuccess_calls\x18\x03 \x01(\x03R\fsuccessCalls\x12!\n" +
-	"\ffailed_calls\x18\x04 \x01(\x03R\vfailedCalls\"\xd1\x01\n" +
+	"\ffailed_calls\x18\x04 \x01(\x03R\vfailedCalls\"\xc6\x04\n" +
 	"\x13AdminPostReportItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\apost_id\x18\x02 \x01(\tR\x06postId\x12(\n" +
@@ -16503,11 +16608,24 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x06reason\x18\x04 \x01(\tR\x06reason\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x120\n" +
-	"\x14post_content_preview\x18\x06 \x01(\tR\x12postContentPreview\"F\n" +
+	"\x14post_content_preview\x18\x06 \x01(\tR\x12postContentPreview\x12,\n" +
+	"\x12reporter_user_name\x18\a \x01(\tR\x10reporterUserName\x120\n" +
+	"\x14reporter_user_avatar\x18\b \x01(\tR\x12reporterUserAvatar\x12$\n" +
+	"\x0epost_author_id\x18\t \x01(\tR\fpostAuthorId\x12(\n" +
+	"\x10post_author_name\x18\n" +
+	" \x01(\tR\x0epostAuthorName\x12!\n" +
+	"\fpost_content\x18\v \x01(\tR\vpostContent\x12\x1f\n" +
+	"\vpost_images\x18\f \x03(\tR\n" +
+	"postImages\x12-\n" +
+	"\x13hand_draw_thumb_url\x18\r \x01(\tR\x10handDrawThumbUrl\x12,\n" +
+	"\x12post_author_avatar\x18\x0e \x01(\tR\x10postAuthorAvatar\x12\"\n" +
+	"\rhas_hand_draw\x18\x0f \x01(\bR\vhasHandDraw\"F\n" +
 	"\x1bAdminPublishAnnouncementReq\x12'\n" +
-	"\x0fannouncement_id\x18\x01 \x01(\tR\x0eannouncementId\"c\n" +
+	"\x0fannouncement_id\x18\x01 \x01(\tR\x0eannouncementId\"\xb1\x01\n" +
 	"\x1cAdminPublishAnnouncementResp\x12C\n" +
-	"\fannouncement\x18\x01 \x01(\v2\x1f.admin.v1.AdminAnnouncementItemR\fannouncement\"R\n" +
+	"\fannouncement\x18\x01 \x01(\v2\x1f.admin.v1.AdminAnnouncementItemR\fannouncement\x123\n" +
+	"\x15notifications_created\x18\x02 \x01(\x05R\x14notificationsCreated\x12\x17\n" +
+	"\aws_sent\x18\x03 \x01(\x05R\x06wsSent\"R\n" +
 	"\x1dAdminRefineMoeBrainEpisodeReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12!\n" +
 	"\fmax_attempts\x18\x02 \x01(\x05R\vmaxAttempts\"\x90\x02\n" +
@@ -16942,7 +17060,7 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x06detail\x18\x04 \x01(\tR\x06detail\x12\x0e\n" +
 	"\x02at\x18\x05 \x01(\tR\x02at\x12\x1f\n" +
 	"\vduration_ms\x18\x06 \x01(\x03R\n" +
-	"durationMs\"\x95\x04\n" +
+	"durationMs\"\xb9\x04\n" +
 	"\x04Post\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
@@ -16963,7 +17081,8 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x13hand_draw_thumb_url\x18\r \x01(\tR\x10handDrawThumbUrl\x12+\n" +
 	"\x11moderation_status\x18\x0e \x01(\tR\x10moderationStatus\x12\"\n" +
 	"\rauthor_is_bot\x18\x0f \x01(\bR\vauthorIsBot\x12/\n" +
-	"\x14author_bot_agent_key\x18\x10 \x01(\tR\x11authorBotAgentKey\"\xcf\x01\n" +
+	"\x14author_bot_agent_key\x18\x10 \x01(\tR\x11authorBotAgentKey\x12\"\n" +
+	"\rhas_hand_draw\x18\x11 \x01(\bR\vhasHandDraw\"\xcf\x01\n" +
 	"\x16RecordAdminAuditLogReq\x12\x19\n" +
 	"\badmin_id\x18\x01 \x01(\x04R\aadminId\x12\x1d\n" +
 	"\n" +

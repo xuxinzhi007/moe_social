@@ -41,6 +41,10 @@ func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode, db *gor
 	if len(preferred) > 0 {
 		lines = append(lines, "优先使用以下标签方向："+strings.Join(preferred, "、"))
 	}
+	locked := LockedSkillsFromRuntime(rt)
+	if len(locked) > 0 {
+		lines = append(lines, "【记忆 RPG · 已锁定技能】发帖时必须体现："+strings.Join(locked, "、"))
+	}
 	if len(overused) > 0 {
 		lines = append(lines, "近期已过多，请换角度："+strings.Join(overused, "、"))
 	}

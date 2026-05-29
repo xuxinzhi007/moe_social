@@ -1,3 +1,5 @@
+import '../utils/api_json.dart';
+
 /// 统一解析后端 HTTP 响应（compat BaseResp + proto 信封 + proto 直出）。
 class ApiResponse {
   static const _envelopeKeys = {'code', 'message', 'success', 'reason'};
@@ -128,21 +130,37 @@ class ApiResponse {
     ],
   }) {
     final direct = json['data'];
-    if (direct is List) return direct;
+    if (direct is List) {
+      return direct
+          .map((e) => e is Map ? apiNormalizedMap(e) : e)
+          .toList(growable: false);
+    }
     if (direct is Map) {
       for (final key in keys) {
         final v = direct[key];
-        if (v is List) return v;
+        if (v is List) {
+          return v
+              .map((e) => e is Map ? apiNormalizedMap(e) : e)
+              .toList(growable: false);
+        }
       }
     }
     for (final key in keys) {
       final v = json[key];
-      if (v is List) return v;
+      if (v is List) {
+        return v
+            .map((e) => e is Map ? apiNormalizedMap(e) : e)
+            .toList(growable: false);
+      }
     }
     final nested = payload(json);
     for (final key in keys) {
       final v = nested[key];
-      if (v is List) return v;
+      if (v is List) {
+        return v
+            .map((e) => e is Map ? apiNormalizedMap(e) : e)
+            .toList(growable: false);
+      }
     }
     return const [];
   }
@@ -173,16 +191,16 @@ class ApiResponse {
     ],
   }) {
     final direct = json['data'];
-    if (direct is Map<String, dynamic>) return direct;
-    if (direct is Map) return Map<String, dynamic>.from(direct);
+    if (direct is Map<String, dynamic>) return apiNormalizedMap(direct);
+    if (direct is Map) return apiNormalizedMap(direct);
 
     final flat = payload(json);
     for (final key in keys) {
       final v = flat[key];
-      if (v is Map<String, dynamic>) return v;
-      if (v is Map) return Map<String, dynamic>.from(v);
+      if (v is Map<String, dynamic>) return apiNormalizedMap(v);
+      if (v is Map) return apiNormalizedMap(v);
     }
-    return flat;
+    return apiNormalizedMap(flat);
   }
 
   static int? intField(Map<String, dynamic> json, String key) {

@@ -2,6 +2,7 @@ package protohttp
 
 import (
 	"context"
+	"time"
 
 	moev1pb "backend/api/moe/v1"
 	"backend/internal/apilegacy/config"
@@ -129,6 +130,159 @@ func (s *Server) GetBrainSnapshot(ctx context.Context, in *moev1pb.GetBrainSnaps
 		return nil, err
 	}
 	return brainToProto(snap), nil
+}
+
+func (s *Server) GetBrainGraph(ctx context.Context, in *moev1pb.GetBrainGraphRequest) (*moev1pb.GetBrainGraphReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	limit := int(in.GetLimit())
+	if limit <= 0 {
+		limit = 80
+	}
+	view, err := admin.GetBrainGraph(ctx, in.GetAgentKey(), limit)
+	if err != nil {
+		return nil, err
+	}
+	return graphToProto(view), nil
+}
+
+func (s *Server) GetBrainRpg(ctx context.Context, in *moev1pb.GetBrainRpgRequest) (*moev1pb.GetBrainRpgReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	view, err := admin.GetBrainRpg(ctx, in.GetAgentKey())
+	if err != nil {
+		return nil, err
+	}
+	return rpgToProto(view), nil
+}
+
+func (s *Server) RunBrainDream(ctx context.Context, in *moev1pb.RunBrainDreamRequest) (*moev1pb.RunBrainDreamReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	res, err := admin.RunBrainDream(ctx, in.GetAgentKey(), in.GetSkipCurate())
+	if err != nil {
+		return nil, err
+	}
+	return dreamToProto(in.GetAgentKey(), res), nil
+}
+
+func (s *Server) CompressBrainMemories(ctx context.Context, in *moev1pb.CompressBrainMemoriesRequest) (*moev1pb.CompressBrainMemoriesReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	res, err := admin.CompressBrainMemories(ctx, in.GetAgentKey(), int(in.GetDays()))
+	if err != nil {
+		return nil, err
+	}
+	return compressToProto(in.GetAgentKey(), res), nil
+}
+
+func (s *Server) TidyBrainFragments(ctx context.Context, in *moev1pb.TidyBrainFragmentsRequest) (*moev1pb.TidyBrainFragmentsReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	res, err := admin.TidyBrainFragments(ctx, in.GetAgentKey(), int(in.GetMaxEpisodes()))
+	if err != nil {
+		return nil, err
+	}
+	return tidyToProto(in.GetAgentKey(), res), nil
+}
+
+func (s *Server) LockBrainSkill(ctx context.Context, in *moev1pb.LockBrainSkillRequest) (*moev1pb.LockBrainSkillReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	locked, err := admin.LockBrainSkill(ctx, in.GetAgentKey(), in.GetTag(), in.GetLock())
+	if err != nil {
+		return nil, err
+	}
+	return &moev1pb.LockBrainSkillReply{AgentKey: in.GetAgentKey(), LockedSkills: locked}, nil
+}
+
+func (s *Server) ForgetBrainMemory(ctx context.Context, in *moev1pb.ForgetBrainMemoryRequest) (*moev1pb.ForgetBrainMemoryReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	deleted, err := admin.ForgetBrainMemory(ctx, in.GetAgentKey(), in.GetMemoryKey())
+	if err != nil {
+		return nil, err
+	}
+	return &moev1pb.ForgetBrainMemoryReply{
+		AgentKey:  in.GetAgentKey(),
+		MemoryKey: in.GetMemoryKey(),
+		Deleted:   deleted,
+	}, nil
+}
+
+func (s *Server) GetBrainPresence(ctx context.Context, in *moev1pb.GetBrainPresenceRequest) (*moev1pb.GetBrainPresenceReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	view, err := admin.GetBrainPresence(ctx, in.GetAgentKey())
+	if err != nil {
+		return nil, err
+	}
+	return presenceToProto(view), nil
+}
+
+func (s *Server) UpdateBrainDreamSchedule(ctx context.Context, in *moev1pb.UpdateBrainDreamScheduleRequest) (*moev1pb.UpdateBrainDreamScheduleReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := admin.UpdateBrainDreamSchedule(ctx, in.GetAgentKey(), in.GetDreamEnabled(), in.GetDreamCron())
+	if err != nil {
+		return nil, err
+	}
+	return &moev1pb.UpdateBrainDreamScheduleReply{
+		AgentKey:     in.GetAgentKey(),
+		DreamEnabled: cfg.DreamEnabled,
+		DreamCron:    cfg.DreamCron,
+		NextDreamAt:  cfg.NextDreamAt,
+	}, nil
+}
+
+func (s *Server) UpdateBrainAutonomousMind(ctx context.Context, in *moev1pb.UpdateBrainAutonomousMindRequest) (*moev1pb.UpdateBrainAutonomousMindReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := admin.UpdateBrainAutonomousMind(ctx, in.GetAgentKey(), in.GetAutonomousMindEnabled())
+	if err != nil {
+		return nil, err
+	}
+	return &moev1pb.UpdateBrainAutonomousMindReply{
+		AgentKey:              in.GetAgentKey(),
+		AutonomousMindEnabled: cfg.AutonomousMindEnabled,
+	}, nil
+}
+
+func (s *Server) GenerateBrainThought(ctx context.Context, in *moev1pb.GenerateBrainThoughtRequest) (*moev1pb.GenerateBrainThoughtReply, error) {
+	admin, err := s.requireAdmin()
+	if err != nil {
+		return nil, err
+	}
+	thought, err := admin.GenerateBrainThought(ctx, in.GetAgentKey())
+	if err != nil {
+		return nil, err
+	}
+	return &moev1pb.GenerateBrainThoughtReply{
+		AgentKey:      in.GetAgentKey(),
+		Thought:       thought,
+		ThoughtSource: "model",
+		GeneratedAt:   time.Now().Format("2006-01-02 15:04:05"),
+	}, nil
 }
 
 func (s *Server) UpdateBrainPolicy(ctx context.Context, in *moev1pb.UpdateBrainPolicyRequest) (*moev1pb.GetBrainSnapshotReply, error) {

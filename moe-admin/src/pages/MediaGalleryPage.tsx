@@ -9,6 +9,7 @@ import { useDirectAdminApi } from '../lib/adminApi'
 import { DeployApiError } from '../api/deployClient'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
+import { resolveMediaViewUrl } from '../lib/mediaUrl'
 
 type OwnerRow = {
   owner_folder: string
@@ -62,24 +63,6 @@ function mediaKindTone(kind: string): TagTone {
     default:
       return 'neutral'
   }
-}
-
-function resolveMediaViewUrl(
-  rawUrl: string,
-  apiBase: string,
-  devDirect: boolean,
-  apiTarget: 'local' | 'cloud',
-): string {
-  const pathMatch = rawUrl.match(/\/api\/images\/[^?#]+/)
-  if (!pathMatch) return rawUrl
-  const path = pathMatch[0]
-  if (devDirect) {
-    if (apiTarget === 'cloud' && apiBase) return `${apiBase.replace(/\/$/, '')}${path}`
-    return path
-  }
-  const base = apiBase.replace(/\/$/, '')
-  if (!base) return rawUrl
-  return `${base}${path}`
 }
 
 export function MediaGalleryPage() {
@@ -270,8 +253,8 @@ export function MediaGalleryPage() {
         { label: '当前匹配', value: loading ? '…' : total },
       ]}
       headActions={
-        <Link to="/system/app-config" className="btn btn-ghost">
-          应用配置
+        <Link to="/system/platform?tab=config" className="btn btn-ghost">
+          图库配置
         </Link>
       }
       banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}

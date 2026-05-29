@@ -5,6 +5,7 @@ import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { moderationTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
+import { fieldNum, fieldStr } from '../lib/apiRecord'
 import { DeployApiError } from '../api/deployClient'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
@@ -79,12 +80,15 @@ export function PostsPage() {
       {
         key: 'content',
         header: '内容',
-        render: (row) => (
-          <span style={{ maxWidth: 320, display: 'inline-block' }}>
-            {row.content.slice(0, 80)}
-            {row.content.length > 80 ? '…' : ''}
-          </span>
-        ),
+        render: (row) => {
+          const content = fieldStr(row as Record<string, unknown>, 'content')
+          return (
+            <span style={{ maxWidth: 320, display: 'inline-block' }}>
+              {content.slice(0, 80)}
+              {content.length > 80 ? '…' : ''}
+            </span>
+          )
+        },
       },
       {
         key: 'status',
@@ -96,11 +100,11 @@ export function PostsPage() {
         header: '赞/评',
         render: (row) => (
           <>
-            <AdminTag label={`${row.likes} 赞`} tone="neutral" />
+            <AdminTag label={`${fieldNum(row as Record<string, unknown>, 'likes')} 赞`} tone="neutral" />
             <span className="muted" style={{ margin: '0 4px' }}>
               /
             </span>
-            <AdminTag label={`${row.comments} 评`} tone="info" />
+            <AdminTag label={`${fieldNum(row as Record<string, unknown>, 'comments')} 评`} tone="info" />
           </>
         ),
       },

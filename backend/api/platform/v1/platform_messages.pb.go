@@ -1931,6 +1931,267 @@ func (x *LlmDownloadModelReq) GetModel() string {
 	return ""
 }
 
+// 用户侧公告（仅 published）。
+type AnnouncementItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	PublishedAt   string                 `protobuf:"bytes,4,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AnnouncementItem) Reset() {
+	*x = AnnouncementItem{}
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AnnouncementItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AnnouncementItem) ProtoMessage() {}
+
+func (x *AnnouncementItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AnnouncementItem.ProtoReflect.Descriptor instead.
+func (*AnnouncementItem) Descriptor() ([]byte, []int) {
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *AnnouncementItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AnnouncementItem) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *AnnouncementItem) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *AnnouncementItem) GetPublishedAt() string {
+	if x != nil {
+		return x.PublishedAt
+	}
+	return ""
+}
+
+type ListAnnouncementsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAnnouncementsReq) Reset() {
+	*x = ListAnnouncementsReq{}
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAnnouncementsReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAnnouncementsReq) ProtoMessage() {}
+
+func (x *ListAnnouncementsReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAnnouncementsReq.ProtoReflect.Descriptor instead.
+func (*ListAnnouncementsReq) Descriptor() ([]byte, []int) {
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *ListAnnouncementsReq) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListAnnouncementsReq) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListAnnouncementsResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*AnnouncementItem    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAnnouncementsResp) Reset() {
+	*x = ListAnnouncementsResp{}
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAnnouncementsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAnnouncementsResp) ProtoMessage() {}
+
+func (x *ListAnnouncementsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAnnouncementsResp.ProtoReflect.Descriptor instead.
+func (*ListAnnouncementsResp) Descriptor() ([]byte, []int) {
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ListAnnouncementsResp) GetItems() []*AnnouncementItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListAnnouncementsResp) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type GetAnnouncementReq struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AnnouncementId string                 `protobuf:"bytes,1,opt,name=announcement_id,json=announcementId,proto3" json:"announcement_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetAnnouncementReq) Reset() {
+	*x = GetAnnouncementReq{}
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAnnouncementReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAnnouncementReq) ProtoMessage() {}
+
+func (x *GetAnnouncementReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAnnouncementReq.ProtoReflect.Descriptor instead.
+func (*GetAnnouncementReq) Descriptor() ([]byte, []int) {
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetAnnouncementReq) GetAnnouncementId() string {
+	if x != nil {
+		return x.AnnouncementId
+	}
+	return ""
+}
+
+type GetAnnouncementResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *AnnouncementItem      `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAnnouncementResp) Reset() {
+	*x = GetAnnouncementResp{}
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAnnouncementResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAnnouncementResp) ProtoMessage() {}
+
+func (x *GetAnnouncementResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_platform_v1_platform_messages_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAnnouncementResp.ProtoReflect.Descriptor instead.
+func (*GetAnnouncementResp) Descriptor() ([]byte, []int) {
+	return file_api_platform_v1_platform_messages_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *GetAnnouncementResp) GetItem() *AnnouncementItem {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
 var File_api_platform_v1_platform_messages_proto protoreflect.FileDescriptor
 
 const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
@@ -2069,7 +2330,22 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x11LlmDeleteModelReq\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\"+\n" +
 	"\x13LlmDownloadModelReq\x12\x14\n" +
-	"\x05model\x18\x01 \x01(\tR\x05model2\xb0\x0e\n" +
+	"\x05model\x18\x01 \x01(\tR\x05model\"u\n" +
+	"\x10AnnouncementItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12!\n" +
+	"\fpublished_at\x18\x04 \x01(\tR\vpublishedAt\"G\n" +
+	"\x14ListAnnouncementsReq\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"b\n" +
+	"\x15ListAnnouncementsResp\x123\n" +
+	"\x05items\x18\x01 \x03(\v2\x1d.platform.v1.AnnouncementItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"=\n" +
+	"\x12GetAnnouncementReq\x12'\n" +
+	"\x0fannouncement_id\x18\x01 \x01(\tR\x0eannouncementId\"H\n" +
+	"\x13GetAnnouncementResp\x121\n" +
+	"\x04item\x18\x01 \x01(\v2\x1d.platform.v1.AnnouncementItemR\x04item2\xad\x10\n" +
 	"\bPlatform\x12\x89\x01\n" +
 	"\x15GetPublicClientConfig\x12%.platform.v1.GetPublicClientConfigReq\x1a&.platform.v1.GetPublicClientConfigResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/public/client-config\x12y\n" +
 	"\x0fListUserContent\x12\x1f.platform.v1.ListUserContentReq\x1a .platform.v1.ListUserContentResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/user/{user_id}/content\x12e\n" +
@@ -2089,7 +2365,9 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x0eLlmCreateAgent\x12\x1e.platform.v1.LlmCreateAgentReq\x1a\x15.platform.v1.BaseResp\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/llm/agents\x12V\n" +
 	"\aLlmChat\x12\x17.platform.v1.LlmChatReq\x1a\x18.platform.v1.LlmChatResp\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/llm/chat\x12j\n" +
 	"\x0eLlmDeleteModel\x12\x1e.platform.v1.LlmDeleteModelReq\x1a\x15.platform.v1.BaseResp\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/llm/models/delete\x12p\n" +
-	"\x10LlmDownloadModel\x12 .platform.v1.LlmDownloadModelReq\x1a\x15.platform.v1.BaseResp\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/llm/models/downloadB$Z\"backend/api/platform/v1;platformv1b\x06proto3"
+	"\x10LlmDownloadModel\x12 .platform.v1.LlmDownloadModelReq\x1a\x15.platform.v1.BaseResp\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/llm/models/download\x12v\n" +
+	"\x11ListAnnouncements\x12!.platform.v1.ListAnnouncementsReq\x1a\".platform.v1.ListAnnouncementsResp\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/announcements\x12\x82\x01\n" +
+	"\x0fGetAnnouncement\x12\x1f.platform.v1.GetAnnouncementReq\x1a .platform.v1.GetAnnouncementResp\",\x82\xd3\xe4\x93\x02&\x12$/api/announcements/{announcement_id}B$Z\"backend/api/platform/v1;platformv1b\x06proto3"
 
 var (
 	file_api_platform_v1_platform_messages_proto_rawDescOnce sync.Once
@@ -2103,7 +2381,7 @@ func file_api_platform_v1_platform_messages_proto_rawDescGZIP() []byte {
 	return file_api_platform_v1_platform_messages_proto_rawDescData
 }
 
-var file_api_platform_v1_platform_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_api_platform_v1_platform_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_api_platform_v1_platform_messages_proto_goTypes = []any{
 	(*BaseResp)(nil),                  // 0: platform.v1.BaseResp
 	(*GetPublicClientConfigReq)(nil),  // 1: platform.v1.GetPublicClientConfigReq
@@ -2138,57 +2416,68 @@ var file_api_platform_v1_platform_messages_proto_goTypes = []any{
 	(*LlmChatResp)(nil),               // 30: platform.v1.LlmChatResp
 	(*LlmDeleteModelReq)(nil),         // 31: platform.v1.LlmDeleteModelReq
 	(*LlmDownloadModelReq)(nil),       // 32: platform.v1.LlmDownloadModelReq
-	(*structpb.Struct)(nil),           // 33: google.protobuf.Struct
-	(*structpb.ListValue)(nil),        // 34: google.protobuf.ListValue
+	(*AnnouncementItem)(nil),          // 33: platform.v1.AnnouncementItem
+	(*ListAnnouncementsReq)(nil),      // 34: platform.v1.ListAnnouncementsReq
+	(*ListAnnouncementsResp)(nil),     // 35: platform.v1.ListAnnouncementsResp
+	(*GetAnnouncementReq)(nil),        // 36: platform.v1.GetAnnouncementReq
+	(*GetAnnouncementResp)(nil),       // 37: platform.v1.GetAnnouncementResp
+	(*structpb.Struct)(nil),           // 38: google.protobuf.Struct
+	(*structpb.ListValue)(nil),        // 39: google.protobuf.ListValue
 }
 var file_api_platform_v1_platform_messages_proto_depIdxs = []int32{
 	3,  // 0: platform.v1.ListUserContentResp.data:type_name -> platform.v1.ContentItem
-	33, // 1: platform.v1.GetLlmConfigResp.data:type_name -> google.protobuf.Struct
-	34, // 2: platform.v1.MoeToolSchemaData.tools:type_name -> google.protobuf.ListValue
+	38, // 1: platform.v1.GetLlmConfigResp.data:type_name -> google.protobuf.Struct
+	39, // 2: platform.v1.MoeToolSchemaData.tools:type_name -> google.protobuf.ListValue
 	11, // 3: platform.v1.MoeToolSchemaResp.data:type_name -> platform.v1.MoeToolSchemaData
 	14, // 4: platform.v1.MoeToolExecuteResp.data:type_name -> platform.v1.MoeToolExecuteData
 	17, // 5: platform.v1.VoiceCallResp.data:type_name -> platform.v1.VoiceCallData
 	20, // 6: platform.v1.VoiceAnswerResp.data:type_name -> platform.v1.VoiceAnswerData
 	27, // 7: platform.v1.LlmChatReq.messages:type_name -> platform.v1.LlmMessage
-	1,  // 8: platform.v1.Platform.GetPublicClientConfig:input_type -> platform.v1.GetPublicClientConfigReq
-	4,  // 9: platform.v1.Platform.ListUserContent:input_type -> platform.v1.ListUserContentReq
-	6,  // 10: platform.v1.Platform.LlmChatRaw:input_type -> platform.v1.LlmRawProxyReq
-	8,  // 11: platform.v1.Platform.GetLlmConfig:input_type -> platform.v1.GetLlmConfigReq
-	6,  // 12: platform.v1.Platform.LlmModelsRaw:input_type -> platform.v1.LlmRawProxyReq
-	6,  // 13: platform.v1.Platform.LlmShowRaw:input_type -> platform.v1.LlmRawProxyReq
-	13, // 14: platform.v1.Platform.MoeExecuteTool:input_type -> platform.v1.MoeToolExecuteReq
-	10, // 15: platform.v1.Platform.MoeToolsSchema:input_type -> platform.v1.MoeToolSchemaReq
-	19, // 16: platform.v1.Platform.VoiceAnswer:input_type -> platform.v1.VoiceAnswerReq
-	16, // 17: platform.v1.Platform.VoiceCall:input_type -> platform.v1.VoiceCallReq
-	22, // 18: platform.v1.Platform.VoiceCancel:input_type -> platform.v1.VoiceCancelReq
-	23, // 19: platform.v1.Platform.VoiceReject:input_type -> platform.v1.VoiceRejectReq
-	25, // 20: platform.v1.Platform.GetVoiceToken:input_type -> platform.v1.GetVoiceTokenReq
-	28, // 21: platform.v1.Platform.LlmCreateAgent:input_type -> platform.v1.LlmCreateAgentReq
-	29, // 22: platform.v1.Platform.LlmChat:input_type -> platform.v1.LlmChatReq
-	31, // 23: platform.v1.Platform.LlmDeleteModel:input_type -> platform.v1.LlmDeleteModelReq
-	32, // 24: platform.v1.Platform.LlmDownloadModel:input_type -> platform.v1.LlmDownloadModelReq
-	2,  // 25: platform.v1.Platform.GetPublicClientConfig:output_type -> platform.v1.GetPublicClientConfigResp
-	5,  // 26: platform.v1.Platform.ListUserContent:output_type -> platform.v1.ListUserContentResp
-	7,  // 27: platform.v1.Platform.LlmChatRaw:output_type -> platform.v1.LlmRawProxyResp
-	9,  // 28: platform.v1.Platform.GetLlmConfig:output_type -> platform.v1.GetLlmConfigResp
-	7,  // 29: platform.v1.Platform.LlmModelsRaw:output_type -> platform.v1.LlmRawProxyResp
-	7,  // 30: platform.v1.Platform.LlmShowRaw:output_type -> platform.v1.LlmRawProxyResp
-	15, // 31: platform.v1.Platform.MoeExecuteTool:output_type -> platform.v1.MoeToolExecuteResp
-	12, // 32: platform.v1.Platform.MoeToolsSchema:output_type -> platform.v1.MoeToolSchemaResp
-	21, // 33: platform.v1.Platform.VoiceAnswer:output_type -> platform.v1.VoiceAnswerResp
-	18, // 34: platform.v1.Platform.VoiceCall:output_type -> platform.v1.VoiceCallResp
-	24, // 35: platform.v1.Platform.VoiceCancel:output_type -> platform.v1.VoiceSimpleResp
-	24, // 36: platform.v1.Platform.VoiceReject:output_type -> platform.v1.VoiceSimpleResp
-	26, // 37: platform.v1.Platform.GetVoiceToken:output_type -> platform.v1.GetVoiceTokenResp
-	0,  // 38: platform.v1.Platform.LlmCreateAgent:output_type -> platform.v1.BaseResp
-	30, // 39: platform.v1.Platform.LlmChat:output_type -> platform.v1.LlmChatResp
-	0,  // 40: platform.v1.Platform.LlmDeleteModel:output_type -> platform.v1.BaseResp
-	0,  // 41: platform.v1.Platform.LlmDownloadModel:output_type -> platform.v1.BaseResp
-	25, // [25:42] is the sub-list for method output_type
-	8,  // [8:25] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	33, // 8: platform.v1.ListAnnouncementsResp.items:type_name -> platform.v1.AnnouncementItem
+	33, // 9: platform.v1.GetAnnouncementResp.item:type_name -> platform.v1.AnnouncementItem
+	1,  // 10: platform.v1.Platform.GetPublicClientConfig:input_type -> platform.v1.GetPublicClientConfigReq
+	4,  // 11: platform.v1.Platform.ListUserContent:input_type -> platform.v1.ListUserContentReq
+	6,  // 12: platform.v1.Platform.LlmChatRaw:input_type -> platform.v1.LlmRawProxyReq
+	8,  // 13: platform.v1.Platform.GetLlmConfig:input_type -> platform.v1.GetLlmConfigReq
+	6,  // 14: platform.v1.Platform.LlmModelsRaw:input_type -> platform.v1.LlmRawProxyReq
+	6,  // 15: platform.v1.Platform.LlmShowRaw:input_type -> platform.v1.LlmRawProxyReq
+	13, // 16: platform.v1.Platform.MoeExecuteTool:input_type -> platform.v1.MoeToolExecuteReq
+	10, // 17: platform.v1.Platform.MoeToolsSchema:input_type -> platform.v1.MoeToolSchemaReq
+	19, // 18: platform.v1.Platform.VoiceAnswer:input_type -> platform.v1.VoiceAnswerReq
+	16, // 19: platform.v1.Platform.VoiceCall:input_type -> platform.v1.VoiceCallReq
+	22, // 20: platform.v1.Platform.VoiceCancel:input_type -> platform.v1.VoiceCancelReq
+	23, // 21: platform.v1.Platform.VoiceReject:input_type -> platform.v1.VoiceRejectReq
+	25, // 22: platform.v1.Platform.GetVoiceToken:input_type -> platform.v1.GetVoiceTokenReq
+	28, // 23: platform.v1.Platform.LlmCreateAgent:input_type -> platform.v1.LlmCreateAgentReq
+	29, // 24: platform.v1.Platform.LlmChat:input_type -> platform.v1.LlmChatReq
+	31, // 25: platform.v1.Platform.LlmDeleteModel:input_type -> platform.v1.LlmDeleteModelReq
+	32, // 26: platform.v1.Platform.LlmDownloadModel:input_type -> platform.v1.LlmDownloadModelReq
+	34, // 27: platform.v1.Platform.ListAnnouncements:input_type -> platform.v1.ListAnnouncementsReq
+	36, // 28: platform.v1.Platform.GetAnnouncement:input_type -> platform.v1.GetAnnouncementReq
+	2,  // 29: platform.v1.Platform.GetPublicClientConfig:output_type -> platform.v1.GetPublicClientConfigResp
+	5,  // 30: platform.v1.Platform.ListUserContent:output_type -> platform.v1.ListUserContentResp
+	7,  // 31: platform.v1.Platform.LlmChatRaw:output_type -> platform.v1.LlmRawProxyResp
+	9,  // 32: platform.v1.Platform.GetLlmConfig:output_type -> platform.v1.GetLlmConfigResp
+	7,  // 33: platform.v1.Platform.LlmModelsRaw:output_type -> platform.v1.LlmRawProxyResp
+	7,  // 34: platform.v1.Platform.LlmShowRaw:output_type -> platform.v1.LlmRawProxyResp
+	15, // 35: platform.v1.Platform.MoeExecuteTool:output_type -> platform.v1.MoeToolExecuteResp
+	12, // 36: platform.v1.Platform.MoeToolsSchema:output_type -> platform.v1.MoeToolSchemaResp
+	21, // 37: platform.v1.Platform.VoiceAnswer:output_type -> platform.v1.VoiceAnswerResp
+	18, // 38: platform.v1.Platform.VoiceCall:output_type -> platform.v1.VoiceCallResp
+	24, // 39: platform.v1.Platform.VoiceCancel:output_type -> platform.v1.VoiceSimpleResp
+	24, // 40: platform.v1.Platform.VoiceReject:output_type -> platform.v1.VoiceSimpleResp
+	26, // 41: platform.v1.Platform.GetVoiceToken:output_type -> platform.v1.GetVoiceTokenResp
+	0,  // 42: platform.v1.Platform.LlmCreateAgent:output_type -> platform.v1.BaseResp
+	30, // 43: platform.v1.Platform.LlmChat:output_type -> platform.v1.LlmChatResp
+	0,  // 44: platform.v1.Platform.LlmDeleteModel:output_type -> platform.v1.BaseResp
+	0,  // 45: platform.v1.Platform.LlmDownloadModel:output_type -> platform.v1.BaseResp
+	35, // 46: platform.v1.Platform.ListAnnouncements:output_type -> platform.v1.ListAnnouncementsResp
+	37, // 47: platform.v1.Platform.GetAnnouncement:output_type -> platform.v1.GetAnnouncementResp
+	29, // [29:48] is the sub-list for method output_type
+	10, // [10:29] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_api_platform_v1_platform_messages_proto_init() }
@@ -2202,7 +2491,7 @@ func file_api_platform_v1_platform_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_platform_v1_platform_messages_proto_rawDesc), len(file_api_platform_v1_platform_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

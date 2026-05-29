@@ -13,6 +13,7 @@ func registerWebSocket(r *khttp.Router, svcCtx *svc.ServiceContext) {
 	r.GET("/ws/presence", chatPresenceWSHandler())
 	r.GET("/ws/remote", chatRemoteWS())
 	r.GET("/ws/world", chatWorldWSHandler())
+	r.GET("/ws/admin/moe/brain/pipeline", brainPipelineWSHandler(svcCtx.MoeAdmin))
 }
 
 func chatRemoteWS() func(khttp.Context) error {

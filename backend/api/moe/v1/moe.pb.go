@@ -1482,6 +1482,2134 @@ func (x *GetBrainSnapshotReply) GetAvgEpisodeQuality() int32 {
 	return 0
 }
 
+type BrainGraphNode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Label         string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
+	Summary       string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
+	Weight        int32                  `protobuf:"varint,5,opt,name=weight,proto3" json:"weight,omitempty"`
+	RefId         string                 `protobuf:"bytes,6,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrainGraphNode) Reset() {
+	*x = BrainGraphNode{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainGraphNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainGraphNode) ProtoMessage() {}
+
+func (x *BrainGraphNode) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainGraphNode.ProtoReflect.Descriptor instead.
+func (*BrainGraphNode) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *BrainGraphNode) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *BrainGraphNode) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *BrainGraphNode) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *BrainGraphNode) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *BrainGraphNode) GetWeight() int32 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+func (x *BrainGraphNode) GetRefId() string {
+	if x != nil {
+		return x.RefId
+	}
+	return ""
+}
+
+type BrainGraphEdge struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Target        string                 `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
+	Relation      string                 `protobuf:"bytes,4,opt,name=relation,proto3" json:"relation,omitempty"`
+	Weight        float64                `protobuf:"fixed64,5,opt,name=weight,proto3" json:"weight,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrainGraphEdge) Reset() {
+	*x = BrainGraphEdge{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainGraphEdge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainGraphEdge) ProtoMessage() {}
+
+func (x *BrainGraphEdge) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainGraphEdge.ProtoReflect.Descriptor instead.
+func (*BrainGraphEdge) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *BrainGraphEdge) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *BrainGraphEdge) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *BrainGraphEdge) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *BrainGraphEdge) GetRelation() string {
+	if x != nil {
+		return x.Relation
+	}
+	return ""
+}
+
+func (x *BrainGraphEdge) GetWeight() float64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
+type GetBrainGraphRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBrainGraphRequest) Reset() {
+	*x = GetBrainGraphRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainGraphRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainGraphRequest) ProtoMessage() {}
+
+func (x *GetBrainGraphRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainGraphRequest.ProtoReflect.Descriptor instead.
+func (*GetBrainGraphRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetBrainGraphRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *GetBrainGraphRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type GetBrainGraphReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Nodes         []*BrainGraphNode      `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Edges         []*BrainGraphEdge      `protobuf:"bytes,3,rep,name=edges,proto3" json:"edges,omitempty"`
+	EpisodeCount  int32                  `protobuf:"varint,4,opt,name=episode_count,json=episodeCount,proto3" json:"episode_count,omitempty"`
+	MemoryCount   int32                  `protobuf:"varint,5,opt,name=memory_count,json=memoryCount,proto3" json:"memory_count,omitempty"`
+	TagCount      int32                  `protobuf:"varint,6,opt,name=tag_count,json=tagCount,proto3" json:"tag_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBrainGraphReply) Reset() {
+	*x = GetBrainGraphReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainGraphReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainGraphReply) ProtoMessage() {}
+
+func (x *GetBrainGraphReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainGraphReply.ProtoReflect.Descriptor instead.
+func (*GetBrainGraphReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetBrainGraphReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *GetBrainGraphReply) GetNodes() []*BrainGraphNode {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *GetBrainGraphReply) GetEdges() []*BrainGraphEdge {
+	if x != nil {
+		return x.Edges
+	}
+	return nil
+}
+
+func (x *GetBrainGraphReply) GetEpisodeCount() int32 {
+	if x != nil {
+		return x.EpisodeCount
+	}
+	return 0
+}
+
+func (x *GetBrainGraphReply) GetMemoryCount() int32 {
+	if x != nil {
+		return x.MemoryCount
+	}
+	return 0
+}
+
+func (x *GetBrainGraphReply) GetTagCount() int32 {
+	if x != nil {
+		return x.TagCount
+	}
+	return 0
+}
+
+type BrainRpgSkill struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tag           string                 `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	Level         int32                  `protobuf:"varint,3,opt,name=level,proto3" json:"level,omitempty"`
+	Locked        bool                   `protobuf:"varint,4,opt,name=locked,proto3" json:"locked,omitempty"`
+	UsageCount    int32                  `protobuf:"varint,5,opt,name=usage_count,json=usageCount,proto3" json:"usage_count,omitempty"`
+	IsNew         bool                   `protobuf:"varint,6,opt,name=is_new,json=isNew,proto3" json:"is_new,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrainRpgSkill) Reset() {
+	*x = BrainRpgSkill{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainRpgSkill) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainRpgSkill) ProtoMessage() {}
+
+func (x *BrainRpgSkill) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainRpgSkill.ProtoReflect.Descriptor instead.
+func (*BrainRpgSkill) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *BrainRpgSkill) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
+func (x *BrainRpgSkill) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *BrainRpgSkill) GetLevel() int32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *BrainRpgSkill) GetLocked() bool {
+	if x != nil {
+		return x.Locked
+	}
+	return false
+}
+
+func (x *BrainRpgSkill) GetUsageCount() int32 {
+	if x != nil {
+		return x.UsageCount
+	}
+	return 0
+}
+
+func (x *BrainRpgSkill) GetIsNew() bool {
+	if x != nil {
+		return x.IsNew
+	}
+	return false
+}
+
+type BrainRpgFragment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	QualityScore  int32                  `protobuf:"varint,5,opt,name=quality_score,json=qualityScore,proto3" json:"quality_score,omitempty"`
+	Approved      bool                   `protobuf:"varint,6,opt,name=approved,proto3" json:"approved,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	MemoryKey     string                 `protobuf:"bytes,8,opt,name=memory_key,json=memoryKey,proto3" json:"memory_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrainRpgFragment) Reset() {
+	*x = BrainRpgFragment{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainRpgFragment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainRpgFragment) ProtoMessage() {}
+
+func (x *BrainRpgFragment) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainRpgFragment.ProtoReflect.Descriptor instead.
+func (*BrainRpgFragment) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *BrainRpgFragment) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *BrainRpgFragment) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *BrainRpgFragment) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *BrainRpgFragment) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *BrainRpgFragment) GetQualityScore() int32 {
+	if x != nil {
+		return x.QualityScore
+	}
+	return 0
+}
+
+func (x *BrainRpgFragment) GetApproved() bool {
+	if x != nil {
+		return x.Approved
+	}
+	return false
+}
+
+func (x *BrainRpgFragment) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *BrainRpgFragment) GetMemoryKey() string {
+	if x != nil {
+		return x.MemoryKey
+	}
+	return ""
+}
+
+type BrainRpgDreamLog struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	RanAt         string                 `protobuf:"bytes,2,opt,name=ran_at,json=ranAt,proto3" json:"ran_at,omitempty"`
+	Summary       string                 `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
+	Refined       int32                  `protobuf:"varint,4,opt,name=refined,proto3" json:"refined,omitempty"`
+	Merged        int32                  `protobuf:"varint,5,opt,name=merged,proto3" json:"merged,omitempty"`
+	Archived      int32                  `protobuf:"varint,6,opt,name=archived,proto3" json:"archived,omitempty"`
+	XpGained      int32                  `protobuf:"varint,7,opt,name=xp_gained,json=xpGained,proto3" json:"xp_gained,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrainRpgDreamLog) Reset() {
+	*x = BrainRpgDreamLog{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainRpgDreamLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainRpgDreamLog) ProtoMessage() {}
+
+func (x *BrainRpgDreamLog) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainRpgDreamLog.ProtoReflect.Descriptor instead.
+func (*BrainRpgDreamLog) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *BrainRpgDreamLog) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *BrainRpgDreamLog) GetRanAt() string {
+	if x != nil {
+		return x.RanAt
+	}
+	return ""
+}
+
+func (x *BrainRpgDreamLog) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *BrainRpgDreamLog) GetRefined() int32 {
+	if x != nil {
+		return x.Refined
+	}
+	return 0
+}
+
+func (x *BrainRpgDreamLog) GetMerged() int32 {
+	if x != nil {
+		return x.Merged
+	}
+	return 0
+}
+
+func (x *BrainRpgDreamLog) GetArchived() int32 {
+	if x != nil {
+		return x.Archived
+	}
+	return 0
+}
+
+func (x *BrainRpgDreamLog) GetXpGained() int32 {
+	if x != nil {
+		return x.XpGained
+	}
+	return 0
+}
+
+type BrainRpgStats struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TotalFragments int32                  `protobuf:"varint,1,opt,name=total_fragments,json=totalFragments,proto3" json:"total_fragments,omitempty"`
+	SolidMemories  int32                  `protobuf:"varint,2,opt,name=solid_memories,json=solidMemories,proto3" json:"solid_memories,omitempty"`
+	PendingTidy    int32                  `protobuf:"varint,3,opt,name=pending_tidy,json=pendingTidy,proto3" json:"pending_tidy,omitempty"`
+	LockedSkills   int32                  `protobuf:"varint,4,opt,name=locked_skills,json=lockedSkills,proto3" json:"locked_skills,omitempty"`
+	GraphNodes     int32                  `protobuf:"varint,5,opt,name=graph_nodes,json=graphNodes,proto3" json:"graph_nodes,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *BrainRpgStats) Reset() {
+	*x = BrainRpgStats{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrainRpgStats) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrainRpgStats) ProtoMessage() {}
+
+func (x *BrainRpgStats) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrainRpgStats.ProtoReflect.Descriptor instead.
+func (*BrainRpgStats) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *BrainRpgStats) GetTotalFragments() int32 {
+	if x != nil {
+		return x.TotalFragments
+	}
+	return 0
+}
+
+func (x *BrainRpgStats) GetSolidMemories() int32 {
+	if x != nil {
+		return x.SolidMemories
+	}
+	return 0
+}
+
+func (x *BrainRpgStats) GetPendingTidy() int32 {
+	if x != nil {
+		return x.PendingTidy
+	}
+	return 0
+}
+
+func (x *BrainRpgStats) GetLockedSkills() int32 {
+	if x != nil {
+		return x.LockedSkills
+	}
+	return 0
+}
+
+func (x *BrainRpgStats) GetGraphNodes() int32 {
+	if x != nil {
+		return x.GraphNodes
+	}
+	return 0
+}
+
+type GetBrainRpgRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBrainRpgRequest) Reset() {
+	*x = GetBrainRpgRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainRpgRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainRpgRequest) ProtoMessage() {}
+
+func (x *GetBrainRpgRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainRpgRequest.ProtoReflect.Descriptor instead.
+func (*GetBrainRpgRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetBrainRpgRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type GetBrainRpgReply struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey              string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Level                 int32                  `protobuf:"varint,2,opt,name=level,proto3" json:"level,omitempty"`
+	Xp                    int32                  `protobuf:"varint,3,opt,name=xp,proto3" json:"xp,omitempty"`
+	XpToNext              int32                  `protobuf:"varint,4,opt,name=xp_to_next,json=xpToNext,proto3" json:"xp_to_next,omitempty"`
+	StabilityScore        int32                  `protobuf:"varint,5,opt,name=stability_score,json=stabilityScore,proto3" json:"stability_score,omitempty"`
+	Skills                []*BrainRpgSkill       `protobuf:"bytes,6,rep,name=skills,proto3" json:"skills,omitempty"`
+	Fragments             []*BrainRpgFragment    `protobuf:"bytes,7,rep,name=fragments,proto3" json:"fragments,omitempty"`
+	RecentDreams          []*BrainRpgDreamLog    `protobuf:"bytes,8,rep,name=recent_dreams,json=recentDreams,proto3" json:"recent_dreams,omitempty"`
+	Stats                 *BrainRpgStats         `protobuf:"bytes,9,opt,name=stats,proto3" json:"stats,omitempty"`
+	LastDreamAt           string                 `protobuf:"bytes,10,opt,name=last_dream_at,json=lastDreamAt,proto3" json:"last_dream_at,omitempty"`
+	DreamEnabled          bool                   `protobuf:"varint,11,opt,name=dream_enabled,json=dreamEnabled,proto3" json:"dream_enabled,omitempty"`
+	DreamCron             string                 `protobuf:"bytes,12,opt,name=dream_cron,json=dreamCron,proto3" json:"dream_cron,omitempty"`
+	NextDreamAt           string                 `protobuf:"bytes,13,opt,name=next_dream_at,json=nextDreamAt,proto3" json:"next_dream_at,omitempty"`
+	AutonomousMindEnabled bool                   `protobuf:"varint,14,opt,name=autonomous_mind_enabled,json=autonomousMindEnabled,proto3" json:"autonomous_mind_enabled,omitempty"`
+	PendingDeleteCount    int32                  `protobuf:"varint,15,opt,name=pending_delete_count,json=pendingDeleteCount,proto3" json:"pending_delete_count,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *GetBrainRpgReply) Reset() {
+	*x = GetBrainRpgReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainRpgReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainRpgReply) ProtoMessage() {}
+
+func (x *GetBrainRpgReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainRpgReply.ProtoReflect.Descriptor instead.
+func (*GetBrainRpgReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetBrainRpgReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *GetBrainRpgReply) GetLevel() int32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *GetBrainRpgReply) GetXp() int32 {
+	if x != nil {
+		return x.Xp
+	}
+	return 0
+}
+
+func (x *GetBrainRpgReply) GetXpToNext() int32 {
+	if x != nil {
+		return x.XpToNext
+	}
+	return 0
+}
+
+func (x *GetBrainRpgReply) GetStabilityScore() int32 {
+	if x != nil {
+		return x.StabilityScore
+	}
+	return 0
+}
+
+func (x *GetBrainRpgReply) GetSkills() []*BrainRpgSkill {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+func (x *GetBrainRpgReply) GetFragments() []*BrainRpgFragment {
+	if x != nil {
+		return x.Fragments
+	}
+	return nil
+}
+
+func (x *GetBrainRpgReply) GetRecentDreams() []*BrainRpgDreamLog {
+	if x != nil {
+		return x.RecentDreams
+	}
+	return nil
+}
+
+func (x *GetBrainRpgReply) GetStats() *BrainRpgStats {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
+func (x *GetBrainRpgReply) GetLastDreamAt() string {
+	if x != nil {
+		return x.LastDreamAt
+	}
+	return ""
+}
+
+func (x *GetBrainRpgReply) GetDreamEnabled() bool {
+	if x != nil {
+		return x.DreamEnabled
+	}
+	return false
+}
+
+func (x *GetBrainRpgReply) GetDreamCron() string {
+	if x != nil {
+		return x.DreamCron
+	}
+	return ""
+}
+
+func (x *GetBrainRpgReply) GetNextDreamAt() string {
+	if x != nil {
+		return x.NextDreamAt
+	}
+	return ""
+}
+
+func (x *GetBrainRpgReply) GetAutonomousMindEnabled() bool {
+	if x != nil {
+		return x.AutonomousMindEnabled
+	}
+	return false
+}
+
+func (x *GetBrainRpgReply) GetPendingDeleteCount() int32 {
+	if x != nil {
+		return x.PendingDeleteCount
+	}
+	return 0
+}
+
+type RunBrainDreamRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	SkipCurate    bool                   `protobuf:"varint,2,opt,name=skip_curate,json=skipCurate,proto3" json:"skip_curate,omitempty"`
+	Async         bool                   `protobuf:"varint,3,opt,name=async,proto3" json:"async,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RunBrainDreamRequest) Reset() {
+	*x = RunBrainDreamRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunBrainDreamRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunBrainDreamRequest) ProtoMessage() {}
+
+func (x *RunBrainDreamRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunBrainDreamRequest.ProtoReflect.Descriptor instead.
+func (*RunBrainDreamRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *RunBrainDreamRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *RunBrainDreamRequest) GetSkipCurate() bool {
+	if x != nil {
+		return x.SkipCurate
+	}
+	return false
+}
+
+func (x *RunBrainDreamRequest) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
+type RunBrainDreamReply struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey       string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Summary        string                 `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
+	Refined        int32                  `protobuf:"varint,3,opt,name=refined,proto3" json:"refined,omitempty"`
+	Merged         int32                  `protobuf:"varint,4,opt,name=merged,proto3" json:"merged,omitempty"`
+	Archived       int32                  `protobuf:"varint,5,opt,name=archived,proto3" json:"archived,omitempty"`
+	XpGained       int32                  `protobuf:"varint,6,opt,name=xp_gained,json=xpGained,proto3" json:"xp_gained,omitempty"`
+	Level          int32                  `protobuf:"varint,7,opt,name=level,proto3" json:"level,omitempty"`
+	Xp             int32                  `protobuf:"varint,8,opt,name=xp,proto3" json:"xp,omitempty"`
+	Accepted       bool                   `protobuf:"varint,9,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	AlreadyRunning bool                   `protobuf:"varint,10,opt,name=already_running,json=alreadyRunning,proto3" json:"already_running,omitempty"`
+	Detail         string                 `protobuf:"bytes,11,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *RunBrainDreamReply) Reset() {
+	*x = RunBrainDreamReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RunBrainDreamReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RunBrainDreamReply) ProtoMessage() {}
+
+func (x *RunBrainDreamReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RunBrainDreamReply.ProtoReflect.Descriptor instead.
+func (*RunBrainDreamReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *RunBrainDreamReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *RunBrainDreamReply) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *RunBrainDreamReply) GetRefined() int32 {
+	if x != nil {
+		return x.Refined
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetMerged() int32 {
+	if x != nil {
+		return x.Merged
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetArchived() int32 {
+	if x != nil {
+		return x.Archived
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetXpGained() int32 {
+	if x != nil {
+		return x.XpGained
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetLevel() int32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetXp() int32 {
+	if x != nil {
+		return x.Xp
+	}
+	return 0
+}
+
+func (x *RunBrainDreamReply) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *RunBrainDreamReply) GetAlreadyRunning() bool {
+	if x != nil {
+		return x.AlreadyRunning
+	}
+	return false
+}
+
+func (x *RunBrainDreamReply) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+type CompressBrainMemoriesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Days          int32                  `protobuf:"varint,2,opt,name=days,proto3" json:"days,omitempty"`
+	Async         bool                   `protobuf:"varint,3,opt,name=async,proto3" json:"async,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompressBrainMemoriesRequest) Reset() {
+	*x = CompressBrainMemoriesRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompressBrainMemoriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompressBrainMemoriesRequest) ProtoMessage() {}
+
+func (x *CompressBrainMemoriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompressBrainMemoriesRequest.ProtoReflect.Descriptor instead.
+func (*CompressBrainMemoriesRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CompressBrainMemoriesRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *CompressBrainMemoriesRequest) GetDays() int32 {
+	if x != nil {
+		return x.Days
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesRequest) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
+type CompressBrainMemoriesReply struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey         string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	MemoryKey        string                 `protobuf:"bytes,2,opt,name=memory_key,json=memoryKey,proto3" json:"memory_key,omitempty"`
+	Summary          string                 `protobuf:"bytes,3,opt,name=summary,proto3" json:"summary,omitempty"`
+	SourceCount      int32                  `protobuf:"varint,4,opt,name=source_count,json=sourceCount,proto3" json:"source_count,omitempty"`
+	XpGained         int32                  `protobuf:"varint,5,opt,name=xp_gained,json=xpGained,proto3" json:"xp_gained,omitempty"`
+	SweptCount       int32                  `protobuf:"varint,6,opt,name=swept_count,json=sweptCount,proto3" json:"swept_count,omitempty"`
+	MergedClusters   int32                  `protobuf:"varint,7,opt,name=merged_clusters,json=mergedClusters,proto3" json:"merged_clusters,omitempty"`
+	MarkedCount      int32                  `protobuf:"varint,8,opt,name=marked_count,json=markedCount,proto3" json:"marked_count,omitempty"`
+	PendingRemaining int32                  `protobuf:"varint,9,opt,name=pending_remaining,json=pendingRemaining,proto3" json:"pending_remaining,omitempty"`
+	Accepted         bool                   `protobuf:"varint,10,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	AlreadyRunning   bool                   `protobuf:"varint,11,opt,name=already_running,json=alreadyRunning,proto3" json:"already_running,omitempty"`
+	Detail           string                 `protobuf:"bytes,12,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CompressBrainMemoriesReply) Reset() {
+	*x = CompressBrainMemoriesReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompressBrainMemoriesReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompressBrainMemoriesReply) ProtoMessage() {}
+
+func (x *CompressBrainMemoriesReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompressBrainMemoriesReply.ProtoReflect.Descriptor instead.
+func (*CompressBrainMemoriesReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *CompressBrainMemoriesReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *CompressBrainMemoriesReply) GetMemoryKey() string {
+	if x != nil {
+		return x.MemoryKey
+	}
+	return ""
+}
+
+func (x *CompressBrainMemoriesReply) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *CompressBrainMemoriesReply) GetSourceCount() int32 {
+	if x != nil {
+		return x.SourceCount
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetXpGained() int32 {
+	if x != nil {
+		return x.XpGained
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetSweptCount() int32 {
+	if x != nil {
+		return x.SweptCount
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetMergedClusters() int32 {
+	if x != nil {
+		return x.MergedClusters
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetMarkedCount() int32 {
+	if x != nil {
+		return x.MarkedCount
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetPendingRemaining() int32 {
+	if x != nil {
+		return x.PendingRemaining
+	}
+	return 0
+}
+
+func (x *CompressBrainMemoriesReply) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *CompressBrainMemoriesReply) GetAlreadyRunning() bool {
+	if x != nil {
+		return x.AlreadyRunning
+	}
+	return false
+}
+
+func (x *CompressBrainMemoriesReply) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+type TidyBrainFragmentsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	MaxEpisodes   int32                  `protobuf:"varint,2,opt,name=max_episodes,json=maxEpisodes,proto3" json:"max_episodes,omitempty"`
+	Async         bool                   `protobuf:"varint,3,opt,name=async,proto3" json:"async,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TidyBrainFragmentsRequest) Reset() {
+	*x = TidyBrainFragmentsRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TidyBrainFragmentsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TidyBrainFragmentsRequest) ProtoMessage() {}
+
+func (x *TidyBrainFragmentsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TidyBrainFragmentsRequest.ProtoReflect.Descriptor instead.
+func (*TidyBrainFragmentsRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *TidyBrainFragmentsRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *TidyBrainFragmentsRequest) GetMaxEpisodes() int32 {
+	if x != nil {
+		return x.MaxEpisodes
+	}
+	return 0
+}
+
+func (x *TidyBrainFragmentsRequest) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
+type TidyBrainFragmentsReply struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey       string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Total          int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	Approved       int32                  `protobuf:"varint,3,opt,name=approved,proto3" json:"approved,omitempty"`
+	XpGained       int32                  `protobuf:"varint,4,opt,name=xp_gained,json=xpGained,proto3" json:"xp_gained,omitempty"`
+	Accepted       bool                   `protobuf:"varint,5,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	AlreadyRunning bool                   `protobuf:"varint,6,opt,name=already_running,json=alreadyRunning,proto3" json:"already_running,omitempty"`
+	Detail         string                 `protobuf:"bytes,7,opt,name=detail,proto3" json:"detail,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *TidyBrainFragmentsReply) Reset() {
+	*x = TidyBrainFragmentsReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TidyBrainFragmentsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TidyBrainFragmentsReply) ProtoMessage() {}
+
+func (x *TidyBrainFragmentsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TidyBrainFragmentsReply.ProtoReflect.Descriptor instead.
+func (*TidyBrainFragmentsReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *TidyBrainFragmentsReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *TidyBrainFragmentsReply) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *TidyBrainFragmentsReply) GetApproved() int32 {
+	if x != nil {
+		return x.Approved
+	}
+	return 0
+}
+
+func (x *TidyBrainFragmentsReply) GetXpGained() int32 {
+	if x != nil {
+		return x.XpGained
+	}
+	return 0
+}
+
+func (x *TidyBrainFragmentsReply) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *TidyBrainFragmentsReply) GetAlreadyRunning() bool {
+	if x != nil {
+		return x.AlreadyRunning
+	}
+	return false
+}
+
+func (x *TidyBrainFragmentsReply) GetDetail() string {
+	if x != nil {
+		return x.Detail
+	}
+	return ""
+}
+
+type LockBrainSkillRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Tag           string                 `protobuf:"bytes,2,opt,name=tag,proto3" json:"tag,omitempty"`
+	Lock          bool                   `protobuf:"varint,3,opt,name=lock,proto3" json:"lock,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LockBrainSkillRequest) Reset() {
+	*x = LockBrainSkillRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LockBrainSkillRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LockBrainSkillRequest) ProtoMessage() {}
+
+func (x *LockBrainSkillRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LockBrainSkillRequest.ProtoReflect.Descriptor instead.
+func (*LockBrainSkillRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *LockBrainSkillRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *LockBrainSkillRequest) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
+func (x *LockBrainSkillRequest) GetLock() bool {
+	if x != nil {
+		return x.Lock
+	}
+	return false
+}
+
+type LockBrainSkillReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	LockedSkills  []string               `protobuf:"bytes,2,rep,name=locked_skills,json=lockedSkills,proto3" json:"locked_skills,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LockBrainSkillReply) Reset() {
+	*x = LockBrainSkillReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LockBrainSkillReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LockBrainSkillReply) ProtoMessage() {}
+
+func (x *LockBrainSkillReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LockBrainSkillReply.ProtoReflect.Descriptor instead.
+func (*LockBrainSkillReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *LockBrainSkillReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *LockBrainSkillReply) GetLockedSkills() []string {
+	if x != nil {
+		return x.LockedSkills
+	}
+	return nil
+}
+
+type ForgetBrainMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	MemoryKey     string                 `protobuf:"bytes,2,opt,name=memory_key,json=memoryKey,proto3" json:"memory_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetBrainMemoryRequest) Reset() {
+	*x = ForgetBrainMemoryRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetBrainMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetBrainMemoryRequest) ProtoMessage() {}
+
+func (x *ForgetBrainMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetBrainMemoryRequest.ProtoReflect.Descriptor instead.
+func (*ForgetBrainMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *ForgetBrainMemoryRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *ForgetBrainMemoryRequest) GetMemoryKey() string {
+	if x != nil {
+		return x.MemoryKey
+	}
+	return ""
+}
+
+type ForgetBrainMemoryReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	MemoryKey     string                 `protobuf:"bytes,2,opt,name=memory_key,json=memoryKey,proto3" json:"memory_key,omitempty"`
+	Deleted       bool                   `protobuf:"varint,3,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetBrainMemoryReply) Reset() {
+	*x = ForgetBrainMemoryReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetBrainMemoryReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetBrainMemoryReply) ProtoMessage() {}
+
+func (x *ForgetBrainMemoryReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetBrainMemoryReply.ProtoReflect.Descriptor instead.
+func (*ForgetBrainMemoryReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *ForgetBrainMemoryReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *ForgetBrainMemoryReply) GetMemoryKey() string {
+	if x != nil {
+		return x.MemoryKey
+	}
+	return ""
+}
+
+func (x *ForgetBrainMemoryReply) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
+}
+
+type GetBrainPresenceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBrainPresenceRequest) Reset() {
+	*x = GetBrainPresenceRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainPresenceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainPresenceRequest) ProtoMessage() {}
+
+func (x *GetBrainPresenceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainPresenceRequest.ProtoReflect.Descriptor instead.
+func (*GetBrainPresenceRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *GetBrainPresenceRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type GetBrainPresenceReply struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey              string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	DisplayName           string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Activity              string                 `protobuf:"bytes,3,opt,name=activity,proto3" json:"activity,omitempty"`
+	Mood                  string                 `protobuf:"bytes,4,opt,name=mood,proto3" json:"mood,omitempty"`
+	Thought               string                 `protobuf:"bytes,5,opt,name=thought,proto3" json:"thought,omitempty"`
+	PipelineStep          string                 `protobuf:"bytes,6,opt,name=pipeline_step,json=pipelineStep,proto3" json:"pipeline_step,omitempty"`
+	PipelineRunning       bool                   `protobuf:"varint,7,opt,name=pipeline_running,json=pipelineRunning,proto3" json:"pipeline_running,omitempty"`
+	DreamEnabled          bool                   `protobuf:"varint,8,opt,name=dream_enabled,json=dreamEnabled,proto3" json:"dream_enabled,omitempty"`
+	DreamCron             string                 `protobuf:"bytes,9,opt,name=dream_cron,json=dreamCron,proto3" json:"dream_cron,omitempty"`
+	NextDreamAt           string                 `protobuf:"bytes,10,opt,name=next_dream_at,json=nextDreamAt,proto3" json:"next_dream_at,omitempty"`
+	Dreaming              bool                   `protobuf:"varint,11,opt,name=dreaming,proto3" json:"dreaming,omitempty"`
+	AutonomousMindEnabled bool                   `protobuf:"varint,12,opt,name=autonomous_mind_enabled,json=autonomousMindEnabled,proto3" json:"autonomous_mind_enabled,omitempty"`
+	ThoughtSource         string                 `protobuf:"bytes,13,opt,name=thought_source,json=thoughtSource,proto3" json:"thought_source,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *GetBrainPresenceReply) Reset() {
+	*x = GetBrainPresenceReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBrainPresenceReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBrainPresenceReply) ProtoMessage() {}
+
+func (x *GetBrainPresenceReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBrainPresenceReply.ProtoReflect.Descriptor instead.
+func (*GetBrainPresenceReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetBrainPresenceReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetActivity() string {
+	if x != nil {
+		return x.Activity
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetMood() string {
+	if x != nil {
+		return x.Mood
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetThought() string {
+	if x != nil {
+		return x.Thought
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetPipelineStep() string {
+	if x != nil {
+		return x.PipelineStep
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetPipelineRunning() bool {
+	if x != nil {
+		return x.PipelineRunning
+	}
+	return false
+}
+
+func (x *GetBrainPresenceReply) GetDreamEnabled() bool {
+	if x != nil {
+		return x.DreamEnabled
+	}
+	return false
+}
+
+func (x *GetBrainPresenceReply) GetDreamCron() string {
+	if x != nil {
+		return x.DreamCron
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetNextDreamAt() string {
+	if x != nil {
+		return x.NextDreamAt
+	}
+	return ""
+}
+
+func (x *GetBrainPresenceReply) GetDreaming() bool {
+	if x != nil {
+		return x.Dreaming
+	}
+	return false
+}
+
+func (x *GetBrainPresenceReply) GetAutonomousMindEnabled() bool {
+	if x != nil {
+		return x.AutonomousMindEnabled
+	}
+	return false
+}
+
+func (x *GetBrainPresenceReply) GetThoughtSource() string {
+	if x != nil {
+		return x.ThoughtSource
+	}
+	return ""
+}
+
+type UpdateBrainDreamScheduleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	DreamEnabled  bool                   `protobuf:"varint,2,opt,name=dream_enabled,json=dreamEnabled,proto3" json:"dream_enabled,omitempty"`
+	DreamCron     string                 `protobuf:"bytes,3,opt,name=dream_cron,json=dreamCron,proto3" json:"dream_cron,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateBrainDreamScheduleRequest) Reset() {
+	*x = UpdateBrainDreamScheduleRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateBrainDreamScheduleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateBrainDreamScheduleRequest) ProtoMessage() {}
+
+func (x *UpdateBrainDreamScheduleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateBrainDreamScheduleRequest.ProtoReflect.Descriptor instead.
+func (*UpdateBrainDreamScheduleRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *UpdateBrainDreamScheduleRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *UpdateBrainDreamScheduleRequest) GetDreamEnabled() bool {
+	if x != nil {
+		return x.DreamEnabled
+	}
+	return false
+}
+
+func (x *UpdateBrainDreamScheduleRequest) GetDreamCron() string {
+	if x != nil {
+		return x.DreamCron
+	}
+	return ""
+}
+
+type UpdateBrainDreamScheduleReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	DreamEnabled  bool                   `protobuf:"varint,2,opt,name=dream_enabled,json=dreamEnabled,proto3" json:"dream_enabled,omitempty"`
+	DreamCron     string                 `protobuf:"bytes,3,opt,name=dream_cron,json=dreamCron,proto3" json:"dream_cron,omitempty"`
+	NextDreamAt   string                 `protobuf:"bytes,4,opt,name=next_dream_at,json=nextDreamAt,proto3" json:"next_dream_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateBrainDreamScheduleReply) Reset() {
+	*x = UpdateBrainDreamScheduleReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateBrainDreamScheduleReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateBrainDreamScheduleReply) ProtoMessage() {}
+
+func (x *UpdateBrainDreamScheduleReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateBrainDreamScheduleReply.ProtoReflect.Descriptor instead.
+func (*UpdateBrainDreamScheduleReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *UpdateBrainDreamScheduleReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *UpdateBrainDreamScheduleReply) GetDreamEnabled() bool {
+	if x != nil {
+		return x.DreamEnabled
+	}
+	return false
+}
+
+func (x *UpdateBrainDreamScheduleReply) GetDreamCron() string {
+	if x != nil {
+		return x.DreamCron
+	}
+	return ""
+}
+
+func (x *UpdateBrainDreamScheduleReply) GetNextDreamAt() string {
+	if x != nil {
+		return x.NextDreamAt
+	}
+	return ""
+}
+
+type UpdateBrainAutonomousMindRequest struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey              string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	AutonomousMindEnabled bool                   `protobuf:"varint,2,opt,name=autonomous_mind_enabled,json=autonomousMindEnabled,proto3" json:"autonomous_mind_enabled,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *UpdateBrainAutonomousMindRequest) Reset() {
+	*x = UpdateBrainAutonomousMindRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateBrainAutonomousMindRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateBrainAutonomousMindRequest) ProtoMessage() {}
+
+func (x *UpdateBrainAutonomousMindRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateBrainAutonomousMindRequest.ProtoReflect.Descriptor instead.
+func (*UpdateBrainAutonomousMindRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *UpdateBrainAutonomousMindRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *UpdateBrainAutonomousMindRequest) GetAutonomousMindEnabled() bool {
+	if x != nil {
+		return x.AutonomousMindEnabled
+	}
+	return false
+}
+
+type UpdateBrainAutonomousMindReply struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey              string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	AutonomousMindEnabled bool                   `protobuf:"varint,2,opt,name=autonomous_mind_enabled,json=autonomousMindEnabled,proto3" json:"autonomous_mind_enabled,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *UpdateBrainAutonomousMindReply) Reset() {
+	*x = UpdateBrainAutonomousMindReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateBrainAutonomousMindReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateBrainAutonomousMindReply) ProtoMessage() {}
+
+func (x *UpdateBrainAutonomousMindReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateBrainAutonomousMindReply.ProtoReflect.Descriptor instead.
+func (*UpdateBrainAutonomousMindReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *UpdateBrainAutonomousMindReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *UpdateBrainAutonomousMindReply) GetAutonomousMindEnabled() bool {
+	if x != nil {
+		return x.AutonomousMindEnabled
+	}
+	return false
+}
+
+type GenerateBrainThoughtRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateBrainThoughtRequest) Reset() {
+	*x = GenerateBrainThoughtRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateBrainThoughtRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateBrainThoughtRequest) ProtoMessage() {}
+
+func (x *GenerateBrainThoughtRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateBrainThoughtRequest.ProtoReflect.Descriptor instead.
+func (*GenerateBrainThoughtRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *GenerateBrainThoughtRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type GenerateBrainThoughtReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Thought       string                 `protobuf:"bytes,2,opt,name=thought,proto3" json:"thought,omitempty"`
+	ThoughtSource string                 `protobuf:"bytes,3,opt,name=thought_source,json=thoughtSource,proto3" json:"thought_source,omitempty"`
+	GeneratedAt   string                 `protobuf:"bytes,4,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GenerateBrainThoughtReply) Reset() {
+	*x = GenerateBrainThoughtReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GenerateBrainThoughtReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GenerateBrainThoughtReply) ProtoMessage() {}
+
+func (x *GenerateBrainThoughtReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GenerateBrainThoughtReply.ProtoReflect.Descriptor instead.
+func (*GenerateBrainThoughtReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *GenerateBrainThoughtReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *GenerateBrainThoughtReply) GetThought() string {
+	if x != nil {
+		return x.Thought
+	}
+	return ""
+}
+
+func (x *GenerateBrainThoughtReply) GetThoughtSource() string {
+	if x != nil {
+		return x.ThoughtSource
+	}
+	return ""
+}
+
+func (x *GenerateBrainThoughtReply) GetGeneratedAt() string {
+	if x != nil {
+		return x.GeneratedAt
+	}
+	return ""
+}
+
 type UpdateBrainPolicyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
@@ -1493,7 +3621,7 @@ type UpdateBrainPolicyRequest struct {
 
 func (x *UpdateBrainPolicyRequest) Reset() {
 	*x = UpdateBrainPolicyRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[17]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1505,7 +3633,7 @@ func (x *UpdateBrainPolicyRequest) String() string {
 func (*UpdateBrainPolicyRequest) ProtoMessage() {}
 
 func (x *UpdateBrainPolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[17]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1518,7 +3646,7 @@ func (x *UpdateBrainPolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateBrainPolicyRequest.ProtoReflect.Descriptor instead.
 func (*UpdateBrainPolicyRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{17}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *UpdateBrainPolicyRequest) GetAgentKey() string {
@@ -1551,7 +3679,7 @@ type DeleteBrainEpisodeRequest struct {
 
 func (x *DeleteBrainEpisodeRequest) Reset() {
 	*x = DeleteBrainEpisodeRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[18]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1563,7 +3691,7 @@ func (x *DeleteBrainEpisodeRequest) String() string {
 func (*DeleteBrainEpisodeRequest) ProtoMessage() {}
 
 func (x *DeleteBrainEpisodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[18]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1576,7 +3704,7 @@ func (x *DeleteBrainEpisodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteBrainEpisodeRequest.ProtoReflect.Descriptor instead.
 func (*DeleteBrainEpisodeRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{18}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *DeleteBrainEpisodeRequest) GetId() uint64 {
@@ -1594,7 +3722,7 @@ type DeleteBrainEpisodeReply struct {
 
 func (x *DeleteBrainEpisodeReply) Reset() {
 	*x = DeleteBrainEpisodeReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[19]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1606,7 +3734,7 @@ func (x *DeleteBrainEpisodeReply) String() string {
 func (*DeleteBrainEpisodeReply) ProtoMessage() {}
 
 func (x *DeleteBrainEpisodeReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[19]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1619,7 +3747,7 @@ func (x *DeleteBrainEpisodeReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteBrainEpisodeReply.ProtoReflect.Descriptor instead.
 func (*DeleteBrainEpisodeReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{19}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{47}
 }
 
 type RefineBrainEpisodeRequest struct {
@@ -1632,7 +3760,7 @@ type RefineBrainEpisodeRequest struct {
 
 func (x *RefineBrainEpisodeRequest) Reset() {
 	*x = RefineBrainEpisodeRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[20]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1644,7 +3772,7 @@ func (x *RefineBrainEpisodeRequest) String() string {
 func (*RefineBrainEpisodeRequest) ProtoMessage() {}
 
 func (x *RefineBrainEpisodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[20]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1657,7 +3785,7 @@ func (x *RefineBrainEpisodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefineBrainEpisodeRequest.ProtoReflect.Descriptor instead.
 func (*RefineBrainEpisodeRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{20}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *RefineBrainEpisodeRequest) GetId() uint64 {
@@ -1690,7 +3818,7 @@ type RefineBrainEpisodeReply struct {
 
 func (x *RefineBrainEpisodeReply) Reset() {
 	*x = RefineBrainEpisodeReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[21]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1702,7 +3830,7 @@ func (x *RefineBrainEpisodeReply) String() string {
 func (*RefineBrainEpisodeReply) ProtoMessage() {}
 
 func (x *RefineBrainEpisodeReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[21]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1715,7 +3843,7 @@ func (x *RefineBrainEpisodeReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefineBrainEpisodeReply.ProtoReflect.Descriptor instead.
 func (*RefineBrainEpisodeReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{21}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *RefineBrainEpisodeReply) GetEpisodeId() uint64 {
@@ -1787,7 +3915,7 @@ type CurateBrainRequest struct {
 
 func (x *CurateBrainRequest) Reset() {
 	*x = CurateBrainRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[22]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1799,7 +3927,7 @@ func (x *CurateBrainRequest) String() string {
 func (*CurateBrainRequest) ProtoMessage() {}
 
 func (x *CurateBrainRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[22]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1812,7 +3940,7 @@ func (x *CurateBrainRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CurateBrainRequest.ProtoReflect.Descriptor instead.
 func (*CurateBrainRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{22}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *CurateBrainRequest) GetAgentKey() string {
@@ -1862,7 +3990,7 @@ type CurateBrainReply struct {
 
 func (x *CurateBrainReply) Reset() {
 	*x = CurateBrainReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[23]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1874,7 +4002,7 @@ func (x *CurateBrainReply) String() string {
 func (*CurateBrainReply) ProtoMessage() {}
 
 func (x *CurateBrainReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[23]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1887,7 +4015,7 @@ func (x *CurateBrainReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CurateBrainReply.ProtoReflect.Descriptor instead.
 func (*CurateBrainReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{23}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *CurateBrainReply) GetAgentKey() string {
@@ -1930,7 +4058,7 @@ type ToolStatRow struct {
 
 func (x *ToolStatRow) Reset() {
 	*x = ToolStatRow{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[24]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1942,7 +4070,7 @@ func (x *ToolStatRow) String() string {
 func (*ToolStatRow) ProtoMessage() {}
 
 func (x *ToolStatRow) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[24]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1955,7 +4083,7 @@ func (x *ToolStatRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolStatRow.ProtoReflect.Descriptor instead.
 func (*ToolStatRow) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{24}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *ToolStatRow) GetTool() string {
@@ -1997,7 +4125,7 @@ type ToolDayStat struct {
 
 func (x *ToolDayStat) Reset() {
 	*x = ToolDayStat{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[25]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2009,7 +4137,7 @@ func (x *ToolDayStat) String() string {
 func (*ToolDayStat) ProtoMessage() {}
 
 func (x *ToolDayStat) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[25]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2022,7 +4150,7 @@ func (x *ToolDayStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolDayStat.ProtoReflect.Descriptor instead.
 func (*ToolDayStat) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{25}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ToolDayStat) GetDate() string {
@@ -2058,7 +4186,7 @@ type QueryToolStatsRequest struct {
 
 func (x *QueryToolStatsRequest) Reset() {
 	*x = QueryToolStatsRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[26]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2070,7 +4198,7 @@ func (x *QueryToolStatsRequest) String() string {
 func (*QueryToolStatsRequest) ProtoMessage() {}
 
 func (x *QueryToolStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[26]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2083,7 +4211,7 @@ func (x *QueryToolStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryToolStatsRequest.ProtoReflect.Descriptor instead.
 func (*QueryToolStatsRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{26}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *QueryToolStatsRequest) GetFrom() string {
@@ -2127,7 +4255,7 @@ type QueryToolStatsReply struct {
 
 func (x *QueryToolStatsReply) Reset() {
 	*x = QueryToolStatsReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[27]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2139,7 +4267,7 @@ func (x *QueryToolStatsReply) String() string {
 func (*QueryToolStatsReply) ProtoMessage() {}
 
 func (x *QueryToolStatsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[27]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2152,7 +4280,7 @@ func (x *QueryToolStatsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryToolStatsReply.ProtoReflect.Descriptor instead.
 func (*QueryToolStatsReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{27}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *QueryToolStatsReply) GetTotalCalls() int64 {
@@ -2208,7 +4336,7 @@ type ToolCallRow struct {
 
 func (x *ToolCallRow) Reset() {
 	*x = ToolCallRow{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[28]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2220,7 +4348,7 @@ func (x *ToolCallRow) String() string {
 func (*ToolCallRow) ProtoMessage() {}
 
 func (x *ToolCallRow) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[28]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2233,7 +4361,7 @@ func (x *ToolCallRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolCallRow.ProtoReflect.Descriptor instead.
 func (*ToolCallRow) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{28}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ToolCallRow) GetId() string {
@@ -2324,7 +4452,7 @@ type ListToolCallsRequest struct {
 
 func (x *ListToolCallsRequest) Reset() {
 	*x = ListToolCallsRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[29]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2336,7 +4464,7 @@ func (x *ListToolCallsRequest) String() string {
 func (*ListToolCallsRequest) ProtoMessage() {}
 
 func (x *ListToolCallsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[29]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2349,7 +4477,7 @@ func (x *ListToolCallsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolCallsRequest.ProtoReflect.Descriptor instead.
 func (*ListToolCallsRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{29}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListToolCallsRequest) GetFrom() string {
@@ -2432,7 +4560,7 @@ type ListToolCallsReply struct {
 
 func (x *ListToolCallsReply) Reset() {
 	*x = ListToolCallsReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[30]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2444,7 +4572,7 @@ func (x *ListToolCallsReply) String() string {
 func (*ListToolCallsReply) ProtoMessage() {}
 
 func (x *ListToolCallsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[30]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2457,7 +4585,7 @@ func (x *ListToolCallsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolCallsReply.ProtoReflect.Descriptor instead.
 func (*ListToolCallsReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{30}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *ListToolCallsReply) GetTotal() int64 {
@@ -2494,7 +4622,7 @@ type MoeFlowNode struct {
 
 func (x *MoeFlowNode) Reset() {
 	*x = MoeFlowNode{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2506,7 +4634,7 @@ func (x *MoeFlowNode) String() string {
 func (*MoeFlowNode) ProtoMessage() {}
 
 func (x *MoeFlowNode) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2519,7 +4647,7 @@ func (x *MoeFlowNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeFlowNode.ProtoReflect.Descriptor instead.
 func (*MoeFlowNode) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{31}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *MoeFlowNode) GetId() string {
@@ -2619,7 +4747,7 @@ type MoeFlowEdge struct {
 
 func (x *MoeFlowEdge) Reset() {
 	*x = MoeFlowEdge{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2631,7 +4759,7 @@ func (x *MoeFlowEdge) String() string {
 func (*MoeFlowEdge) ProtoMessage() {}
 
 func (x *MoeFlowEdge) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2644,7 +4772,7 @@ func (x *MoeFlowEdge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeFlowEdge.ProtoReflect.Descriptor instead.
 func (*MoeFlowEdge) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{32}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *MoeFlowEdge) GetId() string {
@@ -2701,7 +4829,7 @@ type BotFlowReply struct {
 
 func (x *BotFlowReply) Reset() {
 	*x = BotFlowReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2713,7 +4841,7 @@ func (x *BotFlowReply) String() string {
 func (*BotFlowReply) ProtoMessage() {}
 
 func (x *BotFlowReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2726,7 +4854,7 @@ func (x *BotFlowReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BotFlowReply.ProtoReflect.Descriptor instead.
 func (*BotFlowReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{33}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *BotFlowReply) GetAgentKey() string {
@@ -2815,7 +4943,7 @@ type GetBotFlowRequest struct {
 
 func (x *GetBotFlowRequest) Reset() {
 	*x = GetBotFlowRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2827,7 +4955,7 @@ func (x *GetBotFlowRequest) String() string {
 func (*GetBotFlowRequest) ProtoMessage() {}
 
 func (x *GetBotFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2840,7 +4968,7 @@ func (x *GetBotFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetBotFlowRequest.ProtoReflect.Descriptor instead.
 func (*GetBotFlowRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{34}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *GetBotFlowRequest) GetAgentKey() string {
@@ -2864,7 +4992,7 @@ type UpsertBotFlowRequest struct {
 
 func (x *UpsertBotFlowRequest) Reset() {
 	*x = UpsertBotFlowRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2876,7 +5004,7 @@ func (x *UpsertBotFlowRequest) String() string {
 func (*UpsertBotFlowRequest) ProtoMessage() {}
 
 func (x *UpsertBotFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2889,7 +5017,7 @@ func (x *UpsertBotFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertBotFlowRequest.ProtoReflect.Descriptor instead.
 func (*UpsertBotFlowRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{35}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *UpsertBotFlowRequest) GetAgentKey() string {
@@ -2943,7 +5071,7 @@ type DeleteBotFlowRequest struct {
 
 func (x *DeleteBotFlowRequest) Reset() {
 	*x = DeleteBotFlowRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2955,7 +5083,7 @@ func (x *DeleteBotFlowRequest) String() string {
 func (*DeleteBotFlowRequest) ProtoMessage() {}
 
 func (x *DeleteBotFlowRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2968,7 +5096,7 @@ func (x *DeleteBotFlowRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteBotFlowRequest.ProtoReflect.Descriptor instead.
 func (*DeleteBotFlowRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{36}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *DeleteBotFlowRequest) GetAgentKey() string {
@@ -2987,7 +5115,7 @@ type GetInferenceStatusRequest struct {
 
 func (x *GetInferenceStatusRequest) Reset() {
 	*x = GetInferenceStatusRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2999,7 +5127,7 @@ func (x *GetInferenceStatusRequest) String() string {
 func (*GetInferenceStatusRequest) ProtoMessage() {}
 
 func (x *GetInferenceStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3012,7 +5140,7 @@ func (x *GetInferenceStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInferenceStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetInferenceStatusRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{37}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetInferenceStatusRequest) GetAgentKey() string {
@@ -3042,7 +5170,7 @@ type GetInferenceStatusReply struct {
 
 func (x *GetInferenceStatusReply) Reset() {
 	*x = GetInferenceStatusReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3054,7 +5182,7 @@ func (x *GetInferenceStatusReply) String() string {
 func (*GetInferenceStatusReply) ProtoMessage() {}
 
 func (x *GetInferenceStatusReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3067,7 +5195,7 @@ func (x *GetInferenceStatusReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInferenceStatusReply.ProtoReflect.Descriptor instead.
 func (*GetInferenceStatusReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{38}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GetInferenceStatusReply) GetOnline() bool {
@@ -3165,7 +5293,7 @@ type MoeToolSchemaItem struct {
 
 func (x *MoeToolSchemaItem) Reset() {
 	*x = MoeToolSchemaItem{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3177,7 +5305,7 @@ func (x *MoeToolSchemaItem) String() string {
 func (*MoeToolSchemaItem) ProtoMessage() {}
 
 func (x *MoeToolSchemaItem) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3190,7 +5318,7 @@ func (x *MoeToolSchemaItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeToolSchemaItem.ProtoReflect.Descriptor instead.
 func (*MoeToolSchemaItem) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{39}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *MoeToolSchemaItem) GetName() string {
@@ -3222,7 +5350,7 @@ type GetToolsSchemaRequest struct {
 
 func (x *GetToolsSchemaRequest) Reset() {
 	*x = GetToolsSchemaRequest{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3234,7 +5362,7 @@ func (x *GetToolsSchemaRequest) String() string {
 func (*GetToolsSchemaRequest) ProtoMessage() {}
 
 func (x *GetToolsSchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3247,7 +5375,7 @@ func (x *GetToolsSchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetToolsSchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetToolsSchemaRequest) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{40}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{68}
 }
 
 type GetToolsSchemaReply struct {
@@ -3261,7 +5389,7 @@ type GetToolsSchemaReply struct {
 
 func (x *GetToolsSchemaReply) Reset() {
 	*x = GetToolsSchemaReply{}
-	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3273,7 +5401,7 @@ func (x *GetToolsSchemaReply) String() string {
 func (*GetToolsSchemaReply) ProtoMessage() {}
 
 func (x *GetToolsSchemaReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	mi := &file_api_moe_v1_moe_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3286,7 +5414,7 @@ func (x *GetToolsSchemaReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetToolsSchemaReply.ProtoReflect.Descriptor instead.
 func (*GetToolsSchemaReply) Descriptor() ([]byte, []int) {
-	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{41}
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *GetToolsSchemaReply) GetDefaultTier() string {
@@ -3453,7 +5581,193 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	"\x0fstability_score\x18\n" +
 	" \x01(\x05R\x0estabilityScore\x12'\n" +
 	"\x0fstability_delta\x18\v \x01(\x05R\x0estabilityDelta\x12.\n" +
-	"\x13avg_episode_quality\x18\f \x01(\x05R\x11avgEpisodeQuality\"\x85\x01\n" +
+	"\x13avg_episode_quality\x18\f \x01(\x05R\x11avgEpisodeQuality\"\x93\x01\n" +
+	"\x0eBrainGraphNode\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05label\x18\x03 \x01(\tR\x05label\x12\x18\n" +
+	"\asummary\x18\x04 \x01(\tR\asummary\x12\x16\n" +
+	"\x06weight\x18\x05 \x01(\x05R\x06weight\x12\x15\n" +
+	"\x06ref_id\x18\x06 \x01(\tR\x05refId\"\x84\x01\n" +
+	"\x0eBrainGraphEdge\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12\x16\n" +
+	"\x06target\x18\x03 \x01(\tR\x06target\x12\x1a\n" +
+	"\brelation\x18\x04 \x01(\tR\brelation\x12\x16\n" +
+	"\x06weight\x18\x05 \x01(\x01R\x06weight\"I\n" +
+	"\x14GetBrainGraphRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\xf2\x01\n" +
+	"\x12GetBrainGraphReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12,\n" +
+	"\x05nodes\x18\x02 \x03(\v2\x16.moe.v1.BrainGraphNodeR\x05nodes\x12,\n" +
+	"\x05edges\x18\x03 \x03(\v2\x16.moe.v1.BrainGraphEdgeR\x05edges\x12#\n" +
+	"\repisode_count\x18\x04 \x01(\x05R\fepisodeCount\x12!\n" +
+	"\fmemory_count\x18\x05 \x01(\x05R\vmemoryCount\x12\x1b\n" +
+	"\ttag_count\x18\x06 \x01(\x05R\btagCount\"\x9d\x01\n" +
+	"\rBrainRpgSkill\x12\x10\n" +
+	"\x03tag\x18\x01 \x01(\tR\x03tag\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12\x14\n" +
+	"\x05level\x18\x03 \x01(\x05R\x05level\x12\x16\n" +
+	"\x06locked\x18\x04 \x01(\bR\x06locked\x12\x1f\n" +
+	"\vusage_count\x18\x05 \x01(\x05R\n" +
+	"usageCount\x12\x15\n" +
+	"\x06is_new\x18\x06 \x01(\bR\x05isNew\"\xe3\x01\n" +
+	"\x10BrainRpgFragment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x16\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12#\n" +
+	"\rquality_score\x18\x05 \x01(\x05R\fqualityScore\x12\x1a\n" +
+	"\bapproved\x18\x06 \x01(\bR\bapproved\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"memory_key\x18\b \x01(\tR\tmemoryKey\"\xbe\x01\n" +
+	"\x10BrainRpgDreamLog\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x15\n" +
+	"\x06ran_at\x18\x02 \x01(\tR\x05ranAt\x12\x18\n" +
+	"\asummary\x18\x03 \x01(\tR\asummary\x12\x18\n" +
+	"\arefined\x18\x04 \x01(\x05R\arefined\x12\x16\n" +
+	"\x06merged\x18\x05 \x01(\x05R\x06merged\x12\x1a\n" +
+	"\barchived\x18\x06 \x01(\x05R\barchived\x12\x1b\n" +
+	"\txp_gained\x18\a \x01(\x05R\bxpGained\"\xc8\x01\n" +
+	"\rBrainRpgStats\x12'\n" +
+	"\x0ftotal_fragments\x18\x01 \x01(\x05R\x0etotalFragments\x12%\n" +
+	"\x0esolid_memories\x18\x02 \x01(\x05R\rsolidMemories\x12!\n" +
+	"\fpending_tidy\x18\x03 \x01(\x05R\vpendingTidy\x12#\n" +
+	"\rlocked_skills\x18\x04 \x01(\x05R\flockedSkills\x12\x1f\n" +
+	"\vgraph_nodes\x18\x05 \x01(\x05R\n" +
+	"graphNodes\"1\n" +
+	"\x12GetBrainRpgRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xe5\x04\n" +
+	"\x10GetBrainRpgReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x14\n" +
+	"\x05level\x18\x02 \x01(\x05R\x05level\x12\x0e\n" +
+	"\x02xp\x18\x03 \x01(\x05R\x02xp\x12\x1c\n" +
+	"\n" +
+	"xp_to_next\x18\x04 \x01(\x05R\bxpToNext\x12'\n" +
+	"\x0fstability_score\x18\x05 \x01(\x05R\x0estabilityScore\x12-\n" +
+	"\x06skills\x18\x06 \x03(\v2\x15.moe.v1.BrainRpgSkillR\x06skills\x126\n" +
+	"\tfragments\x18\a \x03(\v2\x18.moe.v1.BrainRpgFragmentR\tfragments\x12=\n" +
+	"\rrecent_dreams\x18\b \x03(\v2\x18.moe.v1.BrainRpgDreamLogR\frecentDreams\x12+\n" +
+	"\x05stats\x18\t \x01(\v2\x15.moe.v1.BrainRpgStatsR\x05stats\x12\"\n" +
+	"\rlast_dream_at\x18\n" +
+	" \x01(\tR\vlastDreamAt\x12#\n" +
+	"\rdream_enabled\x18\v \x01(\bR\fdreamEnabled\x12\x1d\n" +
+	"\n" +
+	"dream_cron\x18\f \x01(\tR\tdreamCron\x12\"\n" +
+	"\rnext_dream_at\x18\r \x01(\tR\vnextDreamAt\x126\n" +
+	"\x17autonomous_mind_enabled\x18\x0e \x01(\bR\x15autonomousMindEnabled\x120\n" +
+	"\x14pending_delete_count\x18\x0f \x01(\x05R\x12pendingDeleteCount\"j\n" +
+	"\x14RunBrainDreamRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x1f\n" +
+	"\vskip_curate\x18\x02 \x01(\bR\n" +
+	"skipCurate\x12\x14\n" +
+	"\x05async\x18\x03 \x01(\bR\x05async\"\xb9\x02\n" +
+	"\x12RunBrainDreamReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x18\n" +
+	"\asummary\x18\x02 \x01(\tR\asummary\x12\x18\n" +
+	"\arefined\x18\x03 \x01(\x05R\arefined\x12\x16\n" +
+	"\x06merged\x18\x04 \x01(\x05R\x06merged\x12\x1a\n" +
+	"\barchived\x18\x05 \x01(\x05R\barchived\x12\x1b\n" +
+	"\txp_gained\x18\x06 \x01(\x05R\bxpGained\x12\x14\n" +
+	"\x05level\x18\a \x01(\x05R\x05level\x12\x0e\n" +
+	"\x02xp\x18\b \x01(\x05R\x02xp\x12\x1a\n" +
+	"\baccepted\x18\t \x01(\bR\baccepted\x12'\n" +
+	"\x0falready_running\x18\n" +
+	" \x01(\bR\x0ealreadyRunning\x12\x16\n" +
+	"\x06detail\x18\v \x01(\tR\x06detail\"e\n" +
+	"\x1cCompressBrainMemoriesRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x12\n" +
+	"\x04days\x18\x02 \x01(\x05R\x04days\x12\x14\n" +
+	"\x05async\x18\x03 \x01(\bR\x05async\"\xa9\x03\n" +
+	"\x1aCompressBrainMemoriesReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x1d\n" +
+	"\n" +
+	"memory_key\x18\x02 \x01(\tR\tmemoryKey\x12\x18\n" +
+	"\asummary\x18\x03 \x01(\tR\asummary\x12!\n" +
+	"\fsource_count\x18\x04 \x01(\x05R\vsourceCount\x12\x1b\n" +
+	"\txp_gained\x18\x05 \x01(\x05R\bxpGained\x12\x1f\n" +
+	"\vswept_count\x18\x06 \x01(\x05R\n" +
+	"sweptCount\x12'\n" +
+	"\x0fmerged_clusters\x18\a \x01(\x05R\x0emergedClusters\x12!\n" +
+	"\fmarked_count\x18\b \x01(\x05R\vmarkedCount\x12+\n" +
+	"\x11pending_remaining\x18\t \x01(\x05R\x10pendingRemaining\x12\x1a\n" +
+	"\baccepted\x18\n" +
+	" \x01(\bR\baccepted\x12'\n" +
+	"\x0falready_running\x18\v \x01(\bR\x0ealreadyRunning\x12\x16\n" +
+	"\x06detail\x18\f \x01(\tR\x06detail\"q\n" +
+	"\x19TidyBrainFragmentsRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12!\n" +
+	"\fmax_episodes\x18\x02 \x01(\x05R\vmaxEpisodes\x12\x14\n" +
+	"\x05async\x18\x03 \x01(\bR\x05async\"\xe2\x01\n" +
+	"\x17TidyBrainFragmentsReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x1a\n" +
+	"\bapproved\x18\x03 \x01(\x05R\bapproved\x12\x1b\n" +
+	"\txp_gained\x18\x04 \x01(\x05R\bxpGained\x12\x1a\n" +
+	"\baccepted\x18\x05 \x01(\bR\baccepted\x12'\n" +
+	"\x0falready_running\x18\x06 \x01(\bR\x0ealreadyRunning\x12\x16\n" +
+	"\x06detail\x18\a \x01(\tR\x06detail\"Z\n" +
+	"\x15LockBrainSkillRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x10\n" +
+	"\x03tag\x18\x02 \x01(\tR\x03tag\x12\x12\n" +
+	"\x04lock\x18\x03 \x01(\bR\x04lock\"W\n" +
+	"\x13LockBrainSkillReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12#\n" +
+	"\rlocked_skills\x18\x02 \x03(\tR\flockedSkills\"V\n" +
+	"\x18ForgetBrainMemoryRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x1d\n" +
+	"\n" +
+	"memory_key\x18\x02 \x01(\tR\tmemoryKey\"n\n" +
+	"\x16ForgetBrainMemoryReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x1d\n" +
+	"\n" +
+	"memory_key\x18\x02 \x01(\tR\tmemoryKey\x12\x18\n" +
+	"\adeleted\x18\x03 \x01(\bR\adeleted\"6\n" +
+	"\x17GetBrainPresenceRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xd4\x03\n" +
+	"\x15GetBrainPresenceReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12!\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1a\n" +
+	"\bactivity\x18\x03 \x01(\tR\bactivity\x12\x12\n" +
+	"\x04mood\x18\x04 \x01(\tR\x04mood\x12\x18\n" +
+	"\athought\x18\x05 \x01(\tR\athought\x12#\n" +
+	"\rpipeline_step\x18\x06 \x01(\tR\fpipelineStep\x12)\n" +
+	"\x10pipeline_running\x18\a \x01(\bR\x0fpipelineRunning\x12#\n" +
+	"\rdream_enabled\x18\b \x01(\bR\fdreamEnabled\x12\x1d\n" +
+	"\n" +
+	"dream_cron\x18\t \x01(\tR\tdreamCron\x12\"\n" +
+	"\rnext_dream_at\x18\n" +
+	" \x01(\tR\vnextDreamAt\x12\x1a\n" +
+	"\bdreaming\x18\v \x01(\bR\bdreaming\x126\n" +
+	"\x17autonomous_mind_enabled\x18\f \x01(\bR\x15autonomousMindEnabled\x12%\n" +
+	"\x0ethought_source\x18\r \x01(\tR\rthoughtSource\"\x82\x01\n" +
+	"\x1fUpdateBrainDreamScheduleRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12#\n" +
+	"\rdream_enabled\x18\x02 \x01(\bR\fdreamEnabled\x12\x1d\n" +
+	"\n" +
+	"dream_cron\x18\x03 \x01(\tR\tdreamCron\"\xa4\x01\n" +
+	"\x1dUpdateBrainDreamScheduleReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12#\n" +
+	"\rdream_enabled\x18\x02 \x01(\bR\fdreamEnabled\x12\x1d\n" +
+	"\n" +
+	"dream_cron\x18\x03 \x01(\tR\tdreamCron\x12\"\n" +
+	"\rnext_dream_at\x18\x04 \x01(\tR\vnextDreamAt\"w\n" +
+	" UpdateBrainAutonomousMindRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x126\n" +
+	"\x17autonomous_mind_enabled\x18\x02 \x01(\bR\x15autonomousMindEnabled\"u\n" +
+	"\x1eUpdateBrainAutonomousMindReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x126\n" +
+	"\x17autonomous_mind_enabled\x18\x02 \x01(\bR\x15autonomousMindEnabled\":\n" +
+	"\x1bGenerateBrainThoughtRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\x9c\x01\n" +
+	"\x19GenerateBrainThoughtReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x18\n" +
+	"\athought\x18\x02 \x01(\tR\athought\x12%\n" +
+	"\x0ethought_source\x18\x03 \x01(\tR\rthoughtSource\x12!\n" +
+	"\fgenerated_at\x18\x04 \x01(\tR\vgeneratedAt\"\x85\x01\n" +
 	"\x18UpdateBrainPolicyRequest\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12%\n" +
 	"\x0eforbidden_tags\x18\x02 \x03(\tR\rforbiddenTags\x12%\n" +
@@ -3615,13 +5929,24 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	"\x13GetToolsSchemaReply\x12!\n" +
 	"\fdefault_tier\x18\x01 \x01(\tR\vdefaultTier\x12/\n" +
 	"\x05tools\x18\x02 \x03(\v2\x19.moe.v1.MoeToolSchemaItemR\x05tools\x12*\n" +
-	"\x11openai_tools_json\x18\x03 \x01(\tR\x0fopenaiToolsJson2\xcf\x0f\n" +
+	"\x11openai_tools_json\x18\x03 \x01(\tR\x0fopenaiToolsJson2\xe8\x1c\n" +
 	"\bMoeAdmin\x12g\n" +
 	"\fListRuntimes\x12\x1b.moe.v1.ListRuntimesRequest\x1a\x19.moe.v1.ListRuntimesReply\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/admin/moe/runtimes\x12m\n" +
 	"\rUpsertRuntime\x12\x1c.moe.v1.UpsertRuntimeRequest\x1a\x1a.moe.v1.UpsertRuntimeReply\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/admin/moe/runtimes\x12y\n" +
 	"\x10GetBrainPipeline\x12\x1f.moe.v1.GetBrainPipelineRequest\x1a\x1d.moe.v1.GetBrainPipelineReply\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/admin/moe/brain/pipeline\x12\x7f\n" +
 	"\fRunAgentOnce\x12\x1b.moe.v1.RunAgentOnceRequest\x1a\x19.moe.v1.RunAgentOnceReply\"7\x82\xd3\xe4\x93\x021:\x01*\",/api/admin/moe/runtimes/{agent_key}/run-once\x12\x85\x01\n" +
-	"\x10GetBrainSnapshot\x12\x1f.moe.v1.GetBrainSnapshotRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\"1\x82\xd3\xe4\x93\x02+\x12)/api/admin/moe/runtimes/{agent_key}/brain\x12\x91\x01\n" +
+	"\x10GetBrainSnapshot\x12\x1f.moe.v1.GetBrainSnapshotRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\"1\x82\xd3\xe4\x93\x02+\x12)/api/admin/moe/runtimes/{agent_key}/brain\x12\x82\x01\n" +
+	"\rGetBrainGraph\x12\x1c.moe.v1.GetBrainGraphRequest\x1a\x1a.moe.v1.GetBrainGraphReply\"7\x82\xd3\xe4\x93\x021\x12//api/admin/moe/runtimes/{agent_key}/brain/graph\x12z\n" +
+	"\vGetBrainRpg\x12\x1a.moe.v1.GetBrainRpgRequest\x1a\x18.moe.v1.GetBrainRpgReply\"5\x82\xd3\xe4\x93\x02/\x12-/api/admin/moe/runtimes/{agent_key}/brain/rpg\x12\x89\x01\n" +
+	"\rRunBrainDream\x12\x1c.moe.v1.RunBrainDreamRequest\x1a\x1a.moe.v1.RunBrainDreamReply\">\x82\xd3\xe4\x93\x028:\x01*\"3/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream\x12\xa4\x01\n" +
+	"\x15CompressBrainMemories\x12$.moe.v1.CompressBrainMemoriesRequest\x1a\".moe.v1.CompressBrainMemoriesReply\"A\x82\xd3\xe4\x93\x02;:\x01*\"6/api/admin/moe/runtimes/{agent_key}/brain/rpg/compress\x12\x97\x01\n" +
+	"\x12TidyBrainFragments\x12!.moe.v1.TidyBrainFragmentsRequest\x1a\x1f.moe.v1.TidyBrainFragmentsReply\"=\x82\xd3\xe4\x93\x027:\x01*\"2/api/admin/moe/runtimes/{agent_key}/brain/rpg/tidy\x12\x8d\x01\n" +
+	"\x0eLockBrainSkill\x12\x1d.moe.v1.LockBrainSkillRequest\x1a\x1b.moe.v1.LockBrainSkillReply\"?\x82\xd3\xe4\x93\x029:\x01*\"4/api/admin/moe/runtimes/{agent_key}/brain/rpg/skills\x12\x96\x01\n" +
+	"\x11ForgetBrainMemory\x12 .moe.v1.ForgetBrainMemoryRequest\x1a\x1e.moe.v1.ForgetBrainMemoryReply\"?\x82\xd3\xe4\x93\x029:\x01*\"4/api/admin/moe/runtimes/{agent_key}/brain/rpg/forget\x12\x8e\x01\n" +
+	"\x10GetBrainPresence\x12\x1f.moe.v1.GetBrainPresenceRequest\x1a\x1d.moe.v1.GetBrainPresenceReply\":\x82\xd3\xe4\x93\x024\x122/api/admin/moe/runtimes/{agent_key}/brain/presence\x12\xb3\x01\n" +
+	"\x18UpdateBrainDreamSchedule\x12'.moe.v1.UpdateBrainDreamScheduleRequest\x1a%.moe.v1.UpdateBrainDreamScheduleReply\"G\x82\xd3\xe4\x93\x02A:\x01*\x1a</api/admin/moe/runtimes/{agent_key}/brain/rpg/dream-schedule\x12\xb7\x01\n" +
+	"\x19UpdateBrainAutonomousMind\x12(.moe.v1.UpdateBrainAutonomousMindRequest\x1a&.moe.v1.UpdateBrainAutonomousMindReply\"H\x82\xd3\xe4\x93\x02B:\x01*\x1a=/api/admin/moe/runtimes/{agent_key}/brain/rpg/autonomous-mind\x12\x9e\x01\n" +
+	"\x14GenerateBrainThought\x12#.moe.v1.GenerateBrainThoughtRequest\x1a!.moe.v1.GenerateBrainThoughtReply\">\x82\xd3\xe4\x93\x028:\x01*\"3/api/admin/moe/runtimes/{agent_key}/brain/rpg/think\x12\x91\x01\n" +
 	"\x11UpdateBrainPolicy\x12 .moe.v1.UpdateBrainPolicyRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\";\x82\xd3\xe4\x93\x025:\x01*\x1a0/api/admin/moe/runtimes/{agent_key}/brain/policy\x12\x84\x01\n" +
 	"\x12DeleteBrainEpisode\x12!.moe.v1.DeleteBrainEpisodeRequest\x1a\x1f.moe.v1.DeleteBrainEpisodeReply\"*\x82\xd3\xe4\x93\x02$*\"/api/admin/moe/brain/episodes/{id}\x12\x8e\x01\n" +
 	"\x12RefineBrainEpisode\x12!.moe.v1.RefineBrainEpisodeRequest\x1a\x1f.moe.v1.RefineBrainEpisodeReply\"4\x82\xd3\xe4\x93\x02.:\x01*\")/api/admin/moe/brain/episodes/{id}/refine\x12\x80\x01\n" +
@@ -3647,50 +5972,78 @@ func file_api_moe_v1_moe_proto_rawDescGZIP() []byte {
 	return file_api_moe_v1_moe_proto_rawDescData
 }
 
-var file_api_moe_v1_moe_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_api_moe_v1_moe_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_api_moe_v1_moe_proto_goTypes = []any{
-	(*AgentRuntime)(nil),              // 0: moe.v1.AgentRuntime
-	(*ListRuntimesRequest)(nil),       // 1: moe.v1.ListRuntimesRequest
-	(*ListRuntimesReply)(nil),         // 2: moe.v1.ListRuntimesReply
-	(*UpsertRuntimeRequest)(nil),      // 3: moe.v1.UpsertRuntimeRequest
-	(*UpsertRuntimeReply)(nil),        // 4: moe.v1.UpsertRuntimeReply
-	(*MoePipelineStep)(nil),           // 5: moe.v1.MoePipelineStep
-	(*MoeHostMetrics)(nil),            // 6: moe.v1.MoeHostMetrics
-	(*GetBrainPipelineRequest)(nil),   // 7: moe.v1.GetBrainPipelineRequest
-	(*GetBrainPipelineReply)(nil),     // 8: moe.v1.GetBrainPipelineReply
-	(*RunAgentOnceRequest)(nil),       // 9: moe.v1.RunAgentOnceRequest
-	(*RunAgentOnceReply)(nil),         // 10: moe.v1.RunAgentOnceReply
-	(*BrainTagStat)(nil),              // 11: moe.v1.BrainTagStat
-	(*BrainEpisode)(nil),              // 12: moe.v1.BrainEpisode
-	(*BrainMemory)(nil),               // 13: moe.v1.BrainMemory
-	(*BrainGenerationMeta)(nil),       // 14: moe.v1.BrainGenerationMeta
-	(*GetBrainSnapshotRequest)(nil),   // 15: moe.v1.GetBrainSnapshotRequest
-	(*GetBrainSnapshotReply)(nil),     // 16: moe.v1.GetBrainSnapshotReply
-	(*UpdateBrainPolicyRequest)(nil),  // 17: moe.v1.UpdateBrainPolicyRequest
-	(*DeleteBrainEpisodeRequest)(nil), // 18: moe.v1.DeleteBrainEpisodeRequest
-	(*DeleteBrainEpisodeReply)(nil),   // 19: moe.v1.DeleteBrainEpisodeReply
-	(*RefineBrainEpisodeRequest)(nil), // 20: moe.v1.RefineBrainEpisodeRequest
-	(*RefineBrainEpisodeReply)(nil),   // 21: moe.v1.RefineBrainEpisodeReply
-	(*CurateBrainRequest)(nil),        // 22: moe.v1.CurateBrainRequest
-	(*CurateBrainReply)(nil),          // 23: moe.v1.CurateBrainReply
-	(*ToolStatRow)(nil),               // 24: moe.v1.ToolStatRow
-	(*ToolDayStat)(nil),               // 25: moe.v1.ToolDayStat
-	(*QueryToolStatsRequest)(nil),     // 26: moe.v1.QueryToolStatsRequest
-	(*QueryToolStatsReply)(nil),       // 27: moe.v1.QueryToolStatsReply
-	(*ToolCallRow)(nil),               // 28: moe.v1.ToolCallRow
-	(*ListToolCallsRequest)(nil),      // 29: moe.v1.ListToolCallsRequest
-	(*ListToolCallsReply)(nil),        // 30: moe.v1.ListToolCallsReply
-	(*MoeFlowNode)(nil),               // 31: moe.v1.MoeFlowNode
-	(*MoeFlowEdge)(nil),               // 32: moe.v1.MoeFlowEdge
-	(*BotFlowReply)(nil),              // 33: moe.v1.BotFlowReply
-	(*GetBotFlowRequest)(nil),         // 34: moe.v1.GetBotFlowRequest
-	(*UpsertBotFlowRequest)(nil),      // 35: moe.v1.UpsertBotFlowRequest
-	(*DeleteBotFlowRequest)(nil),      // 36: moe.v1.DeleteBotFlowRequest
-	(*GetInferenceStatusRequest)(nil), // 37: moe.v1.GetInferenceStatusRequest
-	(*GetInferenceStatusReply)(nil),   // 38: moe.v1.GetInferenceStatusReply
-	(*MoeToolSchemaItem)(nil),         // 39: moe.v1.MoeToolSchemaItem
-	(*GetToolsSchemaRequest)(nil),     // 40: moe.v1.GetToolsSchemaRequest
-	(*GetToolsSchemaReply)(nil),       // 41: moe.v1.GetToolsSchemaReply
+	(*AgentRuntime)(nil),                     // 0: moe.v1.AgentRuntime
+	(*ListRuntimesRequest)(nil),              // 1: moe.v1.ListRuntimesRequest
+	(*ListRuntimesReply)(nil),                // 2: moe.v1.ListRuntimesReply
+	(*UpsertRuntimeRequest)(nil),             // 3: moe.v1.UpsertRuntimeRequest
+	(*UpsertRuntimeReply)(nil),               // 4: moe.v1.UpsertRuntimeReply
+	(*MoePipelineStep)(nil),                  // 5: moe.v1.MoePipelineStep
+	(*MoeHostMetrics)(nil),                   // 6: moe.v1.MoeHostMetrics
+	(*GetBrainPipelineRequest)(nil),          // 7: moe.v1.GetBrainPipelineRequest
+	(*GetBrainPipelineReply)(nil),            // 8: moe.v1.GetBrainPipelineReply
+	(*RunAgentOnceRequest)(nil),              // 9: moe.v1.RunAgentOnceRequest
+	(*RunAgentOnceReply)(nil),                // 10: moe.v1.RunAgentOnceReply
+	(*BrainTagStat)(nil),                     // 11: moe.v1.BrainTagStat
+	(*BrainEpisode)(nil),                     // 12: moe.v1.BrainEpisode
+	(*BrainMemory)(nil),                      // 13: moe.v1.BrainMemory
+	(*BrainGenerationMeta)(nil),              // 14: moe.v1.BrainGenerationMeta
+	(*GetBrainSnapshotRequest)(nil),          // 15: moe.v1.GetBrainSnapshotRequest
+	(*GetBrainSnapshotReply)(nil),            // 16: moe.v1.GetBrainSnapshotReply
+	(*BrainGraphNode)(nil),                   // 17: moe.v1.BrainGraphNode
+	(*BrainGraphEdge)(nil),                   // 18: moe.v1.BrainGraphEdge
+	(*GetBrainGraphRequest)(nil),             // 19: moe.v1.GetBrainGraphRequest
+	(*GetBrainGraphReply)(nil),               // 20: moe.v1.GetBrainGraphReply
+	(*BrainRpgSkill)(nil),                    // 21: moe.v1.BrainRpgSkill
+	(*BrainRpgFragment)(nil),                 // 22: moe.v1.BrainRpgFragment
+	(*BrainRpgDreamLog)(nil),                 // 23: moe.v1.BrainRpgDreamLog
+	(*BrainRpgStats)(nil),                    // 24: moe.v1.BrainRpgStats
+	(*GetBrainRpgRequest)(nil),               // 25: moe.v1.GetBrainRpgRequest
+	(*GetBrainRpgReply)(nil),                 // 26: moe.v1.GetBrainRpgReply
+	(*RunBrainDreamRequest)(nil),             // 27: moe.v1.RunBrainDreamRequest
+	(*RunBrainDreamReply)(nil),               // 28: moe.v1.RunBrainDreamReply
+	(*CompressBrainMemoriesRequest)(nil),     // 29: moe.v1.CompressBrainMemoriesRequest
+	(*CompressBrainMemoriesReply)(nil),       // 30: moe.v1.CompressBrainMemoriesReply
+	(*TidyBrainFragmentsRequest)(nil),        // 31: moe.v1.TidyBrainFragmentsRequest
+	(*TidyBrainFragmentsReply)(nil),          // 32: moe.v1.TidyBrainFragmentsReply
+	(*LockBrainSkillRequest)(nil),            // 33: moe.v1.LockBrainSkillRequest
+	(*LockBrainSkillReply)(nil),              // 34: moe.v1.LockBrainSkillReply
+	(*ForgetBrainMemoryRequest)(nil),         // 35: moe.v1.ForgetBrainMemoryRequest
+	(*ForgetBrainMemoryReply)(nil),           // 36: moe.v1.ForgetBrainMemoryReply
+	(*GetBrainPresenceRequest)(nil),          // 37: moe.v1.GetBrainPresenceRequest
+	(*GetBrainPresenceReply)(nil),            // 38: moe.v1.GetBrainPresenceReply
+	(*UpdateBrainDreamScheduleRequest)(nil),  // 39: moe.v1.UpdateBrainDreamScheduleRequest
+	(*UpdateBrainDreamScheduleReply)(nil),    // 40: moe.v1.UpdateBrainDreamScheduleReply
+	(*UpdateBrainAutonomousMindRequest)(nil), // 41: moe.v1.UpdateBrainAutonomousMindRequest
+	(*UpdateBrainAutonomousMindReply)(nil),   // 42: moe.v1.UpdateBrainAutonomousMindReply
+	(*GenerateBrainThoughtRequest)(nil),      // 43: moe.v1.GenerateBrainThoughtRequest
+	(*GenerateBrainThoughtReply)(nil),        // 44: moe.v1.GenerateBrainThoughtReply
+	(*UpdateBrainPolicyRequest)(nil),         // 45: moe.v1.UpdateBrainPolicyRequest
+	(*DeleteBrainEpisodeRequest)(nil),        // 46: moe.v1.DeleteBrainEpisodeRequest
+	(*DeleteBrainEpisodeReply)(nil),          // 47: moe.v1.DeleteBrainEpisodeReply
+	(*RefineBrainEpisodeRequest)(nil),        // 48: moe.v1.RefineBrainEpisodeRequest
+	(*RefineBrainEpisodeReply)(nil),          // 49: moe.v1.RefineBrainEpisodeReply
+	(*CurateBrainRequest)(nil),               // 50: moe.v1.CurateBrainRequest
+	(*CurateBrainReply)(nil),                 // 51: moe.v1.CurateBrainReply
+	(*ToolStatRow)(nil),                      // 52: moe.v1.ToolStatRow
+	(*ToolDayStat)(nil),                      // 53: moe.v1.ToolDayStat
+	(*QueryToolStatsRequest)(nil),            // 54: moe.v1.QueryToolStatsRequest
+	(*QueryToolStatsReply)(nil),              // 55: moe.v1.QueryToolStatsReply
+	(*ToolCallRow)(nil),                      // 56: moe.v1.ToolCallRow
+	(*ListToolCallsRequest)(nil),             // 57: moe.v1.ListToolCallsRequest
+	(*ListToolCallsReply)(nil),               // 58: moe.v1.ListToolCallsReply
+	(*MoeFlowNode)(nil),                      // 59: moe.v1.MoeFlowNode
+	(*MoeFlowEdge)(nil),                      // 60: moe.v1.MoeFlowEdge
+	(*BotFlowReply)(nil),                     // 61: moe.v1.BotFlowReply
+	(*GetBotFlowRequest)(nil),                // 62: moe.v1.GetBotFlowRequest
+	(*UpsertBotFlowRequest)(nil),             // 63: moe.v1.UpsertBotFlowRequest
+	(*DeleteBotFlowRequest)(nil),             // 64: moe.v1.DeleteBotFlowRequest
+	(*GetInferenceStatusRequest)(nil),        // 65: moe.v1.GetInferenceStatusRequest
+	(*GetInferenceStatusReply)(nil),          // 66: moe.v1.GetInferenceStatusReply
+	(*MoeToolSchemaItem)(nil),                // 67: moe.v1.MoeToolSchemaItem
+	(*GetToolsSchemaRequest)(nil),            // 68: moe.v1.GetToolsSchemaRequest
+	(*GetToolsSchemaReply)(nil),              // 69: moe.v1.GetToolsSchemaReply
 }
 var file_api_moe_v1_moe_proto_depIdxs = []int32{
 	0,  // 0: moe.v1.ListRuntimesReply.items:type_name -> moe.v1.AgentRuntime
@@ -3701,52 +6054,80 @@ var file_api_moe_v1_moe_proto_depIdxs = []int32{
 	12, // 5: moe.v1.GetBrainSnapshotReply.episodes:type_name -> moe.v1.BrainEpisode
 	13, // 6: moe.v1.GetBrainSnapshotReply.memories:type_name -> moe.v1.BrainMemory
 	14, // 7: moe.v1.GetBrainSnapshotReply.generation_meta:type_name -> moe.v1.BrainGenerationMeta
-	21, // 8: moe.v1.CurateBrainReply.results:type_name -> moe.v1.RefineBrainEpisodeReply
-	24, // 9: moe.v1.QueryToolStatsReply.by_tool:type_name -> moe.v1.ToolStatRow
-	25, // 10: moe.v1.QueryToolStatsReply.by_day:type_name -> moe.v1.ToolDayStat
-	28, // 11: moe.v1.ListToolCallsReply.items:type_name -> moe.v1.ToolCallRow
-	31, // 12: moe.v1.BotFlowReply.nodes:type_name -> moe.v1.MoeFlowNode
-	32, // 13: moe.v1.BotFlowReply.edges:type_name -> moe.v1.MoeFlowEdge
-	31, // 14: moe.v1.UpsertBotFlowRequest.nodes:type_name -> moe.v1.MoeFlowNode
-	32, // 15: moe.v1.UpsertBotFlowRequest.edges:type_name -> moe.v1.MoeFlowEdge
-	39, // 16: moe.v1.GetToolsSchemaReply.tools:type_name -> moe.v1.MoeToolSchemaItem
-	1,  // 17: moe.v1.MoeAdmin.ListRuntimes:input_type -> moe.v1.ListRuntimesRequest
-	3,  // 18: moe.v1.MoeAdmin.UpsertRuntime:input_type -> moe.v1.UpsertRuntimeRequest
-	7,  // 19: moe.v1.MoeAdmin.GetBrainPipeline:input_type -> moe.v1.GetBrainPipelineRequest
-	9,  // 20: moe.v1.MoeAdmin.RunAgentOnce:input_type -> moe.v1.RunAgentOnceRequest
-	15, // 21: moe.v1.MoeAdmin.GetBrainSnapshot:input_type -> moe.v1.GetBrainSnapshotRequest
-	17, // 22: moe.v1.MoeAdmin.UpdateBrainPolicy:input_type -> moe.v1.UpdateBrainPolicyRequest
-	18, // 23: moe.v1.MoeAdmin.DeleteBrainEpisode:input_type -> moe.v1.DeleteBrainEpisodeRequest
-	20, // 24: moe.v1.MoeAdmin.RefineBrainEpisode:input_type -> moe.v1.RefineBrainEpisodeRequest
-	22, // 25: moe.v1.MoeAdmin.CurateBrain:input_type -> moe.v1.CurateBrainRequest
-	34, // 26: moe.v1.MoeAdmin.GetBotFlow:input_type -> moe.v1.GetBotFlowRequest
-	35, // 27: moe.v1.MoeAdmin.UpsertBotFlow:input_type -> moe.v1.UpsertBotFlowRequest
-	36, // 28: moe.v1.MoeAdmin.DeleteBotFlow:input_type -> moe.v1.DeleteBotFlowRequest
-	37, // 29: moe.v1.MoeAdmin.GetInferenceStatus:input_type -> moe.v1.GetInferenceStatusRequest
-	40, // 30: moe.v1.MoeAdmin.GetToolsSchema:input_type -> moe.v1.GetToolsSchemaRequest
-	26, // 31: moe.v1.MoeAdmin.QueryToolStats:input_type -> moe.v1.QueryToolStatsRequest
-	29, // 32: moe.v1.MoeAdmin.ListToolCalls:input_type -> moe.v1.ListToolCallsRequest
-	2,  // 33: moe.v1.MoeAdmin.ListRuntimes:output_type -> moe.v1.ListRuntimesReply
-	4,  // 34: moe.v1.MoeAdmin.UpsertRuntime:output_type -> moe.v1.UpsertRuntimeReply
-	8,  // 35: moe.v1.MoeAdmin.GetBrainPipeline:output_type -> moe.v1.GetBrainPipelineReply
-	10, // 36: moe.v1.MoeAdmin.RunAgentOnce:output_type -> moe.v1.RunAgentOnceReply
-	16, // 37: moe.v1.MoeAdmin.GetBrainSnapshot:output_type -> moe.v1.GetBrainSnapshotReply
-	16, // 38: moe.v1.MoeAdmin.UpdateBrainPolicy:output_type -> moe.v1.GetBrainSnapshotReply
-	19, // 39: moe.v1.MoeAdmin.DeleteBrainEpisode:output_type -> moe.v1.DeleteBrainEpisodeReply
-	21, // 40: moe.v1.MoeAdmin.RefineBrainEpisode:output_type -> moe.v1.RefineBrainEpisodeReply
-	23, // 41: moe.v1.MoeAdmin.CurateBrain:output_type -> moe.v1.CurateBrainReply
-	33, // 42: moe.v1.MoeAdmin.GetBotFlow:output_type -> moe.v1.BotFlowReply
-	33, // 43: moe.v1.MoeAdmin.UpsertBotFlow:output_type -> moe.v1.BotFlowReply
-	33, // 44: moe.v1.MoeAdmin.DeleteBotFlow:output_type -> moe.v1.BotFlowReply
-	38, // 45: moe.v1.MoeAdmin.GetInferenceStatus:output_type -> moe.v1.GetInferenceStatusReply
-	41, // 46: moe.v1.MoeAdmin.GetToolsSchema:output_type -> moe.v1.GetToolsSchemaReply
-	27, // 47: moe.v1.MoeAdmin.QueryToolStats:output_type -> moe.v1.QueryToolStatsReply
-	30, // 48: moe.v1.MoeAdmin.ListToolCalls:output_type -> moe.v1.ListToolCallsReply
-	33, // [33:49] is the sub-list for method output_type
-	17, // [17:33] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	17, // 8: moe.v1.GetBrainGraphReply.nodes:type_name -> moe.v1.BrainGraphNode
+	18, // 9: moe.v1.GetBrainGraphReply.edges:type_name -> moe.v1.BrainGraphEdge
+	21, // 10: moe.v1.GetBrainRpgReply.skills:type_name -> moe.v1.BrainRpgSkill
+	22, // 11: moe.v1.GetBrainRpgReply.fragments:type_name -> moe.v1.BrainRpgFragment
+	23, // 12: moe.v1.GetBrainRpgReply.recent_dreams:type_name -> moe.v1.BrainRpgDreamLog
+	24, // 13: moe.v1.GetBrainRpgReply.stats:type_name -> moe.v1.BrainRpgStats
+	49, // 14: moe.v1.CurateBrainReply.results:type_name -> moe.v1.RefineBrainEpisodeReply
+	52, // 15: moe.v1.QueryToolStatsReply.by_tool:type_name -> moe.v1.ToolStatRow
+	53, // 16: moe.v1.QueryToolStatsReply.by_day:type_name -> moe.v1.ToolDayStat
+	56, // 17: moe.v1.ListToolCallsReply.items:type_name -> moe.v1.ToolCallRow
+	59, // 18: moe.v1.BotFlowReply.nodes:type_name -> moe.v1.MoeFlowNode
+	60, // 19: moe.v1.BotFlowReply.edges:type_name -> moe.v1.MoeFlowEdge
+	59, // 20: moe.v1.UpsertBotFlowRequest.nodes:type_name -> moe.v1.MoeFlowNode
+	60, // 21: moe.v1.UpsertBotFlowRequest.edges:type_name -> moe.v1.MoeFlowEdge
+	67, // 22: moe.v1.GetToolsSchemaReply.tools:type_name -> moe.v1.MoeToolSchemaItem
+	1,  // 23: moe.v1.MoeAdmin.ListRuntimes:input_type -> moe.v1.ListRuntimesRequest
+	3,  // 24: moe.v1.MoeAdmin.UpsertRuntime:input_type -> moe.v1.UpsertRuntimeRequest
+	7,  // 25: moe.v1.MoeAdmin.GetBrainPipeline:input_type -> moe.v1.GetBrainPipelineRequest
+	9,  // 26: moe.v1.MoeAdmin.RunAgentOnce:input_type -> moe.v1.RunAgentOnceRequest
+	15, // 27: moe.v1.MoeAdmin.GetBrainSnapshot:input_type -> moe.v1.GetBrainSnapshotRequest
+	19, // 28: moe.v1.MoeAdmin.GetBrainGraph:input_type -> moe.v1.GetBrainGraphRequest
+	25, // 29: moe.v1.MoeAdmin.GetBrainRpg:input_type -> moe.v1.GetBrainRpgRequest
+	27, // 30: moe.v1.MoeAdmin.RunBrainDream:input_type -> moe.v1.RunBrainDreamRequest
+	29, // 31: moe.v1.MoeAdmin.CompressBrainMemories:input_type -> moe.v1.CompressBrainMemoriesRequest
+	31, // 32: moe.v1.MoeAdmin.TidyBrainFragments:input_type -> moe.v1.TidyBrainFragmentsRequest
+	33, // 33: moe.v1.MoeAdmin.LockBrainSkill:input_type -> moe.v1.LockBrainSkillRequest
+	35, // 34: moe.v1.MoeAdmin.ForgetBrainMemory:input_type -> moe.v1.ForgetBrainMemoryRequest
+	37, // 35: moe.v1.MoeAdmin.GetBrainPresence:input_type -> moe.v1.GetBrainPresenceRequest
+	39, // 36: moe.v1.MoeAdmin.UpdateBrainDreamSchedule:input_type -> moe.v1.UpdateBrainDreamScheduleRequest
+	41, // 37: moe.v1.MoeAdmin.UpdateBrainAutonomousMind:input_type -> moe.v1.UpdateBrainAutonomousMindRequest
+	43, // 38: moe.v1.MoeAdmin.GenerateBrainThought:input_type -> moe.v1.GenerateBrainThoughtRequest
+	45, // 39: moe.v1.MoeAdmin.UpdateBrainPolicy:input_type -> moe.v1.UpdateBrainPolicyRequest
+	46, // 40: moe.v1.MoeAdmin.DeleteBrainEpisode:input_type -> moe.v1.DeleteBrainEpisodeRequest
+	48, // 41: moe.v1.MoeAdmin.RefineBrainEpisode:input_type -> moe.v1.RefineBrainEpisodeRequest
+	50, // 42: moe.v1.MoeAdmin.CurateBrain:input_type -> moe.v1.CurateBrainRequest
+	62, // 43: moe.v1.MoeAdmin.GetBotFlow:input_type -> moe.v1.GetBotFlowRequest
+	63, // 44: moe.v1.MoeAdmin.UpsertBotFlow:input_type -> moe.v1.UpsertBotFlowRequest
+	64, // 45: moe.v1.MoeAdmin.DeleteBotFlow:input_type -> moe.v1.DeleteBotFlowRequest
+	65, // 46: moe.v1.MoeAdmin.GetInferenceStatus:input_type -> moe.v1.GetInferenceStatusRequest
+	68, // 47: moe.v1.MoeAdmin.GetToolsSchema:input_type -> moe.v1.GetToolsSchemaRequest
+	54, // 48: moe.v1.MoeAdmin.QueryToolStats:input_type -> moe.v1.QueryToolStatsRequest
+	57, // 49: moe.v1.MoeAdmin.ListToolCalls:input_type -> moe.v1.ListToolCallsRequest
+	2,  // 50: moe.v1.MoeAdmin.ListRuntimes:output_type -> moe.v1.ListRuntimesReply
+	4,  // 51: moe.v1.MoeAdmin.UpsertRuntime:output_type -> moe.v1.UpsertRuntimeReply
+	8,  // 52: moe.v1.MoeAdmin.GetBrainPipeline:output_type -> moe.v1.GetBrainPipelineReply
+	10, // 53: moe.v1.MoeAdmin.RunAgentOnce:output_type -> moe.v1.RunAgentOnceReply
+	16, // 54: moe.v1.MoeAdmin.GetBrainSnapshot:output_type -> moe.v1.GetBrainSnapshotReply
+	20, // 55: moe.v1.MoeAdmin.GetBrainGraph:output_type -> moe.v1.GetBrainGraphReply
+	26, // 56: moe.v1.MoeAdmin.GetBrainRpg:output_type -> moe.v1.GetBrainRpgReply
+	28, // 57: moe.v1.MoeAdmin.RunBrainDream:output_type -> moe.v1.RunBrainDreamReply
+	30, // 58: moe.v1.MoeAdmin.CompressBrainMemories:output_type -> moe.v1.CompressBrainMemoriesReply
+	32, // 59: moe.v1.MoeAdmin.TidyBrainFragments:output_type -> moe.v1.TidyBrainFragmentsReply
+	34, // 60: moe.v1.MoeAdmin.LockBrainSkill:output_type -> moe.v1.LockBrainSkillReply
+	36, // 61: moe.v1.MoeAdmin.ForgetBrainMemory:output_type -> moe.v1.ForgetBrainMemoryReply
+	38, // 62: moe.v1.MoeAdmin.GetBrainPresence:output_type -> moe.v1.GetBrainPresenceReply
+	40, // 63: moe.v1.MoeAdmin.UpdateBrainDreamSchedule:output_type -> moe.v1.UpdateBrainDreamScheduleReply
+	42, // 64: moe.v1.MoeAdmin.UpdateBrainAutonomousMind:output_type -> moe.v1.UpdateBrainAutonomousMindReply
+	44, // 65: moe.v1.MoeAdmin.GenerateBrainThought:output_type -> moe.v1.GenerateBrainThoughtReply
+	16, // 66: moe.v1.MoeAdmin.UpdateBrainPolicy:output_type -> moe.v1.GetBrainSnapshotReply
+	47, // 67: moe.v1.MoeAdmin.DeleteBrainEpisode:output_type -> moe.v1.DeleteBrainEpisodeReply
+	49, // 68: moe.v1.MoeAdmin.RefineBrainEpisode:output_type -> moe.v1.RefineBrainEpisodeReply
+	51, // 69: moe.v1.MoeAdmin.CurateBrain:output_type -> moe.v1.CurateBrainReply
+	61, // 70: moe.v1.MoeAdmin.GetBotFlow:output_type -> moe.v1.BotFlowReply
+	61, // 71: moe.v1.MoeAdmin.UpsertBotFlow:output_type -> moe.v1.BotFlowReply
+	61, // 72: moe.v1.MoeAdmin.DeleteBotFlow:output_type -> moe.v1.BotFlowReply
+	66, // 73: moe.v1.MoeAdmin.GetInferenceStatus:output_type -> moe.v1.GetInferenceStatusReply
+	69, // 74: moe.v1.MoeAdmin.GetToolsSchema:output_type -> moe.v1.GetToolsSchemaReply
+	55, // 75: moe.v1.MoeAdmin.QueryToolStats:output_type -> moe.v1.QueryToolStatsReply
+	58, // 76: moe.v1.MoeAdmin.ListToolCalls:output_type -> moe.v1.ListToolCallsReply
+	50, // [50:77] is the sub-list for method output_type
+	23, // [23:50] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_api_moe_v1_moe_proto_init() }
@@ -3760,7 +6141,7 @@ func file_api_moe_v1_moe_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_moe_v1_moe_proto_rawDesc), len(file_api_moe_v1_moe_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   42,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

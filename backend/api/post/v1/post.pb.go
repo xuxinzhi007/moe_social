@@ -108,6 +108,7 @@ type Post struct {
 	ModerationStatus  string                 `protobuf:"bytes,14,opt,name=moderation_status,json=moderationStatus,proto3" json:"moderation_status,omitempty"`
 	AuthorIsBot       bool                   `protobuf:"varint,15,opt,name=author_is_bot,json=authorIsBot,proto3" json:"author_is_bot,omitempty"`
 	AuthorBotAgentKey string                 `protobuf:"bytes,16,opt,name=author_bot_agent_key,json=authorBotAgentKey,proto3" json:"author_bot_agent_key,omitempty"`
+	HasHandDraw       bool                   `protobuf:"varint,17,opt,name=has_hand_draw,json=hasHandDraw,proto3" json:"has_hand_draw,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -252,6 +253,13 @@ func (x *Post) GetAuthorBotAgentKey() string {
 		return x.AuthorBotAgentKey
 	}
 	return ""
+}
+
+func (x *Post) GetHasHandDraw() bool {
+	if x != nil {
+		return x.HasHandDraw
+	}
+	return false
 }
 
 type AchievementUnlock struct {
@@ -426,6 +434,110 @@ func (x *GetPostReply) GetPost() *Post {
 	return nil
 }
 
+type GetPostHandDrawRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	ViewerUserId  string                 `protobuf:"bytes,2,opt,name=viewer_user_id,json=viewerUserId,proto3" json:"viewer_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPostHandDrawRequest) Reset() {
+	*x = GetPostHandDrawRequest{}
+	mi := &file_api_post_v1_post_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostHandDrawRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostHandDrawRequest) ProtoMessage() {}
+
+func (x *GetPostHandDrawRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostHandDrawRequest.ProtoReflect.Descriptor instead.
+func (*GetPostHandDrawRequest) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetPostHandDrawRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *GetPostHandDrawRequest) GetViewerUserId() string {
+	if x != nil {
+		return x.ViewerUserId
+	}
+	return ""
+}
+
+type GetPostHandDrawReply struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	HandDrawCard     string                 `protobuf:"bytes,1,opt,name=hand_draw_card,json=handDrawCard,proto3" json:"hand_draw_card,omitempty"`
+	HandDrawThumbUrl string                 `protobuf:"bytes,2,opt,name=hand_draw_thumb_url,json=handDrawThumbUrl,proto3" json:"hand_draw_thumb_url,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetPostHandDrawReply) Reset() {
+	*x = GetPostHandDrawReply{}
+	mi := &file_api_post_v1_post_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPostHandDrawReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPostHandDrawReply) ProtoMessage() {}
+
+func (x *GetPostHandDrawReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_post_v1_post_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPostHandDrawReply.ProtoReflect.Descriptor instead.
+func (*GetPostHandDrawReply) Descriptor() ([]byte, []int) {
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetPostHandDrawReply) GetHandDrawCard() string {
+	if x != nil {
+		return x.HandDrawCard
+	}
+	return ""
+}
+
+func (x *GetPostHandDrawReply) GetHandDrawThumbUrl() string {
+	if x != nil {
+		return x.HandDrawThumbUrl
+	}
+	return ""
+}
+
 type MoeSearchPostsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
@@ -439,7 +551,7 @@ type MoeSearchPostsRequest struct {
 
 func (x *MoeSearchPostsRequest) Reset() {
 	*x = MoeSearchPostsRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[5]
+	mi := &file_api_post_v1_post_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -451,7 +563,7 @@ func (x *MoeSearchPostsRequest) String() string {
 func (*MoeSearchPostsRequest) ProtoMessage() {}
 
 func (x *MoeSearchPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[5]
+	mi := &file_api_post_v1_post_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -464,7 +576,7 @@ func (x *MoeSearchPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeSearchPostsRequest.ProtoReflect.Descriptor instead.
 func (*MoeSearchPostsRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{5}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *MoeSearchPostsRequest) GetQuery() string {
@@ -521,7 +633,7 @@ type MoeSearchPostHit struct {
 
 func (x *MoeSearchPostHit) Reset() {
 	*x = MoeSearchPostHit{}
-	mi := &file_api_post_v1_post_proto_msgTypes[6]
+	mi := &file_api_post_v1_post_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -533,7 +645,7 @@ func (x *MoeSearchPostHit) String() string {
 func (*MoeSearchPostHit) ProtoMessage() {}
 
 func (x *MoeSearchPostHit) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[6]
+	mi := &file_api_post_v1_post_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -546,7 +658,7 @@ func (x *MoeSearchPostHit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeSearchPostHit.ProtoReflect.Descriptor instead.
 func (*MoeSearchPostHit) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{6}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *MoeSearchPostHit) GetPostId() string {
@@ -636,7 +748,7 @@ type MoeSearchPostsReply struct {
 
 func (x *MoeSearchPostsReply) Reset() {
 	*x = MoeSearchPostsReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[7]
+	mi := &file_api_post_v1_post_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -648,7 +760,7 @@ func (x *MoeSearchPostsReply) String() string {
 func (*MoeSearchPostsReply) ProtoMessage() {}
 
 func (x *MoeSearchPostsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[7]
+	mi := &file_api_post_v1_post_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -661,7 +773,7 @@ func (x *MoeSearchPostsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MoeSearchPostsReply.ProtoReflect.Descriptor instead.
 func (*MoeSearchPostsReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{7}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *MoeSearchPostsReply) GetItems() []*MoeSearchPostHit {
@@ -694,7 +806,7 @@ type CreatePostRequest struct {
 
 func (x *CreatePostRequest) Reset() {
 	*x = CreatePostRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[8]
+	mi := &file_api_post_v1_post_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -706,7 +818,7 @@ func (x *CreatePostRequest) String() string {
 func (*CreatePostRequest) ProtoMessage() {}
 
 func (x *CreatePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[8]
+	mi := &file_api_post_v1_post_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -719,7 +831,7 @@ func (x *CreatePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePostRequest.ProtoReflect.Descriptor instead.
 func (*CreatePostRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{8}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreatePostRequest) GetUserId() string {
@@ -788,7 +900,7 @@ type CreatePostReply struct {
 
 func (x *CreatePostReply) Reset() {
 	*x = CreatePostReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[9]
+	mi := &file_api_post_v1_post_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -800,7 +912,7 @@ func (x *CreatePostReply) String() string {
 func (*CreatePostReply) ProtoMessage() {}
 
 func (x *CreatePostReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[9]
+	mi := &file_api_post_v1_post_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -813,7 +925,7 @@ func (x *CreatePostReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePostReply.ProtoReflect.Descriptor instead.
 func (*CreatePostReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{9}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *CreatePostReply) GetPost() *Post {
@@ -840,7 +952,7 @@ type LikePostRequest struct {
 
 func (x *LikePostRequest) Reset() {
 	*x = LikePostRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[10]
+	mi := &file_api_post_v1_post_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -852,7 +964,7 @@ func (x *LikePostRequest) String() string {
 func (*LikePostRequest) ProtoMessage() {}
 
 func (x *LikePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[10]
+	mi := &file_api_post_v1_post_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -865,7 +977,7 @@ func (x *LikePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikePostRequest.ProtoReflect.Descriptor instead.
 func (*LikePostRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{10}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *LikePostRequest) GetPostId() string {
@@ -891,7 +1003,7 @@ type LikePostReply struct {
 
 func (x *LikePostReply) Reset() {
 	*x = LikePostReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[11]
+	mi := &file_api_post_v1_post_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -903,7 +1015,7 @@ func (x *LikePostReply) String() string {
 func (*LikePostReply) ProtoMessage() {}
 
 func (x *LikePostReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[11]
+	mi := &file_api_post_v1_post_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -916,7 +1028,7 @@ func (x *LikePostReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikePostReply.ProtoReflect.Descriptor instead.
 func (*LikePostReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{11}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *LikePostReply) GetPost() *Post {
@@ -940,7 +1052,7 @@ type GetPostsRequest struct {
 
 func (x *GetPostsRequest) Reset() {
 	*x = GetPostsRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[12]
+	mi := &file_api_post_v1_post_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -952,7 +1064,7 @@ func (x *GetPostsRequest) String() string {
 func (*GetPostsRequest) ProtoMessage() {}
 
 func (x *GetPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[12]
+	mi := &file_api_post_v1_post_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -965,7 +1077,7 @@ func (x *GetPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsRequest.ProtoReflect.Descriptor instead.
 func (*GetPostsRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{12}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetPostsRequest) GetPage() int32 {
@@ -1020,7 +1132,7 @@ type GetPostsReply struct {
 
 func (x *GetPostsReply) Reset() {
 	*x = GetPostsReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[13]
+	mi := &file_api_post_v1_post_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1032,7 +1144,7 @@ func (x *GetPostsReply) String() string {
 func (*GetPostsReply) ProtoMessage() {}
 
 func (x *GetPostsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[13]
+	mi := &file_api_post_v1_post_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1045,7 +1157,7 @@ func (x *GetPostsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsReply.ProtoReflect.Descriptor instead.
 func (*GetPostsReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{13}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetPostsReply) GetPosts() []*Post {
@@ -1077,7 +1189,7 @@ type UpdatePostRequest struct {
 
 func (x *UpdatePostRequest) Reset() {
 	*x = UpdatePostRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[14]
+	mi := &file_api_post_v1_post_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1089,7 +1201,7 @@ func (x *UpdatePostRequest) String() string {
 func (*UpdatePostRequest) ProtoMessage() {}
 
 func (x *UpdatePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[14]
+	mi := &file_api_post_v1_post_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1102,7 +1214,7 @@ func (x *UpdatePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePostRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePostRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{14}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UpdatePostRequest) GetPostId() string {
@@ -1163,7 +1275,7 @@ type UpdatePostReply struct {
 
 func (x *UpdatePostReply) Reset() {
 	*x = UpdatePostReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[15]
+	mi := &file_api_post_v1_post_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1175,7 +1287,7 @@ func (x *UpdatePostReply) String() string {
 func (*UpdatePostReply) ProtoMessage() {}
 
 func (x *UpdatePostReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[15]
+	mi := &file_api_post_v1_post_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1188,7 +1300,7 @@ func (x *UpdatePostReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePostReply.ProtoReflect.Descriptor instead.
 func (*UpdatePostReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{15}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UpdatePostReply) GetPost() *Post {
@@ -1208,7 +1320,7 @@ type DeletePostRequest struct {
 
 func (x *DeletePostRequest) Reset() {
 	*x = DeletePostRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[16]
+	mi := &file_api_post_v1_post_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1220,7 +1332,7 @@ func (x *DeletePostRequest) String() string {
 func (*DeletePostRequest) ProtoMessage() {}
 
 func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[16]
+	mi := &file_api_post_v1_post_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1233,7 +1345,7 @@ func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostRequest.ProtoReflect.Descriptor instead.
 func (*DeletePostRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{16}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DeletePostRequest) GetPostId() string {
@@ -1258,7 +1370,7 @@ type DeletePostReply struct {
 
 func (x *DeletePostReply) Reset() {
 	*x = DeletePostReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[17]
+	mi := &file_api_post_v1_post_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1270,7 +1382,7 @@ func (x *DeletePostReply) String() string {
 func (*DeletePostReply) ProtoMessage() {}
 
 func (x *DeletePostReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[17]
+	mi := &file_api_post_v1_post_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1283,7 +1395,7 @@ func (x *DeletePostReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostReply.ProtoReflect.Descriptor instead.
 func (*DeletePostReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{17}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{19}
 }
 
 type ReportPostRequest struct {
@@ -1297,7 +1409,7 @@ type ReportPostRequest struct {
 
 func (x *ReportPostRequest) Reset() {
 	*x = ReportPostRequest{}
-	mi := &file_api_post_v1_post_proto_msgTypes[18]
+	mi := &file_api_post_v1_post_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1309,7 +1421,7 @@ func (x *ReportPostRequest) String() string {
 func (*ReportPostRequest) ProtoMessage() {}
 
 func (x *ReportPostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[18]
+	mi := &file_api_post_v1_post_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1322,7 +1434,7 @@ func (x *ReportPostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportPostRequest.ProtoReflect.Descriptor instead.
 func (*ReportPostRequest) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{18}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ReportPostRequest) GetPostId() string {
@@ -1354,7 +1466,7 @@ type ReportPostReply struct {
 
 func (x *ReportPostReply) Reset() {
 	*x = ReportPostReply{}
-	mi := &file_api_post_v1_post_proto_msgTypes[19]
+	mi := &file_api_post_v1_post_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1478,7 @@ func (x *ReportPostReply) String() string {
 func (*ReportPostReply) ProtoMessage() {}
 
 func (x *ReportPostReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_post_v1_post_proto_msgTypes[19]
+	mi := &file_api_post_v1_post_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1491,7 @@ func (x *ReportPostReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportPostReply.ProtoReflect.Descriptor instead.
 func (*ReportPostReply) Descriptor() ([]byte, []int) {
-	return file_api_post_v1_post_proto_rawDescGZIP(), []int{19}
+	return file_api_post_v1_post_proto_rawDescGZIP(), []int{21}
 }
 
 var File_api_post_v1_post_proto protoreflect.FileDescriptor
@@ -1392,7 +1504,7 @@ const file_api_post_v1_post_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05color\x18\x03 \x01(\tR\x05color\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\"\x94\x04\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\"\xb8\x04\n" +
 	"\x04Post\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
@@ -1413,7 +1525,8 @@ const file_api_post_v1_post_proto_rawDesc = "" +
 	"\x13hand_draw_thumb_url\x18\r \x01(\tR\x10handDrawThumbUrl\x12+\n" +
 	"\x11moderation_status\x18\x0e \x01(\tR\x10moderationStatus\x12\"\n" +
 	"\rauthor_is_bot\x18\x0f \x01(\bR\vauthorIsBot\x12/\n" +
-	"\x14author_bot_agent_key\x18\x10 \x01(\tR\x11authorBotAgentKey\"\x9b\x01\n" +
+	"\x14author_bot_agent_key\x18\x10 \x01(\tR\x11authorBotAgentKey\x12\"\n" +
+	"\rhas_hand_draw\x18\x11 \x01(\bR\vhasHandDraw\"\x9b\x01\n" +
 	"\x11AchievementUnlock\x12\x19\n" +
 	"\bbadge_id\x18\x01 \x01(\tR\abadgeId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -1425,7 +1538,13 @@ const file_api_post_v1_post_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12$\n" +
 	"\x0eviewer_user_id\x18\x02 \x01(\tR\fviewerUserId\"1\n" +
 	"\fGetPostReply\x12!\n" +
-	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post\"\xa6\x01\n" +
+	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post\"W\n" +
+	"\x16GetPostHandDrawRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12$\n" +
+	"\x0eviewer_user_id\x18\x02 \x01(\tR\fviewerUserId\"k\n" +
+	"\x14GetPostHandDrawReply\x12$\n" +
+	"\x0ehand_draw_card\x18\x01 \x01(\tR\fhandDrawCard\x12-\n" +
+	"\x13hand_draw_thumb_url\x18\x02 \x01(\tR\x10handDrawThumbUrl\"\xa6\x01\n" +
 	"\x15MoeSearchPostsRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12$\n" +
@@ -1498,9 +1617,10 @@ const file_api_post_v1_post_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12(\n" +
 	"\x10reporter_user_id\x18\x02 \x01(\tR\x0ereporterUserId\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"\x11\n" +
-	"\x0fReportPostReply2\x95\x06\n" +
+	"\x0fReportPostReply2\x90\a\n" +
 	"\vPostService\x12W\n" +
-	"\aGetPost\x12\x17.post.v1.GetPostRequest\x1a\x15.post.v1.GetPostReply\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/posts/{post_id}\x12P\n" +
+	"\aGetPost\x12\x17.post.v1.GetPostRequest\x1a\x15.post.v1.GetPostReply\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/posts/{post_id}\x12y\n" +
+	"\x0fGetPostHandDraw\x12\x1f.post.v1.GetPostHandDrawRequest\x1a\x1d.post.v1.GetPostHandDrawReply\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/posts/{post_id}/hand-draw\x12P\n" +
 	"\bGetPosts\x12\x18.post.v1.GetPostsRequest\x1a\x16.post.v1.GetPostsReply\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
 	"/api/posts\x12i\n" +
 	"\x0eMoeSearchPosts\x12\x1e.post.v1.MoeSearchPostsRequest\x1a\x1c.post.v1.MoeSearchPostsReply\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/api/posts/search\x12Y\n" +
@@ -1527,33 +1647,35 @@ func file_api_post_v1_post_proto_rawDescGZIP() []byte {
 	return file_api_post_v1_post_proto_rawDescData
 }
 
-var file_api_post_v1_post_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_api_post_v1_post_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_api_post_v1_post_proto_goTypes = []any{
-	(*TopicTag)(nil),              // 0: post.v1.TopicTag
-	(*Post)(nil),                  // 1: post.v1.Post
-	(*AchievementUnlock)(nil),     // 2: post.v1.AchievementUnlock
-	(*GetPostRequest)(nil),        // 3: post.v1.GetPostRequest
-	(*GetPostReply)(nil),          // 4: post.v1.GetPostReply
-	(*MoeSearchPostsRequest)(nil), // 5: post.v1.MoeSearchPostsRequest
-	(*MoeSearchPostHit)(nil),      // 6: post.v1.MoeSearchPostHit
-	(*MoeSearchPostsReply)(nil),   // 7: post.v1.MoeSearchPostsReply
-	(*CreatePostRequest)(nil),     // 8: post.v1.CreatePostRequest
-	(*CreatePostReply)(nil),       // 9: post.v1.CreatePostReply
-	(*LikePostRequest)(nil),       // 10: post.v1.LikePostRequest
-	(*LikePostReply)(nil),         // 11: post.v1.LikePostReply
-	(*GetPostsRequest)(nil),       // 12: post.v1.GetPostsRequest
-	(*GetPostsReply)(nil),         // 13: post.v1.GetPostsReply
-	(*UpdatePostRequest)(nil),     // 14: post.v1.UpdatePostRequest
-	(*UpdatePostReply)(nil),       // 15: post.v1.UpdatePostReply
-	(*DeletePostRequest)(nil),     // 16: post.v1.DeletePostRequest
-	(*DeletePostReply)(nil),       // 17: post.v1.DeletePostReply
-	(*ReportPostRequest)(nil),     // 18: post.v1.ReportPostRequest
-	(*ReportPostReply)(nil),       // 19: post.v1.ReportPostReply
+	(*TopicTag)(nil),               // 0: post.v1.TopicTag
+	(*Post)(nil),                   // 1: post.v1.Post
+	(*AchievementUnlock)(nil),      // 2: post.v1.AchievementUnlock
+	(*GetPostRequest)(nil),         // 3: post.v1.GetPostRequest
+	(*GetPostReply)(nil),           // 4: post.v1.GetPostReply
+	(*GetPostHandDrawRequest)(nil), // 5: post.v1.GetPostHandDrawRequest
+	(*GetPostHandDrawReply)(nil),   // 6: post.v1.GetPostHandDrawReply
+	(*MoeSearchPostsRequest)(nil),  // 7: post.v1.MoeSearchPostsRequest
+	(*MoeSearchPostHit)(nil),       // 8: post.v1.MoeSearchPostHit
+	(*MoeSearchPostsReply)(nil),    // 9: post.v1.MoeSearchPostsReply
+	(*CreatePostRequest)(nil),      // 10: post.v1.CreatePostRequest
+	(*CreatePostReply)(nil),        // 11: post.v1.CreatePostReply
+	(*LikePostRequest)(nil),        // 12: post.v1.LikePostRequest
+	(*LikePostReply)(nil),          // 13: post.v1.LikePostReply
+	(*GetPostsRequest)(nil),        // 14: post.v1.GetPostsRequest
+	(*GetPostsReply)(nil),          // 15: post.v1.GetPostsReply
+	(*UpdatePostRequest)(nil),      // 16: post.v1.UpdatePostRequest
+	(*UpdatePostReply)(nil),        // 17: post.v1.UpdatePostReply
+	(*DeletePostRequest)(nil),      // 18: post.v1.DeletePostRequest
+	(*DeletePostReply)(nil),        // 19: post.v1.DeletePostReply
+	(*ReportPostRequest)(nil),      // 20: post.v1.ReportPostRequest
+	(*ReportPostReply)(nil),        // 21: post.v1.ReportPostReply
 }
 var file_api_post_v1_post_proto_depIdxs = []int32{
 	0,  // 0: post.v1.Post.topic_tags:type_name -> post.v1.TopicTag
 	1,  // 1: post.v1.GetPostReply.post:type_name -> post.v1.Post
-	6,  // 2: post.v1.MoeSearchPostsReply.items:type_name -> post.v1.MoeSearchPostHit
+	8,  // 2: post.v1.MoeSearchPostsReply.items:type_name -> post.v1.MoeSearchPostHit
 	0,  // 3: post.v1.CreatePostRequest.topic_tags:type_name -> post.v1.TopicTag
 	1,  // 4: post.v1.CreatePostReply.post:type_name -> post.v1.Post
 	2,  // 5: post.v1.CreatePostReply.new_achievements:type_name -> post.v1.AchievementUnlock
@@ -1562,23 +1684,25 @@ var file_api_post_v1_post_proto_depIdxs = []int32{
 	0,  // 8: post.v1.UpdatePostRequest.topic_tags:type_name -> post.v1.TopicTag
 	1,  // 9: post.v1.UpdatePostReply.post:type_name -> post.v1.Post
 	3,  // 10: post.v1.PostService.GetPost:input_type -> post.v1.GetPostRequest
-	12, // 11: post.v1.PostService.GetPosts:input_type -> post.v1.GetPostsRequest
-	5,  // 12: post.v1.PostService.MoeSearchPosts:input_type -> post.v1.MoeSearchPostsRequest
-	8,  // 13: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
-	10, // 14: post.v1.PostService.LikePost:input_type -> post.v1.LikePostRequest
-	14, // 15: post.v1.PostService.UpdatePost:input_type -> post.v1.UpdatePostRequest
-	16, // 16: post.v1.PostService.DeletePost:input_type -> post.v1.DeletePostRequest
-	18, // 17: post.v1.PostService.ReportPost:input_type -> post.v1.ReportPostRequest
-	4,  // 18: post.v1.PostService.GetPost:output_type -> post.v1.GetPostReply
-	13, // 19: post.v1.PostService.GetPosts:output_type -> post.v1.GetPostsReply
-	7,  // 20: post.v1.PostService.MoeSearchPosts:output_type -> post.v1.MoeSearchPostsReply
-	9,  // 21: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostReply
-	11, // 22: post.v1.PostService.LikePost:output_type -> post.v1.LikePostReply
-	15, // 23: post.v1.PostService.UpdatePost:output_type -> post.v1.UpdatePostReply
-	17, // 24: post.v1.PostService.DeletePost:output_type -> post.v1.DeletePostReply
-	19, // 25: post.v1.PostService.ReportPost:output_type -> post.v1.ReportPostReply
-	18, // [18:26] is the sub-list for method output_type
-	10, // [10:18] is the sub-list for method input_type
+	5,  // 11: post.v1.PostService.GetPostHandDraw:input_type -> post.v1.GetPostHandDrawRequest
+	14, // 12: post.v1.PostService.GetPosts:input_type -> post.v1.GetPostsRequest
+	7,  // 13: post.v1.PostService.MoeSearchPosts:input_type -> post.v1.MoeSearchPostsRequest
+	10, // 14: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
+	12, // 15: post.v1.PostService.LikePost:input_type -> post.v1.LikePostRequest
+	16, // 16: post.v1.PostService.UpdatePost:input_type -> post.v1.UpdatePostRequest
+	18, // 17: post.v1.PostService.DeletePost:input_type -> post.v1.DeletePostRequest
+	20, // 18: post.v1.PostService.ReportPost:input_type -> post.v1.ReportPostRequest
+	4,  // 19: post.v1.PostService.GetPost:output_type -> post.v1.GetPostReply
+	6,  // 20: post.v1.PostService.GetPostHandDraw:output_type -> post.v1.GetPostHandDrawReply
+	15, // 21: post.v1.PostService.GetPosts:output_type -> post.v1.GetPostsReply
+	9,  // 22: post.v1.PostService.MoeSearchPosts:output_type -> post.v1.MoeSearchPostsReply
+	11, // 23: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostReply
+	13, // 24: post.v1.PostService.LikePost:output_type -> post.v1.LikePostReply
+	17, // 25: post.v1.PostService.UpdatePost:output_type -> post.v1.UpdatePostReply
+	19, // 26: post.v1.PostService.DeletePost:output_type -> post.v1.DeletePostReply
+	21, // 27: post.v1.PostService.ReportPost:output_type -> post.v1.ReportPostReply
+	19, // [19:28] is the sub-list for method output_type
+	10, // [10:19] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -1595,7 +1719,7 @@ func file_api_post_v1_post_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_post_v1_post_proto_rawDesc), len(file_api_post_v1_post_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

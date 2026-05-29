@@ -12,6 +12,7 @@ export default defineConfig({
     proxy: {
       // 业务 Admin：只需 RPC+API，不必起 Agent
       '/api/admin': { target: 'http://127.0.0.1:8888', changeOrigin: true },
+      '/ws': { target: 'http://127.0.0.1:8888', changeOrigin: true, ws: true },
       // 云图库预览/查看：与业务 API 同源，避免走 Deploy Agent
       '/api/images': { target: 'http://127.0.0.1:8888', changeOrigin: true },
       '/api/deploy': { target: 'http://127.0.0.1:19010', changeOrigin: true },

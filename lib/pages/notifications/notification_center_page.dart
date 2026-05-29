@@ -3,6 +3,7 @@ import '../../models/notification.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/avatar_image.dart';
 import '../../utils/error_handler.dart';
+import '../announcements/announcement_detail_page.dart';
 
 class NotificationCenterPage extends StatefulWidget {
   const NotificationCenterPage({super.key});
@@ -159,6 +160,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.notifications_rounded;
         color = Colors.orange;
         break;
+      case NotificationModel.announcement:
+        icon = Icons.campaign_rounded;
+        color = const Color(0xFF7F7FD5);
+        break;
       case NotificationModel.directMessage:
         icon = Icons.mark_chat_unread_rounded;
         color = Colors.deepPurple;
@@ -188,6 +193,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         elevation: 0,
         centerTitle: true,
         actions: [
+          TextButton(
+            onPressed: () => Navigator.pushNamed(context, '/announcements'),
+            child: const Text('公告'),
+          ),
           if (_unreadCount > 0)
             TextButton.icon(
               onPressed: _markAllAsRead,
@@ -263,6 +272,19 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
               onTap: () {
                 if (!notification.isRead) {
                   _markAsRead(notification.id);
+                }
+                final annId = notification.announcementId;
+                if (annId != null && annId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => AnnouncementDetailPage(announcementId: annId),
+                    ),
+                  );
+                  return;
+                }
+                if (notification.type == NotificationModel.system) {
+                  Navigator.pushNamed(context, '/announcements');
                 }
               },
               child: Container(

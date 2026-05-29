@@ -36,6 +36,8 @@ const (
 	Platform_LlmChat_FullMethodName               = "/platform.v1.Platform/LlmChat"
 	Platform_LlmDeleteModel_FullMethodName        = "/platform.v1.Platform/LlmDeleteModel"
 	Platform_LlmDownloadModel_FullMethodName      = "/platform.v1.Platform/LlmDownloadModel"
+	Platform_ListAnnouncements_FullMethodName     = "/platform.v1.Platform/ListAnnouncements"
+	Platform_GetAnnouncement_FullMethodName       = "/platform.v1.Platform/GetAnnouncement"
 )
 
 // PlatformClient is the client API for Platform service.
@@ -59,6 +61,8 @@ type PlatformClient interface {
 	LlmChat(ctx context.Context, in *LlmChatReq, opts ...grpc.CallOption) (*LlmChatResp, error)
 	LlmDeleteModel(ctx context.Context, in *LlmDeleteModelReq, opts ...grpc.CallOption) (*BaseResp, error)
 	LlmDownloadModel(ctx context.Context, in *LlmDownloadModelReq, opts ...grpc.CallOption) (*BaseResp, error)
+	ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...grpc.CallOption) (*ListAnnouncementsResp, error)
+	GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...grpc.CallOption) (*GetAnnouncementResp, error)
 }
 
 type platformClient struct {
@@ -239,6 +243,26 @@ func (c *platformClient) LlmDownloadModel(ctx context.Context, in *LlmDownloadMo
 	return out, nil
 }
 
+func (c *platformClient) ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...grpc.CallOption) (*ListAnnouncementsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAnnouncementsResp)
+	err := c.cc.Invoke(ctx, Platform_ListAnnouncements_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *platformClient) GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...grpc.CallOption) (*GetAnnouncementResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAnnouncementResp)
+	err := c.cc.Invoke(ctx, Platform_GetAnnouncement_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PlatformServer is the server API for Platform service.
 // All implementations must embed UnimplementedPlatformServer
 // for forward compatibility.
@@ -260,6 +284,8 @@ type PlatformServer interface {
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
 	LlmDeleteModel(context.Context, *LlmDeleteModelReq) (*BaseResp, error)
 	LlmDownloadModel(context.Context, *LlmDownloadModelReq) (*BaseResp, error)
+	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
+	GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error)
 	mustEmbedUnimplementedPlatformServer()
 }
 
@@ -320,6 +346,12 @@ func (UnimplementedPlatformServer) LlmDeleteModel(context.Context, *LlmDeleteMod
 }
 func (UnimplementedPlatformServer) LlmDownloadModel(context.Context, *LlmDownloadModelReq) (*BaseResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method LlmDownloadModel not implemented")
+}
+func (UnimplementedPlatformServer) ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAnnouncements not implemented")
+}
+func (UnimplementedPlatformServer) GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAnnouncement not implemented")
 }
 func (UnimplementedPlatformServer) mustEmbedUnimplementedPlatformServer() {}
 func (UnimplementedPlatformServer) testEmbeddedByValue()                  {}
@@ -648,6 +680,42 @@ func _Platform_LlmDownloadModel_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Platform_ListAnnouncements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAnnouncementsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).ListAnnouncements(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_ListAnnouncements_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).ListAnnouncements(ctx, req.(*ListAnnouncementsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Platform_GetAnnouncement_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAnnouncementReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).GetAnnouncement(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_GetAnnouncement_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).GetAnnouncement(ctx, req.(*GetAnnouncementReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Platform_ServiceDesc is the grpc.ServiceDesc for Platform service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -722,6 +790,14 @@ var Platform_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LlmDownloadModel",
 			Handler:    _Platform_LlmDownloadModel_Handler,
+		},
+		{
+			MethodName: "ListAnnouncements",
+			Handler:    _Platform_ListAnnouncements_Handler,
+		},
+		{
+			MethodName: "GetAnnouncement",
+			Handler:    _Platform_GetAnnouncement_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

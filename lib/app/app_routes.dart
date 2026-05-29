@@ -30,6 +30,7 @@ import '../pages/feed/comments_page.dart';
 import '../pages/feed/create_post_page.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
+import '../pages/announcements/announcements_page.dart';
 import '../pages/notifications/notification_center_page.dart';
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friends_page.dart';
@@ -136,6 +137,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       );
     },
     '/notifications': (context) => const NotificationCenterPage(),
+    '/announcements': (context) => const AnnouncementsPage(),
     '/wallet': (context) => _deferred(
           wallet.loadLibrary,
           () => wallet.WalletPage(),

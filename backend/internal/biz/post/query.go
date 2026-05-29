@@ -89,7 +89,7 @@ func GetByID(ctx context.Context, st PostStore, postIDRaw, viewerUserIDRaw strin
 		liked := LikedTargetIDSet(ctx, st, viewerUID, "post", []uint{post.ID})
 		isLiked = liked[post.ID]
 	}
-	return BuildPostV1(post, user, isLiked), nil
+	return BuildPostV1ForDetail(post, user, isLiked), nil
 }
 
 // ListFilter 帖子列表筛选。
@@ -167,7 +167,7 @@ func List(ctx context.Context, st PostStore, f ListFilter) ([]*postv1.Post, int3
 	likedPosts := LikedTargetIDSet(ctx, st, viewerUID, "post", postIDs)
 	out := make([]*postv1.Post, 0, len(posts))
 	for _, post := range posts {
-		out = append(out, BuildPostV1(post, userMap[post.UserID], likedPosts[post.ID]))
+		out = append(out, BuildPostV1ForList(post, userMap[post.UserID], likedPosts[post.ID]))
 	}
 	return out, int32(total), nil
 }

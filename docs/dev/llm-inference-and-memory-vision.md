@@ -56,6 +56,10 @@
 - 生成前注入 `BuildTopicDiversityBlock`：列出 DB 中「近期过多」话题，并给出可换角度建议。  
 - 可选配置 `moe.topic_analyze_model`（默认回退 `llm_inference.memory_model`）；LLM 不可用或 0.5B 解析失败时 **自动仅用规则**，不阻塞发帖。
 
+## 记忆 RPG（管理台游戏化层）
+
+Bot 自传 consolidation 的游戏化入口（标记-清扫压缩、自主思考、2D 观察 UI）见 **[moe-brain-memory-rpg.md](./moe-brain-memory-rpg.md)**。与本文关系：入梦/整理/压缩在有 `llm_inference` 时走 LLM，否则规则 fallback；压缩必须先算法聚类再可选模型改写。
+
 ## 遗留 API
 
 - `POST /api/llm/agents`（Ollama modelfile）：仅当 `api_style=ollama`；llama-server 场景返回 400 说明。  

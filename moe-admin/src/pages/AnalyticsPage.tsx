@@ -11,22 +11,12 @@ import { MonitorPageLayout } from '../ui'
 import { DayTrendChart } from '../components/DayTrendChart'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
+import {
+  normalizeAnalyticsOverview,
+  type AnalyticsOverview,
+} from '../lib/analyticsData'
 
-type Overview = {
-  user_total: number
-  users_new_7d: number
-  users_by_day: Array<{ date: string; count: number }>
-  memory_total: number
-  memory_users: number
-  memories_by_day: Array<{ date: string; count: number }>
-  memory_by_type: Array<{ memory_type: string; count: number }>
-  moe_tool_calls_7d: number
-  moe_tool_success_rate: number
-  moe_tools_by_day: Array<{ date: string; count: number }>
-  chat_sessions_total: number
-  chat_messages_7d: number
-  chat_messages_by_day: Array<{ date: string; count: number }>
-}
+type Overview = AnalyticsOverview
 
 const PIE_COLORS = ['#6b5fc1', '#34d3c8', '#86a8e7', '#f3b74f', '#c9b6ff', '#a8d8ea']
 
@@ -46,7 +36,7 @@ export function AnalyticsPage() {
         setData(null)
         return
       }
-      setData(res.data)
+      setData(normalizeAnalyticsOverview(res.data))
     } catch (e) {
       setError(e instanceof DeployApiError ? e.message : '加载失败')
     } finally {

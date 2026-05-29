@@ -19,22 +19,33 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MoeAdmin_ListRuntimes_FullMethodName       = "/moe.v1.MoeAdmin/ListRuntimes"
-	MoeAdmin_UpsertRuntime_FullMethodName      = "/moe.v1.MoeAdmin/UpsertRuntime"
-	MoeAdmin_GetBrainPipeline_FullMethodName   = "/moe.v1.MoeAdmin/GetBrainPipeline"
-	MoeAdmin_RunAgentOnce_FullMethodName       = "/moe.v1.MoeAdmin/RunAgentOnce"
-	MoeAdmin_GetBrainSnapshot_FullMethodName   = "/moe.v1.MoeAdmin/GetBrainSnapshot"
-	MoeAdmin_UpdateBrainPolicy_FullMethodName  = "/moe.v1.MoeAdmin/UpdateBrainPolicy"
-	MoeAdmin_DeleteBrainEpisode_FullMethodName = "/moe.v1.MoeAdmin/DeleteBrainEpisode"
-	MoeAdmin_RefineBrainEpisode_FullMethodName = "/moe.v1.MoeAdmin/RefineBrainEpisode"
-	MoeAdmin_CurateBrain_FullMethodName        = "/moe.v1.MoeAdmin/CurateBrain"
-	MoeAdmin_GetBotFlow_FullMethodName         = "/moe.v1.MoeAdmin/GetBotFlow"
-	MoeAdmin_UpsertBotFlow_FullMethodName      = "/moe.v1.MoeAdmin/UpsertBotFlow"
-	MoeAdmin_DeleteBotFlow_FullMethodName      = "/moe.v1.MoeAdmin/DeleteBotFlow"
-	MoeAdmin_GetInferenceStatus_FullMethodName = "/moe.v1.MoeAdmin/GetInferenceStatus"
-	MoeAdmin_GetToolsSchema_FullMethodName     = "/moe.v1.MoeAdmin/GetToolsSchema"
-	MoeAdmin_QueryToolStats_FullMethodName     = "/moe.v1.MoeAdmin/QueryToolStats"
-	MoeAdmin_ListToolCalls_FullMethodName      = "/moe.v1.MoeAdmin/ListToolCalls"
+	MoeAdmin_ListRuntimes_FullMethodName              = "/moe.v1.MoeAdmin/ListRuntimes"
+	MoeAdmin_UpsertRuntime_FullMethodName             = "/moe.v1.MoeAdmin/UpsertRuntime"
+	MoeAdmin_GetBrainPipeline_FullMethodName          = "/moe.v1.MoeAdmin/GetBrainPipeline"
+	MoeAdmin_RunAgentOnce_FullMethodName              = "/moe.v1.MoeAdmin/RunAgentOnce"
+	MoeAdmin_GetBrainSnapshot_FullMethodName          = "/moe.v1.MoeAdmin/GetBrainSnapshot"
+	MoeAdmin_GetBrainGraph_FullMethodName             = "/moe.v1.MoeAdmin/GetBrainGraph"
+	MoeAdmin_GetBrainRpg_FullMethodName               = "/moe.v1.MoeAdmin/GetBrainRpg"
+	MoeAdmin_RunBrainDream_FullMethodName             = "/moe.v1.MoeAdmin/RunBrainDream"
+	MoeAdmin_CompressBrainMemories_FullMethodName     = "/moe.v1.MoeAdmin/CompressBrainMemories"
+	MoeAdmin_TidyBrainFragments_FullMethodName        = "/moe.v1.MoeAdmin/TidyBrainFragments"
+	MoeAdmin_LockBrainSkill_FullMethodName            = "/moe.v1.MoeAdmin/LockBrainSkill"
+	MoeAdmin_ForgetBrainMemory_FullMethodName         = "/moe.v1.MoeAdmin/ForgetBrainMemory"
+	MoeAdmin_GetBrainPresence_FullMethodName          = "/moe.v1.MoeAdmin/GetBrainPresence"
+	MoeAdmin_UpdateBrainDreamSchedule_FullMethodName  = "/moe.v1.MoeAdmin/UpdateBrainDreamSchedule"
+	MoeAdmin_UpdateBrainAutonomousMind_FullMethodName = "/moe.v1.MoeAdmin/UpdateBrainAutonomousMind"
+	MoeAdmin_GenerateBrainThought_FullMethodName      = "/moe.v1.MoeAdmin/GenerateBrainThought"
+	MoeAdmin_UpdateBrainPolicy_FullMethodName         = "/moe.v1.MoeAdmin/UpdateBrainPolicy"
+	MoeAdmin_DeleteBrainEpisode_FullMethodName        = "/moe.v1.MoeAdmin/DeleteBrainEpisode"
+	MoeAdmin_RefineBrainEpisode_FullMethodName        = "/moe.v1.MoeAdmin/RefineBrainEpisode"
+	MoeAdmin_CurateBrain_FullMethodName               = "/moe.v1.MoeAdmin/CurateBrain"
+	MoeAdmin_GetBotFlow_FullMethodName                = "/moe.v1.MoeAdmin/GetBotFlow"
+	MoeAdmin_UpsertBotFlow_FullMethodName             = "/moe.v1.MoeAdmin/UpsertBotFlow"
+	MoeAdmin_DeleteBotFlow_FullMethodName             = "/moe.v1.MoeAdmin/DeleteBotFlow"
+	MoeAdmin_GetInferenceStatus_FullMethodName        = "/moe.v1.MoeAdmin/GetInferenceStatus"
+	MoeAdmin_GetToolsSchema_FullMethodName            = "/moe.v1.MoeAdmin/GetToolsSchema"
+	MoeAdmin_QueryToolStats_FullMethodName            = "/moe.v1.MoeAdmin/QueryToolStats"
+	MoeAdmin_ListToolCalls_FullMethodName             = "/moe.v1.MoeAdmin/ListToolCalls"
 )
 
 // MoeAdminClient is the client API for MoeAdmin service.
@@ -53,6 +64,17 @@ type MoeAdminClient interface {
 	GetBrainPipeline(ctx context.Context, in *GetBrainPipelineRequest, opts ...grpc.CallOption) (*GetBrainPipelineReply, error)
 	RunAgentOnce(ctx context.Context, in *RunAgentOnceRequest, opts ...grpc.CallOption) (*RunAgentOnceReply, error)
 	GetBrainSnapshot(ctx context.Context, in *GetBrainSnapshotRequest, opts ...grpc.CallOption) (*GetBrainSnapshotReply, error)
+	GetBrainGraph(ctx context.Context, in *GetBrainGraphRequest, opts ...grpc.CallOption) (*GetBrainGraphReply, error)
+	GetBrainRpg(ctx context.Context, in *GetBrainRpgRequest, opts ...grpc.CallOption) (*GetBrainRpgReply, error)
+	RunBrainDream(ctx context.Context, in *RunBrainDreamRequest, opts ...grpc.CallOption) (*RunBrainDreamReply, error)
+	CompressBrainMemories(ctx context.Context, in *CompressBrainMemoriesRequest, opts ...grpc.CallOption) (*CompressBrainMemoriesReply, error)
+	TidyBrainFragments(ctx context.Context, in *TidyBrainFragmentsRequest, opts ...grpc.CallOption) (*TidyBrainFragmentsReply, error)
+	LockBrainSkill(ctx context.Context, in *LockBrainSkillRequest, opts ...grpc.CallOption) (*LockBrainSkillReply, error)
+	ForgetBrainMemory(ctx context.Context, in *ForgetBrainMemoryRequest, opts ...grpc.CallOption) (*ForgetBrainMemoryReply, error)
+	GetBrainPresence(ctx context.Context, in *GetBrainPresenceRequest, opts ...grpc.CallOption) (*GetBrainPresenceReply, error)
+	UpdateBrainDreamSchedule(ctx context.Context, in *UpdateBrainDreamScheduleRequest, opts ...grpc.CallOption) (*UpdateBrainDreamScheduleReply, error)
+	UpdateBrainAutonomousMind(ctx context.Context, in *UpdateBrainAutonomousMindRequest, opts ...grpc.CallOption) (*UpdateBrainAutonomousMindReply, error)
+	GenerateBrainThought(ctx context.Context, in *GenerateBrainThoughtRequest, opts ...grpc.CallOption) (*GenerateBrainThoughtReply, error)
 	UpdateBrainPolicy(ctx context.Context, in *UpdateBrainPolicyRequest, opts ...grpc.CallOption) (*GetBrainSnapshotReply, error)
 	DeleteBrainEpisode(ctx context.Context, in *DeleteBrainEpisodeRequest, opts ...grpc.CallOption) (*DeleteBrainEpisodeReply, error)
 	RefineBrainEpisode(ctx context.Context, in *RefineBrainEpisodeRequest, opts ...grpc.CallOption) (*RefineBrainEpisodeReply, error)
@@ -118,6 +140,116 @@ func (c *moeAdminClient) GetBrainSnapshot(ctx context.Context, in *GetBrainSnaps
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBrainSnapshotReply)
 	err := c.cc.Invoke(ctx, MoeAdmin_GetBrainSnapshot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GetBrainGraph(ctx context.Context, in *GetBrainGraphRequest, opts ...grpc.CallOption) (*GetBrainGraphReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBrainGraphReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetBrainGraph_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GetBrainRpg(ctx context.Context, in *GetBrainRpgRequest, opts ...grpc.CallOption) (*GetBrainRpgReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBrainRpgReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetBrainRpg_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) RunBrainDream(ctx context.Context, in *RunBrainDreamRequest, opts ...grpc.CallOption) (*RunBrainDreamReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RunBrainDreamReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_RunBrainDream_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) CompressBrainMemories(ctx context.Context, in *CompressBrainMemoriesRequest, opts ...grpc.CallOption) (*CompressBrainMemoriesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompressBrainMemoriesReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_CompressBrainMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) TidyBrainFragments(ctx context.Context, in *TidyBrainFragmentsRequest, opts ...grpc.CallOption) (*TidyBrainFragmentsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TidyBrainFragmentsReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_TidyBrainFragments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) LockBrainSkill(ctx context.Context, in *LockBrainSkillRequest, opts ...grpc.CallOption) (*LockBrainSkillReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LockBrainSkillReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_LockBrainSkill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) ForgetBrainMemory(ctx context.Context, in *ForgetBrainMemoryRequest, opts ...grpc.CallOption) (*ForgetBrainMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ForgetBrainMemoryReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_ForgetBrainMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GetBrainPresence(ctx context.Context, in *GetBrainPresenceRequest, opts ...grpc.CallOption) (*GetBrainPresenceReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBrainPresenceReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetBrainPresence_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) UpdateBrainDreamSchedule(ctx context.Context, in *UpdateBrainDreamScheduleRequest, opts ...grpc.CallOption) (*UpdateBrainDreamScheduleReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateBrainDreamScheduleReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_UpdateBrainDreamSchedule_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) UpdateBrainAutonomousMind(ctx context.Context, in *UpdateBrainAutonomousMindRequest, opts ...grpc.CallOption) (*UpdateBrainAutonomousMindReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateBrainAutonomousMindReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_UpdateBrainAutonomousMind_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GenerateBrainThought(ctx context.Context, in *GenerateBrainThoughtRequest, opts ...grpc.CallOption) (*GenerateBrainThoughtReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateBrainThoughtReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GenerateBrainThought_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +382,17 @@ type MoeAdminServer interface {
 	GetBrainPipeline(context.Context, *GetBrainPipelineRequest) (*GetBrainPipelineReply, error)
 	RunAgentOnce(context.Context, *RunAgentOnceRequest) (*RunAgentOnceReply, error)
 	GetBrainSnapshot(context.Context, *GetBrainSnapshotRequest) (*GetBrainSnapshotReply, error)
+	GetBrainGraph(context.Context, *GetBrainGraphRequest) (*GetBrainGraphReply, error)
+	GetBrainRpg(context.Context, *GetBrainRpgRequest) (*GetBrainRpgReply, error)
+	RunBrainDream(context.Context, *RunBrainDreamRequest) (*RunBrainDreamReply, error)
+	CompressBrainMemories(context.Context, *CompressBrainMemoriesRequest) (*CompressBrainMemoriesReply, error)
+	TidyBrainFragments(context.Context, *TidyBrainFragmentsRequest) (*TidyBrainFragmentsReply, error)
+	LockBrainSkill(context.Context, *LockBrainSkillRequest) (*LockBrainSkillReply, error)
+	ForgetBrainMemory(context.Context, *ForgetBrainMemoryRequest) (*ForgetBrainMemoryReply, error)
+	GetBrainPresence(context.Context, *GetBrainPresenceRequest) (*GetBrainPresenceReply, error)
+	UpdateBrainDreamSchedule(context.Context, *UpdateBrainDreamScheduleRequest) (*UpdateBrainDreamScheduleReply, error)
+	UpdateBrainAutonomousMind(context.Context, *UpdateBrainAutonomousMindRequest) (*UpdateBrainAutonomousMindReply, error)
+	GenerateBrainThought(context.Context, *GenerateBrainThoughtRequest) (*GenerateBrainThoughtReply, error)
 	UpdateBrainPolicy(context.Context, *UpdateBrainPolicyRequest) (*GetBrainSnapshotReply, error)
 	DeleteBrainEpisode(context.Context, *DeleteBrainEpisodeRequest) (*DeleteBrainEpisodeReply, error)
 	RefineBrainEpisode(context.Context, *RefineBrainEpisodeRequest) (*RefineBrainEpisodeReply, error)
@@ -285,6 +428,39 @@ func (UnimplementedMoeAdminServer) RunAgentOnce(context.Context, *RunAgentOnceRe
 }
 func (UnimplementedMoeAdminServer) GetBrainSnapshot(context.Context, *GetBrainSnapshotRequest) (*GetBrainSnapshotReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetBrainSnapshot not implemented")
+}
+func (UnimplementedMoeAdminServer) GetBrainGraph(context.Context, *GetBrainGraphRequest) (*GetBrainGraphReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBrainGraph not implemented")
+}
+func (UnimplementedMoeAdminServer) GetBrainRpg(context.Context, *GetBrainRpgRequest) (*GetBrainRpgReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBrainRpg not implemented")
+}
+func (UnimplementedMoeAdminServer) RunBrainDream(context.Context, *RunBrainDreamRequest) (*RunBrainDreamReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RunBrainDream not implemented")
+}
+func (UnimplementedMoeAdminServer) CompressBrainMemories(context.Context, *CompressBrainMemoriesRequest) (*CompressBrainMemoriesReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompressBrainMemories not implemented")
+}
+func (UnimplementedMoeAdminServer) TidyBrainFragments(context.Context, *TidyBrainFragmentsRequest) (*TidyBrainFragmentsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method TidyBrainFragments not implemented")
+}
+func (UnimplementedMoeAdminServer) LockBrainSkill(context.Context, *LockBrainSkillRequest) (*LockBrainSkillReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LockBrainSkill not implemented")
+}
+func (UnimplementedMoeAdminServer) ForgetBrainMemory(context.Context, *ForgetBrainMemoryRequest) (*ForgetBrainMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ForgetBrainMemory not implemented")
+}
+func (UnimplementedMoeAdminServer) GetBrainPresence(context.Context, *GetBrainPresenceRequest) (*GetBrainPresenceReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBrainPresence not implemented")
+}
+func (UnimplementedMoeAdminServer) UpdateBrainDreamSchedule(context.Context, *UpdateBrainDreamScheduleRequest) (*UpdateBrainDreamScheduleReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateBrainDreamSchedule not implemented")
+}
+func (UnimplementedMoeAdminServer) UpdateBrainAutonomousMind(context.Context, *UpdateBrainAutonomousMindRequest) (*UpdateBrainAutonomousMindReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateBrainAutonomousMind not implemented")
+}
+func (UnimplementedMoeAdminServer) GenerateBrainThought(context.Context, *GenerateBrainThoughtRequest) (*GenerateBrainThoughtReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GenerateBrainThought not implemented")
 }
 func (UnimplementedMoeAdminServer) UpdateBrainPolicy(context.Context, *UpdateBrainPolicyRequest) (*GetBrainSnapshotReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateBrainPolicy not implemented")
@@ -426,6 +602,204 @@ func _MoeAdmin_GetBrainSnapshot_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MoeAdminServer).GetBrainSnapshot(ctx, req.(*GetBrainSnapshotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GetBrainGraph_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBrainGraphRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetBrainGraph(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetBrainGraph_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetBrainGraph(ctx, req.(*GetBrainGraphRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GetBrainRpg_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBrainRpgRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetBrainRpg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetBrainRpg_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetBrainRpg(ctx, req.(*GetBrainRpgRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_RunBrainDream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunBrainDreamRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).RunBrainDream(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_RunBrainDream_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).RunBrainDream(ctx, req.(*RunBrainDreamRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_CompressBrainMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompressBrainMemoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).CompressBrainMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_CompressBrainMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).CompressBrainMemories(ctx, req.(*CompressBrainMemoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_TidyBrainFragments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TidyBrainFragmentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).TidyBrainFragments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_TidyBrainFragments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).TidyBrainFragments(ctx, req.(*TidyBrainFragmentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_LockBrainSkill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LockBrainSkillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).LockBrainSkill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_LockBrainSkill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).LockBrainSkill(ctx, req.(*LockBrainSkillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_ForgetBrainMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForgetBrainMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).ForgetBrainMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_ForgetBrainMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).ForgetBrainMemory(ctx, req.(*ForgetBrainMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GetBrainPresence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBrainPresenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetBrainPresence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetBrainPresence_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetBrainPresence(ctx, req.(*GetBrainPresenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_UpdateBrainDreamSchedule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBrainDreamScheduleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).UpdateBrainDreamSchedule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_UpdateBrainDreamSchedule_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).UpdateBrainDreamSchedule(ctx, req.(*UpdateBrainDreamScheduleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_UpdateBrainAutonomousMind_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBrainAutonomousMindRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).UpdateBrainAutonomousMind(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_UpdateBrainAutonomousMind_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).UpdateBrainAutonomousMind(ctx, req.(*UpdateBrainAutonomousMindRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GenerateBrainThought_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateBrainThoughtRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GenerateBrainThought(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GenerateBrainThought_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GenerateBrainThought(ctx, req.(*GenerateBrainThoughtRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -654,6 +1028,50 @@ var MoeAdmin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBrainSnapshot",
 			Handler:    _MoeAdmin_GetBrainSnapshot_Handler,
+		},
+		{
+			MethodName: "GetBrainGraph",
+			Handler:    _MoeAdmin_GetBrainGraph_Handler,
+		},
+		{
+			MethodName: "GetBrainRpg",
+			Handler:    _MoeAdmin_GetBrainRpg_Handler,
+		},
+		{
+			MethodName: "RunBrainDream",
+			Handler:    _MoeAdmin_RunBrainDream_Handler,
+		},
+		{
+			MethodName: "CompressBrainMemories",
+			Handler:    _MoeAdmin_CompressBrainMemories_Handler,
+		},
+		{
+			MethodName: "TidyBrainFragments",
+			Handler:    _MoeAdmin_TidyBrainFragments_Handler,
+		},
+		{
+			MethodName: "LockBrainSkill",
+			Handler:    _MoeAdmin_LockBrainSkill_Handler,
+		},
+		{
+			MethodName: "ForgetBrainMemory",
+			Handler:    _MoeAdmin_ForgetBrainMemory_Handler,
+		},
+		{
+			MethodName: "GetBrainPresence",
+			Handler:    _MoeAdmin_GetBrainPresence_Handler,
+		},
+		{
+			MethodName: "UpdateBrainDreamSchedule",
+			Handler:    _MoeAdmin_UpdateBrainDreamSchedule_Handler,
+		},
+		{
+			MethodName: "UpdateBrainAutonomousMind",
+			Handler:    _MoeAdmin_UpdateBrainAutonomousMind_Handler,
+		},
+		{
+			MethodName: "GenerateBrainThought",
+			Handler:    _MoeAdmin_GenerateBrainThought_Handler,
 		},
 		{
 			MethodName: "UpdateBrainPolicy",

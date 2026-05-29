@@ -872,6 +872,23 @@ class ApiService {
     return Post.fromJson(ApiResponse.object(result, keys: const ['post']));
   }
 
+  /// 懒加载手绘笔迹 JSON（列表/详情不下发大字段时使用）。
+  static Future<({String handDrawCard, String handDrawThumbUrl})> getPostHandDraw(
+    String postId, {
+    String? viewerUserId,
+  }) async {
+    var path = '/api/posts/$postId/hand-draw';
+    if (viewerUserId != null && viewerUserId.isNotEmpty) {
+      path += '?viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}';
+    }
+    final result = await _request(path);
+    final payload = ApiResponse.payload(result);
+    final card = (payload['hand_draw_card'] ?? payload['handDrawCard'] ?? '').toString();
+    final thumb =
+        (payload['hand_draw_thumb_url'] ?? payload['handDrawThumbUrl'] ?? '').toString();
+    return (handDrawCard: card, handDrawThumbUrl: thumb);
+  }
+
   /// 举报动态
   static Future<void> reportPost({
     required String postId,

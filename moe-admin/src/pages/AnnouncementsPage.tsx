@@ -129,7 +129,10 @@ export function AnnouncementsPage() {
                   const res = await client.publishAnnouncement(row.id)
                   if (!res.success) setError(res.message || '发布失败')
                   else {
-                    setMessage('已发布')
+                    const pushed = (res.data as { notifications_created?: number; ws_sent?: number } | undefined)
+                    const n = pushed?.notifications_created ?? 0
+                    const w = pushed?.ws_sent ?? 0
+                    setMessage(`已发布 · 推送 ${n} 条通知 · WS ${w} 人在线`)
                     await load()
                   }
                 }}

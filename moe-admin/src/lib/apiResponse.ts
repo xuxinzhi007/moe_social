@@ -1,3 +1,5 @@
+import { normalizeApiRecords } from './apiRecord'
+
 const ENVELOPE_KEYS = new Set(['code', 'message', 'success', 'reason'])
 
 /**
@@ -83,12 +85,12 @@ export function normalizeListPayload(
   payload: Record<string, unknown>,
 ): Record<string, unknown> {
   if (Array.isArray(payload.items)) {
-    return payload
+    return { ...payload, items: normalizeApiRecords(payload.items) }
   }
   for (const key of LIST_ARRAY_KEYS) {
     const value = payload[key]
     if (Array.isArray(value)) {
-      return { ...payload, items: value }
+      return { ...payload, items: normalizeApiRecords(value) }
     }
   }
   return payload
@@ -140,18 +142,20 @@ export function normalizeAdminResponse<T>(
 }
 
 /** 列表接口：兼容 `data: T[]`、proto `data: { items }` 与域名字段 `users/posts/…`。 */
-export function unwrapListItems<T>(
+export function unwrapListItems<T extends Record<string, unknown>>(
   data: T[] | Record<string, unknown> | null | undefined,
 ): T[] {
-  if (Array.isArray(data)) return data
+  if (Array.isArray(data)) {
+    return normalizeApiRecords(data) as T[]
+  }
   if (data && typeof data === 'object') {
     if (Array.isArray(data.items)) {
-      return data.items as T[]
+      return normalizeApiRecords(data.items) as T[]
     }
     for (const key of LIST_ARRAY_KEYS) {
       const value = data[key]
       if (Array.isArray(value)) {
-        return value as T[]
+        return normalizeApiRecords(value) as T[]
       }
     }
   }

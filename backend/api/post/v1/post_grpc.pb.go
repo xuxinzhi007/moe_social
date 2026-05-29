@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PostService_GetPost_FullMethodName        = "/post.v1.PostService/GetPost"
-	PostService_GetPosts_FullMethodName       = "/post.v1.PostService/GetPosts"
-	PostService_MoeSearchPosts_FullMethodName = "/post.v1.PostService/MoeSearchPosts"
-	PostService_CreatePost_FullMethodName     = "/post.v1.PostService/CreatePost"
-	PostService_LikePost_FullMethodName       = "/post.v1.PostService/LikePost"
-	PostService_UpdatePost_FullMethodName     = "/post.v1.PostService/UpdatePost"
-	PostService_DeletePost_FullMethodName     = "/post.v1.PostService/DeletePost"
-	PostService_ReportPost_FullMethodName     = "/post.v1.PostService/ReportPost"
+	PostService_GetPost_FullMethodName         = "/post.v1.PostService/GetPost"
+	PostService_GetPostHandDraw_FullMethodName = "/post.v1.PostService/GetPostHandDraw"
+	PostService_GetPosts_FullMethodName        = "/post.v1.PostService/GetPosts"
+	PostService_MoeSearchPosts_FullMethodName  = "/post.v1.PostService/MoeSearchPosts"
+	PostService_CreatePost_FullMethodName      = "/post.v1.PostService/CreatePost"
+	PostService_LikePost_FullMethodName        = "/post.v1.PostService/LikePost"
+	PostService_UpdatePost_FullMethodName      = "/post.v1.PostService/UpdatePost"
+	PostService_DeletePost_FullMethodName      = "/post.v1.PostService/DeletePost"
+	PostService_ReportPost_FullMethodName      = "/post.v1.PostService/ReportPost"
 )
 
 // PostServiceClient is the client API for PostService service.
@@ -34,6 +35,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PostServiceClient interface {
 	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*GetPostReply, error)
+	GetPostHandDraw(ctx context.Context, in *GetPostHandDrawRequest, opts ...grpc.CallOption) (*GetPostHandDrawReply, error)
 	GetPosts(ctx context.Context, in *GetPostsRequest, opts ...grpc.CallOption) (*GetPostsReply, error)
 	MoeSearchPosts(ctx context.Context, in *MoeSearchPostsRequest, opts ...grpc.CallOption) (*MoeSearchPostsReply, error)
 	CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostReply, error)
@@ -55,6 +57,16 @@ func (c *postServiceClient) GetPost(ctx context.Context, in *GetPostRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPostReply)
 	err := c.cc.Invoke(ctx, PostService_GetPost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postServiceClient) GetPostHandDraw(ctx context.Context, in *GetPostHandDrawRequest, opts ...grpc.CallOption) (*GetPostHandDrawReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPostHandDrawReply)
+	err := c.cc.Invoke(ctx, PostService_GetPostHandDraw_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +148,7 @@ func (c *postServiceClient) ReportPost(ctx context.Context, in *ReportPostReques
 // for forward compatibility.
 type PostServiceServer interface {
 	GetPost(context.Context, *GetPostRequest) (*GetPostReply, error)
+	GetPostHandDraw(context.Context, *GetPostHandDrawRequest) (*GetPostHandDrawReply, error)
 	GetPosts(context.Context, *GetPostsRequest) (*GetPostsReply, error)
 	MoeSearchPosts(context.Context, *MoeSearchPostsRequest) (*MoeSearchPostsReply, error)
 	CreatePost(context.Context, *CreatePostRequest) (*CreatePostReply, error)
@@ -155,6 +168,9 @@ type UnimplementedPostServiceServer struct{}
 
 func (UnimplementedPostServiceServer) GetPost(context.Context, *GetPostRequest) (*GetPostReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPost not implemented")
+}
+func (UnimplementedPostServiceServer) GetPostHandDraw(context.Context, *GetPostHandDrawRequest) (*GetPostHandDrawReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPostHandDraw not implemented")
 }
 func (UnimplementedPostServiceServer) GetPosts(context.Context, *GetPostsRequest) (*GetPostsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPosts not implemented")
@@ -212,6 +228,24 @@ func _PostService_GetPost_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PostServiceServer).GetPost(ctx, req.(*GetPostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PostService_GetPostHandDraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostHandDrawRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServiceServer).GetPostHandDraw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostService_GetPostHandDraw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServiceServer).GetPostHandDraw(ctx, req.(*GetPostHandDrawRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -352,6 +386,10 @@ var PostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPost",
 			Handler:    _PostService_GetPost_Handler,
+		},
+		{
+			MethodName: "GetPostHandDraw",
+			Handler:    _PostService_GetPostHandDraw_Handler,
 		},
 		{
 			MethodName: "GetPosts",

@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -44,6 +45,9 @@ func TestListAndDeleteAdminMediaImages(t *testing.T) {
 	if total != 3 || len(items) != 3 || len(owners) != 2 {
 		t.Fatalf("list all: total=%d items=%d owners=%d", total, len(items), len(owners))
 	}
+	if items[0].URL == "" || !strings.HasPrefix(items[0].URL, "/api/images/") {
+		t.Fatalf("expected relative image url, got %q", items[0].URL)
+	}
 
 	items, _, total, err = ListAdminMediaImages(root, "http://example.com", 1, 10, "", "", "gallery")
 	if err != nil || total != 2 {
@@ -83,6 +87,27 @@ func TestClassifyAdminMediaKind(t *testing.T) {
 	}
 	if ClassifyAdminMediaKind("1777310070_scaled_6941.jpg") != "gallery" {
 		t.Fatal("expected gallery")
+	}
+}
+
+func TestResolveImageLocalDirFallback(t *testing.T) {
+	root := t.TempDir()
+	fallback := filepath.Join(root, "data", "images")
+	if err := os.MkdirAll(fallback, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+
+	got := ResolveImageLocalDir(filepath.Join(root, "missing", "images"))
+	if got != "./data/images" {
+		t.Fatalf("expected ./data/images fallback, got %q", got)
 	}
 }
 

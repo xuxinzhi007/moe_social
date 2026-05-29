@@ -151,6 +151,7 @@ message AdminBroadcastNotificationReq {
 
 message AdminBroadcastNotificationResp {
   int32 notifications_created = 1;
+  int32 ws_sent = 2;
 }
 
 message AdminCheckInRewardItem {
@@ -893,6 +894,15 @@ message AdminPostReportItem {
   string reason = 4;
   string created_at = 5;
   string post_content_preview = 6;
+  string reporter_user_name = 7;
+  string reporter_user_avatar = 8;
+  string post_author_id = 9;
+  string post_author_name = 10;
+  string post_content = 11;
+  repeated string post_images = 12;
+  string hand_draw_thumb_url = 13;
+  string post_author_avatar = 14;
+  bool has_hand_draw = 15;
 }
 
 message AdminPublishAnnouncementReq {
@@ -901,6 +911,8 @@ message AdminPublishAnnouncementReq {
 
 message AdminPublishAnnouncementResp {
   AdminAnnouncementItem announcement = 1;
+  int32 notifications_created = 2;
+  int32 ws_sent = 3;
 }
 
 message AdminRefineMoeBrainEpisodeReq {
@@ -1398,6 +1410,7 @@ message Post {
   string moderation_status = 14;
   bool author_is_bot = 15;
   string author_bot_agent_key = 16;
+  bool has_hand_draw = 17;
 }
 
 message RecordAdminAuditLogReq {

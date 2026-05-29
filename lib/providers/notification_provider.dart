@@ -26,6 +26,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   void init() {
     if (!AuthService.isLoggedIn) return;
 
+    NotificationService.onRealtimeRefresh = _refreshUnreadState;
+
     // One-time sync at startup
     _refreshUnreadState();
 
