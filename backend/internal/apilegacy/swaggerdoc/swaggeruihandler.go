@@ -25,7 +25,7 @@ func SwaggerUiHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>
       window.ui = SwaggerUIBundle({
-        url: '/swagger/doc.json',
+        url: '/swagger/openapi.yaml',
         dom_id: '#swagger-ui',
         deepLinking: true,
         defaultModelsExpandDepth: 1,

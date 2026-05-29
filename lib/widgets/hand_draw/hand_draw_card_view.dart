@@ -197,7 +197,7 @@ class _HandDrawCardReplayState extends State<HandDrawCardReplay>
         final card = Material(
           color: Colors.transparent,
           elevation: 4,
-          shadowColor: Theme.of(context).primaryColor.withOpacity(0.2),
+          shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(widget.borderRadius),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.borderRadius),

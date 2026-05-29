@@ -108,7 +108,7 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.06),
+            color: Colors.grey.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -128,8 +128,8 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
       children: [
         if (_isLoading)
           Shimmer.fromColors(
-            baseColor: color.withOpacity(0.3),
-            highlightColor: color.withOpacity(0.1),
+            baseColor: color.withValues(alpha: 0.3),
+            highlightColor: color.withValues(alpha: 0.1),
             child: Container(
               height: 14,
               width: 200,
@@ -155,7 +155,7 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
                 style: TextStyle(
                   fontSize: fittedSize,
                   height: 1.3,
-                  color: color.withOpacity(0.95),
+                  color: color.withValues(alpha: 0.95),
                   fontFamily: 'serif',
                   letterSpacing: 0.4,
                 ),

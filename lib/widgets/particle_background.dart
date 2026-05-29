@@ -105,7 +105,7 @@ class ParticlePainter extends CustomPainter {
         Offset(particle.x * size.width, particle.y * size.height),
         particle.size,
         Paint()
-          ..color = particle.color.withOpacity(0.3)
+          ..color = particle.color.withValues(alpha: 0.3)
           ..blendMode = BlendMode.overlay,
       );
     }

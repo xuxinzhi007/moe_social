@@ -89,7 +89,7 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
                           margin: const EdgeInsets.symmetric(vertical: 8),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: badge.color.withOpacity(0.1),
+                              backgroundColor: badge.color.withValues(alpha: 0.1),
                               child: Text(
                                 badge.emoji,
                                 style: const TextStyle(fontSize: 22),

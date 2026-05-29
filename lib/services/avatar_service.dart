@@ -1,5 +1,6 @@
 import '../avatars/avatar_data.dart';
 import '../services/api_service.dart';
+import 'api_response.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 class AvatarService {
@@ -7,16 +8,14 @@ class AvatarService {
   Future<UserAvatar?> getUserAvatar(String userId) async {
     try {
       final response = await ApiService.get('/api/avatar/$userId');
-
-      if (response['data'] != null) {
-        final userAvatar = UserAvatar.fromJson(response['data']);
-        return userAvatar;
-      } else {
+      final data = ApiResponse.object(response, keys: const ['avatar']);
+      if (data.isEmpty) {
         if (kDebugMode) {
-          debugPrint('⚠️ 响应data字段为空');
+          debugPrint('⚠️ 响应 avatar 字段为空');
         }
         return null;
       }
+      return UserAvatar.fromJson(data);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('获取用户虚拟形象失败: $e');
@@ -38,7 +37,9 @@ class AvatarService {
         '/api/avatar/$userId',
         body: requestBody,
       );
-      return UserAvatar.fromJson(response['data']);
+      return UserAvatar.fromJson(
+        ApiResponse.object(response, keys: const ['avatar']),
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating user avatar: $e');
@@ -63,8 +64,12 @@ class AvatarService {
       };
       final queryString = Uri(queryParameters: queryParams).query;
       final response = await ApiService.get('/api/avatar/outfits?$queryString');
-      final List<dynamic> outfitsJson = response['data'] ?? [];
-      return outfitsJson.map((e) => AvatarOutfit.fromJson(e)).toList();
+      final outfitsJson =
+          ApiResponse.listOf(response, keys: const ['outfits', 'data']);
+      return outfitsJson
+          .whereType<Map>()
+          .map((e) => AvatarOutfit.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error getting avatar outfits: $e');
@@ -77,7 +82,9 @@ class AvatarService {
   Future<AvatarOutfit?> getAvatarOutfit(String outfitId) async {
     try {
       final response = await ApiService.get('/api/avatar/outfits/$outfitId');
-      return AvatarOutfit.fromJson(response['data']);
+      return AvatarOutfit.fromJson(
+        ApiResponse.object(response, keys: const ['outfit']),
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error getting avatar outfit: $e');
@@ -93,7 +100,8 @@ class AvatarService {
         '/api/avatar/outfits/$outfitId/purchase',
         body: {'user_id': userId},
       );
-      return response['data'];
+      return ApiResponse.stringField(response, 'order_id') ??
+          ApiResponse.stringField(response, 'message');
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error purchasing avatar outfit: $e');

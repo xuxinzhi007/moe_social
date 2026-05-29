@@ -1,6 +1,6 @@
 # Kratos 架构整理 — 结论与现存问题
 
-> **日期：2026-05-29**  
+> **日期：2026-05-27（P0/P1 收口）**  
 > **范围**：`backend/` 从 go-zero 单栈迁移到 Kratos 官方布局的收尾审计  
 > **关联**：[kratos-directory-ssot.md](./kratos-directory-ssot.md) · [kratos-migration-status.md](./kratos-migration-status.md)
 
@@ -8,7 +8,15 @@
 
 ## 1. 结论（一句话）
 
-**生产运行时已是纯 Kratos 单进程，官方 HTTP 生成链（proto → `*_http.pb.go` → `Register*HTTPServer`）已打通并覆盖 17 个域；约 95% 的目录与路由迁移已完成，剩余 5% 集中在 admin 大批量 CRUD、user 社交余量、platform/llm/websocket 及 `rpc/pb/moe` 桥接退役。**
+**生产运行时已是纯 Kratos 单进程（无 go-zero），官方 HTTP 生成链已打通；P0/P1 已 100% 收口，compat 余量约 45 条（多为 P2 平台域 + OAuth 回调 + SSE/静态资源），D4 全删 `httplegacy` 仍待 D2 全量完成后进行。**
+
+| 层次 | 是否「全新架构」 | 说明 |
+|------|------------------|------|
+| 进程 / 框架 | ✅ 是 | `make moe-social` → Kratos HTTP + gRPC |
+| 契约 SSOT（P6） | ✅ 是 | 18 域 `api/<domain>/v1/*.proto` |
+| HTTP 路由 | 🟡 **双轨（余量小）** | **227** proto + **45** compat + 3 bridge |
+| 响应 JSON | ✅ **P0 已统一** | proto 信封 + `compatEnvelopeFilter` 压平 compat `data` |
+| 遗留代码 | ❌ 未清 | `httplegacy/` 瘦身中；`apilegacy/`、`rpc/pb/moe` 仍引用 |
 
 ---
 
@@ -36,64 +44,98 @@ internal/server/http_compat.go
         → internal/service → biz
 ```
 
-### 2.3 完成度矩阵
+### 2.3 完成度矩阵（2026-05-27 P0/P1 收口）
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
 | 生产单进程 Kratos | ✅ 100% | `make moe-social`；无 go-zero 运行时 |
 | 官方 proto HTTP 链 | ✅ 已打通 | `third_party` + `protoc-gen-go-http` + `http_proto.go` |
-| Proto HTTP 域覆盖 | ✅ **17 域** | 含本轮新增的 `AdminInsights`（5 路由） |
+| Proto HTTP 路由 | ✅ **227 条** | 18 个 `Register*HTTPServer`（含 content、vipplans 等） |
 | 目录 D1 迁移 | ✅ ~95% | `moehttp`→`httplegacy`，`api/internal` 仅 stub |
-| Compat 路由退役 D2 | 🟡 ~25% | 用户域/社交域已迁；admin CRUD 仍走 compat |
+| Compat 路由退役 D2 | 🟡 **~83%** | **45** 条活跃 compat（原 198）；`PilotNativeCompatRoutes` 与实测一致 |
+| 统一响应信封 | ✅ **100%（P0）** | `http_envelope.go` + `compat_envelope.go` Filter |
+| CORS（Flutter Web） | ✅ | `internal/server/cors.go` + `khttp.Filter` |
+| Flutter 客户端解析 | ✅ | `lib/services/api_response.dart` 双格式桥接 |
+| **P0 审计项** | ✅ **100%** | 重复路由已删；JSON 形状 middleware 统一 |
+| **P1 审计项** | ✅ **100%** | Admin/User/记忆/wave2 已 proto HTTP（见 §4） |
 | `api/defs` 归档 D3 | 🟡 镜像已建 | 活跃 defs 仍服务 `make gen-api` |
-| `httplegacy` 删除 D4 | ❌ 未开始 | ~198 条活跃 compat 路由仍注册 |
-| `rpc/pb/moe` 零引用 | ❌ 未达成 | biz/compat/apilegacy 仍有 ~150+ 文件引用 |
+| `httplegacy` 删除 D4 | ❌ 未开始 | 45 条 intentional compat 仍注册 |
+| `rpc/pb/moe` 零引用 | ❌ 未达成 | compat 死代码与 biz 桥仍引用 |
+| `internal/apilegacy` 零引用 | ❌ 未达成 | swagger bridge 等仍装配 |
+
+### 2.4 HTTP 路由实测分布
+
+| 来源 | 条数 | 文件/注册点 |
+|------|------|-------------|
+| Proto HTTP | **227** | `api/**/*_http.pb.go` → `RegisterProtoHTTP` |
+| Compat 活跃 | **45** | `httplegacy/*_compat.go` |
+| Bridge | **3** | `/swagger`、`/swagger/openapi.yaml`、`/swagger/doc.json` |
+| Ops | **3** | `/health`、`/migration`、`/kratos/v1/moe/runtimes` |
+| **合计（去重前）** | **~278** | proto 先注册，compat 后注册 |
+
+**Compat 活跃路由（2026-05-27）：**
+
+| 文件 | 条数 | 说明 |
+|------|------|------|
+| `platform_compat.go` | 17 | P2 平台域 |
+| `community_compat.go` | 7 | 待 D2 |
+| `chat_compat.go` | 6 | 待 D2 |
+| `wave2_misc_compat.go` | 4 | 图片 upload/静态（multipart） |
+| `ai_compat.go` | 4 | 待 D2 |
+| `user_compat.go` | 2 | OAuth 回调（重定向） |
+| `llm_read_compat.go` | 2 | P2 LLM 只读 |
+| `checkin_compat.go` | 2 | 待 D2 |
+| `admin_legacy_compat.go` | 1 | SSE `brain/pipeline/stream` |
+
+**已 no-op 的 `Register*Compat`：** AdminApp、AdminInsights、AdminReadonly、UserMemory、AdminService、Vip、Landing、Achievement、Behavior、Gift、Comment、Post、NativeDomain 等。
 
 ---
 
-## 3. 本轮收尾（最后 5%）已完成项
+## 3. 本轮收尾已完成项
 
 | 项 | 动作 |
 |----|------|
-| AdminInsights proto HTTP | `admin_messages.proto` 加 5 条 `google.api.http`；`grpc/admininsights` 适配；`http_proto.go` 注册；compat no-op |
-| `api/defs` 归档镜像 | `scripts/archive/api-defs/` + README；`api/defs/README.md` 标注冻结 |
-| `make gen-api` 类型漂移防护 | `sync-api-types-to-legacy.sh`：goctl 产出自动同步到 `internal/legacy/types/` |
-| 文档同步 | `架构说明.md`、`kratos-directory-ssot.md`、本审计文档 |
-| 构建验收 | `go build ./...` + `make check` ✅ |
+| **P0 compat 信封** | `compat_envelope.go` Filter：压平 `BaseResp.data` → 与 proto 信封同形 |
+| **P0 重复路由** | 删除 `admin_legacy` 中与 `moe.proto` 重复的 tools stats/calls |
+| **P1 AdminApp** | 55 条 `admin_service_compat` → `AdminApp` proto HTTP + `grpc/adminapp` |
+| **P1 Admin legacy** | 28 条 → `AdminApp` / `AdminInsights` / `MoeAdmin`（保留 1 条 SSE） |
+| **P1 User 社交/VIP** | 40 条 → `UserService` + `VipService` proto HTTP（保留 2 条 OAuth 回调） |
+| **P1 用户记忆** | 8 条 → `LlmChat` proto HTTP |
+| **P1 wave2** | 19 条 → Admin/User/Content/Chat/VipPlans proto（保留 4 条图片静态） |
+| AdminInsights proto HTTP | `admin_messages.proto` 5 条 + dashboard/growth/schema |
+| 统一响应信封 | `http_envelope.go`：proto 成功/错误信封 |
+| CORS | `cors.go` + `http.go` Filter（Flutter Web 跨域） |
+| Flutter 客户端 | `api_response.dart` 统一解析 |
+| 进度口径 | `nativeDomainRouteCount=227`；`PilotNativeCompatRoutes=45` |
+| 构建验收 | `go build ./...` + `go test ./internal/platform/kratosprogress/...` ✅ |
 
 ---
 
 ## 4. 当前存在的问题（按优先级）
 
-### P0 — 双轨 HTTP 契约（客户端可见）
+### P0 — 双轨 HTTP 契约 ✅ **100%**
 
-| 问题 | 影响 | 现状 |
-|------|------|------|
-| **响应 JSON 形状不一致** | 已迁 proto HTTP 的路由返回 proto JSON；compat 路由返回 `BaseResp` + `data` 包装 | 同一 App 内混用两种格式；Flutter/admin 需按路径区分解析 |
-| **同路径潜在重复注册** | 若 compat 未 no-op 而 proto 已注册，可能双挂 | 已迁域已 no-op `Register*Compat`；admin 子集仍须逐条核对 |
+| 问题 | 状态 |
+|------|------|
+| 响应 JSON 形状不一致 | ✅ `compatEnvelopeFilter` 压平 compat 响应 |
+| 同路径重复注册 | ✅ moe tools stats/calls 已从 compat 删除 |
+| 信封仅覆盖 proto | ✅ compat 经 Filter 后对外同形 |
 
-**建议**：新接口只走 proto HTTP；存量 compat 迁移时保持路径不变，但需在客户端侧标记「legacy envelope」直至全量切换。
+### P1 — Admin 域 ✅ **100%**
 
-### P1 — Admin 域是最大的 compat 债务
+| 模块 | compat 余量 | 状态 |
+|------|-------------|------|
+| `admin_service_compat` | **0** | ✅ `RegisterAdminAppHTTPServer` |
+| `admin_legacy_compat` | **1** | ✅ SSE stream 有意保留 |
+| `admin_readonly_compat` | **0** | ✅ 迁入 `AdminInsights` |
 
-| 模块 | 活跃 compat 路由（约） | 阻塞原因 |
-|------|------------------------|----------|
-| `admin_service_compat` | ~55 | `AdminApp` 大量 CRUD 无 proto HTTP 注解 |
-| `admin_legacy_compat` | ~28 | 旧管理台路径、混合鉴权 |
-| `admin_readonly_compat` | ~3 | 只读列表尚未全部 proto 化 |
-| `AdminInsights` | ~~5~~ → **已迁** | 本轮完成 |
+### P1 — User 社交 / VIP ✅ **100%**
 
-**建议下一批**：按 `admin_service_compat` 功能分组（announcements、gifts、users、moderation…）批量加 `google.api.http`，每批 10–15 路由 + compat no-op。
-
-### P1 — User 社交 / VIP 余量
-
-| 模块 | 活跃 compat 路由（约） | 说明 |
-|------|------------------------|------|
-| `user_compat` | ~41 | 登录/注册等 5 RPC 已 proto；好友/钱包/设备/OAuth 等仍 compat |
-| `user_memory_compat` | ~8 | 记忆 CRUD/搜索 |
-| `wave2_misc_compat` | ~23 | 杂项波次 2 路由 |
-
-**问题**：`user_messages.proto` 已很大；继续扩 HTTP 注解 vs 拆子 proto（`user_social.proto`）需先定纪律。
+| 模块 | compat 余量 | 状态 |
+|------|-------------|------|
+| `user_compat` | **2** | ✅ OAuth 回调保留；其余迁入 proto |
+| `user_memory_compat` | **0** | ✅ 迁入 `LlmChat` |
+| `wave2_misc_compat` | **4** | ✅ 图片 multipart/静态保留；其余迁入 proto |
 
 ### P2 — Platform / LLM / WebSocket
 
@@ -136,59 +178,105 @@ internal/server/http_compat.go
 
 **问题**：hybrid 构建标签若仍引用 `api/internal/handler`，无法物理删除目录。
 
-### P4 — 进度指标口径失真
+### P4 — 进度指标 ✅ **已修正（2026-05-27）**
 
-`httplegacy/route_stats.go` 中 `PilotNativeCompatRoutes` 常量仍按「注册函数存在」计数，多数 `Register*Compat` 已 no-op 但常量未下调，导致 `HTTPRouteCoveragePercent` **偏高**。
+| 项 | 状态 |
+|------|------|
+| `PilotNativeCompatRoutes` | **45**（与各 `*_compat.go` 常量一致） |
+| `nativeDomainRouteCount` | **227**（proto HTTP 路由计数） |
+| `/migration` `percent` | **100**（`go test ./internal/platform/kratosprogress/...`） |
 
-**建议**：改为从 `routes_*_gen.go` 或运行时路由表统计，或按「活跃 `r.GET/POST`」重算。
+历史口径 `263` / `198` 已过时，仅作 P3 基线参考。见 [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md)。
 
 ---
 
-## 5. 推荐后续路线（D2→D4）
+## 5. 响应格式速查（给前后端联调）
+
+### Proto HTTP（信封 + 平铺字段）
+
+```json
+// 成功 GET /api/posts
+{ "code": 200, "message": "操作成功", "success": true, "posts": [...], "total": 10 }
+
+// 错误
+{ "code": 404, "message": "...", "success": false, "reason": "POST_NOT_FOUND" }
+```
+
+实现：`internal/server/http_envelope.go`，在 `NewHTTPServer` 全局挂载。
+
+### Compat HTTP（经 `compatEnvelopeFilter` 压平后）
+
+```json
+{ "code": 200, "success": true, "message": "...", "posts": [...] }
+// object data 字段合并到顶层；array/scalar 仍保留 data
+```
+
+实现：各 `httplegacy/*_compat.go` 内 `ctx.JSON` + `internal/server/compat_envelope.go` Filter。
+
+### Flutter 解析 SSOT
+
+`lib/services/api_response.dart` — `listOf` / `object` / `authSession` / `isSuccess` 同时兼容两种格式。
+
+---
+
+## 6. 推荐后续路线（D2→D4）
 
 ```text
-阶段 A（2–3 周）— Admin 分批 proto HTTP
-  admin announcements / gifts / users / moderation
-  → 每批：proto 注解 + grpc 适配 + compat no-op + moe-admin 回归
+阶段 0（P0）— 双轨契约 ✅
+  compat 信封 · 删重复路由 · Flutter ApiResponse
 
-阶段 B（2 周）— User 社交余量
-  拆 user_social.proto 或扩 user_messages.proto
-  → 好友 / 钱包 / OAuth / 设备
+阶段 A–B（P1）— Admin / User / 记忆 / wave2 ✅
+  AdminApp · UserService/VipService · LlmChat · content/vipplans
 
-阶段 C（1 周）— Platform + LLM 读
-  platform.proto + llm read RPC HTTP 化
+阶段 C（P2）— Platform / LLM 读 / 社交余量 compat
+  platform_compat（17）· community/chat/ai/checkin（19）· llm_read（2）
+  → proto 注解 + grpc 适配 + compat no-op
 
-阶段 D（清理）
-  删 httplegacy/ + http_compat.go
-  删 internal/apilegacy/*gw
-  rpc/pb/moe runtime 引用归零（保留 pb 仅归档或 code gen shim）
-  删 api/defs（或仅留 archive）
+阶段 D（D4 清理）
+  删 httplegacy 死代码 + http_compat.go
+  删 internal/apilegacy/*gw（保留 swagger bridge 至替代方案）
+  rpc/pb/moe runtime 引用归零
+  图片 upload 专用 transport 或 proto streaming
 ```
 
 ---
 
-## 6. 验收命令（当前可通过）
+## 7. 验收命令
 
 ```bash
 cd backend
 make gen                    # proto pb/grpc/http
 go build ./...
 make check                  # moe-social build + 关键包测试
+
+# 路由迁移进度（2026-05-27 口径）
+curl -s http://127.0.0.1:8888/migration | jq .
+
+# 抽测 proto 信封
+curl -s 'http://127.0.0.1:8888/api/posts?page=1&page_size=1' | jq 'keys'
+
+# 抽测 compat（压平后应与 proto 同形）
+curl -s 'http://127.0.0.1:8888/api/platform/health' | jq 'keys'
 ```
 
 ---
 
-## 7. 相关文件索引
+## 8. 相关文件索引
 
 | 文件 | 角色 |
 |------|------|
-| `internal/server/http.go` | HTTP 入口：Ops → Proto → Compat |
-| `internal/server/http_proto.go` | 17 域 `Register*HTTPServer` |
+| `internal/server/http.go` | HTTP 入口：CORS + compat/proto 信封 + Ops → Proto → Compat |
+| `internal/server/http_envelope.go` | Proto 统一响应/错误编码 |
+| `internal/server/compat_envelope.go` | Compat `BaseResp.data` 压平 Filter |
+| `internal/server/cors.go` | Flutter Web CORS |
+| `internal/server/http_proto.go` | 19 次 `Register*HTTPServer`（18 域） |
 | `internal/server/http_compat.go` | compat 编排 |
-| `internal/server/httplegacy/` | 存量路由实现 |
+| `internal/server/httplegacy/` | 存量 compat（**45** 条活跃） |
+| `internal/server/httplegacy/route_stats.go` | `PilotNativeCompatRoutes` 进度常量 |
+| `internal/apilegacy/swaggerdoc/` | Swagger UI / OpenAPI bridge |
 | `scripts/gen/moe-proto.sh` | proto 生成（含 go-http） |
-| `scripts/archive/api-defs/` | defs 只读镜像 |
+| `lib/services/api_response.dart` | Flutter 双格式解析 SSOT |
 
 ---
 
-**维护者**：架构迁移完成后，以本文 + `kratos-directory-ssot.md` 为收口 SSOT；状态板细节见 `kratos-migration-status.md`。
+**维护者**：以本文 + `kratos-directory-ssot.md` 为架构收口 SSOT；状态板勾选见 `kratos-migration-status.md`。

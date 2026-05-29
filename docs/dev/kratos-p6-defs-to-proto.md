@@ -10,7 +10,8 @@
 
 | 指标 | 值 |
 |------|-----|
-| **P6 整体** | **100%** |
+| **P6 整体** | **100%**（契约 message + service 签名） |
+| **D2 proto HTTP** | **~83%**（227 proto · 45 compat — 见 [kratos-migration-status.md](./kratos-migration-status.md)） |
 | compat → App 直传 `&moe.*` | **0 处**（VIP/platform 已收尾） |
 | 大域 `moe_bridge_gen.go` | **5**（admin · user · ai · llm · vip） |
 | 域 `moe_bridge.go` | **10**（见下表） |

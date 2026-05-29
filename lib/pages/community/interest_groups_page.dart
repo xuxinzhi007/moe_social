@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../services/api_service.dart';
+import '../../theme/moe_theme_extension.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
@@ -161,11 +162,12 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final moe = MoeTheme.of(context);
     final blocking = _loading && _groups.isEmpty && _loadError == null;
     final showListProgress = _loading && _groups.isNotEmpty;
 
     return Material(
-      color: scheme.surfaceContainerLowest,
+      color: moe.pageBackground,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -183,9 +185,9 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
             ),
           ),
           if (showListProgress)
-            const LinearProgressIndicator(
+            LinearProgressIndicator(
               minHeight: 2,
-              color: Color(0xFF7F7FD5),
+              color: moe.primary,
               backgroundColor: Colors.transparent,
             ),
           Expanded(
@@ -201,7 +203,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                 : blocking
                     ? const Center(child: MoeLoading())
                     : RefreshIndicator(
-                        color: const Color(0xFF7F7FD5),
+                        color: moe.primary,
                         onRefresh: () =>
                             _load(keyword: _keyword.isEmpty ? null : _keyword),
                         child: _groups.isEmpty

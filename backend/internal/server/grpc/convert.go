@@ -3,8 +3,8 @@ package grpcserver
 import (
 	"strconv"
 
-	moebiz "backend/internal/biz/moe"
 	moev1pb "backend/api/moe/v1"
+	moebiz "backend/internal/biz/moe"
 	"backend/model"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/runtime"
@@ -121,6 +121,15 @@ func brainToProto(s *brain.Snapshot) *moev1pb.GetBrainSnapshotReply {
 		PromptEstTokens:    int32(gm.PromptEstTokens),
 		ContextLimit:       int32(gm.ContextLimit),
 		ContextUsedPct:     gm.ContextUsedPct,
+	}
+	out.StabilityScore = int32(s.StabilityScore)
+	out.StabilityDelta = int32(s.StabilityDelta)
+	if len(s.Episodes) > 0 {
+		sum := 0
+		for _, e := range s.Episodes {
+			sum += e.QualityScore
+		}
+		out.AvgEpisodeQuality = int32(sum / len(s.Episodes))
 	}
 	return out
 }

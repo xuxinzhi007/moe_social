@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,11 +20,54 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_Login_FullMethodName          = "/user.v1.UserService/Login"
-	UserService_Register_FullMethodName       = "/user.v1.UserService/Register"
-	UserService_GetUserInfo_FullMethodName    = "/user.v1.UserService/GetUserInfo"
-	UserService_GetUser_FullMethodName        = "/user.v1.UserService/GetUser"
-	UserService_UpdateUserInfo_FullMethodName = "/user.v1.UserService/UpdateUserInfo"
+	UserService_Login_FullMethodName                      = "/user.v1.UserService/Login"
+	UserService_Register_FullMethodName                   = "/user.v1.UserService/Register"
+	UserService_GetUserInfo_FullMethodName                = "/user.v1.UserService/GetUserInfo"
+	UserService_GetUser_FullMethodName                    = "/user.v1.UserService/GetUser"
+	UserService_UpdateUserInfo_FullMethodName             = "/user.v1.UserService/UpdateUserInfo"
+	UserService_SyncUserDevice_FullMethodName             = "/user.v1.UserService/SyncUserDevice"
+	UserService_ListUserDevices_FullMethodName            = "/user.v1.UserService/ListUserDevices"
+	UserService_ListFriends_FullMethodName                = "/user.v1.UserService/ListFriends"
+	UserService_GetFriendRelation_FullMethodName          = "/user.v1.UserService/GetFriendRelation"
+	UserService_SendFriendRequest_FullMethodName          = "/user.v1.UserService/SendFriendRequest"
+	UserService_AcceptFriendRequest_FullMethodName        = "/user.v1.UserService/AcceptFriendRequest"
+	UserService_RejectFriendRequest_FullMethodName        = "/user.v1.UserService/RejectFriendRequest"
+	UserService_ListIncomingFriendRequests_FullMethodName = "/user.v1.UserService/ListIncomingFriendRequests"
+	UserService_ListOutgoingFriendRequests_FullMethodName = "/user.v1.UserService/ListOutgoingFriendRequests"
+	UserService_FeishuAuthorizeURL_FullMethodName         = "/user.v1.UserService/FeishuAuthorizeURL"
+	UserService_FeishuLogin_FullMethodName                = "/user.v1.UserService/FeishuLogin"
+	UserService_FeishuPublicConfig_FullMethodName         = "/user.v1.UserService/FeishuPublicConfig"
+	UserService_WechatAuthorizeURL_FullMethodName         = "/user.v1.UserService/WechatAuthorizeURL"
+	UserService_WechatLogin_FullMethodName                = "/user.v1.UserService/WechatLogin"
+	UserService_RefreshToken_FullMethodName               = "/user.v1.UserService/RefreshToken"
+	UserService_GetTransaction_FullMethodName             = "/user.v1.UserService/GetTransaction"
+	UserService_CheckFollow_FullMethodName                = "/user.v1.UserService/CheckFollow"
+	UserService_DeleteUser_FullMethodName                 = "/user.v1.UserService/DeleteUser"
+	UserService_FollowUser_FullMethodName                 = "/user.v1.UserService/FollowUser"
+	UserService_UnfollowUser_FullMethodName               = "/user.v1.UserService/UnfollowUser"
+	UserService_GetFollowers_FullMethodName               = "/user.v1.UserService/GetFollowers"
+	UserService_GetFollowings_FullMethodName              = "/user.v1.UserService/GetFollowings"
+	UserService_UpdateUserPassword_FullMethodName         = "/user.v1.UserService/UpdateUserPassword"
+	UserService_GetTransactions_FullMethodName            = "/user.v1.UserService/GetTransactions"
+	UserService_Recharge_FullMethodName                   = "/user.v1.UserService/Recharge"
+	UserService_GetUserByEmail_FullMethodName             = "/user.v1.UserService/GetUserByEmail"
+	UserService_ResetPassword_FullMethodName              = "/user.v1.UserService/ResetPassword"
+	UserService_GetUsers_FullMethodName                   = "/user.v1.UserService/GetUsers"
+	UserService_GetUserCount_FullMethodName               = "/user.v1.UserService/GetUserCount"
+	UserService_DeleteMyAccount_FullMethodName            = "/user.v1.UserService/DeleteMyAccount"
+	UserService_BindFeishu_FullMethodName                 = "/user.v1.UserService/BindFeishu"
+	UserService_UnbindFeishu_FullMethodName               = "/user.v1.UserService/UnbindFeishu"
+	UserService_SendFeishuTestCard_FullMethodName         = "/user.v1.UserService/SendFeishuTestCard"
+	UserService_GetUserAvatar_FullMethodName              = "/user.v1.UserService/GetUserAvatar"
+	UserService_UpdateUserAvatar_FullMethodName           = "/user.v1.UserService/UpdateUserAvatar"
+	UserService_GetAvatarOutfits_FullMethodName           = "/user.v1.UserService/GetAvatarOutfits"
+	UserService_GetAvatarOutfit_FullMethodName            = "/user.v1.UserService/GetAvatarOutfit"
+	UserService_PurchaseAvatarOutfit_FullMethodName       = "/user.v1.UserService/PurchaseAvatarOutfit"
+	UserService_GetEmojiPacks_FullMethodName              = "/user.v1.UserService/GetEmojiPacks"
+	UserService_GetEmojiPack_FullMethodName               = "/user.v1.UserService/GetEmojiPack"
+	UserService_FavoriteEmojiPack_FullMethodName          = "/user.v1.UserService/FavoriteEmojiPack"
+	UserService_PurchaseEmojiPack_FullMethodName          = "/user.v1.UserService/PurchaseEmojiPack"
+	UserService_GetUserEmojiPacks_FullMethodName          = "/user.v1.UserService/GetUserEmojiPacks"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -35,6 +79,49 @@ type UserServiceClient interface {
 	GetUserInfo(ctx context.Context, in *GetUserInfoReq, opts ...grpc.CallOption) (*GetUserInfoResp, error)
 	GetUser(ctx context.Context, in *GetUserReq, opts ...grpc.CallOption) (*GetUserResp, error)
 	UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...grpc.CallOption) (*UpdateUserInfoResp, error)
+	SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...grpc.CallOption) (*SyncUserDeviceResp, error)
+	ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...grpc.CallOption) (*ListUserDevicesResp, error)
+	ListFriends(ctx context.Context, in *ListFriendsReq, opts ...grpc.CallOption) (*ListFriendsResp, error)
+	GetFriendRelation(ctx context.Context, in *GetFriendRelationReq, opts ...grpc.CallOption) (*GetFriendRelationResp, error)
+	SendFriendRequest(ctx context.Context, in *SendFriendRequestReq, opts ...grpc.CallOption) (*SendFriendRequestResp, error)
+	AcceptFriendRequest(ctx context.Context, in *AcceptFriendRequestReq, opts ...grpc.CallOption) (*AcceptFriendRequestResp, error)
+	RejectFriendRequest(ctx context.Context, in *RejectFriendRequestReq, opts ...grpc.CallOption) (*RejectFriendRequestResp, error)
+	ListIncomingFriendRequests(ctx context.Context, in *ListIncomingFriendRequestsReq, opts ...grpc.CallOption) (*ListIncomingFriendRequestsResp, error)
+	ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...grpc.CallOption) (*ListOutgoingFriendRequestsResp, error)
+	FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error)
+	FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error)
+	FeishuPublicConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FeishuPublicConfigResp, error)
+	WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...grpc.CallOption) (*WechatAuthorizeURLResp, error)
+	WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...grpc.CallOption) (*WechatLoginResp, error)
+	RefreshToken(ctx context.Context, in *RefreshTokenReq, opts ...grpc.CallOption) (*RefreshTokenResp, error)
+	GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error)
+	CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error)
+	DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error)
+	FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+	UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error)
+	GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error)
+	GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error)
+	UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error)
+	GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...grpc.CallOption) (*GetTransactionsResp, error)
+	Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error)
+	GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error)
+	ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error)
+	GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error)
+	GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error)
+	DeleteMyAccount(ctx context.Context, in *DeleteMyAccountReq, opts ...grpc.CallOption) (*DeleteMyAccountResp, error)
+	BindFeishu(ctx context.Context, in *BindFeishuReq, opts ...grpc.CallOption) (*BindFeishuResp, error)
+	UnbindFeishu(ctx context.Context, in *UnbindFeishuReq, opts ...grpc.CallOption) (*UnbindFeishuResp, error)
+	SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...grpc.CallOption) (*SendFeishuTestCardResp, error)
+	GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error)
+	UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error)
+	GetAvatarOutfits(ctx context.Context, in *GetAvatarOutfitsReq, opts ...grpc.CallOption) (*GetAvatarOutfitsResp, error)
+	GetAvatarOutfit(ctx context.Context, in *GetAvatarOutfitReq, opts ...grpc.CallOption) (*GetAvatarOutfitResp, error)
+	PurchaseAvatarOutfit(ctx context.Context, in *PurchaseAvatarOutfitReq, opts ...grpc.CallOption) (*PurchaseAvatarOutfitResp, error)
+	GetEmojiPacks(ctx context.Context, in *GetEmojiPacksReq, opts ...grpc.CallOption) (*GetEmojiPacksResp, error)
+	GetEmojiPack(ctx context.Context, in *GetEmojiPackReq, opts ...grpc.CallOption) (*GetEmojiPackResp, error)
+	FavoriteEmojiPack(ctx context.Context, in *FavoriteEmojiPackReq, opts ...grpc.CallOption) (*FavoriteEmojiPackResp, error)
+	PurchaseEmojiPack(ctx context.Context, in *PurchaseEmojiPackReq, opts ...grpc.CallOption) (*PurchaseEmojiPackResp, error)
+	GetUserEmojiPacks(ctx context.Context, in *GetUserEmojiPacksReq, opts ...grpc.CallOption) (*GetUserEmojiPacksResp, error)
 }
 
 type userServiceClient struct {
@@ -95,6 +182,436 @@ func (c *userServiceClient) UpdateUserInfo(ctx context.Context, in *UpdateUserIn
 	return out, nil
 }
 
+func (c *userServiceClient) SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...grpc.CallOption) (*SyncUserDeviceResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncUserDeviceResp)
+	err := c.cc.Invoke(ctx, UserService_SyncUserDevice_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...grpc.CallOption) (*ListUserDevicesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserDevicesResp)
+	err := c.cc.Invoke(ctx, UserService_ListUserDevices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListFriends(ctx context.Context, in *ListFriendsReq, opts ...grpc.CallOption) (*ListFriendsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListFriendsResp)
+	err := c.cc.Invoke(ctx, UserService_ListFriends_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetFriendRelation(ctx context.Context, in *GetFriendRelationReq, opts ...grpc.CallOption) (*GetFriendRelationResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFriendRelationResp)
+	err := c.cc.Invoke(ctx, UserService_GetFriendRelation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SendFriendRequest(ctx context.Context, in *SendFriendRequestReq, opts ...grpc.CallOption) (*SendFriendRequestResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendFriendRequestResp)
+	err := c.cc.Invoke(ctx, UserService_SendFriendRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) AcceptFriendRequest(ctx context.Context, in *AcceptFriendRequestReq, opts ...grpc.CallOption) (*AcceptFriendRequestResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptFriendRequestResp)
+	err := c.cc.Invoke(ctx, UserService_AcceptFriendRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RejectFriendRequest(ctx context.Context, in *RejectFriendRequestReq, opts ...grpc.CallOption) (*RejectFriendRequestResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RejectFriendRequestResp)
+	err := c.cc.Invoke(ctx, UserService_RejectFriendRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListIncomingFriendRequests(ctx context.Context, in *ListIncomingFriendRequestsReq, opts ...grpc.CallOption) (*ListIncomingFriendRequestsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListIncomingFriendRequestsResp)
+	err := c.cc.Invoke(ctx, UserService_ListIncomingFriendRequests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...grpc.CallOption) (*ListOutgoingFriendRequestsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListOutgoingFriendRequestsResp)
+	err := c.cc.Invoke(ctx, UserService_ListOutgoingFriendRequests_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...grpc.CallOption) (*FeishuAuthorizeURLResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FeishuAuthorizeURLResp)
+	err := c.cc.Invoke(ctx, UserService_FeishuAuthorizeURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...grpc.CallOption) (*FeishuLoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FeishuLoginResp)
+	err := c.cc.Invoke(ctx, UserService_FeishuLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FeishuPublicConfig(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*FeishuPublicConfigResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FeishuPublicConfigResp)
+	err := c.cc.Invoke(ctx, UserService_FeishuPublicConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...grpc.CallOption) (*WechatAuthorizeURLResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WechatAuthorizeURLResp)
+	err := c.cc.Invoke(ctx, UserService_WechatAuthorizeURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...grpc.CallOption) (*WechatLoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WechatLoginResp)
+	err := c.cc.Invoke(ctx, UserService_WechatLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RefreshToken(ctx context.Context, in *RefreshTokenReq, opts ...grpc.CallOption) (*RefreshTokenResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefreshTokenResp)
+	err := c.cc.Invoke(ctx, UserService_RefreshToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...grpc.CallOption) (*GetTransactionResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTransactionResp)
+	err := c.cc.Invoke(ctx, UserService_GetTransaction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...grpc.CallOption) (*CheckFollowResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckFollowResp)
+	err := c.cc.Invoke(ctx, UserService_CheckFollow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...grpc.CallOption) (*DeleteUserResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUserResp)
+	err := c.cc.Invoke(ctx, UserService_DeleteUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FollowUser(ctx context.Context, in *FollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FollowUserResp)
+	err := c.cc.Invoke(ctx, UserService_FollowUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...grpc.CallOption) (*FollowUserResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FollowUserResp)
+	err := c.cc.Invoke(ctx, UserService_UnfollowUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...grpc.CallOption) (*GetFollowersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFollowersResp)
+	err := c.cc.Invoke(ctx, UserService_GetFollowers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...grpc.CallOption) (*GetFollowingsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFollowingsResp)
+	err := c.cc.Invoke(ctx, UserService_GetFollowings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...grpc.CallOption) (*UpdateUserPasswordResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserPasswordResp)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...grpc.CallOption) (*GetTransactionsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTransactionsResp)
+	err := c.cc.Invoke(ctx, UserService_GetTransactions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) Recharge(ctx context.Context, in *RechargeReq, opts ...grpc.CallOption) (*RechargeResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RechargeResp)
+	err := c.cc.Invoke(ctx, UserService_Recharge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...grpc.CallOption) (*GetUserByEmailResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserByEmailResp)
+	err := c.cc.Invoke(ctx, UserService_GetUserByEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...grpc.CallOption) (*ResetPasswordResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetPasswordResp)
+	err := c.cc.Invoke(ctx, UserService_ResetPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUsers(ctx context.Context, in *GetUsersReq, opts ...grpc.CallOption) (*GetUsersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUsersResp)
+	err := c.cc.Invoke(ctx, UserService_GetUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...grpc.CallOption) (*GetUserCountResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserCountResp)
+	err := c.cc.Invoke(ctx, UserService_GetUserCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteMyAccount(ctx context.Context, in *DeleteMyAccountReq, opts ...grpc.CallOption) (*DeleteMyAccountResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteMyAccountResp)
+	err := c.cc.Invoke(ctx, UserService_DeleteMyAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) BindFeishu(ctx context.Context, in *BindFeishuReq, opts ...grpc.CallOption) (*BindFeishuResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BindFeishuResp)
+	err := c.cc.Invoke(ctx, UserService_BindFeishu_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UnbindFeishu(ctx context.Context, in *UnbindFeishuReq, opts ...grpc.CallOption) (*UnbindFeishuResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnbindFeishuResp)
+	err := c.cc.Invoke(ctx, UserService_UnbindFeishu_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...grpc.CallOption) (*SendFeishuTestCardResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendFeishuTestCardResp)
+	err := c.cc.Invoke(ctx, UserService_SendFeishuTestCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...grpc.CallOption) (*GetUserAvatarResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserAvatarResp)
+	err := c.cc.Invoke(ctx, UserService_GetUserAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...grpc.CallOption) (*UpdateUserAvatarResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserAvatarResp)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetAvatarOutfits(ctx context.Context, in *GetAvatarOutfitsReq, opts ...grpc.CallOption) (*GetAvatarOutfitsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAvatarOutfitsResp)
+	err := c.cc.Invoke(ctx, UserService_GetAvatarOutfits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetAvatarOutfit(ctx context.Context, in *GetAvatarOutfitReq, opts ...grpc.CallOption) (*GetAvatarOutfitResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAvatarOutfitResp)
+	err := c.cc.Invoke(ctx, UserService_GetAvatarOutfit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) PurchaseAvatarOutfit(ctx context.Context, in *PurchaseAvatarOutfitReq, opts ...grpc.CallOption) (*PurchaseAvatarOutfitResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PurchaseAvatarOutfitResp)
+	err := c.cc.Invoke(ctx, UserService_PurchaseAvatarOutfit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetEmojiPacks(ctx context.Context, in *GetEmojiPacksReq, opts ...grpc.CallOption) (*GetEmojiPacksResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmojiPacksResp)
+	err := c.cc.Invoke(ctx, UserService_GetEmojiPacks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetEmojiPack(ctx context.Context, in *GetEmojiPackReq, opts ...grpc.CallOption) (*GetEmojiPackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmojiPackResp)
+	err := c.cc.Invoke(ctx, UserService_GetEmojiPack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FavoriteEmojiPack(ctx context.Context, in *FavoriteEmojiPackReq, opts ...grpc.CallOption) (*FavoriteEmojiPackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FavoriteEmojiPackResp)
+	err := c.cc.Invoke(ctx, UserService_FavoriteEmojiPack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) PurchaseEmojiPack(ctx context.Context, in *PurchaseEmojiPackReq, opts ...grpc.CallOption) (*PurchaseEmojiPackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PurchaseEmojiPackResp)
+	err := c.cc.Invoke(ctx, UserService_PurchaseEmojiPack_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetUserEmojiPacks(ctx context.Context, in *GetUserEmojiPacksReq, opts ...grpc.CallOption) (*GetUserEmojiPacksResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserEmojiPacksResp)
+	err := c.cc.Invoke(ctx, UserService_GetUserEmojiPacks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -104,6 +621,49 @@ type UserServiceServer interface {
 	GetUserInfo(context.Context, *GetUserInfoReq) (*GetUserInfoResp, error)
 	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error)
+	SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error)
+	ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error)
+	ListFriends(context.Context, *ListFriendsReq) (*ListFriendsResp, error)
+	GetFriendRelation(context.Context, *GetFriendRelationReq) (*GetFriendRelationResp, error)
+	SendFriendRequest(context.Context, *SendFriendRequestReq) (*SendFriendRequestResp, error)
+	AcceptFriendRequest(context.Context, *AcceptFriendRequestReq) (*AcceptFriendRequestResp, error)
+	RejectFriendRequest(context.Context, *RejectFriendRequestReq) (*RejectFriendRequestResp, error)
+	ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error)
+	ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error)
+	FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error)
+	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
+	FeishuPublicConfig(context.Context, *emptypb.Empty) (*FeishuPublicConfigResp, error)
+	WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error)
+	WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error)
+	RefreshToken(context.Context, *RefreshTokenReq) (*RefreshTokenResp, error)
+	GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error)
+	CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error)
+	DeleteUser(context.Context, *DeleteUserReq) (*DeleteUserResp, error)
+	FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error)
+	UnfollowUser(context.Context, *UnfollowUserReq) (*FollowUserResp, error)
+	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error)
+	GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error)
+	UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error)
+	GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error)
+	Recharge(context.Context, *RechargeReq) (*RechargeResp, error)
+	GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error)
+	ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error)
+	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
+	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
+	DeleteMyAccount(context.Context, *DeleteMyAccountReq) (*DeleteMyAccountResp, error)
+	BindFeishu(context.Context, *BindFeishuReq) (*BindFeishuResp, error)
+	UnbindFeishu(context.Context, *UnbindFeishuReq) (*UnbindFeishuResp, error)
+	SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error)
+	GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error)
+	UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error)
+	GetAvatarOutfits(context.Context, *GetAvatarOutfitsReq) (*GetAvatarOutfitsResp, error)
+	GetAvatarOutfit(context.Context, *GetAvatarOutfitReq) (*GetAvatarOutfitResp, error)
+	PurchaseAvatarOutfit(context.Context, *PurchaseAvatarOutfitReq) (*PurchaseAvatarOutfitResp, error)
+	GetEmojiPacks(context.Context, *GetEmojiPacksReq) (*GetEmojiPacksResp, error)
+	GetEmojiPack(context.Context, *GetEmojiPackReq) (*GetEmojiPackResp, error)
+	FavoriteEmojiPack(context.Context, *FavoriteEmojiPackReq) (*FavoriteEmojiPackResp, error)
+	PurchaseEmojiPack(context.Context, *PurchaseEmojiPackReq) (*PurchaseEmojiPackResp, error)
+	GetUserEmojiPacks(context.Context, *GetUserEmojiPacksReq) (*GetUserEmojiPacksResp, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -128,6 +688,135 @@ func (UnimplementedUserServiceServer) GetUser(context.Context, *GetUserReq) (*Ge
 }
 func (UnimplementedUserServiceServer) UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserInfo not implemented")
+}
+func (UnimplementedUserServiceServer) SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncUserDevice not implemented")
+}
+func (UnimplementedUserServiceServer) ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserDevices not implemented")
+}
+func (UnimplementedUserServiceServer) ListFriends(context.Context, *ListFriendsReq) (*ListFriendsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListFriends not implemented")
+}
+func (UnimplementedUserServiceServer) GetFriendRelation(context.Context, *GetFriendRelationReq) (*GetFriendRelationResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFriendRelation not implemented")
+}
+func (UnimplementedUserServiceServer) SendFriendRequest(context.Context, *SendFriendRequestReq) (*SendFriendRequestResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendFriendRequest not implemented")
+}
+func (UnimplementedUserServiceServer) AcceptFriendRequest(context.Context, *AcceptFriendRequestReq) (*AcceptFriendRequestResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptFriendRequest not implemented")
+}
+func (UnimplementedUserServiceServer) RejectFriendRequest(context.Context, *RejectFriendRequestReq) (*RejectFriendRequestResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method RejectFriendRequest not implemented")
+}
+func (UnimplementedUserServiceServer) ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListIncomingFriendRequests not implemented")
+}
+func (UnimplementedUserServiceServer) ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListOutgoingFriendRequests not implemented")
+}
+func (UnimplementedUserServiceServer) FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeishuAuthorizeURL not implemented")
+}
+func (UnimplementedUserServiceServer) FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeishuLogin not implemented")
+}
+func (UnimplementedUserServiceServer) FeishuPublicConfig(context.Context, *emptypb.Empty) (*FeishuPublicConfigResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FeishuPublicConfig not implemented")
+}
+func (UnimplementedUserServiceServer) WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method WechatAuthorizeURL not implemented")
+}
+func (UnimplementedUserServiceServer) WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method WechatLogin not implemented")
+}
+func (UnimplementedUserServiceServer) RefreshToken(context.Context, *RefreshTokenReq) (*RefreshTokenResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method RefreshToken not implemented")
+}
+func (UnimplementedUserServiceServer) GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTransaction not implemented")
+}
+func (UnimplementedUserServiceServer) CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckFollow not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteUser(context.Context, *DeleteUserReq) (*DeleteUserResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedUserServiceServer) FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FollowUser not implemented")
+}
+func (UnimplementedUserServiceServer) UnfollowUser(context.Context, *UnfollowUserReq) (*FollowUserResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnfollowUser not implemented")
+}
+func (UnimplementedUserServiceServer) GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFollowers not implemented")
+}
+func (UnimplementedUserServiceServer) GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFollowings not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserPassword not implemented")
+}
+func (UnimplementedUserServiceServer) GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTransactions not implemented")
+}
+func (UnimplementedUserServiceServer) Recharge(context.Context, *RechargeReq) (*RechargeResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method Recharge not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserByEmail not implemented")
+}
+func (UnimplementedUserServiceServer) ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetPassword not implemented")
+}
+func (UnimplementedUserServiceServer) GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserCount not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteMyAccount(context.Context, *DeleteMyAccountReq) (*DeleteMyAccountResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteMyAccount not implemented")
+}
+func (UnimplementedUserServiceServer) BindFeishu(context.Context, *BindFeishuReq) (*BindFeishuResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method BindFeishu not implemented")
+}
+func (UnimplementedUserServiceServer) UnbindFeishu(context.Context, *UnbindFeishuReq) (*UnbindFeishuResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnbindFeishu not implemented")
+}
+func (UnimplementedUserServiceServer) SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendFeishuTestCard not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) GetAvatarOutfits(context.Context, *GetAvatarOutfitsReq) (*GetAvatarOutfitsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAvatarOutfits not implemented")
+}
+func (UnimplementedUserServiceServer) GetAvatarOutfit(context.Context, *GetAvatarOutfitReq) (*GetAvatarOutfitResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAvatarOutfit not implemented")
+}
+func (UnimplementedUserServiceServer) PurchaseAvatarOutfit(context.Context, *PurchaseAvatarOutfitReq) (*PurchaseAvatarOutfitResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurchaseAvatarOutfit not implemented")
+}
+func (UnimplementedUserServiceServer) GetEmojiPacks(context.Context, *GetEmojiPacksReq) (*GetEmojiPacksResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetEmojiPacks not implemented")
+}
+func (UnimplementedUserServiceServer) GetEmojiPack(context.Context, *GetEmojiPackReq) (*GetEmojiPackResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetEmojiPack not implemented")
+}
+func (UnimplementedUserServiceServer) FavoriteEmojiPack(context.Context, *FavoriteEmojiPackReq) (*FavoriteEmojiPackResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method FavoriteEmojiPack not implemented")
+}
+func (UnimplementedUserServiceServer) PurchaseEmojiPack(context.Context, *PurchaseEmojiPackReq) (*PurchaseEmojiPackResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method PurchaseEmojiPack not implemented")
+}
+func (UnimplementedUserServiceServer) GetUserEmojiPacks(context.Context, *GetUserEmojiPacksReq) (*GetUserEmojiPacksResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserEmojiPacks not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -240,6 +929,780 @@ func _UserService_UpdateUserInfo_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_SyncUserDevice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncUserDeviceReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SyncUserDevice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SyncUserDevice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SyncUserDevice(ctx, req.(*SyncUserDeviceReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListUserDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserDevicesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListUserDevices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListUserDevices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListUserDevices(ctx, req.(*ListUserDevicesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListFriends_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFriendsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListFriends(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListFriends_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListFriends(ctx, req.(*ListFriendsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetFriendRelation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFriendRelationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetFriendRelation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetFriendRelation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetFriendRelation(ctx, req.(*GetFriendRelationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SendFriendRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendFriendRequestReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SendFriendRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SendFriendRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SendFriendRequest(ctx, req.(*SendFriendRequestReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_AcceptFriendRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptFriendRequestReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).AcceptFriendRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_AcceptFriendRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).AcceptFriendRequest(ctx, req.(*AcceptFriendRequestReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RejectFriendRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RejectFriendRequestReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RejectFriendRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RejectFriendRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RejectFriendRequest(ctx, req.(*RejectFriendRequestReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListIncomingFriendRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListIncomingFriendRequestsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListIncomingFriendRequests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListIncomingFriendRequests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListIncomingFriendRequests(ctx, req.(*ListIncomingFriendRequestsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListOutgoingFriendRequests_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListOutgoingFriendRequestsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListOutgoingFriendRequests(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListOutgoingFriendRequests_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListOutgoingFriendRequests(ctx, req.(*ListOutgoingFriendRequestsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FeishuAuthorizeURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeishuAuthorizeURLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FeishuAuthorizeURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FeishuAuthorizeURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FeishuAuthorizeURL(ctx, req.(*FeishuAuthorizeURLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FeishuLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FeishuLoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FeishuLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FeishuLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FeishuLogin(ctx, req.(*FeishuLoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FeishuPublicConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FeishuPublicConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FeishuPublicConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FeishuPublicConfig(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_WechatAuthorizeURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WechatAuthorizeURLReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).WechatAuthorizeURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_WechatAuthorizeURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).WechatAuthorizeURL(ctx, req.(*WechatAuthorizeURLReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_WechatLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WechatLoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).WechatLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_WechatLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).WechatLogin(ctx, req.(*WechatLoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RefreshToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefreshTokenReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RefreshToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RefreshToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RefreshToken(ctx, req.(*RefreshTokenReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTransactionReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetTransaction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetTransaction(ctx, req.(*GetTransactionReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_CheckFollow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckFollowReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).CheckFollow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_CheckFollow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).CheckFollow(ctx, req.(*CheckFollowReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteUser(ctx, req.(*DeleteUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FollowUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FollowUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FollowUser(ctx, req.(*FollowUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UnfollowUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnfollowUserReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UnfollowUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UnfollowUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UnfollowUser(ctx, req.(*UnfollowUserReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetFollowers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFollowersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetFollowers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetFollowers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetFollowers(ctx, req.(*GetFollowersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetFollowings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFollowingsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetFollowings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetFollowings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetFollowings(ctx, req.(*GetFollowingsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUserPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserPasswordReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserPassword(ctx, req.(*UpdateUserPasswordReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetTransactions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTransactionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetTransactions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetTransactions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetTransactions(ctx, req.(*GetTransactionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_Recharge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RechargeReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).Recharge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_Recharge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).Recharge(ctx, req.(*RechargeReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserByEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserByEmailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserByEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserByEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserByEmail(ctx, req.(*GetUserByEmailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ResetPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ResetPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ResetPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ResetPassword(ctx, req.(*ResetPasswordReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUsersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUsers(ctx, req.(*GetUsersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserCountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserCount(ctx, req.(*GetUserCountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteMyAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMyAccountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteMyAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteMyAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteMyAccount(ctx, req.(*DeleteMyAccountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_BindFeishu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindFeishuReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).BindFeishu(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_BindFeishu_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).BindFeishu(ctx, req.(*BindFeishuReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UnbindFeishu_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbindFeishuReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UnbindFeishu(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UnbindFeishu_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UnbindFeishu(ctx, req.(*UnbindFeishuReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SendFeishuTestCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendFeishuTestCardReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SendFeishuTestCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SendFeishuTestCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SendFeishuTestCard(ctx, req.(*SendFeishuTestCardReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserAvatarReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserAvatar(ctx, req.(*GetUserAvatarReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUserAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserAvatarReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserAvatar(ctx, req.(*UpdateUserAvatarReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetAvatarOutfits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAvatarOutfitsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetAvatarOutfits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetAvatarOutfits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetAvatarOutfits(ctx, req.(*GetAvatarOutfitsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetAvatarOutfit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAvatarOutfitReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetAvatarOutfit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetAvatarOutfit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetAvatarOutfit(ctx, req.(*GetAvatarOutfitReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_PurchaseAvatarOutfit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PurchaseAvatarOutfitReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).PurchaseAvatarOutfit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_PurchaseAvatarOutfit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).PurchaseAvatarOutfit(ctx, req.(*PurchaseAvatarOutfitReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetEmojiPacks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmojiPacksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetEmojiPacks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetEmojiPacks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetEmojiPacks(ctx, req.(*GetEmojiPacksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetEmojiPack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmojiPackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetEmojiPack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetEmojiPack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetEmojiPack(ctx, req.(*GetEmojiPackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FavoriteEmojiPack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FavoriteEmojiPackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FavoriteEmojiPack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FavoriteEmojiPack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FavoriteEmojiPack(ctx, req.(*FavoriteEmojiPackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_PurchaseEmojiPack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PurchaseEmojiPackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).PurchaseEmojiPack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_PurchaseEmojiPack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).PurchaseEmojiPack(ctx, req.(*PurchaseEmojiPackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetUserEmojiPacks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserEmojiPacksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetUserEmojiPacks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetUserEmojiPacks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetUserEmojiPacks(ctx, req.(*GetUserEmojiPacksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +1729,178 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserInfo",
 			Handler:    _UserService_UpdateUserInfo_Handler,
+		},
+		{
+			MethodName: "SyncUserDevice",
+			Handler:    _UserService_SyncUserDevice_Handler,
+		},
+		{
+			MethodName: "ListUserDevices",
+			Handler:    _UserService_ListUserDevices_Handler,
+		},
+		{
+			MethodName: "ListFriends",
+			Handler:    _UserService_ListFriends_Handler,
+		},
+		{
+			MethodName: "GetFriendRelation",
+			Handler:    _UserService_GetFriendRelation_Handler,
+		},
+		{
+			MethodName: "SendFriendRequest",
+			Handler:    _UserService_SendFriendRequest_Handler,
+		},
+		{
+			MethodName: "AcceptFriendRequest",
+			Handler:    _UserService_AcceptFriendRequest_Handler,
+		},
+		{
+			MethodName: "RejectFriendRequest",
+			Handler:    _UserService_RejectFriendRequest_Handler,
+		},
+		{
+			MethodName: "ListIncomingFriendRequests",
+			Handler:    _UserService_ListIncomingFriendRequests_Handler,
+		},
+		{
+			MethodName: "ListOutgoingFriendRequests",
+			Handler:    _UserService_ListOutgoingFriendRequests_Handler,
+		},
+		{
+			MethodName: "FeishuAuthorizeURL",
+			Handler:    _UserService_FeishuAuthorizeURL_Handler,
+		},
+		{
+			MethodName: "FeishuLogin",
+			Handler:    _UserService_FeishuLogin_Handler,
+		},
+		{
+			MethodName: "FeishuPublicConfig",
+			Handler:    _UserService_FeishuPublicConfig_Handler,
+		},
+		{
+			MethodName: "WechatAuthorizeURL",
+			Handler:    _UserService_WechatAuthorizeURL_Handler,
+		},
+		{
+			MethodName: "WechatLogin",
+			Handler:    _UserService_WechatLogin_Handler,
+		},
+		{
+			MethodName: "RefreshToken",
+			Handler:    _UserService_RefreshToken_Handler,
+		},
+		{
+			MethodName: "GetTransaction",
+			Handler:    _UserService_GetTransaction_Handler,
+		},
+		{
+			MethodName: "CheckFollow",
+			Handler:    _UserService_CheckFollow_Handler,
+		},
+		{
+			MethodName: "DeleteUser",
+			Handler:    _UserService_DeleteUser_Handler,
+		},
+		{
+			MethodName: "FollowUser",
+			Handler:    _UserService_FollowUser_Handler,
+		},
+		{
+			MethodName: "UnfollowUser",
+			Handler:    _UserService_UnfollowUser_Handler,
+		},
+		{
+			MethodName: "GetFollowers",
+			Handler:    _UserService_GetFollowers_Handler,
+		},
+		{
+			MethodName: "GetFollowings",
+			Handler:    _UserService_GetFollowings_Handler,
+		},
+		{
+			MethodName: "UpdateUserPassword",
+			Handler:    _UserService_UpdateUserPassword_Handler,
+		},
+		{
+			MethodName: "GetTransactions",
+			Handler:    _UserService_GetTransactions_Handler,
+		},
+		{
+			MethodName: "Recharge",
+			Handler:    _UserService_Recharge_Handler,
+		},
+		{
+			MethodName: "GetUserByEmail",
+			Handler:    _UserService_GetUserByEmail_Handler,
+		},
+		{
+			MethodName: "ResetPassword",
+			Handler:    _UserService_ResetPassword_Handler,
+		},
+		{
+			MethodName: "GetUsers",
+			Handler:    _UserService_GetUsers_Handler,
+		},
+		{
+			MethodName: "GetUserCount",
+			Handler:    _UserService_GetUserCount_Handler,
+		},
+		{
+			MethodName: "DeleteMyAccount",
+			Handler:    _UserService_DeleteMyAccount_Handler,
+		},
+		{
+			MethodName: "BindFeishu",
+			Handler:    _UserService_BindFeishu_Handler,
+		},
+		{
+			MethodName: "UnbindFeishu",
+			Handler:    _UserService_UnbindFeishu_Handler,
+		},
+		{
+			MethodName: "SendFeishuTestCard",
+			Handler:    _UserService_SendFeishuTestCard_Handler,
+		},
+		{
+			MethodName: "GetUserAvatar",
+			Handler:    _UserService_GetUserAvatar_Handler,
+		},
+		{
+			MethodName: "UpdateUserAvatar",
+			Handler:    _UserService_UpdateUserAvatar_Handler,
+		},
+		{
+			MethodName: "GetAvatarOutfits",
+			Handler:    _UserService_GetAvatarOutfits_Handler,
+		},
+		{
+			MethodName: "GetAvatarOutfit",
+			Handler:    _UserService_GetAvatarOutfit_Handler,
+		},
+		{
+			MethodName: "PurchaseAvatarOutfit",
+			Handler:    _UserService_PurchaseAvatarOutfit_Handler,
+		},
+		{
+			MethodName: "GetEmojiPacks",
+			Handler:    _UserService_GetEmojiPacks_Handler,
+		},
+		{
+			MethodName: "GetEmojiPack",
+			Handler:    _UserService_GetEmojiPack_Handler,
+		},
+		{
+			MethodName: "FavoriteEmojiPack",
+			Handler:    _UserService_FavoriteEmojiPack_Handler,
+		},
+		{
+			MethodName: "PurchaseEmojiPack",
+			Handler:    _UserService_PurchaseEmojiPack_Handler,
+		},
+		{
+			MethodName: "GetUserEmojiPacks",
+			Handler:    _UserService_GetUserEmojiPacks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

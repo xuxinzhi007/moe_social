@@ -60,7 +60,7 @@ class _AppMessageWidgetState extends State<AppMessageWidget> {
             widget.child,
             if (loadingProvider.isLoading)
               Container(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 child: const Center(
                   child: MoeLoading(),
                 ),
@@ -102,7 +102,7 @@ class OperationLoadingWidget extends StatelessWidget {
             Opacity(opacity: 0.5, child: child),
             Positioned.fill(
               child: Container(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

@@ -19,6 +19,185 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	PushNotificationService_BroadcastPushNotification_FullMethodName = "/chat.v1.PushNotificationService/BroadcastPushNotification"
+	PushNotificationService_SendPushNotification_FullMethodName      = "/chat.v1.PushNotificationService/SendPushNotification"
+	PushNotificationService_SendBatchPushNotification_FullMethodName = "/chat.v1.PushNotificationService/SendBatchPushNotification"
+)
+
+// PushNotificationServiceClient is the client API for PushNotificationService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type PushNotificationServiceClient interface {
+	BroadcastPushNotification(ctx context.Context, in *BroadcastPushNotificationReq, opts ...grpc.CallOption) (*BroadcastPushNotificationResp, error)
+	SendPushNotification(ctx context.Context, in *SendPushNotificationReq, opts ...grpc.CallOption) (*SendPushNotificationResp, error)
+	SendBatchPushNotification(ctx context.Context, in *SendBatchPushNotificationReq, opts ...grpc.CallOption) (*SendBatchPushNotificationResp, error)
+}
+
+type pushNotificationServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPushNotificationServiceClient(cc grpc.ClientConnInterface) PushNotificationServiceClient {
+	return &pushNotificationServiceClient{cc}
+}
+
+func (c *pushNotificationServiceClient) BroadcastPushNotification(ctx context.Context, in *BroadcastPushNotificationReq, opts ...grpc.CallOption) (*BroadcastPushNotificationResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BroadcastPushNotificationResp)
+	err := c.cc.Invoke(ctx, PushNotificationService_BroadcastPushNotification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pushNotificationServiceClient) SendPushNotification(ctx context.Context, in *SendPushNotificationReq, opts ...grpc.CallOption) (*SendPushNotificationResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendPushNotificationResp)
+	err := c.cc.Invoke(ctx, PushNotificationService_SendPushNotification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pushNotificationServiceClient) SendBatchPushNotification(ctx context.Context, in *SendBatchPushNotificationReq, opts ...grpc.CallOption) (*SendBatchPushNotificationResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendBatchPushNotificationResp)
+	err := c.cc.Invoke(ctx, PushNotificationService_SendBatchPushNotification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PushNotificationServiceServer is the server API for PushNotificationService service.
+// All implementations must embed UnimplementedPushNotificationServiceServer
+// for forward compatibility.
+type PushNotificationServiceServer interface {
+	BroadcastPushNotification(context.Context, *BroadcastPushNotificationReq) (*BroadcastPushNotificationResp, error)
+	SendPushNotification(context.Context, *SendPushNotificationReq) (*SendPushNotificationResp, error)
+	SendBatchPushNotification(context.Context, *SendBatchPushNotificationReq) (*SendBatchPushNotificationResp, error)
+	mustEmbedUnimplementedPushNotificationServiceServer()
+}
+
+// UnimplementedPushNotificationServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedPushNotificationServiceServer struct{}
+
+func (UnimplementedPushNotificationServiceServer) BroadcastPushNotification(context.Context, *BroadcastPushNotificationReq) (*BroadcastPushNotificationResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method BroadcastPushNotification not implemented")
+}
+func (UnimplementedPushNotificationServiceServer) SendPushNotification(context.Context, *SendPushNotificationReq) (*SendPushNotificationResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendPushNotification not implemented")
+}
+func (UnimplementedPushNotificationServiceServer) SendBatchPushNotification(context.Context, *SendBatchPushNotificationReq) (*SendBatchPushNotificationResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendBatchPushNotification not implemented")
+}
+func (UnimplementedPushNotificationServiceServer) mustEmbedUnimplementedPushNotificationServiceServer() {
+}
+func (UnimplementedPushNotificationServiceServer) testEmbeddedByValue() {}
+
+// UnsafePushNotificationServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PushNotificationServiceServer will
+// result in compilation errors.
+type UnsafePushNotificationServiceServer interface {
+	mustEmbedUnimplementedPushNotificationServiceServer()
+}
+
+func RegisterPushNotificationServiceServer(s grpc.ServiceRegistrar, srv PushNotificationServiceServer) {
+	// If the following call panics, it indicates UnimplementedPushNotificationServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&PushNotificationService_ServiceDesc, srv)
+}
+
+func _PushNotificationService_BroadcastPushNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BroadcastPushNotificationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PushNotificationServiceServer).BroadcastPushNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PushNotificationService_BroadcastPushNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PushNotificationServiceServer).BroadcastPushNotification(ctx, req.(*BroadcastPushNotificationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PushNotificationService_SendPushNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendPushNotificationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PushNotificationServiceServer).SendPushNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PushNotificationService_SendPushNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PushNotificationServiceServer).SendPushNotification(ctx, req.(*SendPushNotificationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PushNotificationService_SendBatchPushNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendBatchPushNotificationReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PushNotificationServiceServer).SendBatchPushNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PushNotificationService_SendBatchPushNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PushNotificationServiceServer).SendBatchPushNotification(ctx, req.(*SendBatchPushNotificationReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PushNotificationService_ServiceDesc is the grpc.ServiceDesc for PushNotificationService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PushNotificationService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "chat.v1.PushNotificationService",
+	HandlerType: (*PushNotificationServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "BroadcastPushNotification",
+			Handler:    _PushNotificationService_BroadcastPushNotification_Handler,
+		},
+		{
+			MethodName: "SendPushNotification",
+			Handler:    _PushNotificationService_SendPushNotification_Handler,
+		},
+		{
+			MethodName: "SendBatchPushNotification",
+			Handler:    _PushNotificationService_SendBatchPushNotification_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api/chat/v1/private_message.proto",
+}
+
+const (
 	PrivateMessageService_SendPrivateMessage_FullMethodName       = "/chat.v1.PrivateMessageService/SendPrivateMessage"
 	PrivateMessageService_ListPrivateMessages_FullMethodName      = "/chat.v1.PrivateMessageService/ListPrivateMessages"
 	PrivateMessageService_ListPrivateConversations_FullMethodName = "/chat.v1.PrivateMessageService/ListPrivateConversations"

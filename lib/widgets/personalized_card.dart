@@ -146,7 +146,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF667eea).withOpacity(0.3),
+                color: const Color(0xFF667eea).withValues(alpha: 0.3),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -167,7 +167,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -183,7 +183,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                   width: 110,
                   height: 110,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.07),
+                    color: Colors.white.withValues(alpha: 0.07),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -223,10 +223,10 @@ class _PersonalizedCardState extends State<PersonalizedCard>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border:
-                Border.all(color: Colors.white.withOpacity(0.65), width: compact ? 2.0 : 2.5),
+                Border.all(color: Colors.white.withValues(alpha: 0.65), width: compact ? 2.0 : 2.5),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -235,7 +235,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
           child: NetworkAvatarImage(
             imageUrl: _user?.avatar,
             radius: compact ? 21 : 24,
-            backgroundColor: Colors.white.withOpacity(0.25),
+            backgroundColor: Colors.white.withValues(alpha: 0.25),
             placeholderIcon: Icons.person_rounded,
             placeholderColor: Colors.white70,
           ),
@@ -250,7 +250,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
               Text(
                 _getGreeting(),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontSize: compact ? 11 : 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -307,10 +307,10 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 padding:
                     EdgeInsets.symmetric(horizontal: compact ? 6 : 7, vertical: compact ? 1.5 : 2),
                 decoration: BoxDecoration(
-                  color: levelColor.withOpacity(0.22),
+                  color: levelColor.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: levelColor.withOpacity(0.5), width: 0.8),
+                      color: levelColor.withValues(alpha: 0.5), width: 0.8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -318,7 +318,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                     Icon(
                       Icons.auto_awesome_rounded,
                       size: compact ? 8 : 9,
-                      color: levelColor.withOpacity(0.9),
+                      color: levelColor.withValues(alpha: 0.9),
                     ),
                     const SizedBox(width: 3),
                     Text(
@@ -362,9 +362,9 @@ class _PersonalizedCardState extends State<PersonalizedCard>
         padding: EdgeInsets.symmetric(
             horizontal: compact ? 6 : 8, vertical: compact ? 6 : 7),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.18),
+          color: Colors.white.withValues(alpha: 0.18),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: _isLoadingWeather
             ? const SizedBox(
@@ -393,7 +393,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                   Text(
                     _getCity(provider),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                       fontSize: compact ? 8 : 9,
                       fontWeight: FontWeight.w500,
                     ),
@@ -411,23 +411,23 @@ class _PersonalizedCardState extends State<PersonalizedCard>
       padding: EdgeInsets.symmetric(
           horizontal: compact ? 10 : 12, vertical: compact ? 6 : 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(compact ? 10 : 12),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.format_quote_rounded,
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             size: compact ? 13 : 14,
           ),
           SizedBox(width: compact ? 5 : 6),
           Expanded(
             // No fixed SizedBox height — let content size naturally to avoid overflow
             child: DailyQuoteWidget(
-              textColor: Colors.white.withOpacity(0.95),
+              textColor: Colors.white.withValues(alpha: 0.95),
               embedded: true,
             ),
           ),

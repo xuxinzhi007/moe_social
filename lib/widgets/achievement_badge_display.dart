@@ -91,8 +91,8 @@ class BadgeCard extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: badge.isUnlocked
-                        ? badge.rarity.tierGradient.last.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.06),
+                        ? badge.rarity.tierGradient.last.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.06),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -106,12 +106,12 @@ class BadgeCard extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: badge.isUnlocked
-                          ? [Colors.white, badge.color.withOpacity(0.08)]
+                          ? [Colors.white, badge.color.withValues(alpha: 0.08)]
                           : [Colors.grey.shade50, Colors.grey.shade200],
                     ),
                     border: Border.all(
                       color: badge.isUnlocked
-                          ? badge.rarity.tierGradient.first.withOpacity(0.4)
+                          ? badge.rarity.tierGradient.first.withValues(alpha: 0.4)
                           : Colors.grey.shade300,
                     ),
                   ),
@@ -171,8 +171,8 @@ class BadgeCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: badge.isUnlocked
-                  ? badge.rarity.tierGradient.last.withOpacity(0.18)
-                  : Colors.black.withOpacity(0.05),
+                  ? badge.rarity.tierGradient.last.withValues(alpha: 0.18)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -188,12 +188,12 @@ class BadgeCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: badge.isUnlocked
-                        ? [Colors.white, badge.color.withOpacity(0.05)]
+                        ? [Colors.white, badge.color.withValues(alpha: 0.05)]
                         : [Colors.grey.shade50, Colors.grey.shade100],
                   ),
                   border: Border.all(
                     color: badge.isUnlocked
-                        ? badge.rarity.tierGradient.first.withOpacity(0.35)
+                        ? badge.rarity.tierGradient.first.withValues(alpha: 0.35)
                         : Colors.grey.shade300,
                   ),
                 ),
@@ -252,7 +252,7 @@ class BadgeCard extends StatelessWidget {
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
@@ -308,8 +308,8 @@ class BadgeCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: badge.isUnlocked
-                  ? badge.rarity.tierGradient.last.withOpacity(0.22)
-                  : Colors.black.withOpacity(0.05),
+                  ? badge.rarity.tierGradient.last.withValues(alpha: 0.22)
+                  : Colors.black.withValues(alpha: 0.05),
               blurRadius: badge.isUnlocked ? 14 : 6,
               offset: const Offset(0, 4),
             ),
@@ -327,7 +327,7 @@ class BadgeCard extends StatelessWidget {
                     colors: badge.isUnlocked
                         ? [
                             Colors.white,
-                            badge.color.withOpacity(0.06),
+                            badge.color.withValues(alpha: 0.06),
                           ]
                         : [
                             Colors.grey.shade50,
@@ -336,7 +336,7 @@ class BadgeCard extends StatelessWidget {
                   ),
                   border: Border.all(
                     color: badge.isUnlocked
-                        ? badge.rarity.tierGradient.first.withOpacity(0.35)
+                        ? badge.rarity.tierGradient.first.withValues(alpha: 0.35)
                         : Colors.grey.shade300,
                     width: badge.isUnlocked ? 1.5 : 1,
                   ),
@@ -394,7 +394,7 @@ class BadgeCard extends StatelessWidget {
                           gradient: LinearGradient(
                             colors: [
                               badge.color,
-                              badge.color.withOpacity(0.65),
+                              badge.color.withValues(alpha: 0.65),
                             ],
                           ),
                         ),
@@ -408,7 +408,7 @@ class BadgeCard extends StatelessWidget {
                   child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
+                        color: Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
@@ -431,7 +431,7 @@ class BadgeCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.35),
+                          color: Colors.red.withValues(alpha: 0.35),
                           blurRadius: 6,
                         ),
                       ],
@@ -479,9 +479,9 @@ class BadgeDetailDialog extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              g.first.withOpacity(0.14),
+              g.first.withValues(alpha: 0.14),
               Colors.white,
-              badge.color.withOpacity(0.06),
+              badge.color.withValues(alpha: 0.06),
             ],
             stops: const [0.0, 0.45, 1.0],
           ),
@@ -495,7 +495,7 @@ class BadgeDetailDialog extends StatelessWidget {
               child: Icon(
                 Icons.auto_awesome_rounded,
                 size: 22,
-                color: g.last.withOpacity(0.35),
+                color: g.last.withValues(alpha: 0.35),
               ),
             ),
             Positioned(
@@ -504,7 +504,7 @@ class BadgeDetailDialog extends StatelessWidget {
               child: Icon(
                 Icons.stars_rounded,
                 size: 18,
-                color: g.first.withOpacity(0.25),
+                color: g.first.withValues(alpha: 0.25),
               ),
             ),
             Padding(
@@ -517,7 +517,7 @@ class BadgeDetailDialog extends StatelessWidget {
                       Icon(
                         badge.category.categoryIcon,
                         size: 18,
-                        color: badge.color.withOpacity(0.85),
+                        color: badge.color.withValues(alpha: 0.85),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -595,7 +595,7 @@ class BadgeDetailDialog extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.75),
+                      color: Colors.white.withValues(alpha: 0.75),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
@@ -672,8 +672,8 @@ class BadgeDetailDialog extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            badge.rarity.tierGradient.first.withOpacity(0.12),
-                            badge.rarity.tierGradient.last.withOpacity(0.08),
+                            badge.rarity.tierGradient.first.withValues(alpha: 0.12),
+                            badge.rarity.tierGradient.last.withValues(alpha: 0.08),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(14),
@@ -713,7 +713,7 @@ class BadgeDetailDialog extends StatelessWidget {
                         gradient: LinearGradient(colors: g),
                         boxShadow: [
                           BoxShadow(
-                            color: g.last.withOpacity(0.35),
+                            color: g.last.withValues(alpha: 0.35),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -821,7 +821,7 @@ class MiniBadge extends StatelessWidget {
         gradient: LinearGradient(colors: g),
         boxShadow: [
           BoxShadow(
-            color: g.last.withOpacity(0.4),
+            color: g.last.withValues(alpha: 0.4),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

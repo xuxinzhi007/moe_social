@@ -159,7 +159,7 @@ class _CheckInPageState extends State<CheckInPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
@@ -171,7 +171,7 @@ class _CheckInPageState extends State<CheckInPage>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(
@@ -211,7 +211,7 @@ class _CheckInPageState extends State<CheckInPage>
                     borderRadius: BorderRadius.circular(10),
                     child: LinearProgressIndicator(
                       value: levelProvider.progress,
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                       minHeight: 6,
                     ),
@@ -249,7 +249,7 @@ class _CheckInPageState extends State<CheckInPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
@@ -321,8 +321,8 @@ class _CheckInPageState extends State<CheckInPage>
                         boxShadow: [
                           BoxShadow(
                             color: (hasChecked || !canCheckIn)
-                                ? Colors.grey.withOpacity(0.3)
-                                : const Color(0xFF7F7FD5).withOpacity(0.4),
+                                ? Colors.grey.withValues(alpha: 0.3)
+                                : const Color(0xFF7F7FD5).withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -341,7 +341,7 @@ class _CheckInPageState extends State<CheckInPage>
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: const Color(0xFF7F7FD5).withOpacity(
+                                      color: const Color(0xFF7F7FD5).withValues(alpha: 
                                         0.5 * (1 - _rippleAnimation.value),
                                       ),
                                       width: 2,
@@ -383,7 +383,7 @@ class _CheckInPageState extends State<CheckInPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -432,7 +432,7 @@ class _CheckInPageState extends State<CheckInPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -477,7 +477,7 @@ class _CheckInPageState extends State<CheckInPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 15,
               offset: const Offset(0, 4),
             ),
@@ -535,7 +535,7 @@ class _CheckInPageState extends State<CheckInPage>
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: color, size: 20),

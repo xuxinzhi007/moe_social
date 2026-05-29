@@ -708,7 +708,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       offset: const Offset(0, 2),
                       blurRadius: 8,
                     ),
@@ -760,13 +760,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    primaryColor.withOpacity(0.1),
-                    primaryColor.withOpacity(0.05),
+                    primaryColor.withValues(alpha: 0.1),
+                    primaryColor.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: primaryColor.withOpacity(0.2),
+                  color: primaryColor.withValues(alpha: 0.2),
                 ),
               ),
               child: Column(
@@ -803,7 +803,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                   border: Border.all(color: Colors.grey[200]!),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       offset: const Offset(0, 2),
                       blurRadius: 8,
                     ),
@@ -814,9 +814,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: primaryColor.withOpacity(0.05),
+                        color: primaryColor.withValues(alpha: 0.05),
                         border: Border(
-                          bottom: BorderSide(color: primaryColor.withOpacity(0.2)),
+                          bottom: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
                         ),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
@@ -881,7 +881,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     offset: const Offset(0, -4),
                     blurRadius: 16,
                   )
@@ -910,7 +910,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                         HapticFeedback.lightImpact();
                                         _controller.text = _presetCommands[index];
                                       },
-                                backgroundColor: primaryColor.withOpacity(0.1),
+                                backgroundColor: primaryColor.withValues(alpha: 0.1),
                                 labelStyle: TextStyle(
                                   color: primaryColor,
                                   fontSize: 12,
@@ -919,7 +919,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                   side: BorderSide(
-                                    color: primaryColor.withOpacity(0.2),
+                                    color: primaryColor.withValues(alpha: 0.2),
                                   ),
                                 ),
                               ),

@@ -16,64 +16,18 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// PilotNativeUserCompatRoutes 用户 / 鉴权 / 社交 / VIP（UserApp tier-A）。
-const PilotNativeUserCompatRoutes = 49
+// PilotNativeUserCompatRoutes OAuth 回调（不走 proto HTTP）。
+const PilotNativeUserCompatRoutes = 2
 
+// RegisterUserCompat P1：用户社交/VIP 已迁入 RegisterUserServiceHTTPServer / RegisterVipServiceHTTPServer。
 func RegisterUserCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
-	if srv == nil || svcCtx == nil {
+	if srv == nil {
 		return
 	}
-	app := svcCtx.UserApp
 	r := srv.Route("/")
-
 	r.GET("/api/auth/feishu/callback", userFeishuOAuthCallback())
 	r.GET("/api/auth/wechat/callback", userWechatOAuthCallback())
-	r.POST("/api/user/refresh-token", userRefreshToken())
-
-	if app == nil {
-		return
-	}
-
-	r.GET("/api/auth/feishu/authorize-url", feishuAuthorizeURL(app))
-	r.POST("/api/auth/feishu/login", feishuLogin(app))
-	r.GET("/api/auth/feishu/public-config", feishuPublicConfig())
-	r.GET("/api/auth/wechat/authorize-url", wechatAuthorizeURL(app))
-	r.POST("/api/auth/wechat/login", wechatLogin(app))
-	r.GET("/api/transactions/:transaction_id", getTransaction(app))
-	r.GET("/api/user/:follower_id/follow/:following_id/check", checkFollow(app))
-	// D2：Login/Register/GetUserInfo/GetUser/UpdateUserInfo 已迁入 RegisterUserServiceHTTPServer
-	r.DELETE("/api/user/:user_id", deleteUser(app))
-	r.GET("/api/user/:user_id/devices", listUserDevices(app))
-	r.POST("/api/user/:user_id/devices/sync", syncUserDevice(app))
-	r.POST("/api/user/:user_id/follow", followUser(app))
-	r.DELETE("/api/user/:user_id/follow", unfollowUser(app))
-	r.GET("/api/user/:user_id/followers", getFollowers(app))
-	r.GET("/api/user/:user_id/following", getFollowings(app))
-	r.POST("/api/user/:user_id/friend-requests", sendFriendRequest(app))
-	r.POST("/api/user/:user_id/friend-requests/:request_id/accept", acceptFriendRequest(app))
-	r.POST("/api/user/:user_id/friend-requests/:request_id/reject", rejectFriendRequest(app))
-	r.GET("/api/user/:user_id/friend-requests/incoming", listIncomingFriendRequests(app))
-	r.GET("/api/user/:user_id/friend-requests/outgoing", listOutgoingFriendRequests(app))
-	r.GET("/api/user/:user_id/friends", listFriends(app))
-	r.GET("/api/user/:user_id/friends/status/:other_user_id", getFriendStatus(app))
-	r.PUT("/api/user/:user_id/password", updateUserPassword(app))
-	r.GET("/api/user/:user_id/transactions", getTransactions(app))
-	r.POST("/api/user/:user_id/vip", updateUserVip(app))
-	r.GET("/api/user/:user_id/vip", getUserVipStatus(app))
-	// D2：vip/active、vip/orders、vip/records 已迁入 RegisterVipServiceHTTPServer
-	r.PUT("/api/user/:user_id/vip/auto-renew", updateAutoRenew(app))
-	r.GET("/api/user/:user_id/vip/check", checkUserVip(app))
-	r.GET("/api/user/:user_id/vip/orders", getVipOrders(app))
-	r.POST("/api/user/:user_id/vip/sync", syncUserVipStatus(app))
-	r.POST("/api/user/:user_id/wallet/recharge", recharge(app))
-	r.POST("/api/user/check-email", checkUserByEmail(app))
-	r.POST("/api/user/reset-password", resetPassword(app))
-	r.GET("/api/users", getUsers(app))
-	r.GET("/api/users/count", getUserCount(app))
-	r.DELETE("/api/user/account", deleteMyAccount(app))
-	r.PUT("/api/user/feishu/bind", bindFeishu(app))
-	r.DELETE("/api/user/feishu/bind", unbindFeishu(app))
-	r.POST("/api/user/feishu/test-card", sendFeishuTestCard(app))
+	_ = svcCtx
 }
 
 func feishuAuthorizeURL(app *userapp.AppService) func(khttp.Context) error {

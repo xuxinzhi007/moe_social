@@ -169,7 +169,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
                     ),
                   ),
                 );
@@ -191,7 +191,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.7),
+                    Colors.black.withValues(alpha: 0.7),
                     Colors.transparent,
                   ],
                 ),
@@ -253,7 +253,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                     Colors.transparent,
                   ],
                 ),

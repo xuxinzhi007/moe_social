@@ -187,4 +187,34 @@ service Community {
   rpc JoinGroup(JoinGroupRequest) returns (JoinGroupReply) {
     option (google.api.http) = { post: "/api/community/groups/{group_id}/join" body: "*" };
   }
+  rpc UpdateGroup(UpdateGroupRequest) returns (UpdateGroupReply) {
+    option (google.api.http) = {
+      put: "/api/community/groups/{group_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupReply) {
+    option (google.api.http) = { delete: "/api/community/groups/{group_id}" };
+  }
+  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupReply) {
+    option (google.api.http) = {
+      post: "/api/community/groups/{group_id}/leave"
+      body: "*"
+    };
+  }
+  rpc GetGroupMembers(GetGroupMembersRequest) returns (GetGroupMembersReply) {
+    option (google.api.http) = { get: "/api/community/groups/{group_id}/members" };
+  }
+  rpc GetUserGroups(GetUserGroupsRequest) returns (GetUserGroupsReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/community/groups" };
+  }
+  rpc CreateGroupPost(CreateGroupPostRequest) returns (CreateGroupPostReply) {
+    option (google.api.http) = {
+      post: "/api/community/groups/{group_id}/posts"
+      body: "*"
+    };
+  }
+  rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsReply) {
+    option (google.api.http) = { get: "/api/community/groups/{group_id}/posts" };
+  }
 }

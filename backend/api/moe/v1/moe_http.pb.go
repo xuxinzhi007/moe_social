@@ -20,28 +20,38 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationMoeAdminCurateBrain = "/moe.v1.MoeAdmin/CurateBrain"
+const OperationMoeAdminDeleteBotFlow = "/moe.v1.MoeAdmin/DeleteBotFlow"
 const OperationMoeAdminDeleteBrainEpisode = "/moe.v1.MoeAdmin/DeleteBrainEpisode"
+const OperationMoeAdminGetBotFlow = "/moe.v1.MoeAdmin/GetBotFlow"
 const OperationMoeAdminGetBrainPipeline = "/moe.v1.MoeAdmin/GetBrainPipeline"
 const OperationMoeAdminGetBrainSnapshot = "/moe.v1.MoeAdmin/GetBrainSnapshot"
+const OperationMoeAdminGetInferenceStatus = "/moe.v1.MoeAdmin/GetInferenceStatus"
+const OperationMoeAdminGetToolsSchema = "/moe.v1.MoeAdmin/GetToolsSchema"
 const OperationMoeAdminListRuntimes = "/moe.v1.MoeAdmin/ListRuntimes"
 const OperationMoeAdminListToolCalls = "/moe.v1.MoeAdmin/ListToolCalls"
 const OperationMoeAdminQueryToolStats = "/moe.v1.MoeAdmin/QueryToolStats"
 const OperationMoeAdminRefineBrainEpisode = "/moe.v1.MoeAdmin/RefineBrainEpisode"
 const OperationMoeAdminRunAgentOnce = "/moe.v1.MoeAdmin/RunAgentOnce"
 const OperationMoeAdminUpdateBrainPolicy = "/moe.v1.MoeAdmin/UpdateBrainPolicy"
+const OperationMoeAdminUpsertBotFlow = "/moe.v1.MoeAdmin/UpsertBotFlow"
 const OperationMoeAdminUpsertRuntime = "/moe.v1.MoeAdmin/UpsertRuntime"
 
 type MoeAdminHTTPServer interface {
 	CurateBrain(context.Context, *CurateBrainRequest) (*CurateBrainReply, error)
+	DeleteBotFlow(context.Context, *DeleteBotFlowRequest) (*BotFlowReply, error)
 	DeleteBrainEpisode(context.Context, *DeleteBrainEpisodeRequest) (*DeleteBrainEpisodeReply, error)
+	GetBotFlow(context.Context, *GetBotFlowRequest) (*BotFlowReply, error)
 	GetBrainPipeline(context.Context, *GetBrainPipelineRequest) (*GetBrainPipelineReply, error)
 	GetBrainSnapshot(context.Context, *GetBrainSnapshotRequest) (*GetBrainSnapshotReply, error)
+	GetInferenceStatus(context.Context, *GetInferenceStatusRequest) (*GetInferenceStatusReply, error)
+	GetToolsSchema(context.Context, *GetToolsSchemaRequest) (*GetToolsSchemaReply, error)
 	ListRuntimes(context.Context, *ListRuntimesRequest) (*ListRuntimesReply, error)
 	ListToolCalls(context.Context, *ListToolCallsRequest) (*ListToolCallsReply, error)
 	QueryToolStats(context.Context, *QueryToolStatsRequest) (*QueryToolStatsReply, error)
 	RefineBrainEpisode(context.Context, *RefineBrainEpisodeRequest) (*RefineBrainEpisodeReply, error)
 	RunAgentOnce(context.Context, *RunAgentOnceRequest) (*RunAgentOnceReply, error)
 	UpdateBrainPolicy(context.Context, *UpdateBrainPolicyRequest) (*GetBrainSnapshotReply, error)
+	UpsertBotFlow(context.Context, *UpsertBotFlowRequest) (*BotFlowReply, error)
 	UpsertRuntime(context.Context, *UpsertRuntimeRequest) (*UpsertRuntimeReply, error)
 }
 
@@ -50,12 +60,17 @@ func RegisterMoeAdminHTTPServer(s *http.Server, srv MoeAdminHTTPServer) {
 	r.GET("/api/admin/moe/runtimes", _MoeAdmin_ListRuntimes0_HTTP_Handler(srv))
 	r.POST("/api/admin/moe/runtimes", _MoeAdmin_UpsertRuntime0_HTTP_Handler(srv))
 	r.GET("/api/admin/moe/brain/pipeline", _MoeAdmin_GetBrainPipeline0_HTTP_Handler(srv))
-	r.POST("/api/admin/moe/agents/run-once", _MoeAdmin_RunAgentOnce0_HTTP_Handler(srv))
-	r.GET("/api/admin/moe/brain/snapshot", _MoeAdmin_GetBrainSnapshot0_HTTP_Handler(srv))
-	r.PUT("/api/admin/moe/brain/policy", _MoeAdmin_UpdateBrainPolicy0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/run-once", _MoeAdmin_RunAgentOnce0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/runtimes/{agent_key}/brain", _MoeAdmin_GetBrainSnapshot0_HTTP_Handler(srv))
+	r.PUT("/api/admin/moe/runtimes/{agent_key}/brain/policy", _MoeAdmin_UpdateBrainPolicy0_HTTP_Handler(srv))
 	r.DELETE("/api/admin/moe/brain/episodes/{id}", _MoeAdmin_DeleteBrainEpisode0_HTTP_Handler(srv))
 	r.POST("/api/admin/moe/brain/episodes/{id}/refine", _MoeAdmin_RefineBrainEpisode0_HTTP_Handler(srv))
-	r.POST("/api/admin/moe/brain/curate", _MoeAdmin_CurateBrain0_HTTP_Handler(srv))
+	r.POST("/api/admin/moe/runtimes/{agent_key}/brain/curate", _MoeAdmin_CurateBrain0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/runtimes/{agent_key}/flow", _MoeAdmin_GetBotFlow0_HTTP_Handler(srv))
+	r.PUT("/api/admin/moe/runtimes/{agent_key}/flow", _MoeAdmin_UpsertBotFlow0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/moe/runtimes/{agent_key}/flow", _MoeAdmin_DeleteBotFlow0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/inference/status", _MoeAdmin_GetInferenceStatus0_HTTP_Handler(srv))
+	r.GET("/api/admin/moe/tools/schema", _MoeAdmin_GetToolsSchema0_HTTP_Handler(srv))
 	r.GET("/api/admin/moe/tools/stats", _MoeAdmin_QueryToolStats0_HTTP_Handler(srv))
 	r.GET("/api/admin/moe/tools/calls", _MoeAdmin_ListToolCalls0_HTTP_Handler(srv))
 }
@@ -129,6 +144,9 @@ func _MoeAdmin_RunAgentOnce0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
 		http.SetOperation(ctx, OperationMoeAdminRunAgentOnce)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.RunAgentOnce(ctx, req.(*RunAgentOnceRequest))
@@ -146,6 +164,9 @@ func _MoeAdmin_GetBrainSnapshot0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx h
 	return func(ctx http.Context) error {
 		var in GetBrainSnapshotRequest
 		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationMoeAdminGetBrainSnapshot)
@@ -168,6 +189,9 @@ func _MoeAdmin_UpdateBrainPolicy0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx 
 			return err
 		}
 		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
 			return err
 		}
 		http.SetOperation(ctx, OperationMoeAdminUpdateBrainPolicy)
@@ -239,6 +263,9 @@ func _MoeAdmin_CurateBrain0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.C
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
 		http.SetOperation(ctx, OperationMoeAdminCurateBrain)
 		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
 			return srv.CurateBrain(ctx, req.(*CurateBrainRequest))
@@ -248,6 +275,113 @@ func _MoeAdmin_CurateBrain0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.C
 			return err
 		}
 		reply := out.(*CurateBrainReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetBotFlow0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetBotFlowRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetBotFlow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetBotFlow(ctx, req.(*GetBotFlowRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*BotFlowReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_UpsertBotFlow0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpsertBotFlowRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminUpsertBotFlow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpsertBotFlow(ctx, req.(*UpsertBotFlowRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*BotFlowReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_DeleteBotFlow0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteBotFlowRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminDeleteBotFlow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteBotFlow(ctx, req.(*DeleteBotFlowRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*BotFlowReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetInferenceStatus0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetInferenceStatusRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetInferenceStatus)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetInferenceStatus(ctx, req.(*GetInferenceStatusRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetInferenceStatusReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _MoeAdmin_GetToolsSchema0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetToolsSchemaRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationMoeAdminGetToolsSchema)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetToolsSchema(ctx, req.(*GetToolsSchemaRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetToolsSchemaReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -292,15 +426,20 @@ func _MoeAdmin_ListToolCalls0_HTTP_Handler(srv MoeAdminHTTPServer) func(ctx http
 
 type MoeAdminHTTPClient interface {
 	CurateBrain(ctx context.Context, req *CurateBrainRequest, opts ...http.CallOption) (rsp *CurateBrainReply, err error)
+	DeleteBotFlow(ctx context.Context, req *DeleteBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
 	DeleteBrainEpisode(ctx context.Context, req *DeleteBrainEpisodeRequest, opts ...http.CallOption) (rsp *DeleteBrainEpisodeReply, err error)
+	GetBotFlow(ctx context.Context, req *GetBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
 	GetBrainPipeline(ctx context.Context, req *GetBrainPipelineRequest, opts ...http.CallOption) (rsp *GetBrainPipelineReply, err error)
 	GetBrainSnapshot(ctx context.Context, req *GetBrainSnapshotRequest, opts ...http.CallOption) (rsp *GetBrainSnapshotReply, err error)
+	GetInferenceStatus(ctx context.Context, req *GetInferenceStatusRequest, opts ...http.CallOption) (rsp *GetInferenceStatusReply, err error)
+	GetToolsSchema(ctx context.Context, req *GetToolsSchemaRequest, opts ...http.CallOption) (rsp *GetToolsSchemaReply, err error)
 	ListRuntimes(ctx context.Context, req *ListRuntimesRequest, opts ...http.CallOption) (rsp *ListRuntimesReply, err error)
 	ListToolCalls(ctx context.Context, req *ListToolCallsRequest, opts ...http.CallOption) (rsp *ListToolCallsReply, err error)
 	QueryToolStats(ctx context.Context, req *QueryToolStatsRequest, opts ...http.CallOption) (rsp *QueryToolStatsReply, err error)
 	RefineBrainEpisode(ctx context.Context, req *RefineBrainEpisodeRequest, opts ...http.CallOption) (rsp *RefineBrainEpisodeReply, err error)
 	RunAgentOnce(ctx context.Context, req *RunAgentOnceRequest, opts ...http.CallOption) (rsp *RunAgentOnceReply, err error)
 	UpdateBrainPolicy(ctx context.Context, req *UpdateBrainPolicyRequest, opts ...http.CallOption) (rsp *GetBrainSnapshotReply, err error)
+	UpsertBotFlow(ctx context.Context, req *UpsertBotFlowRequest, opts ...http.CallOption) (rsp *BotFlowReply, err error)
 	UpsertRuntime(ctx context.Context, req *UpsertRuntimeRequest, opts ...http.CallOption) (rsp *UpsertRuntimeReply, err error)
 }
 
@@ -314,11 +453,24 @@ func NewMoeAdminHTTPClient(client *http.Client) MoeAdminHTTPClient {
 
 func (c *MoeAdminHTTPClientImpl) CurateBrain(ctx context.Context, in *CurateBrainRequest, opts ...http.CallOption) (*CurateBrainReply, error) {
 	var out CurateBrainReply
-	pattern := "/api/admin/moe/brain/curate"
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/curate"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationMoeAdminCurateBrain))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) DeleteBotFlow(ctx context.Context, in *DeleteBotFlowRequest, opts ...http.CallOption) (*BotFlowReply, error) {
+	var out BotFlowReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/flow"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminDeleteBotFlow))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +484,19 @@ func (c *MoeAdminHTTPClientImpl) DeleteBrainEpisode(ctx context.Context, in *Del
 	opts = append(opts, http.Operation(OperationMoeAdminDeleteBrainEpisode))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GetBotFlow(ctx context.Context, in *GetBotFlowRequest, opts ...http.CallOption) (*BotFlowReply, error) {
+	var out BotFlowReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/flow"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetBotFlow))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -353,9 +518,35 @@ func (c *MoeAdminHTTPClientImpl) GetBrainPipeline(ctx context.Context, in *GetBr
 
 func (c *MoeAdminHTTPClientImpl) GetBrainSnapshot(ctx context.Context, in *GetBrainSnapshotRequest, opts ...http.CallOption) (*GetBrainSnapshotReply, error) {
 	var out GetBrainSnapshotReply
-	pattern := "/api/admin/moe/brain/snapshot"
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationMoeAdminGetBrainSnapshot))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GetInferenceStatus(ctx context.Context, in *GetInferenceStatusRequest, opts ...http.CallOption) (*GetInferenceStatusReply, error) {
+	var out GetInferenceStatusReply
+	pattern := "/api/admin/moe/inference/status"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetInferenceStatus))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) GetToolsSchema(ctx context.Context, in *GetToolsSchemaRequest, opts ...http.CallOption) (*GetToolsSchemaReply, error) {
+	var out GetToolsSchemaReply
+	pattern := "/api/admin/moe/tools/schema"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationMoeAdminGetToolsSchema))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -418,7 +609,7 @@ func (c *MoeAdminHTTPClientImpl) RefineBrainEpisode(ctx context.Context, in *Ref
 
 func (c *MoeAdminHTTPClientImpl) RunAgentOnce(ctx context.Context, in *RunAgentOnceRequest, opts ...http.CallOption) (*RunAgentOnceReply, error) {
 	var out RunAgentOnceReply
-	pattern := "/api/admin/moe/agents/run-once"
+	pattern := "/api/admin/moe/runtimes/{agent_key}/run-once"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationMoeAdminRunAgentOnce))
 	opts = append(opts, http.PathTemplate(pattern))
@@ -431,9 +622,22 @@ func (c *MoeAdminHTTPClientImpl) RunAgentOnce(ctx context.Context, in *RunAgentO
 
 func (c *MoeAdminHTTPClientImpl) UpdateBrainPolicy(ctx context.Context, in *UpdateBrainPolicyRequest, opts ...http.CallOption) (*GetBrainSnapshotReply, error) {
 	var out GetBrainSnapshotReply
-	pattern := "/api/admin/moe/brain/policy"
+	pattern := "/api/admin/moe/runtimes/{agent_key}/brain/policy"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationMoeAdminUpdateBrainPolicy))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *MoeAdminHTTPClientImpl) UpsertBotFlow(ctx context.Context, in *UpsertBotFlowRequest, opts ...http.CallOption) (*BotFlowReply, error) {
+	var out BotFlowReply
+	pattern := "/api/admin/moe/runtimes/{agent_key}/flow"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationMoeAdminUpsertBotFlow))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {

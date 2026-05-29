@@ -86,20 +86,20 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
       await openAppSettings();
     }
   }
-  
+
   Future<void> _requestAllPermissions() async {
     setState(() {
       _loading = true;
     });
-    
+
     try {
       final permissions = _items.map((e) => e.permission).toList();
       final results = await permissions.request();
-      
+
       for (final item in _items) {
         item.status = results[item.permission] ?? PermissionStatus.denied;
       }
-      
+
       int granted = 0;
       int denied = 0;
       for (final result in results.values) {
@@ -109,7 +109,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
           denied++;
         }
       }
-      
+
       if (mounted) {
         MoeToast.success(context, '权限申请完成：$granted 个已授权，$denied 个未授权');
       }
@@ -140,7 +140,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -159,7 +159,8 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('隐私与权限', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text('隐私与权限',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -184,7 +185,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -196,7 +197,8 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 onTap: _loading ? null : _requestAllPermissions,
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -226,14 +228,13 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ),
             ),
           ),
-          
           Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.1),
+              color: Colors.amber.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.withOpacity(0.3)),
+              border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -248,7 +249,6 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ],
             ),
           ),
-          
           MoeMenuCard(
             items: _items.map((item) {
               return MoeMenuItem(
@@ -261,7 +261,6 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               );
             }).toList(),
           ),
-          
           const Padding(
             padding: EdgeInsets.only(left: 12, top: 20, bottom: 10),
             child: Text(
@@ -273,7 +272,6 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
               ),
             ),
           ),
-          
           const SizedBox(height: 20),
         ],
       ),

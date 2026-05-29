@@ -76,7 +76,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.2),
+            color: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -117,7 +117,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
                     decoration: BoxDecoration(
                       color: _currentPage == index
                           ? Colors.white
-                          : Colors.white.withOpacity(0.5),
+                          : Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -142,7 +142,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
                   },
                   icon: Icon(
                     Icons.chevron_left,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -163,7 +163,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
                   },
                   icon: Icon(
                     Icons.chevron_right,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ),
@@ -200,7 +200,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
+                color: Colors.white.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
             ),
@@ -218,7 +218,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
               width: 140,
               height: 140,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: Colors.white.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
             ),
@@ -240,11 +240,11 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           spreadRadius: 2,
                         ),
@@ -278,7 +278,7 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
                 Text(
                   item['subtitle'],
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),

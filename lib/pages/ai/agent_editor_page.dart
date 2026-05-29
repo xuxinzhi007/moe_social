@@ -322,7 +322,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       decoration: BoxDecoration(
         border: Border.all(color: Colors.blue.shade100),
         borderRadius: BorderRadius.circular(8),
-        color: Colors.blue.shade50.withOpacity(0.4),
+        color: Colors.blue.shade50.withValues(alpha: 0.4),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),

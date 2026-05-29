@@ -8,7 +8,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-const nativeDomainRouteCount = 0
+const nativeDomainRouteCount = 227
 
 func RegisterNativeDomainHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext) {
 	if srv == nil || svc == nil {

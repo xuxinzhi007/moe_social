@@ -313,7 +313,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
+                  color: Colors.black.withValues(alpha: 0.06),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -355,7 +355,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -424,7 +424,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                           width: double.infinity,
                           height: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
@@ -582,13 +582,13 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: dynamicColor!.withOpacity(0.1),
+              color: dynamicColor!.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
           ],
           border: Border.all(
-            color: dynamicColor.withOpacity(0.3),
+            color: dynamicColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -659,7 +659,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
         color: Colors.yellow.shade200,
         child: Icon(
           Icons.flag_rounded,
-          color: Colors.red.withOpacity(0.5),
+          color: Colors.red.withValues(alpha: 0.5),
           size: _getIconSize(),
         ),
       );

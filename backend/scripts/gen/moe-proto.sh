@@ -34,3 +34,4 @@ if [ "$count" -eq 0 ]; then
   exit 0
 fi
 echo "OK: gen-moe-proto (${count} file(s)) → backend/api/*/v1/*.{pb,grpc.pb,http.pb}.go"
+bash scripts/gen/openapi.sh

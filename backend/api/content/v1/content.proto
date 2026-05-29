@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package content.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/content/v1;contentv1";
+
+message GenerateContentReq {
+  string user_id = 1;
+  string type = 2;
+  string prompt = 3;
+  string options_json = 4;
+}
+
+message GenerateContentData {
+  string id = 1;
+  string type = 2;
+  string url = 3;
+  string content = 4;
+  string created_at = 5;
+}
+
+message GenerateContentResp {
+  GenerateContentData data = 1;
+}
+
+service ContentService {
+  rpc GenerateContent(GenerateContentReq) returns (GenerateContentResp) {
+    option (google.api.http) = { post: "/api/content/generate" body: "*" };
+  }
+}

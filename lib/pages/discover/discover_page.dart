@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/main_nav_controller.dart';
-import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
+import '../../widgets/fade_in_up.dart';
 import '../notifications/notification_center_page.dart';
 import 'discover_match_tab.dart';
 import 'discover_play_tab.dart';
@@ -50,15 +52,24 @@ class _DiscoverPageState extends State<DiscoverPage>
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: AiBrandTokens.chatBackground,
+      backgroundColor: moe.pageBackground,
       body: SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(context),
-            _buildSegmented(),
+            FadeInUp(
+              duration: MoeTokens.motionFadeDuration,
+              child: _buildHeader(context, scheme),
+            ),
+            FadeInUp(
+              duration: MoeTokens.motionFadeDuration,
+              delay: MoeTokens.motionStaggerStep,
+              child: _buildSegmented(context, scheme),
+            ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -74,7 +85,7 @@ class _DiscoverPageState extends State<DiscoverPage>
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
       child: Row(
@@ -89,7 +100,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: AiBrandTokens.titleColor,
+                    color: scheme.onSurface,
                     height: 1.1,
                   ),
                 ),
@@ -98,7 +109,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                   '匹配同好，或试试酒馆与小游戏',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey.shade600,
+                    color: scheme.onSurfaceVariant,
                     height: 1.35,
                   ),
                 ),
@@ -115,7 +126,7 @@ class _DiscoverPageState extends State<DiscoverPage>
             ),
             icon: Icon(
               Icons.notifications_outlined,
-              color: AiBrandTokens.titleColor,
+              color: scheme.onSurface,
             ),
           ),
         ],
@@ -123,14 +134,14 @@ class _DiscoverPageState extends State<DiscoverPage>
     );
   }
 
-  Widget _buildSegmented() {
+  Widget _buildSegmented(BuildContext context, ColorScheme scheme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Container(
         height: 44,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: MoeTheme.of(context).cardBackground,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -146,10 +157,10 @@ class _DiscoverPageState extends State<DiscoverPage>
           indicatorSize: TabBarIndicatorSize.tab,
           indicator: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: AiBrandTokens.primary.withValues(alpha: 0.12),
+            color: scheme.primary.withValues(alpha: 0.12),
           ),
-          labelColor: AiBrandTokens.primary,
-          unselectedLabelColor: Colors.grey.shade600,
+          labelColor: scheme.primary,
+          unselectedLabelColor: scheme.onSurfaceVariant,
           labelStyle: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w800,

@@ -10,6 +10,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -23,9 +24,11 @@ const (
 )
 
 type AcceptFriendRequestReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
-	RequestId     string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	ActorUserId string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	RequestId   string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// HTTP path `/api/user/{user_id}/...` 绑定；服务层会回填 actor_user_id。
+	UserId        string `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -70,6 +73,13 @@ func (x *AcceptFriendRequestReq) GetActorUserId() string {
 func (x *AcceptFriendRequestReq) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
+	}
+	return ""
+}
+
+func (x *AcceptFriendRequestReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -1362,6 +1372,7 @@ type GetFriendRelationReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
 	OtherUserId   string                 `protobuf:"bytes,2,opt,name=other_user_id,json=otherUserId,proto3" json:"other_user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1406,6 +1417,13 @@ func (x *GetFriendRelationReq) GetActorUserId() string {
 func (x *GetFriendRelationReq) GetOtherUserId() string {
 	if x != nil {
 		return x.OtherUserId
+	}
+	return ""
+}
+
+func (x *GetFriendRelationReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -2617,6 +2635,7 @@ func (x *GetUsersResp) GetTotal() int32 {
 type ListFriendsReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2654,6 +2673,13 @@ func (*ListFriendsReq) Descriptor() ([]byte, []int) {
 func (x *ListFriendsReq) GetActorUserId() string {
 	if x != nil {
 		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListFriendsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -2705,6 +2731,7 @@ func (x *ListFriendsResp) GetUsers() []*User {
 type ListIncomingFriendRequestsReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2742,6 +2769,13 @@ func (*ListIncomingFriendRequestsReq) Descriptor() ([]byte, []int) {
 func (x *ListIncomingFriendRequestsReq) GetActorUserId() string {
 	if x != nil {
 		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListIncomingFriendRequestsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -2793,6 +2827,7 @@ func (x *ListIncomingFriendRequestsResp) GetData() []*FriendRequestView {
 type ListOutgoingFriendRequestsReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2830,6 +2865,13 @@ func (*ListOutgoingFriendRequestsReq) Descriptor() ([]byte, []int) {
 func (x *ListOutgoingFriendRequestsReq) GetActorUserId() string {
 	if x != nil {
 		return x.ActorUserId
+	}
+	return ""
+}
+
+func (x *ListOutgoingFriendRequestsReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -4103,6 +4145,7 @@ type RejectFriendRequestReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
 	RequestId     string                 `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4147,6 +4190,13 @@ func (x *RejectFriendRequestReq) GetActorUserId() string {
 func (x *RejectFriendRequestReq) GetRequestId() string {
 	if x != nil {
 		return x.RequestId
+	}
+	return ""
+}
+
+func (x *RejectFriendRequestReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -4368,6 +4418,7 @@ type SendFriendRequestReq struct {
 	ActorUserId   string                 `protobuf:"bytes,1,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
 	ToUserId      string                 `protobuf:"bytes,2,opt,name=to_user_id,json=toUserId,proto3" json:"to_user_id,omitempty"`
 	ToMoeNo       string                 `protobuf:"bytes,3,opt,name=to_moe_no,json=toMoeNo,proto3" json:"to_moe_no,omitempty"`
+	UserId        string                 `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4419,6 +4470,13 @@ func (x *SendFriendRequestReq) GetToUserId() string {
 func (x *SendFriendRequestReq) GetToMoeNo() string {
 	if x != nil {
 		return x.ToMoeNo
+	}
+	return ""
+}
+
+func (x *SendFriendRequestReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -5909,6 +5967,1142 @@ func (x *UserMemory) GetSessionId() string {
 	return ""
 }
 
+type OutfitPart struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,3,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OutfitPart) Reset() {
+	*x = OutfitPart{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[101]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OutfitPart) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OutfitPart) ProtoMessage() {}
+
+func (x *OutfitPart) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[101]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OutfitPart.ProtoReflect.Descriptor instead.
+func (*OutfitPart) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{101}
+}
+
+func (x *OutfitPart) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *OutfitPart) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *OutfitPart) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+type AvatarOutfit struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Category      string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	Style         string                 `protobuf:"bytes,5,opt,name=style,proto3" json:"style,omitempty"`
+	Price         float64                `protobuf:"fixed64,6,opt,name=price,proto3" json:"price,omitempty"`
+	IsFree        bool                   `protobuf:"varint,7,opt,name=is_free,json=isFree,proto3" json:"is_free,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,8,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	Parts         []*OutfitPart          `protobuf:"bytes,9,rep,name=parts,proto3" json:"parts,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AvatarOutfit) Reset() {
+	*x = AvatarOutfit{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[102]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AvatarOutfit) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AvatarOutfit) ProtoMessage() {}
+
+func (x *AvatarOutfit) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[102]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AvatarOutfit.ProtoReflect.Descriptor instead.
+func (*AvatarOutfit) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{102}
+}
+
+func (x *AvatarOutfit) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetStyle() string {
+	if x != nil {
+		return x.Style
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *AvatarOutfit) GetIsFree() bool {
+	if x != nil {
+		return x.IsFree
+	}
+	return false
+}
+
+func (x *AvatarOutfit) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *AvatarOutfit) GetParts() []*OutfitPart {
+	if x != nil {
+		return x.Parts
+	}
+	return nil
+}
+
+func (x *AvatarOutfit) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type GetAvatarOutfitsReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Category      string                 `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
+	Style         string                 `protobuf:"bytes,2,opt,name=style,proto3" json:"style,omitempty"`
+	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarOutfitsReq) Reset() {
+	*x = GetAvatarOutfitsReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[103]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarOutfitsReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarOutfitsReq) ProtoMessage() {}
+
+func (x *GetAvatarOutfitsReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[103]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarOutfitsReq.ProtoReflect.Descriptor instead.
+func (*GetAvatarOutfitsReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{103}
+}
+
+func (x *GetAvatarOutfitsReq) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *GetAvatarOutfitsReq) GetStyle() string {
+	if x != nil {
+		return x.Style
+	}
+	return ""
+}
+
+func (x *GetAvatarOutfitsReq) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetAvatarOutfitsReq) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetAvatarOutfitsResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []*AvatarOutfit        `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarOutfitsResp) Reset() {
+	*x = GetAvatarOutfitsResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[104]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarOutfitsResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarOutfitsResp) ProtoMessage() {}
+
+func (x *GetAvatarOutfitsResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[104]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarOutfitsResp.ProtoReflect.Descriptor instead.
+func (*GetAvatarOutfitsResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{104}
+}
+
+func (x *GetAvatarOutfitsResp) GetData() []*AvatarOutfit {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetAvatarOutfitsResp) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type GetAvatarOutfitReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OutfitId      string                 `protobuf:"bytes,1,opt,name=outfit_id,json=outfitId,proto3" json:"outfit_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarOutfitReq) Reset() {
+	*x = GetAvatarOutfitReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[105]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarOutfitReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarOutfitReq) ProtoMessage() {}
+
+func (x *GetAvatarOutfitReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[105]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarOutfitReq.ProtoReflect.Descriptor instead.
+func (*GetAvatarOutfitReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{105}
+}
+
+func (x *GetAvatarOutfitReq) GetOutfitId() string {
+	if x != nil {
+		return x.OutfitId
+	}
+	return ""
+}
+
+type GetAvatarOutfitResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          *AvatarOutfit          `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAvatarOutfitResp) Reset() {
+	*x = GetAvatarOutfitResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[106]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAvatarOutfitResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAvatarOutfitResp) ProtoMessage() {}
+
+func (x *GetAvatarOutfitResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[106]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAvatarOutfitResp.ProtoReflect.Descriptor instead.
+func (*GetAvatarOutfitResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{106}
+}
+
+func (x *GetAvatarOutfitResp) GetData() *AvatarOutfit {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type PurchaseAvatarOutfitReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OutfitId      string                 `protobuf:"bytes,1,opt,name=outfit_id,json=outfitId,proto3" json:"outfit_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurchaseAvatarOutfitReq) Reset() {
+	*x = PurchaseAvatarOutfitReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[107]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurchaseAvatarOutfitReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurchaseAvatarOutfitReq) ProtoMessage() {}
+
+func (x *PurchaseAvatarOutfitReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[107]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurchaseAvatarOutfitReq.ProtoReflect.Descriptor instead.
+func (*PurchaseAvatarOutfitReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{107}
+}
+
+func (x *PurchaseAvatarOutfitReq) GetOutfitId() string {
+	if x != nil {
+		return x.OutfitId
+	}
+	return ""
+}
+
+func (x *PurchaseAvatarOutfitReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type PurchaseAvatarOutfitResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurchaseAvatarOutfitResp) Reset() {
+	*x = PurchaseAvatarOutfitResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[108]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurchaseAvatarOutfitResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurchaseAvatarOutfitResp) ProtoMessage() {}
+
+func (x *PurchaseAvatarOutfitResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[108]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurchaseAvatarOutfitResp.ProtoReflect.Descriptor instead.
+func (*PurchaseAvatarOutfitResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{108}
+}
+
+func (x *PurchaseAvatarOutfitResp) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+type Emoji struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,2,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	Tags          []string               `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`
+	IsAnimated    bool                   `protobuf:"varint,4,opt,name=is_animated,json=isAnimated,proto3" json:"is_animated,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Emoji) Reset() {
+	*x = Emoji{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[109]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Emoji) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Emoji) ProtoMessage() {}
+
+func (x *Emoji) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[109]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Emoji.ProtoReflect.Descriptor instead.
+func (*Emoji) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{109}
+}
+
+func (x *Emoji) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Emoji) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *Emoji) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *Emoji) GetIsAnimated() bool {
+	if x != nil {
+		return x.IsAnimated
+	}
+	return false
+}
+
+type EmojiPack struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	AuthorName    string                 `protobuf:"bytes,4,opt,name=author_name,json=authorName,proto3" json:"author_name,omitempty"`
+	Category      string                 `protobuf:"bytes,5,opt,name=category,proto3" json:"category,omitempty"`
+	Price         float64                `protobuf:"fixed64,6,opt,name=price,proto3" json:"price,omitempty"`
+	IsFree        bool                   `protobuf:"varint,7,opt,name=is_free,json=isFree,proto3" json:"is_free,omitempty"`
+	CoverImage    string                 `protobuf:"bytes,8,opt,name=cover_image,json=coverImage,proto3" json:"cover_image,omitempty"`
+	Emojis        []*Emoji               `protobuf:"bytes,9,rep,name=emojis,proto3" json:"emojis,omitempty"`
+	DownloadCount int32                  `protobuf:"varint,10,opt,name=download_count,json=downloadCount,proto3" json:"download_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EmojiPack) Reset() {
+	*x = EmojiPack{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[110]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EmojiPack) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmojiPack) ProtoMessage() {}
+
+func (x *EmojiPack) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[110]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmojiPack.ProtoReflect.Descriptor instead.
+func (*EmojiPack) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{110}
+}
+
+func (x *EmojiPack) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetAuthorName() string {
+	if x != nil {
+		return x.AuthorName
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *EmojiPack) GetIsFree() bool {
+	if x != nil {
+		return x.IsFree
+	}
+	return false
+}
+
+func (x *EmojiPack) GetCoverImage() string {
+	if x != nil {
+		return x.CoverImage
+	}
+	return ""
+}
+
+func (x *EmojiPack) GetEmojis() []*Emoji {
+	if x != nil {
+		return x.Emojis
+	}
+	return nil
+}
+
+func (x *EmojiPack) GetDownloadCount() int32 {
+	if x != nil {
+		return x.DownloadCount
+	}
+	return 0
+}
+
+type GetEmojiPacksReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Category      string                 `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEmojiPacksReq) Reset() {
+	*x = GetEmojiPacksReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[111]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEmojiPacksReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEmojiPacksReq) ProtoMessage() {}
+
+func (x *GetEmojiPacksReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[111]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEmojiPacksReq.ProtoReflect.Descriptor instead.
+func (*GetEmojiPacksReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{111}
+}
+
+func (x *GetEmojiPacksReq) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *GetEmojiPacksReq) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetEmojiPacksReq) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type GetEmojiPacksResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []*EmojiPack           `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEmojiPacksResp) Reset() {
+	*x = GetEmojiPacksResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[112]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEmojiPacksResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEmojiPacksResp) ProtoMessage() {}
+
+func (x *GetEmojiPacksResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[112]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEmojiPacksResp.ProtoReflect.Descriptor instead.
+func (*GetEmojiPacksResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{112}
+}
+
+func (x *GetEmojiPacksResp) GetData() []*EmojiPack {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *GetEmojiPacksResp) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type GetEmojiPackReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PackId        string                 `protobuf:"bytes,1,opt,name=pack_id,json=packId,proto3" json:"pack_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEmojiPackReq) Reset() {
+	*x = GetEmojiPackReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[113]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEmojiPackReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEmojiPackReq) ProtoMessage() {}
+
+func (x *GetEmojiPackReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[113]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEmojiPackReq.ProtoReflect.Descriptor instead.
+func (*GetEmojiPackReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{113}
+}
+
+func (x *GetEmojiPackReq) GetPackId() string {
+	if x != nil {
+		return x.PackId
+	}
+	return ""
+}
+
+type GetEmojiPackResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          *EmojiPack             `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEmojiPackResp) Reset() {
+	*x = GetEmojiPackResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[114]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEmojiPackResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEmojiPackResp) ProtoMessage() {}
+
+func (x *GetEmojiPackResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[114]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEmojiPackResp.ProtoReflect.Descriptor instead.
+func (*GetEmojiPackResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{114}
+}
+
+func (x *GetEmojiPackResp) GetData() *EmojiPack {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type FavoriteEmojiPackReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PackId        string                 `protobuf:"bytes,1,opt,name=pack_id,json=packId,proto3" json:"pack_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavoriteEmojiPackReq) Reset() {
+	*x = FavoriteEmojiPackReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[115]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavoriteEmojiPackReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavoriteEmojiPackReq) ProtoMessage() {}
+
+func (x *FavoriteEmojiPackReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[115]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavoriteEmojiPackReq.ProtoReflect.Descriptor instead.
+func (*FavoriteEmojiPackReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{115}
+}
+
+func (x *FavoriteEmojiPackReq) GetPackId() string {
+	if x != nil {
+		return x.PackId
+	}
+	return ""
+}
+
+func (x *FavoriteEmojiPackReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type FavoriteEmojiPackResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FavoriteEmojiPackResp) Reset() {
+	*x = FavoriteEmojiPackResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FavoriteEmojiPackResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FavoriteEmojiPackResp) ProtoMessage() {}
+
+func (x *FavoriteEmojiPackResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FavoriteEmojiPackResp.ProtoReflect.Descriptor instead.
+func (*FavoriteEmojiPackResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{116}
+}
+
+type PurchaseEmojiPackReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PackId        string                 `protobuf:"bytes,1,opt,name=pack_id,json=packId,proto3" json:"pack_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurchaseEmojiPackReq) Reset() {
+	*x = PurchaseEmojiPackReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[117]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurchaseEmojiPackReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurchaseEmojiPackReq) ProtoMessage() {}
+
+func (x *PurchaseEmojiPackReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[117]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurchaseEmojiPackReq.ProtoReflect.Descriptor instead.
+func (*PurchaseEmojiPackReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{117}
+}
+
+func (x *PurchaseEmojiPackReq) GetPackId() string {
+	if x != nil {
+		return x.PackId
+	}
+	return ""
+}
+
+func (x *PurchaseEmojiPackReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type PurchaseEmojiPackResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          string                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PurchaseEmojiPackResp) Reset() {
+	*x = PurchaseEmojiPackResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[118]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PurchaseEmojiPackResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PurchaseEmojiPackResp) ProtoMessage() {}
+
+func (x *PurchaseEmojiPackResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[118]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PurchaseEmojiPackResp.ProtoReflect.Descriptor instead.
+func (*PurchaseEmojiPackResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{118}
+}
+
+func (x *PurchaseEmojiPackResp) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+type GetUserEmojiPacksReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserEmojiPacksReq) Reset() {
+	*x = GetUserEmojiPacksReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[119]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserEmojiPacksReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserEmojiPacksReq) ProtoMessage() {}
+
+func (x *GetUserEmojiPacksReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[119]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserEmojiPacksReq.ProtoReflect.Descriptor instead.
+func (*GetUserEmojiPacksReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{119}
+}
+
+func (x *GetUserEmojiPacksReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetUserEmojiPacksResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []*EmojiPack           `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserEmojiPacksResp) Reset() {
+	*x = GetUserEmojiPacksResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[120]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserEmojiPacksResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserEmojiPacksResp) ProtoMessage() {}
+
+func (x *GetUserEmojiPacksResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[120]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserEmojiPacksResp.ProtoReflect.Descriptor instead.
+func (*GetUserEmojiPacksResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{120}
+}
+
+func (x *GetUserEmojiPacksResp) GetData() []*EmojiPack {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 type WechatAuthorizeURLReq struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	State string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
@@ -5920,7 +7114,7 @@ type WechatAuthorizeURLReq struct {
 
 func (x *WechatAuthorizeURLReq) Reset() {
 	*x = WechatAuthorizeURLReq{}
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[101]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5932,7 +7126,7 @@ func (x *WechatAuthorizeURLReq) String() string {
 func (*WechatAuthorizeURLReq) ProtoMessage() {}
 
 func (x *WechatAuthorizeURLReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[101]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5945,7 +7139,7 @@ func (x *WechatAuthorizeURLReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WechatAuthorizeURLReq.ProtoReflect.Descriptor instead.
 func (*WechatAuthorizeURLReq) Descriptor() ([]byte, []int) {
-	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{101}
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *WechatAuthorizeURLReq) GetState() string {
@@ -5971,7 +7165,7 @@ type WechatAuthorizeURLResp struct {
 
 func (x *WechatAuthorizeURLResp) Reset() {
 	*x = WechatAuthorizeURLResp{}
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[102]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5983,7 +7177,7 @@ func (x *WechatAuthorizeURLResp) String() string {
 func (*WechatAuthorizeURLResp) ProtoMessage() {}
 
 func (x *WechatAuthorizeURLResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[102]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5996,7 +7190,7 @@ func (x *WechatAuthorizeURLResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WechatAuthorizeURLResp.ProtoReflect.Descriptor instead.
 func (*WechatAuthorizeURLResp) Descriptor() ([]byte, []int) {
-	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{102}
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *WechatAuthorizeURLResp) GetAuthorizeUrl() string {
@@ -6017,7 +7211,7 @@ type WechatLoginReq struct {
 
 func (x *WechatLoginReq) Reset() {
 	*x = WechatLoginReq{}
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[103]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6029,7 +7223,7 @@ func (x *WechatLoginReq) String() string {
 func (*WechatLoginReq) ProtoMessage() {}
 
 func (x *WechatLoginReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[103]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6042,7 +7236,7 @@ func (x *WechatLoginReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WechatLoginReq.ProtoReflect.Descriptor instead.
 func (*WechatLoginReq) Descriptor() ([]byte, []int) {
-	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{103}
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *WechatLoginReq) GetCode() string {
@@ -6070,7 +7264,7 @@ type WechatLoginResp struct {
 
 func (x *WechatLoginResp) Reset() {
 	*x = WechatLoginResp{}
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[104]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6082,7 +7276,7 @@ func (x *WechatLoginResp) String() string {
 func (*WechatLoginResp) ProtoMessage() {}
 
 func (x *WechatLoginResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_user_v1_user_messages_proto_msgTypes[104]
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6095,7 +7289,7 @@ func (x *WechatLoginResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WechatLoginResp.ProtoReflect.Descriptor instead.
 func (*WechatLoginResp) Descriptor() ([]byte, []int) {
-	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{104}
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *WechatLoginResp) GetUser() *User {
@@ -6119,15 +7313,228 @@ func (x *WechatLoginResp) GetIsNewUser() bool {
 	return false
 }
 
+type RefreshTokenReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshTokenReq) Reset() {
+	*x = RefreshTokenReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[125]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshTokenReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshTokenReq) ProtoMessage() {}
+
+func (x *RefreshTokenReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[125]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshTokenReq.ProtoReflect.Descriptor instead.
+func (*RefreshTokenReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{125}
+}
+
+type RefreshTokenResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefreshTokenResp) Reset() {
+	*x = RefreshTokenResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[126]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefreshTokenResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefreshTokenResp) ProtoMessage() {}
+
+func (x *RefreshTokenResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[126]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefreshTokenResp.ProtoReflect.Descriptor instead.
+func (*RefreshTokenResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{126}
+}
+
+func (x *RefreshTokenResp) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type FeishuPublicConfigResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InviteUrl     string                 `protobuf:"bytes,1,opt,name=invite_url,json=inviteUrl,proto3" json:"invite_url,omitempty"`
+	HelpText      string                 `protobuf:"bytes,2,opt,name=help_text,json=helpText,proto3" json:"help_text,omitempty"`
+	Enabled       bool                   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FeishuPublicConfigResp) Reset() {
+	*x = FeishuPublicConfigResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[127]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FeishuPublicConfigResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FeishuPublicConfigResp) ProtoMessage() {}
+
+func (x *FeishuPublicConfigResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[127]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FeishuPublicConfigResp.ProtoReflect.Descriptor instead.
+func (*FeishuPublicConfigResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{127}
+}
+
+func (x *FeishuPublicConfigResp) GetInviteUrl() string {
+	if x != nil {
+		return x.InviteUrl
+	}
+	return ""
+}
+
+func (x *FeishuPublicConfigResp) GetHelpText() string {
+	if x != nil {
+		return x.HelpText
+	}
+	return ""
+}
+
+func (x *FeishuPublicConfigResp) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type DeleteMyAccountReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMyAccountReq) Reset() {
+	*x = DeleteMyAccountReq{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[128]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMyAccountReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMyAccountReq) ProtoMessage() {}
+
+func (x *DeleteMyAccountReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[128]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMyAccountReq.ProtoReflect.Descriptor instead.
+func (*DeleteMyAccountReq) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{128}
+}
+
+type DeleteMyAccountResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteMyAccountResp) Reset() {
+	*x = DeleteMyAccountResp{}
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[129]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteMyAccountResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteMyAccountResp) ProtoMessage() {}
+
+func (x *DeleteMyAccountResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_user_v1_user_messages_proto_msgTypes[129]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteMyAccountResp.ProtoReflect.Descriptor instead.
+func (*DeleteMyAccountResp) Descriptor() ([]byte, []int) {
+	return file_api_user_v1_user_messages_proto_rawDescGZIP(), []int{129}
+}
+
 var File_api_user_v1_user_messages_proto protoreflect.FileDescriptor
 
 const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
-	"\x1fapi/user/v1/user_messages.proto\x12\auser.v1\x1a\x1cgoogle/api/annotations.proto\"[\n" +
+	"\x1fapi/user/v1/user_messages.proto\x12\auser.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"t\n" +
 	"\x16AcceptFriendRequestReq\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestId\")\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\")\n" +
 	"\x17AcceptFriendRequestResp\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xd8\x02\n" +
 	"\x14AchievementBadgeItem\x12\x0e\n" +
@@ -6218,10 +7625,11 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"N\n" +
 	"\x11GetFollowingsResp\x12#\n" +
 	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"^\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"w\n" +
 	"\x14GetFriendRelationReq\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\"\n" +
-	"\rother_user_id\x18\x02 \x01(\tR\votherUserId\"3\n" +
+	"\rother_user_id\x18\x02 \x01(\tR\votherUserId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\"3\n" +
 	"\x15GetFriendRelationResp\x12\x1a\n" +
 	"\brelation\x18\x01 \x01(\tR\brelation\"_\n" +
 	"\x13GetNotificationsReq\x12\x17\n" +
@@ -6285,17 +7693,20 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"I\n" +
 	"\fGetUsersResp\x12#\n" +
 	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"4\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"M\n" +
 	"\x0eListFriendsReq\x12\"\n" +
-	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\"6\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"6\n" +
 	"\x0fListFriendsResp\x12#\n" +
-	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\"C\n" +
+	"\x05users\x18\x01 \x03(\v2\r.user.v1.UserR\x05users\"\\\n" +
 	"\x1dListIncomingFriendRequestsReq\x12\"\n" +
-	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\"P\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"P\n" +
 	"\x1eListIncomingFriendRequestsResp\x12.\n" +
-	"\x04data\x18\x01 \x03(\v2\x1a.user.v1.FriendRequestViewR\x04data\"C\n" +
+	"\x04data\x18\x01 \x03(\v2\x1a.user.v1.FriendRequestViewR\x04data\"\\\n" +
 	"\x1dListOutgoingFriendRequestsReq\x12\"\n" +
-	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\"P\n" +
+	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"P\n" +
 	"\x1eListOutgoingFriendRequestsResp\x12.\n" +
 	"\x04data\x18\x01 \x03(\v2\x1a.user.v1.FriendRequestViewR\x04data\"h\n" +
 	"\x1bListPrivateConversationsReq\x12\x1b\n" +
@@ -6393,11 +7804,12 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\x05email\x18\x03 \x01(\tR\x05email\"G\n" +
 	"\fRegisterResp\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"[\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"t\n" +
 	"\x16RejectFriendRequestReq\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestId\")\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\")\n" +
 	"\x17RejectFriendRequestResp\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\"K\n" +
 	"\x10ResetPasswordReq\x12\x14\n" +
@@ -6406,12 +7818,13 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\x11ResetPasswordResp\"0\n" +
 	"\x15SendFeishuTestCardReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x18\n" +
-	"\x16SendFeishuTestCardResp\"t\n" +
+	"\x16SendFeishuTestCardResp\"\x8d\x01\n" +
 	"\x14SendFriendRequestReq\x12\"\n" +
 	"\ractor_user_id\x18\x01 \x01(\tR\vactorUserId\x12\x1c\n" +
 	"\n" +
 	"to_user_id\x18\x02 \x01(\tR\btoUserId\x12\x1a\n" +
-	"\tto_moe_no\x18\x03 \x01(\tR\atoMoeNo\"G\n" +
+	"\tto_moe_no\x18\x03 \x01(\tR\atoMoeNo\x12\x17\n" +
+	"\auser_id\x18\x04 \x01(\tR\x06userId\"G\n" +
 	"\x15SendFriendRequestResp\x12.\n" +
 	"\x04data\x18\x01 \x01(\v2\x1a.user.v1.FriendRequestViewR\x04data\"\x8a\x01\n" +
 	"\x15SendPrivateMessageReq\x12\x1b\n" +
@@ -6558,7 +7971,86 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\rsource_msg_id\x18\n" +
 	" \x01(\tR\vsourceMsgId\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\v \x01(\tR\tsessionId\"A\n" +
+	"session_id\x18\v \x01(\tR\tsessionId\"M\n" +
+	"\n" +
+	"OutfitPart\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1b\n" +
+	"\timage_url\x18\x03 \x01(\tR\bimageUrl\"\x9c\x02\n" +
+	"\fAvatarOutfit\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1a\n" +
+	"\bcategory\x18\x04 \x01(\tR\bcategory\x12\x14\n" +
+	"\x05style\x18\x05 \x01(\tR\x05style\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\x01R\x05price\x12\x17\n" +
+	"\ais_free\x18\a \x01(\bR\x06isFree\x12\x1b\n" +
+	"\timage_url\x18\b \x01(\tR\bimageUrl\x12)\n" +
+	"\x05parts\x18\t \x03(\v2\x13.user.v1.OutfitPartR\x05parts\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\tR\tcreatedAt\"x\n" +
+	"\x13GetAvatarOutfitsReq\x12\x1a\n" +
+	"\bcategory\x18\x01 \x01(\tR\bcategory\x12\x14\n" +
+	"\x05style\x18\x02 \x01(\tR\x05style\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\"W\n" +
+	"\x14GetAvatarOutfitsResp\x12)\n" +
+	"\x04data\x18\x01 \x03(\v2\x15.user.v1.AvatarOutfitR\x04data\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"1\n" +
+	"\x12GetAvatarOutfitReq\x12\x1b\n" +
+	"\toutfit_id\x18\x01 \x01(\tR\boutfitId\"@\n" +
+	"\x13GetAvatarOutfitResp\x12)\n" +
+	"\x04data\x18\x01 \x01(\v2\x15.user.v1.AvatarOutfitR\x04data\"O\n" +
+	"\x17PurchaseAvatarOutfitReq\x12\x1b\n" +
+	"\toutfit_id\x18\x01 \x01(\tR\boutfitId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\".\n" +
+	"\x18PurchaseAvatarOutfitResp\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\tR\x04data\"i\n" +
+	"\x05Emoji\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\timage_url\x18\x02 \x01(\tR\bimageUrl\x12\x12\n" +
+	"\x04tags\x18\x03 \x03(\tR\x04tags\x12\x1f\n" +
+	"\vis_animated\x18\x04 \x01(\bR\n" +
+	"isAnimated\"\xad\x02\n" +
+	"\tEmojiPack\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x1f\n" +
+	"\vauthor_name\x18\x04 \x01(\tR\n" +
+	"authorName\x12\x1a\n" +
+	"\bcategory\x18\x05 \x01(\tR\bcategory\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\x01R\x05price\x12\x17\n" +
+	"\ais_free\x18\a \x01(\bR\x06isFree\x12\x1f\n" +
+	"\vcover_image\x18\b \x01(\tR\n" +
+	"coverImage\x12&\n" +
+	"\x06emojis\x18\t \x03(\v2\x0e.user.v1.EmojiR\x06emojis\x12%\n" +
+	"\x0edownload_count\x18\n" +
+	" \x01(\x05R\rdownloadCount\"_\n" +
+	"\x10GetEmojiPacksReq\x12\x1a\n" +
+	"\bcategory\x18\x01 \x01(\tR\bcategory\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"Q\n" +
+	"\x11GetEmojiPacksResp\x12&\n" +
+	"\x04data\x18\x01 \x03(\v2\x12.user.v1.EmojiPackR\x04data\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"*\n" +
+	"\x0fGetEmojiPackReq\x12\x17\n" +
+	"\apack_id\x18\x01 \x01(\tR\x06packId\":\n" +
+	"\x10GetEmojiPackResp\x12&\n" +
+	"\x04data\x18\x01 \x01(\v2\x12.user.v1.EmojiPackR\x04data\"H\n" +
+	"\x14FavoriteEmojiPackReq\x12\x17\n" +
+	"\apack_id\x18\x01 \x01(\tR\x06packId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x17\n" +
+	"\x15FavoriteEmojiPackResp\"H\n" +
+	"\x14PurchaseEmojiPackReq\x12\x17\n" +
+	"\apack_id\x18\x01 \x01(\tR\x06packId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"+\n" +
+	"\x15PurchaseEmojiPackResp\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\tR\x04data\"/\n" +
+	"\x14GetUserEmojiPacksReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"?\n" +
+	"\x15GetUserEmojiPacksResp\x12&\n" +
+	"\x04data\x18\x01 \x03(\v2\x12.user.v1.EmojiPackR\x04data\"A\n" +
 	"\x15WechatAuthorizeURLReq\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x12\n" +
 	"\x04flow\x18\x02 \x01(\tR\x04flow\"=\n" +
@@ -6570,13 +8062,70 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\x0fWechatLoginResp\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1e\n" +
-	"\vis_new_user\x18\x03 \x01(\bR\tisNewUser2\xd5\x03\n" +
+	"\vis_new_user\x18\x03 \x01(\bR\tisNewUser\"\x11\n" +
+	"\x0fRefreshTokenReq\"(\n" +
+	"\x10RefreshTokenResp\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"n\n" +
+	"\x16FeishuPublicConfigResp\x12\x1d\n" +
+	"\n" +
+	"invite_url\x18\x01 \x01(\tR\tinviteUrl\x12\x1b\n" +
+	"\thelp_text\x18\x02 \x01(\tR\bhelpText\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\"\x14\n" +
+	"\x12DeleteMyAccountReq\"\x15\n" +
+	"\x13DeleteMyAccountResp2\x97+\n" +
 	"\vUserService\x12J\n" +
 	"\x05Login\x12\x11.user.v1.LoginReq\x1a\x12.user.v1.LoginResp\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/user/login\x12V\n" +
 	"\bRegister\x12\x14.user.v1.RegisterReq\x1a\x15.user.v1.RegisterResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/user/register\x12]\n" +
 	"\vGetUserInfo\x12\x17.user.v1.GetUserInfoReq\x1a\x18.user.v1.GetUserInfoResp\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/user/{user_id}\x12X\n" +
 	"\aGetUser\x12\x13.user.v1.GetUserReq\x1a\x14.user.v1.GetUserResp\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/user/{user_id}/detail\x12i\n" +
-	"\x0eUpdateUserInfo\x12\x1a.user.v1.UpdateUserInfoReq\x1a\x1b.user.v1.UpdateUserInfoResp\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\x1a\x13/api/user/{user_id}B\x1cZ\x1abackend/api/user/v1;userv1b\x06proto3"
+	"\x0eUpdateUserInfo\x12\x1a.user.v1.UpdateUserInfoReq\x1a\x1b.user.v1.UpdateUserInfoResp\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\x1a\x13/api/user/{user_id}\x12v\n" +
+	"\x0eSyncUserDevice\x12\x1a.user.v1.SyncUserDeviceReq\x1a\x1b.user.v1.SyncUserDeviceResp\"+\x82\xd3\xe4\x93\x02%:\x01*\" /api/user/{user_id}/devices/sync\x12q\n" +
+	"\x0fListUserDevices\x12\x1b.user.v1.ListUserDevicesReq\x1a\x1c.user.v1.ListUserDevicesResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/user/{user_id}/devices\x12e\n" +
+	"\vListFriends\x12\x17.user.v1.ListFriendsReq\x1a\x18.user.v1.ListFriendsResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/user/{user_id}/friends\x12\x8e\x01\n" +
+	"\x11GetFriendRelation\x12\x1d.user.v1.GetFriendRelationReq\x1a\x1e.user.v1.GetFriendRelationResp\":\x82\xd3\xe4\x93\x024\x122/api/user/{user_id}/friends/status/{other_user_id}\x12\x82\x01\n" +
+	"\x11SendFriendRequest\x12\x1d.user.v1.SendFriendRequestReq\x1a\x1e.user.v1.SendFriendRequestResp\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/user/{user_id}/friend-requests\x12\x9c\x01\n" +
+	"\x13AcceptFriendRequest\x12\x1f.user.v1.AcceptFriendRequestReq\x1a .user.v1.AcceptFriendRequestResp\"B\x82\xd3\xe4\x93\x02<:\x01*\"7/api/user/{user_id}/friend-requests/{request_id}/accept\x12\x9c\x01\n" +
+	"\x13RejectFriendRequest\x12\x1f.user.v1.RejectFriendRequestReq\x1a .user.v1.RejectFriendRequestResp\"B\x82\xd3\xe4\x93\x02<:\x01*\"7/api/user/{user_id}/friend-requests/{request_id}/reject\x12\xa3\x01\n" +
+	"\x1aListIncomingFriendRequests\x12&.user.v1.ListIncomingFriendRequestsReq\x1a'.user.v1.ListIncomingFriendRequestsResp\"4\x82\xd3\xe4\x93\x02.\x12,/api/user/{user_id}/friend-requests/incoming\x12\xa3\x01\n" +
+	"\x1aListOutgoingFriendRequests\x12&.user.v1.ListOutgoingFriendRequestsReq\x1a'.user.v1.ListOutgoingFriendRequestsResp\"4\x82\xd3\xe4\x93\x02.\x12,/api/user/{user_id}/friend-requests/outgoing\x12}\n" +
+	"\x12FeishuAuthorizeURL\x12\x1e.user.v1.FeishuAuthorizeURLReq\x1a\x1f.user.v1.FeishuAuthorizeURLResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/auth/feishu/authorize-url\x12c\n" +
+	"\vFeishuLogin\x12\x17.user.v1.FeishuLoginReq\x1a\x18.user.v1.FeishuLoginResp\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/auth/feishu/login\x12u\n" +
+	"\x12FeishuPublicConfig\x12\x16.google.protobuf.Empty\x1a\x1f.user.v1.FeishuPublicConfigResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/auth/feishu/public-config\x12}\n" +
+	"\x12WechatAuthorizeURL\x12\x1e.user.v1.WechatAuthorizeURLReq\x1a\x1f.user.v1.WechatAuthorizeURLResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/auth/wechat/authorize-url\x12c\n" +
+	"\vWechatLogin\x12\x17.user.v1.WechatLoginReq\x1a\x18.user.v1.WechatLoginResp\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/auth/wechat/login\x12g\n" +
+	"\fRefreshToken\x12\x18.user.v1.RefreshTokenReq\x1a\x19.user.v1.RefreshTokenResp\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/user/refresh-token\x12i\n" +
+	"\x0eGetTransaction\x12\x1a.user.v1.GetTransactionReq\x1a\x1b.user.v1.GetTransactionResp\"\x1e\x82\xd3\xe4\x93\x02\x18\x12\x16/api/transactions/{id}\x12}\n" +
+	"\vCheckFollow\x12\x17.user.v1.CheckFollowReq\x1a\x18.user.v1.CheckFollowResp\";\x82\xd3\xe4\x93\x025\x123/api/user/{follower_id}/follow/{following_id}/check\x12Z\n" +
+	"\n" +
+	"DeleteUser\x12\x16.user.v1.DeleteUserReq\x1a\x17.user.v1.DeleteUserResp\"\x1b\x82\xd3\xe4\x93\x02\x15*\x13/api/user/{user_id}\x12d\n" +
+	"\n" +
+	"FollowUser\x12\x16.user.v1.FollowUserReq\x1a\x17.user.v1.FollowUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/user/{user_id}/follow\x12h\n" +
+	"\fUnfollowUser\x12\x18.user.v1.UnfollowUserReq\x1a\x17.user.v1.FollowUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01**\x1a/api/user/{user_id}/follow\x12j\n" +
+	"\fGetFollowers\x12\x18.user.v1.GetFollowersReq\x1a\x19.user.v1.GetFollowersResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/user/{user_id}/followers\x12m\n" +
+	"\rGetFollowings\x12\x19.user.v1.GetFollowingsReq\x1a\x1a.user.v1.GetFollowingsResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/user/{user_id}/following\x12~\n" +
+	"\x12UpdateUserPassword\x12\x1e.user.v1.UpdateUserPasswordReq\x1a\x1f.user.v1.UpdateUserPasswordResp\"'\x82\xd3\xe4\x93\x02!:\x01*\x1a\x1c/api/user/{user_id}/password\x12v\n" +
+	"\x0fGetTransactions\x12\x1b.user.v1.GetTransactionsReq\x1a\x1c.user.v1.GetTransactionsResp\"(\x82\xd3\xe4\x93\x02\"\x12 /api/user/{user_id}/transactions\x12g\n" +
+	"\bRecharge\x12\x14.user.v1.RechargeReq\x1a\x15.user.v1.RechargeResp\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/user/{user_id}/wallet/recharge\x12k\n" +
+	"\x0eGetUserByEmail\x12\x1a.user.v1.GetUserByEmailReq\x1a\x1b.user.v1.GetUserByEmailResp\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/user/check-email\x12k\n" +
+	"\rResetPassword\x12\x19.user.v1.ResetPasswordReq\x1a\x1a.user.v1.ResetPasswordResp\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/user/reset-password\x12K\n" +
+	"\bGetUsers\x12\x14.user.v1.GetUsersReq\x1a\x15.user.v1.GetUsersResp\"\x12\x82\xd3\xe4\x93\x02\f\x12\n" +
+	"/api/users\x12]\n" +
+	"\fGetUserCount\x12\x18.user.v1.GetUserCountReq\x1a\x19.user.v1.GetUserCountResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/users/count\x12g\n" +
+	"\x0fDeleteMyAccount\x12\x1b.user.v1.DeleteMyAccountReq\x1a\x1c.user.v1.DeleteMyAccountResp\"\x19\x82\xd3\xe4\x93\x02\x13*\x11/api/user/account\x12_\n" +
+	"\n" +
+	"BindFeishu\x12\x16.user.v1.BindFeishuReq\x1a\x17.user.v1.BindFeishuResp\" \x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/api/user/feishu/bind\x12b\n" +
+	"\fUnbindFeishu\x12\x18.user.v1.UnbindFeishuReq\x1a\x19.user.v1.UnbindFeishuResp\"\x1d\x82\xd3\xe4\x93\x02\x17*\x15/api/user/feishu/bind\x12|\n" +
+	"\x12SendFeishuTestCard\x12\x1e.user.v1.SendFeishuTestCardReq\x1a\x1f.user.v1.SendFeishuTestCardResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/user/feishu/test-card\x12e\n" +
+	"\rGetUserAvatar\x12\x19.user.v1.GetUserAvatarReq\x1a\x1a.user.v1.GetUserAvatarResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/avatar/{user_id}\x12q\n" +
+	"\x10UpdateUserAvatar\x12\x1c.user.v1.UpdateUserAvatarReq\x1a\x1d.user.v1.UpdateUserAvatarResp\" \x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/api/avatar/{user_id}\x12l\n" +
+	"\x10GetAvatarOutfits\x12\x1c.user.v1.GetAvatarOutfitsReq\x1a\x1d.user.v1.GetAvatarOutfitsResp\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/avatar/outfits\x12u\n" +
+	"\x0fGetAvatarOutfit\x12\x1b.user.v1.GetAvatarOutfitReq\x1a\x1c.user.v1.GetAvatarOutfitResp\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/avatar/outfits/{outfit_id}\x12\x90\x01\n" +
+	"\x14PurchaseAvatarOutfit\x12 .user.v1.PurchaseAvatarOutfitReq\x1a!.user.v1.PurchaseAvatarOutfitResp\"3\x82\xd3\xe4\x93\x02-:\x01*\"(/api/avatar/outfits/{outfit_id}/purchase\x12`\n" +
+	"\rGetEmojiPacks\x12\x19.user.v1.GetEmojiPacksReq\x1a\x1a.user.v1.GetEmojiPacksResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/emoji/packs\x12g\n" +
+	"\fGetEmojiPack\x12\x18.user.v1.GetEmojiPackReq\x1a\x19.user.v1.GetEmojiPackResp\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/emoji/packs/{pack_id}\x12\x82\x01\n" +
+	"\x11FavoriteEmojiPack\x12\x1d.user.v1.FavoriteEmojiPackReq\x1a\x1e.user.v1.FavoriteEmojiPackResp\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/emoji/packs/{pack_id}/favorite\x12\x82\x01\n" +
+	"\x11PurchaseEmojiPack\x12\x1d.user.v1.PurchaseEmojiPackReq\x1a\x1e.user.v1.PurchaseEmojiPackResp\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/emoji/packs/{pack_id}/purchase\x12{\n" +
+	"\x11GetUserEmojiPacks\x12\x1d.user.v1.GetUserEmojiPacksReq\x1a\x1e.user.v1.GetUserEmojiPacksResp\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/user/{user_id}/emoji/packsB\x1cZ\x1abackend/api/user/v1;userv1b\x06proto3"
 
 var (
 	file_api_user_v1_user_messages_proto_rawDescOnce sync.Once
@@ -6590,7 +8139,7 @@ func file_api_user_v1_user_messages_proto_rawDescGZIP() []byte {
 	return file_api_user_v1_user_messages_proto_rawDescData
 }
 
-var file_api_user_v1_user_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 105)
+var file_api_user_v1_user_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 130)
 var file_api_user_v1_user_messages_proto_goTypes = []any{
 	(*AcceptFriendRequestReq)(nil),          // 0: user.v1.AcceptFriendRequestReq
 	(*AcceptFriendRequestResp)(nil),         // 1: user.v1.AcceptFriendRequestResp
@@ -6693,10 +8242,36 @@ var file_api_user_v1_user_messages_proto_goTypes = []any{
 	(*UserAvatarData)(nil),                  // 98: user.v1.UserAvatarData
 	(*UserDeviceRecord)(nil),                // 99: user.v1.UserDeviceRecord
 	(*UserMemory)(nil),                      // 100: user.v1.UserMemory
-	(*WechatAuthorizeURLReq)(nil),           // 101: user.v1.WechatAuthorizeURLReq
-	(*WechatAuthorizeURLResp)(nil),          // 102: user.v1.WechatAuthorizeURLResp
-	(*WechatLoginReq)(nil),                  // 103: user.v1.WechatLoginReq
-	(*WechatLoginResp)(nil),                 // 104: user.v1.WechatLoginResp
+	(*OutfitPart)(nil),                      // 101: user.v1.OutfitPart
+	(*AvatarOutfit)(nil),                    // 102: user.v1.AvatarOutfit
+	(*GetAvatarOutfitsReq)(nil),             // 103: user.v1.GetAvatarOutfitsReq
+	(*GetAvatarOutfitsResp)(nil),            // 104: user.v1.GetAvatarOutfitsResp
+	(*GetAvatarOutfitReq)(nil),              // 105: user.v1.GetAvatarOutfitReq
+	(*GetAvatarOutfitResp)(nil),             // 106: user.v1.GetAvatarOutfitResp
+	(*PurchaseAvatarOutfitReq)(nil),         // 107: user.v1.PurchaseAvatarOutfitReq
+	(*PurchaseAvatarOutfitResp)(nil),        // 108: user.v1.PurchaseAvatarOutfitResp
+	(*Emoji)(nil),                           // 109: user.v1.Emoji
+	(*EmojiPack)(nil),                       // 110: user.v1.EmojiPack
+	(*GetEmojiPacksReq)(nil),                // 111: user.v1.GetEmojiPacksReq
+	(*GetEmojiPacksResp)(nil),               // 112: user.v1.GetEmojiPacksResp
+	(*GetEmojiPackReq)(nil),                 // 113: user.v1.GetEmojiPackReq
+	(*GetEmojiPackResp)(nil),                // 114: user.v1.GetEmojiPackResp
+	(*FavoriteEmojiPackReq)(nil),            // 115: user.v1.FavoriteEmojiPackReq
+	(*FavoriteEmojiPackResp)(nil),           // 116: user.v1.FavoriteEmojiPackResp
+	(*PurchaseEmojiPackReq)(nil),            // 117: user.v1.PurchaseEmojiPackReq
+	(*PurchaseEmojiPackResp)(nil),           // 118: user.v1.PurchaseEmojiPackResp
+	(*GetUserEmojiPacksReq)(nil),            // 119: user.v1.GetUserEmojiPacksReq
+	(*GetUserEmojiPacksResp)(nil),           // 120: user.v1.GetUserEmojiPacksResp
+	(*WechatAuthorizeURLReq)(nil),           // 121: user.v1.WechatAuthorizeURLReq
+	(*WechatAuthorizeURLResp)(nil),          // 122: user.v1.WechatAuthorizeURLResp
+	(*WechatLoginReq)(nil),                  // 123: user.v1.WechatLoginReq
+	(*WechatLoginResp)(nil),                 // 124: user.v1.WechatLoginResp
+	(*RefreshTokenReq)(nil),                 // 125: user.v1.RefreshTokenReq
+	(*RefreshTokenResp)(nil),                // 126: user.v1.RefreshTokenResp
+	(*FeishuPublicConfigResp)(nil),          // 127: user.v1.FeishuPublicConfigResp
+	(*DeleteMyAccountReq)(nil),              // 128: user.v1.DeleteMyAccountReq
+	(*DeleteMyAccountResp)(nil),             // 129: user.v1.DeleteMyAccountResp
+	(*emptypb.Empty)(nil),                   // 130: google.protobuf.Empty
 }
 var file_api_user_v1_user_messages_proto_depIdxs = []int32{
 	97,  // 0: user.v1.BindFeishuResp.user:type_name -> user.v1.User
@@ -6735,22 +8310,115 @@ var file_api_user_v1_user_messages_proto_depIdxs = []int32{
 	97,  // 33: user.v1.UpdateUserInfoResp.user:type_name -> user.v1.User
 	3,   // 34: user.v1.UserAvatarData.base_config:type_name -> user.v1.AvatarBaseConfig
 	4,   // 35: user.v1.UserAvatarData.current_outfit:type_name -> user.v1.AvatarOutfitConfig
-	97,  // 36: user.v1.WechatLoginResp.user:type_name -> user.v1.User
-	62,  // 37: user.v1.UserService.Login:input_type -> user.v1.LoginReq
-	73,  // 38: user.v1.UserService.Register:input_type -> user.v1.RegisterReq
-	40,  // 39: user.v1.UserService.GetUserInfo:input_type -> user.v1.GetUserInfoReq
-	44,  // 40: user.v1.UserService.GetUser:input_type -> user.v1.GetUserReq
-	93,  // 41: user.v1.UserService.UpdateUserInfo:input_type -> user.v1.UpdateUserInfoReq
-	63,  // 42: user.v1.UserService.Login:output_type -> user.v1.LoginResp
-	74,  // 43: user.v1.UserService.Register:output_type -> user.v1.RegisterResp
-	41,  // 44: user.v1.UserService.GetUserInfo:output_type -> user.v1.GetUserInfoResp
-	45,  // 45: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResp
-	94,  // 46: user.v1.UserService.UpdateUserInfo:output_type -> user.v1.UpdateUserInfoResp
-	42,  // [42:47] is the sub-list for method output_type
-	37,  // [37:42] is the sub-list for method input_type
-	37,  // [37:37] is the sub-list for extension type_name
-	37,  // [37:37] is the sub-list for extension extendee
-	0,   // [0:37] is the sub-list for field type_name
+	101, // 36: user.v1.AvatarOutfit.parts:type_name -> user.v1.OutfitPart
+	102, // 37: user.v1.GetAvatarOutfitsResp.data:type_name -> user.v1.AvatarOutfit
+	102, // 38: user.v1.GetAvatarOutfitResp.data:type_name -> user.v1.AvatarOutfit
+	109, // 39: user.v1.EmojiPack.emojis:type_name -> user.v1.Emoji
+	110, // 40: user.v1.GetEmojiPacksResp.data:type_name -> user.v1.EmojiPack
+	110, // 41: user.v1.GetEmojiPackResp.data:type_name -> user.v1.EmojiPack
+	110, // 42: user.v1.GetUserEmojiPacksResp.data:type_name -> user.v1.EmojiPack
+	97,  // 43: user.v1.WechatLoginResp.user:type_name -> user.v1.User
+	62,  // 44: user.v1.UserService.Login:input_type -> user.v1.LoginReq
+	73,  // 45: user.v1.UserService.Register:input_type -> user.v1.RegisterReq
+	40,  // 46: user.v1.UserService.GetUserInfo:input_type -> user.v1.GetUserInfoReq
+	44,  // 47: user.v1.UserService.GetUser:input_type -> user.v1.GetUserReq
+	93,  // 48: user.v1.UserService.UpdateUserInfo:input_type -> user.v1.UpdateUserInfoReq
+	85,  // 49: user.v1.UserService.SyncUserDevice:input_type -> user.v1.SyncUserDeviceReq
+	60,  // 50: user.v1.UserService.ListUserDevices:input_type -> user.v1.ListUserDevicesReq
+	50,  // 51: user.v1.UserService.ListFriends:input_type -> user.v1.ListFriendsReq
+	24,  // 52: user.v1.UserService.GetFriendRelation:input_type -> user.v1.GetFriendRelationReq
+	81,  // 53: user.v1.UserService.SendFriendRequest:input_type -> user.v1.SendFriendRequestReq
+	0,   // 54: user.v1.UserService.AcceptFriendRequest:input_type -> user.v1.AcceptFriendRequestReq
+	75,  // 55: user.v1.UserService.RejectFriendRequest:input_type -> user.v1.RejectFriendRequestReq
+	52,  // 56: user.v1.UserService.ListIncomingFriendRequests:input_type -> user.v1.ListIncomingFriendRequestsReq
+	54,  // 57: user.v1.UserService.ListOutgoingFriendRequests:input_type -> user.v1.ListOutgoingFriendRequestsReq
+	13,  // 58: user.v1.UserService.FeishuAuthorizeURL:input_type -> user.v1.FeishuAuthorizeURLReq
+	15,  // 59: user.v1.UserService.FeishuLogin:input_type -> user.v1.FeishuLoginReq
+	130, // 60: user.v1.UserService.FeishuPublicConfig:input_type -> google.protobuf.Empty
+	121, // 61: user.v1.UserService.WechatAuthorizeURL:input_type -> user.v1.WechatAuthorizeURLReq
+	123, // 62: user.v1.UserService.WechatLogin:input_type -> user.v1.WechatLoginReq
+	125, // 63: user.v1.UserService.RefreshToken:input_type -> user.v1.RefreshTokenReq
+	28,  // 64: user.v1.UserService.GetTransaction:input_type -> user.v1.GetTransactionReq
+	7,   // 65: user.v1.UserService.CheckFollow:input_type -> user.v1.CheckFollowReq
+	11,  // 66: user.v1.UserService.DeleteUser:input_type -> user.v1.DeleteUserReq
+	17,  // 67: user.v1.UserService.FollowUser:input_type -> user.v1.FollowUserReq
+	90,  // 68: user.v1.UserService.UnfollowUser:input_type -> user.v1.UnfollowUserReq
+	20,  // 69: user.v1.UserService.GetFollowers:input_type -> user.v1.GetFollowersReq
+	22,  // 70: user.v1.UserService.GetFollowings:input_type -> user.v1.GetFollowingsReq
+	95,  // 71: user.v1.UserService.UpdateUserPassword:input_type -> user.v1.UpdateUserPasswordReq
+	30,  // 72: user.v1.UserService.GetTransactions:input_type -> user.v1.GetTransactionsReq
+	71,  // 73: user.v1.UserService.Recharge:input_type -> user.v1.RechargeReq
+	36,  // 74: user.v1.UserService.GetUserByEmail:input_type -> user.v1.GetUserByEmailReq
+	77,  // 75: user.v1.UserService.ResetPassword:input_type -> user.v1.ResetPasswordReq
+	48,  // 76: user.v1.UserService.GetUsers:input_type -> user.v1.GetUsersReq
+	38,  // 77: user.v1.UserService.GetUserCount:input_type -> user.v1.GetUserCountReq
+	128, // 78: user.v1.UserService.DeleteMyAccount:input_type -> user.v1.DeleteMyAccountReq
+	5,   // 79: user.v1.UserService.BindFeishu:input_type -> user.v1.BindFeishuReq
+	88,  // 80: user.v1.UserService.UnbindFeishu:input_type -> user.v1.UnbindFeishuReq
+	79,  // 81: user.v1.UserService.SendFeishuTestCard:input_type -> user.v1.SendFeishuTestCardReq
+	34,  // 82: user.v1.UserService.GetUserAvatar:input_type -> user.v1.GetUserAvatarReq
+	91,  // 83: user.v1.UserService.UpdateUserAvatar:input_type -> user.v1.UpdateUserAvatarReq
+	103, // 84: user.v1.UserService.GetAvatarOutfits:input_type -> user.v1.GetAvatarOutfitsReq
+	105, // 85: user.v1.UserService.GetAvatarOutfit:input_type -> user.v1.GetAvatarOutfitReq
+	107, // 86: user.v1.UserService.PurchaseAvatarOutfit:input_type -> user.v1.PurchaseAvatarOutfitReq
+	111, // 87: user.v1.UserService.GetEmojiPacks:input_type -> user.v1.GetEmojiPacksReq
+	113, // 88: user.v1.UserService.GetEmojiPack:input_type -> user.v1.GetEmojiPackReq
+	115, // 89: user.v1.UserService.FavoriteEmojiPack:input_type -> user.v1.FavoriteEmojiPackReq
+	117, // 90: user.v1.UserService.PurchaseEmojiPack:input_type -> user.v1.PurchaseEmojiPackReq
+	119, // 91: user.v1.UserService.GetUserEmojiPacks:input_type -> user.v1.GetUserEmojiPacksReq
+	63,  // 92: user.v1.UserService.Login:output_type -> user.v1.LoginResp
+	74,  // 93: user.v1.UserService.Register:output_type -> user.v1.RegisterResp
+	41,  // 94: user.v1.UserService.GetUserInfo:output_type -> user.v1.GetUserInfoResp
+	45,  // 95: user.v1.UserService.GetUser:output_type -> user.v1.GetUserResp
+	94,  // 96: user.v1.UserService.UpdateUserInfo:output_type -> user.v1.UpdateUserInfoResp
+	86,  // 97: user.v1.UserService.SyncUserDevice:output_type -> user.v1.SyncUserDeviceResp
+	61,  // 98: user.v1.UserService.ListUserDevices:output_type -> user.v1.ListUserDevicesResp
+	51,  // 99: user.v1.UserService.ListFriends:output_type -> user.v1.ListFriendsResp
+	25,  // 100: user.v1.UserService.GetFriendRelation:output_type -> user.v1.GetFriendRelationResp
+	82,  // 101: user.v1.UserService.SendFriendRequest:output_type -> user.v1.SendFriendRequestResp
+	1,   // 102: user.v1.UserService.AcceptFriendRequest:output_type -> user.v1.AcceptFriendRequestResp
+	76,  // 103: user.v1.UserService.RejectFriendRequest:output_type -> user.v1.RejectFriendRequestResp
+	53,  // 104: user.v1.UserService.ListIncomingFriendRequests:output_type -> user.v1.ListIncomingFriendRequestsResp
+	55,  // 105: user.v1.UserService.ListOutgoingFriendRequests:output_type -> user.v1.ListOutgoingFriendRequestsResp
+	14,  // 106: user.v1.UserService.FeishuAuthorizeURL:output_type -> user.v1.FeishuAuthorizeURLResp
+	16,  // 107: user.v1.UserService.FeishuLogin:output_type -> user.v1.FeishuLoginResp
+	127, // 108: user.v1.UserService.FeishuPublicConfig:output_type -> user.v1.FeishuPublicConfigResp
+	122, // 109: user.v1.UserService.WechatAuthorizeURL:output_type -> user.v1.WechatAuthorizeURLResp
+	124, // 110: user.v1.UserService.WechatLogin:output_type -> user.v1.WechatLoginResp
+	126, // 111: user.v1.UserService.RefreshToken:output_type -> user.v1.RefreshTokenResp
+	29,  // 112: user.v1.UserService.GetTransaction:output_type -> user.v1.GetTransactionResp
+	8,   // 113: user.v1.UserService.CheckFollow:output_type -> user.v1.CheckFollowResp
+	12,  // 114: user.v1.UserService.DeleteUser:output_type -> user.v1.DeleteUserResp
+	18,  // 115: user.v1.UserService.FollowUser:output_type -> user.v1.FollowUserResp
+	18,  // 116: user.v1.UserService.UnfollowUser:output_type -> user.v1.FollowUserResp
+	21,  // 117: user.v1.UserService.GetFollowers:output_type -> user.v1.GetFollowersResp
+	23,  // 118: user.v1.UserService.GetFollowings:output_type -> user.v1.GetFollowingsResp
+	96,  // 119: user.v1.UserService.UpdateUserPassword:output_type -> user.v1.UpdateUserPasswordResp
+	31,  // 120: user.v1.UserService.GetTransactions:output_type -> user.v1.GetTransactionsResp
+	72,  // 121: user.v1.UserService.Recharge:output_type -> user.v1.RechargeResp
+	37,  // 122: user.v1.UserService.GetUserByEmail:output_type -> user.v1.GetUserByEmailResp
+	78,  // 123: user.v1.UserService.ResetPassword:output_type -> user.v1.ResetPasswordResp
+	49,  // 124: user.v1.UserService.GetUsers:output_type -> user.v1.GetUsersResp
+	39,  // 125: user.v1.UserService.GetUserCount:output_type -> user.v1.GetUserCountResp
+	129, // 126: user.v1.UserService.DeleteMyAccount:output_type -> user.v1.DeleteMyAccountResp
+	6,   // 127: user.v1.UserService.BindFeishu:output_type -> user.v1.BindFeishuResp
+	89,  // 128: user.v1.UserService.UnbindFeishu:output_type -> user.v1.UnbindFeishuResp
+	80,  // 129: user.v1.UserService.SendFeishuTestCard:output_type -> user.v1.SendFeishuTestCardResp
+	35,  // 130: user.v1.UserService.GetUserAvatar:output_type -> user.v1.GetUserAvatarResp
+	92,  // 131: user.v1.UserService.UpdateUserAvatar:output_type -> user.v1.UpdateUserAvatarResp
+	104, // 132: user.v1.UserService.GetAvatarOutfits:output_type -> user.v1.GetAvatarOutfitsResp
+	106, // 133: user.v1.UserService.GetAvatarOutfit:output_type -> user.v1.GetAvatarOutfitResp
+	108, // 134: user.v1.UserService.PurchaseAvatarOutfit:output_type -> user.v1.PurchaseAvatarOutfitResp
+	112, // 135: user.v1.UserService.GetEmojiPacks:output_type -> user.v1.GetEmojiPacksResp
+	114, // 136: user.v1.UserService.GetEmojiPack:output_type -> user.v1.GetEmojiPackResp
+	116, // 137: user.v1.UserService.FavoriteEmojiPack:output_type -> user.v1.FavoriteEmojiPackResp
+	118, // 138: user.v1.UserService.PurchaseEmojiPack:output_type -> user.v1.PurchaseEmojiPackResp
+	120, // 139: user.v1.UserService.GetUserEmojiPacks:output_type -> user.v1.GetUserEmojiPacksResp
+	92,  // [92:140] is the sub-list for method output_type
+	44,  // [44:92] is the sub-list for method input_type
+	44,  // [44:44] is the sub-list for extension type_name
+	44,  // [44:44] is the sub-list for extension extendee
+	0,   // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_api_user_v1_user_messages_proto_init() }
@@ -6764,7 +8432,7 @@ func file_api_user_v1_user_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_user_v1_user_messages_proto_rawDesc), len(file_api_user_v1_user_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   105,
+			NumMessages:   130,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

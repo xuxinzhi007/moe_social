@@ -90,7 +90,7 @@ class _LlmTerminalModeSettingsPageState
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 14,
                         offset: const Offset(0, 8),
                       ),
@@ -147,10 +147,10 @@ class _LlmTerminalModeSettingsPageState
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7F7FD5).withOpacity(0.06),
+                            color: const Color(0xFF7F7FD5).withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF7F7FD5).withOpacity(0.18),
+                              color: const Color(0xFF7F7FD5).withValues(alpha: 0.18),
                             ),
                           ),
                           child: Text(
@@ -170,7 +170,7 @@ class _LlmTerminalModeSettingsPageState
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 14,
                         offset: const Offset(0, 8),
                       ),

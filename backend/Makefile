@@ -24,6 +24,7 @@ init-proto-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 
 # 日常安全生成：不跑 goctl api/rpc，不覆盖 api/internal/logic 与 rpc/internal/logic
 gen: gen-moe-proto gen-moe-conf gen-http-routes
@@ -78,10 +79,7 @@ gen-api:
 
 
 gen-swagger:
-
-	@command -v goctl-swagger >/dev/null 2>&1 || (echo "goctl-swagger 未安装，请先执行: go install github.com/zeromicro/goctl-swagger@latest" && exit 1)
-
-	cd api && goctl api plugin -plugin goctl-swagger="swagger -filename ../rest.swagger.json" -api moe.api -dir ./
+	bash scripts/gen/openapi.sh
 
 
 
@@ -330,7 +328,7 @@ help:
 
 	@echo make gen-api       - 仅 API 代码生成
 
-	@echo make gen-swagger   - 仅生成 Swagger JSON（backend/rest.swagger.json）
+	@echo make gen-swagger   - 生成 OpenAPI 3.0 YAML（backend/openapi.yaml，与 make gen 同源）
 
 	@echo make build         - 本机打包 api + rpc
 

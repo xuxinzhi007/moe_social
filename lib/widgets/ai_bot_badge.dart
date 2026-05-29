@@ -23,8 +23,8 @@ class AiBotBadge extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.primary.withOpacity(0.85),
-            theme.colorScheme.secondary.withOpacity(0.75),
+            theme.colorScheme.primary.withValues(alpha: 0.85),
+            theme.colorScheme.secondary.withValues(alpha: 0.75),
           ],
         ),
         borderRadius: BorderRadius.circular(compact ? 8 : 10),

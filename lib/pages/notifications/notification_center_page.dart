@@ -171,7 +171,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: color, size: 20),
@@ -223,7 +223,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 color: Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                  BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10)),
                 ],
               ),
               child: Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey[300]),
@@ -272,13 +272,13 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.06),
+                      color: Colors.grey.withValues(alpha: 0.06),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                   border: !notification.isRead 
-                      ? Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5)
+                      ? Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.3), width: 1.5)
                       : null,
                 ),
                 child: Padding(

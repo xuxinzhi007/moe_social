@@ -173,8 +173,90 @@ message UserMemoryRelationItem {
   double weight = 4;
 }
 
+message GetUserMemoriesDisplayReq {
+  string user_id = 1;
+}
+
+message UserMemoryDisplayProfile {
+  string title = 1;
+  string summary = 2;
+  int32 item_count = 3;
+}
+
+message UserMemoryDisplayItem {
+  string id = 1;
+  string key = 2;
+  string title = 3;
+  string content = 4;
+  string category = 5;
+  string updated_at = 6;
+}
+
+message UserMemoryDisplayData {
+  string headline = 1;
+  repeated UserMemoryDisplayProfile profiles = 2;
+  repeated UserMemoryDisplayItem items = 3;
+  int32 total = 4;
+}
+
+message GetUserMemoriesDisplayResp {
+  UserMemoryDisplayData data = 1;
+}
+
+message SearchUserMemoriesReq {
+  string user_id = 1;
+  string q = 2;
+  int32 limit = 3;
+}
+
+message SearchUserMemoriesData {
+  string query = 1;
+  repeated UserMemoryDisplayItem items = 2;
+  int32 total = 3;
+}
+
+message SearchUserMemoriesResp {
+  SearchUserMemoriesData data = 1;
+}
+
 service LlmChat {
   rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp) {
     option (google.api.http) = { post: "/api/llm/chat/turn" body: "*" };
+  }
+  rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp) {
+    option (google.api.http) = {
+      post: "/api/user/{user_id}/memories"
+      body: "*"
+    };
+  }
+  rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/memories" };
+  }
+  rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp) {
+    option (google.api.http) = {
+      delete: "/api/user/{user_id}/memories"
+      body: "*"
+    };
+  }
+  rpc GetUserMemoriesDisplay(GetUserMemoriesDisplayReq) returns (GetUserMemoriesDisplayResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/memories/display" };
+  }
+  rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp) {
+    option (google.api.http) = {
+      post: "/api/user/{user_id}/memories/feedback"
+      body: "*"
+    };
+  }
+  rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/memories/profiles" };
+  }
+  rpc RebuildUserMemoryEmbeddings(RebuildUserMemoryEmbeddingsReq) returns (RebuildUserMemoryEmbeddingsResp) {
+    option (google.api.http) = {
+      post: "/api/user/{user_id}/memories/reindex"
+      body: "*"
+    };
+  }
+  rpc SearchUserMemories(SearchUserMemoriesReq) returns (SearchUserMemoriesResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/memories/search" };
   }
 }

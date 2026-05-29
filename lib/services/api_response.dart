@@ -2,6 +2,40 @@
 class ApiResponse {
   static const _envelopeKeys = {'code', 'message', 'success', 'reason'};
 
+  static bool isSuccess(Map<String, dynamic> json) {
+    if (json['success'] == false) return false;
+    final code = json['code'];
+    if (code is int && code != 0 && code != 200) return false;
+    if (code is num && code != 0 && code != 200) return false;
+    return true;
+  }
+
+  /// 登录/注册会话：兼容 `data.{user,token}` 与信封下平铺字段。
+  static ({Map<String, dynamic> user, String token})? authSession(
+    Map<String, dynamic> json,
+  ) {
+    final data = json['data'];
+    Map<String, dynamic>? userMap;
+    String? token;
+
+    if (data is Map) {
+      final m = Map<String, dynamic>.from(data);
+      final user = m['user'];
+      if (user is Map) {
+        userMap = Map<String, dynamic>.from(user);
+      }
+      final t = m['token'];
+      if (t is String && t.isNotEmpty) token = t;
+    }
+
+    final flat = payload(json);
+    userMap ??= _mapOrNull(flat['user']);
+    token ??= _stringOrNull(flat['token']);
+
+    if (userMap == null || token == null || token.isEmpty) return null;
+    return (user: userMap, token: token);
+  }
+
   /// 业务字段（去掉 code/message/success/reason 信封层）。
   static Map<String, dynamic> payload(Map<String, dynamic> json) {
     if (json['data'] is Map<String, dynamic>) {
@@ -20,7 +54,7 @@ class ApiResponse {
     return out;
   }
 
-  /// 列表：兼容 `data:[]`、`data:{items:[]}`、proto `posts`/`notifications` 等。
+  /// 列表：兼容 `data:[]`、`data:{items:[]}`、proto 字段名。
   static List<dynamic> listOf(
     Map<String, dynamic> json, {
     List<String> keys = const [
@@ -33,6 +67,23 @@ class ApiResponse {
       'records',
       'orders',
       'plans',
+      'groups',
+      'members',
+      'gifts',
+      'friends',
+      'badges',
+      'logs',
+      'devices',
+      'images',
+      'transactions',
+      'memories',
+      'packs',
+      'outfits',
+      'followings',
+      'followers',
+      'users',
+      'history',
+      'data',
     ],
   }) {
     final direct = json['data'];
@@ -55,7 +106,7 @@ class ApiResponse {
     return const [];
   }
 
-  /// 单对象：优先 `data`（compat），否则取 payload。
+  /// 单对象：优先 `data`（compat），否则取 payload / 指定 key。
   static Map<String, dynamic> object(
     Map<String, dynamic> json, {
     List<String> keys = const [
@@ -65,6 +116,19 @@ class ApiResponse {
       'order',
       'plan',
       'record',
+      'group',
+      'message',
+      'pack',
+      'outfit',
+      'status',
+      'summary',
+      'level_info',
+      'avatar',
+      'quota',
+      'plan',
+      'order',
+      'pack',
+      'outfit',
     ],
   }) {
     final direct = json['data'];
@@ -87,8 +151,26 @@ class ApiResponse {
     return null;
   }
 
+  static bool? boolField(Map<String, dynamic> json, String key) {
+    final v = json[key] ?? payload(json)[key] ?? json['data'];
+    if (v is bool) return v;
+    if (key == 'data' && json['data'] is bool) return json['data'] as bool;
+    return null;
+  }
+
   static String? stringField(Map<String, dynamic> json, String key) {
     final v = json[key] ?? payload(json)[key] ?? json['data']?[key];
     return v?.toString();
+  }
+
+  static Map<String, dynamic>? _mapOrNull(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return null;
+  }
+
+  static String? _stringOrNull(dynamic v) {
+    if (v is String && v.isNotEmpty) return v;
+    return null;
   }
 }

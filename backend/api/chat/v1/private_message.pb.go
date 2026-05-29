@@ -598,6 +598,294 @@ func (x *ListPrivateConversationsReply) GetHasMore() bool {
 	return false
 }
 
+type BroadcastPushNotificationReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	DataJson      string                 `protobuf:"bytes,2,opt,name=data_json,json=dataJson,proto3" json:"data_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BroadcastPushNotificationReq) Reset() {
+	*x = BroadcastPushNotificationReq{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BroadcastPushNotificationReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BroadcastPushNotificationReq) ProtoMessage() {}
+
+func (x *BroadcastPushNotificationReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BroadcastPushNotificationReq.ProtoReflect.Descriptor instead.
+func (*BroadcastPushNotificationReq) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *BroadcastPushNotificationReq) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *BroadcastPushNotificationReq) GetDataJson() string {
+	if x != nil {
+		return x.DataJson
+	}
+	return ""
+}
+
+type BroadcastPushNotificationResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BroadcastPushNotificationResp) Reset() {
+	*x = BroadcastPushNotificationResp{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BroadcastPushNotificationResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BroadcastPushNotificationResp) ProtoMessage() {}
+
+func (x *BroadcastPushNotificationResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BroadcastPushNotificationResp.ProtoReflect.Descriptor instead.
+func (*BroadcastPushNotificationResp) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{9}
+}
+
+type SendPushNotificationReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	DataJson      string                 `protobuf:"bytes,3,opt,name=data_json,json=dataJson,proto3" json:"data_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendPushNotificationReq) Reset() {
+	*x = SendPushNotificationReq{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendPushNotificationReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendPushNotificationReq) ProtoMessage() {}
+
+func (x *SendPushNotificationReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendPushNotificationReq.ProtoReflect.Descriptor instead.
+func (*SendPushNotificationReq) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SendPushNotificationReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SendPushNotificationReq) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SendPushNotificationReq) GetDataJson() string {
+	if x != nil {
+		return x.DataJson
+	}
+	return ""
+}
+
+type SendPushNotificationResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Delivered     bool                   `protobuf:"varint,1,opt,name=delivered,proto3" json:"delivered,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendPushNotificationResp) Reset() {
+	*x = SendPushNotificationResp{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendPushNotificationResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendPushNotificationResp) ProtoMessage() {}
+
+func (x *SendPushNotificationResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendPushNotificationResp.ProtoReflect.Descriptor instead.
+func (*SendPushNotificationResp) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SendPushNotificationResp) GetDelivered() bool {
+	if x != nil {
+		return x.Delivered
+	}
+	return false
+}
+
+type SendBatchPushNotificationReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	DataJson      string                 `protobuf:"bytes,3,opt,name=data_json,json=dataJson,proto3" json:"data_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendBatchPushNotificationReq) Reset() {
+	*x = SendBatchPushNotificationReq{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendBatchPushNotificationReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendBatchPushNotificationReq) ProtoMessage() {}
+
+func (x *SendBatchPushNotificationReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendBatchPushNotificationReq.ProtoReflect.Descriptor instead.
+func (*SendBatchPushNotificationReq) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SendBatchPushNotificationReq) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+func (x *SendBatchPushNotificationReq) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SendBatchPushNotificationReq) GetDataJson() string {
+	if x != nil {
+		return x.DataJson
+	}
+	return ""
+}
+
+type SendBatchPushNotificationResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendBatchPushNotificationResp) Reset() {
+	*x = SendBatchPushNotificationResp{}
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendBatchPushNotificationResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendBatchPushNotificationResp) ProtoMessage() {}
+
+func (x *SendBatchPushNotificationResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_chat_v1_private_message_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendBatchPushNotificationResp.ProtoReflect.Descriptor instead.
+func (*SendBatchPushNotificationResp) Descriptor() ([]byte, []int) {
+	return file_api_chat_v1_private_message_proto_rawDescGZIP(), []int{13}
+}
+
 var File_api_chat_v1_private_message_proto protoreflect.FileDescriptor
 
 const file_api_chat_v1_private_message_proto_rawDesc = "" +
@@ -654,7 +942,26 @@ const file_api_chat_v1_private_message_proto_rawDesc = "" +
 	"\x05total\x18\x02 \x01(\x05R\x05total\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x04 \x01(\x05R\x06offset\x12\x19\n" +
-	"\bhas_more\x18\x05 \x01(\bR\ahasMore2\xaf\x03\n" +
+	"\bhas_more\x18\x05 \x01(\bR\ahasMore\"O\n" +
+	"\x1cBroadcastPushNotificationReq\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12\x1b\n" +
+	"\tdata_json\x18\x02 \x01(\tR\bdataJson\"\x1f\n" +
+	"\x1dBroadcastPushNotificationResp\"c\n" +
+	"\x17SendPushNotificationReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1b\n" +
+	"\tdata_json\x18\x03 \x01(\tR\bdataJson\"8\n" +
+	"\x18SendPushNotificationResp\x12\x1c\n" +
+	"\tdelivered\x18\x01 \x01(\bR\tdelivered\"j\n" +
+	"\x1cSendBatchPushNotificationReq\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1b\n" +
+	"\tdata_json\x18\x03 \x01(\tR\bdataJson\"\x1f\n" +
+	"\x1dSendBatchPushNotificationResp2\xc4\x03\n" +
+	"\x17PushNotificationService\x12\x92\x01\n" +
+	"\x19BroadcastPushNotification\x12%.chat.v1.BroadcastPushNotificationReq\x1a&.chat.v1.BroadcastPushNotificationResp\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/notification/broadcast\x12~\n" +
+	"\x14SendPushNotification\x12 .chat.v1.SendPushNotificationReq\x1a!.chat.v1.SendPushNotificationResp\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/notification/send\x12\x93\x01\n" +
+	"\x19SendBatchPushNotification\x12%.chat.v1.SendBatchPushNotificationReq\x1a&.chat.v1.SendBatchPushNotificationResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/notification/send-batch2\xaf\x03\n" +
 	"\x15PrivateMessageService\x12|\n" +
 	"\x12SendPrivateMessage\x12\".chat.v1.SendPrivateMessageRequest\x1a .chat.v1.SendPrivateMessageReply\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/private-messages\x12|\n" +
 	"\x13ListPrivateMessages\x12#.chat.v1.ListPrivateMessagesRequest\x1a!.chat.v1.ListPrivateMessagesReply\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/private-messages\x12\x99\x01\n" +
@@ -672,7 +979,7 @@ func file_api_chat_v1_private_message_proto_rawDescGZIP() []byte {
 	return file_api_chat_v1_private_message_proto_rawDescData
 }
 
-var file_api_chat_v1_private_message_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_api_chat_v1_private_message_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_api_chat_v1_private_message_proto_goTypes = []any{
 	(*PrivateMessage)(nil),                  // 0: chat.v1.PrivateMessage
 	(*SendPrivateMessageRequest)(nil),       // 1: chat.v1.SendPrivateMessageRequest
@@ -682,23 +989,35 @@ var file_api_chat_v1_private_message_proto_goTypes = []any{
 	(*PrivateConversation)(nil),             // 5: chat.v1.PrivateConversation
 	(*ListPrivateConversationsRequest)(nil), // 6: chat.v1.ListPrivateConversationsRequest
 	(*ListPrivateConversationsReply)(nil),   // 7: chat.v1.ListPrivateConversationsReply
+	(*BroadcastPushNotificationReq)(nil),    // 8: chat.v1.BroadcastPushNotificationReq
+	(*BroadcastPushNotificationResp)(nil),   // 9: chat.v1.BroadcastPushNotificationResp
+	(*SendPushNotificationReq)(nil),         // 10: chat.v1.SendPushNotificationReq
+	(*SendPushNotificationResp)(nil),        // 11: chat.v1.SendPushNotificationResp
+	(*SendBatchPushNotificationReq)(nil),    // 12: chat.v1.SendBatchPushNotificationReq
+	(*SendBatchPushNotificationResp)(nil),   // 13: chat.v1.SendBatchPushNotificationResp
 }
 var file_api_chat_v1_private_message_proto_depIdxs = []int32{
-	0, // 0: chat.v1.SendPrivateMessageReply.message:type_name -> chat.v1.PrivateMessage
-	0, // 1: chat.v1.ListPrivateMessagesReply.messages:type_name -> chat.v1.PrivateMessage
-	0, // 2: chat.v1.PrivateConversation.last_message:type_name -> chat.v1.PrivateMessage
-	5, // 3: chat.v1.ListPrivateConversationsReply.conversations:type_name -> chat.v1.PrivateConversation
-	1, // 4: chat.v1.PrivateMessageService.SendPrivateMessage:input_type -> chat.v1.SendPrivateMessageRequest
-	3, // 5: chat.v1.PrivateMessageService.ListPrivateMessages:input_type -> chat.v1.ListPrivateMessagesRequest
-	6, // 6: chat.v1.PrivateMessageService.ListPrivateConversations:input_type -> chat.v1.ListPrivateConversationsRequest
-	2, // 7: chat.v1.PrivateMessageService.SendPrivateMessage:output_type -> chat.v1.SendPrivateMessageReply
-	4, // 8: chat.v1.PrivateMessageService.ListPrivateMessages:output_type -> chat.v1.ListPrivateMessagesReply
-	7, // 9: chat.v1.PrivateMessageService.ListPrivateConversations:output_type -> chat.v1.ListPrivateConversationsReply
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0,  // 0: chat.v1.SendPrivateMessageReply.message:type_name -> chat.v1.PrivateMessage
+	0,  // 1: chat.v1.ListPrivateMessagesReply.messages:type_name -> chat.v1.PrivateMessage
+	0,  // 2: chat.v1.PrivateConversation.last_message:type_name -> chat.v1.PrivateMessage
+	5,  // 3: chat.v1.ListPrivateConversationsReply.conversations:type_name -> chat.v1.PrivateConversation
+	8,  // 4: chat.v1.PushNotificationService.BroadcastPushNotification:input_type -> chat.v1.BroadcastPushNotificationReq
+	10, // 5: chat.v1.PushNotificationService.SendPushNotification:input_type -> chat.v1.SendPushNotificationReq
+	12, // 6: chat.v1.PushNotificationService.SendBatchPushNotification:input_type -> chat.v1.SendBatchPushNotificationReq
+	1,  // 7: chat.v1.PrivateMessageService.SendPrivateMessage:input_type -> chat.v1.SendPrivateMessageRequest
+	3,  // 8: chat.v1.PrivateMessageService.ListPrivateMessages:input_type -> chat.v1.ListPrivateMessagesRequest
+	6,  // 9: chat.v1.PrivateMessageService.ListPrivateConversations:input_type -> chat.v1.ListPrivateConversationsRequest
+	9,  // 10: chat.v1.PushNotificationService.BroadcastPushNotification:output_type -> chat.v1.BroadcastPushNotificationResp
+	11, // 11: chat.v1.PushNotificationService.SendPushNotification:output_type -> chat.v1.SendPushNotificationResp
+	13, // 12: chat.v1.PushNotificationService.SendBatchPushNotification:output_type -> chat.v1.SendBatchPushNotificationResp
+	2,  // 13: chat.v1.PrivateMessageService.SendPrivateMessage:output_type -> chat.v1.SendPrivateMessageReply
+	4,  // 14: chat.v1.PrivateMessageService.ListPrivateMessages:output_type -> chat.v1.ListPrivateMessagesReply
+	7,  // 15: chat.v1.PrivateMessageService.ListPrivateConversations:output_type -> chat.v1.ListPrivateConversationsReply
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_api_chat_v1_private_message_proto_init() }
@@ -712,9 +1031,9 @@ func file_api_chat_v1_private_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_chat_v1_private_message_proto_rawDesc), len(file_api_chat_v1_private_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   14,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_api_chat_v1_private_message_proto_goTypes,
 		DependencyIndexes: file_api_chat_v1_private_message_proto_depIdxs,

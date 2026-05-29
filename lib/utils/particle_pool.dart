@@ -146,7 +146,7 @@ class ParticleSystem {
     for (final particle in _emittedParticles) {
       if (particle.isAlive) {
         final paint = Paint()
-          ..color = particle.color.withOpacity(particle.alpha * 0.8)
+          ..color = particle.color.withValues(alpha: particle.alpha * 0.8)
           ..style = PaintingStyle.fill;
 
         final drawPosition = center + particle.position * progress;

@@ -44,6 +44,18 @@ class ApiService {
   static VoidCallback? _onLogoutCallback;
   static Function(String)? _onTokenUpdateCallback;
 
+  static List<dynamic> _list(
+    Map<String, dynamic> json, {
+    List<String> keys = const ['data', 'items'],
+  }) =>
+      ApiResponse.listOf(json, keys: keys);
+
+  static Map<String, dynamic> _map(
+    Map<String, dynamic> json, {
+    List<String> keys = const [],
+  }) =>
+      ApiResponse.object(json, keys: keys);
+
   // 设置认证相关回调函数
   static void setAuthCallbacks({
     VoidCallback? onLogout,
@@ -117,9 +129,8 @@ class ApiService {
       method: 'POST',
       body: {'receiver_id': receiverId},
     );
-    final data = response['data'];
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) return Map<String, dynamic>.from(data);
+    final data = _map(response);
+    if (data.isNotEmpty) return data;
     return response;
   }
 
@@ -547,7 +558,14 @@ class ApiService {
           return null;
         }
 
-        final newToken = result['data']['token'] as String;
+        final newToken = ApiResponse.stringField(result, 'token') ??
+            (result['data'] is Map
+                ? (result['data'] as Map)['token'] as String?
+                : null);
+        if (newToken == null || newToken.isEmpty) {
+          _log('❌ Token刷新失败: 响应缺少 token');
+          return null;
+        }
         _currentToken = newToken;
         _onTokenUpdateCallback?.call(newToken);
         _log('✅ Token刷新成功');
@@ -604,7 +622,7 @@ class ApiService {
   static Future<User> checkUserByEmail(String email) async {
     final result = await _request('/api/user/check-email',
         method: 'POST', body: {'email': email});
-    return User.fromJson(result['data']);
+    return User.fromJson(_map(result, keys: const ['user']));
   }
 
   // 重置密码
@@ -646,23 +664,23 @@ class ApiService {
 
     final postsJson = ApiResponse.listOf(result, keys: const ['posts']);
     _log('📥 postsJson长度: ${postsJson.length}');
-    _log('📥 原始JSON: ${json.encode(result)}'); // 输出原始JSON，不做任何处理
     _log(
-        '📥 解析的帖子ID列表: ${postsJson.map((json) => json['id']).toList()}'); // 输出帖子ID列表
+        '📥 解析的帖子ID列表: ${postsJson.map((item) => item is Map ? item['id'] : item).toList()}');
 
     try {
-      final posts = postsJson.map((json) {
-        // 始终输出关键字段的调试信息
-        _log('📥 解析帖子:');
-        _log('   ID: ${json['id']}');
-        _log('   images: ${json['images']} (${json['images']?.runtimeType})');
-        _log(
-            '   topic_tags: ${json['topic_tags']} (${json['topic_tags']?.runtimeType})');
-        if (_verboseApiLog) {
-          _log('📥 完整JSON: ${_safeJsonForLog(json)}');
+      final posts = <Post>[];
+      for (final raw in postsJson) {
+        if (raw is! Map) {
+          _log('❌ 跳过非对象帖子项: ${raw.runtimeType}');
+          continue;
         }
-        return Post.fromJson(json);
-      }).toList();
+        final item = Map<String, dynamic>.from(raw);
+        if (_verboseApiLog) {
+          _log('📥 解析帖子 id=${item['id']}');
+          _log('📥 完整JSON: ${_safeJsonForLog(item)}');
+        }
+        posts.add(Post.fromJson(item));
+      }
       if (_verboseApiLog) {
         _log('📥 成功解析${posts.length}条帖子');
       }
@@ -1055,18 +1073,12 @@ class ApiService {
     final result = await _request(
       '/api/community/groups/$groupId/members?page=$page&page_size=$pageSize',
     );
-    final raw = result['data'];
-    final list = raw is List
-        ? raw
-            .map((e) => GroupMember.fromApi(
-                  Map<String, dynamic>.from(e as Map),
-                ))
-            .toList()
-        : <GroupMember>[];
-    final totalRaw = result['total'];
-    final total = totalRaw is int
-        ? totalRaw
-        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    final raw = _list(result, keys: const ['members', 'data']);
+    final list = raw
+        .whereType<Map>()
+        .map((e) => GroupMember.fromApi(Map<String, dynamic>.from(e)))
+        .toList();
+    final total = ApiResponse.intField(result, 'total') ?? list.length;
     return {'members': list, 'total': total};
   }
 
@@ -1084,26 +1096,21 @@ class ApiService {
     final result = await _request(
       '/api/community/groups/$groupId/posts?${parts.join('&')}',
     );
-    final raw = result['data'];
+    final raw = _list(result, keys: const ['posts', 'data']);
     final list = <GroupPostEntry>[];
-    if (raw is List) {
-      for (final e in raw) {
-        if (e is! Map) continue;
-        try {
-          list.add(
-            GroupPostEntry.fromApi(Map<String, dynamic>.from(e)),
-          );
-        } catch (err) {
-          if (kDebugMode) {
-            debugPrint('getGroupPosts: 跳过无法解析的条目: $err');
-          }
+    for (final e in raw) {
+      if (e is! Map) continue;
+      try {
+        list.add(
+          GroupPostEntry.fromApi(Map<String, dynamic>.from(e)),
+        );
+      } catch (err) {
+        if (kDebugMode) {
+          debugPrint('getGroupPosts: 跳过无法解析的条目: $err');
         }
       }
     }
-    final totalRaw = result['total'];
-    final total = totalRaw is int
-        ? totalRaw
-        : (totalRaw is num ? totalRaw.toInt() : list.length);
+    final total = ApiResponse.intField(result, 'total') ?? list.length;
     return {'posts': list, 'total': total};
   }
 
@@ -1165,7 +1172,7 @@ class ApiService {
       String commentId, String userId) async {
     final result = await _request('/api/comments/$commentId/like',
         method: 'POST', body: {'user_id': userId});
-    return Comment.fromJson(result['data']);
+    return Comment.fromJson(_map(result, keys: const ['comment']));
   }
 
   // ========== 用户信息管理相关API ==========
@@ -1228,11 +1235,7 @@ class ApiService {
       method: 'PUT',
       body: {'feishu_email': feishuEmail.trim()},
     );
-    final data = result['data'];
-    if (data is! Map<String, dynamic>) {
-      throw ApiException('飞书绑定响应格式异常', 500);
-    }
-    return User.fromJson(data);
+    return User.fromJson(_map(result, keys: const ['user']));
   }
 
   /// 解除飞书绑定。
@@ -1241,11 +1244,7 @@ class ApiService {
       '/api/user/feishu/bind',
       method: 'DELETE',
     );
-    final data = result['data'];
-    if (data is! Map<String, dynamic>) {
-      throw ApiException('飞书解绑响应格式异常', 500);
-    }
-    return User.fromJson(data);
+    return User.fromJson(_map(result, keys: const ['user']));
   }
 
   /// 向当前用户绑定的飞书邮箱发送测试消息卡片。
@@ -1259,11 +1258,8 @@ class ApiService {
   /// 飞书公开配置（邀请链接、说明文案，无需登录）。
   static Future<FeishuPublicConfig> getFeishuPublicConfig() async {
     final result = await _request('/api/auth/feishu/public-config');
-    final data = result['data'];
-    if (data is Map<String, dynamic>) {
-      return FeishuPublicConfig.fromJson(data);
-    }
-    return const FeishuPublicConfig();
+    final data = _map(result);
+    return FeishuPublicConfig.fromJson(data);
   }
 
   /// 获取飞书 OAuth 授权页 URL（登录页 WebView 使用）。
@@ -1272,10 +1268,7 @@ class ApiService {
     final result = await _request(
       '/api/auth/feishu/authorize-url?state=${Uri.encodeQueryComponent(state)}',
     );
-    final data = result['data'];
-    if (data is! Map<String, dynamic>) {
-      throw ApiException('飞书授权地址响应格式异常', 500);
-    }
+    final data = _map(result);
     final url = (data['authorize_url'] as String?)?.trim() ?? '';
     if (url.isEmpty) {
       throw ApiException('飞书授权地址为空', 500);
@@ -1300,10 +1293,7 @@ class ApiService {
     final result = await _request(
       '/api/auth/wechat/authorize-url?state=${Uri.encodeQueryComponent(state)}&flow=${Uri.encodeQueryComponent(flow)}',
     );
-    final data = result['data'];
-    if (data is! Map<String, dynamic>) {
-      throw ApiException('微信授权地址响应格式异常', 500);
-    }
+    final data = _map(result);
     final url = (data['authorize_url'] as String?)?.trim() ?? '';
     if (url.isEmpty) {
       throw ApiException('微信授权地址为空', 500);
@@ -1360,7 +1350,7 @@ class ApiService {
 
     final result =
         await _request('/api/user/$userId', method: 'PUT', body: body);
-    return User.fromJson(result['data']);
+    return User.fromJson(_map(result, keys: const ['user']));
   }
 
   /// 拉取与指定用户的私信历史（JWT）。`data` 为时间正序；`has_more` 表示是否还有更早消息。
@@ -1479,18 +1469,26 @@ class ApiService {
   static Future<Map<String, dynamic>> getUsers(
       {int page = 1, int pageSize = 10}) async {
     final result = await _request('/api/users?page=$page&page_size=$pageSize');
-    final usersJson = result['data'] as List;
-    final users = usersJson.map((json) => User.fromJson(json)).toList();
+    final usersJson = _list(result, keys: const ['users', 'data']);
+    final users = usersJson
+        .whereType<Map>()
+        .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
     return {
       'users': users,
-      'total': result['total'] as int,
+      'total': ApiResponse.intField(result, 'total') ?? users.length,
     };
   }
 
   // 获取用户数量
   static Future<int> getUserCount() async {
     final result = await _request('/api/users/count');
-    return result['data'] as int;
+    final count = ApiResponse.intField(result, 'count');
+    if (count != null) return count;
+    final d = result['data'];
+    if (d is int) return d;
+    if (d is num) return d.toInt();
+    return 0;
   }
 
   static Future<bool> getChatOnline(String userId) async {
@@ -1532,13 +1530,17 @@ class ApiService {
   // 获取用户VIP状态
   static Future<Map<String, dynamic>> getUserVipStatus(String userId) async {
     final result = await _request('/api/user/$userId/vip');
-    return result['data'] as Map<String, dynamic>;
+    return _map(result, keys: const ['vip_status', 'status']);
   }
 
   // 检查用户是否为VIP
   static Future<bool> checkUserVip(String userId) async {
     final result = await _request('/api/user/$userId/vip/check');
-    return result['data'] as bool;
+    final v = ApiResponse.boolField(result, 'is_vip');
+    if (v != null) return v;
+    final d = result['data'];
+    if (d is bool) return d;
+    return false;
   }
 
   // 创建VIP订单
@@ -1551,9 +1553,12 @@ class ApiService {
       createVipOrderWithUnlocks(String userId, String planId) async {
     final result = await _request('/api/user/$userId/vip/orders',
         method: 'POST', body: {'plan_id': planId});
-    final unlocks = AchievementUnlock.listFromJson(result['new_achievements']);
+    final unlocks = AchievementUnlock.listFromJson(
+      result['new_achievements'] ??
+          ApiResponse.payload(result)['new_achievements'],
+    );
     return (
-      order: VipOrder.fromJson(result['data'] as Map<String, dynamic>),
+      order: VipOrder.fromJson(_map(result, keys: const ['order'])),
       newAchievements: unlocks,
     );
   }
@@ -1563,11 +1568,14 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/vip/orders?page=$page&page_size=$pageSize');
-    final ordersJson = result['data'] as List;
-    final orders = ordersJson.map((json) => VipOrder.fromJson(json)).toList();
+    final ordersJson = _list(result, keys: const ['orders', 'data']);
+    final orders = ordersJson
+        .whereType<Map>()
+        .map((json) => VipOrder.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
     return {
       'orders': orders,
-      'total': result['total'] as int,
+      'total': ApiResponse.intField(result, 'total') ?? orders.length,
     };
   }
 
@@ -1577,17 +1585,15 @@ class ApiService {
     final result = await _request(
       '/api/user/$userId/gifts/purchase-orders?page=$page&page_size=$pageSize',
     );
-    final raw = result['data'];
-    final list = raw is List
-        ? raw
-            .whereType<Map>()
-            .map(
-                (e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
-            .toList()
-        : <GiftPurchaseOrder>[];
+    final raw = _list(result, keys: const ['orders', 'data']);
+    final list = raw
+        .whereType<Map>()
+        .map(
+            (e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
     return {
       'orders': list,
-      'total': (result['total'] as num?)?.toInt() ?? list.length,
+      'total': ApiResponse.intField(result, 'total') ?? list.length,
     };
   }
 
@@ -1622,10 +1628,7 @@ class ApiService {
   // 同步VIP状态
   static Future<Map<String, dynamic>> syncUserVipStatus(String userId) async {
     final result = await _request('/api/user/$userId/vip/sync', method: 'POST');
-    final data = result['data'];
-    if (data is Map<String, dynamic>) return data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    return <String, dynamic>{};
+    return _map(result, keys: const ['vip_status', 'status']);
   }
 
   // ========== VIP套餐相关API ==========
@@ -1633,14 +1636,17 @@ class ApiService {
   // 获取VIP套餐列表
   static Future<List<VipPlan>> getVipPlans() async {
     final result = await _request('/api/vip/plans');
-    final plansJson = result['data'] as List;
-    return plansJson.map((json) => VipPlan.fromJson(json)).toList();
+    final plansJson = _list(result, keys: const ['plans', 'data']);
+    return plansJson
+        .whereType<Map>()
+        .map((json) => VipPlan.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
   }
 
   // 获取VIP套餐详情
   static Future<VipPlan> getVipPlan(String planId) async {
     final result = await _request('/api/vip/plans/$planId');
-    return VipPlan.fromJson(result['data']);
+    return VipPlan.fromJson(_map(result, keys: const ['plan']));
   }
 
   // 创建VIP套餐（管理员功能）
@@ -1656,7 +1662,7 @@ class ApiService {
       'price': price,
       'duration_days': durationDays,
     });
-    return VipPlan.fromJson(result['data']);
+    return VipPlan.fromJson(_map(result, keys: const ['plan']));
   }
 
   // ========== 钱包相关API ==========
@@ -1678,16 +1684,10 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/transactions?page=$page&page_size=$pageSize');
-
-    // 如果 result['data'] 为 null，返回空列表
-    if (result['data'] == null) {
-      return {
-        'data': [],
-        'total': result['total'] ?? 0,
-      };
-    }
-
-    return result;
+    return {
+      'data': _list(result, keys: const ['transactions', 'data']),
+      'total': ApiResponse.intField(result, 'total') ?? 0,
+    };
   }
 
   // 获取单个交易记录
@@ -1742,7 +1742,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
         if (result['success'] == true) {
-          return result['data'] as Map<String, dynamic>;
+          return _map(result);
         }
         throw ApiException(
             result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
@@ -1808,8 +1808,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final result = json.decode(response.body) as Map<String, dynamic>;
         if (result['success'] == true) {
-          final imageInfo = result['data'] as Map<String, dynamic>;
-          return imageInfo;
+          return _map(result);
         }
         throw ApiException(
             result['message'] ?? '上传失败', result['code'] ?? response.statusCode);
@@ -1880,13 +1879,14 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/following?page=$page&page_size=$pageSize');
-    final followingsJson = result['data'] as List;
+    final followingsJson = _list(result, keys: const ['followings', 'data']);
     final followings = followingsJson
-        .map((json) => User.fromJson(json as Map<String, dynamic>))
+        .whereType<Map>()
+        .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
         .toList();
     return {
       'followings': followings,
-      'total': result['total'] as int,
+      'total': ApiResponse.intField(result, 'total') ?? followings.length,
     };
   }
 
@@ -1895,13 +1895,14 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/followers?page=$page&page_size=$pageSize');
-    final followersJson = result['data'] as List;
+    final followersJson = _list(result, keys: const ['followers', 'data']);
     final followers = followersJson
-        .map((json) => User.fromJson(json as Map<String, dynamic>))
+        .whereType<Map>()
+        .map((json) => User.fromJson(Map<String, dynamic>.from(json)))
         .toList();
     return {
       'followers': followers,
-      'total': result['total'] as int,
+      'total': ApiResponse.intField(result, 'total') ?? followers.length,
     };
   }
 
@@ -1909,14 +1910,18 @@ class ApiService {
   static Future<bool> checkFollow(String followerId, String followingId) async {
     final result =
         await _request('/api/user/$followerId/follow/$followingId/check');
-    return result['data'] as bool;
+    final v = ApiResponse.boolField(result, 'is_following');
+    if (v != null) return v;
+    final d = result['data'];
+    if (d is bool) return d;
+    return false;
   }
 
   // ========== 好友（申请制）==========
 
   static Future<List<User>> getFriends(String userId) async {
     final result = await _request('/api/user/$userId/friends');
-    final raw = ApiResponse.listOf(result, keys: const ['friends', 'data']);
+    final raw = ApiResponse.listOf(result, keys: const ['friends', 'data', 'users']);
     return raw
         .whereType<Map>()
         .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
@@ -2037,8 +2042,8 @@ class ApiService {
       String userId, String otherUserId) async {
     final result =
         await _request('/api/user/$userId/friends/status/$otherUserId');
-    final data = result['data'] as Map<String, dynamic>;
-    return data['relation'] as String;
+    final data = _map(result);
+    return (data['relation'] as String?) ?? '';
   }
 
   // ========== 签到等级系统相关API ==========
@@ -2051,8 +2056,12 @@ class ApiService {
 
   static Future<CheckInResult> checkInWithUnlocks(String userId) async {
     final result = await _request('/api/user/$userId/check-in', method: 'POST');
-    final data = result['data'] as Map<String, dynamic>;
-    final unlocks = AchievementUnlock.listFromJson(data['new_achievements']);
+    final data = _map(result, keys: const ['check_in', 'status']);
+    final unlocks = AchievementUnlock.listFromJson(
+      data['new_achievements'] ??
+          result['new_achievements'] ??
+          ApiResponse.payload(result)['new_achievements'],
+    );
     return CheckInResult(
       data: CheckInData.fromJson(data),
       newAchievements: unlocks,
@@ -2173,16 +2182,22 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/login-history?page=$page&page_size=$pageSize');
-    final historyJson = result['data'] as List;
-    return historyJson.map((json) => json as Map<String, dynamic>).toList();
+    final historyJson = _list(result, keys: const ['history', 'records', 'data']);
+    return historyJson
+        .whereType<Map>()
+        .map((json) => Map<String, dynamic>.from(json))
+        .toList();
   }
 
   // 获取登录设备列表
   static Future<List<Map<String, dynamic>>> getLoginDevices(
       String userId) async {
     final result = await _request('/api/user/$userId/devices');
-    final devicesJson = result['data'] as List;
-    return devicesJson.map((json) => json as Map<String, dynamic>).toList();
+    final devicesJson = _list(result, keys: const ['devices', 'data']);
+    return devicesJson
+        .whereType<Map>()
+        .map((json) => Map<String, dynamic>.from(json))
+        .toList();
   }
 
   // 登出指定设备
@@ -2203,7 +2218,7 @@ class ApiService {
 
     final result = await _request('/api/user/$userId/device-info',
         method: 'PUT', body: body);
-    return result['data'] as Map<String, dynamic>;
+    return _map(result);
   }
 
   // ========== 两步验证相关API ==========
@@ -2212,7 +2227,7 @@ class ApiService {
   static Future<Map<String, dynamic>> enableTwoFactorAuth(String userId) async {
     final result =
         await _request('/api/user/$userId/2fa/enable', method: 'POST');
-    return result['data'] as Map<String, dynamic>;
+    return _map(result);
   }
 
   // 验证两步验证码
@@ -2220,7 +2235,7 @@ class ApiService {
       String userId, String code) async {
     final result = await _request('/api/user/$userId/2fa/verify',
         method: 'POST', body: {'code': code});
-    return result['data'] as Map<String, dynamic>;
+    return _map(result);
   }
 
   // 禁用两步验证
@@ -2232,7 +2247,7 @@ class ApiService {
   // 获取两步验证状态
   static Future<Map<String, dynamic>> getTwoFactorStatus(String userId) async {
     final result = await _request('/api/user/$userId/2fa/status');
-    return result['data'] as Map<String, dynamic>;
+    return _map(result);
   }
 
   // 重新生成两步验证密钥
@@ -2240,6 +2255,6 @@ class ApiService {
       String userId, String code) async {
     final result = await _request('/api/user/$userId/2fa/regenerate',
         method: 'POST', body: {'code': code});
-    return result['data'] as Map<String, dynamic>;
+    return _map(result);
   }
 }

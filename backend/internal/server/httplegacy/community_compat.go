@@ -13,7 +13,7 @@ import (
 )
 
 // PilotNativeCommunityCompatRoutes 社群域 HTTP（internal/service/community）。
-const PilotNativeCommunityCompatRoutes = 11
+const PilotNativeCommunityCompatRoutes = 7
 
 func RegisterCommunityCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	if srv == nil || svcCtx == nil || svcCtx.CommunityApp == nil {

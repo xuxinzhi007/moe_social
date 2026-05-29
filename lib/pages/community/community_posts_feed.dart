@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../utils/moe_error_copy.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_search_bar.dart';
 import '../../widgets/post_card.dart';
@@ -36,7 +39,7 @@ enum _VisualKind { all, image, handDraw, text }
 class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
   List<Post> _posts = [];
   bool _loading = true;
-  String? _error;
+  Object? _loadError;
   String _searchQuery = '';
   _VisualKind _visualKind = _VisualKind.all;
 
@@ -54,15 +57,11 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
     }
   }
 
-  String _err(Object e) {
-    if (e is ApiException) return e.message;
-    return '加载失败，请稍后重试';
-  }
 
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _loadError = null;
     });
     try {
       final viewer = AuthService.currentUser;
@@ -82,7 +81,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _err(e);
+        _loadError = e;
       });
     }
   }
@@ -131,23 +130,17 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
     if (_loading) {
-      return const Center(child: MoeLoading());
+      return Center(child: MoeLoading(color: moe.primary));
     }
-    if (_error != null) {
+    if (_loadError != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.cloud_off_rounded, size: 48, color: Colors.grey[400]),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(onPressed: _load, child: const Text('重试')),
-            ],
-          ),
+        child: MoeErrorState.fromError(
+          _loadError,
+          scene: MoeErrorScene.community,
+          variant: MoeErrorVariant.plain,
+          onRetry: _load,
         ),
       );
     }
@@ -169,7 +162,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
         if (widget.showVisualKindRow) _buildVisualRow(),
         Expanded(
           child: RefreshIndicator(
-            color: const Color(0xFF7F7FD5),
+            color: moe.primary,
             onRefresh: _load,
             child: list.isEmpty
                 ? ListView(

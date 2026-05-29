@@ -1,8 +1,10 @@
 # 存量 HTTP 接口迁移评估
 
-> **状态快照更新：2026-05-29**（P3 + P5 完成；P6 契约迁移 ~80%）  
-> **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  
+> **状态快照更新：2026-05-27**（P3 + P5 + P6 完成；**D2 ~83%**；P0/P1 审计 100%）  
+> **活跃路由数以** [kratos-migration-status.md §D2](./kratos-migration-status.md) **为准**（proto **227** · compat **45**）。  
+> 下文「263」等为 **P3 历史基线**，勿用于当前进度汇报。  
 > **P6 契约 SSOT**：[kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md)  
+> **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  
 > SSOT 架构：[kratos-migration.md](./kratos-migration.md) · 新接口：[new-api-kratos.md](./new-api-kratos.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)  
 > §0 与状态板数字不一致时，**以 `route_stats.go` + `make check` 为准**，并同步两处文档。
 
@@ -10,42 +12,41 @@
 
 ## 0. 状态快照（Now → Next）
 
-### 0.1 当前状态（Latest · 2026-05-29）
+### 0.1 当前状态（Latest · 2026-05-27）
 
-**阶段名：P3 + P4 + P5 完成 — 存量 HTTP 运行时迁移已收口；P6 契约 SSOT 进行中**
+**阶段名：P3–P6 运行时/契约已收口；D2 proto HTTP ~83%；P0/P1 审计 100%**
 
 | 维度 | 状态 | 说明 |
 |------|------|------|
-| **传输 / 路由注册** | ✅ | compat **263**；`native_gen=0`；`bridge=2` |
-| **实现层** | ✅ | `*_compat.go` → `internal/service/*App` → `internal/biz` |
-| **`api/internal/logic`** | ✅ **0** 文件 | 已物理删除；`make audit-logic-orphans` 通过 |
-| **`rpc/internal/logic`** | ✅ **0** 文件 | P5-B；`moe.proto` 无 `service Super` |
-| **生产零 go-zero** | ✅ | P5-D：`go list -deps ./cmd/moe-social` 无 go-zero |
-| **工程验收** | ✅ | `make check` · `/migration percent=100` |
+| **传输 / 路由注册** | ✅ | proto **227** · compat **45** · bridge **3** |
+| **实现层** | ✅ | proto/grpc 适配 + 余量 `*_compat.go` → `internal/service` → `biz` |
+| **`api/internal/logic`** | ✅ **0** 文件 | 已物理删除 |
+| **`rpc/internal/logic`** | ✅ **0** 文件 | P5-B |
+| **生产零 go-zero** | ✅ | P5-D |
+| **工程验收** | ✅ | `go build ./...` · `/migration percent=100` |
 
 **代码锚点**
 
 ```text
-backend/internal/server/http_compat.go       # compat 编排入口
+backend/internal/server/http_proto.go          # Register*HTTPServer（19 次）
 backend/internal/server/httplegacy/route_stats.go
-backend/internal/server/httplegacy/routes_native_gen.go  # nativeDomainRouteCount = 0
-backend/api/internal/logic/                  # .gitkeep（已退役）
+backend/internal/server/httplegacy/routes_native_gen.go  # nativeDomainRouteCount = 227
 ```
 
-> **2026-05-29**：16 域已迁入 `http_proto.go`（`Register*HTTPServer`）；上表 compat 文件中部分路由已摘除，**实际活跃 compat 路由数 < 263**。以 `route_stats.go` + `/migration` 为准。
+> 历史 P3 口径 compat **263** 见 §2；当前活跃 compat **45** 以 `route_stats.go` 各文件常量为准。
 
 ---
 
-### 0.2 下一步（维护向）
+### 0.2 下一步（维护向 · 2026-05-27）
 
-HTTP **运行时**迁移已收口；主轨道为 **P6 契约**（defs → 域 proto）。见 [kratos-migration-status.md §下一步](./kratos-migration-status.md#下一步next)：
+主轨道为 **D2 余量 → D4 清理**。见 [kratos-migration-status.md §下一步](./kratos-migration-status.md#下一步next)：
 
 | 优先级 | 任务 |
 |--------|------|
-| **0** | P6 收尾：`platform_compat` GW bridge · `vip/admin_rpc` · defs 注释/删除 |
-| 1 | grpc 冒烟 notify / chat / vip |
-| 2 | 分体 api/rpc 联调（若需要） |
-| 3 | 可选：从 `go.mod` 移除 go-zero（需废弃 hybrid 或拆 module） |
+| 1 | **P2**：`platform` / `community` / `chat` / `ai` / `checkin` compat → proto HTTP |
+| 2 | 图片 upload multipart → 专用 transport 或 proto |
+| 3 | **D4**：删 `httplegacy` 死代码 · `apilegacy` gw · `rpc/pb/moe` runtime 引用 |
+| 4 | 分体 api/rpc 联调（若需要） |
 
 新能力：**只**走 [new-api-kratos.md](./new-api-kratos.md)（域 proto + `internal/service`）。
 

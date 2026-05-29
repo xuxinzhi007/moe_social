@@ -68,6 +68,49 @@ message ListPrivateConversationsReply {
   bool has_more = 5;
 }
 
+message BroadcastPushNotificationReq {
+  string type = 1;
+  string data_json = 2;
+}
+
+message BroadcastPushNotificationResp {}
+
+message SendPushNotificationReq {
+  string user_id = 1;
+  string type = 2;
+  string data_json = 3;
+}
+
+message SendPushNotificationResp {
+  bool delivered = 1;
+}
+
+message SendBatchPushNotificationReq {
+  repeated string user_ids = 1;
+  string type = 2;
+  string data_json = 3;
+}
+
+message SendBatchPushNotificationResp {}
+
+service PushNotificationService {
+  rpc BroadcastPushNotification(BroadcastPushNotificationReq) returns (BroadcastPushNotificationResp) {
+    option (google.api.http) = {
+      post: "/api/notification/broadcast"
+      body: "*"
+    };
+  }
+  rpc SendPushNotification(SendPushNotificationReq) returns (SendPushNotificationResp) {
+    option (google.api.http) = { post: "/api/notification/send" body: "*" };
+  }
+  rpc SendBatchPushNotification(SendBatchPushNotificationReq) returns (SendBatchPushNotificationResp) {
+    option (google.api.http) = {
+      post: "/api/notification/send-batch"
+      body: "*"
+    };
+  }
+}
+
 service PrivateMessageService {
   rpc SendPrivateMessage(SendPrivateMessageRequest) returns (SendPrivateMessageReply) {
     option (google.api.http) = { post: "/api/private-messages" body: "*" };

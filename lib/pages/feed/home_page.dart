@@ -21,6 +21,8 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../providers/main_nav_controller.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -32,6 +34,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   List<Post> _allPosts = [];
   List<Post> _displayPosts = [];
   bool _isLoading = false;
@@ -395,6 +399,7 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: MoeTheme.of(context).pageBackground,
       body: RefreshIndicator(
         onRefresh: () => _fetchPosts(resetContent: false),
         color: Theme.of(context).primaryColor,
@@ -411,8 +416,12 @@ class _HomePageState extends State<HomePage>
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 10)),
             SliverToBoxAdapter(
-              child: QuickActionsGrid(
-                  onCreatePostSuccess: _handleCreatePostResult),
+              child: FadeInUp(
+                duration: MoeTokens.motionFadeDuration,
+                delay: MoeTokens.motionStaggerStep,
+                child: QuickActionsGrid(
+                    onCreatePostSuccess: _handleCreatePostResult),
+              ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
             // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
@@ -915,7 +924,7 @@ class _HomePageState extends State<HomePage>
             icon: const Icon(Icons.forum_rounded, size: 20),
             label: const Text('去兴趣社区'),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF7F7FD5),
+              backgroundColor: _moe.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -931,8 +940,8 @@ class _HomePageState extends State<HomePage>
             icon: const Icon(Icons.explore_rounded, size: 20),
             label: const Text('去找同好'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF7F7FD5),
-              side: const BorderSide(color: Color(0xFF7F7FD5)),
+              foregroundColor: _moe.primary,
+              side: BorderSide(color: _moe.primary),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -949,7 +958,7 @@ class _HomePageState extends State<HomePage>
       icon: Icons.auto_awesome_rounded,
       title: inTopic ? '#$topicName 下暂时还没有动态' : '这里还是空的耶',
       subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去探索页用话题认识同好。',
-      accentColor: const Color(0xFF7F7FD5),
+      accentColor: _moe.primary,
       action: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
@@ -957,7 +966,7 @@ class _HomePageState extends State<HomePage>
           icon: const Icon(Icons.edit_rounded, size: 20),
           label: const Text('发布动态'),
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF7F7FD5),
+            backgroundColor: _moe.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
@@ -973,8 +982,8 @@ class _HomePageState extends State<HomePage>
           icon: const Icon(Icons.favorite_rounded, size: 20),
           label: const Text('去找同好'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF7F7FD5),
-            side: const BorderSide(color: Color(0xFF7F7FD5)),
+            foregroundColor: _moe.primary,
+            side: BorderSide(color: _moe.primary),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
@@ -1004,7 +1013,7 @@ class _HomePageState extends State<HomePage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+              color: _moe.primary.withValues(alpha: 0.1),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -1121,24 +1130,23 @@ class _HomePageState extends State<HomePage>
               decoration: BoxDecoration(
                 color: (_isLoadingMore || _isRefreshing)
                     ? Colors.grey.withValues(alpha: 0.1)
-                    : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                    : _moe.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: (_isLoadingMore || _isRefreshing)
                       ? Colors.grey.withValues(alpha: 0.2)
-                      : const Color(0xFF7F7FD5).withValues(alpha: 0.26),
+                      : _moe.primary.withValues(alpha: 0.26),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.arrow_downward_rounded,
-                      color: Color(0xFF7F7FD5), size: 18),
+                  Icon(Icons.arrow_downward_rounded, color: _moe.primary, size: 18),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     '点击加载更多',
                     style: TextStyle(
-                      color: Color(0xFF7F7FD5),
+                      color: _moe.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1156,16 +1164,17 @@ class _HomePageState extends State<HomePage>
   Widget _buildBottomStateCapsule({
     required Widget icon,
     required String label,
-    Color accentColor = const Color(0xFF7F7FD5),
+    Color? accentColor,
     Widget? trailing,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    final accent = accentColor ?? _moe.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.12),
+        color: accent.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

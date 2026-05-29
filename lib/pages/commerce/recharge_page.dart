@@ -4,6 +4,8 @@ import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/widgets/custom_button.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 
 class RechargePage extends StatefulWidget {
   const RechargePage({super.key});
@@ -13,6 +15,8 @@ class RechargePage extends StatefulWidget {
 }
 
 class _RechargePageState extends State<RechargePage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController(text: '余额充值');
   bool _isLoading = false;
@@ -22,9 +26,9 @@ class _RechargePageState extends State<RechargePage> {
   final List<int> _presetAmounts = [10, 50, 100, 200, 500, 1000];
   int? _selectedAmount;
 
-  // Moe 风格配色
-  final Color _primaryColor = const Color(0xFF7F7FD5);
-  final Color _accentColor = const Color(0xFF86A8E7);
+  // Moe 风格配色（build 时读取，避免在字段初始化器里访问 context）
+  Color get _primaryColor => _moe.primary;
+  Color get _accentColor => MoeTokens.secondary;
 
   @override
   void initState() {
@@ -108,7 +112,7 @@ class _RechargePageState extends State<RechargePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _moe.pageBackground,
       appBar: AppBar(
         title: const Text('余额充值', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         centerTitle: true,
@@ -136,7 +140,7 @@ class _RechargePageState extends State<RechargePage> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: _primaryColor.withOpacity(0.3),
+                      color: _primaryColor.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -148,7 +152,7 @@ class _RechargePageState extends State<RechargePage> {
                       '当前余额',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -218,19 +222,19 @@ class _RechargePageState extends State<RechargePage> {
                               color: isSelected ? _primaryColor : Colors.white,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isSelected ? Colors.transparent : Colors.grey.withOpacity(0.1),
+                                color: isSelected ? Colors.transparent : Colors.grey.withValues(alpha: 0.1),
                                 width: 1,
                               ),
                               boxShadow: [
                                 if (isSelected)
                                   BoxShadow(
-                                    color: _primaryColor.withOpacity(0.3),
+                                    color: _primaryColor.withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   )
                                 else
                                   BoxShadow(
-                                    color: Colors.grey.withOpacity(0.05),
+                                    color: Colors.grey.withValues(alpha: 0.05),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
                                   ),
@@ -277,7 +281,7 @@ class _RechargePageState extends State<RechargePage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                          color: _moe.primary.withValues(alpha: 0.08),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -319,7 +323,7 @@ class _RechargePageState extends State<RechargePage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                      color: _moe.primary.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -355,7 +359,7 @@ class _RechargePageState extends State<RechargePage> {
                 fontSize: 18,
                 borderRadius: BorderRadius.circular(28),
                 backgroundColor: _primaryColor, // 使用薰衣草色
-                shadowColor: _primaryColor.withOpacity(0.4),
+                shadowColor: _primaryColor.withValues(alpha: 0.4),
                 elevation: 8,
               ),
             ),
@@ -367,9 +371,9 @@ class _RechargePageState extends State<RechargePage> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF9C4).withOpacity(0.3), // 浅黄色背景
+                  color: const Color(0xFFFFF9C4).withValues(alpha: 0.3), // 浅黄色背景
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFFE082).withOpacity(0.5)),
+                  border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

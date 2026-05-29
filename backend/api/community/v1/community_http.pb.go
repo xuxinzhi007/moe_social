@@ -20,15 +20,29 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationCommunityCreateGroup = "/community.v1.Community/CreateGroup"
+const OperationCommunityCreateGroupPost = "/community.v1.Community/CreateGroupPost"
+const OperationCommunityDeleteGroup = "/community.v1.Community/DeleteGroup"
 const OperationCommunityGetGroup = "/community.v1.Community/GetGroup"
+const OperationCommunityGetGroupMembers = "/community.v1.Community/GetGroupMembers"
+const OperationCommunityGetGroupPosts = "/community.v1.Community/GetGroupPosts"
 const OperationCommunityGetGroups = "/community.v1.Community/GetGroups"
+const OperationCommunityGetUserGroups = "/community.v1.Community/GetUserGroups"
 const OperationCommunityJoinGroup = "/community.v1.Community/JoinGroup"
+const OperationCommunityLeaveGroup = "/community.v1.Community/LeaveGroup"
+const OperationCommunityUpdateGroup = "/community.v1.Community/UpdateGroup"
 
 type CommunityHTTPServer interface {
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupReply, error)
+	CreateGroupPost(context.Context, *CreateGroupPostRequest) (*CreateGroupPostReply, error)
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupReply, error)
 	GetGroup(context.Context, *GetGroupRequest) (*GetGroupReply, error)
+	GetGroupMembers(context.Context, *GetGroupMembersRequest) (*GetGroupMembersReply, error)
+	GetGroupPosts(context.Context, *GetGroupPostsRequest) (*GetGroupPostsReply, error)
 	GetGroups(context.Context, *GetGroupsRequest) (*GetGroupsReply, error)
+	GetUserGroups(context.Context, *GetUserGroupsRequest) (*GetUserGroupsReply, error)
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupReply, error)
+	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupReply, error)
+	UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupReply, error)
 }
 
 func RegisterCommunityHTTPServer(s *http.Server, srv CommunityHTTPServer) {
@@ -37,6 +51,13 @@ func RegisterCommunityHTTPServer(s *http.Server, srv CommunityHTTPServer) {
 	r.GET("/api/community/groups/{group_id}", _Community_GetGroup0_HTTP_Handler(srv))
 	r.POST("/api/community/groups", _Community_CreateGroup0_HTTP_Handler(srv))
 	r.POST("/api/community/groups/{group_id}/join", _Community_JoinGroup0_HTTP_Handler(srv))
+	r.PUT("/api/community/groups/{group_id}", _Community_UpdateGroup0_HTTP_Handler(srv))
+	r.DELETE("/api/community/groups/{group_id}", _Community_DeleteGroup0_HTTP_Handler(srv))
+	r.POST("/api/community/groups/{group_id}/leave", _Community_LeaveGroup0_HTTP_Handler(srv))
+	r.GET("/api/community/groups/{group_id}/members", _Community_GetGroupMembers0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/community/groups", _Community_GetUserGroups0_HTTP_Handler(srv))
+	r.POST("/api/community/groups/{group_id}/posts", _Community_CreateGroupPost0_HTTP_Handler(srv))
+	r.GET("/api/community/groups/{group_id}/posts", _Community_GetGroupPosts0_HTTP_Handler(srv))
 }
 
 func _Community_GetGroups0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
@@ -127,11 +148,181 @@ func _Community_JoinGroup0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.C
 	}
 }
 
+func _Community_UpdateGroup0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateGroupRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityUpdateGroup)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateGroup(ctx, req.(*UpdateGroupRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateGroupReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_DeleteGroup0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteGroupRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityDeleteGroup)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteGroup(ctx, req.(*DeleteGroupRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteGroupReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_LeaveGroup0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LeaveGroupRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityLeaveGroup)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.LeaveGroup(ctx, req.(*LeaveGroupRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LeaveGroupReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_GetGroupMembers0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetGroupMembersRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityGetGroupMembers)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetGroupMembers(ctx, req.(*GetGroupMembersRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetGroupMembersReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_GetUserGroups0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserGroupsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityGetUserGroups)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserGroups(ctx, req.(*GetUserGroupsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserGroupsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_CreateGroupPost0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CreateGroupPostRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityCreateGroupPost)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CreateGroupPost(ctx, req.(*CreateGroupPostRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CreateGroupPostReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Community_GetGroupPosts0_HTTP_Handler(srv CommunityHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetGroupPostsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCommunityGetGroupPosts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetGroupPosts(ctx, req.(*GetGroupPostsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetGroupPostsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 type CommunityHTTPClient interface {
 	CreateGroup(ctx context.Context, req *CreateGroupRequest, opts ...http.CallOption) (rsp *CreateGroupReply, err error)
+	CreateGroupPost(ctx context.Context, req *CreateGroupPostRequest, opts ...http.CallOption) (rsp *CreateGroupPostReply, err error)
+	DeleteGroup(ctx context.Context, req *DeleteGroupRequest, opts ...http.CallOption) (rsp *DeleteGroupReply, err error)
 	GetGroup(ctx context.Context, req *GetGroupRequest, opts ...http.CallOption) (rsp *GetGroupReply, err error)
+	GetGroupMembers(ctx context.Context, req *GetGroupMembersRequest, opts ...http.CallOption) (rsp *GetGroupMembersReply, err error)
+	GetGroupPosts(ctx context.Context, req *GetGroupPostsRequest, opts ...http.CallOption) (rsp *GetGroupPostsReply, err error)
 	GetGroups(ctx context.Context, req *GetGroupsRequest, opts ...http.CallOption) (rsp *GetGroupsReply, err error)
+	GetUserGroups(ctx context.Context, req *GetUserGroupsRequest, opts ...http.CallOption) (rsp *GetUserGroupsReply, err error)
 	JoinGroup(ctx context.Context, req *JoinGroupRequest, opts ...http.CallOption) (rsp *JoinGroupReply, err error)
+	LeaveGroup(ctx context.Context, req *LeaveGroupRequest, opts ...http.CallOption) (rsp *LeaveGroupReply, err error)
+	UpdateGroup(ctx context.Context, req *UpdateGroupRequest, opts ...http.CallOption) (rsp *UpdateGroupReply, err error)
 }
 
 type CommunityHTTPClientImpl struct {
@@ -155,11 +346,63 @@ func (c *CommunityHTTPClientImpl) CreateGroup(ctx context.Context, in *CreateGro
 	return &out, nil
 }
 
+func (c *CommunityHTTPClientImpl) CreateGroupPost(ctx context.Context, in *CreateGroupPostRequest, opts ...http.CallOption) (*CreateGroupPostReply, error) {
+	var out CreateGroupPostReply
+	pattern := "/api/community/groups/{group_id}/posts"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCommunityCreateGroupPost))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CommunityHTTPClientImpl) DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...http.CallOption) (*DeleteGroupReply, error) {
+	var out DeleteGroupReply
+	pattern := "/api/community/groups/{group_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCommunityDeleteGroup))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CommunityHTTPClientImpl) GetGroup(ctx context.Context, in *GetGroupRequest, opts ...http.CallOption) (*GetGroupReply, error) {
 	var out GetGroupReply
 	pattern := "/api/community/groups/{group_id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationCommunityGetGroup))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CommunityHTTPClientImpl) GetGroupMembers(ctx context.Context, in *GetGroupMembersRequest, opts ...http.CallOption) (*GetGroupMembersReply, error) {
+	var out GetGroupMembersReply
+	pattern := "/api/community/groups/{group_id}/members"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCommunityGetGroupMembers))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CommunityHTTPClientImpl) GetGroupPosts(ctx context.Context, in *GetGroupPostsRequest, opts ...http.CallOption) (*GetGroupPostsReply, error) {
+	var out GetGroupPostsReply
+	pattern := "/api/community/groups/{group_id}/posts"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCommunityGetGroupPosts))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -181,6 +424,19 @@ func (c *CommunityHTTPClientImpl) GetGroups(ctx context.Context, in *GetGroupsRe
 	return &out, nil
 }
 
+func (c *CommunityHTTPClientImpl) GetUserGroups(ctx context.Context, in *GetUserGroupsRequest, opts ...http.CallOption) (*GetUserGroupsReply, error) {
+	var out GetUserGroupsReply
+	pattern := "/api/user/{user_id}/community/groups"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCommunityGetUserGroups))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CommunityHTTPClientImpl) JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...http.CallOption) (*JoinGroupReply, error) {
 	var out JoinGroupReply
 	pattern := "/api/community/groups/{group_id}/join"
@@ -188,6 +444,32 @@ func (c *CommunityHTTPClientImpl) JoinGroup(ctx context.Context, in *JoinGroupRe
 	opts = append(opts, http.Operation(OperationCommunityJoinGroup))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CommunityHTTPClientImpl) LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...http.CallOption) (*LeaveGroupReply, error) {
+	var out LeaveGroupReply
+	pattern := "/api/community/groups/{group_id}/leave"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCommunityLeaveGroup))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CommunityHTTPClientImpl) UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...http.CallOption) (*UpdateGroupReply, error) {
+	var out UpdateGroupReply
+	pattern := "/api/community/groups/{group_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCommunityUpdateGroup))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

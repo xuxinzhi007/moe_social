@@ -15,7 +15,7 @@
 | Deploy 本机构建 / Flutter 任务 | ✅ `zsh -l` | ✅ Git Bash 或 cmd | 见 `deploy-platform.md` |
 | `make build-linux` | ✅ | ✅（建议 Git Bash） | 交叉编 Linux |
 | `make gen` / `gen-api` / `gen-rpc` | ✅ | ✅ | 需安装 goctl |
-| `make gen-swagger` | ✅ | ⚠️ | 依赖 `command -v`（Mac/Linux 原生；Win 用 Git Bash） |
+| `make gen-swagger` | ✅ | ⚠️ | 输出 `backend/openapi.yaml`（OpenAPI 3.0.3）；详见 [openapi-apifox.md](./openapi-apifox.md) |
 | `make dev-docs` | ✅ `python3` | ✅ `python`/`py` | 需 Python |
 | Flutter `flutter run` / `build macos` | ✅ | ✅ | 各平台目录已有 |
 

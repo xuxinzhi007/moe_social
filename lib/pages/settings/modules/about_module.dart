@@ -45,13 +45,6 @@ class AboutModule extends StatelessWidget {
             color: Colors.indigo,
             onTap: () => _showUserAgreementDialog(context),
           ),
-          MoeMenuItem(
-            icon: Icons.star_rounded,
-            title: '给我们评分',
-            subtitle: '在应用商店给我们好评',
-            color: Colors.amber,
-            onTap: () => _showRateAppDialog(context),
-          ),
         ],
       ),
     );
@@ -116,32 +109,6 @@ class AboutModule extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('我已了解'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRateAppDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('给我们评分'),
-        content: const Text(
-          '如果你喜欢 Moe Social，请在应用商店给我们好评，这对我们非常重要！',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('稍后再说'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // 这里应该跳转到应用商店评分页面
-              MoeToast.info(context, '功能开发中');
-            },
-            child: const Text('去评分'),
           ),
         ],
       ),

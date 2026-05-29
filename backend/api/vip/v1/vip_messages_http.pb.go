@@ -19,14 +19,159 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationVipPlansCreateVipPlan = "/vip.v1.VipPlans/CreateVipPlan"
+const OperationVipPlansGetVipPlan = "/vip.v1.VipPlans/GetVipPlan"
+const OperationVipPlansGetVipPlans = "/vip.v1.VipPlans/GetVipPlans"
+
+type VipPlansHTTPServer interface {
+	CreateVipPlan(context.Context, *CreateVipPlanReq) (*CreateVipPlanResp, error)
+	GetVipPlan(context.Context, *GetVipPlanReq) (*GetVipPlanResp, error)
+	GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error)
+}
+
+func RegisterVipPlansHTTPServer(s *http.Server, srv VipPlansHTTPServer) {
+	r := s.Route("/")
+	r.POST("/api/vip/plans", _VipPlans_CreateVipPlan0_HTTP_Handler(srv))
+	r.GET("/api/vip/plans/{plan_id}", _VipPlans_GetVipPlan0_HTTP_Handler(srv))
+	r.GET("/api/vip/plans", _VipPlans_GetVipPlans0_HTTP_Handler(srv))
+}
+
+func _VipPlans_CreateVipPlan0_HTTP_Handler(srv VipPlansHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CreateVipPlanReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipPlansCreateVipPlan)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CreateVipPlan(ctx, req.(*CreateVipPlanReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CreateVipPlanResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipPlans_GetVipPlan0_HTTP_Handler(srv VipPlansHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetVipPlanReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipPlansGetVipPlan)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetVipPlan(ctx, req.(*GetVipPlanReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetVipPlanResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipPlans_GetVipPlans0_HTTP_Handler(srv VipPlansHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetVipPlansReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipPlansGetVipPlans)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetVipPlans(ctx, req.(*GetVipPlansReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetVipPlansResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+type VipPlansHTTPClient interface {
+	CreateVipPlan(ctx context.Context, req *CreateVipPlanReq, opts ...http.CallOption) (rsp *CreateVipPlanResp, err error)
+	GetVipPlan(ctx context.Context, req *GetVipPlanReq, opts ...http.CallOption) (rsp *GetVipPlanResp, err error)
+	GetVipPlans(ctx context.Context, req *GetVipPlansReq, opts ...http.CallOption) (rsp *GetVipPlansResp, err error)
+}
+
+type VipPlansHTTPClientImpl struct {
+	cc *http.Client
+}
+
+func NewVipPlansHTTPClient(client *http.Client) VipPlansHTTPClient {
+	return &VipPlansHTTPClientImpl{client}
+}
+
+func (c *VipPlansHTTPClientImpl) CreateVipPlan(ctx context.Context, in *CreateVipPlanReq, opts ...http.CallOption) (*CreateVipPlanResp, error) {
+	var out CreateVipPlanResp
+	pattern := "/api/vip/plans"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationVipPlansCreateVipPlan))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipPlansHTTPClientImpl) GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...http.CallOption) (*GetVipPlanResp, error) {
+	var out GetVipPlanResp
+	pattern := "/api/vip/plans/{plan_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationVipPlansGetVipPlan))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipPlansHTTPClientImpl) GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...http.CallOption) (*GetVipPlansResp, error) {
+	var out GetVipPlansResp
+	pattern := "/api/vip/plans"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationVipPlansGetVipPlans))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+const OperationVipServiceCheckUserVip = "/vip.v1.VipService/CheckUserVip"
 const OperationVipServiceCreateVipOrder = "/vip.v1.VipService/CreateVipOrder"
 const OperationVipServiceGetUserActiveVipRecord = "/vip.v1.VipService/GetUserActiveVipRecord"
+const OperationVipServiceGetUserVipStatus = "/vip.v1.VipService/GetUserVipStatus"
+const OperationVipServiceGetVipOrders = "/vip.v1.VipService/GetVipOrders"
 const OperationVipServiceGetVipRecords = "/vip.v1.VipService/GetVipRecords"
+const OperationVipServiceSyncUserVipStatus = "/vip.v1.VipService/SyncUserVipStatus"
+const OperationVipServiceUpdateAutoRenew = "/vip.v1.VipService/UpdateAutoRenew"
+const OperationVipServiceUpdateUserVip = "/vip.v1.VipService/UpdateUserVip"
 
 type VipServiceHTTPServer interface {
+	CheckUserVip(context.Context, *CheckUserVipReq) (*CheckUserVipResp, error)
 	CreateVipOrder(context.Context, *CreateVipOrderReq) (*CreateVipOrderResp, error)
 	GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordReq) (*GetUserActiveVipRecordResp, error)
+	GetUserVipStatus(context.Context, *GetUserVipStatusReq) (*GetUserVipStatusResp, error)
+	GetVipOrders(context.Context, *GetVipOrdersReq) (*GetVipOrdersResp, error)
 	GetVipRecords(context.Context, *GetVipRecordsReq) (*GetVipRecordsResp, error)
+	SyncUserVipStatus(context.Context, *SyncUserVipStatusReq) (*SyncUserVipStatusResp, error)
+	UpdateAutoRenew(context.Context, *UpdateAutoRenewReq) (*UpdateAutoRenewResp, error)
+	UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error)
 }
 
 func RegisterVipServiceHTTPServer(s *http.Server, srv VipServiceHTTPServer) {
@@ -34,6 +179,12 @@ func RegisterVipServiceHTTPServer(s *http.Server, srv VipServiceHTTPServer) {
 	r.GET("/api/user/{user_id}/vip/records", _VipService_GetVipRecords0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}/vip/active", _VipService_GetUserActiveVipRecord0_HTTP_Handler(srv))
 	r.POST("/api/user/{user_id}/vip/orders", _VipService_CreateVipOrder0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/vip", _VipService_GetUserVipStatus0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/vip", _VipService_UpdateUserVip0_HTTP_Handler(srv))
+	r.PUT("/api/user/{user_id}/vip/auto-renew", _VipService_UpdateAutoRenew0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/vip/check", _VipService_CheckUserVip0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/vip/orders", _VipService_GetVipOrders0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/vip/sync", _VipService_SyncUserVipStatus0_HTTP_Handler(srv))
 }
 
 func _VipService_GetVipRecords0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
@@ -105,10 +256,157 @@ func _VipService_CreateVipOrder0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx
 	}
 }
 
+func _VipService_GetUserVipStatus0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserVipStatusReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceGetUserVipStatus)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserVipStatus(ctx, req.(*GetUserVipStatusReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserVipStatusResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipService_UpdateUserVip0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateUserVipReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceUpdateUserVip)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateUserVip(ctx, req.(*UpdateUserVipReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateUserVipResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipService_UpdateAutoRenew0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateAutoRenewReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceUpdateAutoRenew)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateAutoRenew(ctx, req.(*UpdateAutoRenewReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateAutoRenewResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipService_CheckUserVip0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CheckUserVipReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceCheckUserVip)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CheckUserVip(ctx, req.(*CheckUserVipReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CheckUserVipResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipService_GetVipOrders0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetVipOrdersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceGetVipOrders)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetVipOrders(ctx, req.(*GetVipOrdersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetVipOrdersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _VipService_SyncUserVipStatus0_HTTP_Handler(srv VipServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SyncUserVipStatusReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationVipServiceSyncUserVipStatus)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SyncUserVipStatus(ctx, req.(*SyncUserVipStatusReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SyncUserVipStatusResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type VipServiceHTTPClient interface {
+	CheckUserVip(ctx context.Context, req *CheckUserVipReq, opts ...http.CallOption) (rsp *CheckUserVipResp, err error)
 	CreateVipOrder(ctx context.Context, req *CreateVipOrderReq, opts ...http.CallOption) (rsp *CreateVipOrderResp, err error)
 	GetUserActiveVipRecord(ctx context.Context, req *GetUserActiveVipRecordReq, opts ...http.CallOption) (rsp *GetUserActiveVipRecordResp, err error)
+	GetUserVipStatus(ctx context.Context, req *GetUserVipStatusReq, opts ...http.CallOption) (rsp *GetUserVipStatusResp, err error)
+	GetVipOrders(ctx context.Context, req *GetVipOrdersReq, opts ...http.CallOption) (rsp *GetVipOrdersResp, err error)
 	GetVipRecords(ctx context.Context, req *GetVipRecordsReq, opts ...http.CallOption) (rsp *GetVipRecordsResp, err error)
+	SyncUserVipStatus(ctx context.Context, req *SyncUserVipStatusReq, opts ...http.CallOption) (rsp *SyncUserVipStatusResp, err error)
+	UpdateAutoRenew(ctx context.Context, req *UpdateAutoRenewReq, opts ...http.CallOption) (rsp *UpdateAutoRenewResp, err error)
+	UpdateUserVip(ctx context.Context, req *UpdateUserVipReq, opts ...http.CallOption) (rsp *UpdateUserVipResp, err error)
 }
 
 type VipServiceHTTPClientImpl struct {
@@ -117,6 +415,19 @@ type VipServiceHTTPClientImpl struct {
 
 func NewVipServiceHTTPClient(client *http.Client) VipServiceHTTPClient {
 	return &VipServiceHTTPClientImpl{client}
+}
+
+func (c *VipServiceHTTPClientImpl) CheckUserVip(ctx context.Context, in *CheckUserVipReq, opts ...http.CallOption) (*CheckUserVipResp, error) {
+	var out CheckUserVipResp
+	pattern := "/api/user/{user_id}/vip/check"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationVipServiceCheckUserVip))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *VipServiceHTTPClientImpl) CreateVipOrder(ctx context.Context, in *CreateVipOrderReq, opts ...http.CallOption) (*CreateVipOrderResp, error) {
@@ -145,6 +456,32 @@ func (c *VipServiceHTTPClientImpl) GetUserActiveVipRecord(ctx context.Context, i
 	return &out, nil
 }
 
+func (c *VipServiceHTTPClientImpl) GetUserVipStatus(ctx context.Context, in *GetUserVipStatusReq, opts ...http.CallOption) (*GetUserVipStatusResp, error) {
+	var out GetUserVipStatusResp
+	pattern := "/api/user/{user_id}/vip"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationVipServiceGetUserVipStatus))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipServiceHTTPClientImpl) GetVipOrders(ctx context.Context, in *GetVipOrdersReq, opts ...http.CallOption) (*GetVipOrdersResp, error) {
+	var out GetVipOrdersResp
+	pattern := "/api/user/{user_id}/vip/orders"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationVipServiceGetVipOrders))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *VipServiceHTTPClientImpl) GetVipRecords(ctx context.Context, in *GetVipRecordsReq, opts ...http.CallOption) (*GetVipRecordsResp, error) {
 	var out GetVipRecordsResp
 	pattern := "/api/user/{user_id}/vip/records"
@@ -152,6 +489,45 @@ func (c *VipServiceHTTPClientImpl) GetVipRecords(ctx context.Context, in *GetVip
 	opts = append(opts, http.Operation(OperationVipServiceGetVipRecords))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipServiceHTTPClientImpl) SyncUserVipStatus(ctx context.Context, in *SyncUserVipStatusReq, opts ...http.CallOption) (*SyncUserVipStatusResp, error) {
+	var out SyncUserVipStatusResp
+	pattern := "/api/user/{user_id}/vip/sync"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationVipServiceSyncUserVipStatus))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipServiceHTTPClientImpl) UpdateAutoRenew(ctx context.Context, in *UpdateAutoRenewReq, opts ...http.CallOption) (*UpdateAutoRenewResp, error) {
+	var out UpdateAutoRenewResp
+	pattern := "/api/user/{user_id}/vip/auto-renew"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationVipServiceUpdateAutoRenew))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *VipServiceHTTPClientImpl) UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...http.CallOption) (*UpdateUserVipResp, error) {
+	var out UpdateUserVipResp
+	pattern := "/api/user/{user_id}/vip"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationVipServiceUpdateUserVip))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

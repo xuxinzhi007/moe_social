@@ -116,7 +116,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   margin: const EdgeInsets.only(right: 16),
                   decoration: BoxDecoration(
-                    color: _showMyBets ? const Color(0xFF7F7FD5).withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                    color: _showMyBets ? const Color(0xFF7F7FD5).withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: _showMyBets ? const Color(0xFF7F7FD5) : Colors.transparent,
@@ -154,7 +154,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                   width: 300,
                   height: 300,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                    color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -166,7 +166,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                   width: 300,
                   height: 300,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF86A8E7).withOpacity(0.1),
+                    color: const Color(0xFF86A8E7).withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -216,7 +216,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
           colors: [const Color(0xFF16213E), const Color(0xFF0F3460)],
         ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 12),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 12),
         ],
       ),
       child: Row(
@@ -234,7 +234,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7F7FD5).withOpacity(0.5),
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.5),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -299,7 +299,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: room.roundProfit >= 0 ? Colors.greenAccent.withOpacity(0.2) : Colors.redAccent.withOpacity(0.2),
+                color: room.roundProfit >= 0 ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.redAccent.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: room.roundProfit >= 0 ? Colors.greenAccent : Colors.redAccent,
@@ -333,7 +333,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: isBig ? const Color(0xFF7F7FD5).withOpacity(0.4) : const Color(0xFF91EAE4).withOpacity(0.4),
+            color: isBig ? const Color(0xFF7F7FD5).withValues(alpha: 0.4) : const Color(0xFF91EAE4).withValues(alpha: 0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -346,7 +346,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Center(
@@ -380,10 +380,10 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: color.withOpacity(0.3),
+                color: color.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -397,7 +397,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -429,10 +429,10 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
           colors: [const Color(0xFF16213E), const Color(0x8016213E)],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -453,7 +453,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
               gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [Colors.transparent, Colors.white.withOpacity(0.2), Colors.transparent],
+                colors: [Colors.transparent, Colors.white.withValues(alpha: 0.2), Colors.transparent],
               ),
             ),
           ),
@@ -474,7 +474,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: Colors.white12,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                shadowColor: const Color(0xFF7F7FD5).withOpacity(0.5),
+                shadowColor: const Color(0xFF7F7FD5).withValues(alpha: 0.5),
                 elevation: 8,
               ),
               child: Text(
@@ -498,7 +498,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
@@ -516,12 +516,12 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.25) : Colors.white.withOpacity(0.08),
+                color: isSelected ? color.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: isSelected ? color : Colors.transparent, width: 1.5),
                 boxShadow: isSelected ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -548,7 +548,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Text('金额', style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -578,7 +578,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7F7FD5).withOpacity(0.3),
+                color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -600,7 +600,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Text('最近开奖', style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -615,10 +615,10 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
+                color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: color.withOpacity(0.3),
+                  color: color.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -695,9 +695,9 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: (won ? Colors.greenAccent : Colors.redAccent).withOpacity(0.2)),
+        border: Border.all(color: (won ? Colors.greenAccent : Colors.redAccent).withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -705,7 +705,7 @@ class _GameRoomPageState extends State<GameRoomPage> with TickerProviderStateMix
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: (won ? Colors.greenAccent : Colors.redAccent).withOpacity(0.15),
+              color: (won ? Colors.greenAccent : Colors.redAccent).withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(

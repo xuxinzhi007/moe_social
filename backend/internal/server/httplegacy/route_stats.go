@@ -20,8 +20,13 @@ func TotalHTTPRoutes() int {
 // TotalGoZeroRoutes 已废弃，请用 TotalHTTPRoutes。
 func TotalGoZeroRoutes() int { return TotalHTTPRoutes() }
 
-// PilotNativeCompatRoutes internal/service 直挂 + logic 薄转 compat（波次1–3；native_gen=0）。
-const PilotNativeCompatRoutes = 13 + PilotNativeLandingCompatRoutes +
+// PilotNativeLlmReadCompatRoutes LLM 模型列表（只读）。
+const PilotNativeLlmReadCompatRoutes = 2
+
+// PilotNativeCompatRoutes 当前活跃 compat 路由数（与 httplegacy/*_compat.go 中 r.GET/POST 一致）。
+const PilotNativeCompatRoutes = PilotNativeLlmReadCompatRoutes +
+	PilotNativeAdminReadonlyCompatRoutes +
+	PilotNativeLandingCompatRoutes +
 	PilotNativeCheckinCompatRoutes + PilotNativeAchievementCompatRoutes +
 	PilotNativeBehaviorCompatRoutes + PilotNativeGiftCompatRoutes + PilotNativeCommentCompatRoutes +
 	PilotNativePostCompatRoutes + PilotNativeCommunityCompatRoutes +

@@ -153,8 +153,8 @@ func rolloutPercent() int {
 
 func httpNativeHandlerPercent() int {
 	p := httplegacy.HTTPNativeHandlerPercent()
-	// PK-10b：仅 swagger 留在 bridge 时视为 HTTP 层完成。
-	if httplegacy.TotalBridgeHTTPRoutes() <= 2 && p >= 95 {
+	// PK-10b：仅 swagger 三件套留在 bridge 时视为 HTTP 层完成。
+	if httplegacy.TotalBridgeHTTPRoutes() <= 3 && p >= 95 {
 		return 100
 	}
 	return p

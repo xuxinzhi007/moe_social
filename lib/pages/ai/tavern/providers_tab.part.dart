@@ -33,7 +33,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF86A8E7).withOpacity(0.3),
+                  color: const Color(0xFF86A8E7).withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -198,13 +198,13 @@ extension TavernProvidersTabPart on _AgentListPageState {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.08),
+                            color: Colors.grey.withValues(alpha: 0.08),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
                         border: Border.all(
-                          color: cardColor.withOpacity(0.2),
+                          color: cardColor.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -230,13 +230,13 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                       end: Alignment.bottomRight,
                                       colors: [
                                         cardColor,
-                                        cardColor.withOpacity(0.7)
+                                        cardColor.withValues(alpha: 0.7)
                                       ],
                                     ),
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: cardColor.withOpacity(0.3),
+                                        color: cardColor.withValues(alpha: 0.3),
                                         blurRadius: 6,
                                         offset: const Offset(0, 2),
                                       ),
@@ -284,7 +284,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                               ),
                                               decoration: BoxDecoration(
                                                 color: const Color(0xFF4CAF50)
-                                                    .withOpacity(0.1),
+                                                    .withValues(alpha: 0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                               ),
@@ -320,7 +320,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: cardColor.withOpacity(0.1),
+                                              color: cardColor.withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -413,7 +413,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
             borderRadius: BorderRadius.circular(26),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -496,7 +496,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(

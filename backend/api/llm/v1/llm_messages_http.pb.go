@@ -19,15 +19,39 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationLlmChatDeleteUserMemory = "/llm.v1.LlmChat/DeleteUserMemory"
+const OperationLlmChatGetUserMemories = "/llm.v1.LlmChat/GetUserMemories"
+const OperationLlmChatGetUserMemoriesDisplay = "/llm.v1.LlmChat/GetUserMemoriesDisplay"
+const OperationLlmChatGetUserMemoryProfiles = "/llm.v1.LlmChat/GetUserMemoryProfiles"
+const OperationLlmChatRebuildUserMemoryEmbeddings = "/llm.v1.LlmChat/RebuildUserMemoryEmbeddings"
 const OperationLlmChatRecordLlmChatTurn = "/llm.v1.LlmChat/RecordLlmChatTurn"
+const OperationLlmChatSearchUserMemories = "/llm.v1.LlmChat/SearchUserMemories"
+const OperationLlmChatSubmitUserMemoryFeedback = "/llm.v1.LlmChat/SubmitUserMemoryFeedback"
+const OperationLlmChatUpsertUserMemory = "/llm.v1.LlmChat/UpsertUserMemory"
 
 type LlmChatHTTPServer interface {
+	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
+	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
+	GetUserMemoriesDisplay(context.Context, *GetUserMemoriesDisplayReq) (*GetUserMemoriesDisplayResp, error)
+	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
+	RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error)
 	RecordLlmChatTurn(context.Context, *RecordLlmChatTurnReq) (*RecordLlmChatTurnResp, error)
+	SearchUserMemories(context.Context, *SearchUserMemoriesReq) (*SearchUserMemoriesResp, error)
+	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
+	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
 }
 
 func RegisterLlmChatHTTPServer(s *http.Server, srv LlmChatHTTPServer) {
 	r := s.Route("/")
 	r.POST("/api/llm/chat/turn", _LlmChat_RecordLlmChatTurn0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/memories", _LlmChat_UpsertUserMemory0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/memories", _LlmChat_GetUserMemories0_HTTP_Handler(srv))
+	r.DELETE("/api/user/{user_id}/memories", _LlmChat_DeleteUserMemory0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/memories/display", _LlmChat_GetUserMemoriesDisplay0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/memories/feedback", _LlmChat_SubmitUserMemoryFeedback0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/memories/profiles", _LlmChat_GetUserMemoryProfiles0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/memories/reindex", _LlmChat_RebuildUserMemoryEmbeddings0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/memories/search", _LlmChat_SearchUserMemories0_HTTP_Handler(srv))
 }
 
 func _LlmChat_RecordLlmChatTurn0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
@@ -52,8 +76,204 @@ func _LlmChat_RecordLlmChatTurn0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx ht
 	}
 }
 
+func _LlmChat_UpsertUserMemory0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpsertUserMemoryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatUpsertUserMemory)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpsertUserMemory(ctx, req.(*UpsertUserMemoryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpsertUserMemoryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_GetUserMemories0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserMemoriesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatGetUserMemories)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserMemories(ctx, req.(*GetUserMemoriesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserMemoriesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_DeleteUserMemory0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteUserMemoryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatDeleteUserMemory)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteUserMemory(ctx, req.(*DeleteUserMemoryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteUserMemoryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_GetUserMemoriesDisplay0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserMemoriesDisplayReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatGetUserMemoriesDisplay)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserMemoriesDisplay(ctx, req.(*GetUserMemoriesDisplayReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserMemoriesDisplayResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_SubmitUserMemoryFeedback0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SubmitUserMemoryFeedbackReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatSubmitUserMemoryFeedback)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SubmitUserMemoryFeedback(ctx, req.(*SubmitUserMemoryFeedbackReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SubmitUserMemoryFeedbackResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_GetUserMemoryProfiles0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserMemoryProfilesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatGetUserMemoryProfiles)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserMemoryProfiles(ctx, req.(*GetUserMemoryProfilesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserMemoryProfilesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_RebuildUserMemoryEmbeddings0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RebuildUserMemoryEmbeddingsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatRebuildUserMemoryEmbeddings)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.RebuildUserMemoryEmbeddings(ctx, req.(*RebuildUserMemoryEmbeddingsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RebuildUserMemoryEmbeddingsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _LlmChat_SearchUserMemories0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SearchUserMemoriesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatSearchUserMemories)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SearchUserMemories(ctx, req.(*SearchUserMemoriesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SearchUserMemoriesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type LlmChatHTTPClient interface {
+	DeleteUserMemory(ctx context.Context, req *DeleteUserMemoryReq, opts ...http.CallOption) (rsp *DeleteUserMemoryResp, err error)
+	GetUserMemories(ctx context.Context, req *GetUserMemoriesReq, opts ...http.CallOption) (rsp *GetUserMemoriesResp, err error)
+	GetUserMemoriesDisplay(ctx context.Context, req *GetUserMemoriesDisplayReq, opts ...http.CallOption) (rsp *GetUserMemoriesDisplayResp, err error)
+	GetUserMemoryProfiles(ctx context.Context, req *GetUserMemoryProfilesReq, opts ...http.CallOption) (rsp *GetUserMemoryProfilesResp, err error)
+	RebuildUserMemoryEmbeddings(ctx context.Context, req *RebuildUserMemoryEmbeddingsReq, opts ...http.CallOption) (rsp *RebuildUserMemoryEmbeddingsResp, err error)
 	RecordLlmChatTurn(ctx context.Context, req *RecordLlmChatTurnReq, opts ...http.CallOption) (rsp *RecordLlmChatTurnResp, err error)
+	SearchUserMemories(ctx context.Context, req *SearchUserMemoriesReq, opts ...http.CallOption) (rsp *SearchUserMemoriesResp, err error)
+	SubmitUserMemoryFeedback(ctx context.Context, req *SubmitUserMemoryFeedbackReq, opts ...http.CallOption) (rsp *SubmitUserMemoryFeedbackResp, err error)
+	UpsertUserMemory(ctx context.Context, req *UpsertUserMemoryReq, opts ...http.CallOption) (rsp *UpsertUserMemoryResp, err error)
 }
 
 type LlmChatHTTPClientImpl struct {
@@ -64,11 +284,115 @@ func NewLlmChatHTTPClient(client *http.Client) LlmChatHTTPClient {
 	return &LlmChatHTTPClientImpl{client}
 }
 
+func (c *LlmChatHTTPClientImpl) DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...http.CallOption) (*DeleteUserMemoryResp, error) {
+	var out DeleteUserMemoryResp
+	pattern := "/api/user/{user_id}/memories"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLlmChatDeleteUserMemory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...http.CallOption) (*GetUserMemoriesResp, error) {
+	var out GetUserMemoriesResp
+	pattern := "/api/user/{user_id}/memories"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationLlmChatGetUserMemories))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) GetUserMemoriesDisplay(ctx context.Context, in *GetUserMemoriesDisplayReq, opts ...http.CallOption) (*GetUserMemoriesDisplayResp, error) {
+	var out GetUserMemoriesDisplayResp
+	pattern := "/api/user/{user_id}/memories/display"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationLlmChatGetUserMemoriesDisplay))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...http.CallOption) (*GetUserMemoryProfilesResp, error) {
+	var out GetUserMemoryProfilesResp
+	pattern := "/api/user/{user_id}/memories/profiles"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationLlmChatGetUserMemoryProfiles))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...http.CallOption) (*RebuildUserMemoryEmbeddingsResp, error) {
+	var out RebuildUserMemoryEmbeddingsResp
+	pattern := "/api/user/{user_id}/memories/reindex"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLlmChatRebuildUserMemoryEmbeddings))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *LlmChatHTTPClientImpl) RecordLlmChatTurn(ctx context.Context, in *RecordLlmChatTurnReq, opts ...http.CallOption) (*RecordLlmChatTurnResp, error) {
 	var out RecordLlmChatTurnResp
 	pattern := "/api/llm/chat/turn"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationLlmChatRecordLlmChatTurn))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) SearchUserMemories(ctx context.Context, in *SearchUserMemoriesReq, opts ...http.CallOption) (*SearchUserMemoriesResp, error) {
+	var out SearchUserMemoriesResp
+	pattern := "/api/user/{user_id}/memories/search"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationLlmChatSearchUserMemories))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...http.CallOption) (*SubmitUserMemoryFeedbackResp, error) {
+	var out SubmitUserMemoryFeedbackResp
+	pattern := "/api/user/{user_id}/memories/feedback"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLlmChatSubmitUserMemoryFeedback))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...http.CallOption) (*UpsertUserMemoryResp, error) {
+	var out UpsertUserMemoryResp
+	pattern := "/api/user/{user_id}/memories"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationLlmChatUpsertUserMemory))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

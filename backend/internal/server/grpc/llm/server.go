@@ -4,18 +4,36 @@ import (
 	"context"
 
 	llmv1 "backend/api/llm/v1"
+	userbiz "backend/internal/biz/user"
 	llmapp "backend/internal/service/llm"
 )
 
-// Server 实现 llm.v1.LlmChat gRPC/HTTP（RecordLlmChatTurn）。
+// Server 实现 llm.v1.LlmChat gRPC/HTTP（RecordLlmChatTurn + 用户记忆）。
 type Server struct {
 	llmv1.UnimplementedLlmChatServer
-	app *llmapp.AppService
+	app              *llmapp.AppService
+	memoryGW         userbiz.LLMMemoryGateway
+	inferenceBaseURL string
 }
 
 // New 构造 LlmChat gRPC/HTTP 服务。
-func New(app *llmapp.AppService) *Server {
-	return &Server{app: app}
+func New(app *llmapp.AppService, opts ...Option) *Server {
+	s := &Server{app: app}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
+}
+
+// Option 可选依赖（混合记忆检索）。
+type Option func(*Server)
+
+// WithMemorySearch 注入混合检索网关与推理 base URL。
+func WithMemorySearch(gw userbiz.LLMMemoryGateway, inferenceBaseURL string) Option {
+	return func(s *Server) {
+		s.memoryGW = gw
+		s.inferenceBaseURL = inferenceBaseURL
+	}
 }
 
 func (s *Server) requireApp() (*llmapp.AppService, error) {

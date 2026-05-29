@@ -351,7 +351,7 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
             boxShadow: [
               BoxShadow(
-                color: _primaryColor.withOpacity(0.2),
+                color: _primaryColor.withValues(alpha: 0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -450,7 +450,7 @@ class _CommentsPageState extends State<CommentsPage> {
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: _primaryColor.withOpacity(0.1),
+                                  color: _primaryColor.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -471,7 +471,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                 '快来抢沙发吧～',
                                 style: TextStyle(
                                   color: scheme.onSurfaceVariant
-                                      .withOpacity(0.85),
+                                      .withValues(alpha: 0.85),
                                   fontSize: 13,
                                 ),
                               ),
@@ -513,7 +513,7 @@ class _CommentsPageState extends State<CommentsPage> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, -5),
                 ),
@@ -559,7 +559,7 @@ class _CommentsPageState extends State<CommentsPage> {
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF7F7FD5).withOpacity(0.3), width: 1.5),
+                    border: Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.3), width: 1.5),
                   ),
                   child: NetworkAvatarImage(
                     imageUrl: _userAvatar,
@@ -884,7 +884,7 @@ class _CommentsPageState extends State<CommentsPage> {
                       ? null
                       : [
                           BoxShadow(
-                            color: const Color(0xFF7F7FD5).withOpacity(0.05),
+                            color: const Color(0xFF7F7FD5).withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(2, 4),
                           ),

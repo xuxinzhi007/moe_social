@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +17,12 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import '../chat/conversations_page.dart';
+import 'widgets/add_friend_bottom_sheet.dart';
+import 'widgets/friends_hub_tab_strip.dart';
+import 'widgets/friends_logged_out_body.dart';
 
 // 好友分组
 enum _FriendGroup {
@@ -40,6 +44,8 @@ class FriendsPage extends StatefulWidget {
 
 class _FriendsPageState extends State<FriendsPage>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   List<User> _friends = [];
   List<Map<String, dynamic>> _incomingRequests = [];
 
@@ -346,7 +352,7 @@ class _FriendsPageState extends State<FriendsPage>
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-          child: _AddFriendBottomSheet(
+          child: AddFriendBottomSheet(
             rootContext: rootContext,
             myMoe: _selfProfile?.moeNo ?? '',
             onReloadFriends: _loadFriends,
@@ -372,15 +378,16 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   PreferredSizeWidget _contactsAppBar() {
+    final moe = MoeTheme.of(context);
     return AppBar(
       title: const Text(
         '同好与人脉',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: moe.cardBackground,
       elevation: 0,
       centerTitle: true,
-      foregroundColor: const Color(0xFF333333),
+      foregroundColor: MoeTokens.titleText,
       actions: [
         if (_incomingRequests.isNotEmpty)
           IconButton(
@@ -388,22 +395,21 @@ class _FriendsPageState extends State<FriendsPage>
             onPressed: _goToRequestsTab,
             icon: Badge(
               label: Text('${_incomingRequests.length}'),
-              child: const Icon(
+              child: Icon(
                 Icons.mark_email_unread_outlined,
-                color: Color(0xFF7F7FD5),
+                color: moe.primary,
               ),
             ),
           ),
         Container(
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF7F7FD5).withOpacity(0.1),
+            color: moe.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: IconButton(
             tooltip: '添加好友',
-            icon:
-                const Icon(Icons.person_add_rounded, color: Color(0xFF7F7FD5)),
+            icon: Icon(Icons.person_add_rounded, color: moe.primary),
             onPressed: _showAddFriendDialog,
           ),
         ),
@@ -412,148 +418,18 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _buildLoggedOutScaffold() {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTheme.of(context).pageBackground,
       appBar: _contactsAppBar(),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.lock_outline_rounded, size: 56, color: scheme.outline),
-              const SizedBox(height: 18),
-              Text(
-                '登录后管理私信、同好与好友申请',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: scheme.onSurfaceVariant,
-                  height: 1.45,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 28),
-              FilledButton(
-                onPressed: () => Navigator.pushNamed(context, '/login'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-                ),
-                child: const Text('去登录'),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: const FriendsLoggedOutBody(),
     );
   }
 
   Widget _buildHubTabStrip() {
-    final scheme = Theme.of(context).colorScheme;
-    final track = scheme.brightness == Brightness.dark
-        ? scheme.surfaceContainerHighest.withOpacity(0.5)
-        : const Color(0xFFE8ECF3);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-      child: Material(
-        color: track,
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(5),
-          child: TabBar(
-            controller: _hubTabController,
-            dividerColor: Colors.transparent,
-            indicatorSize: TabBarIndicatorSize.tab,
-            indicator: BoxDecoration(
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            labelColor: const Color(0xFF5C6BC0),
-            unselectedLabelColor: scheme.onSurfaceVariant,
-            labelStyle:
-                const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-            unselectedLabelStyle:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            splashBorderRadius: BorderRadius.circular(14),
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('私信'),
-                    if (_dmUnreadTotal > 0) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          _dmUnreadTotal > 99 ? '99+' : '$_dmUnreadTotal',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const Tab(text: '同好'),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('申请'),
-                    if (_incomingRequests.isNotEmpty) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF6B6B),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '${_incomingRequests.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FriendsHubTabStrip(
+      controller: _hubTabController,
+      dmUnreadTotal: _dmUnreadTotal,
+      incomingRequestCount: _incomingRequests.length,
     );
   }
 
@@ -583,7 +459,7 @@ class _FriendsPageState extends State<FriendsPage>
     final renderableRequests = _renderableIncomingRequests;
     return RefreshIndicator(
       onRefresh: _loadFriends,
-      color: const Color(0xFF7F7FD5),
+      color: _moe.primary,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -653,7 +529,7 @@ class _FriendsPageState extends State<FriendsPage>
                                 border: Border.all(color: Colors.grey.shade200),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
+                                    color: Colors.black.withValues(alpha: 0.05),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -718,7 +594,7 @@ class _FriendsPageState extends State<FriendsPage>
                                                             rid),
                                                 style: FilledButton.styleFrom(
                                                   backgroundColor:
-                                                      const Color(0xFF7F7FD5),
+                                                      _moe.primary,
                                                   visualDensity:
                                                       VisualDensity.compact,
                                                 ),
@@ -746,7 +622,7 @@ class _FriendsPageState extends State<FriendsPage>
                                                             rid),
                                                 style: FilledButton.styleFrom(
                                                   backgroundColor:
-                                                      const Color(0xFF7F7FD5),
+                                                      _moe.primary,
                                                   visualDensity:
                                                       VisualDensity.compact,
                                                 ),
@@ -774,19 +650,20 @@ class _FriendsPageState extends State<FriendsPage>
 
   @override
   Widget build(BuildContext context) {
+    final pageBg = MoeTheme.of(context).pageBackground;
     if (AuthService.currentUser == null) {
       return _buildLoggedOutScaffold();
     }
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: pageBg,
         appBar: _contactsAppBar(),
         body: const Center(child: MoeLoading()),
       );
     }
     if (_hasError) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: pageBg,
         appBar: _contactsAppBar(),
         body: Center(
           child: MoeErrorState.fromError(
@@ -798,7 +675,7 @@ class _FriendsPageState extends State<FriendsPage>
       );
     }
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: pageBg,
       appBar: _contactsAppBar(),
       body: Column(
         children: [
@@ -807,7 +684,17 @@ class _FriendsPageState extends State<FriendsPage>
             child: TabBarView(
               controller: _hubTabController,
               children: [
-                const ConversationsPage(embedded: true),
+                ConversationsPage(
+                  embedded: true,
+                  onEmptyFindFriends: () {
+                    if (_hubTabController.index != 1) {
+                      _hubTabController.animateTo(1);
+                    }
+                  },
+                  onEmptyExplore: () {
+                    context.read<MainNavController>().requestExplore();
+                  },
+                ),
                 _buildFriendsListTab(),
                 _buildIncomingRequestsTab(),
               ],
@@ -824,10 +711,11 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   Widget _buildFloatingActionButton() {
+    final moe = MoeTheme.of(context);
     return FloatingActionButton(
       heroTag: _fabHeroTag,
       onPressed: _showAddFriendDialog,
-      backgroundColor: const Color(0xFF7F7FD5),
+      backgroundColor: moe.primary,
       foregroundColor: Colors.white,
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -866,14 +754,14 @@ class _FriendsPageState extends State<FriendsPage>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: const Color(0xFF7F7FD5).withOpacity(0.35),
+                              color: _moe.primary.withValues(alpha: 0.35),
                             ),
                           ),
                           child: Row(
                             children: [
                               Icon(
                                 Icons.mail_outline_rounded,
-                                color: const Color(0xFF7F7FD5),
+                                color: _moe.primary,
                                 size: 22,
                               ),
                               const SizedBox(width: 12),
@@ -903,7 +791,7 @@ class _FriendsPageState extends State<FriendsPage>
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.08),
+                          color: Colors.grey.withValues(alpha: 0.08),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -916,13 +804,11 @@ class _FriendsPageState extends State<FriendsPage>
                           width: 72,
                           height: 72,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7F7FD5).withOpacity(0.12),
+                            color: _moe.primary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.people_outline_rounded,
-                            size: 36,
-                            color: Color(0xFF7F7FD5),
+                          child: Icon(Icons.people_outline_rounded, size: 36,
+                            color: _moe.primary,
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -1074,7 +960,7 @@ class _FriendsPageState extends State<FriendsPage>
                           icon: const Icon(Icons.person_add_rounded, size: 20),
                           label: const Text('添加好友'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF7F7FD5),
+                            backgroundColor: _moe.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -1096,8 +982,8 @@ class _FriendsPageState extends State<FriendsPage>
                             icon: const Icon(Icons.favorite_rounded, size: 20),
                             label: const Text('去认识同好'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF7F7FD5),
-                              side: const BorderSide(color: Color(0xFF7F7FD5)),
+                              foregroundColor: _moe.primary,
+                              side: BorderSide(color: _moe.primary),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 14,
@@ -1136,7 +1022,7 @@ class _FriendsPageState extends State<FriendsPage>
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                  color: _moe.primary.withValues(alpha: 0.08),
                   blurRadius: 14,
                   offset: const Offset(0, 5),
                 ),
@@ -1148,7 +1034,7 @@ class _FriendsPageState extends State<FriendsPage>
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7F7FD5).withOpacity(0.12),
+                    color: _moe.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(
@@ -1193,7 +1079,7 @@ class _FriendsPageState extends State<FriendsPage>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.08),
+                  color: Colors.grey.withValues(alpha: 0.08),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1221,7 +1107,7 @@ class _FriendsPageState extends State<FriendsPage>
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadFriends,
-            color: const Color(0xFF7F7FD5),
+            color: _moe.primary,
             child: filteredFriends.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -1234,7 +1120,7 @@ class _FriendsPageState extends State<FriendsPage>
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -1246,13 +1132,11 @@ class _FriendsPageState extends State<FriendsPage>
                               width: 64,
                               height: 64,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                                color: _moe.primary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
-                                Icons.search_off_rounded,
-                                size: 32,
-                                color: Color(0xFF7F7FD5),
+                              child: Icon(Icons.search_off_rounded, size: 32,
+                                color: _moe.primary,
                               ),
                             ),
                             const SizedBox(height: 14),
@@ -1340,17 +1224,17 @@ class _FriendsPageState extends State<FriendsPage>
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           constraints: const BoxConstraints(minWidth: 86),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF7F7FD5) : Colors.white,
+            color: isSelected ? _moe.primary : Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: Colors.grey.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
             border: Border.all(
-              color: isSelected ? const Color(0xFF7F7FD5) : Colors.grey[200]!,
+              color: isSelected ? _moe.primary : Colors.grey[200]!,
               width: 1,
             ),
           ),
@@ -1378,7 +1262,7 @@ class _FriendsPageState extends State<FriendsPage>
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.white.withOpacity(0.24)
+                        ? Colors.white.withValues(alpha: 0.24)
                         : const Color(0xFFEEF2FF),
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1447,14 +1331,14 @@ class _FriendsPageState extends State<FriendsPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.08),
+              color: Colors.grey.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
             color: isOnline
-                ? const Color(0xFF4CAF50).withOpacity(0.3)
+                ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
                 : Colors.transparent,
             width: 1,
           ),
@@ -1492,8 +1376,8 @@ class _FriendsPageState extends State<FriendsPage>
                             boxShadow: [
                               BoxShadow(
                                 color: isOnline
-                                    ? const Color(0xFF4CAF50).withOpacity(0.3)
-                                    : Colors.grey.withOpacity(0.1),
+                                    ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+                                    : Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1520,7 +1404,7 @@ class _FriendsPageState extends State<FriendsPage>
                               boxShadow: [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFF4CAF50).withOpacity(0.5),
+                                      const Color(0xFF4CAF50).withValues(alpha: 0.5),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -1558,7 +1442,7 @@ class _FriendsPageState extends State<FriendsPage>
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color:
-                                      const Color(0xFF4CAF50).withOpacity(0.1),
+                                      const Color(0xFF4CAF50).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text(
@@ -1644,16 +1528,16 @@ class _FriendsPageState extends State<FriendsPage>
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                                colors: [_moe.primary, MoeTokens.secondary],
                               ),
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
                                   color:
-                                      const Color(0xFF7F7FD5).withOpacity(0.3),
+                                      _moe.primary.withValues(alpha: 0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1717,7 +1601,7 @@ class _FriendsPageState extends State<FriendsPage>
                         children: [
                           Material(
                             color: isFavorite
-                                ? const Color(0xFFFFD700).withOpacity(0.12)
+                                ? const Color(0xFFFFD700).withValues(alpha: 0.12)
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(10),
                             child: InkWell(
@@ -1783,287 +1667,5 @@ class _FriendsPageState extends State<FriendsPage>
     setState(() {
       _recentInteractions[userId] = DateTime.now();
     });
-  }
-}
-
-class _AddFriendBottomSheet extends StatefulWidget {
-  const _AddFriendBottomSheet({
-    required this.rootContext,
-    required this.myMoe,
-    required this.onReloadFriends,
-  });
-
-  final BuildContext rootContext;
-  final String myMoe;
-  final VoidCallback onReloadFriends;
-
-  @override
-  State<_AddFriendBottomSheet> createState() => _AddFriendBottomSheetState();
-}
-
-class _AddFriendBottomSheetState extends State<_AddFriendBottomSheet> {
-  late final TextEditingController _controller;
-  bool _isLoading = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _copyLine(BuildContext ctx, String text, String toast) {
-    if (text.isEmpty) return;
-    Clipboard.setData(ClipboardData(text: text));
-    if (ctx.mounted) MoeToast.success(ctx, toast);
-  }
-
-  Future<void> _submit() async {
-    final raw = _controller.text.trim();
-    if (raw.isEmpty) {
-      setState(() => _error = '请输入邮箱或 Moe 号');
-      return;
-    }
-    final currentUserId = AuthService.currentUser;
-    if (currentUserId == null) {
-      if (mounted) Navigator.of(context).pop();
-      if (widget.rootContext.mounted) {
-        MoeToast.error(widget.rootContext, '请先登录');
-      }
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      if (raw.contains('@')) {
-        final targetUser = await ApiService.checkUserByEmail(raw);
-        if (targetUser.id == currentUserId) {
-          setState(() {
-            _isLoading = false;
-            _error = '不能添加自己为好友';
-          });
-          return;
-        }
-        final relation = await ApiService.getFriendRelation(
-          currentUserId,
-          targetUser.id,
-        );
-        if (relation == 'friend') {
-          setState(() {
-            _isLoading = false;
-            _error = '你们已经是好友了';
-          });
-          return;
-        }
-        if (relation == 'pending_out') {
-          setState(() {
-            _isLoading = false;
-            _error = '已发送申请，请等待对方确认';
-          });
-          return;
-        }
-        if (relation == 'pending_in') {
-          setState(() {
-            _isLoading = false;
-            _error = '对方已向你发送申请，请在上方「申请」中处理';
-          });
-          return;
-        }
-        await ApiService.sendFriendRequestByUserId(
-            currentUserId, targetUser.id);
-      } else if (RegExp(r'^\d{10}$').hasMatch(raw)) {
-        await ApiService.sendFriendRequestByMoeNo(currentUserId, raw);
-      } else {
-        setState(() {
-          _isLoading = false;
-          _error = '请输入有效邮箱或 10 位 Moe 号';
-        });
-        return;
-      }
-      if (!mounted) return;
-      if (widget.rootContext.mounted) {
-        Navigator.of(context).pop();
-        MoeToast.success(widget.rootContext, '好友申请已发送');
-        widget.onReloadFriends();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = e.toString();
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sheetContext = context;
-    final myMoe = widget.myMoe;
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              '添加好友',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '输入对方的注册邮箱，或 10 位数字 Moe 号，我们会向对方发送好友申请。',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _controller,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.done,
-              decoration: InputDecoration(
-                labelText: '邮箱或 Moe 号',
-                hintText: '例如 name@example.com 或 1234567890',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _error!,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            if (myMoe.isNotEmpty) ...[
-              Text(
-                '我的 Moe 号（可复制发给对方）',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Material(
-                color: const Color(0xFFF0F2FF),
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () => _copyLine(
-                    sheetContext,
-                    myMoe,
-                    '已复制我的 Moe 号',
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            myMoe,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                              color: Color(0xFF5C6BC0),
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          Icons.copy_rounded,
-                          size: 20,
-                          color: Colors.grey[700],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.of(sheetContext).pop(),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text('取消'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton(
-                    onPressed: _isLoading ? null : _submit,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF7F7FD5),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('发送申请'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

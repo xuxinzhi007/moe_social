@@ -19,9 +19,193 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	VipPlans_CreateVipPlan_FullMethodName = "/vip.v1.VipPlans/CreateVipPlan"
+	VipPlans_GetVipPlan_FullMethodName    = "/vip.v1.VipPlans/GetVipPlan"
+	VipPlans_GetVipPlans_FullMethodName   = "/vip.v1.VipPlans/GetVipPlans"
+)
+
+// VipPlansClient is the client API for VipPlans service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type VipPlansClient interface {
+	CreateVipPlan(ctx context.Context, in *CreateVipPlanReq, opts ...grpc.CallOption) (*CreateVipPlanResp, error)
+	GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error)
+	GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error)
+}
+
+type vipPlansClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewVipPlansClient(cc grpc.ClientConnInterface) VipPlansClient {
+	return &vipPlansClient{cc}
+}
+
+func (c *vipPlansClient) CreateVipPlan(ctx context.Context, in *CreateVipPlanReq, opts ...grpc.CallOption) (*CreateVipPlanResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateVipPlanResp)
+	err := c.cc.Invoke(ctx, VipPlans_CreateVipPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipPlansClient) GetVipPlan(ctx context.Context, in *GetVipPlanReq, opts ...grpc.CallOption) (*GetVipPlanResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetVipPlanResp)
+	err := c.cc.Invoke(ctx, VipPlans_GetVipPlan_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipPlansClient) GetVipPlans(ctx context.Context, in *GetVipPlansReq, opts ...grpc.CallOption) (*GetVipPlansResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetVipPlansResp)
+	err := c.cc.Invoke(ctx, VipPlans_GetVipPlans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VipPlansServer is the server API for VipPlans service.
+// All implementations must embed UnimplementedVipPlansServer
+// for forward compatibility.
+type VipPlansServer interface {
+	CreateVipPlan(context.Context, *CreateVipPlanReq) (*CreateVipPlanResp, error)
+	GetVipPlan(context.Context, *GetVipPlanReq) (*GetVipPlanResp, error)
+	GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error)
+	mustEmbedUnimplementedVipPlansServer()
+}
+
+// UnimplementedVipPlansServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedVipPlansServer struct{}
+
+func (UnimplementedVipPlansServer) CreateVipPlan(context.Context, *CreateVipPlanReq) (*CreateVipPlanResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateVipPlan not implemented")
+}
+func (UnimplementedVipPlansServer) GetVipPlan(context.Context, *GetVipPlanReq) (*GetVipPlanResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetVipPlan not implemented")
+}
+func (UnimplementedVipPlansServer) GetVipPlans(context.Context, *GetVipPlansReq) (*GetVipPlansResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetVipPlans not implemented")
+}
+func (UnimplementedVipPlansServer) mustEmbedUnimplementedVipPlansServer() {}
+func (UnimplementedVipPlansServer) testEmbeddedByValue()                  {}
+
+// UnsafeVipPlansServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to VipPlansServer will
+// result in compilation errors.
+type UnsafeVipPlansServer interface {
+	mustEmbedUnimplementedVipPlansServer()
+}
+
+func RegisterVipPlansServer(s grpc.ServiceRegistrar, srv VipPlansServer) {
+	// If the following call panics, it indicates UnimplementedVipPlansServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&VipPlans_ServiceDesc, srv)
+}
+
+func _VipPlans_CreateVipPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateVipPlanReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipPlansServer).CreateVipPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipPlans_CreateVipPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipPlansServer).CreateVipPlan(ctx, req.(*CreateVipPlanReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipPlans_GetVipPlan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVipPlanReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipPlansServer).GetVipPlan(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipPlans_GetVipPlan_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipPlansServer).GetVipPlan(ctx, req.(*GetVipPlanReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipPlans_GetVipPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVipPlansReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipPlansServer).GetVipPlans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipPlans_GetVipPlans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipPlansServer).GetVipPlans(ctx, req.(*GetVipPlansReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// VipPlans_ServiceDesc is the grpc.ServiceDesc for VipPlans service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var VipPlans_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "vip.v1.VipPlans",
+	HandlerType: (*VipPlansServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateVipPlan",
+			Handler:    _VipPlans_CreateVipPlan_Handler,
+		},
+		{
+			MethodName: "GetVipPlan",
+			Handler:    _VipPlans_GetVipPlan_Handler,
+		},
+		{
+			MethodName: "GetVipPlans",
+			Handler:    _VipPlans_GetVipPlans_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api/vip/v1/vip_messages.proto",
+}
+
+const (
 	VipService_GetVipRecords_FullMethodName          = "/vip.v1.VipService/GetVipRecords"
 	VipService_GetUserActiveVipRecord_FullMethodName = "/vip.v1.VipService/GetUserActiveVipRecord"
 	VipService_CreateVipOrder_FullMethodName         = "/vip.v1.VipService/CreateVipOrder"
+	VipService_GetUserVipStatus_FullMethodName       = "/vip.v1.VipService/GetUserVipStatus"
+	VipService_UpdateUserVip_FullMethodName          = "/vip.v1.VipService/UpdateUserVip"
+	VipService_UpdateAutoRenew_FullMethodName        = "/vip.v1.VipService/UpdateAutoRenew"
+	VipService_CheckUserVip_FullMethodName           = "/vip.v1.VipService/CheckUserVip"
+	VipService_GetVipOrders_FullMethodName           = "/vip.v1.VipService/GetVipOrders"
+	VipService_SyncUserVipStatus_FullMethodName      = "/vip.v1.VipService/SyncUserVipStatus"
 )
 
 // VipServiceClient is the client API for VipService service.
@@ -31,6 +215,12 @@ type VipServiceClient interface {
 	GetVipRecords(ctx context.Context, in *GetVipRecordsReq, opts ...grpc.CallOption) (*GetVipRecordsResp, error)
 	GetUserActiveVipRecord(ctx context.Context, in *GetUserActiveVipRecordReq, opts ...grpc.CallOption) (*GetUserActiveVipRecordResp, error)
 	CreateVipOrder(ctx context.Context, in *CreateVipOrderReq, opts ...grpc.CallOption) (*CreateVipOrderResp, error)
+	GetUserVipStatus(ctx context.Context, in *GetUserVipStatusReq, opts ...grpc.CallOption) (*GetUserVipStatusResp, error)
+	UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error)
+	UpdateAutoRenew(ctx context.Context, in *UpdateAutoRenewReq, opts ...grpc.CallOption) (*UpdateAutoRenewResp, error)
+	CheckUserVip(ctx context.Context, in *CheckUserVipReq, opts ...grpc.CallOption) (*CheckUserVipResp, error)
+	GetVipOrders(ctx context.Context, in *GetVipOrdersReq, opts ...grpc.CallOption) (*GetVipOrdersResp, error)
+	SyncUserVipStatus(ctx context.Context, in *SyncUserVipStatusReq, opts ...grpc.CallOption) (*SyncUserVipStatusResp, error)
 }
 
 type vipServiceClient struct {
@@ -71,6 +261,66 @@ func (c *vipServiceClient) CreateVipOrder(ctx context.Context, in *CreateVipOrde
 	return out, nil
 }
 
+func (c *vipServiceClient) GetUserVipStatus(ctx context.Context, in *GetUserVipStatusReq, opts ...grpc.CallOption) (*GetUserVipStatusResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserVipStatusResp)
+	err := c.cc.Invoke(ctx, VipService_GetUserVipStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipServiceClient) UpdateUserVip(ctx context.Context, in *UpdateUserVipReq, opts ...grpc.CallOption) (*UpdateUserVipResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserVipResp)
+	err := c.cc.Invoke(ctx, VipService_UpdateUserVip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipServiceClient) UpdateAutoRenew(ctx context.Context, in *UpdateAutoRenewReq, opts ...grpc.CallOption) (*UpdateAutoRenewResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAutoRenewResp)
+	err := c.cc.Invoke(ctx, VipService_UpdateAutoRenew_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipServiceClient) CheckUserVip(ctx context.Context, in *CheckUserVipReq, opts ...grpc.CallOption) (*CheckUserVipResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckUserVipResp)
+	err := c.cc.Invoke(ctx, VipService_CheckUserVip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipServiceClient) GetVipOrders(ctx context.Context, in *GetVipOrdersReq, opts ...grpc.CallOption) (*GetVipOrdersResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetVipOrdersResp)
+	err := c.cc.Invoke(ctx, VipService_GetVipOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vipServiceClient) SyncUserVipStatus(ctx context.Context, in *SyncUserVipStatusReq, opts ...grpc.CallOption) (*SyncUserVipStatusResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncUserVipStatusResp)
+	err := c.cc.Invoke(ctx, VipService_SyncUserVipStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VipServiceServer is the server API for VipService service.
 // All implementations must embed UnimplementedVipServiceServer
 // for forward compatibility.
@@ -78,6 +328,12 @@ type VipServiceServer interface {
 	GetVipRecords(context.Context, *GetVipRecordsReq) (*GetVipRecordsResp, error)
 	GetUserActiveVipRecord(context.Context, *GetUserActiveVipRecordReq) (*GetUserActiveVipRecordResp, error)
 	CreateVipOrder(context.Context, *CreateVipOrderReq) (*CreateVipOrderResp, error)
+	GetUserVipStatus(context.Context, *GetUserVipStatusReq) (*GetUserVipStatusResp, error)
+	UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error)
+	UpdateAutoRenew(context.Context, *UpdateAutoRenewReq) (*UpdateAutoRenewResp, error)
+	CheckUserVip(context.Context, *CheckUserVipReq) (*CheckUserVipResp, error)
+	GetVipOrders(context.Context, *GetVipOrdersReq) (*GetVipOrdersResp, error)
+	SyncUserVipStatus(context.Context, *SyncUserVipStatusReq) (*SyncUserVipStatusResp, error)
 	mustEmbedUnimplementedVipServiceServer()
 }
 
@@ -96,6 +352,24 @@ func (UnimplementedVipServiceServer) GetUserActiveVipRecord(context.Context, *Ge
 }
 func (UnimplementedVipServiceServer) CreateVipOrder(context.Context, *CreateVipOrderReq) (*CreateVipOrderResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateVipOrder not implemented")
+}
+func (UnimplementedVipServiceServer) GetUserVipStatus(context.Context, *GetUserVipStatusReq) (*GetUserVipStatusResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserVipStatus not implemented")
+}
+func (UnimplementedVipServiceServer) UpdateUserVip(context.Context, *UpdateUserVipReq) (*UpdateUserVipResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserVip not implemented")
+}
+func (UnimplementedVipServiceServer) UpdateAutoRenew(context.Context, *UpdateAutoRenewReq) (*UpdateAutoRenewResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAutoRenew not implemented")
+}
+func (UnimplementedVipServiceServer) CheckUserVip(context.Context, *CheckUserVipReq) (*CheckUserVipResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckUserVip not implemented")
+}
+func (UnimplementedVipServiceServer) GetVipOrders(context.Context, *GetVipOrdersReq) (*GetVipOrdersResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetVipOrders not implemented")
+}
+func (UnimplementedVipServiceServer) SyncUserVipStatus(context.Context, *SyncUserVipStatusReq) (*SyncUserVipStatusResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncUserVipStatus not implemented")
 }
 func (UnimplementedVipServiceServer) mustEmbedUnimplementedVipServiceServer() {}
 func (UnimplementedVipServiceServer) testEmbeddedByValue()                    {}
@@ -172,6 +446,114 @@ func _VipService_CreateVipOrder_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VipService_GetUserVipStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserVipStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).GetUserVipStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_GetUserVipStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).GetUserVipStatus(ctx, req.(*GetUserVipStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipService_UpdateUserVip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserVipReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).UpdateUserVip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_UpdateUserVip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).UpdateUserVip(ctx, req.(*UpdateUserVipReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipService_UpdateAutoRenew_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAutoRenewReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).UpdateAutoRenew(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_UpdateAutoRenew_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).UpdateAutoRenew(ctx, req.(*UpdateAutoRenewReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipService_CheckUserVip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckUserVipReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).CheckUserVip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_CheckUserVip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).CheckUserVip(ctx, req.(*CheckUserVipReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipService_GetVipOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVipOrdersReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).GetVipOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_GetVipOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).GetVipOrders(ctx, req.(*GetVipOrdersReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VipService_SyncUserVipStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncUserVipStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VipServiceServer).SyncUserVipStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VipService_SyncUserVipStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VipServiceServer).SyncUserVipStatus(ctx, req.(*SyncUserVipStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // VipService_ServiceDesc is the grpc.ServiceDesc for VipService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +572,30 @@ var VipService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateVipOrder",
 			Handler:    _VipService_CreateVipOrder_Handler,
+		},
+		{
+			MethodName: "GetUserVipStatus",
+			Handler:    _VipService_GetUserVipStatus_Handler,
+		},
+		{
+			MethodName: "UpdateUserVip",
+			Handler:    _VipService_UpdateUserVip_Handler,
+		},
+		{
+			MethodName: "UpdateAutoRenew",
+			Handler:    _VipService_UpdateAutoRenew_Handler,
+		},
+		{
+			MethodName: "CheckUserVip",
+			Handler:    _VipService_CheckUserVip_Handler,
+		},
+		{
+			MethodName: "GetVipOrders",
+			Handler:    _VipService_GetVipOrders_Handler,
+		},
+		{
+			MethodName: "SyncUserVipStatus",
+			Handler:    _VipService_SyncUserVipStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

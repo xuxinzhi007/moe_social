@@ -7,78 +7,21 @@ import (
 
 	adminv1 "backend/api/admin/v1"
 	"backend/internal/apilegacy/common"
-	"backend/internal/platform/svc"
 	"backend/internal/legacy/types"
+	"backend/internal/platform/svc"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// PilotNativeAdminServiceCompatRoutes Admin CRUD（直挂 internal/service/admin + vip）。
-const PilotNativeAdminServiceCompatRoutes = 55
+// PilotNativeAdminServiceCompatRoutes Admin CRUD（已迁入 RegisterAdminAppHTTPServer）。
+const PilotNativeAdminServiceCompatRoutes = 0
 
+// RegisterAdminServiceCompat P1：已迁入 RegisterAdminAppHTTPServer。
 func RegisterAdminServiceCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
-	if srv == nil || svcCtx == nil || svcCtx.AdminApp == nil {
-		return
-	}
-	app := svcCtx.AdminApp
-	r := srv.Route("/")
-	r.GET("/api/admin/accounts", adminListAccounts(app))
-	r.POST("/api/admin/accounts", adminCreateAccount(svcCtx))
-	r.PUT("/api/admin/accounts/:account_id", adminUpdateAccount(svcCtx))
-	r.DELETE("/api/admin/accounts/:account_id", adminDeleteAccount(svcCtx))
-	r.POST("/api/admin/achievements/bootstrap", adminBootstrapAchievements(svcCtx))
-	r.GET("/api/admin/ai/agents", adminListAiAgents(app))
-	r.DELETE("/api/admin/ai/agents", adminDeleteAiAgent(svcCtx))
-	r.GET("/api/admin/announcements", adminListAnnouncements(app))
-	r.POST("/api/admin/announcements", adminCreateAnnouncement(svcCtx))
-	r.GET("/api/admin/announcements/:announcement_id", adminGetAnnouncement(app))
-	r.PUT("/api/admin/announcements/:announcement_id", adminUpdateAnnouncement(svcCtx))
-	r.DELETE("/api/admin/announcements/:announcement_id", adminDeleteAnnouncement(svcCtx))
-	r.POST("/api/admin/announcements/:announcement_id/publish", adminPublishAnnouncement(svcCtx))
-	r.GET("/api/admin/audit-logs", adminListAuditLogs(app))
-	r.GET("/api/admin/comments", adminListComments(app))
-	r.DELETE("/api/admin/comments/:comment_id", adminDeleteComment(svcCtx))
-	r.GET("/api/admin/community/groups", adminListGroups(app))
-	r.DELETE("/api/admin/community/groups/:group_id", adminDeleteGroup(svcCtx))
-	r.GET("/api/admin/gifts", adminListGifts(app))
-	r.POST("/api/admin/gifts", adminCreateGift(svcCtx))
-	r.GET("/api/admin/gifts/:gift_id", adminGetGift(app))
-	r.PUT("/api/admin/gifts/:gift_id", adminUpdateGift(svcCtx))
-	r.DELETE("/api/admin/gifts/:gift_id", adminDeleteGift(svcCtx))
-	r.POST("/api/admin/gifts/bootstrap", adminBootstrapGifts(svcCtx))
-	r.POST("/api/admin/gifts/dedupe", adminDedupeGifts(svcCtx))
-	r.GET("/api/admin/growth/achievements", adminListAchievements(app))
-	r.PUT("/api/admin/growth/achievements/:achievement_id", adminUpdateAchievement(svcCtx))
-	r.GET("/api/admin/growth/levels", adminListLevelConfigs(app))
-	r.PUT("/api/admin/growth/levels/:level_id", adminUpdateLevelConfig(svcCtx))
-	r.POST("/api/admin/growth/levels/bootstrap", adminBootstrapLevels(svcCtx))
-	r.POST("/api/admin/notifications/broadcast", adminBroadcastNotification(svcCtx))
-	r.POST("/api/admin/notifications/send", adminSendNotification(svcCtx))
-	r.GET("/api/admin/orders/gift-purchase", adminListGiftPurchaseOrders(app))
-	r.GET("/api/admin/orders/vip", adminListVipOrders(app))
-	r.GET("/api/admin/post-reports", adminListPostReports(app))
-	r.GET("/api/admin/posts", adminListPosts(app))
-	r.DELETE("/api/admin/posts/:post_id", adminDeletePost(svcCtx))
-	r.GET("/api/admin/social/follows", adminListFollows(app))
-	r.DELETE("/api/admin/social/follows/:follow_id", adminDeleteFollow(svcCtx))
-	r.GET("/api/admin/social/friend-requests", adminListFriendRequests(app))
-	r.GET("/api/admin/tag-dictionary", adminListTagDictionary(app))
-	r.POST("/api/admin/tag-dictionary", adminCreateTagDictionary(svcCtx))
-	r.PUT("/api/admin/tag-dictionary/:entry_id", adminUpdateTagDictionary(svcCtx))
-	r.DELETE("/api/admin/tag-dictionary/:entry_id", adminDeleteTagDictionary(svcCtx))
-	r.PUT("/api/admin/topic-tags/:tag_id", adminUpdateTopicTag(svcCtx))
-	r.DELETE("/api/admin/topic-tags/:tag_id", adminDeleteTopicTag(svcCtx))
-	r.POST("/api/admin/topic-tags/bootstrap", adminBootstrapTopicTags(svcCtx))
-	r.GET("/api/admin/users", adminListUsers(app))
-	r.GET("/api/admin/users/:user_id", adminGetUser(app))
-	r.PUT("/api/admin/users/:user_id", adminUpdateUser(svcCtx))
-	r.GET("/api/admin/users/:user_id/profile", adminGetUserProfile(app))
-	r.GET("/api/admin/vip/plans/:plan_id", adminGetVipPlan(svcCtx))
-	r.PUT("/api/admin/vip/plans/:plan_id", adminUpdateVipPlan(svcCtx))
-	r.DELETE("/api/admin/vip/plans/:plan_id", adminDeleteVipPlan(svcCtx))
-	r.POST("/api/admin/vip/plans/bootstrap", adminBootstrapVipPlans(svcCtx))
+	_ = srv
+	_ = svcCtx
 }
 
 func adminListAccounts(app *adminapp.AppService) func(khttp.Context) error {

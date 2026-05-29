@@ -10215,8 +10215,10 @@ type AdminUpdateAchievementReq struct {
 	UpdateEnabled     bool                   `protobuf:"varint,9,opt,name=update_enabled,json=updateEnabled,proto3" json:"update_enabled,omitempty"`
 	UpdateExpReward   bool                   `protobuf:"varint,10,opt,name=update_exp_reward,json=updateExpReward,proto3" json:"update_exp_reward,omitempty"`
 	UpdateSortOrder   bool                   `protobuf:"varint,11,opt,name=update_sort_order,json=updateSortOrder,proto3" json:"update_sort_order,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// HTTP path /api/admin/growth/achievements/{achievement_id}
+	AchievementId string `protobuf:"bytes,12,opt,name=achievement_id,json=achievementId,proto3" json:"achievement_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AdminUpdateAchievementReq) Reset() {
@@ -10324,6 +10326,13 @@ func (x *AdminUpdateAchievementReq) GetUpdateSortOrder() bool {
 		return x.UpdateSortOrder
 	}
 	return false
+}
+
+func (x *AdminUpdateAchievementReq) GetAchievementId() string {
+	if x != nil {
+		return x.AchievementId
+	}
+	return ""
 }
 
 type AdminUpdateAchievementResp struct {
@@ -10823,8 +10832,10 @@ type AdminUpdateLevelConfigReq struct {
 	UpdateMaxExp     bool                   `protobuf:"varint,9,opt,name=update_max_exp,json=updateMaxExp,proto3" json:"update_max_exp,omitempty"`
 	UpdatePrivileges bool                   `protobuf:"varint,10,opt,name=update_privileges,json=updatePrivileges,proto3" json:"update_privileges,omitempty"`
 	UpdateBadgeUrl   bool                   `protobuf:"varint,11,opt,name=update_badge_url,json=updateBadgeUrl,proto3" json:"update_badge_url,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// HTTP path /api/admin/growth/levels/{level_id}
+	LevelId       uint64 `protobuf:"varint,12,opt,name=level_id,json=levelId,proto3" json:"level_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AdminUpdateLevelConfigReq) Reset() {
@@ -10932,6 +10943,13 @@ func (x *AdminUpdateLevelConfigReq) GetUpdateBadgeUrl() bool {
 		return x.UpdateBadgeUrl
 	}
 	return false
+}
+
+func (x *AdminUpdateLevelConfigReq) GetLevelId() uint64 {
+	if x != nil {
+		return x.LevelId
+	}
+	return 0
 }
 
 type AdminUpdateLevelConfigResp struct {
@@ -14590,6 +14608,1154 @@ func (x *VipPlan) GetUpdatedAt() string {
 	return ""
 }
 
+type AdminMeReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminMeReq) Reset() {
+	*x = AdminMeReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[221]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminMeReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminMeReq) ProtoMessage() {}
+
+func (x *AdminMeReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[221]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminMeReq.ProtoReflect.Descriptor instead.
+func (*AdminMeReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{221}
+}
+
+type AdminMeResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AdminId       uint64                 `protobuf:"varint,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminMeResp) Reset() {
+	*x = AdminMeResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[222]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminMeResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminMeResp) ProtoMessage() {}
+
+func (x *AdminMeResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[222]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminMeResp.ProtoReflect.Descriptor instead.
+func (*AdminMeResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{222}
+}
+
+func (x *AdminMeResp) GetAdminId() uint64 {
+	if x != nil {
+		return x.AdminId
+	}
+	return 0
+}
+
+func (x *AdminMeResp) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *AdminMeResp) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type AdminUpdateAiAgentReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	PayloadJson   string                 `protobuf:"bytes,3,opt,name=payload_json,json=payloadJson,proto3" json:"payload_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminUpdateAiAgentReq) Reset() {
+	*x = AdminUpdateAiAgentReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[223]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUpdateAiAgentReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUpdateAiAgentReq) ProtoMessage() {}
+
+func (x *AdminUpdateAiAgentReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[223]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUpdateAiAgentReq.ProtoReflect.Descriptor instead.
+func (*AdminUpdateAiAgentReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{223}
+}
+
+func (x *AdminUpdateAiAgentReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminUpdateAiAgentReq) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *AdminUpdateAiAgentReq) GetPayloadJson() string {
+	if x != nil {
+		return x.PayloadJson
+	}
+	return ""
+}
+
+type AdminUpdateAiAgentResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminUpdateAiAgentResp) Reset() {
+	*x = AdminUpdateAiAgentResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[224]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUpdateAiAgentResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUpdateAiAgentResp) ProtoMessage() {}
+
+func (x *AdminUpdateAiAgentResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[224]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUpdateAiAgentResp.ProtoReflect.Descriptor instead.
+func (*AdminUpdateAiAgentResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{224}
+}
+
+type AdminMediaImageItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	ImageBasename string                 `protobuf:"bytes,2,opt,name=image_basename,json=imageBasename,proto3" json:"image_basename,omitempty"`
+	OwnerFolder   string                 `protobuf:"bytes,3,opt,name=owner_folder,json=ownerFolder,proto3" json:"owner_folder,omitempty"`
+	MediaKind     string                 `protobuf:"bytes,4,opt,name=media_kind,json=mediaKind,proto3" json:"media_kind,omitempty"`
+	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
+	Size          int64                  `protobuf:"varint,6,opt,name=size,proto3" json:"size,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	OwnerHint     string                 `protobuf:"bytes,8,opt,name=owner_hint,json=ownerHint,proto3" json:"owner_hint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminMediaImageItem) Reset() {
+	*x = AdminMediaImageItem{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[225]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminMediaImageItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminMediaImageItem) ProtoMessage() {}
+
+func (x *AdminMediaImageItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[225]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminMediaImageItem.ProtoReflect.Descriptor instead.
+func (*AdminMediaImageItem) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{225}
+}
+
+func (x *AdminMediaImageItem) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetImageBasename() string {
+	if x != nil {
+		return x.ImageBasename
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetOwnerFolder() string {
+	if x != nil {
+		return x.OwnerFolder
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetMediaKind() string {
+	if x != nil {
+		return x.MediaKind
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *AdminMediaImageItem) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *AdminMediaImageItem) GetOwnerHint() string {
+	if x != nil {
+		return x.OwnerHint
+	}
+	return ""
+}
+
+type AdminMediaOwnerSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OwnerFolder   string                 `protobuf:"bytes,1,opt,name=owner_folder,json=ownerFolder,proto3" json:"owner_folder,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UsernameHint  string                 `protobuf:"bytes,3,opt,name=username_hint,json=usernameHint,proto3" json:"username_hint,omitempty"`
+	FileCount     int32                  `protobuf:"varint,4,opt,name=file_count,json=fileCount,proto3" json:"file_count,omitempty"`
+	TotalBytes    int64                  `protobuf:"varint,5,opt,name=total_bytes,json=totalBytes,proto3" json:"total_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminMediaOwnerSummary) Reset() {
+	*x = AdminMediaOwnerSummary{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[226]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminMediaOwnerSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminMediaOwnerSummary) ProtoMessage() {}
+
+func (x *AdminMediaOwnerSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[226]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminMediaOwnerSummary.ProtoReflect.Descriptor instead.
+func (*AdminMediaOwnerSummary) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{226}
+}
+
+func (x *AdminMediaOwnerSummary) GetOwnerFolder() string {
+	if x != nil {
+		return x.OwnerFolder
+	}
+	return ""
+}
+
+func (x *AdminMediaOwnerSummary) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminMediaOwnerSummary) GetUsernameHint() string {
+	if x != nil {
+		return x.UsernameHint
+	}
+	return ""
+}
+
+func (x *AdminMediaOwnerSummary) GetFileCount() int32 {
+	if x != nil {
+		return x.FileCount
+	}
+	return 0
+}
+
+func (x *AdminMediaOwnerSummary) GetTotalBytes() int64 {
+	if x != nil {
+		return x.TotalBytes
+	}
+	return 0
+}
+
+type AdminListMediaImagesReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Keyword       string                 `protobuf:"bytes,3,opt,name=keyword,proto3" json:"keyword,omitempty"`
+	OwnerFolder   string                 `protobuf:"bytes,4,opt,name=owner_folder,json=ownerFolder,proto3" json:"owner_folder,omitempty"`
+	MediaKind     string                 `protobuf:"bytes,5,opt,name=media_kind,json=mediaKind,proto3" json:"media_kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminListMediaImagesReq) Reset() {
+	*x = AdminListMediaImagesReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[227]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminListMediaImagesReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminListMediaImagesReq) ProtoMessage() {}
+
+func (x *AdminListMediaImagesReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[227]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminListMediaImagesReq.ProtoReflect.Descriptor instead.
+func (*AdminListMediaImagesReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{227}
+}
+
+func (x *AdminListMediaImagesReq) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *AdminListMediaImagesReq) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *AdminListMediaImagesReq) GetKeyword() string {
+	if x != nil {
+		return x.Keyword
+	}
+	return ""
+}
+
+func (x *AdminListMediaImagesReq) GetOwnerFolder() string {
+	if x != nil {
+		return x.OwnerFolder
+	}
+	return ""
+}
+
+func (x *AdminListMediaImagesReq) GetMediaKind() string {
+	if x != nil {
+		return x.MediaKind
+	}
+	return ""
+}
+
+type AdminListMediaImagesResp struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Items         []*AdminMediaImageItem    `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                     `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	Owners        []*AdminMediaOwnerSummary `protobuf:"bytes,3,rep,name=owners,proto3" json:"owners,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminListMediaImagesResp) Reset() {
+	*x = AdminListMediaImagesResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[228]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminListMediaImagesResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminListMediaImagesResp) ProtoMessage() {}
+
+func (x *AdminListMediaImagesResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[228]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminListMediaImagesResp.ProtoReflect.Descriptor instead.
+func (*AdminListMediaImagesResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{228}
+}
+
+func (x *AdminListMediaImagesResp) GetItems() []*AdminMediaImageItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *AdminListMediaImagesResp) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *AdminListMediaImagesResp) GetOwners() []*AdminMediaOwnerSummary {
+	if x != nil {
+		return x.Owners
+	}
+	return nil
+}
+
+type AdminDeleteMediaImageReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminDeleteMediaImageReq) Reset() {
+	*x = AdminDeleteMediaImageReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[229]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminDeleteMediaImageReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminDeleteMediaImageReq) ProtoMessage() {}
+
+func (x *AdminDeleteMediaImageReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[229]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminDeleteMediaImageReq.ProtoReflect.Descriptor instead.
+func (*AdminDeleteMediaImageReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{229}
+}
+
+func (x *AdminDeleteMediaImageReq) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+type AdminDeleteMediaImageResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminDeleteMediaImageResp) Reset() {
+	*x = AdminDeleteMediaImageResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[230]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminDeleteMediaImageResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminDeleteMediaImageResp) ProtoMessage() {}
+
+func (x *AdminDeleteMediaImageResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[230]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminDeleteMediaImageResp.ProtoReflect.Descriptor instead.
+func (*AdminDeleteMediaImageResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{230}
+}
+
+type AdminGetRuntimeConfigReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminGetRuntimeConfigReq) Reset() {
+	*x = AdminGetRuntimeConfigReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[231]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminGetRuntimeConfigReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminGetRuntimeConfigReq) ProtoMessage() {}
+
+func (x *AdminGetRuntimeConfigReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[231]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminGetRuntimeConfigReq.ProtoReflect.Descriptor instead.
+func (*AdminGetRuntimeConfigReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{231}
+}
+
+type AdminGetRuntimeConfigResp struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	PublicApiBaseUrl   string                 `protobuf:"bytes,1,opt,name=public_api_base_url,json=publicApiBaseUrl,proto3" json:"public_api_base_url,omitempty"`
+	ApiPublicBaseUrl   string                 `protobuf:"bytes,2,opt,name=api_public_base_url,json=apiPublicBaseUrl,proto3" json:"api_public_base_url,omitempty"`
+	ImagePublicBaseUrl string                 `protobuf:"bytes,3,opt,name=image_public_base_url,json=imagePublicBaseUrl,proto3" json:"image_public_base_url,omitempty"`
+	ImageLocalDir      string                 `protobuf:"bytes,4,opt,name=image_local_dir,json=imageLocalDir,proto3" json:"image_local_dir,omitempty"`
+	ImageMaxBytes      int64                  `protobuf:"varint,5,opt,name=image_max_bytes,json=imageMaxBytes,proto3" json:"image_max_bytes,omitempty"`
+	ConfigFile         string                 `protobuf:"bytes,6,opt,name=config_file,json=configFile,proto3" json:"config_file,omitempty"`
+	RequiresRestart    bool                   `protobuf:"varint,7,opt,name=requires_restart,json=requiresRestart,proto3" json:"requires_restart,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *AdminGetRuntimeConfigResp) Reset() {
+	*x = AdminGetRuntimeConfigResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[232]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminGetRuntimeConfigResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminGetRuntimeConfigResp) ProtoMessage() {}
+
+func (x *AdminGetRuntimeConfigResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[232]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminGetRuntimeConfigResp.ProtoReflect.Descriptor instead.
+func (*AdminGetRuntimeConfigResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{232}
+}
+
+func (x *AdminGetRuntimeConfigResp) GetPublicApiBaseUrl() string {
+	if x != nil {
+		return x.PublicApiBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeConfigResp) GetApiPublicBaseUrl() string {
+	if x != nil {
+		return x.ApiPublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeConfigResp) GetImagePublicBaseUrl() string {
+	if x != nil {
+		return x.ImagePublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeConfigResp) GetImageLocalDir() string {
+	if x != nil {
+		return x.ImageLocalDir
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeConfigResp) GetImageMaxBytes() int64 {
+	if x != nil {
+		return x.ImageMaxBytes
+	}
+	return 0
+}
+
+func (x *AdminGetRuntimeConfigResp) GetConfigFile() string {
+	if x != nil {
+		return x.ConfigFile
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeConfigResp) GetRequiresRestart() bool {
+	if x != nil {
+		return x.RequiresRestart
+	}
+	return false
+}
+
+type AdminUpdateRuntimeConfigReq struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	PublicApiBaseUrl         string                 `protobuf:"bytes,1,opt,name=public_api_base_url,json=publicApiBaseUrl,proto3" json:"public_api_base_url,omitempty"`
+	UpdatePublicApiBaseUrl   bool                   `protobuf:"varint,2,opt,name=update_public_api_base_url,json=updatePublicApiBaseUrl,proto3" json:"update_public_api_base_url,omitempty"`
+	ApiPublicBaseUrl         string                 `protobuf:"bytes,3,opt,name=api_public_base_url,json=apiPublicBaseUrl,proto3" json:"api_public_base_url,omitempty"`
+	UpdateApiPublicBaseUrl   bool                   `protobuf:"varint,4,opt,name=update_api_public_base_url,json=updateApiPublicBaseUrl,proto3" json:"update_api_public_base_url,omitempty"`
+	ImagePublicBaseUrl       string                 `protobuf:"bytes,5,opt,name=image_public_base_url,json=imagePublicBaseUrl,proto3" json:"image_public_base_url,omitempty"`
+	UpdateImagePublicBaseUrl bool                   `protobuf:"varint,6,opt,name=update_image_public_base_url,json=updateImagePublicBaseUrl,proto3" json:"update_image_public_base_url,omitempty"`
+	ImageLocalDir            string                 `protobuf:"bytes,7,opt,name=image_local_dir,json=imageLocalDir,proto3" json:"image_local_dir,omitempty"`
+	UpdateImageLocalDir      bool                   `protobuf:"varint,8,opt,name=update_image_local_dir,json=updateImageLocalDir,proto3" json:"update_image_local_dir,omitempty"`
+	ImageMaxBytes            int64                  `protobuf:"varint,9,opt,name=image_max_bytes,json=imageMaxBytes,proto3" json:"image_max_bytes,omitempty"`
+	UpdateImageMaxBytes      bool                   `protobuf:"varint,10,opt,name=update_image_max_bytes,json=updateImageMaxBytes,proto3" json:"update_image_max_bytes,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *AdminUpdateRuntimeConfigReq) Reset() {
+	*x = AdminUpdateRuntimeConfigReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[233]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUpdateRuntimeConfigReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUpdateRuntimeConfigReq) ProtoMessage() {}
+
+func (x *AdminUpdateRuntimeConfigReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[233]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUpdateRuntimeConfigReq.ProtoReflect.Descriptor instead.
+func (*AdminUpdateRuntimeConfigReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{233}
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetPublicApiBaseUrl() string {
+	if x != nil {
+		return x.PublicApiBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetUpdatePublicApiBaseUrl() bool {
+	if x != nil {
+		return x.UpdatePublicApiBaseUrl
+	}
+	return false
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetApiPublicBaseUrl() string {
+	if x != nil {
+		return x.ApiPublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetUpdateApiPublicBaseUrl() bool {
+	if x != nil {
+		return x.UpdateApiPublicBaseUrl
+	}
+	return false
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetImagePublicBaseUrl() string {
+	if x != nil {
+		return x.ImagePublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetUpdateImagePublicBaseUrl() bool {
+	if x != nil {
+		return x.UpdateImagePublicBaseUrl
+	}
+	return false
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetImageLocalDir() string {
+	if x != nil {
+		return x.ImageLocalDir
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetUpdateImageLocalDir() bool {
+	if x != nil {
+		return x.UpdateImageLocalDir
+	}
+	return false
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetImageMaxBytes() int64 {
+	if x != nil {
+		return x.ImageMaxBytes
+	}
+	return 0
+}
+
+func (x *AdminUpdateRuntimeConfigReq) GetUpdateImageMaxBytes() bool {
+	if x != nil {
+		return x.UpdateImageMaxBytes
+	}
+	return false
+}
+
+type AdminUpdateRuntimeConfigResp struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	PublicApiBaseUrl   string                 `protobuf:"bytes,1,opt,name=public_api_base_url,json=publicApiBaseUrl,proto3" json:"public_api_base_url,omitempty"`
+	ApiPublicBaseUrl   string                 `protobuf:"bytes,2,opt,name=api_public_base_url,json=apiPublicBaseUrl,proto3" json:"api_public_base_url,omitempty"`
+	ImagePublicBaseUrl string                 `protobuf:"bytes,3,opt,name=image_public_base_url,json=imagePublicBaseUrl,proto3" json:"image_public_base_url,omitempty"`
+	ImageLocalDir      string                 `protobuf:"bytes,4,opt,name=image_local_dir,json=imageLocalDir,proto3" json:"image_local_dir,omitempty"`
+	ImageMaxBytes      int64                  `protobuf:"varint,5,opt,name=image_max_bytes,json=imageMaxBytes,proto3" json:"image_max_bytes,omitempty"`
+	ConfigFile         string                 `protobuf:"bytes,6,opt,name=config_file,json=configFile,proto3" json:"config_file,omitempty"`
+	RequiresRestart    bool                   `protobuf:"varint,7,opt,name=requires_restart,json=requiresRestart,proto3" json:"requires_restart,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *AdminUpdateRuntimeConfigResp) Reset() {
+	*x = AdminUpdateRuntimeConfigResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[234]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminUpdateRuntimeConfigResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminUpdateRuntimeConfigResp) ProtoMessage() {}
+
+func (x *AdminUpdateRuntimeConfigResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[234]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminUpdateRuntimeConfigResp.ProtoReflect.Descriptor instead.
+func (*AdminUpdateRuntimeConfigResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{234}
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetPublicApiBaseUrl() string {
+	if x != nil {
+		return x.PublicApiBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetApiPublicBaseUrl() string {
+	if x != nil {
+		return x.ApiPublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetImagePublicBaseUrl() string {
+	if x != nil {
+		return x.ImagePublicBaseUrl
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetImageLocalDir() string {
+	if x != nil {
+		return x.ImageLocalDir
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetImageMaxBytes() int64 {
+	if x != nil {
+		return x.ImageMaxBytes
+	}
+	return 0
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetConfigFile() string {
+	if x != nil {
+		return x.ConfigFile
+	}
+	return ""
+}
+
+func (x *AdminUpdateRuntimeConfigResp) GetRequiresRestart() bool {
+	if x != nil {
+		return x.RequiresRestart
+	}
+	return false
+}
+
+type AdminRuntimeProcessInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	Pid           int32                  `protobuf:"varint,2,opt,name=pid,proto3" json:"pid,omitempty"`
+	GoAllocMb     float64                `protobuf:"fixed64,3,opt,name=go_alloc_mb,json=goAllocMb,proto3" json:"go_alloc_mb,omitempty"`
+	GoSysMb       float64                `protobuf:"fixed64,4,opt,name=go_sys_mb,json=goSysMb,proto3" json:"go_sys_mb,omitempty"`
+	RssMb         float64                `protobuf:"fixed64,5,opt,name=rss_mb,json=rssMb,proto3" json:"rss_mb,omitempty"`
+	Goroutines    int32                  `protobuf:"varint,6,opt,name=goroutines,proto3" json:"goroutines,omitempty"`
+	NumCpu        int32                  `protobuf:"varint,7,opt,name=num_cpu,json=numCpu,proto3" json:"num_cpu,omitempty"`
+	Reachable     bool                   `protobuf:"varint,8,opt,name=reachable,proto3" json:"reachable,omitempty"`
+	SameProcess   bool                   `protobuf:"varint,9,opt,name=same_process,json=sameProcess,proto3" json:"same_process,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminRuntimeProcessInfo) Reset() {
+	*x = AdminRuntimeProcessInfo{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[235]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminRuntimeProcessInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminRuntimeProcessInfo) ProtoMessage() {}
+
+func (x *AdminRuntimeProcessInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[235]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminRuntimeProcessInfo.ProtoReflect.Descriptor instead.
+func (*AdminRuntimeProcessInfo) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{235}
+}
+
+func (x *AdminRuntimeProcessInfo) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *AdminRuntimeProcessInfo) GetPid() int32 {
+	if x != nil {
+		return x.Pid
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetGoAllocMb() float64 {
+	if x != nil {
+		return x.GoAllocMb
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetGoSysMb() float64 {
+	if x != nil {
+		return x.GoSysMb
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetRssMb() float64 {
+	if x != nil {
+		return x.RssMb
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetGoroutines() int32 {
+	if x != nil {
+		return x.Goroutines
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetNumCpu() int32 {
+	if x != nil {
+		return x.NumCpu
+	}
+	return 0
+}
+
+func (x *AdminRuntimeProcessInfo) GetReachable() bool {
+	if x != nil {
+		return x.Reachable
+	}
+	return false
+}
+
+func (x *AdminRuntimeProcessInfo) GetSameProcess() bool {
+	if x != nil {
+		return x.SameProcess
+	}
+	return false
+}
+
+type AdminGetRuntimeOverviewReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminGetRuntimeOverviewReq) Reset() {
+	*x = AdminGetRuntimeOverviewReq{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[236]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminGetRuntimeOverviewReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminGetRuntimeOverviewReq) ProtoMessage() {}
+
+func (x *AdminGetRuntimeOverviewReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[236]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminGetRuntimeOverviewReq.ProtoReflect.Descriptor instead.
+func (*AdminGetRuntimeOverviewReq) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{236}
+}
+
+type AdminGetRuntimeOverviewResp struct {
+	state            protoimpl.MessageState   `protogen:"open.v1"`
+	ApiProcess       *AdminRuntimeProcessInfo `protobuf:"bytes,1,opt,name=api_process,json=apiProcess,proto3" json:"api_process,omitempty"`
+	RpcProcess       *AdminRuntimeProcessInfo `protobuf:"bytes,2,opt,name=rpc_process,json=rpcProcess,proto3" json:"rpc_process,omitempty"`
+	RpcMonitorOnline bool                     `protobuf:"varint,3,opt,name=rpc_monitor_online,json=rpcMonitorOnline,proto3" json:"rpc_monitor_online,omitempty"`
+	Layout           string                   `protobuf:"bytes,4,opt,name=layout,proto3" json:"layout,omitempty"`
+	ProcessesNote    string                   `protobuf:"bytes,5,opt,name=processes_note,json=processesNote,proto3" json:"processes_note,omitempty"`
+	EstimatedRssMb   float64                  `protobuf:"fixed64,6,opt,name=estimated_rss_mb,json=estimatedRssMb,proto3" json:"estimated_rss_mb,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AdminGetRuntimeOverviewResp) Reset() {
+	*x = AdminGetRuntimeOverviewResp{}
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[237]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminGetRuntimeOverviewResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminGetRuntimeOverviewResp) ProtoMessage() {}
+
+func (x *AdminGetRuntimeOverviewResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[237]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminGetRuntimeOverviewResp.ProtoReflect.Descriptor instead.
+func (*AdminGetRuntimeOverviewResp) Descriptor() ([]byte, []int) {
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{237}
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetApiProcess() *AdminRuntimeProcessInfo {
+	if x != nil {
+		return x.ApiProcess
+	}
+	return nil
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetRpcProcess() *AdminRuntimeProcessInfo {
+	if x != nil {
+		return x.RpcProcess
+	}
+	return nil
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetRpcMonitorOnline() bool {
+	if x != nil {
+		return x.RpcMonitorOnline
+	}
+	return false
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetLayout() string {
+	if x != nil {
+		return x.Layout
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetProcessesNote() string {
+	if x != nil {
+		return x.ProcessesNote
+	}
+	return ""
+}
+
+func (x *AdminGetRuntimeOverviewResp) GetEstimatedRssMb() float64 {
+	if x != nil {
+		return x.EstimatedRssMb
+	}
+	return 0
+}
+
 type PingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -14598,7 +15764,7 @@ type PingRequest struct {
 
 func (x *PingRequest) Reset() {
 	*x = PingRequest{}
-	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[221]
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[238]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14610,7 +15776,7 @@ func (x *PingRequest) String() string {
 func (*PingRequest) ProtoMessage() {}
 
 func (x *PingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[221]
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[238]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14623,7 +15789,7 @@ func (x *PingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
 func (*PingRequest) Descriptor() ([]byte, []int) {
-	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{221}
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{238}
 }
 
 type PingReply struct {
@@ -14634,7 +15800,7 @@ type PingReply struct {
 
 func (x *PingReply) Reset() {
 	*x = PingReply{}
-	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[222]
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[239]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14646,7 +15812,7 @@ func (x *PingReply) String() string {
 func (*PingReply) ProtoMessage() {}
 
 func (x *PingReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[222]
+	mi := &file_api_admin_v1_admin_messages_proto_msgTypes[239]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14659,7 +15825,7 @@ func (x *PingReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingReply.ProtoReflect.Descriptor instead.
 func (*PingReply) Descriptor() ([]byte, []int) {
-	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{222}
+	return file_api_admin_v1_admin_messages_proto_rawDescGZIP(), []int{239}
 }
 
 var File_api_admin_v1_admin_messages_proto protoreflect.FileDescriptor
@@ -15407,7 +16573,7 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\vupdate_role\x18\a \x01(\bR\n" +
 	"updateRole\"N\n" +
 	"\x16AdminUpdateAccountResp\x124\n" +
-	"\aaccount\x18\x01 \x01(\v2\x1a.admin.v1.AdminAccountItemR\aaccount\"\x88\x03\n" +
+	"\aaccount\x18\x01 \x01(\v2\x1a.admin.v1.AdminAccountItemR\aaccount\"\xaf\x03\n" +
 	"\x19AdminUpdateAchievementReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -15423,7 +16589,8 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x0eupdate_enabled\x18\t \x01(\bR\rupdateEnabled\x12*\n" +
 	"\x11update_exp_reward\x18\n" +
 	" \x01(\bR\x0fupdateExpReward\x12*\n" +
-	"\x11update_sort_order\x18\v \x01(\bR\x0fupdateSortOrder\"P\n" +
+	"\x11update_sort_order\x18\v \x01(\bR\x0fupdateSortOrder\x12%\n" +
+	"\x0eachievement_id\x18\f \x01(\tR\rachievementId\"P\n" +
 	"\x1aAdminUpdateAchievementResp\x122\n" +
 	"\x04item\x18\x01 \x01(\v2\x1e.admin.v1.AdminAchievementItemR\x04item\"\xbf\x01\n" +
 	"\x1aAdminUpdateAnnouncementReq\x12'\n" +
@@ -15464,7 +16631,7 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x0fupdate_category\x18\f \x01(\bR\x0eupdateCategory\x12*\n" +
 	"\x11update_sort_order\x18\r \x01(\bR\x0fupdateSortOrder\"9\n" +
 	"\x13AdminUpdateGiftResp\x12\"\n" +
-	"\x04gift\x18\x01 \x01(\v2\x0e.admin.v1.GiftR\x04gift\"\xf6\x02\n" +
+	"\x04gift\x18\x01 \x01(\v2\x0e.admin.v1.GiftR\x04gift\"\x91\x03\n" +
 	"\x19AdminUpdateLevelConfigReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x17\n" +
@@ -15479,7 +16646,8 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x0eupdate_max_exp\x18\t \x01(\bR\fupdateMaxExp\x12+\n" +
 	"\x11update_privileges\x18\n" +
 	" \x01(\bR\x10updatePrivileges\x12(\n" +
-	"\x10update_badge_url\x18\v \x01(\bR\x0eupdateBadgeUrl\"P\n" +
+	"\x10update_badge_url\x18\v \x01(\bR\x0eupdateBadgeUrl\x12\x19\n" +
+	"\blevel_id\x18\f \x01(\x04R\alevelId\"P\n" +
 	"\x1aAdminUpdateLevelConfigResp\x122\n" +
 	"\x04item\x18\x01 \x01(\v2\x1e.admin.v1.AdminLevelConfigItemR\x04item\"\x89\x01\n" +
 	"\x1cAdminUpdateMoeBrainPolicyReq\x12\x1b\n" +
@@ -15858,17 +17026,190 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt\"\r\n" +
+	"updated_at\x18\a \x01(\tR\tupdatedAt\"\f\n" +
+	"\n" +
+	"AdminMeReq\"X\n" +
+	"\vAdminMeResp\x12\x19\n" +
+	"\badmin_id\x18\x01 \x01(\x04R\aadminId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\"n\n" +
+	"\x15AdminUpdateAiAgentReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x19\n" +
+	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12!\n" +
+	"\fpayload_json\x18\x03 \x01(\tR\vpayloadJson\"\x18\n" +
+	"\x16AdminUpdateAiAgentResp\"\xfe\x01\n" +
+	"\x13AdminMediaImageItem\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\x12%\n" +
+	"\x0eimage_basename\x18\x02 \x01(\tR\rimageBasename\x12!\n" +
+	"\fowner_folder\x18\x03 \x01(\tR\vownerFolder\x12\x1d\n" +
+	"\n" +
+	"media_kind\x18\x04 \x01(\tR\tmediaKind\x12\x10\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\x12\x12\n" +
+	"\x04size\x18\x06 \x01(\x03R\x04size\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"owner_hint\x18\b \x01(\tR\townerHint\"\xb9\x01\n" +
+	"\x16AdminMediaOwnerSummary\x12!\n" +
+	"\fowner_folder\x18\x01 \x01(\tR\vownerFolder\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12#\n" +
+	"\rusername_hint\x18\x03 \x01(\tR\fusernameHint\x12\x1d\n" +
+	"\n" +
+	"file_count\x18\x04 \x01(\x05R\tfileCount\x12\x1f\n" +
+	"\vtotal_bytes\x18\x05 \x01(\x03R\n" +
+	"totalBytes\"\xa6\x01\n" +
+	"\x17AdminListMediaImagesReq\x12\x12\n" +
+	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x18\n" +
+	"\akeyword\x18\x03 \x01(\tR\akeyword\x12!\n" +
+	"\fowner_folder\x18\x04 \x01(\tR\vownerFolder\x12\x1d\n" +
+	"\n" +
+	"media_kind\x18\x05 \x01(\tR\tmediaKind\"\x9f\x01\n" +
+	"\x18AdminListMediaImagesResp\x123\n" +
+	"\x05items\x18\x01 \x03(\v2\x1d.admin.v1.AdminMediaImageItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\x128\n" +
+	"\x06owners\x18\x03 \x03(\v2 .admin.v1.AdminMediaOwnerSummaryR\x06owners\"6\n" +
+	"\x18AdminDeleteMediaImageReq\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\"\x1b\n" +
+	"\x19AdminDeleteMediaImageResp\"\x1a\n" +
+	"\x18AdminGetRuntimeConfigReq\"\xc8\x02\n" +
+	"\x19AdminGetRuntimeConfigResp\x12-\n" +
+	"\x13public_api_base_url\x18\x01 \x01(\tR\x10publicApiBaseUrl\x12-\n" +
+	"\x13api_public_base_url\x18\x02 \x01(\tR\x10apiPublicBaseUrl\x121\n" +
+	"\x15image_public_base_url\x18\x03 \x01(\tR\x12imagePublicBaseUrl\x12&\n" +
+	"\x0fimage_local_dir\x18\x04 \x01(\tR\rimageLocalDir\x12&\n" +
+	"\x0fimage_max_bytes\x18\x05 \x01(\x03R\rimageMaxBytes\x12\x1f\n" +
+	"\vconfig_file\x18\x06 \x01(\tR\n" +
+	"configFile\x12)\n" +
+	"\x10requires_restart\x18\a \x01(\bR\x0frequiresRestart\"\xa0\x04\n" +
+	"\x1bAdminUpdateRuntimeConfigReq\x12-\n" +
+	"\x13public_api_base_url\x18\x01 \x01(\tR\x10publicApiBaseUrl\x12:\n" +
+	"\x1aupdate_public_api_base_url\x18\x02 \x01(\bR\x16updatePublicApiBaseUrl\x12-\n" +
+	"\x13api_public_base_url\x18\x03 \x01(\tR\x10apiPublicBaseUrl\x12:\n" +
+	"\x1aupdate_api_public_base_url\x18\x04 \x01(\bR\x16updateApiPublicBaseUrl\x121\n" +
+	"\x15image_public_base_url\x18\x05 \x01(\tR\x12imagePublicBaseUrl\x12>\n" +
+	"\x1cupdate_image_public_base_url\x18\x06 \x01(\bR\x18updateImagePublicBaseUrl\x12&\n" +
+	"\x0fimage_local_dir\x18\a \x01(\tR\rimageLocalDir\x123\n" +
+	"\x16update_image_local_dir\x18\b \x01(\bR\x13updateImageLocalDir\x12&\n" +
+	"\x0fimage_max_bytes\x18\t \x01(\x03R\rimageMaxBytes\x123\n" +
+	"\x16update_image_max_bytes\x18\n" +
+	" \x01(\bR\x13updateImageMaxBytes\"\xcb\x02\n" +
+	"\x1cAdminUpdateRuntimeConfigResp\x12-\n" +
+	"\x13public_api_base_url\x18\x01 \x01(\tR\x10publicApiBaseUrl\x12-\n" +
+	"\x13api_public_base_url\x18\x02 \x01(\tR\x10apiPublicBaseUrl\x121\n" +
+	"\x15image_public_base_url\x18\x03 \x01(\tR\x12imagePublicBaseUrl\x12&\n" +
+	"\x0fimage_local_dir\x18\x04 \x01(\tR\rimageLocalDir\x12&\n" +
+	"\x0fimage_max_bytes\x18\x05 \x01(\x03R\rimageMaxBytes\x12\x1f\n" +
+	"\vconfig_file\x18\x06 \x01(\tR\n" +
+	"configFile\x12)\n" +
+	"\x10requires_restart\x18\a \x01(\bR\x0frequiresRestart\"\x8c\x02\n" +
+	"\x17AdminRuntimeProcessInfo\x12\x12\n" +
+	"\x04role\x18\x01 \x01(\tR\x04role\x12\x10\n" +
+	"\x03pid\x18\x02 \x01(\x05R\x03pid\x12\x1e\n" +
+	"\vgo_alloc_mb\x18\x03 \x01(\x01R\tgoAllocMb\x12\x1a\n" +
+	"\tgo_sys_mb\x18\x04 \x01(\x01R\agoSysMb\x12\x15\n" +
+	"\x06rss_mb\x18\x05 \x01(\x01R\x05rssMb\x12\x1e\n" +
+	"\n" +
+	"goroutines\x18\x06 \x01(\x05R\n" +
+	"goroutines\x12\x17\n" +
+	"\anum_cpu\x18\a \x01(\x05R\x06numCpu\x12\x1c\n" +
+	"\treachable\x18\b \x01(\bR\treachable\x12!\n" +
+	"\fsame_process\x18\t \x01(\bR\vsameProcess\"\x1c\n" +
+	"\x1aAdminGetRuntimeOverviewReq\"\xbc\x02\n" +
+	"\x1bAdminGetRuntimeOverviewResp\x12B\n" +
+	"\vapi_process\x18\x01 \x01(\v2!.admin.v1.AdminRuntimeProcessInfoR\n" +
+	"apiProcess\x12B\n" +
+	"\vrpc_process\x18\x02 \x01(\v2!.admin.v1.AdminRuntimeProcessInfoR\n" +
+	"rpcProcess\x12,\n" +
+	"\x12rpc_monitor_online\x18\x03 \x01(\bR\x10rpcMonitorOnline\x12\x16\n" +
+	"\x06layout\x18\x04 \x01(\tR\x06layout\x12%\n" +
+	"\x0eprocesses_note\x18\x05 \x01(\tR\rprocessesNote\x12(\n" +
+	"\x10estimated_rss_mb\x18\x06 \x01(\x01R\x0eestimatedRssMb\"\r\n" +
 	"\vPingRequest\"\v\n" +
-	"\tPingReply2>\n" +
+	"\tPingReply2\xe0H\n" +
 	"\bAdminApp\x122\n" +
-	"\x04Ping\x12\x15.admin.v1.PingRequest\x1a\x13.admin.v1.PingReply2\xc8\x05\n" +
+	"\x04Ping\x12\x15.admin.v1.PingRequest\x1a\x13.admin.v1.PingReply\x12\x89\x01\n" +
+	"\x15AdminBootstrapAccount\x12\".admin.v1.AdminBootstrapAccountReq\x1a#.admin.v1.AdminBootstrapAccountResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/admin/bootstrap/account\x12\\\n" +
+	"\n" +
+	"AdminLogin\x12\x17.admin.v1.AdminLoginReq\x1a\x18.admin.v1.AdminLoginResp\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/admin/login\x12q\n" +
+	"\x11AdminListAccounts\x12\x1e.admin.v1.AdminListAccountsReq\x1a\x1f.admin.v1.AdminListAccountsResp\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/admin/accounts\x12w\n" +
+	"\x12AdminCreateAccount\x12\x1f.admin.v1.AdminCreateAccountReq\x1a .admin.v1.AdminCreateAccountResp\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/api/admin/accounts\x12\x84\x01\n" +
+	"\x12AdminUpdateAccount\x12\x1f.admin.v1.AdminUpdateAccountReq\x1a .admin.v1.AdminUpdateAccountResp\"+\x82\xd3\xe4\x93\x02%:\x01*\x1a /api/admin/accounts/{account_id}\x12\x81\x01\n" +
+	"\x12AdminDeleteAccount\x12\x1f.admin.v1.AdminDeleteAccountReq\x1a .admin.v1.AdminDeleteAccountResp\"(\x82\xd3\xe4\x93\x02\"* /api/admin/accounts/{account_id}\x12\x9d\x01\n" +
+	"\x1aAdminBootstrapAchievements\x12'.admin.v1.AdminBootstrapAchievementsReq\x1a(.admin.v1.AdminBootstrapAchievementsResp\",\x82\xd3\xe4\x93\x02&:\x01*\"!/api/admin/achievements/bootstrap\x12r\n" +
+	"\x11AdminListAiAgents\x12\x1e.admin.v1.AdminListAiAgentsReq\x1a\x1f.admin.v1.AdminListAiAgentsResp\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/admin/ai/agents\x12x\n" +
+	"\x12AdminDeleteAiAgent\x12\x1f.admin.v1.AdminDeleteAiAgentReq\x1a .admin.v1.AdminDeleteAiAgentResp\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01**\x14/api/admin/ai/agents\x12\x85\x01\n" +
+	"\x16AdminListAnnouncements\x12#.admin.v1.AdminListAnnouncementsReq\x1a$.admin.v1.AdminListAnnouncementsResp\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/admin/announcements\x12\x8b\x01\n" +
+	"\x17AdminCreateAnnouncement\x12$.admin.v1.AdminCreateAnnouncementReq\x1a%.admin.v1.AdminCreateAnnouncementResp\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/admin/announcements\x12\x91\x01\n" +
+	"\x14AdminGetAnnouncement\x12!.admin.v1.AdminGetAnnouncementReq\x1a\".admin.v1.AdminGetAnnouncementResp\"2\x82\xd3\xe4\x93\x02,\x12*/api/admin/announcements/{announcement_id}\x12\x9d\x01\n" +
+	"\x17AdminUpdateAnnouncement\x12$.admin.v1.AdminUpdateAnnouncementReq\x1a%.admin.v1.AdminUpdateAnnouncementResp\"5\x82\xd3\xe4\x93\x02/:\x01*\x1a*/api/admin/announcements/{announcement_id}\x12\x9a\x01\n" +
+	"\x17AdminDeleteAnnouncement\x12$.admin.v1.AdminDeleteAnnouncementReq\x1a%.admin.v1.AdminDeleteAnnouncementResp\"2\x82\xd3\xe4\x93\x02,**/api/admin/announcements/{announcement_id}\x12\xa8\x01\n" +
+	"\x18AdminPublishAnnouncement\x12%.admin.v1.AdminPublishAnnouncementReq\x1a&.admin.v1.AdminPublishAnnouncementResp\"=\x82\xd3\xe4\x93\x027:\x01*\"2/api/admin/announcements/{announcement_id}/publish\x12v\n" +
+	"\x12AdminListAuditLogs\x12\x1f.admin.v1.AdminListAuditLogsReq\x1a .admin.v1.AdminListAuditLogsResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/admin/audit-logs\x12q\n" +
+	"\x11AdminListComments\x12\x1e.admin.v1.AdminListCommentsReq\x1a\x1f.admin.v1.AdminListCommentsResp\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/admin/comments\x12\x81\x01\n" +
+	"\x12AdminDeleteComment\x12\x1f.admin.v1.AdminDeleteCommentReq\x1a .admin.v1.AdminDeleteCommentResp\"(\x82\xd3\xe4\x93\x02\"* /api/admin/comments/{comment_id}\x12s\n" +
+	"\x0fAdminListGroups\x12\x1c.admin.v1.AdminListGroupsReq\x1a\x1d.admin.v1.AdminListGroupsResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/admin/community/groups\x12\x81\x01\n" +
+	"\x10AdminDeleteGroup\x12\x1d.admin.v1.AdminDeleteGroupReq\x1a\x1e.admin.v1.AdminDeleteGroupResp\".\x82\xd3\xe4\x93\x02(*&/api/admin/community/groups/{group_id}\x12e\n" +
+	"\x0eAdminListGifts\x12\x1b.admin.v1.AdminListGiftsReq\x1a\x1c.admin.v1.AdminListGiftsResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/gifts\x12k\n" +
+	"\x0fAdminCreateGift\x12\x1c.admin.v1.AdminCreateGiftReq\x1a\x1d.admin.v1.AdminCreateGiftResp\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/admin/gifts\x12i\n" +
+	"\fAdminGetGift\x12\x19.admin.v1.AdminGetGiftReq\x1a\x1a.admin.v1.AdminGetGiftResp\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/admin/gifts/{gift_id}\x12u\n" +
+	"\x0fAdminUpdateGift\x12\x1c.admin.v1.AdminUpdateGiftReq\x1a\x1d.admin.v1.AdminUpdateGiftResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\x1a\x1a/api/admin/gifts/{gift_id}\x12r\n" +
+	"\x0fAdminDeleteGift\x12\x1c.admin.v1.AdminDeleteGiftReq\x1a\x1d.admin.v1.AdminDeleteGiftResp\"\"\x82\xd3\xe4\x93\x02\x1c*\x1a/api/admin/gifts/{gift_id}\x12\x81\x01\n" +
+	"\x13AdminBootstrapGifts\x12 .admin.v1.AdminBootstrapGiftsReq\x1a!.admin.v1.AdminBootstrapGiftsResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/admin/gifts/bootstrap\x12u\n" +
+	"\x10AdminDedupeGifts\x12\x1d.admin.v1.AdminDedupeGiftsReq\x1a\x1e.admin.v1.AdminDedupeGiftsResp\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/admin/gifts/dedupe\x12\x88\x01\n" +
+	"\x15AdminListAchievements\x12\".admin.v1.AdminListAchievementsReq\x1a#.admin.v1.AdminListAchievementsResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/admin/growth/achievements\x12\x9f\x01\n" +
+	"\x16AdminUpdateAchievement\x12#.admin.v1.AdminUpdateAchievementReq\x1a$.admin.v1.AdminUpdateAchievementResp\":\x82\xd3\xe4\x93\x024:\x01*\x1a//api/admin/growth/achievements/{achievement_id}\x12\x82\x01\n" +
+	"\x15AdminListLevelConfigs\x12\".admin.v1.AdminListLevelConfigsReq\x1a#.admin.v1.AdminListLevelConfigsResp\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/admin/growth/levels\x12\x93\x01\n" +
+	"\x16AdminUpdateLevelConfig\x12#.admin.v1.AdminUpdateLevelConfigReq\x1a$.admin.v1.AdminUpdateLevelConfigResp\".\x82\xd3\xe4\x93\x02(:\x01*\x1a#/api/admin/growth/levels/{level_id}\x12\x8c\x01\n" +
+	"\x14AdminBootstrapLevels\x12!.admin.v1.AdminBootstrapLevelsReq\x1a\".admin.v1.AdminBootstrapLevelsResp\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/api/admin/growth/levels/bootstrap\x12\x9e\x01\n" +
+	"\x1aAdminBroadcastNotification\x12'.admin.v1.AdminBroadcastNotificationReq\x1a(.admin.v1.AdminBroadcastNotificationResp\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/api/admin/notifications/broadcast\x12\x8a\x01\n" +
+	"\x15AdminSendNotification\x12\".admin.v1.AdminSendNotificationReq\x1a#.admin.v1.AdminSendNotificationResp\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/api/admin/notifications/send\x12\x9b\x01\n" +
+	"\x1bAdminListGiftPurchaseOrders\x12(.admin.v1.AdminListGiftPurchaseOrdersReq\x1a).admin.v1.AdminListGiftPurchaseOrdersResp\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/admin/orders/gift-purchase\x12v\n" +
+	"\x12AdminListVipOrders\x12\x1f.admin.v1.AdminListVipOrdersReq\x1a .admin.v1.AdminListVipOrdersResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/admin/orders/vip\x12~\n" +
+	"\x14AdminListPostReports\x12!.admin.v1.AdminListPostReportsReq\x1a\".admin.v1.AdminListPostReportsResp\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/admin/post-reports\x12e\n" +
+	"\x0eAdminListPosts\x12\x1b.admin.v1.AdminListPostsReq\x1a\x1c.admin.v1.AdminListPostsResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/posts\x12r\n" +
+	"\x0fAdminDeletePost\x12\x1c.admin.v1.AdminDeletePostReq\x1a\x1d.admin.v1.AdminDeletePostResp\"\"\x82\xd3\xe4\x93\x02\x1c*\x1a/api/admin/posts/{post_id}\x12t\n" +
+	"\x10AdminListFollows\x12\x1d.admin.v1.AdminListFollowsReq\x1a\x1e.admin.v1.AdminListFollowsResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/admin/social/follows\x12\x83\x01\n" +
+	"\x11AdminDeleteFollow\x12\x1e.admin.v1.AdminDeleteFollowReq\x1a\x1f.admin.v1.AdminDeleteFollowResp\"-\x82\xd3\xe4\x93\x02'*%/api/admin/social/follows/{follow_id}\x12\x91\x01\n" +
+	"\x17AdminListFriendRequests\x12$.admin.v1.AdminListFriendRequestsReq\x1a%.admin.v1.AdminListFriendRequestsResp\")\x82\xd3\xe4\x93\x02#\x12!/api/admin/social/friend-requests\x12\x86\x01\n" +
+	"\x16AdminListTagDictionary\x12#.admin.v1.AdminListTagDictionaryReq\x1a$.admin.v1.AdminListTagDictionaryResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/admin/tag-dictionary\x12\x8f\x01\n" +
+	"\x18AdminCreateTagDictionary\x12%.admin.v1.AdminCreateTagDictionaryReq\x1a&.admin.v1.AdminCreateTagDictionaryResp\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/api/admin/tag-dictionary\x12\x9a\x01\n" +
+	"\x18AdminUpdateTagDictionary\x12%.admin.v1.AdminUpdateTagDictionaryReq\x1a&.admin.v1.AdminUpdateTagDictionaryResp\"/\x82\xd3\xe4\x93\x02):\x01*\x1a$/api/admin/tag-dictionary/{entry_id}\x12\x97\x01\n" +
+	"\x18AdminDeleteTagDictionary\x12%.admin.v1.AdminDeleteTagDictionaryReq\x1a&.admin.v1.AdminDeleteTagDictionaryResp\",\x82\xd3\xe4\x93\x02&*$/api/admin/tag-dictionary/{entry_id}\x12\x85\x01\n" +
+	"\x13AdminUpdateTopicTag\x12 .admin.v1.AdminUpdateTopicTagReq\x1a!.admin.v1.AdminUpdateTopicTagResp\")\x82\xd3\xe4\x93\x02#:\x01*\x1a\x1e/api/admin/topic-tags/{tag_id}\x12\x82\x01\n" +
+	"\x13AdminDeleteTopicTag\x12 .admin.v1.AdminDeleteTopicTagReq\x1a!.admin.v1.AdminDeleteTopicTagResp\"&\x82\xd3\xe4\x93\x02 *\x1e/api/admin/topic-tags/{tag_id}\x12\x92\x01\n" +
+	"\x17AdminBootstrapTopicTags\x12$.admin.v1.AdminBootstrapTopicTagsReq\x1a%.admin.v1.AdminBootstrapTopicTagsResp\"*\x82\xd3\xe4\x93\x02$:\x01*\"\x1f/api/admin/topic-tags/bootstrap\x12e\n" +
+	"\x0eAdminListUsers\x12\x1b.admin.v1.AdminListUsersReq\x1a\x1c.admin.v1.AdminListUsersResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/users\x12i\n" +
+	"\fAdminGetUser\x12\x19.admin.v1.AdminGetUserReq\x1a\x1a.admin.v1.AdminGetUserResp\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/admin/users/{user_id}\x12u\n" +
+	"\x0fAdminUpdateUser\x12\x1c.admin.v1.AdminUpdateUserReq\x1a\x1d.admin.v1.AdminUpdateUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\x1a\x1a/api/admin/users/{user_id}\x12\x86\x01\n" +
+	"\x13AdminGetUserProfile\x12 .admin.v1.AdminGetUserProfileReq\x1a!.admin.v1.AdminGetUserProfileResp\"*\x82\xd3\xe4\x93\x02$\x12\"/api/admin/users/{user_id}/profile\x12v\n" +
+	"\x0fAdminGetVipPlan\x12\x1c.admin.v1.AdminGetVipPlanReq\x1a\x1d.admin.v1.AdminGetVipPlanResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/admin/vip/plans/{plan_id}\x12\x82\x01\n" +
+	"\x12AdminUpdateVipPlan\x12\x1f.admin.v1.AdminUpdateVipPlanReq\x1a .admin.v1.AdminUpdateVipPlanResp\")\x82\xd3\xe4\x93\x02#:\x01*\x1a\x1e/api/admin/vip/plans/{plan_id}\x12\x7f\n" +
+	"\x12AdminDeleteVipPlan\x12\x1f.admin.v1.AdminDeleteVipPlanReq\x1a .admin.v1.AdminDeleteVipPlanResp\"&\x82\xd3\xe4\x93\x02 *\x1e/api/admin/vip/plans/{plan_id}\x12\x8e\x01\n" +
+	"\x16AdminBootstrapVipPlans\x12#.admin.v1.AdminBootstrapVipPlansReq\x1a$.admin.v1.AdminBootstrapVipPlansResp\")\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/admin/vip/plans/bootstrap\x12x\n" +
+	"\x12AdminUpdateAiAgent\x12\x1f.admin.v1.AdminUpdateAiAgentReq\x1a .admin.v1.AdminUpdateAiAgentResp\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\x1a\x14/api/admin/ai/agents\x12M\n" +
+	"\aAdminMe\x12\x14.admin.v1.AdminMeReq\x1a\x15.admin.v1.AdminMeResp\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/admin/me\x12~\n" +
+	"\x14AdminListMediaImages\x12!.admin.v1.AdminListMediaImagesReq\x1a\".admin.v1.AdminListMediaImagesResp\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/admin/media/images\x12\x8c\x01\n" +
+	"\x15AdminDeleteMediaImage\x12\".admin.v1.AdminDeleteMediaImageReq\x1a#.admin.v1.AdminDeleteMediaImageResp\"*\x82\xd3\xe4\x93\x02$*\"/api/admin/media/images/{filename}\x12q\n" +
+	"\x11AdminListMemories\x12\x1e.admin.v1.AdminListMemoriesReq\x1a\x1f.admin.v1.AdminListMemoriesResp\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/admin/memories\x12}\n" +
+	"\x11AdminDeleteMemory\x12\x1e.admin.v1.AdminDeleteMemoryReq\x1a\x1f.admin.v1.AdminDeleteMemoryResp\"'\x82\xd3\xe4\x93\x02!*\x1f/api/admin/memories/{memory_id}\x12}\n" +
+	"\x13AdminGetMemoryStats\x12 .admin.v1.AdminGetMemoryStatsReq\x1a!.admin.v1.AdminGetMemoryStatsResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/admin/memories/stats\x12e\n" +
+	"\x0eAdminListMenus\x12\x1b.admin.v1.AdminListMenusReq\x1a\x1c.admin.v1.AdminListMenusResp\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/admin/menus\x12k\n" +
+	"\x0fAdminUpsertMenu\x12\x1c.admin.v1.AdminUpsertMenuReq\x1a\x1d.admin.v1.AdminUpsertMenuResp\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\x1a\x10/api/admin/menus\x12s\n" +
+	"\x0fAdminDeleteMenu\x12\x1c.admin.v1.AdminDeleteMenuReq\x1a\x1d.admin.v1.AdminDeleteMenuResp\"#\x82\xd3\xe4\x93\x02\x1d*\x1b/api/admin/menus/{menu_key}\x12\x81\x01\n" +
+	"\x13AdminBootstrapMenus\x12 .admin.v1.AdminBootstrapMenusReq\x1a!.admin.v1.AdminBootstrapMenusResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/admin/menus/bootstrap\x12\x83\x01\n" +
+	"\x15AdminGetRuntimeConfig\x12\".admin.v1.AdminGetRuntimeConfigReq\x1a#.admin.v1.AdminGetRuntimeConfigResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/admin/runtime-config\x12\x8f\x01\n" +
+	"\x18AdminUpdateRuntimeConfig\x12%.admin.v1.AdminUpdateRuntimeConfigReq\x1a&.admin.v1.AdminUpdateRuntimeConfigResp\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\x1a\x19/api/admin/runtime-config\x12\x88\x01\n" +
+	"\x14AdminRuntimeOverview\x12$.admin.v1.AdminGetRuntimeOverviewReq\x1a%.admin.v1.AdminGetRuntimeOverviewResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/admin/runtime/overview2\xb0\b\n" +
 	"\rAdminInsights\x12\x8b\x01\n" +
 	"\x17AdminListAiChatSessions\x12$.admin.v1.AdminListAiChatSessionsReq\x1a%.admin.v1.AdminListAiChatSessionsResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/admin/ai/chat/sessions\x12\x8b\x01\n" +
 	"\x17AdminListAiChatMessages\x12$.admin.v1.AdminListAiChatMessagesReq\x1a%.admin.v1.AdminListAiChatMessagesResp\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/admin/ai/chat/messages\x12\x98\x01\n" +
 	"\x19AdminExportAiChatMessages\x12&.admin.v1.AdminExportAiChatMessagesReq\x1a'.admin.v1.AdminExportAiChatMessagesResp\"*\x82\xd3\xe4\x93\x02$\x12\"/api/admin/ai/chat/messages/export\x12\x87\x01\n" +
 	"\x16AdminAnalyticsOverview\x12 .admin.v1.AdminGetMemoryStatsReq\x1a$.admin.v1.AdminAnalyticsOverviewResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/admin/analytics/overview\x12v\n" +
-	"\x12AdminListTopicTags\x12\x1f.admin.v1.AdminListTopicTagsReq\x1a .admin.v1.AdminListTopicTagsResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/admin/topic-tagsB\x1eZ\x1cbackend/api/admin/v1;adminv1b\x06proto3"
+	"\x12AdminListTopicTags\x12\x1f.admin.v1.AdminListTopicTagsReq\x1a .admin.v1.AdminListTopicTagsResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/admin/topic-tags\x12i\n" +
+	"\x0eAdminDashboard\x12\x1b.admin.v1.AdminDashboardReq\x1a\x1c.admin.v1.AdminDashboardResp\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/admin/dashboard\x12x\n" +
+	"\x10AdminGrowthStats\x12 .admin.v1.AdminGetGrowthStatsReq\x1a!.admin.v1.AdminGetGrowthStatsResp\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/admin/growth/stats\x12\x80\x01\n" +
+	"\x12AdminSchemaCatalog\x12\".admin.v1.AdminGetSchemaCatalogReq\x1a#.admin.v1.AdminGetSchemaCatalogResp\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/api/admin/schema/catalogB\x1eZ\x1cbackend/api/admin/v1;adminv1b\x06proto3"
 
 var (
 	file_api_admin_v1_admin_messages_proto_rawDescOnce sync.Once
@@ -15882,7 +17223,7 @@ func file_api_admin_v1_admin_messages_proto_rawDescGZIP() []byte {
 	return file_api_admin_v1_admin_messages_proto_rawDescData
 }
 
-var file_api_admin_v1_admin_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 223)
+var file_api_admin_v1_admin_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 240)
 var file_api_admin_v1_admin_messages_proto_goTypes = []any{
 	(*AdminAccountItem)(nil),                // 0: admin.v1.AdminAccountItem
 	(*AdminAchievementItem)(nil),            // 1: admin.v1.AdminAchievementItem
@@ -16105,8 +17446,25 @@ var file_api_admin_v1_admin_messages_proto_goTypes = []any{
 	(*User)(nil),                            // 218: admin.v1.User
 	(*VipOrder)(nil),                        // 219: admin.v1.VipOrder
 	(*VipPlan)(nil),                         // 220: admin.v1.VipPlan
-	(*PingRequest)(nil),                     // 221: admin.v1.PingRequest
-	(*PingReply)(nil),                       // 222: admin.v1.PingReply
+	(*AdminMeReq)(nil),                      // 221: admin.v1.AdminMeReq
+	(*AdminMeResp)(nil),                     // 222: admin.v1.AdminMeResp
+	(*AdminUpdateAiAgentReq)(nil),           // 223: admin.v1.AdminUpdateAiAgentReq
+	(*AdminUpdateAiAgentResp)(nil),          // 224: admin.v1.AdminUpdateAiAgentResp
+	(*AdminMediaImageItem)(nil),             // 225: admin.v1.AdminMediaImageItem
+	(*AdminMediaOwnerSummary)(nil),          // 226: admin.v1.AdminMediaOwnerSummary
+	(*AdminListMediaImagesReq)(nil),         // 227: admin.v1.AdminListMediaImagesReq
+	(*AdminListMediaImagesResp)(nil),        // 228: admin.v1.AdminListMediaImagesResp
+	(*AdminDeleteMediaImageReq)(nil),        // 229: admin.v1.AdminDeleteMediaImageReq
+	(*AdminDeleteMediaImageResp)(nil),       // 230: admin.v1.AdminDeleteMediaImageResp
+	(*AdminGetRuntimeConfigReq)(nil),        // 231: admin.v1.AdminGetRuntimeConfigReq
+	(*AdminGetRuntimeConfigResp)(nil),       // 232: admin.v1.AdminGetRuntimeConfigResp
+	(*AdminUpdateRuntimeConfigReq)(nil),     // 233: admin.v1.AdminUpdateRuntimeConfigReq
+	(*AdminUpdateRuntimeConfigResp)(nil),    // 234: admin.v1.AdminUpdateRuntimeConfigResp
+	(*AdminRuntimeProcessInfo)(nil),         // 235: admin.v1.AdminRuntimeProcessInfo
+	(*AdminGetRuntimeOverviewReq)(nil),      // 236: admin.v1.AdminGetRuntimeOverviewReq
+	(*AdminGetRuntimeOverviewResp)(nil),     // 237: admin.v1.AdminGetRuntimeOverviewResp
+	(*PingRequest)(nil),                     // 238: admin.v1.PingRequest
+	(*PingReply)(nil),                       // 239: admin.v1.PingReply
 }
 var file_api_admin_v1_admin_messages_proto_depIdxs = []int32{
 	39,  // 0: admin.v1.AdminAnalyticsOverviewResp.users_by_day:type_name -> admin.v1.AdminDayStat
@@ -16185,23 +17543,175 @@ var file_api_admin_v1_admin_messages_proto_depIdxs = []int32{
 	201, // 73: admin.v1.AdminUserProfileData.links:type_name -> admin.v1.AdminUserRelationLink
 	197, // 74: admin.v1.AdminUserProfileData.behavior:type_name -> admin.v1.AdminUserBehaviorSummary
 	217, // 75: admin.v1.Post.topic_tags:type_name -> admin.v1.TopicTag
-	221, // 76: admin.v1.AdminApp.Ping:input_type -> admin.v1.PingRequest
-	106, // 77: admin.v1.AdminInsights.AdminListAiChatSessions:input_type -> admin.v1.AdminListAiChatSessionsReq
-	104, // 78: admin.v1.AdminInsights.AdminListAiChatMessages:input_type -> admin.v1.AdminListAiChatMessagesReq
-	70,  // 79: admin.v1.AdminInsights.AdminExportAiChatMessages:input_type -> admin.v1.AdminExportAiChatMessagesReq
-	80,  // 80: admin.v1.AdminInsights.AdminAnalyticsOverview:input_type -> admin.v1.AdminGetMemoryStatsReq
-	142, // 81: admin.v1.AdminInsights.AdminListTopicTags:input_type -> admin.v1.AdminListTopicTagsReq
-	222, // 82: admin.v1.AdminApp.Ping:output_type -> admin.v1.PingReply
-	107, // 83: admin.v1.AdminInsights.AdminListAiChatSessions:output_type -> admin.v1.AdminListAiChatSessionsResp
-	105, // 84: admin.v1.AdminInsights.AdminListAiChatMessages:output_type -> admin.v1.AdminListAiChatMessagesResp
-	71,  // 85: admin.v1.AdminInsights.AdminExportAiChatMessages:output_type -> admin.v1.AdminExportAiChatMessagesResp
-	5,   // 86: admin.v1.AdminInsights.AdminAnalyticsOverview:output_type -> admin.v1.AdminAnalyticsOverviewResp
-	143, // 87: admin.v1.AdminInsights.AdminListTopicTags:output_type -> admin.v1.AdminListTopicTagsResp
-	82,  // [82:88] is the sub-list for method output_type
-	76,  // [76:82] is the sub-list for method input_type
-	76,  // [76:76] is the sub-list for extension type_name
-	76,  // [76:76] is the sub-list for extension extendee
-	0,   // [0:76] is the sub-list for field type_name
+	225, // 76: admin.v1.AdminListMediaImagesResp.items:type_name -> admin.v1.AdminMediaImageItem
+	226, // 77: admin.v1.AdminListMediaImagesResp.owners:type_name -> admin.v1.AdminMediaOwnerSummary
+	235, // 78: admin.v1.AdminGetRuntimeOverviewResp.api_process:type_name -> admin.v1.AdminRuntimeProcessInfo
+	235, // 79: admin.v1.AdminGetRuntimeOverviewResp.rpc_process:type_name -> admin.v1.AdminRuntimeProcessInfo
+	238, // 80: admin.v1.AdminApp.Ping:input_type -> admin.v1.PingRequest
+	8,   // 81: admin.v1.AdminApp.AdminBootstrapAccount:input_type -> admin.v1.AdminBootstrapAccountReq
+	150, // 82: admin.v1.AdminApp.AdminLogin:input_type -> admin.v1.AdminLoginReq
+	98,  // 83: admin.v1.AdminApp.AdminListAccounts:input_type -> admin.v1.AdminListAccountsReq
+	25,  // 84: admin.v1.AdminApp.AdminCreateAccount:input_type -> admin.v1.AdminCreateAccountReq
+	171, // 85: admin.v1.AdminApp.AdminUpdateAccount:input_type -> admin.v1.AdminUpdateAccountReq
+	42,  // 86: admin.v1.AdminApp.AdminDeleteAccount:input_type -> admin.v1.AdminDeleteAccountReq
+	10,  // 87: admin.v1.AdminApp.AdminBootstrapAchievements:input_type -> admin.v1.AdminBootstrapAchievementsReq
+	102, // 88: admin.v1.AdminApp.AdminListAiAgents:input_type -> admin.v1.AdminListAiAgentsReq
+	44,  // 89: admin.v1.AdminApp.AdminDeleteAiAgent:input_type -> admin.v1.AdminDeleteAiAgentReq
+	108, // 90: admin.v1.AdminApp.AdminListAnnouncements:input_type -> admin.v1.AdminListAnnouncementsReq
+	27,  // 91: admin.v1.AdminApp.AdminCreateAnnouncement:input_type -> admin.v1.AdminCreateAnnouncementReq
+	74,  // 92: admin.v1.AdminApp.AdminGetAnnouncement:input_type -> admin.v1.AdminGetAnnouncementReq
+	175, // 93: admin.v1.AdminApp.AdminUpdateAnnouncement:input_type -> admin.v1.AdminUpdateAnnouncementReq
+	46,  // 94: admin.v1.AdminApp.AdminDeleteAnnouncement:input_type -> admin.v1.AdminDeleteAnnouncementReq
+	160, // 95: admin.v1.AdminApp.AdminPublishAnnouncement:input_type -> admin.v1.AdminPublishAnnouncementReq
+	110, // 96: admin.v1.AdminApp.AdminListAuditLogs:input_type -> admin.v1.AdminListAuditLogsReq
+	114, // 97: admin.v1.AdminApp.AdminListComments:input_type -> admin.v1.AdminListCommentsReq
+	48,  // 98: admin.v1.AdminApp.AdminDeleteComment:input_type -> admin.v1.AdminDeleteCommentReq
+	124, // 99: admin.v1.AdminApp.AdminListGroups:input_type -> admin.v1.AdminListGroupsReq
+	54,  // 100: admin.v1.AdminApp.AdminDeleteGroup:input_type -> admin.v1.AdminDeleteGroupReq
+	122, // 101: admin.v1.AdminApp.AdminListGifts:input_type -> admin.v1.AdminListGiftsReq
+	29,  // 102: admin.v1.AdminApp.AdminCreateGift:input_type -> admin.v1.AdminCreateGiftReq
+	76,  // 103: admin.v1.AdminApp.AdminGetGift:input_type -> admin.v1.AdminGetGiftReq
+	179, // 104: admin.v1.AdminApp.AdminUpdateGift:input_type -> admin.v1.AdminUpdateGiftReq
+	52,  // 105: admin.v1.AdminApp.AdminDeleteGift:input_type -> admin.v1.AdminDeleteGiftReq
+	12,  // 106: admin.v1.AdminApp.AdminBootstrapGifts:input_type -> admin.v1.AdminBootstrapGiftsReq
+	40,  // 107: admin.v1.AdminApp.AdminDedupeGifts:input_type -> admin.v1.AdminDedupeGiftsReq
+	100, // 108: admin.v1.AdminApp.AdminListAchievements:input_type -> admin.v1.AdminListAchievementsReq
+	173, // 109: admin.v1.AdminApp.AdminUpdateAchievement:input_type -> admin.v1.AdminUpdateAchievementReq
+	126, // 110: admin.v1.AdminApp.AdminListLevelConfigs:input_type -> admin.v1.AdminListLevelConfigsReq
+	181, // 111: admin.v1.AdminApp.AdminUpdateLevelConfig:input_type -> admin.v1.AdminUpdateLevelConfigReq
+	14,  // 112: admin.v1.AdminApp.AdminBootstrapLevels:input_type -> admin.v1.AdminBootstrapLevelsReq
+	22,  // 113: admin.v1.AdminApp.AdminBroadcastNotification:input_type -> admin.v1.AdminBroadcastNotificationReq
+	168, // 114: admin.v1.AdminApp.AdminSendNotification:input_type -> admin.v1.AdminSendNotificationReq
+	120, // 115: admin.v1.AdminApp.AdminListGiftPurchaseOrders:input_type -> admin.v1.AdminListGiftPurchaseOrdersReq
+	146, // 116: admin.v1.AdminApp.AdminListVipOrders:input_type -> admin.v1.AdminListVipOrdersReq
+	136, // 117: admin.v1.AdminApp.AdminListPostReports:input_type -> admin.v1.AdminListPostReportsReq
+	138, // 118: admin.v1.AdminApp.AdminListPosts:input_type -> admin.v1.AdminListPostsReq
+	62,  // 119: admin.v1.AdminApp.AdminDeletePost:input_type -> admin.v1.AdminDeletePostReq
+	116, // 120: admin.v1.AdminApp.AdminListFollows:input_type -> admin.v1.AdminListFollowsReq
+	50,  // 121: admin.v1.AdminApp.AdminDeleteFollow:input_type -> admin.v1.AdminDeleteFollowReq
+	118, // 122: admin.v1.AdminApp.AdminListFriendRequests:input_type -> admin.v1.AdminListFriendRequestsReq
+	140, // 123: admin.v1.AdminApp.AdminListTagDictionary:input_type -> admin.v1.AdminListTagDictionaryReq
+	31,  // 124: admin.v1.AdminApp.AdminCreateTagDictionary:input_type -> admin.v1.AdminCreateTagDictionaryReq
+	184, // 125: admin.v1.AdminApp.AdminUpdateTagDictionary:input_type -> admin.v1.AdminUpdateTagDictionaryReq
+	64,  // 126: admin.v1.AdminApp.AdminDeleteTagDictionary:input_type -> admin.v1.AdminDeleteTagDictionaryReq
+	186, // 127: admin.v1.AdminApp.AdminUpdateTopicTag:input_type -> admin.v1.AdminUpdateTopicTagReq
+	66,  // 128: admin.v1.AdminApp.AdminDeleteTopicTag:input_type -> admin.v1.AdminDeleteTopicTagReq
+	18,  // 129: admin.v1.AdminApp.AdminBootstrapTopicTags:input_type -> admin.v1.AdminBootstrapTopicTagsReq
+	144, // 130: admin.v1.AdminApp.AdminListUsers:input_type -> admin.v1.AdminListUsersReq
+	92,  // 131: admin.v1.AdminApp.AdminGetUser:input_type -> admin.v1.AdminGetUserReq
+	188, // 132: admin.v1.AdminApp.AdminUpdateUser:input_type -> admin.v1.AdminUpdateUserReq
+	90,  // 133: admin.v1.AdminApp.AdminGetUserProfile:input_type -> admin.v1.AdminGetUserProfileReq
+	94,  // 134: admin.v1.AdminApp.AdminGetVipPlan:input_type -> admin.v1.AdminGetVipPlanReq
+	190, // 135: admin.v1.AdminApp.AdminUpdateVipPlan:input_type -> admin.v1.AdminUpdateVipPlanReq
+	68,  // 136: admin.v1.AdminApp.AdminDeleteVipPlan:input_type -> admin.v1.AdminDeleteVipPlanReq
+	20,  // 137: admin.v1.AdminApp.AdminBootstrapVipPlans:input_type -> admin.v1.AdminBootstrapVipPlansReq
+	223, // 138: admin.v1.AdminApp.AdminUpdateAiAgent:input_type -> admin.v1.AdminUpdateAiAgentReq
+	221, // 139: admin.v1.AdminApp.AdminMe:input_type -> admin.v1.AdminMeReq
+	227, // 140: admin.v1.AdminApp.AdminListMediaImages:input_type -> admin.v1.AdminListMediaImagesReq
+	229, // 141: admin.v1.AdminApp.AdminDeleteMediaImage:input_type -> admin.v1.AdminDeleteMediaImageReq
+	128, // 142: admin.v1.AdminApp.AdminListMemories:input_type -> admin.v1.AdminListMemoriesReq
+	56,  // 143: admin.v1.AdminApp.AdminDeleteMemory:input_type -> admin.v1.AdminDeleteMemoryReq
+	80,  // 144: admin.v1.AdminApp.AdminGetMemoryStats:input_type -> admin.v1.AdminGetMemoryStatsReq
+	130, // 145: admin.v1.AdminApp.AdminListMenus:input_type -> admin.v1.AdminListMenusReq
+	192, // 146: admin.v1.AdminApp.AdminUpsertMenu:input_type -> admin.v1.AdminUpsertMenuReq
+	58,  // 147: admin.v1.AdminApp.AdminDeleteMenu:input_type -> admin.v1.AdminDeleteMenuReq
+	16,  // 148: admin.v1.AdminApp.AdminBootstrapMenus:input_type -> admin.v1.AdminBootstrapMenusReq
+	231, // 149: admin.v1.AdminApp.AdminGetRuntimeConfig:input_type -> admin.v1.AdminGetRuntimeConfigReq
+	233, // 150: admin.v1.AdminApp.AdminUpdateRuntimeConfig:input_type -> admin.v1.AdminUpdateRuntimeConfigReq
+	236, // 151: admin.v1.AdminApp.AdminRuntimeOverview:input_type -> admin.v1.AdminGetRuntimeOverviewReq
+	106, // 152: admin.v1.AdminInsights.AdminListAiChatSessions:input_type -> admin.v1.AdminListAiChatSessionsReq
+	104, // 153: admin.v1.AdminInsights.AdminListAiChatMessages:input_type -> admin.v1.AdminListAiChatMessagesReq
+	70,  // 154: admin.v1.AdminInsights.AdminExportAiChatMessages:input_type -> admin.v1.AdminExportAiChatMessagesReq
+	80,  // 155: admin.v1.AdminInsights.AdminAnalyticsOverview:input_type -> admin.v1.AdminGetMemoryStatsReq
+	142, // 156: admin.v1.AdminInsights.AdminListTopicTags:input_type -> admin.v1.AdminListTopicTagsReq
+	37,  // 157: admin.v1.AdminInsights.AdminDashboard:input_type -> admin.v1.AdminDashboardReq
+	78,  // 158: admin.v1.AdminInsights.AdminGrowthStats:input_type -> admin.v1.AdminGetGrowthStatsReq
+	88,  // 159: admin.v1.AdminInsights.AdminSchemaCatalog:input_type -> admin.v1.AdminGetSchemaCatalogReq
+	239, // 160: admin.v1.AdminApp.Ping:output_type -> admin.v1.PingReply
+	9,   // 161: admin.v1.AdminApp.AdminBootstrapAccount:output_type -> admin.v1.AdminBootstrapAccountResp
+	151, // 162: admin.v1.AdminApp.AdminLogin:output_type -> admin.v1.AdminLoginResp
+	99,  // 163: admin.v1.AdminApp.AdminListAccounts:output_type -> admin.v1.AdminListAccountsResp
+	26,  // 164: admin.v1.AdminApp.AdminCreateAccount:output_type -> admin.v1.AdminCreateAccountResp
+	172, // 165: admin.v1.AdminApp.AdminUpdateAccount:output_type -> admin.v1.AdminUpdateAccountResp
+	43,  // 166: admin.v1.AdminApp.AdminDeleteAccount:output_type -> admin.v1.AdminDeleteAccountResp
+	11,  // 167: admin.v1.AdminApp.AdminBootstrapAchievements:output_type -> admin.v1.AdminBootstrapAchievementsResp
+	103, // 168: admin.v1.AdminApp.AdminListAiAgents:output_type -> admin.v1.AdminListAiAgentsResp
+	45,  // 169: admin.v1.AdminApp.AdminDeleteAiAgent:output_type -> admin.v1.AdminDeleteAiAgentResp
+	109, // 170: admin.v1.AdminApp.AdminListAnnouncements:output_type -> admin.v1.AdminListAnnouncementsResp
+	28,  // 171: admin.v1.AdminApp.AdminCreateAnnouncement:output_type -> admin.v1.AdminCreateAnnouncementResp
+	75,  // 172: admin.v1.AdminApp.AdminGetAnnouncement:output_type -> admin.v1.AdminGetAnnouncementResp
+	176, // 173: admin.v1.AdminApp.AdminUpdateAnnouncement:output_type -> admin.v1.AdminUpdateAnnouncementResp
+	47,  // 174: admin.v1.AdminApp.AdminDeleteAnnouncement:output_type -> admin.v1.AdminDeleteAnnouncementResp
+	161, // 175: admin.v1.AdminApp.AdminPublishAnnouncement:output_type -> admin.v1.AdminPublishAnnouncementResp
+	111, // 176: admin.v1.AdminApp.AdminListAuditLogs:output_type -> admin.v1.AdminListAuditLogsResp
+	115, // 177: admin.v1.AdminApp.AdminListComments:output_type -> admin.v1.AdminListCommentsResp
+	49,  // 178: admin.v1.AdminApp.AdminDeleteComment:output_type -> admin.v1.AdminDeleteCommentResp
+	125, // 179: admin.v1.AdminApp.AdminListGroups:output_type -> admin.v1.AdminListGroupsResp
+	55,  // 180: admin.v1.AdminApp.AdminDeleteGroup:output_type -> admin.v1.AdminDeleteGroupResp
+	123, // 181: admin.v1.AdminApp.AdminListGifts:output_type -> admin.v1.AdminListGiftsResp
+	30,  // 182: admin.v1.AdminApp.AdminCreateGift:output_type -> admin.v1.AdminCreateGiftResp
+	77,  // 183: admin.v1.AdminApp.AdminGetGift:output_type -> admin.v1.AdminGetGiftResp
+	180, // 184: admin.v1.AdminApp.AdminUpdateGift:output_type -> admin.v1.AdminUpdateGiftResp
+	53,  // 185: admin.v1.AdminApp.AdminDeleteGift:output_type -> admin.v1.AdminDeleteGiftResp
+	13,  // 186: admin.v1.AdminApp.AdminBootstrapGifts:output_type -> admin.v1.AdminBootstrapGiftsResp
+	41,  // 187: admin.v1.AdminApp.AdminDedupeGifts:output_type -> admin.v1.AdminDedupeGiftsResp
+	101, // 188: admin.v1.AdminApp.AdminListAchievements:output_type -> admin.v1.AdminListAchievementsResp
+	174, // 189: admin.v1.AdminApp.AdminUpdateAchievement:output_type -> admin.v1.AdminUpdateAchievementResp
+	127, // 190: admin.v1.AdminApp.AdminListLevelConfigs:output_type -> admin.v1.AdminListLevelConfigsResp
+	182, // 191: admin.v1.AdminApp.AdminUpdateLevelConfig:output_type -> admin.v1.AdminUpdateLevelConfigResp
+	15,  // 192: admin.v1.AdminApp.AdminBootstrapLevels:output_type -> admin.v1.AdminBootstrapLevelsResp
+	23,  // 193: admin.v1.AdminApp.AdminBroadcastNotification:output_type -> admin.v1.AdminBroadcastNotificationResp
+	169, // 194: admin.v1.AdminApp.AdminSendNotification:output_type -> admin.v1.AdminSendNotificationResp
+	121, // 195: admin.v1.AdminApp.AdminListGiftPurchaseOrders:output_type -> admin.v1.AdminListGiftPurchaseOrdersResp
+	147, // 196: admin.v1.AdminApp.AdminListVipOrders:output_type -> admin.v1.AdminListVipOrdersResp
+	137, // 197: admin.v1.AdminApp.AdminListPostReports:output_type -> admin.v1.AdminListPostReportsResp
+	139, // 198: admin.v1.AdminApp.AdminListPosts:output_type -> admin.v1.AdminListPostsResp
+	63,  // 199: admin.v1.AdminApp.AdminDeletePost:output_type -> admin.v1.AdminDeletePostResp
+	117, // 200: admin.v1.AdminApp.AdminListFollows:output_type -> admin.v1.AdminListFollowsResp
+	51,  // 201: admin.v1.AdminApp.AdminDeleteFollow:output_type -> admin.v1.AdminDeleteFollowResp
+	119, // 202: admin.v1.AdminApp.AdminListFriendRequests:output_type -> admin.v1.AdminListFriendRequestsResp
+	141, // 203: admin.v1.AdminApp.AdminListTagDictionary:output_type -> admin.v1.AdminListTagDictionaryResp
+	32,  // 204: admin.v1.AdminApp.AdminCreateTagDictionary:output_type -> admin.v1.AdminCreateTagDictionaryResp
+	185, // 205: admin.v1.AdminApp.AdminUpdateTagDictionary:output_type -> admin.v1.AdminUpdateTagDictionaryResp
+	65,  // 206: admin.v1.AdminApp.AdminDeleteTagDictionary:output_type -> admin.v1.AdminDeleteTagDictionaryResp
+	187, // 207: admin.v1.AdminApp.AdminUpdateTopicTag:output_type -> admin.v1.AdminUpdateTopicTagResp
+	67,  // 208: admin.v1.AdminApp.AdminDeleteTopicTag:output_type -> admin.v1.AdminDeleteTopicTagResp
+	19,  // 209: admin.v1.AdminApp.AdminBootstrapTopicTags:output_type -> admin.v1.AdminBootstrapTopicTagsResp
+	145, // 210: admin.v1.AdminApp.AdminListUsers:output_type -> admin.v1.AdminListUsersResp
+	93,  // 211: admin.v1.AdminApp.AdminGetUser:output_type -> admin.v1.AdminGetUserResp
+	189, // 212: admin.v1.AdminApp.AdminUpdateUser:output_type -> admin.v1.AdminUpdateUserResp
+	91,  // 213: admin.v1.AdminApp.AdminGetUserProfile:output_type -> admin.v1.AdminGetUserProfileResp
+	95,  // 214: admin.v1.AdminApp.AdminGetVipPlan:output_type -> admin.v1.AdminGetVipPlanResp
+	191, // 215: admin.v1.AdminApp.AdminUpdateVipPlan:output_type -> admin.v1.AdminUpdateVipPlanResp
+	69,  // 216: admin.v1.AdminApp.AdminDeleteVipPlan:output_type -> admin.v1.AdminDeleteVipPlanResp
+	21,  // 217: admin.v1.AdminApp.AdminBootstrapVipPlans:output_type -> admin.v1.AdminBootstrapVipPlansResp
+	224, // 218: admin.v1.AdminApp.AdminUpdateAiAgent:output_type -> admin.v1.AdminUpdateAiAgentResp
+	222, // 219: admin.v1.AdminApp.AdminMe:output_type -> admin.v1.AdminMeResp
+	228, // 220: admin.v1.AdminApp.AdminListMediaImages:output_type -> admin.v1.AdminListMediaImagesResp
+	230, // 221: admin.v1.AdminApp.AdminDeleteMediaImage:output_type -> admin.v1.AdminDeleteMediaImageResp
+	129, // 222: admin.v1.AdminApp.AdminListMemories:output_type -> admin.v1.AdminListMemoriesResp
+	57,  // 223: admin.v1.AdminApp.AdminDeleteMemory:output_type -> admin.v1.AdminDeleteMemoryResp
+	81,  // 224: admin.v1.AdminApp.AdminGetMemoryStats:output_type -> admin.v1.AdminGetMemoryStatsResp
+	131, // 225: admin.v1.AdminApp.AdminListMenus:output_type -> admin.v1.AdminListMenusResp
+	193, // 226: admin.v1.AdminApp.AdminUpsertMenu:output_type -> admin.v1.AdminUpsertMenuResp
+	59,  // 227: admin.v1.AdminApp.AdminDeleteMenu:output_type -> admin.v1.AdminDeleteMenuResp
+	17,  // 228: admin.v1.AdminApp.AdminBootstrapMenus:output_type -> admin.v1.AdminBootstrapMenusResp
+	232, // 229: admin.v1.AdminApp.AdminGetRuntimeConfig:output_type -> admin.v1.AdminGetRuntimeConfigResp
+	234, // 230: admin.v1.AdminApp.AdminUpdateRuntimeConfig:output_type -> admin.v1.AdminUpdateRuntimeConfigResp
+	237, // 231: admin.v1.AdminApp.AdminRuntimeOverview:output_type -> admin.v1.AdminGetRuntimeOverviewResp
+	107, // 232: admin.v1.AdminInsights.AdminListAiChatSessions:output_type -> admin.v1.AdminListAiChatSessionsResp
+	105, // 233: admin.v1.AdminInsights.AdminListAiChatMessages:output_type -> admin.v1.AdminListAiChatMessagesResp
+	71,  // 234: admin.v1.AdminInsights.AdminExportAiChatMessages:output_type -> admin.v1.AdminExportAiChatMessagesResp
+	5,   // 235: admin.v1.AdminInsights.AdminAnalyticsOverview:output_type -> admin.v1.AdminAnalyticsOverviewResp
+	143, // 236: admin.v1.AdminInsights.AdminListTopicTags:output_type -> admin.v1.AdminListTopicTagsResp
+	38,  // 237: admin.v1.AdminInsights.AdminDashboard:output_type -> admin.v1.AdminDashboardResp
+	79,  // 238: admin.v1.AdminInsights.AdminGrowthStats:output_type -> admin.v1.AdminGetGrowthStatsResp
+	89,  // 239: admin.v1.AdminInsights.AdminSchemaCatalog:output_type -> admin.v1.AdminGetSchemaCatalogResp
+	160, // [160:240] is the sub-list for method output_type
+	80,  // [80:160] is the sub-list for method input_type
+	80,  // [80:80] is the sub-list for extension type_name
+	80,  // [80:80] is the sub-list for extension extendee
+	0,   // [0:80] is the sub-list for field type_name
 }
 
 func init() { file_api_admin_v1_admin_messages_proto_init() }
@@ -16215,7 +17725,7 @@ func file_api_admin_v1_admin_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_admin_v1_admin_messages_proto_rawDesc), len(file_api_admin_v1_admin_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   223,
+			NumMessages:   240,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

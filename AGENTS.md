@@ -10,7 +10,8 @@ Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` wit
 - `flutter pub get`: install Flutter dependencies.
 - `flutter analyze`: run Dart and Flutter lint checks.
 - `flutter test`: run Flutter tests.
-- `cd backend && make gen`: regenerate goctl API/RPC code.
+- `cd backend && make gen`: regenerate domain proto, HTTP stubs, and `openapi.yaml`.
+- OpenAPI / Apifox: [docs/dev/openapi-apifox.md](docs/dev/openapi-apifox.md).
 - `cd backend && make build`: build backend binaries.
 - `cd backend && go test ./...`: run backend tests.
 

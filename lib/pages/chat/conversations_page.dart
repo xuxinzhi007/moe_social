@@ -14,14 +14,27 @@ import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_local_reader.dart';
 import '../../services/direct_chat_sync_bus.dart';
 import '../../services/notification_service.dart';
+import '../../providers/main_nav_controller.dart';
+import '../../theme/moe_theme_extension.dart';
 import '../../utils/chat_message_display.dart';
+import '../../utils/moe_error_copy.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/avatar_image.dart';
 
 /// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
 class ConversationsPage extends StatefulWidget {
-  const ConversationsPage({super.key, this.embedded = false});
+  const ConversationsPage({
+    super.key,
+    this.embedded = false,
+    this.onEmptyFindFriends,
+    this.onEmptyExplore,
+  });
 
   final bool embedded;
+  final VoidCallback? onEmptyFindFriends;
+  final VoidCallback? onEmptyExplore;
 
   @override
   State<ConversationsPage> createState() => _ConversationsPageState();
@@ -29,7 +42,7 @@ class ConversationsPage extends StatefulWidget {
 
 class _ConversationsPageState extends State<ConversationsPage> {
   bool _loading = true;
-  String? _error;
+  Object? _loadError;
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
   List<PrivateConversationItem> _serverConversations = [];
@@ -162,14 +175,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _loadError = null;
     });
     try {
       final uid = await AuthService.getUserId();
       if (uid.isEmpty) {
         setState(() {
           _loading = false;
-          _error = '请先登录';
+          _loadError = '请先登录';
         });
         return;
       }
@@ -224,7 +237,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e.toString();
+          _loadError = e;
         });
       }
     }
@@ -251,27 +264,16 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Widget _buildBody(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: MoeLoading(color: MoeTheme.of(context).primary));
     }
-    if (_error != null) {
+    if (_loadError != null) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: scheme.error),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => unawaited(_load()),
-                child: const Text('重试'),
-              ),
-            ],
-          ),
+        child: MoeErrorState.fromError(
+          _loadError,
+          scene: MoeErrorScene.messages,
+          variant: MoeErrorVariant.plain,
+          onRetry: () => unawaited(_load()),
         ),
       );
     }
@@ -445,26 +447,31 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
     if (peerIds.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.chat_bubble_outline,
-                size: 56,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '暂无会话\n在好友或探索里发起聊天后会出现在这里。',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-              ),
-            ],
+        child: MoeEmptyState(
+          icon: Icons.chat_bubble_outline_rounded,
+          title: '还没有聊天',
+          subtitle: '去同好列表找好友，或在探索里认识新朋友',
+          primaryAction: MoeEmptyStateAction(
+            label: '去找同好',
+            icon: Icons.people_rounded,
+            onPressed: () {
+              if (widget.onEmptyFindFriends != null) {
+                widget.onEmptyFindFriends!();
+                return;
+              }
+              context.read<MainNavController>().requestTab(1);
+            },
+          ),
+          secondaryAction: MoeEmptyStateAction(
+            label: '去探索',
+            icon: Icons.explore_rounded,
+            onPressed: () {
+              if (widget.onEmptyExplore != null) {
+                widget.onEmptyExplore!();
+                return;
+              }
+              context.read<MainNavController>().requestExplore();
+            },
           ),
         ),
       );

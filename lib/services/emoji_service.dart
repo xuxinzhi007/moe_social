@@ -1,6 +1,6 @@
-import 'dart:convert';
 import '../emoji/emoji_data.dart';
 import '../services/api_service.dart';
+import 'api_response.dart';
 
 class EmojiService {
   // 获取表情包包列表
@@ -17,8 +17,12 @@ class EmojiService {
       };
       final queryString = Uri(queryParameters: queryParams).query;
       final response = await ApiService.get('/api/emoji/packs?$queryString');
-      final List<dynamic> packsJson = response['data'] ?? [];
-      return packsJson.map((e) => EmojiPack.fromJson(e)).toList();
+      final packsJson =
+          ApiResponse.listOf(response, keys: const ['packs', 'data']);
+      return packsJson
+          .whereType<Map>()
+          .map((e) => EmojiPack.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
       print('Error getting emoji packs: $e');
       return null;
@@ -29,7 +33,9 @@ class EmojiService {
   Future<EmojiPack?> getEmojiPack(String packId) async {
     try {
       final response = await ApiService.get('/api/emoji/packs/$packId');
-      return EmojiPack.fromJson(response['data']);
+      return EmojiPack.fromJson(
+        ApiResponse.object(response, keys: const ['pack']),
+      );
     } catch (e) {
       print('Error getting emoji pack: $e');
       return null;
@@ -43,7 +49,8 @@ class EmojiService {
         '/api/emoji/packs/$packId/purchase',
         body: {'user_id': userId},
       );
-      return response['data'];
+      return ApiResponse.stringField(response, 'order_id') ??
+          ApiResponse.stringField(response, 'message');
     } catch (e) {
       print('Error purchasing emoji pack: $e');
       return null;
@@ -54,8 +61,12 @@ class EmojiService {
   Future<List<EmojiPack>?> getUserEmojiPacks(String userId) async {
     try {
       final response = await ApiService.get('/api/user/$userId/emoji/packs');
-      final List<dynamic> packsJson = response['data'] ?? [];
-      return packsJson.map((e) => EmojiPack.fromJson(e)).toList();
+      final packsJson =
+          ApiResponse.listOf(response, keys: const ['packs', 'data']);
+      return packsJson
+          .whereType<Map>()
+          .map((e) => EmojiPack.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
       print('Error getting user emoji packs: $e');
       return null;
@@ -65,7 +76,7 @@ class EmojiService {
   // 收藏表情包包
   Future<bool> favoriteEmojiPack(String packId, String userId) async {
     try {
-      final response = await ApiService.post(
+      await ApiService.post(
         '/api/emoji/packs/$packId/favorite',
         body: {'user_id': userId},
       );

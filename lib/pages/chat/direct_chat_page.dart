@@ -812,7 +812,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final scheme = Theme.of(context).colorScheme;
     final reversedMessages = List<_DirectMessage>.from(_messages.reversed);
     final chatBg = Color.alphaBlend(
-      scheme.primary.withOpacity(0.04),
+      scheme.primary.withValues(alpha: 0.04),
       scheme.surfaceContainerLowest,
     );
 
@@ -1001,7 +1001,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: scheme.outline.withOpacity(0.35),
+                  color: scheme.outline.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1061,11 +1061,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
         margin: const EdgeInsets.symmetric(vertical: 14),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         decoration: BoxDecoration(
-          color: scheme.surface.withOpacity(0.92),
+          color: scheme.surface.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: scheme.shadow.withOpacity(0.06),
+              color: scheme.shadow.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1135,7 +1135,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
               errorWidget: (context, url, error) => Icon(
                 Icons.broken_image_outlined,
                 size: 48,
-                color: textColor.withOpacity(0.6),
+                color: textColor.withValues(alpha: 0.6),
               ),
             ),
           )
@@ -1159,7 +1159,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withOpacity(isMe ? 0.12 : 0.06),
+            color: scheme.shadow.withValues(alpha: isMe ? 0.12 : 0.06),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -1207,7 +1207,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       elevation: 8,
-      shadowColor: scheme.shadow.withOpacity(0.12),
+      shadowColor: scheme.shadow.withValues(alpha: 0.12),
       color: scheme.surface,
       child: SafeArea(
         top: false,
@@ -1227,10 +1227,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 120),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withOpacity(0.65),
+                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: scheme.outline.withOpacity(0.15),
+                      color: scheme.outline.withValues(alpha: 0.15),
                     ),
                   ),
                   child: TextField(
@@ -1245,7 +1245,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     decoration: InputDecoration(
                       hintText: '发消息…',
                       hintStyle: TextStyle(
-                        color: scheme.onSurfaceVariant.withOpacity(0.8),
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                         fontSize: 15,
                       ),
                       border: InputBorder.none,

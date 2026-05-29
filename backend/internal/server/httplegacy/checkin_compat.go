@@ -17,7 +17,7 @@ import (
 )
 
 // PilotNativeCheckinCompatRoutes 签到域 Kratos HTTP（internal/service）。
-const PilotNativeCheckinCompatRoutes = 7
+const PilotNativeCheckinCompatRoutes = 2
 
 // RegisterCheckinCompat 签到 + Admin 签到奖励配置。
 func RegisterCheckinCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

@@ -15,11 +15,12 @@
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
 
-## Kratos 后端（2026-05-29 · P0–P6 完成）
+## Kratos 后端（运行时 ✅ · P0/P1 已收口 · D2 ~83%）
 
 | 文档 | 用途 |
 |------|------|
 | [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（状态板 SSOT） |
+| [kratos-architecture-audit.md](./kratos-architecture-audit.md) | **审计结论**：P0/P1 100%、路由实测、P2 余量 |
 | [kratos-migration.md](./kratos-migration.md) | **架构 SSOT**（纯 Kratos 生产、`make gen`） |
 | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | **P6** 契约 defs → 域 proto |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（域 proto，勿扩 defs） |

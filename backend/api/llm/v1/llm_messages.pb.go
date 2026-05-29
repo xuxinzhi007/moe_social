@@ -1679,6 +1679,470 @@ func (x *UserMemoryRelationItem) GetWeight() float64 {
 	return 0
 }
 
+type GetUserMemoriesDisplayReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserMemoriesDisplayReq) Reset() {
+	*x = GetUserMemoriesDisplayReq{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserMemoriesDisplayReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserMemoriesDisplayReq) ProtoMessage() {}
+
+func (x *GetUserMemoriesDisplayReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserMemoriesDisplayReq.ProtoReflect.Descriptor instead.
+func (*GetUserMemoriesDisplayReq) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetUserMemoriesDisplayReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UserMemoryDisplayProfile struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Summary       string                 `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
+	ItemCount     int32                  `protobuf:"varint,3,opt,name=item_count,json=itemCount,proto3" json:"item_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserMemoryDisplayProfile) Reset() {
+	*x = UserMemoryDisplayProfile{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserMemoryDisplayProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserMemoryDisplayProfile) ProtoMessage() {}
+
+func (x *UserMemoryDisplayProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserMemoryDisplayProfile.ProtoReflect.Descriptor instead.
+func (*UserMemoryDisplayProfile) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *UserMemoryDisplayProfile) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayProfile) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayProfile) GetItemCount() int32 {
+	if x != nil {
+		return x.ItemCount
+	}
+	return 0
+}
+
+type UserMemoryDisplayItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	Category      string                 `protobuf:"bytes,5,opt,name=category,proto3" json:"category,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserMemoryDisplayItem) Reset() {
+	*x = UserMemoryDisplayItem{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserMemoryDisplayItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserMemoryDisplayItem) ProtoMessage() {}
+
+func (x *UserMemoryDisplayItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserMemoryDisplayItem.ProtoReflect.Descriptor instead.
+func (*UserMemoryDisplayItem) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *UserMemoryDisplayItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayItem) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayItem) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayItem) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayItem) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayItem) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+type UserMemoryDisplayData struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Headline      string                      `protobuf:"bytes,1,opt,name=headline,proto3" json:"headline,omitempty"`
+	Profiles      []*UserMemoryDisplayProfile `protobuf:"bytes,2,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	Items         []*UserMemoryDisplayItem    `protobuf:"bytes,3,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                       `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserMemoryDisplayData) Reset() {
+	*x = UserMemoryDisplayData{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserMemoryDisplayData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserMemoryDisplayData) ProtoMessage() {}
+
+func (x *UserMemoryDisplayData) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserMemoryDisplayData.ProtoReflect.Descriptor instead.
+func (*UserMemoryDisplayData) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *UserMemoryDisplayData) GetHeadline() string {
+	if x != nil {
+		return x.Headline
+	}
+	return ""
+}
+
+func (x *UserMemoryDisplayData) GetProfiles() []*UserMemoryDisplayProfile {
+	if x != nil {
+		return x.Profiles
+	}
+	return nil
+}
+
+func (x *UserMemoryDisplayData) GetItems() []*UserMemoryDisplayItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *UserMemoryDisplayData) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type GetUserMemoriesDisplayResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          *UserMemoryDisplayData `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetUserMemoriesDisplayResp) Reset() {
+	*x = GetUserMemoriesDisplayResp{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetUserMemoriesDisplayResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetUserMemoriesDisplayResp) ProtoMessage() {}
+
+func (x *GetUserMemoriesDisplayResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetUserMemoriesDisplayResp.ProtoReflect.Descriptor instead.
+func (*GetUserMemoriesDisplayResp) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetUserMemoriesDisplayResp) GetData() *UserMemoryDisplayData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type SearchUserMemoriesReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Q             string                 `protobuf:"bytes,2,opt,name=q,proto3" json:"q,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUserMemoriesReq) Reset() {
+	*x = SearchUserMemoriesReq{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUserMemoriesReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUserMemoriesReq) ProtoMessage() {}
+
+func (x *SearchUserMemoriesReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUserMemoriesReq.ProtoReflect.Descriptor instead.
+func (*SearchUserMemoriesReq) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *SearchUserMemoriesReq) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SearchUserMemoriesReq) GetQ() string {
+	if x != nil {
+		return x.Q
+	}
+	return ""
+}
+
+func (x *SearchUserMemoriesReq) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type SearchUserMemoriesData struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Query         string                   `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Items         []*UserMemoryDisplayItem `protobuf:"bytes,2,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int32                    `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUserMemoriesData) Reset() {
+	*x = SearchUserMemoriesData{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUserMemoriesData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUserMemoriesData) ProtoMessage() {}
+
+func (x *SearchUserMemoriesData) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUserMemoriesData.ProtoReflect.Descriptor instead.
+func (*SearchUserMemoriesData) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *SearchUserMemoriesData) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchUserMemoriesData) GetItems() []*UserMemoryDisplayItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *SearchUserMemoriesData) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type SearchUserMemoriesResp struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Data          *SearchUserMemoriesData `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchUserMemoriesResp) Reset() {
+	*x = SearchUserMemoriesResp{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchUserMemoriesResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchUserMemoriesResp) ProtoMessage() {}
+
+func (x *SearchUserMemoriesResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchUserMemoriesResp.ProtoReflect.Descriptor instead.
+func (*SearchUserMemoriesResp) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *SearchUserMemoriesResp) GetData() *SearchUserMemoriesData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 var File_api_llm_v1_llm_messages_proto protoreflect.FileDescriptor
 
 const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
@@ -1812,9 +2276,49 @@ const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
 	"\bfrom_key\x18\x01 \x01(\tR\afromKey\x12\x15\n" +
 	"\x06to_key\x18\x02 \x01(\tR\x05toKey\x12\x1a\n" +
 	"\brelation\x18\x03 \x01(\tR\brelation\x12\x16\n" +
-	"\x06weight\x18\x04 \x01(\x01R\x06weight2z\n" +
+	"\x06weight\x18\x04 \x01(\x01R\x06weight\"4\n" +
+	"\x19GetUserMemoriesDisplayReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"i\n" +
+	"\x18UserMemoryDisplayProfile\x12\x14\n" +
+	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
+	"\asummary\x18\x02 \x01(\tR\asummary\x12\x1d\n" +
+	"\n" +
+	"item_count\x18\x03 \x01(\x05R\titemCount\"\xa4\x01\n" +
+	"\x15UserMemoryDisplayItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12\x1a\n" +
+	"\bcategory\x18\x05 \x01(\tR\bcategory\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\tR\tupdatedAt\"\xbc\x01\n" +
+	"\x15UserMemoryDisplayData\x12\x1a\n" +
+	"\bheadline\x18\x01 \x01(\tR\bheadline\x12<\n" +
+	"\bprofiles\x18\x02 \x03(\v2 .llm.v1.UserMemoryDisplayProfileR\bprofiles\x123\n" +
+	"\x05items\x18\x03 \x03(\v2\x1d.llm.v1.UserMemoryDisplayItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x04 \x01(\x05R\x05total\"O\n" +
+	"\x1aGetUserMemoriesDisplayResp\x121\n" +
+	"\x04data\x18\x01 \x01(\v2\x1d.llm.v1.UserMemoryDisplayDataR\x04data\"T\n" +
+	"\x15SearchUserMemoriesReq\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\f\n" +
+	"\x01q\x18\x02 \x01(\tR\x01q\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"y\n" +
+	"\x16SearchUserMemoriesData\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x123\n" +
+	"\x05items\x18\x02 \x03(\v2\x1d.llm.v1.UserMemoryDisplayItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x05R\x05total\"L\n" +
+	"\x16SearchUserMemoriesResp\x122\n" +
+	"\x04data\x18\x01 \x01(\v2\x1e.llm.v1.SearchUserMemoriesDataR\x04data2\xb9\t\n" +
 	"\aLlmChat\x12o\n" +
-	"\x11RecordLlmChatTurn\x12\x1c.llm.v1.RecordLlmChatTurnReq\x1a\x1d.llm.v1.RecordLlmChatTurnResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/llm/chat/turnB\x1aZ\x18backend/api/llm/v1;llmv1b\x06proto3"
+	"\x11RecordLlmChatTurn\x12\x1c.llm.v1.RecordLlmChatTurnReq\x1a\x1d.llm.v1.RecordLlmChatTurnResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/llm/chat/turn\x12v\n" +
+	"\x10UpsertUserMemory\x12\x1b.llm.v1.UpsertUserMemoryReq\x1a\x1c.llm.v1.UpsertUserMemoryResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/user/{user_id}/memories\x12p\n" +
+	"\x0fGetUserMemories\x12\x1a.llm.v1.GetUserMemoriesReq\x1a\x1b.llm.v1.GetUserMemoriesResp\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/user/{user_id}/memories\x12v\n" +
+	"\x10DeleteUserMemory\x12\x1b.llm.v1.DeleteUserMemoryReq\x1a\x1c.llm.v1.DeleteUserMemoryResp\"'\x82\xd3\xe4\x93\x02!:\x01**\x1c/api/user/{user_id}/memories\x12\x8d\x01\n" +
+	"\x16GetUserMemoriesDisplay\x12!.llm.v1.GetUserMemoriesDisplayReq\x1a\".llm.v1.GetUserMemoriesDisplayResp\",\x82\xd3\xe4\x93\x02&\x12$/api/user/{user_id}/memories/display\x12\x97\x01\n" +
+	"\x18SubmitUserMemoryFeedback\x12#.llm.v1.SubmitUserMemoryFeedbackReq\x1a$.llm.v1.SubmitUserMemoryFeedbackResp\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/api/user/{user_id}/memories/feedback\x12\x8b\x01\n" +
+	"\x15GetUserMemoryProfiles\x12 .llm.v1.GetUserMemoryProfilesReq\x1a!.llm.v1.GetUserMemoryProfilesResp\"-\x82\xd3\xe4\x93\x02'\x12%/api/user/{user_id}/memories/profiles\x12\x9f\x01\n" +
+	"\x1bRebuildUserMemoryEmbeddings\x12&.llm.v1.RebuildUserMemoryEmbeddingsReq\x1a'.llm.v1.RebuildUserMemoryEmbeddingsResp\"/\x82\xd3\xe4\x93\x02):\x01*\"$/api/user/{user_id}/memories/reindex\x12\x80\x01\n" +
+	"\x12SearchUserMemories\x12\x1d.llm.v1.SearchUserMemoriesReq\x1a\x1e.llm.v1.SearchUserMemoriesResp\"+\x82\xd3\xe4\x93\x02%\x12#/api/user/{user_id}/memories/searchB\x1aZ\x18backend/api/llm/v1;llmv1b\x06proto3"
 
 var (
 	file_api_llm_v1_llm_messages_proto_rawDescOnce sync.Once
@@ -1828,7 +2332,7 @@ func file_api_llm_v1_llm_messages_proto_rawDescGZIP() []byte {
 	return file_api_llm_v1_llm_messages_proto_rawDescData
 }
 
-var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_api_llm_v1_llm_messages_proto_goTypes = []any{
 	(*DeleteUserMemoryReq)(nil),             // 0: llm.v1.DeleteUserMemoryReq
 	(*DeleteUserMemoryResp)(nil),            // 1: llm.v1.DeleteUserMemoryResp
@@ -1858,6 +2362,14 @@ var file_api_llm_v1_llm_messages_proto_goTypes = []any{
 	(*UserMemoryEmbeddingItem)(nil),         // 25: llm.v1.UserMemoryEmbeddingItem
 	(*UserMemoryProfile)(nil),               // 26: llm.v1.UserMemoryProfile
 	(*UserMemoryRelationItem)(nil),          // 27: llm.v1.UserMemoryRelationItem
+	(*GetUserMemoriesDisplayReq)(nil),       // 28: llm.v1.GetUserMemoriesDisplayReq
+	(*UserMemoryDisplayProfile)(nil),        // 29: llm.v1.UserMemoryDisplayProfile
+	(*UserMemoryDisplayItem)(nil),           // 30: llm.v1.UserMemoryDisplayItem
+	(*UserMemoryDisplayData)(nil),           // 31: llm.v1.UserMemoryDisplayData
+	(*GetUserMemoriesDisplayResp)(nil),      // 32: llm.v1.GetUserMemoriesDisplayResp
+	(*SearchUserMemoriesReq)(nil),           // 33: llm.v1.SearchUserMemoriesReq
+	(*SearchUserMemoriesData)(nil),          // 34: llm.v1.SearchUserMemoriesData
+	(*SearchUserMemoriesResp)(nil),          // 35: llm.v1.SearchUserMemoriesResp
 }
 var file_api_llm_v1_llm_messages_proto_depIdxs = []int32{
 	24, // 0: llm.v1.GetUserMemoriesResp.memories:type_name -> llm.v1.UserMemory
@@ -1866,13 +2378,34 @@ var file_api_llm_v1_llm_messages_proto_depIdxs = []int32{
 	27, // 3: llm.v1.ListUserMemoryRelationsResp.items:type_name -> llm.v1.UserMemoryRelationItem
 	24, // 4: llm.v1.SubmitUserMemoryFeedbackResp.memory:type_name -> llm.v1.UserMemory
 	24, // 5: llm.v1.UpsertUserMemoryResp.memory:type_name -> llm.v1.UserMemory
-	14, // 6: llm.v1.LlmChat.RecordLlmChatTurn:input_type -> llm.v1.RecordLlmChatTurnReq
-	15, // 7: llm.v1.LlmChat.RecordLlmChatTurn:output_type -> llm.v1.RecordLlmChatTurnResp
-	7,  // [7:8] is the sub-list for method output_type
-	6,  // [6:7] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	29, // 6: llm.v1.UserMemoryDisplayData.profiles:type_name -> llm.v1.UserMemoryDisplayProfile
+	30, // 7: llm.v1.UserMemoryDisplayData.items:type_name -> llm.v1.UserMemoryDisplayItem
+	31, // 8: llm.v1.GetUserMemoriesDisplayResp.data:type_name -> llm.v1.UserMemoryDisplayData
+	30, // 9: llm.v1.SearchUserMemoriesData.items:type_name -> llm.v1.UserMemoryDisplayItem
+	34, // 10: llm.v1.SearchUserMemoriesResp.data:type_name -> llm.v1.SearchUserMemoriesData
+	14, // 11: llm.v1.LlmChat.RecordLlmChatTurn:input_type -> llm.v1.RecordLlmChatTurnReq
+	22, // 12: llm.v1.LlmChat.UpsertUserMemory:input_type -> llm.v1.UpsertUserMemoryReq
+	4,  // 13: llm.v1.LlmChat.GetUserMemories:input_type -> llm.v1.GetUserMemoriesReq
+	0,  // 14: llm.v1.LlmChat.DeleteUserMemory:input_type -> llm.v1.DeleteUserMemoryReq
+	28, // 15: llm.v1.LlmChat.GetUserMemoriesDisplay:input_type -> llm.v1.GetUserMemoriesDisplayReq
+	16, // 16: llm.v1.LlmChat.SubmitUserMemoryFeedback:input_type -> llm.v1.SubmitUserMemoryFeedbackReq
+	6,  // 17: llm.v1.LlmChat.GetUserMemoryProfiles:input_type -> llm.v1.GetUserMemoryProfilesReq
+	12, // 18: llm.v1.LlmChat.RebuildUserMemoryEmbeddings:input_type -> llm.v1.RebuildUserMemoryEmbeddingsReq
+	33, // 19: llm.v1.LlmChat.SearchUserMemories:input_type -> llm.v1.SearchUserMemoriesReq
+	15, // 20: llm.v1.LlmChat.RecordLlmChatTurn:output_type -> llm.v1.RecordLlmChatTurnResp
+	23, // 21: llm.v1.LlmChat.UpsertUserMemory:output_type -> llm.v1.UpsertUserMemoryResp
+	5,  // 22: llm.v1.LlmChat.GetUserMemories:output_type -> llm.v1.GetUserMemoriesResp
+	1,  // 23: llm.v1.LlmChat.DeleteUserMemory:output_type -> llm.v1.DeleteUserMemoryResp
+	32, // 24: llm.v1.LlmChat.GetUserMemoriesDisplay:output_type -> llm.v1.GetUserMemoriesDisplayResp
+	17, // 25: llm.v1.LlmChat.SubmitUserMemoryFeedback:output_type -> llm.v1.SubmitUserMemoryFeedbackResp
+	7,  // 26: llm.v1.LlmChat.GetUserMemoryProfiles:output_type -> llm.v1.GetUserMemoryProfilesResp
+	13, // 27: llm.v1.LlmChat.RebuildUserMemoryEmbeddings:output_type -> llm.v1.RebuildUserMemoryEmbeddingsResp
+	35, // 28: llm.v1.LlmChat.SearchUserMemories:output_type -> llm.v1.SearchUserMemoriesResp
+	20, // [20:29] is the sub-list for method output_type
+	11, // [11:20] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_api_llm_v1_llm_messages_proto_init() }
@@ -1886,7 +2419,7 @@ func file_api_llm_v1_llm_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_llm_v1_llm_messages_proto_rawDesc), len(file_api_llm_v1_llm_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

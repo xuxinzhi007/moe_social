@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
+import '../utils/api_json.dart';
 import 'hand_draw_card.dart';
 import 'topic_tag.dart';
 
@@ -146,18 +147,28 @@ class Post {
   }
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    return Post._fromJsonMap(json);
+  }
+
+  factory Post.fromJsonDynamic(dynamic raw) {
+    return Post._fromJsonMap(apiMap(raw));
+  }
+
+  static Post _fromJsonMap(Map<String, dynamic> json) {
     try {
-      final createdAt = _parseCreatedAt(json['created_at']);
+      final createdAt =
+          _parseCreatedAt(apiField(json, 'created_at', 'createdAt'));
 
       List<TopicTag> topicTags = [];
-      if (json['topic_tags'] != null) {
+      final topicTagsRaw = apiField(json, 'topic_tags', 'topicTags');
+      if (topicTagsRaw != null) {
         try {
-          final tagsList = json['topic_tags'];
+          final tagsList = topicTagsRaw;
           if (tagsList is List) {
             for (final tagJson in tagsList) {
-              if (tagJson != null && tagJson is Map<String, dynamic>) {
+              if (tagJson is Map) {
                 try {
-                  topicTags.add(TopicTag.fromJson(tagJson));
+                  topicTags.add(TopicTag.fromJson(apiMap(tagJson)));
                 } catch (e) {
                   if (kDebugMode) {
                     debugPrint('Post.fromJson: 单个话题标签解析失败: $e, data=$tagJson');
@@ -196,33 +207,34 @@ class Post {
         }
       }
 
-      final hd = json['hand_draw_card'];
+      final hd = apiField(json, 'hand_draw_card', 'handDrawCard');
       final handDrawCardJson = hd == null ? '' : hd.toString();
 
-      final th = json['hand_draw_thumb_url'];
+      final th = apiField(json, 'hand_draw_thumb_url', 'handDrawThumbUrl');
       final handDrawThumbUrl = th == null ? '' : th.toString();
 
-      final ms = json['moderation_status'];
+      final ms = apiField(json, 'moderation_status', 'moderationStatus');
       final moderationStatus = ms == null ? '' : ms.toString();
 
       return Post(
         id: (json['id'] ?? '').toString(),
-        userId: (json['user_id'] ?? '').toString(),
-        userName: (json['user_name'] ?? '未知用户').toString(),
-        userAvatar: (json['user_avatar'] ?? '').toString(),
+        userId: apiString(json, 'user_id', 'userId'),
+        userName: apiString(json, 'user_name', 'userName', fallback: '未知用户'),
+        userAvatar: apiString(json, 'user_avatar', 'userAvatar'),
         content: (json['content'] ?? '').toString(),
         images: images,
-        likes: (json['likes'] as num?)?.toInt() ?? 0,
-        comments: (json['comments'] as num?)?.toInt() ?? 0,
-        isLiked: _parseBool(json['is_liked']),
+        likes: apiInt(apiField(json, 'likes', 'likes')),
+        comments: apiInt(apiField(json, 'comments', 'comments')),
+        isLiked: _parseBool(apiField(json, 'is_liked', 'isLiked')),
         createdAt: createdAt,
         topicTags: topicTags,
         handDrawCardJson: handDrawCardJson,
         handDrawThumbUrl: handDrawThumbUrl,
         moderationStatus: moderationStatus,
-        moodTag: (json['mood_tag'] ?? '').toString(),
-        authorIsBot: _parseBool(json['author_is_bot']),
-        authorBotAgentKey: (json['author_bot_agent_key'] ?? '').toString(),
+        moodTag: apiString(json, 'mood_tag', 'moodTag'),
+        authorIsBot: _parseBool(apiField(json, 'author_is_bot', 'authorIsBot')),
+        authorBotAgentKey:
+            apiString(json, 'author_bot_agent_key', 'authorBotAgentKey'),
       );
     } catch (e, stackTrace) {
       if (kDebugMode) {

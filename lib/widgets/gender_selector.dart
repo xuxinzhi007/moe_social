@@ -41,7 +41,7 @@ class GenderSelector extends StatelessWidget {
             ),
             color: enabled
                 ? theme.cardColor
-                : theme.disabledColor.withOpacity(0.1),
+                : theme.disabledColor.withValues(alpha: 0.1),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -73,12 +73,12 @@ class GenderSelector extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           color: isSelected
-                              ? theme.primaryColor.withOpacity(0.1)
+                              ? theme.primaryColor.withValues(alpha: 0.1)
                               : Colors.transparent,
                           border: Border.all(
                             color: isSelected
                                 ? theme.primaryColor
-                                : theme.dividerColor.withOpacity(0.5),
+                                : theme.dividerColor.withValues(alpha: 0.5),
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -90,7 +90,7 @@ class GenderSelector extends StatelessWidget {
                               color: isSelected
                                   ? theme.primaryColor
                                   : (enabled
-                                      ? theme.textTheme.bodyMedium?.color?.withOpacity(0.6)
+                                      ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6)
                                       : theme.disabledColor),
                             ),
                             const SizedBox(height: 4),
@@ -141,7 +141,7 @@ class GenderSelector extends StatelessWidget {
               '选择性别后将在个人资料中显示',
               style: TextStyle(
                 fontSize: 12,
-                color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
               ),
             ),
           ),

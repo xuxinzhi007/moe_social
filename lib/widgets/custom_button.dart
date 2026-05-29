@@ -63,7 +63,7 @@ class CustomButton extends StatelessWidget {
                 foregroundColor: onPrimary,
                 padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
                 elevation: elevation ?? (isDisabled ? 0 : 4),
-                shadowColor: shadowColor ?? primary.withOpacity(0.4),
+                shadowColor: shadowColor ?? primary.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(borderRadius: radius),
                 splashFactory: InkRipple.splashFactory,
               ),

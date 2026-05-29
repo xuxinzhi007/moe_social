@@ -69,7 +69,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: primaryColor.withOpacity(0.08), // 使用主题色阴影
+            color: primaryColor.withValues(alpha: 0.08), // 使用主题色阴影
             blurRadius: 24,
             offset: const Offset(0, 8),
             spreadRadius: 0,
@@ -96,13 +96,13 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             colors: [
-                              primaryColor.withOpacity(0.3),
-                              secondaryColor.withOpacity(0.3),
+                              primaryColor.withValues(alpha: 0.3),
+                              secondaryColor.withValues(alpha: 0.3),
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: primaryColor.withOpacity(0.2),
+                              color: primaryColor.withValues(alpha: 0.2),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -206,7 +206,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                                 if (isAuthor && (widget.onEdit != null || widget.onDelete != null))
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                                    child: Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+                                    child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.15)),
                                   ),
                                 ListTile(
                                   leading: const Icon(Icons.link_rounded, color: Color(0xFF7F7FD5)),
@@ -236,7 +236,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                         ),
                       );
                     },
-                    icon: Icon(Icons.more_horiz_rounded, color: theme.iconTheme.color?.withOpacity(0.5)),
+                    icon: Icon(Icons.more_horiz_rounded, color: theme.iconTheme.color?.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
@@ -338,7 +338,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
               const SizedBox(height: 20),
               Divider(
                 height: 1, 
-                color: theme.dividerColor.withOpacity(0.1),
+                color: theme.dividerColor.withValues(alpha: 0.1),
               ),
               const SizedBox(height: 12),
 
@@ -520,19 +520,19 @@ $link''';
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor.withOpacity(0.5),
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: theme.iconTheme.color?.withOpacity(0.6), size: 20),
+            Icon(icon, color: theme.iconTheme.color?.withValues(alpha: 0.6), size: 20),
             if (count != null || label != null) ...[
               const SizedBox(width: 6),
               Text(
                 count?.toString() ?? label ?? '',
                 style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -743,8 +743,8 @@ class _HandDrawThumbnail extends StatelessWidget {
                         begin: Alignment.center,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.05),
-                          Colors.black.withOpacity(0.3),
+                          Colors.black.withValues(alpha: 0.05),
+                          Colors.black.withValues(alpha: 0.3),
                         ],
                       ),
                     ),
@@ -754,10 +754,10 @@ class _HandDrawThumbnail extends StatelessWidget {
                   child: Icon(
                     Icons.play_circle_fill_rounded,
                     size: 68,
-                    color: Colors.white.withOpacity(0.94),
+                    color: Colors.white.withValues(alpha: 0.94),
                     shadows: [
                       Shadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 14,
                       ),
                     ],
@@ -772,7 +772,7 @@ class _HandDrawThumbnail extends StatelessWidget {
                       '点击查看大图',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.92),
+                        color: Colors.white.withValues(alpha: 0.92),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         shadows: const [
@@ -800,7 +800,7 @@ void _openHandDrawViewer(BuildContext context, Post post) {
     );
     showDialog<void>(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.88),
+      barrierColor: Colors.black.withValues(alpha: 0.88),
       builder: (ctx) {
         final maxH = MediaQuery.sizeOf(context).height * 0.75;
         final maxW = MediaQuery.sizeOf(context).width - 24;

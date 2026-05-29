@@ -9,6 +9,7 @@ import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import 'inventory_page.dart';
 import 'recharge_page.dart';
+import '../../theme/moe_theme_extension.dart';
 import '../../widgets/moe_toast.dart';
 
 class GachaPage extends StatefulWidget {
@@ -269,7 +270,7 @@ class _GachaPageState extends State<GachaPage>
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: _currentBallColor.withOpacity(0.4),
+                      color: _currentBallColor.withValues(alpha: 0.4),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                     ),
@@ -471,7 +472,7 @@ class _GachaPageState extends State<GachaPage>
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            color: Color(item.rarityColor).withOpacity(0.1),
+            color: Color(item.rarityColor).withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -527,9 +528,9 @@ class _GachaPageState extends State<GachaPage>
   Widget _buildResultCard(VirtualItem item) {
     return Container(
       decoration: BoxDecoration(
-        color: Color(item.rarityColor).withOpacity(0.05),
+        color: Color(item.rarityColor).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(item.rarityColor).withOpacity(0.3)),
+        border: Border.all(color: Color(item.rarityColor).withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -583,13 +584,13 @@ class _GachaPageState extends State<GachaPage>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(
-          color: Color(item.rarityColor).withOpacity(0.4),
+          color: Color(item.rarityColor).withValues(alpha: 0.4),
           width: 1.2,
         ),
       ),
@@ -642,6 +643,7 @@ class _GachaPageState extends State<GachaPage>
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFFFDFBF7),
       appBar: AppBar(
@@ -659,7 +661,7 @@ class _GachaPageState extends State<GachaPage>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -697,7 +699,7 @@ class _GachaPageState extends State<GachaPage>
               border: Border.all(color: Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -752,7 +754,7 @@ class _GachaPageState extends State<GachaPage>
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.pink.withOpacity(0.3),
+                    color: Colors.pink.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -767,13 +769,13 @@ class _GachaPageState extends State<GachaPage>
                     height: 200,
                     width: 200,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
-                          color: Colors.white.withOpacity(0.8), width: 2),
+                          color: Colors.white.withValues(alpha: 0.8), width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           blurRadius: 10,
                           offset: const Offset(-5, -5),
                         ),
@@ -805,12 +807,12 @@ class _GachaPageState extends State<GachaPage>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.stars_rounded,
-                                color: Colors.white.withOpacity(0.6), size: 32),
+                                color: Colors.white.withValues(alpha: 0.6), size: 32),
                             const SizedBox(height: 8),
                             Text(
                               'Moe Gacha',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                                 fontFamily: 'Courier',
@@ -840,7 +842,7 @@ class _GachaPageState extends State<GachaPage>
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -848,11 +850,11 @@ class _GachaPageState extends State<GachaPage>
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.card_giftcard,
-                          size: 16, color: Color(0xFF7F7FD5)),
-                      SizedBox(width: 6),
-                      Text(
+                          size: 16, color: moe.primary),
+                      const SizedBox(width: 6),
+                      const Text(
                         '当前奖品池',
                         style: TextStyle(
                           fontSize: 12,
@@ -883,7 +885,7 @@ class _GachaPageState extends State<GachaPage>
                       child: _buildGachaButton(
                         label: '单抽',
                         price: '¥5.0',
-                        color: const Color(0xFF7F7FD5),
+                        color: moe.primary,
                         onTap: () => _startGacha(1),
                       ),
                     ),
@@ -925,7 +927,7 @@ class _GachaPageState extends State<GachaPage>
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: 8,
-          shadowColor: color.withOpacity(0.5),
+          shadowColor: color.withValues(alpha: 0.5),
           padding: EdgeInsets.zero,
         ),
         child: Column(
@@ -952,7 +954,7 @@ class _GachaPageState extends State<GachaPage>
                 margin: const EdgeInsets.only(top: 2),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

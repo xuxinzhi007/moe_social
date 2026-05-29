@@ -35,7 +35,7 @@ class _SettingsSearchBarState extends State<SettingsSearchBar> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
+            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

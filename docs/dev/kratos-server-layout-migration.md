@@ -39,24 +39,28 @@ internal/
 
 **特征**：无 `api/internal`、无 compat、无 `*gw`；HTTP/gRPC 注册集中在 `internal/server`。
 
-### moe_social（当前）
+### moe_social（迁移前 · 历史）
 
 ```text
 api/<domain>/v1/*.proto
-api/moehttp/*_compat.go   # 263 条存量 HTTP（手维护）
-api/internal/             # go-zero 遗产：types、*gw、common、svc
-internal/
-  biz/
-  data/
-  service/
-  server/
-    http.go               # ★ 运维路由：/health、/migration（原 moekratoshttp）
-    grpc/                 # 12 域 gRPC 适配 + MoeAdmin（原 moegrpc）
-  platform/moesocial/     # 进程启动、HTTP+gRPC 编排
-rpc/pb/moe/               # 冻结 message + bridge
+api/moehttp/*_compat.go   # P3 基线 263 条（已迁出）
+api/internal/             # go-zero 遗产
+...
 ```
 
-**特征**：HTTP **装配分散**在 `platform/moesocial` + `api/moehttp` + `server/http.go`；命名带 `moe`/`kratos` 前缀，与官方 `server/http.go` 不对齐。
+### moe_social（当前 · 2026-05-27）
+
+```text
+api/<domain>/v1/*.proto + *_http.pb.go    # 227 条 proto HTTP
+internal/server/
+  http.go / http_proto.go / http_compat.go
+  httplegacy/*_compat.go                  # 45 条活跃 compat
+  grpc/<domain>/                          # proto 薄适配
+internal/apilegacy/swaggerdoc/            # /swagger 三件套 bridge
+internal/platform/moesocial/
+```
+
+**特征**：HTTP 装配已收敛到 `internal/server`；compat 从 263→45；P0/P1 审计 100%。
 
 ---
 
@@ -140,11 +144,15 @@ flowchart LR
 | 动作 | 验收 |
 |------|------|
 | `server/http_compat.go` 按域调用 `moehttp.Register*Compat` | admin / post / user … 分组 |
-| proto `Register*HTTPServer` | **待 S5**：需 `google.api.http` + `protoc-gen-go-http`（当前无 `*_http.pb.go`） |
+| proto `Register*HTTPServer` | ✅ | `http_proto.go` · **227** 路由 · 18 域 |
+| compat 手写路由 | 🟡 缩减中 | **45** 条（原 P3 基线 263） |
 
-### 阶段 S3b — proto HTTP 生成（下一步，原 S5 前置）
+### 阶段 S3b — proto HTTP 生成 ✅
 
-### 阶段 S4 — 删除 `api/internal`
+- [x] `google.api.http` + `protoc-gen-go-http` → `*_http.pb.go`
+- [x] `http_proto.go` · **227** 路由 · P0/P1 大批量 compat no-op
+
+### 阶段 S4 — 删除 `api/internal`（进行中）
 
 | 动作 | 验收 |
 |------|------|
@@ -159,7 +167,7 @@ flowchart LR
 |------|------|
 | `internal/platform/moesocial` 仅保留 `Run()`，server 构造全在 `internal/server` | — |
 | `rpc/pb/moe` bridge 归零 | service/biz 无 `moe.*` |
-| `make gen` 生成 HTTP 注册，手写 compat **0** | 对齐官方布局 |
+| `make gen` 生成 HTTP 注册，手写 compat **45**（目标 0） | 对齐官方布局；见 [kratos-migration-status.md](./kratos-migration-status.md) |
 
 ---
 

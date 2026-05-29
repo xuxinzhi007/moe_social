@@ -1240,7 +1240,7 @@ class _ChatPageState extends State<ChatPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.reply_rounded,
@@ -1257,7 +1257,7 @@ class _ChatPageState extends State<ChatPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.copy_rounded, color: Colors.blue),
@@ -1323,7 +1323,7 @@ class _ChatPageState extends State<ChatPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child:
@@ -1340,7 +1340,7 @@ class _ChatPageState extends State<ChatPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.format_quote_rounded,
@@ -1358,8 +1358,8 @@ class _ChatPageState extends State<ChatPage> {
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: _markedMessages.contains(message.id)
-                            ? Colors.yellow.withOpacity(0.1)
-                            : Colors.blue.withOpacity(0.1),
+                            ? Colors.yellow.withValues(alpha: 0.1)
+                            : Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -1384,7 +1384,7 @@ class _ChatPageState extends State<ChatPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child:
@@ -1555,7 +1555,7 @@ class _ChatPageState extends State<ChatPage> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -1570,7 +1570,7 @@ class _ChatPageState extends State<ChatPage> {
                       radius: 16,
                       backgroundColor: message.role == 'user'
                           ? const Color(0xFFE94057)
-                          : Theme.of(context).primaryColor.withOpacity(0.1),
+                          : Theme.of(context).primaryColor.withValues(alpha: 0.1),
                       child: Icon(
                         message.role == 'user'
                             ? Icons.person_rounded
@@ -1714,7 +1714,7 @@ class _ChatPageState extends State<ChatPage> {
                       CircleAvatar(
                         radius: 22,
                         backgroundColor:
-                            Theme.of(ctx).primaryColor.withOpacity(0.12),
+                            Theme.of(ctx).primaryColor.withValues(alpha: 0.12),
                         child: Icon(Icons.smart_toy_rounded,
                             color: Theme.of(ctx).primaryColor),
                       ),
@@ -2610,7 +2610,7 @@ class _ChatPageState extends State<ChatPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: AiBrandTokens.primary.withValues(alpha: 0.14),

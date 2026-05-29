@@ -45,7 +45,7 @@ class _HomeBannerState extends State<HomeBanner> with SingleTickerProviderStateM
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.25),
+            color: const Color(0xFF7F7FD5).withValues(alpha: 0.25),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -73,7 +73,7 @@ class _HomeBannerState extends State<HomeBanner> with SingleTickerProviderStateM
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -92,7 +92,7 @@ class _HomeBannerState extends State<HomeBanner> with SingleTickerProviderStateM
                   width: 140,
                   height: 140,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -113,11 +113,11 @@ class _HomeBannerState extends State<HomeBanner> with SingleTickerProviderStateM
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),

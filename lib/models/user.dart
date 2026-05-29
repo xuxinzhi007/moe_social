@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'avatar_configuration.dart';
+import '../utils/api_json.dart';
 
 class User {
   final String id;
@@ -78,35 +79,41 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: _coerceId(json['id']),
-      username: json['username'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      feishuEmail: json['feishu_email'] as String? ?? '',
-      feishuName: json['feishu_name'] as String? ?? '',
-      feishuBound: json['feishu_bound'] as bool? ?? false,
-      wechatNickname: json['wechat_nickname'] as String? ?? '',
-      wechatBound: json['wechat_bound'] as bool? ?? false,
-      moeNo: json['moe_no'] as String? ?? '',
-      displayUserId: json['display_user_id'] as String? ??
-          json['moe_no'] as String? ??
-          '',
+      username: apiString(json, 'username', 'username'),
+      email: apiString(json, 'email', 'email'),
+      feishuEmail: apiString(json, 'feishu_email', 'feishuEmail'),
+      feishuName: apiString(json, 'feishu_name', 'feishuName'),
+      feishuBound: apiBool(json, 'feishu_bound', 'feishuBound'),
+      wechatNickname: apiString(json, 'wechat_nickname', 'wechatNickname'),
+      wechatBound: apiBool(json, 'wechat_bound', 'wechatBound'),
+      moeNo: apiString(json, 'moe_no', 'moeNo'),
+      displayUserId: apiString(json, 'display_user_id', 'displayUserId').isNotEmpty
+          ? apiString(json, 'display_user_id', 'displayUserId')
+          : apiString(json, 'moe_no', 'moeNo'),
       messageRetentionChoice:
-          (json['message_retention_choice'] as num?)?.toInt() ?? 0,
-      avatar: json['avatar'] as String? ?? '',
-      signature: json['signature'] as String? ?? '',
-      gender: json['gender'] as String? ?? '',
-      birthday: json['birthday'] as String?,
-      avatarConfig: json['avatar_config'] as String?,
-      isVip: json['is_vip'] as bool? ?? false,
-      vipExpiresAt: json['vip_expires_at'] as String?,
-      autoRenew: json['auto_renew'] as bool? ?? false,
-      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
-      giftCharm: (json['gift_charm'] as num?)?.toInt() ?? 0,
+          apiInt(apiField(json, 'message_retention_choice', 'messageRetentionChoice')),
+      avatar: apiString(json, 'avatar', 'avatar'),
+      signature: apiString(json, 'signature', 'signature'),
+      gender: apiString(json, 'gender', 'gender'),
+      birthday: apiField(json, 'birthday', 'birthday') as String?,
+      avatarConfig: apiString(json, 'avatar_config', 'avatarConfig').isEmpty
+          ? null
+          : apiString(json, 'avatar_config', 'avatarConfig'),
+      isVip: apiBool(json, 'is_vip', 'isVip'),
+      vipExpiresAt: apiField(json, 'vip_expires_at', 'vipExpiresAt') as String?,
+      autoRenew: apiBool(json, 'auto_renew', 'autoRenew'),
+      balance: (apiField(json, 'balance', 'balance') as num?)?.toDouble() ?? 0.0,
+      giftCharm: apiInt(apiField(json, 'gift_charm', 'giftCharm')),
       receivedGiftValue:
-          (json['received_gift_value'] as num?)?.toDouble() ?? 0.0,
-      inventory: _parseInventory(json['inventory']),
-      equippedFrameId: json['equipped_frame_id'] as String?,
-      createdAt: json['created_at'] as String? ?? '',
-      updatedAt: json['updated_at'] as String? ?? '',
+          (apiField(json, 'received_gift_value', 'receivedGiftValue') as num?)
+                  ?.toDouble() ??
+              0.0,
+      inventory: _parseInventory(apiField(json, 'inventory', 'inventory')),
+      equippedFrameId: apiString(json, 'equipped_frame_id', 'equippedFrameId').isEmpty
+          ? null
+          : apiString(json, 'equipped_frame_id', 'equippedFrameId'),
+      createdAt: apiString(json, 'created_at', 'createdAt'),
+      updatedAt: apiString(json, 'updated_at', 'updatedAt'),
     );
   }
 

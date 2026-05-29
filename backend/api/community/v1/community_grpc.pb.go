@@ -19,10 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Community_GetGroups_FullMethodName   = "/community.v1.Community/GetGroups"
-	Community_GetGroup_FullMethodName    = "/community.v1.Community/GetGroup"
-	Community_CreateGroup_FullMethodName = "/community.v1.Community/CreateGroup"
-	Community_JoinGroup_FullMethodName   = "/community.v1.Community/JoinGroup"
+	Community_GetGroups_FullMethodName       = "/community.v1.Community/GetGroups"
+	Community_GetGroup_FullMethodName        = "/community.v1.Community/GetGroup"
+	Community_CreateGroup_FullMethodName     = "/community.v1.Community/CreateGroup"
+	Community_JoinGroup_FullMethodName       = "/community.v1.Community/JoinGroup"
+	Community_UpdateGroup_FullMethodName     = "/community.v1.Community/UpdateGroup"
+	Community_DeleteGroup_FullMethodName     = "/community.v1.Community/DeleteGroup"
+	Community_LeaveGroup_FullMethodName      = "/community.v1.Community/LeaveGroup"
+	Community_GetGroupMembers_FullMethodName = "/community.v1.Community/GetGroupMembers"
+	Community_GetUserGroups_FullMethodName   = "/community.v1.Community/GetUserGroups"
+	Community_CreateGroupPost_FullMethodName = "/community.v1.Community/CreateGroupPost"
+	Community_GetGroupPosts_FullMethodName   = "/community.v1.Community/GetGroupPosts"
 )
 
 // CommunityClient is the client API for Community service.
@@ -33,6 +40,13 @@ type CommunityClient interface {
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*GetGroupReply, error)
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupReply, error)
 	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupReply, error)
+	UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*UpdateGroupReply, error)
+	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*DeleteGroupReply, error)
+	LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupReply, error)
+	GetGroupMembers(ctx context.Context, in *GetGroupMembersRequest, opts ...grpc.CallOption) (*GetGroupMembersReply, error)
+	GetUserGroups(ctx context.Context, in *GetUserGroupsRequest, opts ...grpc.CallOption) (*GetUserGroupsReply, error)
+	CreateGroupPost(ctx context.Context, in *CreateGroupPostRequest, opts ...grpc.CallOption) (*CreateGroupPostReply, error)
+	GetGroupPosts(ctx context.Context, in *GetGroupPostsRequest, opts ...grpc.CallOption) (*GetGroupPostsReply, error)
 }
 
 type communityClient struct {
@@ -83,6 +97,76 @@ func (c *communityClient) JoinGroup(ctx context.Context, in *JoinGroupRequest, o
 	return out, nil
 }
 
+func (c *communityClient) UpdateGroup(ctx context.Context, in *UpdateGroupRequest, opts ...grpc.CallOption) (*UpdateGroupReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGroupReply)
+	err := c.cc.Invoke(ctx, Community_UpdateGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*DeleteGroupReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGroupReply)
+	err := c.cc.Invoke(ctx, Community_DeleteGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveGroupReply)
+	err := c.cc.Invoke(ctx, Community_LeaveGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) GetGroupMembers(ctx context.Context, in *GetGroupMembersRequest, opts ...grpc.CallOption) (*GetGroupMembersReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupMembersReply)
+	err := c.cc.Invoke(ctx, Community_GetGroupMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) GetUserGroups(ctx context.Context, in *GetUserGroupsRequest, opts ...grpc.CallOption) (*GetUserGroupsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserGroupsReply)
+	err := c.cc.Invoke(ctx, Community_GetUserGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) CreateGroupPost(ctx context.Context, in *CreateGroupPostRequest, opts ...grpc.CallOption) (*CreateGroupPostReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupPostReply)
+	err := c.cc.Invoke(ctx, Community_CreateGroupPost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communityClient) GetGroupPosts(ctx context.Context, in *GetGroupPostsRequest, opts ...grpc.CallOption) (*GetGroupPostsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupPostsReply)
+	err := c.cc.Invoke(ctx, Community_GetGroupPosts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CommunityServer is the server API for Community service.
 // All implementations must embed UnimplementedCommunityServer
 // for forward compatibility.
@@ -91,6 +175,13 @@ type CommunityServer interface {
 	GetGroup(context.Context, *GetGroupRequest) (*GetGroupReply, error)
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupReply, error)
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupReply, error)
+	UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupReply, error)
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupReply, error)
+	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupReply, error)
+	GetGroupMembers(context.Context, *GetGroupMembersRequest) (*GetGroupMembersReply, error)
+	GetUserGroups(context.Context, *GetUserGroupsRequest) (*GetUserGroupsReply, error)
+	CreateGroupPost(context.Context, *CreateGroupPostRequest) (*CreateGroupPostReply, error)
+	GetGroupPosts(context.Context, *GetGroupPostsRequest) (*GetGroupPostsReply, error)
 	mustEmbedUnimplementedCommunityServer()
 }
 
@@ -112,6 +203,27 @@ func (UnimplementedCommunityServer) CreateGroup(context.Context, *CreateGroupReq
 }
 func (UnimplementedCommunityServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
+}
+func (UnimplementedCommunityServer) UpdateGroup(context.Context, *UpdateGroupRequest) (*UpdateGroupReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateGroup not implemented")
+}
+func (UnimplementedCommunityServer) DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteGroup not implemented")
+}
+func (UnimplementedCommunityServer) LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveGroup not implemented")
+}
+func (UnimplementedCommunityServer) GetGroupMembers(context.Context, *GetGroupMembersRequest) (*GetGroupMembersReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupMembers not implemented")
+}
+func (UnimplementedCommunityServer) GetUserGroups(context.Context, *GetUserGroupsRequest) (*GetUserGroupsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserGroups not implemented")
+}
+func (UnimplementedCommunityServer) CreateGroupPost(context.Context, *CreateGroupPostRequest) (*CreateGroupPostReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroupPost not implemented")
+}
+func (UnimplementedCommunityServer) GetGroupPosts(context.Context, *GetGroupPostsRequest) (*GetGroupPostsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupPosts not implemented")
 }
 func (UnimplementedCommunityServer) mustEmbedUnimplementedCommunityServer() {}
 func (UnimplementedCommunityServer) testEmbeddedByValue()                   {}
@@ -206,6 +318,132 @@ func _Community_JoinGroup_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Community_UpdateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).UpdateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_UpdateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).UpdateGroup(ctx, req.(*UpdateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_DeleteGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).DeleteGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_DeleteGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).DeleteGroup(ctx, req.(*DeleteGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_LeaveGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).LeaveGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_LeaveGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).LeaveGroup(ctx, req.(*LeaveGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_GetGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).GetGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_GetGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).GetGroupMembers(ctx, req.(*GetGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_GetUserGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).GetUserGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_GetUserGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).GetUserGroups(ctx, req.(*GetUserGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_CreateGroupPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).CreateGroupPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_CreateGroupPost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).CreateGroupPost(ctx, req.(*CreateGroupPostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Community_GetGroupPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupPostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunityServer).GetGroupPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Community_GetGroupPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunityServer).GetGroupPosts(ctx, req.(*GetGroupPostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Community_ServiceDesc is the grpc.ServiceDesc for Community service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +466,34 @@ var Community_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinGroup",
 			Handler:    _Community_JoinGroup_Handler,
+		},
+		{
+			MethodName: "UpdateGroup",
+			Handler:    _Community_UpdateGroup_Handler,
+		},
+		{
+			MethodName: "DeleteGroup",
+			Handler:    _Community_DeleteGroup_Handler,
+		},
+		{
+			MethodName: "LeaveGroup",
+			Handler:    _Community_LeaveGroup_Handler,
+		},
+		{
+			MethodName: "GetGroupMembers",
+			Handler:    _Community_GetGroupMembers_Handler,
+		},
+		{
+			MethodName: "GetUserGroups",
+			Handler:    _Community_GetUserGroups_Handler,
+		},
+		{
+			MethodName: "CreateGroupPost",
+			Handler:    _Community_CreateGroupPost_Handler,
+		},
+		{
+			MethodName: "GetGroupPosts",
+			Handler:    _Community_GetGroupPosts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

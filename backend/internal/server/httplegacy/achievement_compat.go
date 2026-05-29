@@ -12,7 +12,7 @@ import (
 )
 
 // PilotNativeAchievementCompatRoutes 成就域 Kratos HTTP。
-const PilotNativeAchievementCompatRoutes = 4
+const PilotNativeAchievementCompatRoutes = 0
 
 // RegisterAchievementCompat D2：已迁入 RegisterAchievementHTTPServer。
 func RegisterAchievementCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

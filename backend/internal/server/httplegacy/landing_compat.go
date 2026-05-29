@@ -14,7 +14,7 @@ import (
 )
 
 // PilotNativeLandingCompatRoutes Landing 域 Kratos 原生 HTTP（internal/service，PK-10 首批）。
-const PilotNativeLandingCompatRoutes = 3
+const PilotNativeLandingCompatRoutes = 0
 
 // RegisterLandingCompat D2：已迁入 RegisterLandingHTTPServer，此处不再注册。
 func RegisterLandingCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
