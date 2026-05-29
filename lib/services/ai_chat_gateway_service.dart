@@ -10,6 +10,7 @@ import 'ai_models_cache_service.dart';
 import 'ai_provider_service.dart';
 import 'ai_tool_runtime.dart';
 import 'api_service.dart';
+import 'api_response.dart';
 import 'llama_cpp_endpoint_config.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
@@ -602,8 +603,10 @@ class AiChatGatewayService {
 
   List<String> _extractModelNames(dynamic decoded) {
     if (decoded is! Map) return const [];
-    final raw = decoded['models'] ?? decoded['data'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(
+      Map<String, dynamic>.from(decoded),
+      keys: const ['models'],
+    );
     if (raw.whereType<String>().isNotEmpty) {
       return raw.whereType<String>().toList();
     }

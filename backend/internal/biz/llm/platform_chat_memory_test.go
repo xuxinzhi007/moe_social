@@ -4,14 +4,14 @@ import (
 	"testing"
 	"time"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
 )
 
 func TestUserMemoryCache_HitAndExpire(t *testing.T) {
 	userID := "u-cache-test"
 	invalidateCachedUserMemories(userID)
 
-	items := []*moe.UserMemory{
+	items := []*llmv1.UserMemory{
 		{Key: "hobby", Value: "画画"},
 	}
 	setCachedUserMemories(userID, items)
@@ -37,7 +37,7 @@ func TestUserMemoryCache_HitAndExpire(t *testing.T) {
 
 func TestSelectRelevantMemoryLines_FallbackToRecentWhenNoKeywordHit(t *testing.T) {
 	budget := DefaultMemoryBudget()
-	memories := []*moe.UserMemory{
+	memories := []*llmv1.UserMemory{
 		{Key: "hobby", Value: "画画"},
 		{Key: "food", Value: "拉面"},
 		{Key: "music", Value: "轻音乐"},
@@ -57,7 +57,7 @@ func TestSelectRelevantMemoryLines_FallbackToRecentWhenNoKeywordHit(t *testing.T
 
 func TestSelectRelevantMemoryLines_KeywordHitPrefersRelevantMemories(t *testing.T) {
 	budget := DefaultMemoryBudget()
-	memories := []*moe.UserMemory{
+	memories := []*llmv1.UserMemory{
 		{Key: "hobby", Value: "画画"},
 		{Key: "pet", Value: "猫"},
 		{Key: "food", Value: "拉面"},

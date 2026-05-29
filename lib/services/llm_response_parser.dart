@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'api_response.dart';
+
 class LlmResponseParser {
   LlmResponseParser._();
 
@@ -27,8 +29,13 @@ class LlmResponseParser {
 
   static String extractChatContent(dynamic data, {required bool terminalMode}) {
     if (!terminalMode) {
-      if (data is Map && data['content'] is String) {
-        return data['content'] as String;
+      final payload = data is Map<String, dynamic>
+          ? ApiResponse.payload(data)
+          : data is Map
+              ? ApiResponse.payload(Map<String, dynamic>.from(data))
+              : const <String, dynamic>{};
+      if (payload['content'] is String) {
+        return payload['content'] as String;
       }
       if (data is List && data.isNotEmpty) {
         final last = data.last;

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 var memoryTokenPattern = regexp.MustCompile(`[\p{Han}]{2,}|[a-zA-Z0-9_]{2,}`)
 
 type cachedMemories struct {
-	items     []*moe.UserMemory
+	items     []*llmv1.UserMemory
 	expiresAt time.Time
 }
 
@@ -99,7 +99,7 @@ func estimateTokens(s string) int {
 	return len([]rune(s))
 }
 
-func getCachedUserMemories(userID string) ([]*moe.UserMemory, bool) {
+func getCachedUserMemories(userID string) ([]*llmv1.UserMemory, bool) {
 	now := time.Now()
 	userMemoryCache.RLock()
 	entry, ok := userMemoryCache.data[userID]
@@ -116,7 +116,7 @@ func getCachedUserMemories(userID string) ([]*moe.UserMemory, bool) {
 	return entry.items, true
 }
 
-func setCachedUserMemories(userID string, items []*moe.UserMemory) {
+func setCachedUserMemories(userID string, items []*llmv1.UserMemory) {
 	userMemoryCache.Lock()
 	defer userMemoryCache.Unlock()
 	evictUserMemoryCacheLocked()
@@ -204,7 +204,7 @@ func normalizeMemoryText(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-func selectRelevantMemoryLines(memories []*moe.UserMemory, messages []PlatformChatMessage, budget MemoryBudgetConfig) []string {
+func selectRelevantMemoryLines(memories []*llmv1.UserMemory, messages []PlatformChatMessage, budget MemoryBudgetConfig) []string {
 	if len(memories) == 0 {
 		return nil
 	}
@@ -306,7 +306,7 @@ func selectRelevantMemoryLines(memories []*moe.UserMemory, messages []PlatformCh
 	return lines
 }
 
-func isPersonaMemory(m *moe.UserMemory) bool {
+func isPersonaMemory(m *llmv1.UserMemory) bool {
 	if m == nil {
 		return false
 	}

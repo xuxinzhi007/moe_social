@@ -2,7 +2,6 @@ package runserver
 
 import (
 	"fmt"
-	"log"
 )
 
 // Options API 启动选项。
@@ -27,7 +26,5 @@ func StartWithResult(opts Options) (*StartResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	LogEffectiveConfig(&c)
-	log.Print("moe api: wire-only (Kratos HTTP)")
 	return &StartResult{Server: nil, Svc: ctx, Host: c.Host, Port: c.Port}, nil
 }

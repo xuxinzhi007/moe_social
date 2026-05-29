@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -18,7 +18,7 @@ import (
 )
 
 // FeishuLogin OAuth 登录或注册。
-func FeishuLogin(ctx context.Context, store UserStore, in *moe.FeishuLoginReq) (*moe.FeishuLoginResp, error) {
+func FeishuLogin(ctx context.Context, store UserStore, in *userv1.FeishuLoginReq) (*userv1.FeishuLoginResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -44,15 +44,15 @@ func FeishuLogin(ctx context.Context, store UserStore, in *moe.FeishuLoginReq) (
 	if err != nil {
 		return nil, err
 	}
-	return &moe.FeishuLoginResp{
-		User:      ModelToProto(&user),
+	return &userv1.FeishuLoginResp{
+		User:      ModelToUserV1(&user),
 		Token:     token,
 		IsNewUser: isNew,
 	}, nil
 }
 
 // FeishuAuthorizeURL 生成飞书授权链接。
-func FeishuAuthorizeURL(_ context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.FeishuAuthorizeURLResp, error) {
+func FeishuAuthorizeURL(_ context.Context, in *userv1.FeishuAuthorizeURLReq) (*userv1.FeishuAuthorizeURLResp, error) {
 	if !viper.GetBool("feishu.enabled") {
 		return nil, ErrOAuthDisabled
 	}
@@ -60,11 +60,11 @@ func FeishuAuthorizeURL(_ context.Context, in *moe.FeishuAuthorizeURLReq) (*moe.
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	return &moe.FeishuAuthorizeURLResp{AuthorizeUrl: url}, nil
+	return &userv1.FeishuAuthorizeURLResp{AuthorizeUrl: url}, nil
 }
 
 // BindFeishu 绑定飞书邮箱。
-func BindFeishu(ctx context.Context, store UserStore, in *moe.BindFeishuReq) (*moe.BindFeishuResp, error) {
+func BindFeishu(ctx context.Context, store UserStore, in *userv1.BindFeishuReq) (*userv1.BindFeishuResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -87,11 +87,11 @@ func BindFeishu(ctx context.Context, store UserStore, in *moe.BindFeishuReq) (*m
 	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	return &moe.BindFeishuResp{User: ModelToProto(&user)}, nil
+	return &userv1.BindFeishuResp{User: ModelToUserV1(&user)}, nil
 }
 
 // UnbindFeishu 解绑飞书邮箱。
-func UnbindFeishu(ctx context.Context, store UserStore, in *moe.UnbindFeishuReq) (*moe.UnbindFeishuResp, error) {
+func UnbindFeishu(ctx context.Context, store UserStore, in *userv1.UnbindFeishuReq) (*userv1.UnbindFeishuResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -110,11 +110,11 @@ func UnbindFeishu(ctx context.Context, store UserStore, in *moe.UnbindFeishuReq)
 	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	return &moe.UnbindFeishuResp{User: ModelToProto(&user)}, nil
+	return &userv1.UnbindFeishuResp{User: ModelToUserV1(&user)}, nil
 }
 
 // SendFeishuTestCard 发送飞书测试卡片。
-func SendFeishuTestCard(ctx context.Context, store UserStore, in *moe.SendFeishuTestCardReq) (*moe.SendFeishuTestCardResp, error) {
+func SendFeishuTestCard(ctx context.Context, store UserStore, in *userv1.SendFeishuTestCardReq) (*userv1.SendFeishuTestCardResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -136,7 +136,7 @@ func SendFeishuTestCard(ctx context.Context, store UserStore, in *moe.SendFeishu
 	if err := utils.SendFeishuTestCard(ctx, target); err != nil {
 		return nil, err
 	}
-	return &moe.SendFeishuTestCardResp{}, nil
+	return &userv1.SendFeishuTestCardResp{}, nil
 }
 
 func findOrCreateFeishuUser(ctx context.Context, store UserStore, info utils.FeishuOAuthUserInfo) (model.User, bool, error) {

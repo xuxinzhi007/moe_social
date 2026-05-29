@@ -15,6 +15,7 @@ import (
 	llmv1 "backend/api/llm/v1"
 	moepb "backend/api/moe/v1"
 	notifyv1 "backend/api/notify/v1"
+	platformv1 "backend/api/platform/v1"
 	postv1 "backend/api/post/v1"
 	userv1 "backend/api/user/v1"
 	vipv1 "backend/api/vip/v1"
@@ -34,7 +35,9 @@ import (
 	giftgrpc "backend/internal/server/grpc/gift"
 	landinggrpc "backend/internal/server/grpc/landing"
 	llmgrpc "backend/internal/server/grpc/llm"
+	mediagrpc "backend/internal/server/grpc/media"
 	notifygrpc "backend/internal/server/grpc/notify"
+	platformgrpc "backend/internal/server/grpc/platform"
 	postgrpc "backend/internal/server/grpc/post"
 	usergrpc "backend/internal/server/grpc/user"
 	vipgrpc "backend/internal/server/grpc/vip"
@@ -52,6 +55,7 @@ import (
 	giftapp "backend/internal/service/gift"
 	landingapp "backend/internal/service/landing"
 	llmapp "backend/internal/service/llm"
+	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
 	postapp "backend/internal/service/post"
@@ -76,6 +80,7 @@ type ProtoHTTPDeps struct {
 	BehaviorApp         *behaviorapp.AppService
 	AIApp               *aiapp.AppService
 	LLMApp              *llmapp.AppService
+	MediaApp            *mediaapp.AppService
 	LLMInferenceBaseURL string
 	LLMMemoryGateway    userbiz.LLMMemoryGateway
 	VipAdmin            *vipadmin.AdminService
@@ -118,6 +123,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		chatv1.RegisterPrivateMessageServiceHTTPServer(srv, chatSrv)
 		chatv1.RegisterPushNotificationServiceHTTPServer(srv, chatSrv)
 	}
+	chatv1.RegisterChatPresenceServiceHTTPServer(srv, chatgrpc.NewPresence())
 	if d.NotifyApp != nil {
 		notifyv1.RegisterNotifyServiceHTTPServer(srv, notifygrpc.New(d.NotifyApp))
 	}
@@ -134,6 +140,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		llmv1.RegisterLlmChatHTTPServer(srv, llmgrpc.New(d.LLMApp,
 			llmgrpc.WithMemorySearch(d.LLMMemoryGateway, d.LLMInferenceBaseURL),
 		))
+	}
+	if d.MediaApp != nil {
+		mediagrpc.RegisterHTTPServer(srv, mediagrpc.New(d.MediaApp))
 	}
 	contentv1.RegisterContentServiceHTTPServer(srv, contentgrpc.New(contentapp.New()))
 	if d.VipAdmin != nil {
@@ -154,5 +163,8 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 			adminOpts = append(adminOpts, adminappgrpc.WithServiceContext(d.SvcCtx))
 		}
 		adminv1.RegisterAdminAppHTTPServer(srv, adminappgrpc.New(d.AdminApp, d.VipAdmin, adminOpts...))
+	}
+	if d.SvcCtx != nil {
+		platformv1.RegisterPlatformHTTPServer(srv, platformgrpc.New(d.SvcCtx))
 	}
 }

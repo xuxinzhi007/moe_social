@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
+	postv1 "backend/api/post/v1"
 	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -24,7 +24,7 @@ type SearchInput struct {
 }
 
 // Search 关键词检索帖子。
-func Search(ctx context.Context, st PostStore, in SearchInput) (*moe.MoeSearchPostsResp, error) {
+func Search(ctx context.Context, st PostStore, in SearchInput) (*postv1.MoeSearchPostsReply, error) {
 	if st == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -38,9 +38,9 @@ func Search(ctx context.Context, st PostStore, in SearchInput) (*moe.MoeSearchPo
 	if err != nil {
 		return nil, err
 	}
-	out := &moe.MoeSearchPostsResp{Total: int32(len(hits))}
+	out := &postv1.MoeSearchPostsReply{Total: int32(len(hits))}
 	for _, h := range hits {
-		out.Items = append(out.Items, &moe.MoeSearchPostHit{
+		out.Items = append(out.Items, &postv1.MoeSearchPostHit{
 			PostId: h.PostID, UserId: h.UserID, UserName: h.UserName,
 			Content: h.Content, Snippet: h.Snippet, MoodTag: h.MoodTag,
 			Likes: int32(h.Likes), Comments: int32(h.Comments), CreatedAt: h.CreatedAt,
@@ -51,7 +51,7 @@ func Search(ctx context.Context, st PostStore, in SearchInput) (*moe.MoeSearchPo
 }
 
 // GetByID 单帖详情。
-func GetByID(ctx context.Context, st PostStore, postIDRaw, viewerUserIDRaw string) (*moe.Post, error) {
+func GetByID(ctx context.Context, st PostStore, postIDRaw, viewerUserIDRaw string) (*postv1.Post, error) {
 	if st == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -89,7 +89,7 @@ func GetByID(ctx context.Context, st PostStore, postIDRaw, viewerUserIDRaw strin
 		liked := LikedTargetIDSet(ctx, st, viewerUID, "post", []uint{post.ID})
 		isLiked = liked[post.ID]
 	}
-	return BuildProtoPost(post, user, isLiked), nil
+	return BuildPostV1(post, user, isLiked), nil
 }
 
 // ListFilter 帖子列表筛选。
@@ -103,7 +103,7 @@ type ListFilter struct {
 }
 
 // List 帖子 feed 列表。
-func List(ctx context.Context, st PostStore, f ListFilter) ([]*moe.Post, int32, error) {
+func List(ctx context.Context, st PostStore, f ListFilter) ([]*postv1.Post, int32, error) {
 	if st == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -165,9 +165,9 @@ func List(ctx context.Context, st PostStore, f ListFilter) ([]*moe.Post, int32, 
 		postIDs = append(postIDs, p.ID)
 	}
 	likedPosts := LikedTargetIDSet(ctx, st, viewerUID, "post", postIDs)
-	out := make([]*moe.Post, 0, len(posts))
+	out := make([]*postv1.Post, 0, len(posts))
 	for _, post := range posts {
-		out = append(out, BuildProtoPost(post, userMap[post.UserID], likedPosts[post.ID]))
+		out = append(out, BuildPostV1(post, userMap[post.UserID], likedPosts[post.ID]))
 	}
 	return out, int32(total), nil
 }

@@ -37,12 +37,16 @@ func TestEnvelopeResponseEncoder_getPosts(t *testing.T) {
 	if body["code"].(float64) != 200 {
 		t.Fatalf("code=%v", body["code"])
 	}
-	posts, ok := body["posts"].([]any)
-	if !ok || len(posts) != 1 {
-		t.Fatalf("posts=%v", body["posts"])
+	data, ok := body["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("data=%v", body["data"])
 	}
-	if body["total"].(float64) != 1 {
-		t.Fatalf("total=%v", body["total"])
+	posts, ok := data["posts"].([]any)
+	if !ok || len(posts) != 1 {
+		t.Fatalf("posts=%v", data["posts"])
+	}
+	if data["total"].(float64) != 1 {
+		t.Fatalf("total=%v", data["total"])
 	}
 }
 

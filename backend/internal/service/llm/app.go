@@ -59,11 +59,7 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 }
 
 func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *llmv1.RecordLlmChatTurnReq) (*llmv1.RecordLlmChatTurnResp, error) {
-	out, err := llmbiz.RecordChatTurn(ctx, s.memory, llmv1.RecordLlmChatTurnReqToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return llmv1.RecordLlmChatTurnRespFromMoe(out), nil
+	return llmbiz.RecordChatTurn(ctx, s.memory, in)
 }
 
 // FindLocalModel 按 id 查找本地模型（供 download handler 使用）。
@@ -83,11 +79,7 @@ func (s *AppService) PostChatCompletion(
 
 // UpsertUserMemory 写入用户记忆（含异步索引）。
 func (s *AppService) UpsertUserMemory(ctx context.Context, in *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error) {
-	out, err := llmbiz.UpsertUserMemory(ctx, s.memory, llmv1.UpsertUserMemoryReqToMoe(in), llmbiz.MemoryWriteOptions{
+	return llmbiz.UpsertUserMemory(ctx, s.memory, in, llmbiz.MemoryWriteOptions{
 		InferenceBaseURL: s.deps.Inference.BaseURL,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return llmv1.UpsertUserMemoryRespFromMoe(out), nil
 }

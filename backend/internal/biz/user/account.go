@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"time"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // DeleteUser 注销账号（脱敏后软删）。
-func DeleteUser(ctx context.Context, store UserStore, in *moe.DeleteUserReq) (*moe.DeleteUserResp, error) {
+func DeleteUser(ctx context.Context, store UserStore, in *userv1.DeleteUserReq) (*userv1.DeleteUserResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -39,7 +39,7 @@ func DeleteUser(ctx context.Context, store UserStore, in *moe.DeleteUserReq) (*m
 	if err := store.DeleteUserHard(ctx, user.ID); err != nil {
 		return nil, err
 	}
-	return &moe.DeleteUserResp{}, nil
+	return &userv1.DeleteUserResp{}, nil
 }
 
 func scrubUserBeforeDelete(user *model.User) error {

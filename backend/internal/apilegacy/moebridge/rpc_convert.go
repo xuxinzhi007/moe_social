@@ -1,86 +1,87 @@
 package moebridge
 
 import (
+	adminv1 "backend/api/admin/v1"
+	postv1 "backend/api/post/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RuntimeItemFromRPC(item *moe.MoeAgentRuntimeItem) types.MoeAgentRuntimeItem {
+func RuntimeItemFromRPC(item *adminv1.MoeAgentRuntimeItem) types.MoeAgentRuntimeItem {
 	if item == nil {
 		return types.MoeAgentRuntimeItem{}
 	}
 	return types.MoeAgentRuntimeItem{
-		AgentKey:          item.AgentKey,
-		DisplayName:       item.DisplayName,
-		BotUserId:         item.BotUserId,
-		CapabilityTier:    item.CapabilityTier,
-		ModelName:         item.ModelName,
-		ProviderProfileId: item.ProviderProfileId,
-		ToolsEnabled:      item.ToolsEnabled,
-		PostQuotaDaily:    int(item.PostQuotaDaily),
-		PostsToday:        int(item.PostsToday),
-		Enabled:           item.Enabled,
-		LastRunAt:         item.LastRunAt,
-		LastPostId:        item.LastPostId,
-		PostScheduleMode:  item.PostScheduleMode,
-		ScheduleCron:      item.ScheduleCron,
-		NextRunAt:         item.NextRunAt,
-		SystemPrompt:      item.SystemPrompt,
-		PostRules:         item.PostRules,
-		ForbiddenTags:     item.ForbiddenTags,
-		PreferredTags:     item.PreferredTags,
+		AgentKey:          item.GetAgentKey(),
+		DisplayName:       item.GetDisplayName(),
+		BotUserId:         item.GetBotUserId(),
+		CapabilityTier:    item.GetCapabilityTier(),
+		ModelName:         item.GetModelName(),
+		ProviderProfileId: item.GetProviderProfileId(),
+		ToolsEnabled:      item.GetToolsEnabled(),
+		PostQuotaDaily:    int(item.GetPostQuotaDaily()),
+		PostsToday:        int(item.GetPostsToday()),
+		Enabled:           item.GetEnabled(),
+		LastRunAt:         item.GetLastRunAt(),
+		LastPostId:        item.GetLastPostId(),
+		PostScheduleMode:  item.GetPostScheduleMode(),
+		ScheduleCron:      item.GetScheduleCron(),
+		NextRunAt:         item.GetNextRunAt(),
+		SystemPrompt:      item.GetSystemPrompt(),
+		PostRules:         item.GetPostRules(),
+		ForbiddenTags:     item.GetForbiddenTags(),
+		PreferredTags:     item.GetPreferredTags(),
 	}
 }
 
-func BrainDataFromRPC(d *moe.AdminGetMoeBrainResp) types.AdminGetMoeBrainData {
+func BrainDataFromRPC(d *adminv1.AdminGetMoeBrainResp) types.AdminGetMoeBrainData {
 	if d == nil {
 		return types.AdminGetMoeBrainData{}
 	}
 	out := types.AdminGetMoeBrainData{
-		AgentKey:      d.AgentKey,
-		DisplayName:   d.DisplayName,
-		BotUserId:     d.BotUserId,
-		ForbiddenTags: d.ForbiddenTags,
-		PreferredTags: d.PreferredTags,
+		AgentKey:      d.GetAgentKey(),
+		DisplayName:   d.GetDisplayName(),
+		BotUserId:     d.GetBotUserId(),
+		ForbiddenTags: d.GetForbiddenTags(),
+		PreferredTags: d.GetPreferredTags(),
 	}
-	for _, t := range d.TagStats {
-		out.TagStats = append(out.TagStats, types.MoeBrainTagStat{Tag: t.Tag, Count: int(t.Count)})
+	for _, t := range d.GetTagStats() {
+		out.TagStats = append(out.TagStats, types.MoeBrainTagStat{Tag: t.GetTag(), Count: int(t.GetCount())})
 	}
-	for _, e := range d.Episodes {
+	for _, e := range d.GetEpisodes() {
 		out.Episodes = append(out.Episodes, types.MoeBrainEpisodeItem{
-			Id:            uint(e.Id),
-			PostId:        e.PostId,
-			Content:       e.Content,
-			Tags:          e.Tags,
-			MoodTag:       e.MoodTag,
-			StyleScore:    int(e.StyleScore),
-			QualityScore:  int(e.QualityScore),
-			Approved:      e.Approved,
-			RevisionCount: int(e.RevisionCount),
-			MemoryKey:     e.MemoryKey,
-			Source:        e.Source,
-			CreatedAt:     e.CreatedAt,
+			Id:            uint(e.GetId()),
+			PostId:        e.GetPostId(),
+			Content:       e.GetContent(),
+			Tags:          e.GetTags(),
+			MoodTag:       e.GetMoodTag(),
+			StyleScore:    int(e.GetStyleScore()),
+			QualityScore:  int(e.GetQualityScore()),
+			Approved:      e.GetApproved(),
+			RevisionCount: int(e.GetRevisionCount()),
+			MemoryKey:     e.GetMemoryKey(),
+			Source:        e.GetSource(),
+			CreatedAt:     e.GetCreatedAt(),
 		})
 	}
-	for _, m := range d.Memories {
+	for _, m := range d.GetMemories() {
 		out.Memories = append(out.Memories, types.MoeBrainMemoryItem{
-			Key:        m.Key,
-			Value:      m.Value,
-			MemoryType: m.MemoryType,
-			UpdatedAt:  m.UpdatedAt,
+			Key:        m.GetKey(),
+			Value:      m.GetValue(),
+			MemoryType: m.GetMemoryType(),
+			UpdatedAt:  m.GetUpdatedAt(),
 		})
 	}
-	if gm := d.GenerationMeta; gm != nil {
+	if gm := d.GetGenerationMeta(); gm != nil {
 		out.GenerationMeta = types.MoeBrainGenerationMeta{
-			PostUsesToolMemory: gm.PostUsesToolMemory,
-			MemoriesSynced:     int(gm.MemoriesSynced),
-			EpisodesInPrompt:   int(gm.EpisodesInPrompt),
-			PromptMemoryLines:  int(gm.PromptMemoryLines),
-			PromptPreview:      gm.PromptPreview,
-			PromptEstTokens:    int(gm.PromptEstTokens),
-			ContextLimit:       int(gm.ContextLimit),
-			ContextUsedPct:     gm.ContextUsedPct,
-			Note:               gm.Note,
+			PostUsesToolMemory: gm.GetPostUsesToolMemory(),
+			MemoriesSynced:     int(gm.GetMemoriesSynced()),
+			EpisodesInPrompt:   int(gm.GetEpisodesInPrompt()),
+			PromptMemoryLines:  int(gm.GetPromptMemoryLines()),
+			PromptPreview:      gm.GetPromptPreview(),
+			PromptEstTokens:    int(gm.GetPromptEstTokens()),
+			ContextLimit:       int(gm.GetContextLimit()),
+			ContextUsedPct:     gm.GetContextUsedPct(),
+			Note:               gm.GetNote(),
 		}
 	}
 	out.StabilityScore = int(d.GetStabilityScore())
@@ -89,72 +90,72 @@ func BrainDataFromRPC(d *moe.AdminGetMoeBrainResp) types.AdminGetMoeBrainData {
 	return out
 }
 
-func RefineResultFromRPC(d *moe.AdminRefineMoeBrainEpisodeResp) types.AdminRefineMoeBrainEpisodeData {
+func RefineResultFromRPC(d *adminv1.AdminRefineMoeBrainEpisodeResp) types.AdminRefineMoeBrainEpisodeData {
 	if d == nil {
 		return types.AdminRefineMoeBrainEpisodeData{}
 	}
 	return types.AdminRefineMoeBrainEpisodeData{
-		EpisodeId:     uint(d.EpisodeId),
-		Ok:            d.Ok,
-		Approved:      d.Approved,
-		QualityScore:  int(d.QualityScore),
-		BeforeContent: d.BeforeContent,
-		AfterContent:  d.AfterContent,
-		Attempts:      int(d.Attempts),
-		Detail:        d.Detail,
+		EpisodeId:     uint(d.GetEpisodeId()),
+		Ok:            d.GetOk(),
+		Approved:      d.GetApproved(),
+		QualityScore:  int(d.GetQualityScore()),
+		BeforeContent: d.GetBeforeContent(),
+		AfterContent:  d.GetAfterContent(),
+		Attempts:      int(d.GetAttempts()),
+		Detail:        d.GetDetail(),
 	}
 }
 
-func ToolStatsFromRPC(d *moe.AdminGetMoeToolStatsResp) types.AdminMoeToolStatsData {
+func ToolStatsFromRPC(d *adminv1.AdminGetMoeToolStatsResp) types.AdminMoeToolStatsData {
 	if d == nil {
 		return types.AdminMoeToolStatsData{}
 	}
 	out := types.AdminMoeToolStatsData{
-		TotalCalls:   d.TotalCalls,
-		SuccessCalls: d.SuccessCalls,
-		FailedCalls:  d.FailedCalls,
+		TotalCalls:   d.GetTotalCalls(),
+		SuccessCalls: d.GetSuccessCalls(),
+		FailedCalls:  d.GetFailedCalls(),
 	}
-	for _, row := range d.ByTool {
+	for _, row := range d.GetByTool() {
 		out.ByTool = append(out.ByTool, types.AdminMoeToolStatRow{
-			Tool:         row.Tool,
-			TotalCalls:   row.TotalCalls,
-			SuccessCalls: row.SuccessCalls,
-			FailedCalls:  row.FailedCalls,
+			Tool:         row.GetTool(),
+			TotalCalls:   row.GetTotalCalls(),
+			SuccessCalls: row.GetSuccessCalls(),
+			FailedCalls:  row.GetFailedCalls(),
 		})
 	}
-	for _, row := range d.ByDay {
+	for _, row := range d.GetByDay() {
 		out.ByDay = append(out.ByDay, types.AdminMoeToolDayStat{
-			Date:         row.Date,
-			TotalCalls:   row.TotalCalls,
-			SuccessCalls: row.SuccessCalls,
+			Date:         row.GetDate(),
+			TotalCalls:   row.GetTotalCalls(),
+			SuccessCalls: row.GetSuccessCalls(),
 		})
 	}
 	return out
 }
 
-func ToolCallsFromRPC(d *moe.AdminListMoeToolCallsResp) types.AdminListMoeToolCallsData {
+func ToolCallsFromRPC(d *adminv1.AdminListMoeToolCallsResp) types.AdminListMoeToolCallsData {
 	if d == nil {
 		return types.AdminListMoeToolCallsData{}
 	}
-	out := types.AdminListMoeToolCallsData{Total: d.Total}
-	for _, row := range d.Items {
+	out := types.AdminListMoeToolCallsData{Total: d.GetTotal()}
+	for _, row := range d.GetItems() {
 		out.Items = append(out.Items, types.AdminMoeToolCallItem{
-			Id:               row.Id,
-			Tool:             row.Tool,
-			ActorUserId:      row.ActorUserId,
-			AgentKey:         row.AgentKey,
-			Ok:               row.Ok,
-			ErrorMsg:         row.ErrorMsg,
-			LatencyMs:        int(row.LatencyMs),
-			Source:           row.Source,
-			ArgumentsPreview: row.ArgumentsPreview,
-			CreatedAt:        row.CreatedAt,
+			Id:               row.GetId(),
+			Tool:             row.GetTool(),
+			ActorUserId:      row.GetActorUserId(),
+			AgentKey:         row.GetAgentKey(),
+			Ok:               row.GetOk(),
+			ErrorMsg:         row.GetErrorMsg(),
+			LatencyMs:        int(row.GetLatencyMs()),
+			Source:           row.GetSource(),
+			ArgumentsPreview: row.GetArgumentsPreview(),
+			CreatedAt:        row.GetCreatedAt(),
 		})
 	}
 	return out
 }
 
-func PipelineDataFromSuper(d *moe.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
+func PipelineDataFromSuper(d *adminv1.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
 	if d == nil {
 		return types.AdminGetMoeBrainPipelineData{Steps: DefaultPipelineStepTypes()}
 	}
@@ -201,24 +202,24 @@ func PipelineDataFromSuper(d *moe.AdminGetMoeBrainPipelineResp) types.AdminGetMo
 	return data
 }
 
-func SearchPostsFromRPC(d *moe.MoeSearchPostsResp) types.SearchPostsData {
+func SearchPostsFromRPC(d *postv1.MoeSearchPostsReply) types.SearchPostsData {
 	if d == nil {
 		return types.SearchPostsData{}
 	}
-	out := types.SearchPostsData{Total: int(d.Total)}
-	for _, h := range d.Items {
+	out := types.SearchPostsData{Total: int(d.GetTotal())}
+	for _, h := range d.GetItems() {
 		out.Items = append(out.Items, types.SearchPostHit{
-			PostId:      h.PostId,
-			UserId:      h.UserId,
-			UserName:    h.UserName,
-			Content:     h.Content,
-			Snippet:     h.Snippet,
-			MoodTag:     h.MoodTag,
-			Likes:       int(h.Likes),
-			Comments:    int(h.Comments),
-			CreatedAt:   h.CreatedAt,
-			Score:       h.Score,
-			ScoreReason: h.ScoreReason,
+			PostId:      h.GetPostId(),
+			UserId:      h.GetUserId(),
+			UserName:    h.GetUserName(),
+			Content:     h.GetContent(),
+			Snippet:     h.GetSnippet(),
+			MoodTag:     h.GetMoodTag(),
+			Likes:       int(h.GetLikes()),
+			Comments:    int(h.GetComments()),
+			CreatedAt:   h.GetCreatedAt(),
+			Score:       h.GetScore(),
+			ScoreReason: h.GetScoreReason(),
 		})
 	}
 	return out

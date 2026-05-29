@@ -5,19 +5,19 @@ import (
 	"strings"
 	"time"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/pkg/memory"
-	"backend/rpc/pb/moe"
 
 	"backend/internal/platform/moelog"
 )
 
 // buildOpenClawMemoryBlock 按 OpenClaw 分层注入：精选画像 → 今日/昨日日记 → 检索命中。
 func buildOpenClawMemoryBlock(
-	memories []*moe.UserMemory,
-	profiles []*moe.UserMemoryProfile,
+	memories []*llmv1.UserMemory,
+	profiles []*llmv1.UserMemoryProfile,
 	messages []PlatformChatMessage,
 ) string {
-	records := memory.RecordsFromSuper(memories)
+	records := recordsFromLLM(memories)
 	query := lastUserMessageContent(messages)
 
 	profileSummaries := make([]memory.ProfileSummary, 0, len(profiles))
@@ -43,6 +43,32 @@ func buildOpenClawMemoryBlock(
 		SearchItems: searchRes.Items,
 		Budget:      memory.DefaultBootstrapBudget(),
 	})
+}
+
+func recordsFromLLM(list []*llmv1.UserMemory) []memory.Record {
+	out := make([]memory.Record, 0, len(list))
+	for _, m := range list {
+		if m == nil {
+			continue
+		}
+		updated, _ := time.ParseInLocation("2006-01-02 15:04:05", strings.TrimSpace(m.GetUpdatedAt()), time.Local)
+		if updated.IsZero() {
+			updated, _ = time.Parse(time.RFC3339, strings.TrimSpace(m.GetUpdatedAt()))
+		}
+		out = append(out, memory.Record{
+			ID:          m.GetId(),
+			UserID:      m.GetUserId(),
+			Key:         m.GetKey(),
+			Value:       m.GetValue(),
+			MemoryType:  m.GetMemoryType(),
+			Confidence:  m.GetConfidence(),
+			Source:      m.GetSource(),
+			SourceMsgID: m.GetSourceMsgId(),
+			SessionID:   m.GetSessionId(),
+			UpdatedAt:   updated,
+		})
+	}
+	return out
 }
 
 func lastUserMessageContent(messages []PlatformChatMessage) string {
@@ -71,7 +97,7 @@ func memoryFlushBeforeCompact(
 			continue
 		}
 		for _, item := range memory.HeuristicExtractFromUserMessage(m.Content) {
-			_, err := deps.Gateway.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+			_, err := deps.Gateway.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,
@@ -133,7 +159,7 @@ func appendDailyObservation(
 
 	key := memory.DailyNoteKey(time.Now().UTC())
 	existing := ""
-	if resp, err := deps.Gateway.GetUserMemories(ctx, &moe.GetUserMemoriesReq{
+	if resp, err := deps.Gateway.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{
 		UserId: userID,
 		Limit:  200,
 	}); err == nil {
@@ -145,7 +171,7 @@ func appendDailyObservation(
 		}
 	}
 	merged := memory.MergeDailyNoteContent(existing, line)
-	_, _ = deps.Gateway.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+	_, _ = deps.Gateway.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
 		UserId:      userID,
 		Key:         key,
 		Value:       merged,

@@ -30,7 +30,7 @@ func (s *AppService) GetNotifications(ctx context.Context, in *notifyv1.GetNotif
 	if err != nil {
 		return nil, err
 	}
-	return &notifyv1.GetNotificationsReply{Notifications: notifyv1.NotificationsFromMoe(items), Total: total}, nil
+	return &notifyv1.GetNotificationsReply{Notifications: items, Total: total}, nil
 }
 
 // GetUnreadCount 未读数。

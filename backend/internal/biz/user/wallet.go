@@ -5,14 +5,14 @@ import (
 	"errors"
 	"strconv"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetTransactions 分页查询用户交易记录。
-func GetTransactions(ctx context.Context, store UserStore, in *moe.GetTransactionsReq) (*moe.GetTransactionsResp, error) {
+func GetTransactions(ctx context.Context, store UserStore, in *userv1.GetTransactionsReq) (*userv1.GetTransactionsResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -46,15 +46,15 @@ func GetTransactions(ctx context.Context, store UserStore, in *moe.GetTransactio
 		return nil, err
 	}
 
-	rpcTx := make([]*moe.Transaction, len(transactions))
+	rpcTx := make([]*userv1.Transaction, len(transactions))
 	for i, t := range transactions {
-		rpcTx[i] = transactionToProto(&t)
+		rpcTx[i] = transactionToV1(&t)
 	}
-	return &moe.GetTransactionsResp{Transactions: rpcTx, Total: int32(total)}, nil
+	return &userv1.GetTransactionsResp{Transactions: rpcTx, Total: int32(total)}, nil
 }
 
 // GetTransaction 按 ID 查询单笔交易。
-func GetTransaction(ctx context.Context, store UserStore, in *moe.GetTransactionReq) (*moe.GetTransactionResp, error) {
+func GetTransaction(ctx context.Context, store UserStore, in *userv1.GetTransactionReq) (*userv1.GetTransactionResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -69,11 +69,11 @@ func GetTransaction(ctx context.Context, store UserStore, in *moe.GetTransaction
 		}
 		return nil, err
 	}
-	return &moe.GetTransactionResp{Transaction: transactionToProto(&transaction)}, nil
+	return &userv1.GetTransactionResp{Transaction: transactionToV1(&transaction)}, nil
 }
 
 // Recharge 钱包充值（事务）。
-func Recharge(ctx context.Context, store UserStore, in *moe.RechargeReq) (*moe.RechargeResp, error) {
+func Recharge(ctx context.Context, store UserStore, in *userv1.RechargeReq) (*userv1.RechargeResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -123,14 +123,14 @@ func Recharge(ctx context.Context, store UserStore, in *moe.RechargeReq) (*moe.R
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return &moe.RechargeResp{Message: "充值成功", NewBalance: float32(newBalance)}, nil
+	return &userv1.RechargeResp{Message: "充值成功", NewBalance: float32(newBalance)}, nil
 }
 
-func transactionToProto(t *model.Transaction) *moe.Transaction {
+func transactionToV1(t *model.Transaction) *userv1.Transaction {
 	if t == nil {
 		return nil
 	}
-	return &moe.Transaction{
+	return &userv1.Transaction{
 		Id:          strconv.Itoa(int(t.ID)),
 		UserId:      strconv.Itoa(int(t.UserID)),
 		Amount:      float32(t.Amount),

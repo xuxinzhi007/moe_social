@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -16,7 +16,7 @@ import (
 var ErrEmptyAnnouncementTitle = errors.New("empty announcement title")
 
 // CreateAnnouncement 创建草稿公告。
-func CreateAnnouncement(ctx context.Context, store AdminStore, title, content, createdByRaw string) (*moe.AdminAnnouncementItem, error) {
+func CreateAnnouncement(ctx context.Context, store AdminStore, title, content, createdByRaw string) (*adminv1.AdminAnnouncementItem, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -48,7 +48,7 @@ type UpdateAnnouncementInput struct {
 }
 
 // UpdateAnnouncement 更新公告。
-func UpdateAnnouncement(ctx context.Context, store AdminStore, in UpdateAnnouncementInput) (*moe.AdminAnnouncementItem, error) {
+func UpdateAnnouncement(ctx context.Context, store AdminStore, in UpdateAnnouncementInput) (*adminv1.AdminAnnouncementItem, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -95,7 +95,7 @@ func UpdateAnnouncement(ctx context.Context, store AdminStore, in UpdateAnnounce
 }
 
 // PublishAnnouncement 发布公告。
-func PublishAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*moe.AdminAnnouncementItem, error) {
+func PublishAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*adminv1.AdminAnnouncementItem, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}

@@ -6,6 +6,7 @@ import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { achievementCategoryTag, boolTag, rarityTag } from '../lib/adminLabels'
+import { unwrapListItems } from '../lib/apiResponse'
 import { DeployApiError } from '../api/deployClient'
 import { AdminPanel, AdminTable, TabbedPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
@@ -117,11 +118,11 @@ export function GrowthPage() {
         }
       } else if (tab === 'levels') {
         const res = await client.listLevelConfigs()
-        if (res.success && res.data) setLevels(res.data)
+        if (res.success && res.data) setLevels(unwrapListItems(res.data))
         else setError(res.message || '加载等级配置失败')
       } else if (tab === 'rewards') {
         const res = await client.listCheckInRewards()
-        if (res.success && res.data) setRewards(res.data)
+        if (res.success && res.data) setRewards(unwrapListItems(res.data))
         else setError(res.message || '加载签到奖励失败')
       }
     } catch (e) {

@@ -6,7 +6,8 @@ import (
 
 	"backend/pkg/memory"
 	"backend/pkg/moe/core"
-	"backend/rpc/pb/moe"
+
+	llmv1 "backend/api/llm/v1"
 )
 
 type memorySearchArgs struct {
@@ -33,11 +34,11 @@ func (e *Executor) execMemorySearch(ctx context.Context, req core.ExecuteRequest
 		return fail(err.Error())
 	}
 	uid := strconv.FormatUint(uint64(req.ActorUserID), 10)
-	memResp, err := e.deps.RPC.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
+	memResp, err := e.deps.RPC.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: uid})
 	if err != nil {
 		return fail("拉取记忆失败")
 	}
-	records := memory.RecordsFromSuper(memResp.Memories)
+	records := memory.RecordsFromLLMV1(memResp.GetMemories())
 	limit := args.Limit
 	if limit <= 0 {
 		limit = 5
@@ -63,13 +64,13 @@ func (e *Executor) execMemoryGet(ctx context.Context, req core.ExecuteRequest) c
 		return fail(err.Error())
 	}
 	uid := strconv.FormatUint(uint64(req.ActorUserID), 10)
-	memResp, err := e.deps.RPC.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
+	memResp, err := e.deps.RPC.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: uid})
 	if err != nil {
 		return fail("拉取记忆失败")
 	}
-	for _, m := range memResp.Memories {
-		if m != nil && m.Key == args.Key {
-			return ok(map[string]any{"key": m.Key, "value": m.Value, "type": m.MemoryType})
+	for _, m := range memResp.GetMemories() {
+		if m != nil && m.GetKey() == args.Key {
+			return ok(map[string]any{"key": m.GetKey(), "value": m.GetValue(), "type": m.GetMemoryType()})
 		}
 	}
 	return ok(map[string]any{"key": args.Key, "value": "", "found": false})
@@ -88,7 +89,7 @@ func (e *Executor) execMemorySave(ctx context.Context, req core.ExecuteRequest) 
 	if mt == "" {
 		mt = "fact"
 	}
-	_, err := e.deps.RPC.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+	_, err := e.deps.RPC.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
 		UserId:     uid,
 		Key:        args.Key,
 		Value:      args.Value,

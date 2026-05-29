@@ -1030,6 +1030,8 @@ message AdminUpdateCheckInRewardReq {
   bool update_consecutive_days = 5;
   bool update_exp_reward = 6;
   bool update_extra_reward = 7;
+  // HTTP path /api/admin/growth/check-in-rewards/{reward_id}
+  uint64 reward_id = 8;
 }
 
 message AdminUpdateCheckInRewardResp {
@@ -1716,6 +1718,15 @@ service AdminApp {
   }
   rpc AdminBootstrapLevels(AdminBootstrapLevelsReq) returns (AdminBootstrapLevelsResp) {
     option (google.api.http) = { post: "/api/admin/growth/levels/bootstrap" body: "*" };
+  }
+  rpc AdminListCheckInRewards(AdminListCheckInRewardsReq) returns (AdminListCheckInRewardsResp) {
+    option (google.api.http) = { get: "/api/admin/growth/check-in-rewards" };
+  }
+  rpc AdminUpdateCheckInReward(AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp) {
+    option (google.api.http) = {
+      put: "/api/admin/growth/check-in-rewards/{reward_id}"
+      body: "*"
+    };
   }
   rpc AdminBroadcastNotification(AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp) {
     option (google.api.http) = { post: "/api/admin/notifications/broadcast" body: "*" };

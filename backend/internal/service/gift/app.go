@@ -26,31 +26,19 @@ func (s *AppService) GetGifts(ctx context.Context, in *giftv1.GetGiftsRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return &giftv1.GetGiftsReply{Gifts: giftv1.GiftsFromMoe(gifts), Total: total}, nil
+	return &giftv1.GetGiftsReply{Gifts: gifts, Total: total}, nil
 }
 
 func (s *AppService) GetGift(ctx context.Context, in *giftv1.GetGiftRequest) (*giftv1.GetGiftReply, error) {
-	resp, err := giftbiz.GetGift(ctx, s.store, in.GetGiftId())
-	if err != nil {
-		return nil, err
-	}
-	return giftv1.GetGiftReplyFromMoe(resp), nil
+	return giftbiz.GetGift(ctx, s.store, in.GetGiftId())
 }
 
 func (s *AppService) SendGift(ctx context.Context, in *giftv1.SendGiftRequest) (*giftv1.SendGiftReply, error) {
-	resp, err := giftbiz.Send(ctx, s.store, in.GetFromUserId(), in.GetToUserId(), in.GetGiftId(), in.GetQuantity())
-	if err != nil {
-		return nil, err
-	}
-	return giftv1.SendGiftReplyFromMoe(resp), nil
+	return giftbiz.Send(ctx, s.store, in.GetFromUserId(), in.GetToUserId(), in.GetGiftId(), in.GetQuantity())
 }
 
 func (s *AppService) PurchaseGift(ctx context.Context, in *giftv1.PurchaseGiftRequest) (*giftv1.PurchaseGiftReply, error) {
-	resp, err := giftbiz.Purchase(ctx, s.store, in.GetUserId(), in.GetGiftId(), in.GetQuantity())
-	if err != nil {
-		return nil, err
-	}
-	return giftv1.PurchaseGiftReplyFromMoe(resp), nil
+	return giftbiz.Purchase(ctx, s.store, in.GetUserId(), in.GetGiftId(), in.GetQuantity())
 }
 
 func (s *AppService) GetGiftRecords(ctx context.Context, in *giftv1.GetGiftRecordsRequest) (*giftv1.GetGiftRecordsReply, error) {
@@ -58,7 +46,7 @@ func (s *AppService) GetGiftRecords(ctx context.Context, in *giftv1.GetGiftRecor
 	if err != nil {
 		return nil, err
 	}
-	return &giftv1.GetGiftRecordsReply{Records: giftv1.GiftRecordsFromMoe(records), Total: total}, nil
+	return &giftv1.GetGiftRecordsReply{Records: records, Total: total}, nil
 }
 
 func (s *AppService) GetGiftPurchaseOrders(ctx context.Context, in *giftv1.GetGiftPurchaseOrdersRequest) (*giftv1.GetGiftPurchaseOrdersReply, error) {
@@ -66,5 +54,5 @@ func (s *AppService) GetGiftPurchaseOrders(ctx context.Context, in *giftv1.GetGi
 	if err != nil {
 		return nil, err
 	}
-	return &giftv1.GetGiftPurchaseOrdersReply{Orders: giftv1.GiftPurchaseOrdersFromMoe(orders), Total: total}, nil
+	return &giftv1.GetGiftPurchaseOrdersReply{Orders: orders, Total: total}, nil
 }

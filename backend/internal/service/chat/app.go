@@ -40,29 +40,17 @@ func (s *AppService) PrivateMessageStore() chatbiz.PrivateMessageStore {
 
 // SendPrivateMessage 发送私信。
 func (s *AppService) SendPrivateMessage(ctx context.Context, in *chatv1.SendPrivateMessageRequest) (*chatv1.SendPrivateMessageReply, error) {
-	out, err := chatbiz.SendPrivateMessage(ctx, s.pm, chatv1.SendPrivateMessageRequestToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return chatv1.SendPrivateMessageReplyFromMoe(out), nil
+	return chatbiz.SendPrivateMessage(ctx, s.pm, in)
 }
 
 // ListPrivateMessages 私信历史。
 func (s *AppService) ListPrivateMessages(ctx context.Context, in *chatv1.ListPrivateMessagesRequest) (*chatv1.ListPrivateMessagesReply, error) {
-	out, err := chatbiz.ListPrivateMessages(ctx, s.pm, chatv1.ListPrivateMessagesRequestToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return chatv1.ListPrivateMessagesReplyFromMoe(out), nil
+	return chatbiz.ListPrivateMessages(ctx, s.pm, in)
 }
 
 // ListPrivateConversations 会话列表。
 func (s *AppService) ListPrivateConversations(ctx context.Context, in *chatv1.ListPrivateConversationsRequest) (*chatv1.ListPrivateConversationsReply, error) {
-	out, err := chatbiz.ListPrivateConversations(ctx, s.pm, chatv1.ListPrivateConversationsRequestToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return chatv1.ListPrivateConversationsReplyFromMoe(out), nil
+	return chatbiz.ListPrivateConversations(ctx, s.pm, in)
 }
 
 // PushNotification 向在线用户推送 WS 通知。

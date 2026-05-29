@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // SubmitUserMemoryFeedback 处理 accept/reject/correct 反馈。
-func SubmitUserMemoryFeedback(ctx context.Context, st MemoryStore, in *moe.SubmitUserMemoryFeedbackReq) (*moe.SubmitUserMemoryFeedbackResp, error) {
+func SubmitUserMemoryFeedback(ctx context.Context, st MemoryStore, in *llmv1.SubmitUserMemoryFeedbackReq) (*llmv1.SubmitUserMemoryFeedbackResp, error) {
 	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
@@ -80,7 +80,7 @@ func SubmitUserMemoryFeedback(ctx context.Context, st MemoryStore, in *moe.Submi
 
 	go func() { _ = RebuildUserMemoryProfileCache(db, memory.UserID) }()
 
-	return &moe.SubmitUserMemoryFeedbackResp{Memory: userMemoryToProto(memory)}, nil
+	return &llmv1.SubmitUserMemoryFeedbackResp{Memory: userMemoryToProto(memory)}, nil
 }
 
 func minFloat(a, b float64) float64 {

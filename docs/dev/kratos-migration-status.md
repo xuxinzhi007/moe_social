@@ -1,6 +1,6 @@
 # Kratos 迁移 — 状态板（Current / Next）
 
-> **最后更新：2026-05-27（P0/P1 收口同步）**  
+> **最后更新：2026-05-29（D4 Phase-2 完成 · 三套口径 100%）**  
 > **读这个**：本文 = **当前状态 + 下一步** 快照（汇报 / 勾选用）  
 > **架构审计（双轨 / 遗留问题）**：[kratos-architecture-audit.md](./kratos-architecture-audit.md)
 
@@ -21,10 +21,16 @@
 | P5 Super + 零 go-zero | **100%** | 单进程 Kratos；生产无 go-zero |
 | **P6 契约 proto SSOT** | **100%** | service/compat 主域 `*v1`；defs 已 P6 标注 |
 | **P0/P1 审计（HTTP 契约 + Admin/User）** | **100%** | 信封统一 · Admin/User/记忆/wave2 已 proto HTTP |
-| **D2 compat → proto HTTP** | **~83%** | **227** proto 路由 vs **45** 活跃 compat |
-| **D4 删遗留层** | **0%** | `httplegacy` / `apilegacy` / `rpc/pb/moe` 仍在 |
+| **D2 compat → proto HTTP** | **100%** | **254** proto · **0** 可迁移 compat（+ **11** intentional） |
+| **D4 删遗留层** | **100%** | Phase-0 死代码已删；Phase-2 `biz`/`apilegacy` 零 `rpc/pb/moe` |
 
-> **易混淆**：P6「契约 100%」≠ HTTP 全走 proto。余量 **45** 条 compat 见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
+> **三套进度口径（勿混用）** — `GET /migration` JSON：
+> - `rollout_percent` = P0–P5 传输铺轨（**100%**）
+> - `d2_proto_http_pct` = D2 proto HTTP / (proto + 可迁移 compat)（**100%**）
+> - `d4_legacy_cleanup_pct` = D4 遗留层清理（**100%**）
+> - `percent` = 综合完成度 **(d2×50 + d4×50)/100**（**100%**）
+
+> **易混淆**：P6「契约 100%」≠ D2 完成；`rollout_percent=100` ≠ `percent=100`。
 
 ---
 
@@ -32,7 +38,7 @@
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| **P0–P3（生产）** | ✅ **100%** | 运行时 Kratos · api logic 0 · `/migration percent=100` |
+| **P0–P3（生产）** | ✅ **100%** | 运行时 Kratos · api logic 0 · `rollout_percent=100` |
 | **P4（理想目录）** | ✅ **~100%** | data 20/21 域 · 独立 gRPC **12/12** |
 | **P5-A（Super 运行时）** | ✅ **100%** | 单进程不注册 Super · API 无 zrpc 回环 · AppAdapter |
 | **P5-B（logic + 契约）** | ✅ **100%** | `rpc/internal/logic` **0** · `superserver` 已删 |
@@ -125,19 +131,27 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | 优先级 | 任务 | 文档 |
 |--------|------|------|
 | ~~0~~ | ~~P0/P1 审计项~~ | ✅ 2026-05-27 完成，见 [kratos-architecture-audit.md §4](./kratos-architecture-audit.md) |
-| 1 | **D2 余量**：platform / community / chat / ai / checkin compat → proto | [kratos-directory-ssot.md §D2](./kratos-directory-ssot.md) |
-| 2 | 图片 upload 静态资源 proto 化或专用 transport | 同上 |
-| 3 | **D4**：删 `httplegacy` 死代码 · `apilegacy` · `rpc/pb/moe` runtime 引用 | 同上 |
+| 1 | ~~**D4 Phase-4**：退役 `rpc/pb/moe` 生成链~~ | ✅ 2026-05-29；`common.proto` 归档 · pb 已删 |
+| 2 | **intentional transport** 长期方案 | [kratos-intentional-transport.md](./kratos-intentional-transport.md)（media/v1 已迁入 proto） |
 | 4 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
 
-### D2 — HTTP 路由实测（2026-05-27 P0/P1 收口）
+### D2 — HTTP 路由实测（2026-05-29）
 
 | 指标 | 数值 |
 |------|------|
-| Proto HTTP 路由 | **227** |
-| Compat 活跃路由 | **45** |
-| P0/P1 审计完成度 | **100%** |
-| 有意保留 compat | OAuth 回调 2 · SSE 1 · 图片 4 · P2 平台等 38 |
+| Proto HTTP 路由 | **258** |
+| Compat 活跃路由 | **7**（全部为 intentional） |
+| 可迁移（D2 债务） | **0** |
+| intentional | **7**（OAuth 2 · SSE 1 · WS 4） |
+| `d2_proto_http_pct` | **100%** |
+| `d4_legacy_cleanup_pct` | **100%** |
+| `percent`（综合） | **100%** |
+
+**2026-05-29 media/v1：** 图片四路由迁入 `api/media/v1` + `mediagrpc`；删除 `wave2_misc_compat.go`；intentional 降至 7 条
+
+**2026-05-29 D4 Phase-0：** 删除 26 个 zero-route compat/convert 文件；`httplegacy` 无 `rpc/pb/moe` import；仅保留 7 条 intentional compat
+
+**2026-05-29 D4 Phase-4：** 删除 `rpc/pb/moe`/`super` 生成物；`common.proto` → `scripts/archive/rpc-defs/`；HTTP 分层为 `RegisterProtoHTTP` + `RegisterDocsHTTP` + `RegisterIntentionalTransportHTTP`
 
 ### 2026-05-27 P0/P1 收口
 

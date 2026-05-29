@@ -1,8 +1,9 @@
 package httplegacy
 
 import (
-	"backend/internal/platform/svc"
 	chatbiz "backend/internal/biz/chat"
+	"backend/internal/platform/chatdelivery"
+	"backend/internal/platform/svc"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -37,14 +38,5 @@ func chatWorldWSHandler() func(khttp.Context) error {
 }
 
 func chatWSDeps(svcCtx *svc.ServiceContext) chatbiz.ChatWSDeps {
-	deps := chatbiz.ChatWSDeps{
-		Delivery: chatbiz.DeliveryDeps{UserReader: svcCtx.UserGW, NotifyRPC: svcCtx.UserGW},
-	}
-	if svcCtx != nil {
-		deps.PM = svcCtx.ChatGW
-		if svcCtx.UserApp != nil {
-			deps.Delivery.NotifyStore = svcCtx.UserApp.Notify()
-		}
-	}
-	return deps
+	return chatdelivery.ChatWSDepsFrom(svcCtx)
 }

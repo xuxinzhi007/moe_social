@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../../services/api_response.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 
@@ -54,11 +55,11 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
       }
 
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map) {
+      if (decoded is! Map<String, dynamic>) {
         throw Exception('响应格式异常');
       }
-      final data = decoded['data'];
-      if (data is! Map) {
+      final data = ApiResponse.nestedPayload(decoded);
+      if (data.isEmpty) {
         throw Exception('配置数据为空');
       }
 

@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"backend/rpc/pb/moe"
+	aiv1 "backend/api/ai/v1"
 
 	"gorm.io/gorm"
 )
 
 // UpsertOutcome upsert 结果（供 service 层发通知）。
 type UpsertOutcome struct {
-	Resp     *moe.UpsertAiResourceResp
+	Resp     *aiv1.UpsertAiResourceResp
 	Replaced bool
 	UserID   uint
 	Field    string
@@ -21,14 +21,14 @@ type UpsertOutcome struct {
 
 // DeleteOutcome delete 结果（供 service 层发通知）。
 type DeleteOutcome struct {
-	Resp        *moe.DeleteAiResourceResp
+	Resp        *aiv1.DeleteAiResourceResp
 	UserID      uint
 	Field       string
 	DeletedItem map[string]interface{}
 }
 
 // List 列出用户 AI 资源。
-func List(ctx context.Context, store AiStore, field string, in *moe.ListAiResourceReq) (*moe.ListAiResourceResp, error) {
+func List(ctx context.Context, store AiStore, field string, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -53,13 +53,13 @@ func List(ctx context.Context, store AiStore, field string, in *moe.ListAiResour
 		return nil, ErrUnknownResourceKind
 	}
 	items := DecodeJSONArray(raw)
-	resp := &moe.ListAiResourceResp{Items: make([]*moe.AiJsonResourceItem, 0, len(items))}
+	resp := &aiv1.ListAiResourceResp{Items: make([]*aiv1.AiJsonResourceItem, 0, len(items))}
 	for _, item := range items {
 		payload, err := mustJSON(item)
 		if err != nil {
 			return nil, err
 		}
-		resp.Items = append(resp.Items, &moe.AiJsonResourceItem{
+		resp.Items = append(resp.Items, &aiv1.AiJsonResourceItem{
 			Id:          fmt.Sprint(item["id"]),
 			PayloadJson: payload,
 		})
@@ -68,7 +68,7 @@ func List(ctx context.Context, store AiStore, field string, in *moe.ListAiResour
 }
 
 // ListPublicAgents 列出公开 AI 角色。
-func ListPublicAgents(ctx context.Context, store AiStore, in *moe.ListPublicAiAgentsReq) (*moe.ListAiResourceResp, error) {
+func ListPublicAgents(ctx context.Context, store AiStore, in *aiv1.ListPublicAiAgentsReq) (*aiv1.ListAiResourceResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -86,7 +86,7 @@ func ListPublicAgents(ctx context.Context, store AiStore, in *moe.ListPublicAiAg
 		return nil, fmt.Errorf("%w: %v", ErrListPublicAgents, err)
 	}
 
-	resp := &moe.ListAiResourceResp{Items: make([]*moe.AiJsonResourceItem, 0)}
+	resp := &aiv1.ListAiResourceResp{Items: make([]*aiv1.AiJsonResourceItem, 0)}
 	for _, cfg := range configs {
 		if len(resp.Items) >= limit {
 			break
@@ -109,7 +109,7 @@ func ListPublicAgents(ctx context.Context, store AiStore, in *moe.ListPublicAiAg
 			if err != nil {
 				return nil, err
 			}
-			resp.Items = append(resp.Items, &moe.AiJsonResourceItem{
+			resp.Items = append(resp.Items, &aiv1.AiJsonResourceItem{
 				Id:          fmt.Sprint(item["id"]),
 				PayloadJson: payload,
 			})
@@ -119,7 +119,7 @@ func ListPublicAgents(ctx context.Context, store AiStore, in *moe.ListPublicAiAg
 }
 
 // Upsert 写入或更新 AI 资源。
-func Upsert(ctx context.Context, store AiStore, field string, in *moe.UpsertAiResourceReq) (*UpsertOutcome, error) {
+func Upsert(ctx context.Context, store AiStore, field string, in *aiv1.UpsertAiResourceReq) (*UpsertOutcome, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -158,8 +158,8 @@ func Upsert(ctx context.Context, store AiStore, field string, in *moe.UpsertAiRe
 		return nil, err
 	}
 	return &UpsertOutcome{
-		Resp: &moe.UpsertAiResourceResp{
-			Item: &moe.AiJsonResourceItem{
+		Resp: &aiv1.UpsertAiResourceResp{
+			Item: &aiv1.AiJsonResourceItem{
 				Id:          id,
 				PayloadJson: in.GetPayloadJson(),
 			},
@@ -172,7 +172,7 @@ func Upsert(ctx context.Context, store AiStore, field string, in *moe.UpsertAiRe
 }
 
 // Delete 删除 AI 资源。
-func Delete(ctx context.Context, store AiStore, field string, in *moe.DeleteAiResourceReq) (*DeleteOutcome, error) {
+func Delete(ctx context.Context, store AiStore, field string, in *aiv1.DeleteAiResourceReq) (*DeleteOutcome, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -204,7 +204,7 @@ func Delete(ctx context.Context, store AiStore, field string, in *moe.DeleteAiRe
 		return nil, err
 	}
 	return &DeleteOutcome{
-		Resp:        &moe.DeleteAiResourceResp{Ok: true},
+		Resp:        &aiv1.DeleteAiResourceResp{Ok: true},
 		UserID:      userID,
 		Field:       field,
 		DeletedItem: deletedItem,

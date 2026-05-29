@@ -47,7 +47,7 @@ func (s *AppService) List(ctx context.Context, in *landingv1.ListLandingFeedback
 		return nil, err
 	}
 	return &landingv1.ListLandingFeedbackReply{
-		Items: landingv1.FeedbackItemsFromMoe(landingbiz.FeedbackItemsToProto(result.Rows)),
+		Items: landingbiz.FeedbackItemsToProto(result.Rows),
 		Total: int32(result.Total),
 	}, nil
 }

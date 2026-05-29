@@ -26,7 +26,7 @@ func (s *AppService) GetUserAchievements(ctx context.Context, in *achievementv1.
 	if err != nil {
 		return nil, err
 	}
-	return &achievementv1.GetUserAchievementsReply{Badges: achievementv1.BadgesFromMoe(badges)}, nil
+	return &achievementv1.GetUserAchievementsReply{Badges: badges}, nil
 }
 
 func (s *AppService) GetUserUnlockedAchievements(ctx context.Context, in *achievementv1.GetUserUnlockedAchievementsRequest) (*achievementv1.GetUserUnlockedAchievementsReply, error) {
@@ -34,7 +34,7 @@ func (s *AppService) GetUserUnlockedAchievements(ctx context.Context, in *achiev
 	if err != nil {
 		return nil, err
 	}
-	return &achievementv1.GetUserUnlockedAchievementsReply{Badges: achievementv1.BadgesFromMoe(badges)}, nil
+	return &achievementv1.GetUserUnlockedAchievementsReply{Badges: badges}, nil
 }
 
 func (s *AppService) GetUserAchievementSummary(ctx context.Context, in *achievementv1.GetUserAchievementSummaryRequest) (*achievementv1.GetUserAchievementSummaryReply, error) {
@@ -45,13 +45,7 @@ func (s *AppService) GetUserAchievementSummary(ctx context.Context, in *achievem
 	if summary == nil {
 		return &achievementv1.GetUserAchievementSummaryReply{}, nil
 	}
-	return &achievementv1.GetUserAchievementSummaryReply{
-		Summary: &achievementv1.AchievementSummary{
-			TotalBadges:            summary.GetTotalBadges(),
-			UnlockedBadges:         summary.GetUnlockedBadges(),
-			CompletionPercentage:   summary.GetCompletionPercentage(),
-		},
-	}, nil
+	return &achievementv1.GetUserAchievementSummaryReply{Summary: summary}, nil
 }
 
 func (s *AppService) EnsureUserAchievements(ctx context.Context, in *achievementv1.EnsureUserAchievementsRequest) (*achievementv1.EnsureUserAchievementsReply, error) {
@@ -59,5 +53,5 @@ func (s *AppService) EnsureUserAchievements(ctx context.Context, in *achievement
 	if err != nil {
 		return nil, err
 	}
-	return &achievementv1.EnsureUserAchievementsReply{NewAchievements: achievementv1.UnlocksFromMoe(unlocks)}, nil
+	return &achievementv1.EnsureUserAchievementsReply{NewAchievements: unlocks}, nil
 }

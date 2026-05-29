@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	giftbiz "backend/internal/biz/gift"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -24,7 +24,7 @@ type GiftPage struct {
 }
 
 // ListGifts Admin 礼物列表（keyword/category 筛选）。
-func ListGifts(ctx context.Context, db *gorm.DB, in GiftPage) ([]*moe.Gift, int32, error) {
+func ListGifts(ctx context.Context, db *gorm.DB, in GiftPage) ([]*adminv1.Gift, int32, error) {
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -56,15 +56,15 @@ func ListGifts(ctx context.Context, db *gorm.DB, in GiftPage) ([]*moe.Gift, int3
 	if err := q.Order("sort_order ASC, id ASC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, 0, err
 	}
-	gifts := make([]*moe.Gift, len(rows))
+	gifts := make([]*adminv1.Gift, len(rows))
 	for i := range rows {
-		gifts[i] = giftbiz.GiftToProto(rows[i], 0)
+		gifts[i] = giftModelToAdminV1(rows[i], 0)
 	}
 	return gifts, int32(total), nil
 }
 
 // GetGift Admin 礼物详情。
-func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*moe.Gift, error) {
+func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*adminv1.Gift, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -79,5 +79,5 @@ func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*moe.Gift, err
 		}
 		return nil, err
 	}
-	return giftbiz.GiftToProto(gift, 0), nil
+	return giftModelToAdminV1(gift, 0), nil
 }

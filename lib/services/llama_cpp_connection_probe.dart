@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'api_service.dart';
+import 'api_response.dart';
 import 'llama_cpp_endpoint_config.dart';
 
 class LlamaCppProbeResult {
@@ -57,8 +58,10 @@ abstract final class LlamaCppConnectionProbe {
 
   static List<String> _extractModelNames(dynamic decoded) {
     if (decoded is! Map) return const [];
-    final raw = decoded['models'] ?? decoded['data'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(
+      Map<String, dynamic>.from(decoded),
+      keys: const ['models'],
+    );
     if (raw.whereType<String>().isNotEmpty) {
       return raw.whereType<String>().toList();
     }

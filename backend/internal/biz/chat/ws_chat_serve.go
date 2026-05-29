@@ -8,17 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"backend/rpc/pb/moe"
+	chatv1 "backend/api/chat/v1"
 	"backend/utils"
 
-	"github.com/gorilla/websocket"
 	"backend/internal/platform/moelog"
-	"google.golang.org/grpc"
+	"github.com/gorilla/websocket"
 )
 
-// PrivateMessageSender 私信持久化（ChatGW 或 RPC）。
+// PrivateMessageSender 私信持久化（ChatApp 或进程内适配器）。
 type PrivateMessageSender interface {
-	SendPrivateMessage(ctx context.Context, in *moe.SendPrivateMessageReq, opts ...grpc.CallOption) (*moe.SendPrivateMessageResp, error)
+	SendPrivateMessage(ctx context.Context, in *chatv1.SendPrivateMessageRequest) (*chatv1.SendPrivateMessageReply, error)
 }
 
 // ChatWSDeps /ws/chat 业务依赖。
@@ -146,7 +145,7 @@ func handleChatWSPrivateMessage(
 		return
 	}
 
-	rpcResp, rpcErr := deps.PM.SendPrivateMessage(ctx, &moe.SendPrivateMessageReq{
+	rpcResp, rpcErr := deps.PM.SendPrivateMessage(ctx, &chatv1.SendPrivateMessageRequest{
 		SenderId:   userID,
 		ReceiverId: targetID,
 		Body:       content,

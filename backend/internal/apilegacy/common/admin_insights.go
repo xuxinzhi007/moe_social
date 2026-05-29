@@ -1,11 +1,11 @@
 package common
 
 import (
+	adminv1 "backend/api/admin/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RpcAdminAiChatSessionToTypes(item *moe.AdminAiChatSessionItem) types.AdminAiChatSessionItem {
+func RpcAdminAiChatSessionToTypes(item *adminv1.AdminAiChatSessionItem) types.AdminAiChatSessionItem {
 	if item == nil {
 		return types.AdminAiChatSessionItem{}
 	}
@@ -22,7 +22,7 @@ func RpcAdminAiChatSessionToTypes(item *moe.AdminAiChatSessionItem) types.AdminA
 	}
 }
 
-func RpcAdminAiChatMessageToTypes(item *moe.AdminAiChatMessageItem) types.AdminAiChatMessageItem {
+func RpcAdminAiChatMessageToTypes(item *adminv1.AdminAiChatMessageItem) types.AdminAiChatMessageItem {
 	if item == nil {
 		return types.AdminAiChatMessageItem{}
 	}
@@ -39,7 +39,7 @@ func RpcAdminAiChatMessageToTypes(item *moe.AdminAiChatMessageItem) types.AdminA
 	}
 }
 
-func RpcAdminDayStatsToTypes(rows []*moe.AdminDayStat) []types.AdminDayStat {
+func RpcAdminDayStatsToTypes(rows []*adminv1.AdminDayStat) []types.AdminDayStat {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -53,7 +53,7 @@ func RpcAdminDayStatsToTypes(rows []*moe.AdminDayStat) []types.AdminDayStat {
 	return out
 }
 
-func RpcAdminAnalyticsOverviewToTypes(data *moe.AdminAnalyticsOverviewResp) types.AdminAnalyticsOverviewData {
+func RpcAdminAnalyticsOverviewToTypes(data *adminv1.AdminAnalyticsOverviewResp) types.AdminAnalyticsOverviewData {
 	if data == nil {
 		return types.AdminAnalyticsOverviewData{}
 	}
@@ -86,7 +86,7 @@ func RpcAdminAnalyticsOverviewToTypes(data *moe.AdminAnalyticsOverviewResp) type
 	return out
 }
 
-func RpcTopicTagToTypes(item *moe.TopicTag) types.TopicTag {
+func RpcTopicTagToTypes(item *adminv1.TopicTag) types.TopicTag {
 	if item == nil {
 		return types.TopicTag{}
 	}
@@ -98,7 +98,7 @@ func RpcTopicTagToTypes(item *moe.TopicTag) types.TopicTag {
 	}
 }
 
-func RpcAdminTagDictionaryToTypes(item *moe.AdminTagDictionaryItem) types.AdminTagDictionaryItem {
+func RpcAdminTagDictionaryToTypes(item *adminv1.AdminTagDictionaryItem) types.AdminTagDictionaryItem {
 	if item == nil {
 		return types.AdminTagDictionaryItem{}
 	}

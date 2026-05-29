@@ -227,7 +227,7 @@ func (s *AppService) GetNotifications(ctx context.Context, in *userv1.GetNotific
 
 	}
 
-	return userbiz.NotificationsRespV1(items, total), nil
+	return userbiz.NotificationsRespV1(userbiz.NotificationsFromNotifyV1(items), total), nil
 
 }
 
@@ -278,21 +278,13 @@ func (s *AppService) ReadAllNotifications(ctx context.Context, in *userv1.ReadAl
 // GetUserAvatar 获取用户虚拟形象。
 
 func (s *AppService) GetUserAvatar(ctx context.Context, in *userv1.GetUserAvatarReq) (*userv1.GetUserAvatarResp, error) {
-	out, err := userbiz.GetUserAvatar(ctx, s.store, userv1.GetUserAvatarReqToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return userv1.GetUserAvatarRespFromMoe(out), nil
+	return userbiz.GetUserAvatar(ctx, s.store, in)
 }
 
 // UpdateUserAvatar 更新用户虚拟形象。
 
 func (s *AppService) UpdateUserAvatar(ctx context.Context, in *userv1.UpdateUserAvatarReq) (*userv1.UpdateUserAvatarResp, error) {
-	out, err := userbiz.UpdateUserAvatar(ctx, s.store, userv1.UpdateUserAvatarReqToMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return userv1.UpdateUserAvatarRespFromMoe(out), nil
+	return userbiz.UpdateUserAvatar(ctx, s.store, in)
 }
 
 // DB 暴露给渐进迁移（仅 Hybrid 内部）。
@@ -441,9 +433,7 @@ func (s *AppService) GetFollowings(ctx context.Context, in *userv1.GetFollowings
 
 	}
 
-	resp := followListToProto(result)
-	m := userv1.GetFollowersRespToMoe(resp)
-	return userbiz.FollowingsRespV1(m.Users, m.Total), nil
+	return userbiz.FollowingsRespFromList(result), nil
 
 }
 

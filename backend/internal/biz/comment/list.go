@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	commentv1 "backend/api/comment/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -36,7 +36,7 @@ func likedTargetIDSet(ctx context.Context, st CommentStore, userID uint, targetT
 }
 
 // ListByPost 帖子评论列表。
-func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*moe.Comment, int32, error) {
+func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*commentv1.Comment, int32, error) {
 	if st == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -105,7 +105,7 @@ func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*moe.Comm
 		}
 	}
 
-	out := make([]*moe.Comment, 0, len(comments))
+	out := make([]*commentv1.Comment, 0, len(comments))
 	for _, comment := range comments {
 		username := "未知用户"
 		avatar := "https://picsum.photos/150"
@@ -119,7 +119,7 @@ func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*moe.Comm
 				avatar = user.Avatar
 			}
 		}
-		out = append(out, &moe.Comment{
+		out = append(out, &commentv1.Comment{
 			Id:              strconv.FormatUint(uint64(comment.ID), 10),
 			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
 			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),

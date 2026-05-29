@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
+	llmv1 "backend/api/llm/v1"
 	llmbiz "backend/internal/biz/llm"
 	llmdata "backend/internal/data/llm"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -32,7 +32,7 @@ func openMemoryDB(t *testing.T) *gorm.DB {
 
 func TestUpsertUserMemoryCreatesRow(t *testing.T) {
 	db := openMemoryDB(t)
-	resp, err := llmbiz.UpsertUserMemory(context.Background(), llmdata.NewStore(db), &moe.UpsertUserMemoryReq{
+	resp, err := llmbiz.UpsertUserMemory(context.Background(), llmdata.NewStore(db), &llmv1.UpsertUserMemoryReq{
 		UserId: "1",
 		Key:    "user_name",
 		Value:  "小萌",
@@ -48,7 +48,7 @@ func TestUpsertUserMemoryCreatesRow(t *testing.T) {
 
 func TestUpsertUserMemoryRejectsTechnicalKey(t *testing.T) {
 	db := openMemoryDB(t)
-	_, err := llmbiz.UpsertUserMemory(context.Background(), llmdata.NewStore(db), &moe.UpsertUserMemoryReq{
+	_, err := llmbiz.UpsertUserMemory(context.Background(), llmdata.NewStore(db), &llmv1.UpsertUserMemoryReq{
 		UserId: "1",
 		Key:    "device_info:foo",
 		Value:  "bar",

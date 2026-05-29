@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
+	chatv1 "backend/api/chat/v1"
+	userv1 "backend/api/user/v1"
 	notifybiz "backend/internal/biz/notify"
-	"backend/rpc/pb/moe"
 
 	"backend/internal/platform/moelog"
-	"google.golang.org/grpc"
 )
 
 // NotificationTypePrivateChat ?? model.Notification.Type ???????6=?????
@@ -17,12 +17,12 @@ const NotificationTypePrivateChat = 6
 
 // UserProfileReader ?????????????????????
 type UserProfileReader interface {
-	GetUser(ctx context.Context, in *moe.GetUserReq, opts ...grpc.CallOption) (*moe.GetUserResp, error)
+	GetUser(ctx context.Context, in *userv1.GetUserReq) (*userv1.GetUserResp, error)
 }
 
 // NotificationWriter ????????????????RPC ??????????
 type NotificationWriter interface {
-	CreateNotification(ctx context.Context, in *moe.CreateNotificationReq, opts ...grpc.CallOption) (*moe.CreateNotificationResp, error)
+	CreateNotification(ctx context.Context, in *userv1.CreateNotificationReq) (*userv1.CreateNotificationResp, error)
 }
 
 // DeliveryDeps ???????????????????
@@ -37,14 +37,14 @@ func ResolvePrivateMessageSenderProfile(
 	ctx context.Context,
 	deps DeliveryDeps,
 	senderID string,
-	protoMsg *moe.PrivateMessage,
+	protoMsg *chatv1.PrivateMessage,
 	clientAvatar string,
 ) (senderName string, senderAvatar string) {
 	senderAvatar = strings.TrimSpace(clientAvatar)
 	senderName = ""
 	var username string
 	if deps.UserReader != nil {
-		rpcResp, err := deps.UserReader.GetUser(ctx, &moe.GetUserReq{UserId: senderID})
+		rpcResp, err := deps.UserReader.GetUser(ctx, &userv1.GetUserReq{UserId: senderID})
 		if err == nil && rpcResp != nil && rpcResp.User != nil {
 			u := rpcResp.User
 			username = strings.TrimSpace(u.Username)
@@ -83,7 +83,7 @@ func PersistOfflinePrivateChatNotification(ctx context.Context, deps DeliveryDep
 			body = body[:200]
 		}
 	}
-	req := &moe.CreateNotificationReq{
+	req := &userv1.CreateNotificationReq{
 		UserId:   targetUserID,
 		SenderId: fromUserID,
 		Type:     NotificationTypePrivateChat,
@@ -108,7 +108,7 @@ func DeliverPrivateMessageRealTime(
 	ctx context.Context,
 	deps DeliveryDeps,
 	senderID, receiverID, content, senderName, senderAvatar string,
-	protoMsg *moe.PrivateMessage,
+	protoMsg *chatv1.PrivateMessage,
 ) {
 	senderKey := NormalizeChatUserIDKey(senderID)
 	recvKey := NormalizeChatUserIDKey(receiverID)

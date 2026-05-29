@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// compatEnvelopeFilter 将 httplegacy 的 BaseResp+data 响应压平为与 proto 信封一致的 JSON。
-// 规则：保留 code/message/success；若 data 为 object 则合并到顶层；若为 array/scalar 则保留 data 字段。
+// compatEnvelopeFilter 保留 compat JSON 的 BaseResp+data 嵌套形状（与 proto 信封一致）。
+// 历史上曾将 object data 压平到顶层；已改回统一 { code, message, success, data }。
 func compatEnvelopeFilter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if shouldSkipCompatEnvelope(r.URL.Path) {
@@ -40,7 +40,7 @@ func compatEnvelopeFilter(next http.Handler) http.Handler {
 			_, _ = w.Write(body)
 			return
 		}
-		flat, ok := flattenCompatJSON(body)
+		normalized, ok := normalizeCompatJSON(body)
 		if !ok {
 			w.Header().Set("Content-Type", ct)
 			w.WriteHeader(rec.status)
@@ -49,7 +49,7 @@ func compatEnvelopeFilter(next http.Handler) http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(rec.status)
-		_, _ = w.Write(flat)
+		_, _ = w.Write(normalized)
 	})
 }
 
@@ -67,24 +67,13 @@ func shouldSkipCompatEnvelope(path string) bool {
 }
 
 func flattenCompatJSON(body []byte) ([]byte, bool) {
+	return normalizeCompatJSON(body)
+}
+
+func normalizeCompatJSON(body []byte) ([]byte, bool) {
 	var root map[string]any
 	if err := json.Unmarshal(body, &root); err != nil {
 		return nil, false
-	}
-	data, hasData := root["data"]
-	if !hasData {
-		return body, true
-	}
-	delete(root, "data")
-	switch v := data.(type) {
-	case map[string]any:
-		for k, val := range v {
-			if _, exists := root[k]; !exists {
-				root[k] = val
-			}
-		}
-	default:
-		root["data"] = v
 	}
 	if _, ok := root["code"]; !ok {
 		root["code"] = 200

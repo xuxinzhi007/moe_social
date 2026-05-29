@@ -3,8 +3,7 @@ package adminbiz
 import (
 	"context"
 
-	userbiz "backend/internal/biz/user"
-	"backend/rpc/pb/moe"
+	adminv1 "backend/api/admin/v1"
 
 	"gorm.io/gorm"
 )
@@ -17,7 +16,7 @@ type UserPage struct {
 }
 
 // ListUsers Admin 用户列表。
-func ListUsers(ctx context.Context, store AdminStore, in UserPage) ([]*moe.User, int32, error) {
+func ListUsers(ctx context.Context, store AdminStore, in UserPage) ([]*adminv1.User, int32, error) {
 	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -39,9 +38,9 @@ func ListUsers(ctx context.Context, store AdminStore, in UserPage) ([]*moe.User,
 		return nil, 0, err
 	}
 
-	out := make([]*moe.User, 0, len(users))
+	out := make([]*adminv1.User, 0, len(users))
 	for i := range users {
-		out = append(out, userbiz.ModelToProto(&users[i]))
+		out = append(out, userModelToAdminV1(&users[i]))
 	}
 	return out, int32(total), nil
 }

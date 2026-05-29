@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/common/errorcode"
-	"backend/rpc/pb/moe"
 
 	"backend/internal/platform/moelog"
 )
@@ -44,12 +44,12 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 	var memoryBlock string
 	userIDForLog := userIDFromContext(ctx)
 	if !in.ClientMemoryApplied && userIDForLog != "" && deps.Gateway != nil {
-		var memories []*moe.UserMemory
+		var memories []*llmv1.UserMemory
 		if cached, hit := getCachedUserMemories(userIDForLog); hit {
 			memories = cached
 			moelog.WithContext(ctx).Infof("memory cache hit user_id=%s total=%d", userIDForLog, len(cached))
 		} else {
-			rpcResp, err := deps.Gateway.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: userIDForLog})
+			rpcResp, err := deps.Gateway.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: userIDForLog})
 			if err != nil {
 				moelog.WithContext(ctx).Errorf("GetUserMemories failed: %v", err)
 			} else if rpcResp != nil {
@@ -58,8 +58,8 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 				moelog.WithContext(ctx).Infof("memory cache miss user_id=%s total=%d", userIDForLog, len(memories))
 			}
 		}
-		var profiles []*moe.UserMemoryProfile
-		if profResp, err := deps.Gateway.GetUserMemoryProfiles(ctx, &moe.GetUserMemoryProfilesReq{
+		var profiles []*llmv1.UserMemoryProfile
+		if profResp, err := deps.Gateway.GetUserMemoryProfiles(ctx, &llmv1.GetUserMemoryProfilesReq{
 			UserId: userIDForLog,
 			Limit:  8,
 		}); err != nil {

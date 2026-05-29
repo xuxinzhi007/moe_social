@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	giftbiz "backend/internal/biz/gift"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -38,7 +38,7 @@ type UpdateGiftInput struct {
 }
 
 // CreateGift 创建礼物。
-func CreateGift(ctx context.Context, db *gorm.DB, in *moe.AdminCreateGiftReq) (*moe.Gift, error) {
+func CreateGift(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateGiftReq) (*adminv1.Gift, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -70,11 +70,11 @@ func CreateGift(ctx context.Context, db *gorm.DB, in *moe.AdminCreateGiftReq) (*
 	if err := db.WithContext(ctx).Create(&gift).Error; err != nil {
 		return nil, err
 	}
-	return giftbiz.GiftToProto(gift, 0), nil
+	return giftModelToAdminV1(gift, 0), nil
 }
 
 // UpdateGift 更新礼物。
-func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*moe.Gift, error) {
+func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*adminv1.Gift, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -127,7 +127,7 @@ func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*moe.Gift
 	if err := db.WithContext(ctx).Save(&gift).Error; err != nil {
 		return nil, err
 	}
-	return giftbiz.GiftToProto(gift, 0), nil
+	return giftModelToAdminV1(gift, 0), nil
 }
 
 // DeleteGift 删除礼物。

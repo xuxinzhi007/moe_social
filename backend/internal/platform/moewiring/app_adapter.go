@@ -9,7 +9,6 @@ import (
 	llmapp "backend/internal/service/llm"
 	postapp "backend/internal/service/post"
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/moe"
 )
 
 var errAppPortUnavailable = errors.New("super port: in-process app unavailable")
@@ -25,68 +24,44 @@ func NewAppAdapter(post *postapp.AppService, llm *llmapp.AppService) port.MoeToo
 	return appAdapter{post: post, llm: llm}
 }
 
-func (a appAdapter) GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
+func (a appAdapter) GetUserMemories(ctx context.Context, in *llmv1.GetUserMemoriesReq) (*llmv1.GetUserMemoriesResp, error) {
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.llm.GetUserMemories(ctx, llmv1.GetUserMemoriesReqFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return llmv1.GetUserMemoriesRespToMoe(out), nil
+	return a.llm.GetUserMemories(ctx, in)
 }
 
-func (a appAdapter) UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
+func (a appAdapter) UpsertUserMemory(ctx context.Context, in *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error) {
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.llm.UpsertUserMemory(ctx, llmv1.UpsertUserMemoryReqFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return llmv1.UpsertUserMemoryRespToMoe(out), nil
+	return a.llm.UpsertUserMemory(ctx, in)
 }
 
-func (a appAdapter) DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
+func (a appAdapter) DeleteUserMemory(ctx context.Context, in *llmv1.DeleteUserMemoryReq) (*llmv1.DeleteUserMemoryResp, error) {
 	if a.llm == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.llm.DeleteUserMemory(ctx, llmv1.DeleteUserMemoryReqFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return llmv1.DeleteUserMemoryRespToMoe(out), nil
+	return a.llm.DeleteUserMemory(ctx, in)
 }
 
-func (a appAdapter) CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error) {
+func (a appAdapter) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (*postv1.CreatePostReply, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.post.CreatePost(ctx, postv1.CreatePostRequestFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return postv1.CreatePostReplyToMoe(out), nil
+	return a.post.CreatePost(ctx, in)
 }
 
-func (a appAdapter) UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
+func (a appAdapter) UpdatePost(ctx context.Context, in *postv1.UpdatePostRequest) (*postv1.UpdatePostReply, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.post.UpdatePost(ctx, postv1.UpdatePostRequestFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return postv1.UpdatePostReplyToMoe(out), nil
+	return a.post.UpdatePost(ctx, in)
 }
 
-func (a appAdapter) GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error) {
+func (a appAdapter) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*postv1.GetPostReply, error) {
 	if a.post == nil {
 		return nil, errAppPortUnavailable
 	}
-	out, err := a.post.GetPost(ctx, postv1.GetPostRequestFromMoe(in))
-	if err != nil {
-		return nil, err
-	}
-	return postv1.GetPostReplyToMoe(out), nil
+	return a.post.GetPost(ctx, in)
 }

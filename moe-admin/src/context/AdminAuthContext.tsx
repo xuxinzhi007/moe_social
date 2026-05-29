@@ -115,11 +115,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       try {
         const res = await client.login(username, password)
         if (!res.success || !res.data?.token) {
-          return res.message || '登录失败'
+          return res.message && res.message !== '操作成功'
+            ? res.message
+            : '登录失败'
         }
         const t = res.data.token
         const u: StoredAdminUser = {
-          admin_id: res.data.admin_id,
+          admin_id: Number(res.data.admin_id) || 0,
           username: res.data.username,
           role: res.data.role,
         }

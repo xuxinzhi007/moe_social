@@ -17,11 +17,12 @@ func TestFlattenCompatJSON_objectData(t *testing.T) {
 	if err := json.Unmarshal(out, &m); err != nil {
 		t.Fatal(err)
 	}
-	if m["data"] != nil {
-		t.Fatalf("data should be flattened, got %v", m["data"])
+	data, ok := m["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("data should stay nested, got %v", m["data"])
 	}
-	if m["token"] != "abc" {
-		t.Fatalf("token=%v", m["token"])
+	if data["token"] != "abc" {
+		t.Fatalf("token=%v", data["token"])
 	}
 }
 
@@ -52,8 +53,12 @@ func TestCompatEnvelopeFilter(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
 		t.Fatal(err)
 	}
-	if m["count"] != float64(3) {
-		t.Fatalf("count=%v", m["count"])
+	data, ok := m["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("data=%v", m["data"])
+	}
+	if data["count"] != float64(3) {
+		t.Fatalf("count=%v", data["count"])
 	}
 }
 

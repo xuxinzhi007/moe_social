@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/ai_provider_profile.dart';
 import 'api_service.dart';
+import 'api_response.dart';
 import 'ai_provider_service.dart';
 import 'llama_cpp_endpoint_config.dart';
 
@@ -188,8 +189,10 @@ abstract final class AiProviderDetector {
 
   static List<String> _extractModelNames(dynamic decoded) {
     if (decoded is! Map) return const [];
-    final raw = decoded['models'] ?? decoded['data'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(
+      Map<String, dynamic>.from(decoded),
+      keys: const ['models'],
+    );
     if (raw.whereType<String>().isNotEmpty) {
       return raw.whereType<String>().toList();
     }

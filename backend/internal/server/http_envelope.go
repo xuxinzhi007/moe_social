@@ -16,6 +16,8 @@ import (
 
 const envelopeOKMessage = "操作成功"
 
+var protoJSONOptions = protojson.MarshalOptions{UseProtoNames: true}
+
 var envelopeSkipPrefixes = []string{
 	"/health",
 	"/migration",
@@ -24,8 +26,7 @@ var envelopeSkipPrefixes = []string{
 }
 
 // EnvelopeResponseEncoder 将 proto HTTP 成功响应统一为：
-// { "code": 200, "message": "...", "success": true, ...protoFields }
-// 参考 core-platform 的 proto 直出 + moe 前端习惯的 code/message/success 信封。
+// { "code": 200, "message": "...", "success": true, "data": { ...protoFields } }
 func EnvelopeResponseEncoder(w http.ResponseWriter, r *http.Request, v any) error {
 	if v == nil {
 		return nil
@@ -85,7 +86,7 @@ func marshalEnvelopeSuccess(v any) ([]byte, error) {
 	payload := make(map[string]any)
 	switch msg := v.(type) {
 	case proto.Message:
-		b, err := protojson.Marshal(msg)
+		b, err := protoJSONOptions.Marshal(msg)
 		if err != nil {
 			return nil, err
 		}
@@ -102,23 +103,19 @@ func marshalEnvelopeSuccess(v any) ([]byte, error) {
 		}
 	}
 
-	out := make(map[string]any, len(payload)+3)
-	for k, val := range payload {
-		out[k] = val
-	}
-	if _, ok := out["code"]; !ok {
-		out["code"] = errorcode.E_SUCCESS
-	}
-	if _, ok := out["success"]; !ok {
-		out["success"] = true
-	}
-	if _, ok := out["message"]; !ok {
-		out["message"] = envelopeOKMessage
+	out := map[string]any{
+		"code":    errorcode.E_SUCCESS,
+		"success": true,
+		"message": envelopeOKMessage,
+		"data":    payload,
 	}
 	return json.Marshal(out)
 }
 
 func shouldSkipEnvelope(path string) bool {
+	if strings.HasPrefix(path, "/api/images/") {
+		return true
+	}
 	for _, prefix := range envelopeSkipPrefixes {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true

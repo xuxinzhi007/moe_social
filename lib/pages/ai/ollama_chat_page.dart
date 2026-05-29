@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
+import '../../services/api_response.dart';
 import '../../services/api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/llm_response_parser.dart';
@@ -351,8 +352,8 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         final decodedBody = utf8.decode(response.bodyBytes);
         final data = jsonDecode(decodedBody);
         List<String> list = <String>[];
-        if (data is Map && data['models'] is List) {
-          final raw = data['models'] as List;
+        if (data is Map<String, dynamic>) {
+          final raw = ApiResponse.listOf(data, keys: const ['models']);
           if (raw.whereType<String>().isNotEmpty) {
             list = raw.whereType<String>().toList();
           } else {

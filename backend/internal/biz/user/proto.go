@@ -4,12 +4,12 @@ import (
 	"strconv"
 	"strings"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
-// ModelToProto 将数据库用户转为 RPC User。
-func ModelToProto(user *model.User) *moe.User {
+// ModelToUserV1 将数据库用户转为 user.v1 User。
+func ModelToUserV1(user *model.User) *userv1.User {
 	if user == nil {
 		return nil
 	}
@@ -21,7 +21,7 @@ func ModelToProto(user *model.User) *moe.User {
 	if user.Birthday != nil {
 		bday = user.Birthday.Format("2006-01-02")
 	}
-	return &moe.User{
+	return &userv1.User{
 		Id:                     strconv.Itoa(int(user.ID)),
 		Username:               user.Username,
 		Email:                  user.Email,

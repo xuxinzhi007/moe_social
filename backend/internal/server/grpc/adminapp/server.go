@@ -2,8 +2,10 @@ package adminappgrpc
 
 import (
 	"context"
+	"fmt"
 
 	adminv1 "backend/api/admin/v1"
+	"backend/internal/apilegacy/common"
 	"backend/internal/platform/svc"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
@@ -306,6 +308,30 @@ func (s *Server) AdminBootstrapLevels(ctx context.Context, in *adminv1.AdminBoot
 	return app.BootstrapLevels(ctx, in)
 }
 
+func (s *Server) AdminListCheckInRewards(ctx context.Context, in *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.ListCheckInRewards(ctx, in)
+}
+
+func (s *Server) AdminUpdateCheckInReward(ctx context.Context, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	normalizeRewardID(in)
+	resp, err := app.UpdateCheckInReward(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	if s.svcCtx != nil && in.GetId() != 0 {
+		common.TryRecordAdminAudit(ctx, s.svcCtx, "update", "check_in_reward", fmt.Sprintf("%d", in.GetId()), "更新签到奖励")
+	}
+	return resp, nil
+}
+
 func (s *Server) AdminBroadcastNotification(ctx context.Context, in *adminv1.AdminBroadcastNotificationReq) (*adminv1.AdminBroadcastNotificationResp, error) {
 	app, err := s.requireApp()
 	if err != nil {
@@ -521,5 +547,14 @@ func normalizeLevelID(in *adminv1.AdminUpdateLevelConfigReq) {
 	}
 	if in.GetId() == 0 && in.GetLevelId() != 0 {
 		in.Id = in.GetLevelId()
+	}
+}
+
+func normalizeRewardID(in *adminv1.AdminUpdateCheckInRewardReq) {
+	if in == nil {
+		return
+	}
+	if in.GetId() == 0 && in.GetRewardId() != 0 {
+		in.Id = in.GetRewardId()
 	}
 }

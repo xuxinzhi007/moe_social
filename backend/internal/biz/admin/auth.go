@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"backend/rpc/pb/moe"
+	adminv1 "backend/api/admin/v1"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -20,7 +20,7 @@ var (
 )
 
 // AdminLogin 管理端账号登录。
-func AdminLogin(ctx context.Context, store AdminStore, in *moe.AdminLoginReq) (*moe.AdminLoginResp, error) {
+func AdminLogin(ctx context.Context, store AdminStore, in *adminv1.AdminLoginReq) (*adminv1.AdminLoginResp, error) {
 	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -45,7 +45,7 @@ func AdminLogin(ctx context.Context, store AdminStore, in *moe.AdminLoginReq) (*
 	}
 	now := time.Now()
 	_ = store.UpdateAdminLastLoginAt(ctx, acc.ID, now)
-	return &moe.AdminLoginResp{
+	return &adminv1.AdminLoginResp{
 		Token:    token,
 		AdminId:  uint64(acc.ID),
 		Username: acc.Username,
@@ -55,12 +55,12 @@ func AdminLogin(ctx context.Context, store AdminStore, in *moe.AdminLoginReq) (*
 }
 
 // BootstrapAdminAccount 无管理员时创建默认超管。
-func BootstrapAdminAccount(ctx context.Context, store AdminStore, in *moe.AdminBootstrapAccountReq) (*moe.AdminBootstrapAccountResp, error) {
+func BootstrapAdminAccount(ctx context.Context, store AdminStore, in *adminv1.AdminBootstrapAccountReq) (*adminv1.AdminBootstrapAccountResp, error) {
 	_ = ctx
 	_ = in
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	created := utils.BootstrapAdminAccount(store.Raw())
-	return &moe.AdminBootstrapAccountResp{Created: created}, nil
+	return &adminv1.AdminBootstrapAccountResp{Created: created}, nil
 }

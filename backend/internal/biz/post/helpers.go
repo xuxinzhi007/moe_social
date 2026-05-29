@@ -8,7 +8,6 @@ import (
 
 	postv1 "backend/api/post/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 // LikedTargetIDSet 返回 targetIDs 中已被 userID 点赞的 ID。
@@ -34,8 +33,8 @@ func moderationStatusOrDefault(s string) string {
 	return s
 }
 
-// BuildProtoPost 将帖子与用户转为 moe.Post。
-func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
+// BuildPostV1 将帖子与用户转为 post.v1 Post。
+func BuildPostV1(post model.Post, user model.User, isLiked bool) *postv1.Post {
 	var images []string
 	if post.Images != "" {
 		_ = json.Unmarshal([]byte(post.Images), &images)
@@ -52,9 +51,9 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 		avatar = user.Avatar
 	}
 
-	topicTags := make([]*moe.TopicTag, 0, len(post.TopicTags))
+	topicTags := make([]*postv1.TopicTag, 0, len(post.TopicTags))
 	for _, tag := range post.TopicTags {
-		topicTags = append(topicTags, &moe.TopicTag{
+		topicTags = append(topicTags, &postv1.TopicTag{
 			Id:        strconv.FormatUint(uint64(tag.ID), 10),
 			Name:      tag.Name,
 			Color:     tag.Color,
@@ -62,7 +61,7 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 		})
 	}
 
-	return &moe.Post{
+	return &postv1.Post{
 		Id:                strconv.FormatUint(uint64(post.ID), 10),
 		UserId:            strconv.FormatUint(uint64(post.UserID), 10),
 		UserName:          username,
@@ -82,14 +81,14 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 	}
 }
 
+// BuildProtoPost 保留别名，返回 post.v1 Post。
+func BuildProtoPost(post model.Post, user model.User, isLiked bool) *postv1.Post {
+	return BuildPostV1(post, user, isLiked)
+}
+
 // ModerationStatusOrDefault 导出供其它 biz 使用。
 func ModerationStatusOrDefault(s string) string {
 	return moderationStatusOrDefault(s)
-}
-
-// BuildPostV1 将帖子与用户转为 post.v1 Post。
-func BuildPostV1(post model.Post, user model.User, isLiked bool) *postv1.Post {
-	return postv1.PostFromMoe(BuildProtoPost(post, user, isLiked))
 }
 
 // TopicTagsToPostV1 将话题标签转为 post.v1 TopicTag 列表。

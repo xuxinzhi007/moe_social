@@ -54,6 +54,19 @@ class ApiResponse {
     return out;
   }
 
+  /// 兼容 proto 消息体内再套一层 BaseResp（如 GetLlmConfigResp.data）。
+  static Map<String, dynamic> nestedPayload(Map<String, dynamic> json) {
+    final first = payload(json);
+    final inner = first['data'];
+    if (inner is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(inner);
+    }
+    if (inner is Map) {
+      return Map<String, dynamic>.from(inner);
+    }
+    return first;
+  }
+
   /// 列表：兼容 `data:[]`、`data:{items:[]}`、proto 字段名。
   static List<dynamic> listOf(
     Map<String, dynamic> json, {

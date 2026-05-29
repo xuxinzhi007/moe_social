@@ -1,7 +1,6 @@
 package runserver
 
 import (
-	"log"
 	"os"
 	"strings"
 
@@ -129,11 +128,4 @@ func firstPositiveInt64(v *viper.Viper, keys ...string) int64 {
 		}
 	}
 	return 0
-}
-
-// LogEffectiveConfig 打印关键配置（启动后调用）。
-func LogEffectiveConfig(c *config.Config) {
-	log.Printf("Effective image config: local_dir=%s public_base_url=%s max_bytes=%d",
-		c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)
-	log.Printf("SuperRpc endpoints: %v timeout_ms: %d", c.SuperRpc.Endpoints, c.SuperRpc.Timeout)
 }

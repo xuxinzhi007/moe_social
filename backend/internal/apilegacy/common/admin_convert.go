@@ -3,11 +3,11 @@ package common
 import (
 	"strconv"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RpcPostToTypes(p *moe.Post) types.Post {
+func RpcPostToTypes(p *adminv1.Post) types.Post {
 	if p == nil {
 		return types.Post{}
 	}
@@ -40,7 +40,7 @@ func RpcPostToTypes(p *moe.Post) types.Post {
 	}
 }
 
-func RpcCommentToTypes(c *moe.Comment) types.Comment {
+func RpcCommentToTypes(c *adminv1.Comment) types.Comment {
 	if c == nil {
 		return types.Comment{}
 	}
@@ -59,7 +59,7 @@ func RpcCommentToTypes(c *moe.Comment) types.Comment {
 	}
 }
 
-func RpcGroupToTypes(g *moe.Group) types.Group {
+func RpcGroupToTypes(g *adminv1.Group) types.Group {
 	if g == nil {
 		return types.Group{}
 	}
@@ -80,7 +80,7 @@ func RpcGroupToTypes(g *moe.Group) types.Group {
 	}
 }
 
-func RpcVipOrderToTypes(o *moe.VipOrder) types.VipOrder {
+func RpcVipOrderToTypes(o *adminv1.VipOrder) types.VipOrder {
 	if o == nil {
 		return types.VipOrder{}
 	}
@@ -97,7 +97,7 @@ func RpcVipOrderToTypes(o *moe.VipOrder) types.VipOrder {
 	}
 }
 
-func RpcGiftPurchaseOrderToTypes(o *moe.GiftPurchaseOrder) types.GiftPurchaseOrder {
+func RpcGiftPurchaseOrderToTypes(o *adminv1.GiftPurchaseOrder) types.GiftPurchaseOrder {
 	if o == nil {
 		return types.GiftPurchaseOrder{}
 	}

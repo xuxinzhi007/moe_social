@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListVipOrders Admin VIP 订单列表。
-func ListVipOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListVipOrdersReq) (*moe.AdminListVipOrdersResp, error) {
+func ListVipOrders(ctx context.Context, db *gorm.DB, in *adminv1.AdminListVipOrdersReq) (*adminv1.AdminListVipOrdersResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -53,7 +53,7 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListVipOrdersR
 		return nil, fmt.Errorf("%w: %v", ErrListVipOrders, err)
 	}
 
-	out := make([]*moe.VipOrder, len(rows))
+	out := make([]*adminv1.VipOrder, len(rows))
 	for i, order := range rows {
 		paidAt := ""
 		if order.Status == "paid" {
@@ -63,7 +63,7 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListVipOrdersR
 		if order.Plan.ID > 0 {
 			planName = order.Plan.Name
 		}
-		out[i] = &moe.VipOrder{
+		out[i] = &adminv1.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    strconv.FormatUint(uint64(order.UserID), 10),
 			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),
@@ -75,11 +75,11 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListVipOrdersR
 			OrderNo:   order.OrderNo,
 		}
 	}
-	return &moe.AdminListVipOrdersResp{Orders: out, Total: int32(total)}, nil
+	return &adminv1.AdminListVipOrdersResp{Orders: out, Total: int32(total)}, nil
 }
 
 // ListGiftPurchaseOrders Admin 礼物购买订单列表。
-func ListGiftPurchaseOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListGiftPurchaseOrdersReq) (*moe.AdminListGiftPurchaseOrdersResp, error) {
+func ListGiftPurchaseOrders(ctx context.Context, db *gorm.DB, in *adminv1.AdminListGiftPurchaseOrdersReq) (*adminv1.AdminListGiftPurchaseOrdersResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -120,9 +120,9 @@ func ListGiftPurchaseOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListG
 		return nil, fmt.Errorf("%w: %v", ErrListGiftPurchaseOrders, err)
 	}
 
-	out := make([]*moe.GiftPurchaseOrder, 0, len(rows))
+	out := make([]*adminv1.GiftPurchaseOrder, 0, len(rows))
 	for _, o := range rows {
-		out = append(out, &moe.GiftPurchaseOrder{
+		out = append(out, &adminv1.GiftPurchaseOrder{
 			Id:          strconv.FormatUint(uint64(o.ID), 10),
 			UserId:      strconv.FormatUint(uint64(o.UserID), 10),
 			OrderNo:     o.OrderNo,
@@ -136,5 +136,5 @@ func ListGiftPurchaseOrders(ctx context.Context, db *gorm.DB, in *moe.AdminListG
 			CreatedAt:   o.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &moe.AdminListGiftPurchaseOrdersResp{Orders: out, Total: int32(total)}, nil
+	return &adminv1.AdminListGiftPurchaseOrdersResp{Orders: out, Total: int32(total)}, nil
 }

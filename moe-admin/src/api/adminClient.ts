@@ -1,4 +1,5 @@
 import { adminApiPath, useDirectAdminApi } from '../lib/adminApi'
+import { normalizeAdminResponse } from '../lib/apiResponse'
 import { DeployApiError } from './deployClient'
 
 export function formatFetchError(e: unknown): string {
@@ -277,7 +278,7 @@ export function createAdminClient(opts: AdminClientOptions) {
       opts.onUnauthorized?.()
       throw new DeployApiError(msg, 401)
     }
-    return data as T
+    return normalizeAdminResponse<T>(data) as T
   }
 
   return {
@@ -791,8 +792,8 @@ export function createAdminClient(opts: AdminClientOptions) {
 
     listLevelConfigs: () =>
       api<
-        BaseResp<
-          Array<{
+        BaseResp<{
+          items: Array<{
             id: string
             level: number
             title: string
@@ -801,7 +802,7 @@ export function createAdminClient(opts: AdminClientOptions) {
             privileges: string
             badge_url: string
           }>
-        >
+        }>
       >(adminApiPath('/growth/levels')),
 
     updateLevelConfig: (
@@ -837,14 +838,14 @@ export function createAdminClient(opts: AdminClientOptions) {
 
     listCheckInRewards: () =>
       api<
-        BaseResp<
-          Array<{
+        BaseResp<{
+          items: Array<{
             id: string
             consecutive_days: number
             exp_reward: number
             extra_reward: string
           }>
-        >
+        }>
       >(adminApiPath('/growth/check-in-rewards')),
 
     updateCheckInReward: (
@@ -1178,8 +1179,8 @@ export function createAdminClient(opts: AdminClientOptions) {
 
     listMenus: () =>
       api<
-        BaseResp<
-          Array<{
+        BaseResp<{
+          items: Array<{
             id: string
             key: string
             kind: string
@@ -1192,7 +1193,7 @@ export function createAdminClient(opts: AdminClientOptions) {
             sort_order: number
             enabled: boolean
           }>
-        >
+        }>
       >(adminApiPath('/menus')),
 
     upsertMenu: (body: Record<string, unknown>) =>

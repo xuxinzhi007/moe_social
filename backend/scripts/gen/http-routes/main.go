@@ -246,7 +246,6 @@ func main() {
 	root := backendRoot()
 	routesPath := filepath.Join(root, "scripts/gen/http-routes/fixtures/routes.go")
 	nativeOut := filepath.Join(root, "internal/server/httplegacy/routes_native_gen.go")
-	bridgeOut := filepath.Join(root, "internal/server/httplegacy/routes_bridge_gen.go")
 
 	entries, err := parseRoutes(routesPath)
 	if err != nil {
@@ -267,12 +266,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "write native: %v\n", err)
 		os.Exit(1)
 	}
-	if err := writeBridgeFile(bridgeOut, bridge); err != nil {
-		fmt.Fprintf(os.Stderr, "write bridge: %v\n", err)
-		os.Exit(1)
-	}
 	removeObsoleteFiles(root)
-	fmt.Printf("OK: native=%d bridge=%d compat_skip=%d total=%d → internal/server/httplegacy\n",
+	fmt.Printf("OK: native=%d swagger_skipped=%d compat_skip=%d total=%d → internal/server/httplegacy\n",
 		len(native), len(bridge), len(skipExactPaths), len(entries))
 }
 
@@ -293,7 +288,7 @@ func backendRoot() string {
 
 func removeObsoleteFiles(root string) {
 	dir := filepath.Join(root, "internal/server/httplegacy")
-	for _, name := range []string{"routes_handlers_gen.go", "get_handlers_gen.go"} {
+	for _, name := range []string{"routes_handlers_gen.go", "get_handlers_gen.go", "routes_bridge_gen.go"} {
 		_ = os.Remove(filepath.Join(dir, name))
 	}
 }
