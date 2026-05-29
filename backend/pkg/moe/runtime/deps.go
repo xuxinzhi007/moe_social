@@ -16,7 +16,7 @@ type PostingPlanResolver func(ctx context.Context, db *gorm.DB, agentKey string)
 // Deps Agent 运行时依赖。
 type Deps struct {
 	DB                 *gorm.DB
-	RPC                port.SuperPort
+	RPC                port.MoeToolPort
 	Inference          llminference.Config
 	ResolvePostingPlan PostingPlanResolver
 }

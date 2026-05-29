@@ -14,14 +14,14 @@ import (
 
 var errAppPortUnavailable = errors.New("super port: in-process app unavailable")
 
-// appAdapter 进程内 SuperPort（P5：Super gRPC 退役后 Moe 试跑/工具链直连 App）。
+// appAdapter 进程内 MoeToolPort（P5：Super gRPC 退役后 Moe 试跑/工具链直连 App）。
 type appAdapter struct {
 	post *postapp.AppService
 	llm  *llmapp.AppService
 }
 
-// NewAppAdapter 构造进程内 SuperPort；post/llm 可为 nil（对应方法返回不可用错误）。
-func NewAppAdapter(post *postapp.AppService, llm *llmapp.AppService) port.SuperPort {
+// NewAppAdapter 构造进程内 MoeToolPort；post/llm 可为 nil（对应方法返回不可用错误）。
+func NewAppAdapter(post *postapp.AppService, llm *llmapp.AppService) port.MoeToolPort {
 	return appAdapter{post: post, llm: llm}
 }
 

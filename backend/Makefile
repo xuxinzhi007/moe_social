@@ -48,23 +48,18 @@ gen-rpc: fs8-assemble-super-proto
 	@echo "P5: rpc/moe.proto has no Super service; use domain protos under api/*/v1/ for gRPC."
 	@echo "Frozen pb: rpc/pb/moe/*.pb.go (SuperClient shim for legacy gateways). Run gen-rpc-legacy only if restoring Super."
 
-# 紧急回滚：先从 git 恢复 P5 前的 fs8-assemble-rpc-proto.py 与 defs assemble，再执行（会再生 logic）
+# DEPRECATED (P5 完成)：go-zero / Super logic 已删除；配套脚本在 scripts/archive/fs8-rollback/
 gen-rpc-legacy:
-	@echo "ERROR: restore pre-P5 fs8-assemble-rpc-proto.py from git before gen-rpc-legacy"
+	@echo "DEPRECATED: gen-rpc-legacy disabled. Rollback scripts: scripts/archive/fs8-rollback/"
 	@exit 1
-	goctl rpc protoc rpc/moe.proto --go_out=. --go-grpc_out=. --zrpc_out=./rpc -I rpc --go_opt=module=backend --go-grpc_opt=module=backend --client=false
-	@rm -f rpc/pb/super/super.pb.go rpc/pb/super/super_grpc.pb.go rpc/pb/super/common.pb.go rpc/pb/super/moe.pb.go rpc/pb/super/moe_grpc.pb.go
-	bash scripts/gen/fs9b-pb-shim.sh
-	bash scripts/gen/fs9-fix-rpc-import.sh
-	bash scripts/gen/prune-rpc-logic-shells.sh
 
 fs8-assemble-super-proto:
 	python3 scripts/gen/fs8-assemble-rpc-proto.py
 
-# 仅从单体 moe.proto 重新切分（覆盖 defs 手工编辑，慎用）
+# DEPRECATED (P5 完成)：脚本已迁至 scripts/archive/fs8-rollback/
 fs8-split-super-proto:
-	python3 scripts/fs8-split-super-proto.py
-	python3 scripts/gen/fs8-assemble-rpc-proto.py
+	@echo "DEPRECATED: scripts moved to scripts/archive/fs8-rollback/. Restore from git if disaster recovery needed."
+	@exit 1
 
 gen-api:
 	bash scripts/gen/api-guard.sh
@@ -91,9 +86,10 @@ gen-moe-admin:
 api-moe-proto:
 	bash scripts/gen/moe-proto.sh
 
-# FS-8：仅从单体 moe.api 重新切分 defs（会覆盖 defs 手工编辑，慎用）
+# DEPRECATED (P6 完成)：脚本已迁至 scripts/archive/fs8-rollback/
 fs8-split-api:
-	python3 scripts/gen/fs8-split-api.py
+	@echo "DEPRECATED: scripts moved to scripts/archive/fs8-rollback/. Restore from git if disaster recovery needed."
+	@exit 1
 
 # 日常检查：编译生产入口 + 核心包单测
 check:
@@ -108,10 +104,10 @@ grpc-smoke:
 split-deploy-smoke:
 	bash scripts/split-deploy-smoke.sh
 
-# P5-E：删除 hybrid go-zero 源并从 go.mod 移除 go-zero（一次性）
+# DEPRECATED (P5-E 已执行 2026-05-29)：脚本在 scripts/archive/p5/p5e-remove-hybrid-gozero.py
 remove-hybrid-gozero:
-	python3 scripts/p5e-remove-hybrid-gozero.py
-	go mod tidy
+	@echo "DEPRECATED: P5-E already applied. Script archived at scripts/archive/p5/p5e-remove-hybrid-gozero.py"
+	@exit 1
 
 # P3-W4：列出无 handler 引用的 logic 文件（Windows/Linux 均可）
 audit-logic-orphans:
@@ -139,8 +135,10 @@ moe-platform:
 
 	go run ./cmd/moe-platform
 
+# DEPRECATED：已迁至 scripts/archive/fs8-rollback/fs9b-rewrite-imports/
 fs9b-rewrite-imports:
-	cd scripts/tools/fs9b-rewrite-imports && go run ./
+	@echo "DEPRECATED: scripts/archive/fs8-rollback/fs9b-rewrite-imports/"
+	@exit 1
 
 moe-kratos:
 	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888 + gRPC :8080)."

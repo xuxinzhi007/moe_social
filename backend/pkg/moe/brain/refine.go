@@ -22,7 +22,7 @@ var refineJSONFence = regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)```")
 // RefineDeps 记忆润色依赖。
 type RefineDeps struct {
 	DB        *gorm.DB
-	RPC       port.SuperPort
+	RPC       port.MoeToolPort
 	Inference llminference.Config
 }
 

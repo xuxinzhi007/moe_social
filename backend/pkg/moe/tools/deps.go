@@ -10,6 +10,6 @@ import (
 // Deps 工具执行依赖。
 type Deps struct {
 	DB        *gorm.DB
-	RPC       port.SuperPort
+	RPC       port.MoeToolPort
 	Inference llminference.Config
 }

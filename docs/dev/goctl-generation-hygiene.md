@@ -1,6 +1,6 @@
 # goctl 生成与合并 Logic 说明
 
-> **更新：2026-05-28**（P3 logic 退役后）
+> **更新：2026-05-29**（P5-E 后无 hybrid 构建）
 
 ## P3 后纪律（必读）
 
@@ -9,12 +9,13 @@
 | **logic 层已删除** | `api/internal/logic/` 仅 `.gitkeep` |
 | **handler 直调 GW/biz** | 见 `api/internal/handler/README.md` |
 | **生产不注册 handler** | `WireOnly=true` → 仅 `api/moehttp` |
+| **P5-E** | hybrid handler / `tag-hybrid-routes` 已移除；**无** `//go:build hybrid` 日常构建 |
 
 `make gen-api` 后 **自动**执行：
 
 1. `prune-api-logic-shells.sh`（兼容旧合并文件清单）
 2. **`prune-api-logic-retired.sh`** — 删除 goctl 重新生成的全部 `logic/*.go`
-3. **`tag-hybrid-routes.sh`** — 为 `routes.go` 补 `//go:build hybrid`（P4-H）
+3. **`gen-http-routes`** — 同步 `routes_*_gen.go`
 
 ## 改存量 HTTP 的推荐顺序
 

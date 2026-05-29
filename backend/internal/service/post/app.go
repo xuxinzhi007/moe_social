@@ -2,14 +2,11 @@ package postapp
 
 import (
 	"context"
-	"strconv"
 
 	postv1 "backend/api/post/v1"
 	postbiz "backend/internal/biz/post"
 	postdata "backend/internal/data/post"
 	"backend/internal/platform/socialhook"
-	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -83,11 +80,11 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		HandDrawApproved: result.HandDrawApproved,
 	})
 
-	protoPost := postbiz.BuildProtoPost(result.Post, result.User, false)
-	protoPost.Images = result.Images
-	protoPost.TopicTags = topicTagsToMoe(result.TopicTags)
+	post := postbiz.BuildPostV1(result.Post, result.User, false)
+	post.Images = result.Images
+	post.TopicTags = postbiz.TopicTagsToPostV1(result.TopicTags)
 	return &postv1.CreatePostReply{
-		Post:            postv1.PostFromMoe(protoPost),
+		Post:            post,
 		NewAchievements: postv1.AchievementUnlocksFromMoe(achUnlocks),
 	}, nil
 }
@@ -104,7 +101,7 @@ func (s *AppService) LikePost(ctx context.Context, in *postv1.LikePostRequest) (
 		})
 	}
 	return &postv1.LikePostReply{
-		Post: postv1.PostFromMoe(postbiz.BuildProtoPost(result.Post, result.User, result.IsLiked)),
+		Post: postbiz.BuildPostV1(result.Post, result.User, result.IsLiked),
 	}, nil
 }
 
@@ -133,7 +130,7 @@ func (s *AppService) UpdatePost(ctx context.Context, in *postv1.UpdatePostReques
 		return nil, err
 	}
 	return &postv1.UpdatePostReply{
-		Post: postv1.PostFromMoe(postbiz.BuildProtoPost(result.Post, result.User, result.IsLiked)),
+		Post: postbiz.BuildPostV1(result.Post, result.User, result.IsLiked),
 	}, nil
 }
 
@@ -142,15 +139,4 @@ func (s *AppService) ReportPost(ctx context.Context, in *postv1.ReportPostReques
 		return nil, err
 	}
 	return &postv1.ReportPostReply{}, nil
-}
-
-func topicTagsToMoe(tags []model.TopicTag) []*moe.TopicTag {
-	out := make([]*moe.TopicTag, 0, len(tags))
-	for _, tag := range tags {
-		out = append(out, &moe.TopicTag{
-			Id: strconv.FormatUint(uint64(tag.ID), 10), Name: tag.Name, Color: tag.Color,
-			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
-		})
-	}
-	return out
 }

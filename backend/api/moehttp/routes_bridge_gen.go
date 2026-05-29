@@ -16,6 +16,6 @@ func RegisterBridgeHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext) {
 		return
 	}
 	r := srv.Route("/")
-	r.GET("/swagger", wrapGoZeroHandler(hdoc.SwaggerUiHandler(svc)))
-	r.GET("/swagger/doc.json", wrapGoZeroHandler(hdoc.SwaggerDocHandler(svc)))
+	r.GET("/swagger", wrapNetHTTPHandler(hdoc.SwaggerUiHandler(svc)))
+	r.GET("/swagger/doc.json", wrapNetHTTPHandler(hdoc.SwaggerDocHandler(svc)))
 }

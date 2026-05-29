@@ -1,3 +1,4 @@
+-- DEPRECATED (2026-05-29): 请用 Admin bootstrap / 管理台「初始化默认商品」。仅作本地 dev 参考。
 INSERT INTO `vip_plans` (`name`, `price`, `duration`, `features`, `created_at`, `updated_at`)
 VALUES
   ('月度VIP', 99.00, 30, '月卡测试套餐', NOW(3), NOW(3)),

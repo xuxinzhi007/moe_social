@@ -10,9 +10,9 @@ import (
 	"backend/rpc/pb/moe"
 )
 
-// appBridge implements rpcsuper.Bridge via moewiring.NewAppAdapter (P5: logic-free SuperPort).
+// appBridge implements rpcsuper.Bridge via moewiring.NewAppAdapter (P5: logic-free MoeToolPort).
 type appBridge struct {
-	port port.SuperPort
+	port port.MoeToolPort
 }
 
 func newAppBridge(svcCtx *svc.ServiceContext) rpcsuper.Bridge {

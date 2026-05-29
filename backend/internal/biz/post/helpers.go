@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	postv1 "backend/api/post/v1"
 	"backend/model"
 	"backend/rpc/pb/moe"
 )
@@ -84,4 +85,23 @@ func BuildProtoPost(post model.Post, user model.User, isLiked bool) *moe.Post {
 // ModerationStatusOrDefault 导出供其它 biz 使用。
 func ModerationStatusOrDefault(s string) string {
 	return moderationStatusOrDefault(s)
+}
+
+// BuildPostV1 将帖子与用户转为 post.v1 Post。
+func BuildPostV1(post model.Post, user model.User, isLiked bool) *postv1.Post {
+	return postv1.PostFromMoe(BuildProtoPost(post, user, isLiked))
+}
+
+// TopicTagsToPostV1 将话题标签转为 post.v1 TopicTag 列表。
+func TopicTagsToPostV1(tags []model.TopicTag) []*postv1.TopicTag {
+	out := make([]*postv1.TopicTag, 0, len(tags))
+	for _, tag := range tags {
+		out = append(out, &postv1.TopicTag{
+			Id:        strconv.FormatUint(uint64(tag.ID), 10),
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return out
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // GetBrainSnapshot 加载 Bot 大脑观测快照。
-func GetBrainSnapshot(ctx context.Context, store MoeStore, rpc port.SuperPort, agentKey string) (*brain.Snapshot, error) {
+func GetBrainSnapshot(ctx context.Context, store MoeStore, rpc port.MoeToolPort, agentKey string) (*brain.Snapshot, error) {
 	if err := requireStore(store); err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func GetBrainSnapshot(ctx context.Context, store MoeStore, rpc port.SuperPort, a
 }
 
 // UpdateBrainPolicy 更新标签策略后返回最新快照。
-func UpdateBrainPolicy(ctx context.Context, store MoeStore, rpc port.SuperPort, agentKey string, forbiddenTags, preferredTags []string) (*brain.Snapshot, error) {
+func UpdateBrainPolicy(ctx context.Context, store MoeStore, rpc port.MoeToolPort, agentKey string, forbiddenTags, preferredTags []string) (*brain.Snapshot, error) {
 	if err := requireStore(store); err != nil {
 		return nil, err
 	}

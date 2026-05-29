@@ -412,7 +412,7 @@ func writeBridgeFile(outPath string, entries []routeEntry) error {
 			if len(parts) != 2 {
 				continue
 			}
-			b.WriteString(fmt.Sprintf("\tr.%s(%q, wrapGoZeroHandler(%s.%s(svc)))\n",
+			b.WriteString(fmt.Sprintf("\tr.%s(%q, wrapNetHTTPHandler(%s.%s(svc)))\n",
 				e.method, e.path, handlerImportAlias(parts[0]), parts[1]))
 		}
 	}

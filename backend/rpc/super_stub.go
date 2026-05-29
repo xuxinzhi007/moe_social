@@ -1,5 +1,3 @@
-//go:build !hybrid
-
 package main
 
 import (
@@ -11,5 +9,5 @@ var configFile = flag.String("f", "etc/moe.yaml", "the config file")
 
 func main() {
 	flag.Parse()
-	log.Fatalf("moe-social-rpc (zrpc) removed in default build; use: make moe-social  OR  go build -tags hybrid -o moe-social-rpc ./rpc")
+	log.Fatalf("standalone rpc binary removed; use: make moe-social")
 }

@@ -12,8 +12,8 @@ import (
 // RuntimeDepsFactory 由 RPC 进程在启动时注入（避免 service 依赖 logic 产生循环引用）。
 type RuntimeDepsFactory func(context.Context) runtime.Deps
 
-// SuperPortFactory 由 RPC 进程在启动时注入。
-type SuperPortFactory func(context.Context) port.SuperPort
+// MoeToolPortFactory 由 RPC 进程在启动时注入。
+type MoeToolPortFactory func(context.Context) port.MoeToolPort
 
 // BrainDepsFactory brain.Deps 工厂。
 type BrainDepsFactory func(context.Context) brain.Deps

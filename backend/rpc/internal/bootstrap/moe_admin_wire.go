@@ -26,8 +26,8 @@ func AttachMoeAdminHooks(svcCtx *svc.ServiceContext) {
 	svcCtx.MoeAdmin.AttachRuntimeDeps(func(ctx context.Context) runtime.Deps {
 		return moeRuntimeDeps(ctx, svcCtx)
 	})
-	svcCtx.MoeAdmin.AttachSuperPort(func(ctx context.Context) port.SuperPort {
-		return rpcsuper.NewSuperPort(ctx, bridge)
+	svcCtx.MoeAdmin.AttachMoeToolPort(func(ctx context.Context) port.MoeToolPort {
+		return rpcsuper.NewMoeToolPort(ctx, bridge)
 	})
 	svcCtx.MoeAdmin.AttachBrainDeps(func(ctx context.Context) brain.Deps {
 		return moeBrainDeps(ctx, svcCtx)
@@ -40,14 +40,14 @@ func AttachMoeAdminHooks(svcCtx *svc.ServiceContext) {
 	})
 }
 
-func moeSuperPort(ctx context.Context, svc *svc.ServiceContext) rpcsuper.Bridge {
+func moeToolBridge(ctx context.Context, svc *svc.ServiceContext) rpcsuper.Bridge {
 	return newAppBridge(svc)
 }
 
 func moeRuntimeDeps(ctx context.Context, svc *svc.ServiceContext) runtime.Deps {
 	return runtime.Deps{
 		DB:        svc.DB,
-		RPC:       rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
+		RPC:       rpcsuper.NewMoeToolPort(ctx, moeToolBridge(ctx, svc)),
 		Inference: moeconfig.InferenceFromViper(),
 		ResolvePostingPlan: func(ctx context.Context, db *gorm.DB, agentKey string) (flowexec.Plan, error) {
 			return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(db), agentKey)
@@ -58,7 +58,7 @@ func moeRuntimeDeps(ctx context.Context, svc *svc.ServiceContext) runtime.Deps {
 func moeToolsDeps(ctx context.Context, svc *svc.ServiceContext) tools.Deps {
 	return tools.Deps{
 		DB:        svc.DB,
-		RPC:       rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
+		RPC:       rpcsuper.NewMoeToolPort(ctx, moeToolBridge(ctx, svc)),
 		Inference: moeconfig.InferenceFromViper(),
 	}
 }
@@ -66,14 +66,14 @@ func moeToolsDeps(ctx context.Context, svc *svc.ServiceContext) tools.Deps {
 func moeBrainDeps(ctx context.Context, svc *svc.ServiceContext) brain.Deps {
 	return brain.Deps{
 		DB:  svc.DB,
-		RPC: rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
+		RPC: rpcsuper.NewMoeToolPort(ctx, moeToolBridge(ctx, svc)),
 	}
 }
 
 func moeBrainRefineDeps(ctx context.Context, svc *svc.ServiceContext) brain.RefineDeps {
 	return brain.RefineDeps{
 		DB:        svc.DB,
-		RPC:       rpcsuper.NewSuperPort(ctx, moeSuperPort(ctx, svc)),
+		RPC:       rpcsuper.NewMoeToolPort(ctx, moeToolBridge(ctx, svc)),
 		Inference: moeconfig.InferenceFromViper(),
 	}
 }

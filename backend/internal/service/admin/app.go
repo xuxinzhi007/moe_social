@@ -3,15 +3,13 @@ package adminapp
 
 import (
 	"context"
-	"strconv"
 
+	adminv1 "backend/api/admin/v1"
 	adminbiz "backend/internal/biz/admin"
 	notifybiz "backend/internal/biz/notify"
 	admindata "backend/internal/data/admin"
 	communitydata "backend/internal/data/community"
 	notifydata "backend/internal/data/notify"
-	adminv1 "backend/api/admin/v1"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -39,7 +37,7 @@ func (s *AppService) GrowthStats(ctx context.Context) (*adminv1.AdminGetGrowthSt
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminGetGrowthStatsRespFromMoe(&moe.AdminGetGrowthStatsResp{Stats: stats}), nil
+	return adminbiz.GrowthStatsV1(stats), nil
 }
 
 // SchemaCatalog 数据目录。
@@ -67,7 +65,7 @@ func (s *AppService) BroadcastNotification(ctx context.Context, in *adminv1.Admi
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminBroadcastNotificationRespFromMoe(&moe.AdminBroadcastNotificationResp{NotificationsCreated: created}), nil
+	return &adminv1.AdminBroadcastNotificationResp{NotificationsCreated: created}, nil
 }
 
 // SendNotification 向单用户发送系统通知。
@@ -76,7 +74,7 @@ func (s *AppService) SendNotification(ctx context.Context, in *adminv1.AdminSend
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminSendNotificationRespFromMoe(&moe.AdminSendNotificationResp{NotificationId: strconv.FormatUint(uint64(id), 10)}), nil
+	return adminbiz.SendNotificationV1(id), nil
 }
 
 func (s *AppService) ListAnnouncements(ctx context.Context, in *adminv1.AdminListAnnouncementsReq) (*adminv1.AdminListAnnouncementsResp, error) {
@@ -86,7 +84,7 @@ func (s *AppService) ListAnnouncements(ctx context.Context, in *adminv1.AdminLis
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListAnnouncementsRespFromMoe(&moe.AdminListAnnouncementsResp{Items: items, Total: total}), nil
+	return adminbiz.ListAnnouncementsV1(items, total), nil
 }
 
 func (s *AppService) GetAnnouncement(ctx context.Context, in *adminv1.AdminGetAnnouncementReq) (*adminv1.AdminGetAnnouncementResp, error) {
@@ -94,7 +92,7 @@ func (s *AppService) GetAnnouncement(ctx context.Context, in *adminv1.AdminGetAn
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminGetAnnouncementRespFromMoe(&moe.AdminGetAnnouncementResp{Announcement: item}), nil
+	return adminbiz.AnnouncementV1(item), nil
 }
 
 func (s *AppService) ListAuditLogs(ctx context.Context, in *adminv1.AdminListAuditLogsReq) (*adminv1.AdminListAuditLogsResp, error) {
@@ -105,7 +103,7 @@ func (s *AppService) ListAuditLogs(ctx context.Context, in *adminv1.AdminListAud
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListAuditLogsRespFromMoe(&moe.AdminListAuditLogsResp{Items: items, Total: total}), nil
+	return adminbiz.ListAuditLogsV1(items, total), nil
 }
 
 func (s *AppService) CreateAnnouncement(ctx context.Context, in *adminv1.AdminCreateAnnouncementReq) (*adminv1.AdminCreateAnnouncementResp, error) {
@@ -113,7 +111,7 @@ func (s *AppService) CreateAnnouncement(ctx context.Context, in *adminv1.AdminCr
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminCreateAnnouncementRespFromMoe(&moe.AdminCreateAnnouncementResp{Announcement: item}), nil
+	return adminbiz.CreateAnnouncementV1(item), nil
 }
 
 func (s *AppService) UpdateAnnouncement(ctx context.Context, in *adminv1.AdminUpdateAnnouncementReq) (*adminv1.AdminUpdateAnnouncementResp, error) {
@@ -127,7 +125,7 @@ func (s *AppService) UpdateAnnouncement(ctx context.Context, in *adminv1.AdminUp
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminUpdateAnnouncementRespFromMoe(&moe.AdminUpdateAnnouncementResp{Announcement: item}), nil
+	return adminbiz.UpdateAnnouncementV1(item), nil
 }
 
 func (s *AppService) PublishAnnouncement(ctx context.Context, in *adminv1.AdminPublishAnnouncementReq) (*adminv1.AdminPublishAnnouncementResp, error) {
@@ -135,14 +133,14 @@ func (s *AppService) PublishAnnouncement(ctx context.Context, in *adminv1.AdminP
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminPublishAnnouncementRespFromMoe(&moe.AdminPublishAnnouncementResp{Announcement: item}), nil
+	return adminbiz.PublishAnnouncementV1(item), nil
 }
 
 func (s *AppService) DeleteAnnouncement(ctx context.Context, in *adminv1.AdminDeleteAnnouncementReq) (*adminv1.AdminDeleteAnnouncementResp, error) {
 	if err := adminbiz.DeleteAnnouncement(ctx, s.store, in.GetAnnouncementId()); err != nil {
 		return nil, err
 	}
-	return adminv1.AdminDeleteAnnouncementRespFromMoe(&moe.AdminDeleteAnnouncementResp{}), nil
+	return &adminv1.AdminDeleteAnnouncementResp{}, nil
 }
 
 func (s *AppService) AdminListGifts(ctx context.Context, in *adminv1.AdminListGiftsReq) (*adminv1.AdminListGiftsResp, error) {
@@ -153,7 +151,7 @@ func (s *AppService) AdminListGifts(ctx context.Context, in *adminv1.AdminListGi
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListGiftsRespFromMoe(&moe.AdminListGiftsResp{Gifts: gifts, Total: total}), nil
+	return adminbiz.ListGiftsV1(gifts, total), nil
 }
 
 func (s *AppService) AdminGetGift(ctx context.Context, in *adminv1.AdminGetGiftReq) (*adminv1.AdminGetGiftResp, error) {
@@ -161,7 +159,7 @@ func (s *AppService) AdminGetGift(ctx context.Context, in *adminv1.AdminGetGiftR
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminGetGiftRespFromMoe(&moe.AdminGetGiftResp{Gift: gift}), nil
+	return adminbiz.GiftV1(gift), nil
 }
 
 func (s *AppService) AdminCreateGift(ctx context.Context, in *adminv1.AdminCreateGiftReq) (*adminv1.AdminCreateGiftResp, error) {
@@ -169,7 +167,7 @@ func (s *AppService) AdminCreateGift(ctx context.Context, in *adminv1.AdminCreat
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminCreateGiftRespFromMoe(&moe.AdminCreateGiftResp{Gift: gift}), nil
+	return adminbiz.CreateGiftV1(gift), nil
 }
 
 func (s *AppService) AdminUpdateGift(ctx context.Context, in *adminv1.AdminUpdateGiftReq) (*adminv1.AdminUpdateGiftResp, error) {
@@ -191,14 +189,14 @@ func (s *AppService) AdminUpdateGift(ctx context.Context, in *adminv1.AdminUpdat
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminUpdateGiftRespFromMoe(&moe.AdminUpdateGiftResp{Gift: gift}), nil
+	return adminbiz.UpdateGiftV1(gift), nil
 }
 
 func (s *AppService) AdminDeleteGift(ctx context.Context, in *adminv1.AdminDeleteGiftReq) (*adminv1.AdminDeleteGiftResp, error) {
 	if err := adminbiz.DeleteGift(ctx, s.db, in.GetGiftId()); err != nil {
 		return nil, err
 	}
-	return adminv1.AdminDeleteGiftRespFromMoe(&moe.AdminDeleteGiftResp{}), nil
+	return &adminv1.AdminDeleteGiftResp{}, nil
 }
 
 func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *adminv1.AdminBootstrapGiftsReq) (*adminv1.AdminBootstrapGiftsResp, error) {
@@ -207,7 +205,7 @@ func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *adminv1.AdminB
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminBootstrapGiftsRespFromMoe(&moe.AdminBootstrapGiftsResp{Created: created}), nil
+	return &adminv1.AdminBootstrapGiftsResp{Created: created}, nil
 }
 
 func (s *AppService) AdminDedupeGifts(ctx context.Context, in *adminv1.AdminDedupeGiftsReq) (*adminv1.AdminDedupeGiftsResp, error) {
@@ -216,7 +214,7 @@ func (s *AppService) AdminDedupeGifts(ctx context.Context, in *adminv1.AdminDedu
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminDedupeGiftsRespFromMoe(&moe.AdminDedupeGiftsResp{Removed: removed}), nil
+	return &adminv1.AdminDedupeGiftsResp{Removed: removed}, nil
 }
 
 func (s *AppService) AdminBootstrapTopicTags(ctx context.Context, in *adminv1.AdminBootstrapTopicTagsReq) (*adminv1.AdminBootstrapTopicTagsResp, error) {
@@ -225,7 +223,7 @@ func (s *AppService) AdminBootstrapTopicTags(ctx context.Context, in *adminv1.Ad
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminBootstrapTopicTagsRespFromMoe(&moe.AdminBootstrapTopicTagsResp{Created: created}), nil
+	return &adminv1.AdminBootstrapTopicTagsResp{Created: created}, nil
 }
 
 func (s *AppService) ListUsers(ctx context.Context, in *adminv1.AdminListUsersReq) (*adminv1.AdminListUsersResp, error) {
@@ -235,7 +233,7 @@ func (s *AppService) ListUsers(ctx context.Context, in *adminv1.AdminListUsersRe
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListUsersRespFromMoe(&moe.AdminListUsersResp{Users: users, Total: total}), nil
+	return adminbiz.ListUsersV1(users, total), nil
 }
 
 func (s *AppService) ListAchievements(ctx context.Context, in *adminv1.AdminListAchievementsReq) (*adminv1.AdminListAchievementsResp, error) {
@@ -246,7 +244,7 @@ func (s *AppService) ListAchievements(ctx context.Context, in *adminv1.AdminList
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListAchievementsRespFromMoe(&moe.AdminListAchievementsResp{Items: items, Total: total}), nil
+	return adminbiz.ListAchievementsV1(items, total), nil
 }
 
 func (s *AppService) ListMenus(ctx context.Context, in *adminv1.AdminListMenusReq) (*adminv1.AdminListMenusResp, error) {
@@ -255,7 +253,7 @@ func (s *AppService) ListMenus(ctx context.Context, in *adminv1.AdminListMenusRe
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminListMenusRespFromMoe(&moe.AdminListMenusResp{Items: items}), nil
+	return adminbiz.ListMenusV1(items), nil
 }
 
 func (s *AppService) UpdateUser(ctx context.Context, in *adminv1.AdminUpdateUserReq) (*adminv1.AdminUpdateUserResp, error) {
@@ -272,7 +270,7 @@ func (s *AppService) UpdateUser(ctx context.Context, in *adminv1.AdminUpdateUser
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminUpdateUserRespFromMoe(&moe.AdminUpdateUserResp{User: user}), nil
+	return adminbiz.UpdateUserV1(user), nil
 }
 
 func (s *AppService) UpdateAchievement(ctx context.Context, in *adminv1.AdminUpdateAchievementReq) (*adminv1.AdminUpdateAchievementResp, error) {
@@ -286,7 +284,7 @@ func (s *AppService) UpdateAchievement(ctx context.Context, in *adminv1.AdminUpd
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminUpdateAchievementRespFromMoe(&moe.AdminUpdateAchievementResp{Item: item}), nil
+	return adminbiz.UpdateAchievementV1(item), nil
 }
 
 func (s *AppService) UpsertMenu(ctx context.Context, in *adminv1.AdminUpsertMenuReq) (*adminv1.AdminUpsertMenuResp, error) {
@@ -299,14 +297,14 @@ func (s *AppService) UpsertMenu(ctx context.Context, in *adminv1.AdminUpsertMenu
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminUpsertMenuRespFromMoe(&moe.AdminUpsertMenuResp{Menu: item}), nil
+	return adminbiz.UpsertMenuV1(item), nil
 }
 
 func (s *AppService) DeleteMenu(ctx context.Context, in *adminv1.AdminDeleteMenuReq) (*adminv1.AdminDeleteMenuResp, error) {
 	if err := adminbiz.DeleteMenu(ctx, s.store, in.GetMenuKey()); err != nil {
 		return nil, err
 	}
-	return adminv1.AdminDeleteMenuRespFromMoe(&moe.AdminDeleteMenuResp{}), nil
+	return &adminv1.AdminDeleteMenuResp{}, nil
 }
 
 func (s *AppService) BootstrapAchievements(ctx context.Context, in *adminv1.AdminBootstrapAchievementsReq) (*adminv1.AdminBootstrapAchievementsResp, error) {
@@ -315,7 +313,7 @@ func (s *AppService) BootstrapAchievements(ctx context.Context, in *adminv1.Admi
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminBootstrapAchievementsRespFromMoe(&moe.AdminBootstrapAchievementsResp{Created: created}), nil
+	return &adminv1.AdminBootstrapAchievementsResp{Created: created}, nil
 }
 
 func (s *AppService) BootstrapMenus(ctx context.Context, in *adminv1.AdminBootstrapMenusReq) (*adminv1.AdminBootstrapMenusResp, error) {
@@ -324,7 +322,7 @@ func (s *AppService) BootstrapMenus(ctx context.Context, in *adminv1.AdminBootst
 	if err != nil {
 		return nil, err
 	}
-	return adminv1.AdminBootstrapMenusRespFromMoe(&moe.AdminBootstrapMenusResp{Created: created}), nil
+	return &adminv1.AdminBootstrapMenusResp{Created: created}, nil
 }
 
 func (s *AppService) ListAiChatSessions(ctx context.Context, in *adminv1.AdminListAiChatSessionsReq) (*adminv1.AdminListAiChatSessionsResp, error) {
@@ -660,7 +658,7 @@ func (s *AppService) RecordAuditLog(ctx context.Context, in *adminv1.RecordAdmin
 	if err := adminbiz.RecordAuditLog(ctx, s.store, adminv1.RecordAdminAuditLogReqToMoe(in)); err != nil {
 		return nil, err
 	}
-	return adminv1.RecordAdminAuditLogRespFromMoe(&moe.RecordAdminAuditLogResp{}), nil
+	return &adminv1.RecordAdminAuditLogResp{}, nil
 }
 
 // AdminLogin 管理端登录。

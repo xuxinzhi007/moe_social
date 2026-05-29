@@ -1,7 +1,7 @@
 # internal/data — 持久化层（P4）
 
 > **状态**：P4 Sprint 100 · **20/21 域**（voice 无 DB 除外）  
-> **SSOT**：[docs/dev/kratos-p4-sprint-80.md](../../docs/dev/kratos-p4-sprint-80.md)
+> **SSOT**：[docs/dev/kratos-migration-status.md](../../docs/dev/kratos-migration-status.md) · P4 详表见 [archive](../../docs/archive/dev/kratos/kratos-p4-sprint-80.md)
 
 ## 已迁入
 

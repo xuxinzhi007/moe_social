@@ -58,7 +58,7 @@ type MemoryItem struct {
 }
 
 // LoadSnapshot 拉取 Bot 大脑数据。
-func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.SuperPort, agentKey string) (*Snapshot, error) {
+func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, agentKey string) (*Snapshot, error) {
 	agentKey = strings.TrimSpace(agentKey)
 	var rt model.MoeAgentRuntime
 	if err := db.Where("agent_key = ?", agentKey).First(&rt).Error; err != nil {

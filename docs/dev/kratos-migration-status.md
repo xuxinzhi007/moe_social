@@ -1,6 +1,6 @@
 # Kratos 迁移 — 状态板（Current / Next）
 
-> **最后更新：2026-05-29**  
+> **最后更新：2026-05-27**  
 > **读这个**：本文 = **当前状态 + 下一步** 快照（汇报 / 勾选用）
 
 | 文档 | 用途 |
@@ -31,7 +31,7 @@
 | **P5-A（Super 运行时）** | ✅ **100%** | 单进程不注册 Super · API 无 zrpc 回环 · AppAdapter |
 | **P5-B（logic + 契约）** | ✅ **100%** | `rpc/internal/logic` **0** · `superserver` 已删 |
 | **P5-C（gateway Super）** | ✅ **100%** | `api/*gw` 无 `SuperClient` · 分体 dial MoeAdmin |
-| **P5-D（零 go-zero 生产）** | ✅ **100%** | `go list -deps ./cmd/moe-social` 无 `go-zero` |
+| **P5-D 生产零 go-zero** | ✅ **100%** | 依赖树与源码无 go-zero；P5-E 已删 hybrid 壳 |
 
 ### P5 进度
 
@@ -40,7 +40,7 @@
 | **P5-A 运行时** | ✅ | `super_grpc_retired` + `single_process` |
 | **P5-B rpc logic 清库** | ✅ | **209 → 0** 文件 |
 | **P5-C gateway** | ✅ | 23× `*gw` 去 `moe.SuperClient` |
-| **P5-D 生产零 go-zero** | ✅ | 默认构建；legacy 在 `//go:build hybrid` |
+| **P5-D 生产零 go-zero** | ✅ | 默认构建；hybrid 源码已删除（P5-E） |
 
 ### 独立 gRPC（12）
 
@@ -53,7 +53,7 @@
 | 生产 Kratos（`make moe-social`） | **100%** |
 | P5 Super 退役 + 生产零 go-zero | **100%** |
 | **P6 契约 defs → 域 proto** | **100%** |
-| 仓库删除全部 go-zero 源文件 | **100%**（P5-E：`p5e-remove-hybrid-gozero.py`） |
+| 仓库删除全部 go-zero 源文件 | **100%**（P5-E：`scripts/archive/p5/p5e-remove-hybrid-gozero.py`） |
 | go.mod 无 go-zero | **100%** |
 | P6-C `api/defs` 已迁路由标注 | **100%**（`scripts/gen/p6_mark_defs.py`） |
 
@@ -96,7 +96,8 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | 大域 message + 生成 bridge | `api/{admin,user,ai,llm,vip}/v1/*_messages.proto` · `moe_bridge_gen.go` | **5** |
 | 社交/平台 hand bridge | `api/{behavior,landing,…,chat,notify}/v1/moe_bridge.go` | **10** |
 | service 已用 `*v1` 签名 | `internal/service/{behavior,landing,…,notify,ai,llm,admin,user,chat,post,vip,…}` | **主域已覆盖** |
-| service 仍 import `moe`（边界构造） | `admin/app.go` · `user/app.go` · `post/app.go` · `notify/app.go` | **4**（`FromMoe`/`ToMoe` 过渡，非直挂 RPC） |
+| service import `rpc/pb/moe` | — | **0**（`FromMoe` 过渡已迁至 biz `adminv1_out` / `proto_v1` / `post` helpers） |
+| Moe 工具端口命名 | `pkg/moe/port.MoeToolPort` · `MoeToolGRPCAdapter` · `AttachMoeToolPort` | **已统一**（原 SuperPort） |
 | compat 调 App 直传 `&moe.*` | `api/moehttp/*.go` | **0** |
 | 生成脚本 | `backend/scripts/gen/p6_*.py` | extract · migrate · wrap · `p6_mark_defs.py` |
 
@@ -118,7 +119,6 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 |--------|------|------|
 | — | ~~P6 / grpc 冒烟 / 分体联调 / 移除 hybrid go-zero~~ ✅ | 见下表 |
 | 1 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
-| 2 | 可选：清理 `rpc/pb/moe` 边界 `FromMoe` | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) |
 
 ### 2026-05-29 完成项
 
@@ -128,6 +128,8 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | gRPC 冒烟 notify/chat/vip | `GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/...` ✅ |
 | 分体联调脚本 | `make split-deploy-smoke` |
 | 移除 hybrid go-zero | 删 314 文件 · `go.mod` 无 go-zero · `go build ./...` ✅ |
+| **目录提纯** | 去 `!hybrid` 标签 · 重命名 `wrapNetHTTPHandler`/`TotalHTTPRoutes` · 删 p5d 脚本 |
+| **service 边界 + MoeToolPort** | `internal/service` 零 `rpc/pb/moe` · `SuperPort`→`MoeToolPort` · `go build ./...` ✅ |
 
 ---
 
