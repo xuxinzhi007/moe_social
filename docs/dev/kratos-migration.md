@@ -1,24 +1,23 @@
 # Kratos 后端架构（SSOT）
 
-> **更新：2026-05-28**  
-> **当前阶段**：**纯 Kratos 生产** · **P5 完成**（Super 退役 + 生产二进制零 go-zero）· `make moe-social` · HTTP `:8888` + gRPC `:8080`
+> **更新：2026-05-29**  
+> **当前阶段**：**纯 Kratos 生产** · **P0–P6 完成** · `make moe-social` · HTTP `:8888` + gRPC `:8080`
 
 | 文档 | 用途 |
 |------|------|
 | 本文 | 架构、目录、命令 |
-| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步**（P0–P5 ✅） |
-| [kratos-p5-super-retirement.md](./kratos-p5-super-retirement.md) | P5-A/B/C Super 退役 |
-| [kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md) | **P5-D 生产零 go-zero** |
-| [kratos-p4-post-migration.md](./kratos-p4-post-migration.md) | P4 洁癖（data / gRPC / Hybrid） |
-| [kratos-architecture-complete.md](./kratos-architecture-complete.md) | DoD + `/migration` 公式 |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 清单（历史批次） |
-| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | 分体 api/rpc 部署 |
+| [kratos-migration-status.md](./kratos-migration-status.md) | **当前 / 下一步** |
+| [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | P6 契约 |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 清单 |
+| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | **Next** 分体 api/rpc |
 | [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md) | 域 gRPC 冒烟 |
-| [parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent + worktree |
+| [parallel-agent-workflow.md](../guidelines/parallel-agent-workflow.md) | 大任务多 Agent |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发**（必读） |
 | [moe-social-runtime.md](./moe-social-runtime.md) | 启动与配置 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 | [../../backend/scripts/README.md](../../backend/scripts/README.md) | `make gen` / `gen-api` |
+
+P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/dev/kratos-p4-*`、`kratos-p5-*` 为 stub）
 
 ---
 

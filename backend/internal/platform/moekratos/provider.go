@@ -1,20 +1,14 @@
 package moekratos
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	moeconfv1 "backend/internal/conf/moe/v1"
 	"backend/internal/platform/moeconf"
-	"backend/internal/platform/moewiring"
 	adminapp "backend/internal/service/admin"
 	moeadmin "backend/internal/service/moe"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
 )
 
@@ -88,28 +82,6 @@ func buildApp(
 	return newApp(bootstrap, moeAdmin, adminApp, grpcAddr, httpAddr, superRPC, db)
 }
 
-func buildMoeAdmin(superRPC string, db *gorm.DB) (*moeadmin.AdminService, error) {
-	if superRPC == "" {
-		return moeadmin.NewAdmin(db), nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(ctx, superRPC,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("super rpc dial %s: %w", superRPC, err)
-	}
-	client := moe.NewSuperClient(conn)
-	admin, err := moewiring.NewAPIAdminService(client, nil)
-	if err != nil {
-		_ = conn.Close()
-		return nil, err
-	}
-	if admin == nil {
-		_ = conn.Close()
-		return moeadmin.NewAdmin(db), nil
-	}
-	return admin, nil
+func buildMoeAdmin(_ string, db *gorm.DB) (*moeadmin.AdminService, error) {
+	return moeadmin.NewAdmin(db), nil
 }

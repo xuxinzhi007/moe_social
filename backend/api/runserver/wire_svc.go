@@ -186,7 +186,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 		if !moewiring.SuperGrpcRetired() {
 			appPort = nil
 		}
-		adm, err := moewiring.NewAPIAdminService(nil, appPort)
+		adm, err := moewiring.NewAPIAdminService(appPort)
 		if err != nil {
 			log.Printf("moe api_in_process: init failed, fallback to RPC only: %v", err)
 		} else if adm != nil {

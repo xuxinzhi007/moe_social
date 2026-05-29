@@ -15,11 +15,14 @@
 | `make gen` | 安全：域 proto pb + conf + 同步 `routes_*_gen`（**不**跑 goctl api/rpc）；`native_gen` 应为 0 |
 | `make gen-http-routes` | 仅同步 `api/moehttp/routes_*_gen.go` |
 | `make gen-moe-proto` | 仅 `api/*/v1/*.proto` → `*.pb.go` |
-| `make gen-api` | 改 `api/defs` 后；**自动 prune** 删除与 `admin_insights_logic.go` 等合并文件重复的空壳 |
-| `make gen-rpc` | 改了 `rpc` 契约 |
+| `make gen-api` | 改 `api/defs` 后；**自动 prune** 删除与合并 logic 重复的空壳 |
+| `make gen-rpc` | 组装 message-only `rpc/moe.proto`（无 Super service） |
 | `make gen-all` | defs + rpc + proto 一起改 |
+| `make gen-moe-admin` | Admin 相关 defs 变更后 |
 | `make check` | 编译 + 核心单测 |
-| `make audit-logic-orphans` | P3：列出无 handler 引用的 `api/internal/logic` 文件 |
+| `make audit-logic-orphans` | P3：列出无 handler 引用的 logic 文件 |
+| `make grpc-smoke` | notify/chat/vip gRPC 冒烟 |
+| `make split-deploy-smoke` | 分体 api/rpc 构建 + 联调 |
 
 ## 覆盖范围
 
@@ -32,12 +35,23 @@
 
 若 `api/defs` 比 `routes.go` 新，`stale-api-hint` 会提示执行 `make gen-api`。
 
-## 目录
+## 活跃目录
 
 ```text
 scripts/gen/
-  moe-proto.sh / moe-conf.sh
-  http-routes/     → api/moehttp/routes_*_gen.go
-  api-guard.sh     # gen-api 提示
-  stale-api-hint.sh
+  moe-proto.sh / moe-conf.sh / moe-admin.sh
+  http-routes/          → api/moehttp/routes_*_gen.go
+  fs8-assemble-rpc-proto.py
+  p6_mark_defs.py       # 改 api/defs 后可选重跑 P6-C 标注
+  api-guard.sh / stale-api-hint.sh / post-gen-check.sh
+  prune-api-logic-*.sh
+scripts/tools/logic-orphan-audit/
+scripts/grpc-smoke-notify-chat-vip.sh
+scripts/split-deploy-smoke.sh
 ```
+
+## 已归档（勿日常运行）
+
+P4–P6 一次性迁移脚本 → [archive/README.md](./archive/README.md)
+
+`make remove-hybrid-gozero`、`make fs8-split-api`、`make gen-rpc-legacy` 等 target 已 **DEPRECATED**（P5-E 已执行）。

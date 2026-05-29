@@ -28,14 +28,14 @@ func (stubBridge) GetPost(context.Context, *moe.GetPostReq) (*moe.GetPostResp, e
 	return &moe.GetPostResp{}, nil
 }
 
-func TestNewSuperPort_NilBridge(t *testing.T) {
-	if NewSuperPort(context.Background(), nil) != nil {
+func TestNewMoeToolPort_NilBridge(t *testing.T) {
+	if NewMoeToolPort(context.Background(), nil) != nil {
 		t.Fatal("expected nil port for nil bridge")
 	}
 }
 
-func TestNewSuperPort_Delegates(t *testing.T) {
-	p := NewSuperPort(context.Background(), stubBridge{})
+func TestNewMoeToolPort_Delegates(t *testing.T) {
+	p := NewMoeToolPort(context.Background(), stubBridge{})
 	if p == nil {
 		t.Fatal("expected port")
 	}

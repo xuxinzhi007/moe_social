@@ -18,7 +18,6 @@ import (
 
 	userv1 "backend/api/user/v1"
 	vipv1 "backend/api/vip/v1"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -60,12 +59,7 @@ func (s *AppService) Login(ctx context.Context, in *userv1.LoginReq) (*userv1.Lo
 
 	}
 
-	return userv1.LoginRespFromMoe(&moe.LoginResp{
-
-		User: userbiz.ModelToProto(&user),
-
-		Token: token,
-	}), nil
+	return userbiz.LoginRespV1(user, token), nil
 
 }
 
@@ -81,12 +75,7 @@ func (s *AppService) Register(ctx context.Context, in *userv1.RegisterReq) (*use
 
 	}
 
-	return userv1.RegisterRespFromMoe(&moe.RegisterResp{
-
-		User: userbiz.ModelToProto(&user),
-
-		Token: token,
-	}), nil
+	return userbiz.RegisterRespV1(user, token), nil
 
 }
 
@@ -124,7 +113,7 @@ func (s *AppService) GetUserInfo(ctx context.Context, in *userv1.GetUserInfoReq)
 
 	}
 
-	return userv1.GetUserInfoRespFromMoe(&moe.GetUserInfoResp{User: userbiz.ModelToProto(&user)}), nil
+	return userbiz.UserInfoRespV1(user), nil
 
 }
 
@@ -148,7 +137,7 @@ func (s *AppService) GetUser(ctx context.Context, in *userv1.GetUserReq) (*userv
 
 	}
 
-	return userv1.GetUserRespFromMoe(&moe.GetUserResp{User: userbiz.ModelToProto(&user)}), nil
+	return userbiz.GetUserRespV1(user), nil
 
 }
 
@@ -172,14 +161,7 @@ func (s *AppService) GetUserVipStatus(ctx context.Context, in *vipv1.GetUserVipS
 
 	}
 
-	return vipv1.GetUserVipStatusRespFromMoe(&moe.GetUserVipStatusResp{
-
-		IsVip: st.IsVip,
-
-		ExpiresAt: st.ExpiresAt,
-
-		AutoRenew: st.AutoRenew,
-	}), nil
+	return userbiz.GetUserVipStatusRespV1(st), nil
 
 }
 
@@ -203,7 +185,7 @@ func (s *AppService) CheckUserVip(ctx context.Context, in *vipv1.CheckUserVipReq
 
 	}
 
-	return vipv1.CheckUserVipRespFromMoe(&moe.CheckUserVipResp{IsVip: active}), nil
+	return &vipv1.CheckUserVipResp{IsVip: active}, nil
 
 }
 
@@ -224,7 +206,7 @@ func (s *AppService) GetVipOrders(ctx context.Context, in *vipv1.GetVipOrdersReq
 
 	}
 
-	return vipv1.GetVipOrdersRespFromMoe(&moe.GetVipOrdersResp{Orders: orders, Total: total}), nil
+	return userbiz.VipOrdersRespV1(orders, total), nil
 
 }
 
@@ -245,7 +227,7 @@ func (s *AppService) GetNotifications(ctx context.Context, in *userv1.GetNotific
 
 	}
 
-	return userv1.GetNotificationsRespFromMoe(&moe.GetNotificationsResp{Notifications: items, Total: total}), nil
+	return userbiz.NotificationsRespV1(items, total), nil
 
 }
 
@@ -261,7 +243,7 @@ func (s *AppService) GetUnreadCount(ctx context.Context, in *userv1.GetUnreadCou
 
 	}
 
-	return userv1.GetUnreadCountRespFromMoe(&moe.GetUnreadCountResp{Count: count}), nil
+	return &userv1.GetUnreadCountResp{Count: count}, nil
 
 }
 
@@ -275,7 +257,7 @@ func (s *AppService) ReadNotification(ctx context.Context, in *userv1.ReadNotifi
 
 	}
 
-	return userv1.ReadNotificationRespFromMoe(&moe.ReadNotificationResp{}), nil
+	return &userv1.ReadNotificationResp{}, nil
 
 }
 
@@ -289,7 +271,7 @@ func (s *AppService) ReadAllNotifications(ctx context.Context, in *userv1.ReadAl
 
 	}
 
-	return userv1.ReadAllNotificationsRespFromMoe(&moe.ReadAllNotificationsResp{}), nil
+	return &userv1.ReadAllNotificationsResp{}, nil
 
 }
 
@@ -363,7 +345,7 @@ func (s *AppService) Follow(ctx context.Context, in *userv1.FollowUserReq) (*use
 
 	}
 
-	return userv1.FollowUserRespFromMoe(&moe.FollowUserResp{Success: true}), nil
+	return &userv1.FollowUserResp{Success: true}, nil
 
 }
 
@@ -385,7 +367,7 @@ func (s *AppService) Unfollow(ctx context.Context, in *userv1.UnfollowUserReq) (
 
 	}
 
-	return userv1.FollowUserRespFromMoe(&moe.FollowUserResp{Success: true}), nil
+	return &userv1.FollowUserResp{Success: true}, nil
 
 }
 
@@ -401,7 +383,7 @@ func (s *AppService) CheckFollow(ctx context.Context, in *userv1.CheckFollowReq)
 
 	}
 
-	return userv1.CheckFollowRespFromMoe(&moe.CheckFollowResp{IsFollowing: ok}), nil
+	return &userv1.CheckFollowResp{IsFollowing: ok}, nil
 
 }
 
@@ -461,7 +443,7 @@ func (s *AppService) GetFollowings(ctx context.Context, in *userv1.GetFollowings
 
 	resp := followListToProto(result)
 	m := userv1.GetFollowersRespToMoe(resp)
-	return userv1.GetFollowingsRespFromMoe(&moe.GetFollowingsResp{Users: m.Users, Total: m.Total}), nil
+	return userbiz.FollowingsRespV1(m.Users, m.Total), nil
 
 }
 
@@ -485,7 +467,7 @@ func (s *AppService) SendFriendRequest(ctx context.Context, in *userv1.SendFrien
 
 	}
 
-	return userv1.SendFriendRequestRespFromMoe(&moe.SendFriendRequestResp{Data: view}), nil
+	return userbiz.SendFriendRequestRespV1(view), nil
 
 }
 
@@ -509,7 +491,7 @@ func (s *AppService) ListIncomingFriendRequests(ctx context.Context, in *userv1.
 
 	}
 
-	return userv1.ListIncomingFriendRequestsRespFromMoe(&moe.ListIncomingFriendRequestsResp{Data: data}), nil
+	return userbiz.ListIncomingFriendRequestsRespV1(data), nil
 
 }
 
@@ -533,7 +515,7 @@ func (s *AppService) ListOutgoingFriendRequests(ctx context.Context, in *userv1.
 
 	}
 
-	return userv1.ListOutgoingFriendRequestsRespFromMoe(&moe.ListOutgoingFriendRequestsResp{Data: data}), nil
+	return userbiz.ListOutgoingFriendRequestsRespV1(data), nil
 
 }
 
@@ -555,7 +537,7 @@ func (s *AppService) AcceptFriendRequest(ctx context.Context, in *userv1.AcceptF
 
 	}
 
-	return userv1.AcceptFriendRequestRespFromMoe(&moe.AcceptFriendRequestResp{Ok: true}), nil
+	return &userv1.AcceptFriendRequestResp{Ok: true}, nil
 
 }
 
@@ -577,7 +559,7 @@ func (s *AppService) RejectFriendRequest(ctx context.Context, in *userv1.RejectF
 
 	}
 
-	return userv1.RejectFriendRequestRespFromMoe(&moe.RejectFriendRequestResp{Ok: true}), nil
+	return &userv1.RejectFriendRequestResp{Ok: true}, nil
 
 }
 
@@ -601,7 +583,7 @@ func (s *AppService) ListFriends(ctx context.Context, in *userv1.ListFriendsReq)
 
 	}
 
-	return userv1.ListFriendsRespFromMoe(&moe.ListFriendsResp{Users: users}), nil
+	return userbiz.ListFriendsRespV1(users), nil
 
 }
 
@@ -633,18 +615,10 @@ func (s *AppService) GetFriendRelation(ctx context.Context, in *userv1.GetFriend
 
 	}
 
-	return userv1.GetFriendRelationRespFromMoe(&moe.GetFriendRelationResp{Relation: rel}), nil
+	return userbiz.GetFriendRelationRespV1(rel), nil
 
 }
 
 func followListToProto(result userbiz.FollowListResult) *userv1.GetFollowersResp {
-	users := make([]*moe.User, 0, len(result.Users))
-	for i := range result.Users {
-		u := result.Users[i]
-		users = append(users, userbiz.ModelToProto(&u))
-	}
-	return userv1.GetFollowersRespFromMoe(&moe.GetFollowersResp{
-		Users: users,
-		Total: int32(result.Total),
-	})
+	return userbiz.FollowersRespV1(result)
 }

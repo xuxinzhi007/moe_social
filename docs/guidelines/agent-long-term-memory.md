@@ -43,6 +43,8 @@
 | [AGENTS.md](../../AGENTS.md) | 仓库入口；链接本体系 |
 | [.cursor/LESSONS.md](../../.cursor/LESSONS.md) | **唯一**「重复踩坑」清单 |
 | [.cursor/rules/agent-memory.mdc](../../.cursor/rules/agent-memory.mdc) | 启动读 LESSONS、结束输出 Session 摘要 |
+| [.cursor/rules/compound-engineering.mdc](../../.cursor/rules/compound-engineering.mdc) | CE 大任务工作流（Agent 按需自决） |
+| [compound-engineering.md](./compound-engineering.md) | CE 斜杠命令与产出目录 |
 | [sessions/_TEMPLATE.md](./sessions/_TEMPLATE.md) | Session 复盘模板 |
 | [sessions/](./sessions/) | 按主题归档的历史会话 |
 

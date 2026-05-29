@@ -7,7 +7,6 @@ import (
 	notifyv1 "backend/api/notify/v1"
 	notifybiz "backend/internal/biz/notify"
 	notifydata "backend/internal/data/notify"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -57,14 +56,6 @@ func (s *AppService) ReadAllNotifications(ctx context.Context, in *notifyv1.Read
 		return nil, err
 	}
 	return &notifyv1.ReadAllNotificationsReply{}, nil
-}
-
-// CreateNotification 写入通知（管理/内部；暂保留 moe 入参）。
-func (s *AppService) CreateNotification(ctx context.Context, in *moe.CreateNotificationReq) (*moe.CreateNotificationResp, error) {
-	if err := notifybiz.CreateInbox(ctx, s.store, in); err != nil {
-		return nil, err
-	}
-	return &moe.CreateNotificationResp{}, nil
 }
 
 // Broadcast 全员广播。

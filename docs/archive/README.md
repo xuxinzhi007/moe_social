@@ -67,6 +67,10 @@
 
 见 [backend/README.md](./backend/README.md)（实现状态清单、API 层调整完成记录等）。
 
+### trae/ — Trae IDE 配置快照（2026-05-29）
+
+自仓库根 `.trae/` 迁入；日常以 Cursor `.cursor/rules` 为准。见 [trae/README.md](./trae/README.md)。
+
 ---
 
 返回 [文档首页](../README.md)

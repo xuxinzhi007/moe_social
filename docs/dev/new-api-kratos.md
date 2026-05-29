@@ -25,10 +25,11 @@ backend/
   internal/platform/moesocial/ # 启动、装配 deps
 
   ── 存量（勿为新接口扩展）──
-  api/defs/*.api               # goctl 巨石分片，仅维护老接口
-  api/internal/handler/        # goctl；仅 hybrid 构建
-  api/internal/logic/          # 已退役
-  rpc/                         # 域 proto + MoeAdmin bootstrap（无 Super service）
+  api/defs/*.api               # goctl 契约分片（仅维护老接口）
+  api/internal/types/          # goctl HTTP types（compat 只读）
+  api/internal/handler/doc/    # Swagger
+  api/internal/logic/          # 已退役（.gitkeep）
+  rpc/pb/moe/                  # 冻结 message（bridge 过渡）
 ```
 
 **请求路径（生产）**：
@@ -39,7 +40,7 @@ Client → :8888  Kratos HTTP (api/moehttp)
               → internal/biz/<domain>
 ```
 
-存量路由均在 `api/moehttp/*_compat.go` 注册（`routes_native_gen` 已为 **0**）；**已全部**直挂 `internal/service` / `internal/biz`（P3 完成，logic **0** 文件）。Hybrid 回滚见 [kratos-p4-post-migration.md § P4-H](./kratos-p4-post-migration.md#p4-h--go-zero-壳)。
+存量路由均在 `api/moehttp/*_compat.go` 注册；P3 已完成直挂 service/biz（logic **0** 文件）。
 
 ---
 
@@ -152,6 +153,6 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1&page_size=10"
 
 ## 6. 存量接口维护
 
-老接口仍在 `api/defs` + `api/internal/handler`（Hybrid）：改契约用 **`make gen-api`**（会跑 `tag-hybrid-routes.sh`）；业务逻辑在 `internal/biz` + `internal/service`。**不要**与上表新接口流程混在同一 PR 里新增 defs 路由。
+老接口契约在 `api/defs`（**勿新增路由**）。若必须改 defs：用 **`make gen-api`**（自动 prune logic + `gen-http-routes`）；业务在 `internal/biz` + `internal/service` + `api/moehttp/*_compat`。勿与上表新接口流程混在同一 PR。
 
 迁移进度：`GET http://127.0.0.1:8888/migration`。

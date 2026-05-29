@@ -19,7 +19,7 @@ Match existing structure before adding new abstractions. Use `snake_case.dart` f
 
 ## Kratos migration status
 
-**Current / next snapshot**: [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) · P3 routes: [docs/dev/kratos-legacy-api-migration.md](docs/dev/kratos-legacy-api-migration.md) §0 · **P6 契约 (~80%)**: [docs/dev/kratos-p6-defs-to-proto.md](docs/dev/kratos-p6-defs-to-proto.md).
+**Current / next snapshot**: [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) · P3 routes: [docs/dev/kratos-legacy-api-migration.md](docs/dev/kratos-legacy-api-migration.md) §0 · **P6 契约**: [docs/dev/kratos-p6-defs-to-proto.md](docs/dev/kratos-p6-defs-to-proto.md).
 
 ## Large tasks (multi-agent)
 
@@ -31,6 +31,7 @@ Cross-session knowledge uses layered docs (do not bloat this file):
 - **Playbook**: [docs/guidelines/agent-long-term-memory.md](docs/guidelines/agent-long-term-memory.md) — layers L0–L3, session close, model-upgrade compression.
 - **Session archives**: [docs/guidelines/sessions/](docs/guidelines/sessions/) — copy [_TEMPLATE.md](docs/guidelines/sessions/_TEMPLATE.md) per substantial task; merge stable facts into `docs/dev/` or `docs/product/`.
 - **Cursor rule**: `.cursor/rules/agent-memory.mdc` (LESSONS on start, session summary on close).
+- **Compound Engineering** (optional workflow): [docs/guidelines/compound-engineering.md](docs/guidelines/compound-engineering.md) · rule `.cursor/rules/compound-engineering.mdc`.
 
 ## Retrospective Rules
 Two recurring failure modes are overlong generic docs and stopping at code changes without verification. Avoid both:

@@ -161,7 +161,7 @@ func httpNativeHandlerPercent() int {
 }
 
 func totalHTTPRoutes() int {
-	n := moehttp.TotalGoZeroRoutes()
+	n := moehttp.TotalHTTPRoutes()
 	if n <= 0 {
 		return 268
 	}

@@ -24,7 +24,7 @@ type AdminService struct {
 	db              *gorm.DB
 	store           moebiz.MoeStore
 	runtimeDeps     RuntimeDepsFactory
-	superPort       SuperPortFactory
+	moeToolPort     MoeToolPortFactory
 	brainDeps       BrainDepsFactory
 	brainRefineDeps BrainRefineDepsFactory
 	toolsDeps       ToolsDepsFactory
@@ -40,9 +40,9 @@ func (s *AdminService) AttachRuntimeDeps(fn RuntimeDepsFactory) {
 	s.runtimeDeps = fn
 }
 
-// AttachSuperPort 注入 Super RPC 端口（RPC 启动时调用一次）。
-func (s *AdminService) AttachSuperPort(fn SuperPortFactory) {
-	s.superPort = fn
+// AttachMoeToolPort 注入 Moe 工具 RPC 端口（RPC 启动时调用一次）。
+func (s *AdminService) AttachMoeToolPort(fn MoeToolPortFactory) {
+	s.moeToolPort = fn
 }
 
 // AttachBrainDeps 注入 brain.Deps。
@@ -71,11 +71,11 @@ func (s *AdminService) requireRuntimeDeps(ctx context.Context) (runtime.Deps, er
 	return deps, nil
 }
 
-func (s *AdminService) requireSuperPort(ctx context.Context) (port.SuperPort, error) {
-	if s.superPort == nil {
-		return nil, errors.New("moe admin: super port 未注入")
+func (s *AdminService) requireMoeToolPort(ctx context.Context) (port.MoeToolPort, error) {
+	if s.moeToolPort == nil {
+		return nil, errors.New("moe admin: moe tool port 未注入")
 	}
-	return s.superPort(ctx), nil
+	return s.moeToolPort(ctx), nil
 }
 
 func (s *AdminService) requireBrainDeps(ctx context.Context) (brain.Deps, error) {
@@ -164,7 +164,7 @@ func (s *AdminService) RunAgentOnce(ctx context.Context, agentKey string, async 
 
 // GetBrainSnapshot 加载大脑观测快照。
 func (s *AdminService) GetBrainSnapshot(ctx context.Context, agentKey string) (*brain.Snapshot, error) {
-	rpc, err := s.requireSuperPort(ctx)
+	rpc, err := s.requireMoeToolPort(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (s *AdminService) GetBrainSnapshot(ctx context.Context, agentKey string) (*
 
 // UpdateBrainPolicy 更新标签策略并返回最新快照。
 func (s *AdminService) UpdateBrainPolicy(ctx context.Context, agentKey string, forbiddenTags, preferredTags []string) (*brain.Snapshot, error) {
-	rpc, err := s.requireSuperPort(ctx)
+	rpc, err := s.requireMoeToolPort(ctx)
 	if err != nil {
 		return nil, err
 	}

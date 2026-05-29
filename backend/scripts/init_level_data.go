@@ -1,5 +1,8 @@
 package scripts
 
+// DEPRECATED (2026-05-29): 生产请用 utils.BootstrapLevelData / Admin 配置。
+// 本文件仅作 CLI 参考；逻辑已部分迁入 utils/bootstrap_levels.go。
+
 import (
 	"backend/model"
 	"backend/utils"

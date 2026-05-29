@@ -1,4 +1,4 @@
-// Package moekratos 纯 Kratos 试点：与 go-zero 并行，固定开发端口 19031/19032。
+// Package moekratos 可选 Kratos 试点（开发端口 19031/19032）；生产用 make moe-social。
 package moekratos
 
 import (

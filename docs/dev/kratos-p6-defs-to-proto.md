@@ -118,7 +118,7 @@ rpcResp, err := app.Login(ctx, userv1.LoginReqFromMoe(&moe.LoginReq{
 rpcResp, err := svcCtx.VipAdmin.AdminGetVipPlan(ctx, &adminv1.AdminGetVipPlanReq{PlanId: req.PlanId})
 ```
 
-**脚本**：`backend/scripts/gen/p6_extract_domain_proto.py` · `p6_migrate_service_file.py` · `p6_wrap_gateway.py` · **`p6_mark_defs.py`**
+**脚本（P6 已完成）**：批量工具已迁至 `backend/scripts/archive/p6/`；日常仅需 **`scripts/gen/p6_mark_defs.py`**（改 `api/defs` 后重跑 P6-C 标注）。
 
 ---
 

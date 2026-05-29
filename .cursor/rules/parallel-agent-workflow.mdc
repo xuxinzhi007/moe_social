@@ -49,18 +49,18 @@ cd ../moe_social-feat-user  && # 仅改 user_* compat 等
 - **一域一分支一 worktree**；合并顺序：先合并底层/无依赖域，再合并有交叉的域。
 - 合并后：`git worktree remove <path>`，删除已合并分支。
 
-## 与本仓库结合的拆分示例（Kratos compat 迁移）
+## 与本仓库结合的拆分示例（大任务通用）
 
-**文档 SSOT**：`docs/dev/kratos-legacy-api-migration.md` §0（当前 56/263 直挂 App → 目标 263/263）。
+**状态板**：`docs/dev/kratos-migration-status.md`（P0–P6 ✅；Next：分体部署）。
 
-| 子代理 | 范围 | 路由约计 | 避免触碰 |
-|--------|------|----------|----------|
-| A | `admin_service_compat` → `AdminApp` | 55 | `user_*`、`platform_*` |
-| B | `user_compat` / `user_memory_compat` → App | 57 | `admin_service_*` |
-| C | `ai_compat` / `chat_compat`（私信） | 23 | `admin_*`、B 轨文件 |
-| D | `platform_compat` → `LLMApp` 写路径 | 17 | A/B 轨文件 |
+| 子代理 | 范围 | 避免触碰 |
+|--------|------|----------|
+| A | `admin_*_compat` / `moe-admin` | `user_*`、`platform_*` |
+| B | `user_compat` / Flutter `lib/pages` | `admin_*` |
+| C | `ai_compat` / `chat_compat` | `admin_*`、B 轨 |
+| D | `platform_compat` / LLM 配置 | A/B 轨 |
 
-共享文件（`register_all.go`、`route_stats.go`、§0 状态快照）由 **父代理最后单点修改**。
+共享文件（`register_all.go`、`route_stats.go`）由 **父代理最后单点修改**。
 
 ## 纪律
 

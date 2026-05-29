@@ -3,8 +3,8 @@ package moewiring
 import (
 	"context"
 
-	moebiz "backend/internal/biz/moe"
 	"backend/internal/adapter/moeconfig"
+	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
@@ -12,24 +12,17 @@ import (
 	"backend/pkg/moe/port"
 	"backend/pkg/moe/runtime"
 	"backend/pkg/moe/tools"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库）。
-// superClient 与 appPort 二选一：P5 单进程用 appPort（Post/LLM App），分体部署用 Super gRPC。
-func NewAPIAdminService(superClient moe.SuperClient, appPort port.SuperPort) (*moeadmin.AdminService, error) {
-	var sp port.SuperPort
-	switch {
-	case appPort != nil:
-		sp = appPort
-	case superClient != nil:
-		sp = port.GRPCAdapter{Client: superClient}
-	default:
+func NewAPIAdminService(appPort port.MoeToolPort) (*moeadmin.AdminService, error) {
+	if appPort == nil {
 		return nil, nil
 	}
+	sp := appPort
 	if err := utils.EnsureDB(); err != nil {
 		return nil, err
 	}
@@ -40,7 +33,7 @@ func NewAPIAdminService(superClient moe.SuperClient, appPort port.SuperPort) (*m
 	admin := moeadmin.NewAdmin(db)
 	inf := moeconfig.InferenceFromViper()
 
-	admin.AttachSuperPort(func(context.Context) port.SuperPort { return sp })
+	admin.AttachMoeToolPort(func(context.Context) port.MoeToolPort { return sp })
 	admin.AttachRuntimeDeps(func(context.Context) runtime.Deps {
 		return runtime.Deps{
 			DB: db, RPC: sp, Inference: inf,

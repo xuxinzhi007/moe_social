@@ -31,7 +31,7 @@ type GenerationMeta struct {
 }
 
 // BuildPostMemoryBlock 合并用户记忆库与近期自传，注入发帖 LLM 的【Bot 记忆】段。
-func BuildPostMemoryBlock(ctx context.Context, db *gorm.DB, rpc port.SuperPort, rt model.MoeAgentRuntime) string {
+func BuildPostMemoryBlock(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, rt model.MoeAgentRuntime) string {
 	var sections []string
 	if rpc != nil && rt.BotUserID > 0 {
 		if block := fetchSyncedMemories(ctx, rpc, rt.BotUserID); block != "" {
@@ -51,7 +51,7 @@ func BuildPostMemoryBlock(ctx context.Context, db *gorm.DB, rpc port.SuperPort, 
 }
 
 // BuildGenerationMeta 供管理端说明记忆是否进入发帖链路。
-func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.SuperPort, rt model.MoeAgentRuntime, syncedMemoryCount int) GenerationMeta {
+func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, rt model.MoeAgentRuntime, syncedMemoryCount int) GenerationMeta {
 	block := BuildPostMemoryBlock(ctx, db, rpc, rt)
 	lines := 0
 	if block != "" {
@@ -105,7 +105,7 @@ func defaultContextLimit() int {
 	return 8192
 }
 
-func fetchSyncedMemories(ctx context.Context, rpc port.SuperPort, botUserID uint) string {
+func fetchSyncedMemories(ctx context.Context, rpc port.MoeToolPort, botUserID uint) string {
 	if rpc == nil || botUserID == 0 {
 		return ""
 	}

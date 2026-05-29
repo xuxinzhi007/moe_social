@@ -1,5 +1,7 @@
 package scripts
 
+// DEPRECATED (2026-05-29): 请用 utils.SeedAchievementDefinitions / Admin 配置。
+
 import (
 	"backend/utils"
 )

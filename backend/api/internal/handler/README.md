@@ -1,19 +1,10 @@
-# api/internal/handler — 生产壳（非业务路径）
+# api/internal/handler — 生产壳
 
-> **P5-E 后**：hybrid go-zero handler 已删除；生产 HTTP 仅 `api/moehttp/*_compat.go`。
+> HTTP 业务在 `api/moehttp/*_compat.go`；本目录仅保留 Swagger。
 
-## 生产（`make moe-social`）
+| 文件 | 作用 |
+|------|------|
+| `doc/` | `/swagger` UI 与 `doc.json` |
+| `routes_stub.go` | 空 `RegisterHandlers`（兼容 goctl 生成引用） |
 
-- `routes_stub.go`（`//go:build !hybrid`）空实现 `RegisterHandlers`
-- 对外 HTTP：`api/moehttp/*_compat.go`（263 条 + swagger bridge 2 条）
-- Swagger：`api/internal/handler/doc/`（经 `routes_bridge_gen.go` 注册）
-
-## 路由生成 SSOT
-
-- 历史 goctl 路由表归档：`scripts/gen/http-routes/fixtures/routes.go`
-- 生成命令：`make gen-http-routes`
-
-## 勿再扩展
-
-- 新接口见 `docs/dev/new-api-kratos.md`（域 proto + `moehttp` compat）
-- `make gen-legacy-goctl` 仍会 goctl 生成 types/handler，但 **无** hybrid 回滚路径
+路由表归档：`scripts/gen/http-routes/fixtures/routes.go`
