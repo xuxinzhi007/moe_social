@@ -9,7 +9,7 @@
 make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080
 ```
 
-**路由进度（2026-05-27）**：proto **227** · compat **45** · bridge **3** · `/migration percent=100`
+**路由进度（2026-05-29）**：proto **254** · compat **11**（全部 intentional）· `d2_proto_http_pct` **100%** · `percent` **~80%**
 
 ---
 
@@ -34,7 +34,7 @@ internal/server/
   cors.go
   http_proto.go                      # Register*HTTPServer（19 次 / 18 域）
   http_compat.go                     # 编排 httplegacy
-  httplegacy/                        # 45 条活跃 compat
+  httplegacy/                        # 11 条 intentional compat + route_stats
   grpc.go + grpc/<domain>/           # adminapp、llm、vipplans、content…
 
 internal/platform/
@@ -58,7 +58,7 @@ NewHTTPServer
   → corsFilter + compatEnvelopeFilter + EnvelopeResponseEncoder
   → RegisterOpsHTTP          # /health、/migration
   → RegisterProtoHTTP        # 227 条 proto 路由
-  → RegisterCompatHTTP       # 45 条 compat
+  → RegisterCompatHTTP       # 11 条 intentional compat
   → RegisterBridgeHTTP       # /swagger 三件套
 ```
 
@@ -69,7 +69,7 @@ NewHTTPServer
 | 文件 | 作用 |
 |------|------|
 | `*_compat.go` | 未迁入 proto 的路由（常量见各文件 `PilotNative*CompatRoutes`） |
-| `route_stats.go` | `PilotNativeCompatRoutes` 合计 **45** |
+| `route_stats.go` | `PilotNativeCompatRoutes` 合计 **11**（intentional only） |
 | `routes_native_gen.go` | `nativeDomainRouteCount = 227` |
 | `routes_bridge_gen.go` | `bridgeRouteCount = 3` |
 | `deps.go` | `PilotDeps` |

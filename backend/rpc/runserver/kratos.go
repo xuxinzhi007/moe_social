@@ -2,7 +2,7 @@ package runserver
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"strings"
 
 	"backend/internal/platform/moewiring"
@@ -43,7 +43,7 @@ func StartKratos(opts Options) (*KratosStartResult, *debug.Monitor, error) {
 		mon = debug.StartMonitor("")
 	}
 
-	fmt.Printf("Starting kratos grpc server at %s...\n", c.ListenOn)
+	log.Printf("gRPC 监听: %s", addr)
 	return &KratosStartResult{
 		Server: grpcSrv,
 		Svc:    svcCtx,

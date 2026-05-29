@@ -10,7 +10,8 @@ import (
 	"backend/model"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/moe"
+
+	llmv1 "backend/api/llm/v1"
 
 	"gorm.io/gorm"
 )
@@ -77,7 +78,7 @@ func RecordEpisode(ctx context.Context, deps Deps, in RecordInput) error {
 
 	if deps.RPC != nil && in.BotUserID > 0 {
 		val := fmt.Sprintf("%s\n标签: %s\n质量: %d", truncate(in.Content, 200), strings.Join(tags, ", "), quality)
-		_, _ = deps.RPC.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+		_, _ = deps.RPC.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
 			UserId:     strconv.FormatUint(uint64(in.BotUserID), 10),
 			Key:        memKey,
 			Value:      val,
@@ -102,7 +103,7 @@ func DeleteEpisode(ctx context.Context, deps Deps, episodeID uint) error {
 		return err
 	}
 	if deps.RPC != nil && ep.MemoryKey != "" && ep.BotUserID > 0 {
-		_, _ = deps.RPC.DeleteUserMemory(ctx, &moe.DeleteUserMemoryReq{
+		_, _ = deps.RPC.DeleteUserMemory(ctx, &llmv1.DeleteUserMemoryReq{
 			UserId: strconv.FormatUint(uint64(ep.BotUserID), 10),
 			Key:    ep.MemoryKey,
 		})

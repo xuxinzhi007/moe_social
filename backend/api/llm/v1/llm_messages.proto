@@ -219,6 +219,44 @@ message SearchUserMemoriesResp {
   SearchUserMemoriesData data = 1;
 }
 
+message GetAiMemorySettingsReq {}
+
+message GetAiMemorySettingsResp {
+  bool auto_learn = 1;
+}
+
+message PutAiMemorySettingsReq {
+  bool auto_learn = 1;
+}
+
+message PutAiMemorySettingsResp {
+  bool auto_learn = 1;
+}
+
+message ListLlmModelsReq {}
+
+message ListLlmModelsResp {
+  repeated string models = 1;
+}
+
+message LlmLocalModelCatalogItem {
+  string id = 1;
+  string name = 2;
+  string filename = 3;
+  int64 size_bytes = 4;
+  string sha256 = 5;
+  string description = 6;
+  double parameters_b = 7;
+  bool recommended = 8;
+  string download_path = 9;
+}
+
+message ListLlmLocalModelsCatalogReq {}
+
+message ListLlmLocalModelsCatalogResp {
+  repeated LlmLocalModelCatalogItem items = 1;
+}
+
 service LlmChat {
   rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp) {
     option (google.api.http) = { post: "/api/llm/chat/turn" body: "*" };
@@ -258,5 +296,23 @@ service LlmChat {
   }
   rpc SearchUserMemories(SearchUserMemoriesReq) returns (SearchUserMemoriesResp) {
     option (google.api.http) = { get: "/api/user/{user_id}/memories/search" };
+  }
+  rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp) {
+    option (google.api.http) = { get: "/api/ai/config" };
+  }
+  rpc UpsertAiUserConfig(UpsertAiUserConfigReq) returns (UpsertAiUserConfigResp) {
+    option (google.api.http) = { put: "/api/ai/config" body: "*" };
+  }
+  rpc GetAiMemorySettings(GetAiMemorySettingsReq) returns (GetAiMemorySettingsResp) {
+    option (google.api.http) = { get: "/api/ai/memory/settings" };
+  }
+  rpc PutAiMemorySettings(PutAiMemorySettingsReq) returns (PutAiMemorySettingsResp) {
+    option (google.api.http) = { put: "/api/ai/memory/settings" body: "*" };
+  }
+  rpc ListLlmModels(ListLlmModelsReq) returns (ListLlmModelsResp) {
+    option (google.api.http) = { get: "/api/llm/models" };
+  }
+  rpc ListLlmLocalModelsCatalog(ListLlmLocalModelsCatalogReq) returns (ListLlmLocalModelsCatalogResp) {
+    option (google.api.http) = { get: "/api/llm/local-models/catalog" };
   }
 }

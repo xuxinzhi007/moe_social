@@ -3,11 +3,11 @@ package common
 import (
 	"strconv"
 
+	giftv1 "backend/api/gift/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RpcGiftToTypes(g *moe.Gift) types.Gift {
+func RpcGiftToTypes(g *giftv1.Gift) types.Gift {
 	if g == nil {
 		return types.Gift{}
 	}

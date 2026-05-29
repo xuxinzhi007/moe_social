@@ -1,8 +1,7 @@
-// Package socialhook 供 internal/service 注册 RPC 侧副作用（成就等），避免 import rpc/internal。
 package socialhook
 
 import (
-	"backend/rpc/pb/moe"
+	"backend/pkg/achievement"
 
 	"gorm.io/gorm"
 )
@@ -18,30 +17,30 @@ type PostCreatedMeta struct {
 	HandDrawApproved bool
 }
 
-var postCreatedHook func(db *gorm.DB, meta PostCreatedMeta) []*moe.AchievementUnlock
+var postCreatedHook func(db *gorm.DB, meta PostCreatedMeta) []achievement.UnlockResult
 
 // RegisterPostCreatedAchievementHook 由 RPC bootstrap 注册成就处理。
-func RegisterPostCreatedAchievementHook(fn func(db *gorm.DB, meta PostCreatedMeta) []*moe.AchievementUnlock) {
+func RegisterPostCreatedAchievementHook(fn func(db *gorm.DB, meta PostCreatedMeta) []achievement.UnlockResult) {
 	postCreatedHook = fn
 }
 
 // ApplyPostCreatedAchievements 发帖后触发成就（未注册时返回 nil）。
-func ApplyPostCreatedAchievements(db *gorm.DB, meta PostCreatedMeta) []*moe.AchievementUnlock {
+func ApplyPostCreatedAchievements(db *gorm.DB, meta PostCreatedMeta) []achievement.UnlockResult {
 	if postCreatedHook == nil {
 		return nil
 	}
 	return postCreatedHook(db, meta)
 }
 
-var commentCreatedHook func(db *gorm.DB, userID uint) []*moe.AchievementUnlock
+var commentCreatedHook func(db *gorm.DB, userID uint) []achievement.UnlockResult
 
 // RegisterCommentCreatedAchievementHook 由 RPC bootstrap 注册成就处理。
-func RegisterCommentCreatedAchievementHook(fn func(db *gorm.DB, userID uint) []*moe.AchievementUnlock) {
+func RegisterCommentCreatedAchievementHook(fn func(db *gorm.DB, userID uint) []achievement.UnlockResult) {
 	commentCreatedHook = fn
 }
 
 // ApplyCommentCreatedAchievements 评论后触发成就（未注册时返回 nil）。
-func ApplyCommentCreatedAchievements(db *gorm.DB, userID uint) []*moe.AchievementUnlock {
+func ApplyCommentCreatedAchievements(db *gorm.DB, userID uint) []achievement.UnlockResult {
 	if commentCreatedHook == nil {
 		return nil
 	}
@@ -75,15 +74,15 @@ type GiftSentMeta struct {
 	GiftValue float64
 }
 
-var giftSentHook func(db *gorm.DB, meta GiftSentMeta) []*moe.AchievementUnlock
+var giftSentHook func(db *gorm.DB, meta GiftSentMeta) []achievement.UnlockResult
 
 // RegisterGiftSentAchievementHook 由 RPC bootstrap 注册成就处理。
-func RegisterGiftSentAchievementHook(fn func(db *gorm.DB, meta GiftSentMeta) []*moe.AchievementUnlock) {
+func RegisterGiftSentAchievementHook(fn func(db *gorm.DB, meta GiftSentMeta) []achievement.UnlockResult) {
 	giftSentHook = fn
 }
 
 // ApplyGiftSentAchievements 送礼后触发成就（未注册时返回 nil）。
-func ApplyGiftSentAchievements(db *gorm.DB, meta GiftSentMeta) []*moe.AchievementUnlock {
+func ApplyGiftSentAchievements(db *gorm.DB, meta GiftSentMeta) []achievement.UnlockResult {
 	if giftSentHook == nil {
 		return nil
 	}

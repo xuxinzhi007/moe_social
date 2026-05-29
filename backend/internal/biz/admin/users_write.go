@@ -5,8 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	userbiz "backend/internal/biz/user"
-	"backend/rpc/pb/moe"
+	adminv1 "backend/api/admin/v1"
 
 	"gorm.io/gorm"
 )
@@ -30,7 +29,7 @@ type UpdateUserInput struct {
 }
 
 // UpdateUser 更新 App 用户字段。
-func UpdateUser(ctx context.Context, store AdminStore, in UpdateUserInput) (*moe.User, error) {
+func UpdateUser(ctx context.Context, store AdminStore, in UpdateUserInput) (*adminv1.User, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -65,7 +64,7 @@ func UpdateUser(ctx context.Context, store AdminStore, in UpdateUserInput) (*moe
 		updates["avatar"] = strings.TrimSpace(in.Avatar)
 	}
 	if len(updates) == 0 {
-		return userbiz.ModelToProto(&user), nil
+		return userModelToAdminV1(&user), nil
 	}
 
 	if err := store.UpdateUserFields(ctx, user.ID, updates); err != nil {
@@ -75,5 +74,5 @@ func UpdateUser(ctx context.Context, store AdminStore, in UpdateUserInput) (*moe
 	if err != nil {
 		return nil, err
 	}
-	return userbiz.ModelToProto(&user), nil
+	return userModelToAdminV1(&user), nil
 }

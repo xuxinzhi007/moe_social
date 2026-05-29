@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 // UserMemoryDisplayData 面向用户展示的记忆视图。
@@ -108,7 +108,7 @@ func profileTitleFromType(memoryType string) string {
 }
 
 // BuildUserMemoryDisplay proto 记忆 → 展示 DTO。
-func BuildUserMemoryDisplay(memories []*moe.UserMemory, profiles []*moe.UserMemoryProfile) UserMemoryDisplayData {
+func BuildUserMemoryDisplay(memories []*llmv1.UserMemory, profiles []*llmv1.UserMemoryProfile) UserMemoryDisplayData {
 	items := make([]UserMemoryDisplayItem, 0, len(memories))
 	for _, m := range memories {
 		if m == nil {
@@ -158,16 +158,16 @@ func BuildUserMemoryDisplay(memories []*moe.UserMemory, profiles []*moe.UserMemo
 
 // BuildUserMemoryDisplayFromAPI 从 API types 构建（测试或聚合用，由 api 子树调用）。
 func BuildUserMemoryDisplayFromAPI(memories []UserMemoryInput, profiles []UserMemoryProfileInput) UserMemoryDisplayData {
-	rpcMem := make([]*moe.UserMemory, 0, len(memories))
+	rpcMem := make([]*llmv1.UserMemory, 0, len(memories))
 	for _, m := range memories {
-		rpcMem = append(rpcMem, &moe.UserMemory{
+		rpcMem = append(rpcMem, &llmv1.UserMemory{
 			Id: m.ID, Key: m.Key, Value: m.Value, MemoryType: m.MemoryType,
 			Source: m.Source, UpdatedAt: m.UpdatedAt,
 		})
 	}
-	rpcProf := make([]*moe.UserMemoryProfile, 0, len(profiles))
+	rpcProf := make([]*llmv1.UserMemoryProfile, 0, len(profiles))
 	for _, p := range profiles {
-		rpcProf = append(rpcProf, &moe.UserMemoryProfile{
+		rpcProf = append(rpcProf, &llmv1.UserMemoryProfile{
 			MemoryType: p.MemoryType, Summary: p.Summary, ItemCount: int32(p.ItemCount),
 		})
 	}

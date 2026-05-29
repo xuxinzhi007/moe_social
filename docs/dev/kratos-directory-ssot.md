@@ -36,7 +36,7 @@ backend/
     cors.go                         # Flutter Web CORS
     http_proto.go                   # Register*HTTPServer（19 次注册 / 18 域）
     http_compat.go                  # 编排 httplegacy compat
-    httplegacy/                     # 存量 compat（45 条活跃）
+    httplegacy/                     # intentional compat（11 条）+ route_stats + swagger bridge
     grpc/<domain>/                  # proto HTTP 薄适配（adminapp、vipplans、content…）
     grpc.go
 
@@ -107,11 +107,11 @@ protoc --proto_path=. --proto_path=./third_party \
 
 | 指标 | 数值 | 核对 |
 |------|------|------|
-| Proto HTTP 路由 | **227** | `api/**/*_http.pb.go` 中 `r.GET/POST/…` 计数 |
-| Compat 活跃路由 | **45** | `httplegacy/*_compat.go` 常量之和 |
+| Proto HTTP 路由 | **254** | `api/**/*_http.pb.go` 中 `r.GET/POST/…` 计数 |
+| Compat 活跃路由 | **11** | intentional only（OAuth/SSE/WS/multipart） |
 | Bridge | **3** | `/swagger`、`/swagger/openapi.yaml`、`/swagger/doc.json` |
-| `nativeDomainRouteCount` | **227** | `routes_native_gen.go` |
-| `PilotNativeCompatRoutes` | **45** | `route_stats.go` |
+| `nativeDomainRouteCount` | **254** | `routes_native_gen.go` |
+| `PilotNativeCompatRoutes` | **11** | `route_stats.go` |
 
 **P0/P1 已迁入 proto（compat no-op 或仅保留例外）：**
 
@@ -120,7 +120,7 @@ protoc --proto_path=. --proto_path=./third_party \
 - 记忆：`user_memory`（8）→ `LlmChat`
 - wave2：19→4（图片 multipart 静态保留）
 
-**仍走 compat（P2 / 有意保留，45 条）：** `platform`（17）· `community`（7）· `chat`（6）· `ai`（4）· `wave2` 图片（4）· `user` OAuth（2）· `llm_read`（2）· `checkin`（2）· `admin_legacy` SSE（1）。详见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
+**仍走 compat（intentional，11 条）：** OAuth（2）· SSE（1）· WebSocket（4）· 图片 multipart（4）。详见 [kratos-migration-status.md](./kratos-migration-status.md)。
 
 **响应格式（P0 ✅）：** proto 走 `http_envelope.go`；compat 经 `compat_envelope.go` 压平后与 proto 同形。Flutter `api_response.dart` 仍兼容历史 `data` 嵌套。
 
@@ -130,10 +130,16 @@ protoc --proto_path=. --proto_path=./third_party \
 - [x] `api/internal` 仅保留 handler stub + logic `.gitkeep`（hybrid 构建用）
 - [ ] 物理删除 `api/internal/handler`（待 hybrid 构建标签退役）
 
-### D4 — 归零
+### D4 — httplegacy 死代码清库 ✅ Phase-0 + Phase-2（2026-05-29）
 
-- [ ] 删 `httplegacy/`、`http_compat.go`
-- [ ] `rpc/pb/moe` runtime 零引用
+- [x] 删除 zero-route `*_compat.go` / convert / `admin_legacy_crud_handlers`（26 文件，~4.7k LOC）
+- [x] `httplegacy` 零 `rpc/pb/moe` runtime import
+- [x] `http_compat.go` 仅注册 intentional transport
+- [x] `internal/apilegacy/*gw` 退役（15 包删除；`chatdelivery` + in-process `llm` gateway 替代）
+- [x] `internal/biz` 内 `rpc/pb/moe` 引用归零（Phase-2）
+- [x] `internal/apilegacy` 运行时 `rpc/pb/moe` 引用归零（Phase-2；`api/*/v1/moe_bridge*.go` 已删）
+- [x] 删除 `api/*/v1/moe_bridge*.go` 与域 `grpc/*/convert.go`（Phase-3）
+- [x] `MoeToolPort` / `pkg/moe` 直用域 `*v1`（Phase-3）；`make moe-social` 不链接 `rpc/pb/moe`
 
 **现存问题清单** → [kratos-architecture-audit.md](./kratos-architecture-audit.md) §4
 

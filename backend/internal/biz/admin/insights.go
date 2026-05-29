@@ -4,20 +4,20 @@ import (
 	"context"
 	"time"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
 	"backend/pkg/calendar"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // GrowthStats 管理台成长统计。
-func GrowthStats(ctx context.Context, store AdminStore) (*moe.AdminGrowthStats, error) {
+func GrowthStats(ctx context.Context, store AdminStore) (*adminv1.AdminGrowthStats, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	stats := &moe.AdminGrowthStats{}
+	stats := &adminv1.AdminGrowthStats{}
 
 	count := func(model any, dest *int32) error {
 		n, err := store.CountModel(ctx, model)
@@ -61,13 +61,13 @@ func GrowthStats(ctx context.Context, store AdminStore) (*moe.AdminGrowthStats, 
 }
 
 // SchemaCatalog 数据目录与行数统计。
-func SchemaCatalog(ctx context.Context, store AdminStore) (*moe.AdminGetSchemaCatalogResp, error) {
+func SchemaCatalog(ctx context.Context, store AdminStore) (*adminv1.AdminGetSchemaCatalogResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	catalog := utils.AdminSchemaCatalog()
-	items := make([]*moe.AdminSchemaTableItem, 0, len(catalog))
-	summary := &moe.AdminSchemaCatalogSummary{TotalTables: int32(len(catalog))}
+	items := make([]*adminv1.AdminSchemaTableItem, 0, len(catalog))
+	summary := &adminv1.AdminSchemaCatalogSummary{TotalTables: int32(len(catalog))}
 
 	for _, entry := range catalog {
 		tableName := store.ModelTableName(entry.Model)
@@ -84,7 +84,7 @@ func SchemaCatalog(ctx context.Context, store AdminStore) (*moe.AdminGetSchemaCa
 		default:
 			summary.Unmanaged++
 		}
-		items = append(items, &moe.AdminSchemaTableItem{
+		items = append(items, &adminv1.AdminSchemaTableItem{
 			Key:          entry.Key,
 			TableName:    tableName,
 			Label:        entry.Label,
@@ -97,7 +97,7 @@ func SchemaCatalog(ctx context.Context, store AdminStore) (*moe.AdminGetSchemaCa
 			Note:         entry.Note,
 		})
 	}
-	return &moe.AdminGetSchemaCatalogResp{Summary: summary, Items: items}, nil
+	return &adminv1.AdminGetSchemaCatalogResp{Summary: summary, Items: items}, nil
 }
 
 func countSchemaRows(ctx context.Context, store AdminStore, model any) int64 {

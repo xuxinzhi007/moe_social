@@ -7,7 +7,6 @@ import (
 	checkinv1 "backend/api/checkin/v1"
 	checkinbiz "backend/internal/biz/checkin"
 	checkindata "backend/internal/data/checkin"
-	"backend/pkg/achievement"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +26,7 @@ func (s *AppService) GetCheckInStatus(ctx context.Context, in *checkinv1.GetChec
 	if err != nil {
 		return nil, err
 	}
-	return &checkinv1.GetCheckInStatusReply{Status: checkinv1.CheckInStatusFromMoe(status)}, nil
+	return &checkinv1.GetCheckInStatusReply{Status: status}, nil
 }
 
 func (s *AppService) CheckIn(ctx context.Context, in *checkinv1.CheckInRequest) (*checkinv1.CheckInReply, error) {
@@ -35,13 +34,20 @@ func (s *AppService) CheckIn(ctx context.Context, in *checkinv1.CheckInRequest) 
 	if err != nil {
 		return nil, err
 	}
+	newAchievements := make([]*checkinv1.AchievementUnlock, 0, len(result.AchUnlocks))
+	for _, u := range result.AchUnlocks {
+		newAchievements = append(newAchievements, &checkinv1.AchievementUnlock{
+			BadgeId: u.BadgeID, Name: u.Name, ExpGranted: int32(u.ExpGranted),
+			LevelUp: u.LevelUp, NewLevel: int32(u.NewLevel),
+		})
+	}
 	return &checkinv1.CheckInReply{
 		ExpGained:       int32(result.ExpGained),
 		NewLevel:        int32(result.NewLevel),
 		ConsecutiveDays: int32(result.ConsecutiveDays),
 		LevelUp:         result.LevelUp,
 		SpecialReward:   result.SpecialReward,
-		NewAchievements: checkinv1.AchievementUnlocksFromMoe(achievement.UnlocksToProto(result.AchUnlocks)),
+		NewAchievements: newAchievements,
 	}, nil
 }
 
@@ -51,7 +57,7 @@ func (s *AppService) GetCheckInHistory(ctx context.Context, in *checkinv1.GetChe
 		return nil, err
 	}
 	return &checkinv1.GetCheckInHistoryReply{
-		Records: checkinv1.CheckInRecordsFromMoe(records),
+		Records: records,
 		Total:   total,
 	}, nil
 }
@@ -62,7 +68,7 @@ func (s *AppService) GetExpLogs(ctx context.Context, in *checkinv1.GetExpLogsReq
 		return nil, err
 	}
 	return &checkinv1.GetExpLogsReply{
-		Logs:  checkinv1.ExpLogRecordsFromMoe(logs),
+		Logs:  logs,
 		Total: total,
 	}, nil
 }
@@ -72,5 +78,5 @@ func (s *AppService) GetUserLevel(ctx context.Context, in *checkinv1.GetUserLeve
 	if err != nil {
 		return nil, err
 	}
-	return &checkinv1.GetUserLevelReply{LevelInfo: checkinv1.UserLevelInfoFromMoe(info)}, nil
+	return &checkinv1.GetUserLevelReply{LevelInfo: info}, nil
 }

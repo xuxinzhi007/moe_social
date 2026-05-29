@@ -1,18 +1,126 @@
 package adminbiz
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
-func adminAccountToProto(row model.AdminAccount) *moe.AdminAccountItem {
-	item := &moe.AdminAccountItem{
+func userModelToAdminV1(user *model.User) *adminv1.User {
+	if user == nil {
+		return nil
+	}
+	vipEndAt := ""
+	if user.VipEndAt != nil {
+		vipEndAt = user.VipEndAt.Format("2006-01-02 15:04:05")
+	}
+	bday := ""
+	if user.Birthday != nil {
+		bday = user.Birthday.Format("2006-01-02")
+	}
+	return &adminv1.User{
+		Id:                     strconv.Itoa(int(user.ID)),
+		Username:               user.Username,
+		Email:                  user.Email,
+		Avatar:                 user.Avatar,
+		Signature:              user.Signature,
+		Gender:                 user.Gender,
+		Birthday:               bday,
+		CreatedAt:              user.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:              user.UpdatedAt.Format("2006-01-02 15:04:05"),
+		IsVip:                  user.IsVip,
+		VipExpiresAt:           vipEndAt,
+		AutoRenew:              user.AutoRenew,
+		Balance:                float32(user.Balance),
+		Inventory:              user.Inventory,
+		EquippedFrameId:        user.EquippedFrameId,
+		MoeNo:                  user.MoeNo,
+		GiftCharm:              int32(user.GiftCharm),
+		ReceivedGiftValue:      user.ReceivedGiftValue,
+		DisplayUserId:          user.MoeNo,
+		MessageRetentionChoice: int32(user.MessageRetentionChoice),
+		FeishuEmail:            user.FeishuEmail,
+		FeishuName:             user.FeishuName,
+		FeishuBound:            user.FeishuOpenID != nil && strings.TrimSpace(*user.FeishuOpenID) != "",
+		Role:                   user.Role,
+		WechatNickname:         user.WechatNickname,
+		WechatBound:            user.WechatOpenID != nil && strings.TrimSpace(*user.WechatOpenID) != "",
+		IsBot:                  user.IsBot,
+		BotAgentKey:            strings.TrimSpace(user.BotAgentKey),
+	}
+}
+
+func giftModelToAdminV1(gift model.Gift, ownedQty int32) *adminv1.Gift {
+	return &adminv1.Gift{
+		Id:            uint64(gift.ID),
+		Name:          gift.Name,
+		Price:         int32(gift.Price),
+		Icon:          gift.Icon,
+		Description:   gift.Description,
+		CreatedAt:     gift.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:     gift.UpdatedAt.Format("2006-01-02 15:04:05"),
+		OwnedQuantity: ownedQty,
+		Category:      gift.Category,
+		SortOrder:     int32(gift.SortOrder),
+	}
+}
+
+func postModelToAdminV1(post model.Post, user model.User, isLiked bool) *adminv1.Post {
+	var images []string
+	if post.Images != "" {
+		_ = json.Unmarshal([]byte(post.Images), &images)
+	}
+	username := "未知用户"
+	avatar := "https://picsum.photos/150"
+	if user.Username != "" {
+		username = user.Username
+	} else if user.Email != "" {
+		username = user.Email
+	}
+	if user.Avatar != "" {
+		avatar = user.Avatar
+	}
+	moderationStatus := strings.TrimSpace(post.ModerationStatus)
+	if moderationStatus == "" {
+		moderationStatus = "ok"
+	}
+	topicTags := make([]*adminv1.TopicTag, 0, len(post.TopicTags))
+	for _, tag := range post.TopicTags {
+		topicTags = append(topicTags, &adminv1.TopicTag{
+			Id:        strconv.FormatUint(uint64(tag.ID), 10),
+			Name:      tag.Name,
+			Color:     tag.Color,
+			CreatedAt: tag.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return &adminv1.Post{
+		Id:                strconv.FormatUint(uint64(post.ID), 10),
+		UserId:            strconv.FormatUint(uint64(post.UserID), 10),
+		UserName:          username,
+		UserAvatar:        avatar,
+		Content:           post.Content,
+		Images:            images,
+		TopicTags:         topicTags,
+		Likes:             int32(post.Likes),
+		Comments:          int32(post.Comments),
+		IsLiked:           isLiked,
+		CreatedAt:         post.CreatedAt.Format("2006-01-02 15:04:05"),
+		HandDrawCard:      post.HandDrawCard,
+		HandDrawThumbUrl:  post.HandDrawThumbURL,
+		ModerationStatus:  moderationStatus,
+		AuthorIsBot:       user.IsBot,
+		AuthorBotAgentKey: strings.TrimSpace(user.BotAgentKey),
+	}
+}
+
+func adminAccountToProto(row model.AdminAccount) *adminv1.AdminAccountItem {
+	item := &adminv1.AdminAccountItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Username:  row.Username,
 		Role:      row.Role,
@@ -24,8 +132,8 @@ func adminAccountToProto(row model.AdminAccount) *moe.AdminAccountItem {
 	return item
 }
 
-func levelConfigToProto(row model.LevelConfig) *moe.AdminLevelConfigItem {
-	return &moe.AdminLevelConfigItem{
+func levelConfigToProto(row model.LevelConfig) *adminv1.AdminLevelConfigItem {
+	return &adminv1.AdminLevelConfigItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		Level:      int32(row.Level),
 		Title:      row.Title,
@@ -36,8 +144,8 @@ func levelConfigToProto(row model.LevelConfig) *moe.AdminLevelConfigItem {
 	}
 }
 
-func checkInRewardToProto(row model.CheckInReward) *moe.AdminCheckInRewardItem {
-	return &moe.AdminCheckInRewardItem{
+func checkInRewardToProto(row model.CheckInReward) *adminv1.AdminCheckInRewardItem {
+	return &adminv1.AdminCheckInRewardItem{
 		Id:              strconv.FormatUint(uint64(row.ID), 10),
 		ConsecutiveDays: int32(row.ConsecutiveDays),
 		ExpReward:       int32(row.ExpReward),
@@ -54,8 +162,8 @@ func countWhere(db *gorm.DB, model interface{}, column string, uid uint) int32 {
 	return int32(n)
 }
 
-func memoryToAdminProto(row model.UserMemory, username string) *moe.AdminMemoryItem {
-	return &moe.AdminMemoryItem{
+func memoryToAdminProto(row model.UserMemory, username string) *adminv1.AdminMemoryItem {
+	return &adminv1.AdminMemoryItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		UserId:     strconv.FormatUint(uint64(row.UserID), 10),
 		Username:   username,

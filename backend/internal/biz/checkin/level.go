@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
+	checkinv1 "backend/api/checkin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetUserLevel 用户等级信息。
-func GetUserLevel(ctx context.Context, store CheckInStore, userIDRaw string) (*moe.UserLevelInfo, error) {
+func GetUserLevel(ctx context.Context, store CheckInStore, userIDRaw string) (*checkinv1.UserLevelInfo, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -55,7 +55,7 @@ func GetUserLevel(ctx context.Context, store CheckInStore, userIDRaw string) (*m
 		}
 	}
 
-	return &moe.UserLevelInfo{
+	return &checkinv1.UserLevelInfo{
 		Level: int32(userLevel.Level), Experience: int32(userLevel.Experience),
 		TotalExp: int32(userLevel.TotalExp), NextLevelExp: int32(nextLevelExp),
 		LevelTitle: levelConfig.Title, BadgeUrl: levelConfig.BadgeUrl, Progress: progress,

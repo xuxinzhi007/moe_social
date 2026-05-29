@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'api_response.dart';
 import 'api_service.dart';
 
 /// 后端 LLM/记忆相关配置（与聊天 Provider 无关）。
@@ -54,8 +55,8 @@ class LlmMemoryConfigService {
           .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return;
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map || decoded['data'] is! Map) return;
-      final data = Map<String, dynamic>.from(decoded['data'] as Map);
+      if (decoded is! Map<String, dynamic>) return;
+      final data = ApiResponse.nestedPayload(decoded);
       final inference = data['llm_inference'] ?? data['ollama'];
       if (inference is Map) {
         final raw = (inference['memory_model'] as String?)?.trim() ?? '';

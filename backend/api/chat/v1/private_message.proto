@@ -93,6 +93,31 @@ message SendBatchPushNotificationReq {
 
 message SendBatchPushNotificationResp {}
 
+message GetChatOnlineReq {
+  string user_id = 1;
+}
+
+message GetChatOnlineResp {
+  bool online = 1;
+}
+
+message GetChatOnlineBatchReq {
+  string user_ids = 1;
+}
+
+message GetChatOnlineBatchResp {
+  map<string, bool> online = 1;
+}
+
+service ChatPresenceService {
+  rpc GetChatOnline(GetChatOnlineReq) returns (GetChatOnlineResp) {
+    option (google.api.http) = { get: "/api/chat/online" };
+  }
+  rpc GetChatOnlineBatch(GetChatOnlineBatchReq) returns (GetChatOnlineBatchResp) {
+    option (google.api.http) = { get: "/api/chat/online/batch" };
+  }
+}
+
 service PushNotificationService {
   rpc BroadcastPushNotification(BroadcastPushNotificationReq) returns (BroadcastPushNotificationResp) {
     option (google.api.http) = {

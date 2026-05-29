@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -16,7 +16,7 @@ import (
 )
 
 // WechatLogin 微信 OAuth 登录。
-func WechatLogin(ctx context.Context, store UserStore, in *moe.WechatLoginReq) (*moe.WechatLoginResp, error) {
+func WechatLogin(ctx context.Context, store UserStore, in *userv1.WechatLoginReq) (*userv1.WechatLoginResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -53,15 +53,15 @@ func WechatLogin(ctx context.Context, store UserStore, in *moe.WechatLoginReq) (
 	if err != nil {
 		return nil, err
 	}
-	return &moe.WechatLoginResp{
-		User:      ModelToProto(&user),
+	return &userv1.WechatLoginResp{
+		User:      ModelToUserV1(&user),
 		Token:     token,
 		IsNewUser: isNew,
 	}, nil
 }
 
 // WechatAuthorizeURL 微信授权 URL。
-func WechatAuthorizeURL(_ context.Context, in *moe.WechatAuthorizeURLReq) (*moe.WechatAuthorizeURLResp, error) {
+func WechatAuthorizeURL(_ context.Context, in *userv1.WechatAuthorizeURLReq) (*userv1.WechatAuthorizeURLResp, error) {
 	if !viper.GetBool("wechat.enabled") {
 		if !viper.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
@@ -76,7 +76,7 @@ func WechatAuthorizeURL(_ context.Context, in *moe.WechatAuthorizeURLReq) (*moe.
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	return &moe.WechatAuthorizeURLResp{AuthorizeUrl: url}, nil
+	return &userv1.WechatAuthorizeURLResp{AuthorizeUrl: url}, nil
 }
 
 func findOrCreateWechatUser(ctx context.Context, store UserStore, info utils.WechatOAuthUserInfo) (model.User, bool, error) {

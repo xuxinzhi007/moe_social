@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminTag } from '../components/AdminTag'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { boolTag, menuKindTag, menuStatusTag } from '../lib/adminLabels'
+import { unwrapListItems } from '../lib/apiResponse'
 import { DeployApiError } from '../api/deployClient'
 import { AdminTable, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
@@ -35,7 +36,9 @@ export function MenusPage() {
         setItems([])
         return
       }
-      setItems(res.data.sort((a, b) => a.sort_order - b.sort_order))
+      setItems(
+        unwrapListItems(res.data).sort((a, b) => a.sort_order - b.sort_order),
+      )
     } catch (e) {
       setError(e instanceof DeployApiError ? e.message : '加载失败')
     } finally {

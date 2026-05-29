@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
+	userv1 "backend/api/user/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListUserDevices 分页列出用户设备。
-func ListUserDevices(ctx context.Context, store UserStore, in *moe.ListUserDevicesReq) (*moe.ListUserDevicesResp, error) {
+func ListUserDevices(ctx context.Context, store UserStore, in *userv1.ListUserDevicesReq) (*userv1.ListUserDevicesResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -46,11 +46,11 @@ func ListUserDevices(ctx context.Context, store UserStore, in *moe.ListUserDevic
 		return nil, err
 	}
 
-	out := make([]*moe.UserDeviceRecord, 0, len(devices))
+	out := make([]*userv1.UserDeviceRecord, 0, len(devices))
 	for i := range devices {
 		out = append(out, userDeviceToRecord(&devices[i], in.GetUserId()))
 	}
-	return &moe.ListUserDevicesResp{
+	return &userv1.ListUserDevicesResp{
 		Devices: out,
 		Total:   total,
 		Limit:   int32(limit),
@@ -60,7 +60,7 @@ func ListUserDevices(ctx context.Context, store UserStore, in *moe.ListUserDevic
 }
 
 // SyncUserDevice 同步/更新设备信息。
-func SyncUserDevice(ctx context.Context, store UserStore, in *moe.SyncUserDeviceReq) (*moe.SyncUserDeviceResp, error) {
+func SyncUserDevice(ctx context.Context, store UserStore, in *userv1.SyncUserDeviceReq) (*userv1.SyncUserDeviceResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -135,11 +135,11 @@ func SyncUserDevice(ctx context.Context, store UserStore, in *moe.SyncUserDevice
 
 	_ = store.DeleteDeviceSyncMemories(ctx, uint(userID))
 
-	return &moe.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
+	return &userv1.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
 }
 
-func userDeviceToRecord(d *model.UserDevice, userID string) *moe.UserDeviceRecord {
-	return &moe.UserDeviceRecord{
+func userDeviceToRecord(d *model.UserDevice, userID string) *userv1.UserDeviceRecord {
+	return &userv1.UserDeviceRecord{
 		Id:          strconv.Itoa(int(d.ID)),
 		UserId:      userID,
 		DeviceId:    d.DeviceID,

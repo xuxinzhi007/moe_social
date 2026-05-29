@@ -1,11 +1,11 @@
 package common
 
 import (
+	adminv1 "backend/api/admin/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RpcAdminMemoryToTypes(item *moe.AdminMemoryItem) types.AdminMemoryItem {
+func RpcAdminMemoryToTypes(item *adminv1.AdminMemoryItem) types.AdminMemoryItem {
 	if item == nil {
 		return types.AdminMemoryItem{}
 	}
@@ -22,7 +22,7 @@ func RpcAdminMemoryToTypes(item *moe.AdminMemoryItem) types.AdminMemoryItem {
 	}
 }
 
-func RpcAdminMemoryStatsToTypes(stats *moe.AdminMemoryStats) types.AdminMemoryStats {
+func RpcAdminMemoryStatsToTypes(stats *adminv1.AdminMemoryStats) types.AdminMemoryStats {
 	if stats == nil {
 		return types.AdminMemoryStats{}
 	}

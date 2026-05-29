@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	apirun "backend/internal/platform/wiring"
-	"backend/internal/platform/kratosprogress"
 	"backend/internal/server"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -55,8 +54,6 @@ func (s *kratosPureHTTPServer) Start(ctx context.Context) error {
 		_ = s.khttp.Stop(ctx)
 		return err
 	}
-	rep := kratosprogress.Current()
-	log.Printf("moe-social: pure Kratos HTTP %s (complete %d%%, rollout %d%%)", s.addr, rep.Percent, rep.RolloutPercent)
 	return nil
 }
 

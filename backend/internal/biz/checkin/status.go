@@ -7,15 +7,15 @@ import (
 	"strings"
 	"time"
 
+	checkinv1 "backend/api/checkin/v1"
 	"backend/model"
 	"backend/pkg/achievement"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // GetStatus 返回用户签到状态。
-func GetStatus(ctx context.Context, store CheckInStore, userIDRaw string) (*moe.CheckInStatus, error) {
+func GetStatus(ctx context.Context, store CheckInStore, userIDRaw string) (*checkinv1.CheckInStatus, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -66,7 +66,7 @@ func GetStatus(ctx context.Context, store CheckInStore, userIDRaw string) (*moe.
 	}
 	nextDayReward = calcCheckInReward(ctx, store, user, nextFuture)
 
-	return &moe.CheckInStatus{
+	return &checkinv1.CheckInStatus{
 		HasCheckedToday: hasCheckedToday,
 		ConsecutiveDays: int32(consecutiveDays),
 		TodayReward:     int32(todayReward),

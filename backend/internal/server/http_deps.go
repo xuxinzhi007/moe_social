@@ -25,8 +25,9 @@ func ProtoHTTPDepsFromPilot(d httplegacy.PilotDeps) ProtoHTTPDeps {
 	out.BehaviorApp = s.BehaviorApp
 	out.AIApp = s.AIApp
 	out.LLMApp = s.LLMApp
-	if s.LLMGW != nil {
-		out.LLMMemoryGateway = s.LLMGW
+	out.MediaApp = s.MediaApp
+	if s.LLMApp != nil {
+		out.LLMMemoryGateway = s.LLMApp.MemoryGateway()
 	}
 	if s.Config.LLMInference.BaseUrl != "" {
 		out.LLMInferenceBaseURL = s.Config.LLMInference.BaseUrl

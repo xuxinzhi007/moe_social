@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	communityv1 "backend/api/community/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 func parseGroupID(raw string) (uint64, error) {
@@ -72,13 +72,13 @@ func memberStatus(ctx context.Context, store CommunityStore, groupID uint, viewe
 	return true, member.Role
 }
 
-func groupToProto(ctx context.Context, store CommunityStore, group model.Group, viewerUserID string, createdAtLayout string) *moe.Group {
+func groupToProto(ctx context.Context, store CommunityStore, group model.Group, viewerUserID string, createdAtLayout string) *communityv1.Group {
 	if createdAtLayout == "" {
 		createdAtLayout = "2006-01-02 15:04:05"
 	}
 	creator, _ := store.GetUser(ctx, group.CreatorID)
 	isJoined, userRole := memberStatus(ctx, store, group.ID, viewerUserID)
-	return &moe.Group{
+	return &communityv1.Group{
 		Id:          uint64(group.ID),
 		Name:        group.Name,
 		Description: group.Description,
@@ -95,9 +95,9 @@ func groupToProto(ctx context.Context, store CommunityStore, group model.Group, 
 	}
 }
 
-func memberToProto(ctx context.Context, store CommunityStore, member model.GroupMember) *moe.GroupMember {
+func memberToProto(ctx context.Context, store CommunityStore, member model.GroupMember) *communityv1.GroupMember {
 	user, _ := store.GetUser(ctx, member.UserID)
-	return &moe.GroupMember{
+	return &communityv1.GroupMember{
 		Id:         uint64(member.ID),
 		GroupId:    uint64(member.GroupID),
 		UserId:     uint64(member.UserID),
@@ -109,7 +109,7 @@ func memberToProto(ctx context.Context, store CommunityStore, member model.Group
 	}
 }
 
-func groupToProtoWithMember(ctx context.Context, store CommunityStore, group model.Group, member model.GroupMember) *moe.Group {
+func groupToProtoWithMember(ctx context.Context, store CommunityStore, group model.Group, member model.GroupMember) *communityv1.Group {
 	g := groupToProto(ctx, store, group, strconv.FormatUint(uint64(member.UserID), 10), "2006-01-02 15:04:05")
 	g.IsJoined = true
 	g.UserRole = member.Role

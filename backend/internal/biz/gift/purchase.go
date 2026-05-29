@@ -8,24 +8,24 @@ import (
 	"strings"
 	"time"
 
+	giftv1 "backend/api/gift/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // Purchase 购买礼物入库。
-func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty int32) (*moe.PurchaseGiftResp, error) {
+func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty int32) (*giftv1.PurchaseGiftReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := strconv.ParseUint(strings.TrimSpace(userRaw), 10, 64)
 	if err != nil || userID == 0 {
-		return &moe.PurchaseGiftResp{Success: false, Message: "invalid user id"}, nil
+		return &giftv1.PurchaseGiftReply{Success: false, Message: "invalid user id"}, nil
 	}
 	giftID, err := strconv.ParseUint(strings.TrimSpace(giftRaw), 10, 64)
 	if err != nil || giftID == 0 {
-		return &moe.PurchaseGiftResp{Success: false, Message: "invalid gift id"}, nil
+		return &giftv1.PurchaseGiftReply{Success: false, Message: "invalid gift id"}, nil
 	}
 	if qty <= 0 {
 		qty = 1
@@ -33,7 +33,7 @@ func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty
 
 	gift, err := store.GetGiftByID(ctx, uint(giftID))
 	if err != nil {
-		return &moe.PurchaseGiftResp{Success: false, Message: "gift not found"}, nil
+		return &giftv1.PurchaseGiftReply{Success: false, Message: "gift not found"}, nil
 	}
 
 	cost := float64(gift.Price) * float64(qty)
@@ -85,12 +85,12 @@ func Purchase(ctx context.Context, store GiftStore, userRaw, giftRaw string, qty
 
 	if err != nil {
 		if errors.Is(err, ErrInsufficientBal) {
-			return &moe.PurchaseGiftResp{Success: false, Message: "insufficient balance"}, nil
+			return &giftv1.PurchaseGiftReply{Success: false, Message: "insufficient balance"}, nil
 		}
-		return &moe.PurchaseGiftResp{Success: false, Message: "purchase failed: " + err.Error()}, nil
+		return &giftv1.PurchaseGiftReply{Success: false, Message: "purchase failed: " + err.Error()}, nil
 	}
 
-	return &moe.PurchaseGiftResp{
+	return &giftv1.PurchaseGiftReply{
 		Success: true, Message: "ok", NewBalance: newBal, OwnedQuantity: owned, OrderNo: orderNo,
 	}, nil
 }

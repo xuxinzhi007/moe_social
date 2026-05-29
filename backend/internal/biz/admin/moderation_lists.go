@@ -6,16 +6,15 @@ import (
 	"strconv"
 	"strings"
 
-	postbiz "backend/internal/biz/post"
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // ListFollows Admin 关注列表。
-func ListFollows(ctx context.Context, db *gorm.DB, in *moe.AdminListFollowsReq) (*moe.AdminListFollowsResp, error) {
+func ListFollows(ctx context.Context, db *gorm.DB, in *adminv1.AdminListFollowsReq) (*adminv1.AdminListFollowsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -34,7 +33,7 @@ func ListFollows(ctx context.Context, db *gorm.DB, in *moe.AdminListFollowsReq) 
 			return nil, fmt.Errorf("%w: %v", ErrListFollows, err)
 		}
 		if len(userIDs) == 0 {
-			return &moe.AdminListFollowsResp{Items: nil, Total: 0}, nil
+			return &adminv1.AdminListFollowsResp{Items: nil, Total: 0}, nil
 		}
 		q = q.Where("follower_id IN ? OR following_id IN ?", userIDs, userIDs)
 	}
@@ -49,9 +48,9 @@ func ListFollows(ctx context.Context, db *gorm.DB, in *moe.AdminListFollowsReq) 
 		return nil, fmt.Errorf("%w: %v", ErrListFollows, err)
 	}
 
-	items := make([]*moe.AdminFollowItem, 0, len(rows))
+	items := make([]*adminv1.AdminFollowItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, &moe.AdminFollowItem{
+		items = append(items, &adminv1.AdminFollowItem{
 			Id:            strconv.FormatUint(uint64(row.ID), 10),
 			FollowerId:    fmt.Sprint(row.FollowerID),
 			FollowerName:  adminUserDisplayName(db, row.FollowerID),
@@ -60,7 +59,7 @@ func ListFollows(ctx context.Context, db *gorm.DB, in *moe.AdminListFollowsReq) 
 			CreatedAt:     row.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &moe.AdminListFollowsResp{Items: items, Total: int32(total)}, nil
+	return &adminv1.AdminListFollowsResp{Items: items, Total: int32(total)}, nil
 }
 
 func followKeywordUserIDs(db *gorm.DB, kw string) ([]uint, error) {
@@ -86,7 +85,7 @@ func followKeywordUserIDs(db *gorm.DB, kw string) ([]uint, error) {
 }
 
 // ListPosts Admin 动态列表。
-func ListPosts(ctx context.Context, db *gorm.DB, in *moe.AdminListPostsReq) (*moe.AdminListPostsResp, error) {
+func ListPosts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostsReq) (*adminv1.AdminListPostsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -137,15 +136,15 @@ func ListPosts(ctx context.Context, db *gorm.DB, in *moe.AdminListPostsReq) (*mo
 		}
 	}
 
-	posts := make([]*moe.Post, len(rows))
+	posts := make([]*adminv1.Post, len(rows))
 	for i, post := range rows {
-		posts[i] = postbiz.BuildProtoPost(post, userMap[post.UserID], false)
+		posts[i] = postModelToAdminV1(post, userMap[post.UserID], false)
 	}
-	return &moe.AdminListPostsResp{Posts: posts, Total: int32(total)}, nil
+	return &adminv1.AdminListPostsResp{Posts: posts, Total: int32(total)}, nil
 }
 
 // ListComments Admin 评论列表。
-func ListComments(ctx context.Context, db *gorm.DB, in *moe.AdminListCommentsReq) (*moe.AdminListCommentsResp, error) {
+func ListComments(ctx context.Context, db *gorm.DB, in *adminv1.AdminListCommentsReq) (*adminv1.AdminListCommentsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -195,7 +194,7 @@ func ListComments(ctx context.Context, db *gorm.DB, in *moe.AdminListCommentsReq
 		}
 	}
 
-	comments := make([]*moe.Comment, 0, len(rows))
+	comments := make([]*adminv1.Comment, 0, len(rows))
 	for _, c := range rows {
 		username := "未知用户"
 		avatar := "https://picsum.photos/150"
@@ -209,7 +208,7 @@ func ListComments(ctx context.Context, db *gorm.DB, in *moe.AdminListCommentsReq
 				avatar = u.Avatar
 			}
 		}
-		comments = append(comments, &moe.Comment{
+		comments = append(comments, &adminv1.Comment{
 			Id:         strconv.FormatUint(uint64(c.ID), 10),
 			PostId:     strconv.FormatUint(uint64(c.PostID), 10),
 			UserId:     strconv.FormatUint(uint64(c.UserID), 10),
@@ -221,11 +220,11 @@ func ListComments(ctx context.Context, db *gorm.DB, in *moe.AdminListCommentsReq
 			ParentId:   strconv.FormatUint(uint64(c.ParentID), 10),
 		})
 	}
-	return &moe.AdminListCommentsResp{Comments: comments, Total: int32(total)}, nil
+	return &adminv1.AdminListCommentsResp{Comments: comments, Total: int32(total)}, nil
 }
 
 // ListGroups Admin 社区列表。
-func ListGroups(ctx context.Context, db *gorm.DB, in *moe.AdminListGroupsReq) (*moe.AdminListGroupsResp, error) {
+func ListGroups(ctx context.Context, db *gorm.DB, in *adminv1.AdminListGroupsReq) (*adminv1.AdminListGroupsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -258,10 +257,10 @@ func ListGroups(ctx context.Context, db *gorm.DB, in *moe.AdminListGroupsReq) (*
 		return nil, fmt.Errorf("%w: %v", ErrListGroups, err)
 	}
 
-	groups := make([]*moe.Group, len(rows))
+	groups := make([]*adminv1.Group, len(rows))
 	for i, group := range rows {
 		creatorName := adminUserDisplayName(db, group.CreatorID)
-		groups[i] = &moe.Group{
+		groups[i] = &adminv1.Group{
 			Id:          uint64(group.ID),
 			Name:        group.Name,
 			Description: group.Description,
@@ -275,11 +274,11 @@ func ListGroups(ctx context.Context, db *gorm.DB, in *moe.AdminListGroupsReq) (*
 			CreatedAt:   group.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
-	return &moe.AdminListGroupsResp{Groups: groups, Total: int32(total)}, nil
+	return &adminv1.AdminListGroupsResp{Groups: groups, Total: int32(total)}, nil
 }
 
 // ListFriendRequests Admin 好友申请列表。
-func ListFriendRequests(ctx context.Context, db *gorm.DB, in *moe.AdminListFriendRequestsReq) (*moe.AdminListFriendRequestsResp, error) {
+func ListFriendRequests(ctx context.Context, db *gorm.DB, in *adminv1.AdminListFriendRequestsReq) (*adminv1.AdminListFriendRequestsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -299,7 +298,7 @@ func ListFriendRequests(ctx context.Context, db *gorm.DB, in *moe.AdminListFrien
 	}
 
 	kw := strings.ToLower(strings.TrimSpace(in.GetKeyword()))
-	items := make([]*moe.AdminFriendRequestItem, 0, len(rows))
+	items := make([]*adminv1.AdminFriendRequestItem, 0, len(rows))
 	for _, row := range rows {
 		fromName := adminUserDisplayName(db, row.FromUserID)
 		toName := adminUserDisplayName(db, row.ToUserID)
@@ -312,7 +311,7 @@ func ListFriendRequests(ctx context.Context, db *gorm.DB, in *moe.AdminListFrien
 				continue
 			}
 		}
-		items = append(items, &moe.AdminFriendRequestItem{
+		items = append(items, &adminv1.AdminFriendRequestItem{
 			Id:           strconv.FormatUint(uint64(row.ID), 10),
 			FromUserId:   fmt.Sprint(row.FromUserID),
 			FromUserName: fromName,
@@ -322,11 +321,11 @@ func ListFriendRequests(ctx context.Context, db *gorm.DB, in *moe.AdminListFrien
 			CreatedAt:    row.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &moe.AdminListFriendRequestsResp{Items: items, Total: int32(total)}, nil
+	return &adminv1.AdminListFriendRequestsResp{Items: items, Total: int32(total)}, nil
 }
 
 // ListPostReports Admin 举报列表。
-func ListPostReports(ctx context.Context, db *gorm.DB, in *moe.AdminListPostReportsReq) (*moe.AdminListPostReportsResp, error) {
+func ListPostReports(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostReportsReq) (*adminv1.AdminListPostReportsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -367,9 +366,9 @@ func ListPostReports(ctx context.Context, db *gorm.DB, in *moe.AdminListPostRepo
 		}
 	}
 
-	reports := make([]*moe.AdminPostReportItem, len(rows))
+	reports := make([]*adminv1.AdminPostReportItem, len(rows))
 	for i, r := range rows {
-		reports[i] = &moe.AdminPostReportItem{
+		reports[i] = &adminv1.AdminPostReportItem{
 			Id:                 strconv.FormatUint(uint64(r.ID), 10),
 			PostId:             strconv.FormatUint(uint64(r.PostID), 10),
 			ReporterUserId:     strconv.FormatUint(uint64(r.ReporterUserID), 10),
@@ -378,11 +377,11 @@ func ListPostReports(ctx context.Context, db *gorm.DB, in *moe.AdminListPostRepo
 			PostContentPreview: postPreview[r.PostID],
 		}
 	}
-	return &moe.AdminListPostReportsResp{Reports: reports, Total: int32(total)}, nil
+	return &adminv1.AdminListPostReportsResp{Reports: reports, Total: int32(total)}, nil
 }
 
 // ListMemories Admin 记忆列表。
-func ListMemories(ctx context.Context, db *gorm.DB, in *moe.AdminListMemoriesReq) (*moe.AdminListMemoriesResp, error) {
+func ListMemories(ctx context.Context, db *gorm.DB, in *adminv1.AdminListMemoriesReq) (*adminv1.AdminListMemoriesResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -408,11 +407,11 @@ func ListMemories(ctx context.Context, db *gorm.DB, in *moe.AdminListMemoriesReq
 		return nil, fmt.Errorf("%w: %v", ErrListMemories, err)
 	}
 	names := loadMemoryUsernames(db.WithContext(ctx), rows)
-	items := make([]*moe.AdminMemoryItem, len(rows))
+	items := make([]*adminv1.AdminMemoryItem, len(rows))
 	for i, row := range rows {
 		items[i] = memoryToAdminProto(row, names[row.UserID])
 	}
-	return &moe.AdminListMemoriesResp{Items: items, Total: int32(total)}, nil
+	return &adminv1.AdminListMemoriesResp{Items: items, Total: int32(total)}, nil
 }
 
 func loadMemoryUsernames(db *gorm.DB, rows []model.UserMemory) map[uint]string {

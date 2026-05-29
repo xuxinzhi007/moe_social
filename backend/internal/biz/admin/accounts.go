@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListAccounts Admin 管理员账号列表。
-func ListAccounts(ctx context.Context, db *gorm.DB, in *moe.AdminListAccountsReq) (*moe.AdminListAccountsResp, error) {
+func ListAccounts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -32,15 +32,15 @@ func ListAccounts(ctx context.Context, db *gorm.DB, in *moe.AdminListAccountsReq
 	if err := q.Order("id ASC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrListAccounts, err)
 	}
-	items := make([]*moe.AdminAccountItem, len(rows))
+	items := make([]*adminv1.AdminAccountItem, len(rows))
 	for i, row := range rows {
 		items[i] = adminAccountToProto(row)
 	}
-	return &moe.AdminListAccountsResp{Items: items, Total: int32(total)}, nil
+	return &adminv1.AdminListAccountsResp{Items: items, Total: int32(total)}, nil
 }
 
 // CreateAccount Admin 创建管理员账号。
-func CreateAccount(ctx context.Context, db *gorm.DB, in *moe.AdminCreateAccountReq) (*moe.AdminCreateAccountResp, error) {
+func CreateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -66,11 +66,11 @@ func CreateAccount(ctx context.Context, db *gorm.DB, in *moe.AdminCreateAccountR
 		}
 		return nil, fmt.Errorf("%w: %v", ErrCreateAccount, err)
 	}
-	return &moe.AdminCreateAccountResp{Account: adminAccountToProto(row)}, nil
+	return &adminv1.AdminCreateAccountResp{Account: adminAccountToProto(row)}, nil
 }
 
 // UpdateAccount Admin 更新管理员账号。
-func UpdateAccount(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateAccountReq) (*moe.AdminUpdateAccountResp, error) {
+func UpdateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -105,11 +105,11 @@ func UpdateAccount(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateAccountR
 	if err := db.WithContext(ctx).Save(&row).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUpdateAccount, err)
 	}
-	return &moe.AdminUpdateAccountResp{Account: adminAccountToProto(row)}, nil
+	return &adminv1.AdminUpdateAccountResp{Account: adminAccountToProto(row)}, nil
 }
 
 // DeleteAccount Admin 删除管理员账号。
-func DeleteAccount(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAccountReq) (*moe.AdminDeleteAccountResp, error) {
+func DeleteAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -130,5 +130,5 @@ func DeleteAccount(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAccountR
 	if err := db.WithContext(ctx).Delete(&model.AdminAccount{}, id).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDeleteAccount, err)
 	}
-	return &moe.AdminDeleteAccountResp{}, nil
+	return &adminv1.AdminDeleteAccountResp{}, nil
 }

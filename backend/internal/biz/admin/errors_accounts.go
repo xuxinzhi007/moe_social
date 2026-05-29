@@ -3,7 +3,7 @@ package adminbiz
 import "errors"
 
 var (
-	ErrListAccounts        = errors.New("list accounts failed")
+	ErrListAccounts         = errors.New("list accounts failed")
 	ErrEmptyAccountUsername = errors.New("empty account username")
 	ErrEmptyAccountPassword = errors.New("empty account password")
 	ErrEmptyAccountRole     = errors.New("empty account role")

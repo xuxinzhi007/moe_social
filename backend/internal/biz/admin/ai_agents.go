@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	aibiz "backend/internal/biz/ai"
 	aidata "backend/internal/data/ai"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListAiAgents Admin 公开 AI 角色列表。
-func ListAiAgents(ctx context.Context, db *gorm.DB, in *moe.AdminListAiAgentsReq) (*moe.AdminListAiAgentsResp, error) {
+func ListAiAgents(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAiAgentsReq) (*adminv1.AdminListAiAgentsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -68,27 +68,27 @@ func ListAiAgents(ctx context.Context, db *gorm.DB, in *moe.AdminListAiAgentsReq
 	total := int32(len(all))
 	start := int((page - 1) * pageSize)
 	if start >= len(all) {
-		return &moe.AdminListAiAgentsResp{Items: []*moe.AdminAiAgentItem{}, Total: total}, nil
+		return &adminv1.AdminListAiAgentsResp{Items: []*adminv1.AdminAiAgentItem{}, Total: total}, nil
 	}
 	end := start + int(pageSize)
 	if end > len(all) {
 		end = len(all)
 	}
 	slice := all[start:end]
-	items := make([]*moe.AdminAiAgentItem, len(slice))
+	items := make([]*adminv1.AdminAiAgentItem, len(slice))
 	for i, row := range slice {
-		items[i] = &moe.AdminAiAgentItem{
+		items[i] = &adminv1.AdminAiAgentItem{
 			Id:          row.id,
 			OwnerUserId: fmt.Sprint(row.ownerID),
 			OwnerName:   row.ownerName,
 			PayloadJson: row.payload,
 		}
 	}
-	return &moe.AdminListAiAgentsResp{Items: items, Total: total}, nil
+	return &adminv1.AdminListAiAgentsResp{Items: items, Total: total}, nil
 }
 
 // DeleteAiAgent Admin 删除公开 AI 角色。
-func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAiAgentReq) (*moe.AdminDeleteAiAgentResp, error) {
+func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteAiAgentReq) (*adminv1.AdminDeleteAiAgentResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -97,14 +97,36 @@ func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *moe.AdminDeleteAiAgentR
 	if userID == "" || agentID == "" {
 		return nil, aibiz.ErrEmptyUserID
 	}
-	_, err := aibiz.Delete(ctx, aidata.NewStore(db), "agents", &moe.DeleteAiResourceReq{
-		UserId: userID,
-		Id:     agentID,
-	})
-	if err != nil {
+	if err := deleteAiAgentResource(ctx, aidata.NewStore(db), userID, agentID); err != nil {
 		return nil, err
 	}
-	return &moe.AdminDeleteAiAgentResp{}, nil
+	return &adminv1.AdminDeleteAiAgentResp{}, nil
+}
+
+func deleteAiAgentResource(ctx context.Context, store aibiz.AiStore, userID, agentID string) error {
+	store = store.WithContext(ctx)
+	uid, err := aibiz.ParseUserID(userID)
+	if err != nil {
+		return err
+	}
+	cfg, err := store.LoadOrCreateConfig(ctx, uid)
+	if err != nil {
+		return err
+	}
+	items := aibiz.DecodeJSONArray(cfg.AgentsJSON)
+	next := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		if fmt.Sprint(item["id"]) == agentID {
+			continue
+		}
+		next = append(next, item)
+	}
+	encoded, err := aibiz.EncodeJSONArray(next)
+	if err != nil {
+		return err
+	}
+	cfg.AgentsJSON = encoded
+	return store.SaveConfig(ctx, cfg)
 }
 
 func resolveAdminOwnerName(db *gorm.DB, userID uint) string {

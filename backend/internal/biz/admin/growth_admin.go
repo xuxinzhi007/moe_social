@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // ListLevelConfigs Admin 等级配置列表。
-func ListLevelConfigs(ctx context.Context, db *gorm.DB, _ *moe.AdminListLevelConfigsReq) (*moe.AdminListLevelConfigsResp, error) {
+func ListLevelConfigs(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListLevelConfigsReq) (*adminv1.AdminListLevelConfigsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -22,15 +22,15 @@ func ListLevelConfigs(ctx context.Context, db *gorm.DB, _ *moe.AdminListLevelCon
 	if err := db.WithContext(ctx).Order("level ASC").Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrListLevelConfigs, err)
 	}
-	items := make([]*moe.AdminLevelConfigItem, 0, len(rows))
+	items := make([]*adminv1.AdminLevelConfigItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, levelConfigToProto(row))
 	}
-	return &moe.AdminListLevelConfigsResp{Items: items}, nil
+	return &adminv1.AdminListLevelConfigsResp{Items: items}, nil
 }
 
 // UpdateLevelConfig Admin 更新等级配置。
-func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateLevelConfigReq) (*moe.AdminUpdateLevelConfigResp, error) {
+func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateLevelConfigReq) (*adminv1.AdminUpdateLevelConfigResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -62,7 +62,7 @@ func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateLeve
 		updates["badge_url"] = strings.TrimSpace(in.GetBadgeUrl())
 	}
 	if len(updates) == 0 {
-		return &moe.AdminUpdateLevelConfigResp{Item: levelConfigToProto(row)}, nil
+		return &adminv1.AdminUpdateLevelConfigResp{Item: levelConfigToProto(row)}, nil
 	}
 	if err := db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUpdateLevelConfig, err)
@@ -70,11 +70,11 @@ func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateLeve
 	if err := db.WithContext(ctx).First(&row, id).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUpdateLevelConfig, err)
 	}
-	return &moe.AdminUpdateLevelConfigResp{Item: levelConfigToProto(row)}, nil
+	return &adminv1.AdminUpdateLevelConfigResp{Item: levelConfigToProto(row)}, nil
 }
 
 // BootstrapLevels Admin 初始化等级与签到奖励。
-func BootstrapLevels(ctx context.Context, db *gorm.DB, _ *moe.AdminBootstrapLevelsReq) (*moe.AdminBootstrapLevelsResp, error) {
+func BootstrapLevels(ctx context.Context, db *gorm.DB, _ *adminv1.AdminBootstrapLevelsReq) (*adminv1.AdminBootstrapLevelsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -82,14 +82,14 @@ func BootstrapLevels(ctx context.Context, db *gorm.DB, _ *moe.AdminBootstrapLeve
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrBootstrapLevels, err)
 	}
-	return &moe.AdminBootstrapLevelsResp{
+	return &adminv1.AdminBootstrapLevelsResp{
 		LevelConfigsCreated:   levelCreated,
 		CheckInRewardsCreated: rewardCreated,
 	}, nil
 }
 
 // ListCheckInRewards Admin 签到奖励列表。
-func ListCheckInRewards(ctx context.Context, db *gorm.DB, _ *moe.AdminListCheckInRewardsReq) (*moe.AdminListCheckInRewardsResp, error) {
+func ListCheckInRewards(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -97,15 +97,15 @@ func ListCheckInRewards(ctx context.Context, db *gorm.DB, _ *moe.AdminListCheckI
 	if err := db.WithContext(ctx).Order("consecutive_days ASC").Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrListCheckInRewards, err)
 	}
-	items := make([]*moe.AdminCheckInRewardItem, 0, len(rows))
+	items := make([]*adminv1.AdminCheckInRewardItem, 0, len(rows))
 	for _, row := range rows {
 		items = append(items, checkInRewardToProto(row))
 	}
-	return &moe.AdminListCheckInRewardsResp{Items: items}, nil
+	return &adminv1.AdminListCheckInRewardsResp{Items: items}, nil
 }
 
 // UpdateCheckInReward Admin 更新签到奖励。
-func UpdateCheckInReward(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateCheckInRewardReq) (*moe.AdminUpdateCheckInRewardResp, error) {
+func UpdateCheckInReward(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -131,7 +131,7 @@ func UpdateCheckInReward(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateCh
 		updates["extra_reward"] = strings.TrimSpace(in.GetExtraReward())
 	}
 	if len(updates) == 0 {
-		return &moe.AdminUpdateCheckInRewardResp{Item: checkInRewardToProto(row)}, nil
+		return &adminv1.AdminUpdateCheckInRewardResp{Item: checkInRewardToProto(row)}, nil
 	}
 	if err := db.WithContext(ctx).Model(&row).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUpdateCheckInReward, err)
@@ -139,5 +139,5 @@ func UpdateCheckInReward(ctx context.Context, db *gorm.DB, in *moe.AdminUpdateCh
 	if err := db.WithContext(ctx).First(&row, id).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUpdateCheckInReward, err)
 	}
-	return &moe.AdminUpdateCheckInRewardResp{Item: checkInRewardToProto(row)}, nil
+	return &adminv1.AdminUpdateCheckInRewardResp{Item: checkInRewardToProto(row)}, nil
 }

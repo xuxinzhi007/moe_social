@@ -84,7 +84,6 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 			return nil, "", fmt.Errorf("kratos pure http: %w", err)
 		}
 		addr := fmt.Sprintf("0.0.0.0:%d", port)
-		log.Printf("moe-social: pure Kratos HTTP %s (no go-zero rest)", addr)
 		return pure, addr, nil
 	}
 	if moewiring.KratosHTTPFrontEnabled() || moewiring.KratosHybridHTTPFallback() {
@@ -97,18 +96,22 @@ func buildHTTPServer(opts Options, rpcMonitor interface{ Stop() }) (interface {
 }
 
 func logStartup(rpcAddr, apiAddr string, nativeGRPC bool) {
-	log.Printf("moe-social: 单进程已就绪 — gRPC %s + HTTP %s", rpcAddr, apiAddr)
-	log.Printf("moe-social: 对外请使用 HTTP %s（Flutter / moe-admin / 第三方 REST 不变）", apiAddr)
-	if moewiring.KratosPureEnabled() {
-		log.Print("  · PK-9: 纯 Kratos 生产（transport/http + transport/grpc）")
-	} else if moewiring.KratosHTTPFrontEnabled() {
-		log.Print("  · PK-4: Kratos HTTP :8888（未匹配路由回退 go-zero 内网）")
-	} else if moewiring.KratosHybridHTTPFallback() {
-		log.Print("  · PK-8 hybrid fallback: go-zero HTTP（紧急回滚）")
+	log.Print("════════════════════════════════════════")
+	log.Print("moe-social 已就绪")
+	log.Printf("  HTTP (对外 REST): %s", apiAddr)
+	log.Printf("  gRPC (内部 RPC):  %s", rpcAddr)
+	switch {
+	case moewiring.KratosPureEnabled():
+		log.Print("  模式: 纯 Kratos HTTP + gRPC")
+	case moewiring.KratosHTTPFrontEnabled():
+		log.Print("  模式: Kratos HTTP 前置（未匹配路由回退 legacy）")
+	case moewiring.KratosHybridHTTPFallback():
+		log.Print("  模式: hybrid fallback（紧急回滚）")
 	}
 	if nativeGRPC {
-		log.Print("  · PK-11: Super gRPC 使用 kratos/transport/grpc（非 zrpc）")
+		log.Print("  gRPC 传输: kratos/transport/grpc")
 	} else if moewiring.KratosGRPCManaged() {
-		log.Print("  · gRPC :8080 由 kratos.App 管理（zrpc）")
+		log.Print("  gRPC 传输: kratos.App 托管")
 	}
+	log.Print("════════════════════════════════════════")
 }

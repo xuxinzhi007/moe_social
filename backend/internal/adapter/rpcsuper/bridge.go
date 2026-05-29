@@ -3,15 +3,16 @@ package rpcsuper
 import (
 	"context"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
+	postv1 "backend/api/post/v1"
 )
 
-// Bridge 由 RPC logic 实现，供进程内 MoeToolPort 委托（避免 adapter ↔ logic 循环 import）。
+// Bridge 由进程内 App 适配器实现，供 MoeToolPort 委托。
 type Bridge interface {
-	GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error)
-	UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error)
-	DeleteUserMemory(ctx context.Context, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error)
-	CreatePost(ctx context.Context, in *moe.CreatePostReq) (*moe.CreatePostResp, error)
-	UpdatePost(ctx context.Context, in *moe.UpdatePostReq) (*moe.UpdatePostResp, error)
-	GetPost(ctx context.Context, in *moe.GetPostReq) (*moe.GetPostResp, error)
+	GetUserMemories(ctx context.Context, in *llmv1.GetUserMemoriesReq) (*llmv1.GetUserMemoriesResp, error)
+	UpsertUserMemory(ctx context.Context, in *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error)
+	DeleteUserMemory(ctx context.Context, in *llmv1.DeleteUserMemoryReq) (*llmv1.DeleteUserMemoryResp, error)
+	CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (*postv1.CreatePostReply, error)
+	UpdatePost(ctx context.Context, in *postv1.UpdatePostRequest) (*postv1.UpdatePostReply, error)
+	GetPost(ctx context.Context, in *postv1.GetPostRequest) (*postv1.GetPostReply, error)
 }

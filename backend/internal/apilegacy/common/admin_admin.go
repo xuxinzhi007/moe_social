@@ -1,11 +1,11 @@
 package common
 
 import (
+	adminv1 "backend/api/admin/v1"
 	"backend/internal/legacy/types"
-	"backend/rpc/pb/moe"
 )
 
-func RpcAdminAchievementToTypes(item *moe.AdminAchievementItem) types.AdminAchievementItem {
+func RpcAdminAchievementToTypes(item *adminv1.AdminAchievementItem) types.AdminAchievementItem {
 	if item == nil {
 		return types.AdminAchievementItem{}
 	}
@@ -26,7 +26,7 @@ func RpcAdminAchievementToTypes(item *moe.AdminAchievementItem) types.AdminAchie
 	}
 }
 
-func RpcAdminAnnouncementToTypes(item *moe.AdminAnnouncementItem) types.AdminAnnouncementItem {
+func RpcAdminAnnouncementToTypes(item *adminv1.AdminAnnouncementItem) types.AdminAnnouncementItem {
 	if item == nil {
 		return types.AdminAnnouncementItem{}
 	}
@@ -42,7 +42,7 @@ func RpcAdminAnnouncementToTypes(item *moe.AdminAnnouncementItem) types.AdminAnn
 	}
 }
 
-func RpcAdminAiAgentToTypes(item *moe.AdminAiAgentItem) types.AdminAiAgentItem {
+func RpcAdminAiAgentToTypes(item *adminv1.AdminAiAgentItem) types.AdminAiAgentItem {
 	if item == nil {
 		return types.AdminAiAgentItem{}
 	}
@@ -54,7 +54,7 @@ func RpcAdminAiAgentToTypes(item *moe.AdminAiAgentItem) types.AdminAiAgentItem {
 	}
 }
 
-func RpcAdminFollowToTypes(item *moe.AdminFollowItem) types.AdminFollowItem {
+func RpcAdminFollowToTypes(item *adminv1.AdminFollowItem) types.AdminFollowItem {
 	if item == nil {
 		return types.AdminFollowItem{}
 	}
@@ -68,7 +68,7 @@ func RpcAdminFollowToTypes(item *moe.AdminFollowItem) types.AdminFollowItem {
 	}
 }
 
-func RpcAdminFriendRequestToTypes(item *moe.AdminFriendRequestItem) types.AdminFriendRequestItem {
+func RpcAdminFriendRequestToTypes(item *adminv1.AdminFriendRequestItem) types.AdminFriendRequestItem {
 	if item == nil {
 		return types.AdminFriendRequestItem{}
 	}
@@ -83,7 +83,7 @@ func RpcAdminFriendRequestToTypes(item *moe.AdminFriendRequestItem) types.AdminF
 	}
 }
 
-func RpcAdminAccountToTypes(item *moe.AdminAccountItem) types.AdminAccountItem {
+func RpcAdminAccountToTypes(item *adminv1.AdminAccountItem) types.AdminAccountItem {
 	if item == nil {
 		return types.AdminAccountItem{}
 	}
@@ -96,7 +96,7 @@ func RpcAdminAccountToTypes(item *moe.AdminAccountItem) types.AdminAccountItem {
 	}
 }
 
-func RpcAdminMenuToTypes(item *moe.AdminMenuItem) types.AdminMenuItem {
+func RpcAdminMenuToTypes(item *adminv1.AdminMenuItem) types.AdminMenuItem {
 	if item == nil {
 		return types.AdminMenuItem{}
 	}
@@ -119,7 +119,7 @@ func RpcAdminMenuToTypes(item *moe.AdminMenuItem) types.AdminMenuItem {
 	}
 }
 
-func RpcAdminAuditLogToTypes(item *moe.AdminAuditLogItem) types.AdminAuditLogItem {
+func RpcAdminAuditLogToTypes(item *adminv1.AdminAuditLogItem) types.AdminAuditLogItem {
 	if item == nil {
 		return types.AdminAuditLogItem{}
 	}
@@ -136,7 +136,7 @@ func RpcAdminAuditLogToTypes(item *moe.AdminAuditLogItem) types.AdminAuditLogIte
 	}
 }
 
-func RpcAdminGrowthStatsToTypes(stats *moe.AdminGrowthStats) types.AdminGrowthStats {
+func RpcAdminGrowthStatsToTypes(stats *adminv1.AdminGrowthStats) types.AdminGrowthStats {
 	if stats == nil {
 		return types.AdminGrowthStats{}
 	}

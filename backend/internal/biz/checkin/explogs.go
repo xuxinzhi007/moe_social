@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/rpc/pb/moe"
+	checkinv1 "backend/api/checkin/v1"
 
 	"gorm.io/gorm"
 )
 
 // ListExpLogs 经验日志分页。
-func ListExpLogs(ctx context.Context, store CheckInStore, userIDRaw string, page, pageSize int32) ([]*moe.ExpLogRecord, int32, error) {
+func ListExpLogs(ctx context.Context, store CheckInStore, userIDRaw string, page, pageSize int32) ([]*checkinv1.ExpLogRecord, int32, error) {
 	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -36,9 +36,9 @@ func ListExpLogs(ctx context.Context, store CheckInStore, userIDRaw string, page
 	if err != nil {
 		return nil, 0, err
 	}
-	out := make([]*moe.ExpLogRecord, 0, len(rows))
+	out := make([]*checkinv1.ExpLogRecord, 0, len(rows))
 	for _, log := range rows {
-		out = append(out, &moe.ExpLogRecord{
+		out = append(out, &checkinv1.ExpLogRecord{
 			Id:          fmt.Sprintf("%d", log.ID),
 			ExpChange:   int32(log.ExpChange),
 			Source:      log.Source,

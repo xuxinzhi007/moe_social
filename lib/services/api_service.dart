@@ -80,7 +80,7 @@ class ApiService {
       '/api/voice/token?channel_name=$channelName&role=$role',
       method: 'GET',
     );
-    return response;
+    return _map(response);
   }
 
   // 发起语音呼叫
@@ -90,7 +90,7 @@ class ApiService {
       method: 'POST',
       body: {'receiver_id': receiverId},
     );
-    return response;
+    return _map(response);
   }
 
   // 接听语音呼叫
@@ -1493,7 +1493,7 @@ class ApiService {
 
   static Future<bool> getChatOnline(String userId) async {
     final result = await get('/api/chat/online?user_id=$userId');
-    final value = result['online'];
+    final value = ApiResponse.payload(result)['online'];
     if (value is bool) return value;
     if (value is num) return value != 0;
     if (value is String) {
@@ -1508,7 +1508,7 @@ class ApiService {
     if (userIds.isEmpty) return {};
     final encoded = Uri.encodeQueryComponent(userIds.join(','));
     final result = await get('/api/chat/online/batch?user_ids=$encoded');
-    final online = result['online'];
+    final online = ApiResponse.payload(result)['online'];
     if (online is! Map) return {};
     final out = <String, bool>{};
     online.forEach((key, value) {

@@ -1,31 +1,21 @@
-# RPC 契约分片（P5 后）
+# RPC 契约分片（已退役）
 
-**P5-B 完成**：`rpc/internal/logic` 已删除；`service Super` 已从 `rpc/moe.proto` 移除。
+**D4 Phase-4**：`rpc/pb/moe` 生成链已删除；`common.proto` 已归档。
 
-## 目录
-
-| 路径 | 作用 |
+| 路径 | 状态 |
 |------|------|
-| `common.proto` | 全部 `message`（HTTP/gateway 与 pb/moe 类型 SSOT） |
-| `services/<domain>.rpcfrag` | **归档**：历史 Super RPC 行，不再 assemble |
-| `../moe.proto` | **message-only**（`import defs/common.proto`，无 service） |
+| `scripts/archive/rpc-defs/common.proto` | 历史 message 归档（勿再生成 pb） |
+| `services/*.rpcfrag` | 历史 Super RPC 行（只读归档） |
+| `../moe.proto` | 退役占位（无 import、无 service） |
 
-## 工作流
+## 当前工作流
 
 ```bash
 cd backend
-
-# 日常：仅组装 message-only moe.proto（不跑 goctl zrpc）
-make fs8-assemble-super-proto
-
-# 新域 gRPC：编辑 api/<domain>/v1/*.proto + make gen
-# 勿使用 make gen-rpc-legacy（会尝试恢复 Super + logic）
+make gen          # 域 api/*/v1 proto + http 路由表（不跑 rpc/pb/moe）
+make gen-api      # 仅改 api/defs 存量时
 ```
 
-## 生产 RPC
+域 gRPC/HTTP：编辑 `api/<domain>/v1/*.proto` → `make gen` → `internal/server/http_proto.go` 注册。
 
-- 域服务：`api/*/v1` + `internal/server/grpc/*`
-- MoeAdmin：`moe.v1.MoeAdmin` + `internal/service/moe`
-- 类型：`rpc/pb/moe`（`SuperClient` 垫片保留供 gateway 可选回退，单进程为 nil）
-
-详见 [docs/dev/kratos-p5-super-retirement.md](../../docs/dev/kratos-p5-super-retirement.md)。
+详见 [kratos-migration-status.md](../../docs/dev/kratos-migration-status.md)。

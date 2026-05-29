@@ -1,11 +1,8 @@
-// P5: message-only（assemble 生成；勿恢复 service Super）
-// message SSOT: defs/common.proto
-// 域 gRPC：api/*/v1/*.proto · 历史 rpc 片段：defs/services/*.rpcfrag（归档，不参与 assemble）
+// RETIRED (D4 Phase-4): Super RPC 与 rpc/pb/moe 生成链已退役。
+// 契约 SSOT：api/<domain>/v1/*.proto + google.api.http
+// 历史 message 归档：scripts/archive/rpc-defs/common.proto
 syntax = "proto3";
 
 package super;
 
 option go_package = "backend/rpc/pb/moe";
-
-import "defs/common.proto";
-

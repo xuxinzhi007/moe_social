@@ -5,21 +5,21 @@ import (
 	"strings"
 	"time"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // RecordChatTurn 持久化 LLM 会话轮次。
-func RecordChatTurn(ctx context.Context, st MemoryStore, in *moe.RecordLlmChatTurnReq) (*moe.RecordLlmChatTurnResp, error) {
+func RecordChatTurn(ctx context.Context, st MemoryStore, in *llmv1.RecordLlmChatTurnReq) (*llmv1.RecordLlmChatTurnResp, error) {
 	db := dbFromStore(ctx, st)
 	if db == nil || in.GetUserId() == 0 {
-		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
+		return &llmv1.RecordLlmChatTurnResp{Ok: false}, nil
 	}
 	sessionID := strings.TrimSpace(in.GetSessionId())
 	if sessionID == "" {
-		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
+		return &llmv1.RecordLlmChatTurnResp{Ok: false}, nil
 	}
 	role := strings.TrimSpace(in.GetRole())
 	if role == "" {
@@ -38,10 +38,10 @@ func RecordChatTurn(ctx context.Context, st MemoryStore, in *moe.RecordLlmChatTu
 				UpdatedAt: now,
 			}
 			if createErr := db.WithContext(ctx).Create(&sess).Error; createErr != nil {
-				return &moe.RecordLlmChatTurnResp{Ok: false}, nil
+				return &llmv1.RecordLlmChatTurnResp{Ok: false}, nil
 			}
 		} else {
-			return &moe.RecordLlmChatTurnResp{Ok: false}, nil
+			return &llmv1.RecordLlmChatTurnResp{Ok: false}, nil
 		}
 	} else {
 		_ = db.WithContext(ctx).Model(&sess).Updates(map[string]any{
@@ -59,7 +59,7 @@ func RecordChatTurn(ctx context.Context, st MemoryStore, in *moe.RecordLlmChatTu
 		CreatedAt:   now,
 	}
 	if err := db.WithContext(ctx).Create(&msg).Error; err != nil {
-		return &moe.RecordLlmChatTurnResp{Ok: false}, nil
+		return &llmv1.RecordLlmChatTurnResp{Ok: false}, nil
 	}
-	return &moe.RecordLlmChatTurnResp{Ok: true}, nil
+	return &llmv1.RecordLlmChatTurnResp{Ok: true}, nil
 }

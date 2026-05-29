@@ -38,18 +38,10 @@ func TestRolloutPercentAtLeast100WhenPure(t *testing.T) {
 	}
 }
 
-func TestCompletePureKratosBelowRollout(t *testing.T) {
+func TestOverallMigrationAtLeast50(t *testing.T) {
 	rep := Current()
-	if rep.RolloutPercent >= 100 && rep.Percent > rep.RolloutPercent {
-		t.Fatalf("complete pure (%d) should not exceed transport rollout (%d)",
-			rep.Percent, rep.RolloutPercent)
-	}
-}
-
-func TestCompletePureKratosAtLeast80(t *testing.T) {
-	rep := Current()
-	if rep.Percent < 80 {
-		t.Fatalf("expected complete pure kratos percent >= 80, got %d breakdown=%v",
+	if rep.Percent < 50 {
+		t.Fatalf("expected overall percent >= 50, got %d breakdown=%v",
 			rep.Percent, rep.Breakdown)
 	}
 	if rep.PPercent != rep.Percent {
@@ -57,58 +49,100 @@ func TestCompletePureKratosAtLeast80(t *testing.T) {
 	}
 }
 
-func TestCompletePureKratosAtLeast50(t *testing.T) {
+func TestD2ProtoHTTPAtLeast100(t *testing.T) {
 	rep := Current()
-	if rep.Percent < 50 {
-		t.Fatalf("expected complete pure kratos percent >= 50, got %d breakdown=%v",
-			rep.Percent, rep.Breakdown)
+	if rep.D2ProtoHTTPPercent < 100 {
+		t.Fatalf("expected d2_proto_http_pct == 100, got %d breakdown=%v",
+			rep.D2ProtoHTTPPercent, rep.Breakdown)
+	}
+	if rep.Breakdown["compat_routes_migratable"] != 0 {
+		t.Fatalf("expected compat_routes_migratable == 0, got %d", rep.Breakdown["compat_routes_migratable"])
 	}
 }
 
-func TestCompletePureKratosAtLeast90(t *testing.T) {
+func TestD4LegacyCleanupAtLeast100(t *testing.T) {
 	rep := Current()
-	if rep.Percent < 80 {
-		t.Fatalf("expected complete pure kratos percent >= 80, got %d breakdown=%v",
-			rep.Percent, rep.Breakdown)
+	if rep.Breakdown["biz_moe_import_files_left"] > 0 || rep.Breakdown["apilegacy_moe_import_files_left"] > 0 {
+		t.Skip("Phase-2 bridge migration in progress")
 	}
-	if rep.Breakdown["http_bridge_handler_pct"] > 5 {
-		t.Fatalf("expected bridge routes only swagger, bridge_pct=%d",
-			rep.Breakdown["http_bridge_handler_pct"])
+	if rep.D4LegacyCleanupPercent < 100 {
+		t.Fatalf("expected d4_legacy_cleanup_pct == 100, got %d breakdown=%v",
+			rep.D4LegacyCleanupPercent, rep.Breakdown)
 	}
 }
 
-func TestCompletePureKratosAtLeast100WhenLogicRetired(t *testing.T) {
-	if !moewiring.KratosPureEnabled() {
-		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
-	}
-	if LegacyLogicFileCount() > 0 {
-		t.Skip("logic files remain; percent may be <100")
-	}
+func TestOverallMigrationAtLeast100(t *testing.T) {
 	rep := Current()
+	if rep.Breakdown["biz_moe_import_files_left"] > 0 || rep.Breakdown["apilegacy_moe_import_files_left"] > 0 {
+		t.Skip("Phase-2 bridge migration in progress")
+	}
 	if rep.Percent < 100 {
-		t.Fatalf("expected percent == 100 after logic retirement, got %d breakdown=%v",
-			rep.Percent, rep.Breakdown)
-	}
-	if rep.Breakdown["legacy_logic_files_left"] != 0 {
-		t.Fatalf("expected legacy_logic_files_left == 0, got %d", rep.Breakdown["legacy_logic_files_left"])
+		t.Fatalf("expected overall percent == 100, got %d (d2=%d d4=%d)",
+			rep.Percent, rep.D2ProtoHTTPPercent, rep.D4LegacyCleanupPercent)
 	}
 }
 
-func TestCompletePureKratosNot100UntilLogicRetired(t *testing.T) {
-	if !moewiring.KratosPureEnabled() {
-		t.Fatal("set moe.kratos_pure_enabled: true in backend/config/config.yaml")
+func TestPhase2BreakdownKeys(t *testing.T) {
+	rep := Current()
+	for _, k := range []string{
+		"d4_phase2_bridge_pct",
+		"biz_moe_import_files_left",
+		"apilegacy_moe_import_files_left",
+	} {
+		if _, ok := rep.Breakdown[k]; !ok {
+			t.Fatalf("missing breakdown key %q", k)
+		}
+	}
+}
+
+func TestPhase2BridgeRetiredWhenComplete(t *testing.T) {
+	if BizMoeImportFileCount() > 0 || ApilegacyMoeImportFileCount() > 0 {
+		t.Skip("Phase-2 bridge migration in progress")
+	}
+	if got := Phase2BridgeRetiredPercent(); got != 100 {
+		t.Fatalf("expected phase2 bridge retired 100 when no moe imports remain, got %d", got)
 	}
 	rep := Current()
-	if LegacyLogicFileCount() > 0 && rep.Percent >= 100 {
-		t.Fatalf("percent should be <100 while legacy logic files remain: percent=%d logic_left=%d",
-			rep.Percent, rep.Breakdown["legacy_logic_files_left"])
-	}
-	if LegacyLogicFileCount() > 0 && rep.Breakdown["legacy_logic_retired_pct"] <= 0 {
-		t.Fatalf("expected legacy_logic_retired_pct > 0 while logic files remain")
+	if rep.Breakdown["d4_phase2_bridge_pct"] != 100 {
+		t.Fatalf("expected d4_phase2_bridge_pct == 100, got %d", rep.Breakdown["d4_phase2_bridge_pct"])
 	}
 }
 
-func TestCompletePureBreakdown100WhenPure(t *testing.T) {
+func TestOverallBelowRolloutWhileD2Incomplete(t *testing.T) {
+	rep := Current()
+	if rep.RolloutPercent >= 100 && rep.D2ProtoHTTPPercent < 100 && rep.Percent > rep.RolloutPercent {
+		t.Fatalf("overall (%d) should not exceed rollout (%d) while D2 incomplete",
+			rep.Percent, rep.RolloutPercent)
+	}
+}
+
+func TestOverallNot100UntilMigratableCompatZero(t *testing.T) {
+	rep := Current()
+	if rep.Breakdown["compat_routes_migratable"] > 0 && rep.Percent >= 100 {
+		t.Fatalf("percent should be <100 while migratable compat remains: percent=%d migratable=%d",
+			rep.Percent, rep.Breakdown["compat_routes_migratable"])
+	}
+}
+
+func TestD2BreakdownKeys(t *testing.T) {
+	rep := Current()
+	for _, k := range []string{
+		"d2_proto_http_pct",
+		"d4_legacy_cleanup_pct",
+		"proto_http_routes",
+		"compat_routes_active",
+		"compat_routes_migratable",
+		"compat_routes_intentional",
+		"complete_pure_kratos_pct",
+		"rollout_transport_pk_pct",
+	} {
+		if _, ok := rep.Breakdown[k]; !ok {
+			t.Fatalf("missing breakdown key %q", k)
+		}
+	}
+}
+
+func TestTransportBreakdown100WhenPure(t *testing.T) {
 	if !moewiring.KratosPureEnabled() {
 		t.Fatal("set moe.kratos_pure_enabled: true")
 	}

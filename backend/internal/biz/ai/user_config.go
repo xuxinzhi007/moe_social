@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
 
 	"gorm.io/gorm"
 )
 
 // GetAiUserConfig 读取用户 AI 配置（persona + preferences JSON）。
-func GetAiUserConfig(ctx context.Context, store AiStore, in *moe.GetAiUserConfigReq) (*moe.GetAiUserConfigResp, error) {
+func GetAiUserConfig(ctx context.Context, store AiStore, in *llmv1.GetAiUserConfigReq) (*llmv1.GetAiUserConfigResp, error) {
 	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -23,14 +23,14 @@ func GetAiUserConfig(ctx context.Context, store AiStore, in *moe.GetAiUserConfig
 	if err != nil {
 		return nil, fmt.Errorf("read ai user config: %w", err)
 	}
-	return &moe.GetAiUserConfigResp{
+	return &llmv1.GetAiUserConfigResp{
 		UserPersona:     cfg.UserPersona,
 		PreferencesJson: cfg.PreferencesJSON,
 	}, nil
 }
 
 // UpsertAiUserConfig 更新用户 AI 配置。
-func UpsertAiUserConfig(ctx context.Context, store AiStore, in *moe.UpsertAiUserConfigReq) (*moe.UpsertAiUserConfigResp, error) {
+func UpsertAiUserConfig(ctx context.Context, store AiStore, in *llmv1.UpsertAiUserConfigReq) (*llmv1.UpsertAiUserConfigResp, error) {
 	if store == nil || in == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -52,7 +52,7 @@ func UpsertAiUserConfig(ctx context.Context, store AiStore, in *moe.UpsertAiUser
 	if err := store.SaveConfig(ctx, cfg); err != nil {
 		return nil, fmt.Errorf("save ai user config: %w", err)
 	}
-	return &moe.UpsertAiUserConfigResp{
+	return &llmv1.UpsertAiUserConfigResp{
 		UserPersona:     cfg.UserPersona,
 		PreferencesJson: cfg.PreferencesJSON,
 	}, nil

@@ -14,6 +14,7 @@ import 'ai_db_service.dart';
 import 'ai_memory_learn_result.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
+import 'api_response.dart';
 import 'llm_endpoint_config.dart';
 import 'memory_agent_service.dart';
 import 'memory_daily_note.dart';
@@ -522,8 +523,8 @@ class AiMemoryOrchestrator {
           .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return const {};
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map || decoded['data'] is! Map) return const {};
-      return Map<String, dynamic>.from(decoded['data'] as Map);
+      if (decoded is! Map<String, dynamic>) return const {};
+      return ApiResponse.nestedPayload(decoded);
     } catch (_) {
       return const {};
     }

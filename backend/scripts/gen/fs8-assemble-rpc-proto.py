@@ -1,40 +1,28 @@
 #!/usr/bin/env python3
-"""P5: 组装 rpc/moe.proto（仅 message SSOT；不再生成 service Super）。"""
+"""P5/D4 Phase-4: rpc/pb/moe 已退役；保留占位 moe.proto，不再 assemble common.proto。"""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RPC_DIR = ROOT / "rpc"
-MOE_PROTO = RPC_DIR / "moe.proto"
-DEFS_DIR = RPC_DIR / "defs"
+MOE_PROTO = ROOT / "rpc" / "moe.proto"
 
-# P5-B: Super 服务已退役；RPC 契约见 api/<domain>/v1/*.proto
-HEADER = """// P5: message-only（assemble 生成；勿恢复 service Super）
-// message SSOT: defs/common.proto
-// 域 gRPC：api/*/v1/*.proto · 历史 rpc 片段：defs/services/*.rpcfrag（归档，不参与 assemble）
+RETIRED = """// RETIRED (D4 Phase-4): Super RPC 与 rpc/pb/moe 生成链已退役。
+// 契约 SSOT：api/<domain>/v1/*.proto + google.api.http
+// 历史 message 归档：scripts/archive/rpc-defs/common.proto
 syntax = "proto3";
 
 package super;
 
 option go_package = "backend/rpc/pb/moe";
 
-import "defs/common.proto";
-
 """
 
 
 def main() -> int:
-    if not (DEFS_DIR / "common.proto").is_file():
-        print("missing rpc/defs/common.proto", file=sys.stderr)
-        return 1
-
-    MOE_PROTO.write_text(HEADER, encoding="utf-8")
-    legacy = RPC_DIR / "super.proto"
-    if legacy.is_file():
-        legacy.unlink()
-    print(f"assembled {MOE_PROTO.relative_to(ROOT)} (messages-only, no Super service)")
+    MOE_PROTO.write_text(RETIRED, encoding="utf-8")
+    print(f"rpc/pb/moe retired; wrote placeholder {MOE_PROTO.relative_to(ROOT)}")
     return 0
 
 

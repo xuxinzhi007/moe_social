@@ -49,10 +49,9 @@ gen-http-routes:
 # 兼容旧文档 target 名
 gen-moekratospilot-get: gen-http-routes
 
-# P5：Super 已退役；仅组装 message-only moe.proto，禁止 goctl --zrpc_out 再生 logic
+# P5/D4 Phase-4：rpc/pb/moe 已退役；域契约见 api/*/v1/*.proto
 gen-rpc: fs8-assemble-super-proto
-	@echo "P5: rpc/moe.proto has no Super service; use domain protos under api/*/v1/ for gRPC."
-	@echo "Frozen pb: rpc/pb/moe/*.pb.go (SuperClient shim for legacy gateways). Run gen-rpc-legacy only if restoring Super."
+	@echo "D4 Phase-4: rpc/pb/moe retired. Domain gRPC/HTTP: api/*/v1 + make gen."
 
 # DEPRECATED (P5 完成)：go-zero / Super logic 已删除；配套脚本在 scripts/archive/fs8-rollback/
 gen-rpc-legacy:

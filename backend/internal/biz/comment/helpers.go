@@ -3,13 +3,13 @@ package commentbiz
 import (
 	"strconv"
 
+	commentv1 "backend/api/comment/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 )
 
-// BuildProtoComment 将评论与用户转为 moe.Comment。
-func BuildProtoComment(c model.Comment, user model.User, isLiked bool, replyToUserName string) *moe.Comment {
+// BuildCommentV1 将评论与用户转为 comment.v1 Comment。
+func BuildCommentV1(c model.Comment, user model.User, isLiked bool, replyToUserName string) *commentv1.Comment {
 	username := "未知用户"
 	avatar := "https://picsum.photos/150"
 	if user.ID > 0 {
@@ -22,7 +22,7 @@ func BuildProtoComment(c model.Comment, user model.User, isLiked bool, replyToUs
 			avatar = user.Avatar
 		}
 	}
-	return &moe.Comment{
+	return &commentv1.Comment{
 		Id:              strconv.FormatUint(uint64(c.ID), 10),
 		PostId:          strconv.FormatUint(uint64(c.PostID), 10),
 		UserId:          strconv.FormatUint(uint64(c.UserID), 10),
@@ -35,4 +35,9 @@ func BuildProtoComment(c model.Comment, user model.User, isLiked bool, replyToUs
 		ParentId:        strconv.FormatUint(uint64(c.ParentID), 10),
 		ReplyToUserName: replyToUserName,
 	}
+}
+
+// BuildProtoComment 保留别名，返回 comment.v1 Comment。
+func BuildProtoComment(c model.Comment, user model.User, isLiked bool, replyToUserName string) *commentv1.Comment {
+	return BuildCommentV1(c, user, isLiked, replyToUserName)
 }

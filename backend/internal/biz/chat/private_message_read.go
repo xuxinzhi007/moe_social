@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	chatv1 "backend/api/chat/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 // ListPrivateMessages 分页拉取两人私信历史（viewer 视角）。
-func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *moe.ListPrivateMessagesReq) (*moe.ListPrivateMessagesResp, error) {
+func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *chatv1.ListPrivateMessagesRequest) (*chatv1.ListPrivateMessagesReply, error) {
 	if st == nil {
 		return nil, errors.New("db not ready")
 	}
@@ -70,16 +70,16 @@ func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *moe.Li
 	}
 	moeBy, _ := st.MoeNoByUserIDs(ctx, ids)
 
-	out := make([]*moe.PrivateMessage, 0, len(rows))
+	out := make([]*chatv1.PrivateMessage, 0, len(rows))
 	for i := len(rows) - 1; i >= 0; i-- {
 		out = append(out, privateMessageModelToProto(&rows[i], moeBy))
 	}
 
-	return &moe.ListPrivateMessagesResp{Messages: out, HasMore: hasMore}, nil
+	return &chatv1.ListPrivateMessagesReply{Messages: out, HasMore: hasMore}, nil
 }
 
 // ListPrivateConversations 列出 viewer 的私信会话摘要。
-func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *moe.ListPrivateConversationsReq) (*moe.ListPrivateConversationsResp, error) {
+func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *chatv1.ListPrivateConversationsRequest) (*chatv1.ListPrivateConversationsReply, error) {
 	if st == nil {
 		return nil, errors.New("db not ready")
 	}
@@ -152,7 +152,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *m
 
 	moeIDs := append(peerIDs, uint(viewerID))
 	moeBy, _ := st.MoeNoByUserIDs(ctx, moeIDs)
-	out := make([]*moe.PrivateConversation, 0, len(rows))
+	out := make([]*chatv1.PrivateConversation, 0, len(rows))
 	for _, row := range rows {
 		msg, ok := msgByID[row.LastID]
 		if !ok {
@@ -167,7 +167,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *m
 		if strings.TrimSpace(lastMsg.GetBody()) == "" && len(lastMsg.GetImagePaths()) > 0 {
 			lastMsg.Body = "[IMG]"
 		}
-		out = append(out, &moe.PrivateConversation{
+		out = append(out, &chatv1.PrivateConversation{
 			PeerId:            strconv.FormatUint(uint64(row.PeerID), 10),
 			PeerName:          peerName,
 			PeerAvatar:        strings.TrimSpace(peer.Avatar),
@@ -179,7 +179,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *m
 	}
 
 	hasMore := int64(offset+len(out)) < total
-	return &moe.ListPrivateConversationsResp{
+	return &chatv1.ListPrivateConversationsReply{
 		Conversations: out,
 		Total:         int32(total),
 		Limit:         int32(limit),

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_response.dart';
+
 /// 远程 API 基址（生产环境冷启动解析一次）。
 ///
 /// ## 你只需要维护两处（内容保持一致）
@@ -95,7 +97,7 @@ class RemoteApiConfigService {
       if (res.statusCode < 200 || res.statusCode >= 300) return null;
       final decoded = json.decode(utf8.decode(res.bodyBytes));
       if (decoded is! Map<String, dynamic>) return null;
-      return _parseApiBaseFromJsonMap(decoded);
+      return _parseApiBaseFromJsonMap(ApiResponse.payload(decoded));
     } catch (e) {
       if (kDebugMode) {
         debugPrint('RemoteApiConfig: $uri 不可用 $e');

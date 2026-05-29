@@ -1,0 +1,248 @@
+syntax = "proto3";
+
+package platform.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "backend/api/platform/v1;platformv1";
+
+// Platform — D2 compat 迁入（LLM 读/写 / voice / moe / appcfg / content list）。
+
+message BaseResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+}
+
+message GetPublicClientConfigReq {}
+
+message GetPublicClientConfigResp {
+  string api_base_url = 1;
+}
+
+message ContentItem {
+  string id = 1;
+  string user_id = 2;
+  string type = 3;
+  string prompt = 4;
+  string url = 5;
+  string content = 6;
+  string created_at = 7;
+}
+
+message ListUserContentReq {
+  string user_id = 1;
+  string type = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+message ListUserContentResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  repeated ContentItem data = 4;
+  int32 total = 5;
+}
+
+message LlmRawProxyReq {}
+
+message LlmRawProxyResp {}
+
+message GetLlmConfigReq {}
+
+message GetLlmConfigResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  google.protobuf.Struct data = 4;
+}
+
+message MoeToolSchemaReq {}
+
+message MoeToolSchemaData {
+  string tier = 1;
+  google.protobuf.ListValue tools = 2;
+}
+
+message MoeToolSchemaResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  MoeToolSchemaData data = 4;
+}
+
+message MoeToolExecuteReq {
+  string tool = 1;
+  string arguments = 2;
+  string agent_key = 3;
+  string idempotency_key = 4;
+}
+
+message MoeToolExecuteData {
+  bool ok = 1;
+  string result = 2;
+  string error = 3;
+}
+
+message MoeToolExecuteResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  MoeToolExecuteData data = 4;
+}
+
+message VoiceCallReq {
+  string receiver_id = 1;
+}
+
+message VoiceCallData {
+  string call_id = 1;
+  string channel_name = 2;
+}
+
+message VoiceCallResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  VoiceCallData data = 4;
+}
+
+message VoiceAnswerReq {
+  string call_id = 1;
+}
+
+message VoiceAnswerData {
+  string channel_name = 1;
+}
+
+message VoiceAnswerResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  VoiceAnswerData data = 4;
+}
+
+message VoiceCancelReq {
+  string call_id = 1;
+}
+
+message VoiceRejectReq {
+  string call_id = 1;
+}
+
+message VoiceSimpleResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+}
+
+message GetVoiceTokenReq {
+  string channel_name = 1;
+  uint32 role = 2;
+  string user_account = 3;
+}
+
+message GetVoiceTokenResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  string token = 4;
+  string app_id = 5;
+}
+
+message LlmMessage {
+  string role = 1;
+  string content = 2;
+}
+
+message LlmCreateAgentReq {
+  string name = 1;
+  string base_model = 2;
+  string system_prompt = 3;
+}
+
+message LlmChatReq {
+  string model = 1;
+  repeated LlmMessage messages = 2;
+  string session_id = 3;
+  string source_msg_id = 4;
+  bool client_memory_applied = 5;
+  bool stream = 6;
+  double temperature = 7;
+  double top_p = 8;
+  int32 max_tokens = 9;
+  double repeat_penalty = 10;
+}
+
+message LlmChatResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  string content = 4;
+  double remaining_ratio = 5;
+  bool summarized = 6;
+}
+
+message LlmDeleteModelReq {
+  string model = 1;
+}
+
+message LlmDownloadModelReq {
+  string model = 1;
+}
+
+service Platform {
+  rpc GetPublicClientConfig(GetPublicClientConfigReq) returns (GetPublicClientConfigResp) {
+    option (google.api.http) = { get: "/api/public/client-config" };
+  }
+  rpc ListUserContent(ListUserContentReq) returns (ListUserContentResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/content" };
+  }
+  rpc LlmChatRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
+    option (google.api.http) = { post: "/api/llm/chat/raw" body: "*" };
+  }
+  rpc GetLlmConfig(GetLlmConfigReq) returns (GetLlmConfigResp) {
+    option (google.api.http) = { get: "/api/llm/config" };
+  }
+  rpc LlmModelsRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
+    option (google.api.http) = { get: "/api/llm/models/raw" };
+  }
+  rpc LlmShowRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
+    option (google.api.http) = { post: "/api/llm/show/raw" body: "*" };
+  }
+  rpc MoeExecuteTool(MoeToolExecuteReq) returns (MoeToolExecuteResp) {
+    option (google.api.http) = { post: "/api/moe/tools/execute" body: "*" };
+  }
+  rpc MoeToolsSchema(MoeToolSchemaReq) returns (MoeToolSchemaResp) {
+    option (google.api.http) = { get: "/api/moe/tools/schema" };
+  }
+  rpc VoiceAnswer(VoiceAnswerReq) returns (VoiceAnswerResp) {
+    option (google.api.http) = { post: "/api/voice/answer" body: "*" };
+  }
+  rpc VoiceCall(VoiceCallReq) returns (VoiceCallResp) {
+    option (google.api.http) = { post: "/api/voice/call" body: "*" };
+  }
+  rpc VoiceCancel(VoiceCancelReq) returns (VoiceSimpleResp) {
+    option (google.api.http) = { post: "/api/voice/cancel" body: "*" };
+  }
+  rpc VoiceReject(VoiceRejectReq) returns (VoiceSimpleResp) {
+    option (google.api.http) = { post: "/api/voice/reject" body: "*" };
+  }
+  rpc GetVoiceToken(GetVoiceTokenReq) returns (GetVoiceTokenResp) {
+    option (google.api.http) = { get: "/api/voice/token" };
+  }
+  rpc LlmCreateAgent(LlmCreateAgentReq) returns (BaseResp) {
+    option (google.api.http) = { post: "/api/llm/agents" body: "*" };
+  }
+  rpc LlmChat(LlmChatReq) returns (LlmChatResp) {
+    option (google.api.http) = { post: "/api/llm/chat" body: "*" };
+  }
+  rpc LlmDeleteModel(LlmDeleteModelReq) returns (BaseResp) {
+    option (google.api.http) = { post: "/api/llm/models/delete" body: "*" };
+  }
+  rpc LlmDownloadModel(LlmDownloadModelReq) returns (BaseResp) {
+    option (google.api.http) = { post: "/api/llm/models/download" body: "*" };
+  }
+}

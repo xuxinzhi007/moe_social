@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 
+	communityv1 "backend/api/community/v1"
 	postbiz "backend/internal/biz/post"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // ListGroups 群组列表。
-func ListGroups(ctx context.Context, store CommunityStore, in *moe.GetGroupsReq) (*moe.GetGroupsResp, error) {
+func ListGroups(ctx context.Context, store CommunityStore, in *communityv1.GetGroupsRequest) (*communityv1.GetGroupsReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -29,30 +29,30 @@ func ListGroups(ctx context.Context, store CommunityStore, in *moe.GetGroupsReq)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*moe.Group, len(groups))
+	out := make([]*communityv1.Group, len(groups))
 	for i, group := range groups {
 		out[i] = groupToProto(ctx, store, group, in.GetUserId(), "2006-01-02 15:04:05")
 	}
-	return &moe.GetGroupsResp{Groups: out, Total: int32(total)}, nil
+	return &communityv1.GetGroupsReply{Groups: out, Total: int32(total)}, nil
 }
 
 // GetGroup 群组详情。
-func GetGroup(ctx context.Context, store CommunityStore, in *moe.GetGroupReq) (*moe.GetGroupResp, error) {
+func GetGroup(ctx context.Context, store CommunityStore, in *communityv1.GetGroupRequest) (*communityv1.GetGroupReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil {
-		return &moe.GetGroupResp{Success: false, Message: "invalid group id"}, nil
+		return &communityv1.GetGroupReply{Success: false, Message: "invalid group id"}, nil
 	}
 	group, err := store.GetGroupByID(ctx, uint(groupID))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return &moe.GetGroupResp{Success: false, Message: "group not found"}, nil
+			return &communityv1.GetGroupReply{Success: false, Message: "group not found"}, nil
 		}
 		return nil, err
 	}
-	return &moe.GetGroupResp{
+	return &communityv1.GetGroupReply{
 		Success: true,
 		Message: "success",
 		Group:   groupToProto(ctx, store, group, in.GetUserId(), "2006-01-02 15:04:05"),
@@ -60,13 +60,13 @@ func GetGroup(ctx context.Context, store CommunityStore, in *moe.GetGroupReq) (*
 }
 
 // ListUserGroups 用户已加入群组。
-func ListUserGroups(ctx context.Context, store CommunityStore, in *moe.GetUserGroupsReq) (*moe.GetUserGroupsResp, error) {
+func ListUserGroups(ctx context.Context, store CommunityStore, in *communityv1.GetUserGroupsRequest) (*communityv1.GetUserGroupsReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	userID, err := parseUserID(in.GetUserId())
 	if err != nil {
-		return &moe.GetUserGroupsResp{}, nil
+		return &communityv1.GetUserGroupsReply{}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -96,23 +96,23 @@ func ListUserGroups(ctx context.Context, store CommunityStore, in *moe.GetUserGr
 			groupMap[g.ID] = g
 		}
 	}
-	out := make([]*moe.Group, 0, len(members))
+	out := make([]*communityv1.Group, 0, len(members))
 	for _, member := range members {
 		if group, ok := groupMap[member.GroupID]; ok {
 			out = append(out, groupToProtoWithMember(ctx, store, group, member))
 		}
 	}
-	return &moe.GetUserGroupsResp{Groups: out, Total: int32(total)}, nil
+	return &communityv1.GetUserGroupsReply{Groups: out, Total: int32(total)}, nil
 }
 
 // ListGroupMembers 群组成员。
-func ListGroupMembers(ctx context.Context, store CommunityStore, in *moe.GetGroupMembersReq) (*moe.GetGroupMembersResp, error) {
+func ListGroupMembers(ctx context.Context, store CommunityStore, in *communityv1.GetGroupMembersRequest) (*communityv1.GetGroupMembersReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil {
-		return &moe.GetGroupMembersResp{}, nil
+		return &communityv1.GetGroupMembersReply{}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -131,21 +131,21 @@ func ListGroupMembers(ctx context.Context, store CommunityStore, in *moe.GetGrou
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*moe.GroupMember, len(members))
+	out := make([]*communityv1.GroupMember, len(members))
 	for i, member := range members {
 		out[i] = memberToProto(ctx, store, member)
 	}
-	return &moe.GetGroupMembersResp{Members: out, Total: int32(total)}, nil
+	return &communityv1.GetGroupMembersReply{Members: out, Total: int32(total)}, nil
 }
 
 // ListGroupPosts 群组帖子。
-func ListGroupPosts(ctx context.Context, store CommunityStore, postStore postbiz.PostStore, in *moe.GetGroupPostsReq) (*moe.GetGroupPostsResp, error) {
+func ListGroupPosts(ctx context.Context, store CommunityStore, postStore postbiz.PostStore, in *communityv1.GetGroupPostsRequest) (*communityv1.GetGroupPostsReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	groupID, err := parseGroupID(in.GetGroupId())
 	if err != nil || groupID == 0 {
-		return &moe.GetGroupPostsResp{Posts: []*moe.GroupPost{}, Total: 0}, nil
+		return &communityv1.GetGroupPostsReply{Posts: []*communityv1.GroupPost{}, Total: 0}, nil
 	}
 	page := in.GetPage()
 	pageSize := in.GetPageSize()
@@ -169,7 +169,7 @@ func ListGroupPosts(ctx context.Context, store CommunityStore, postStore postbiz
 		return nil, err
 	}
 	if len(links) == 0 {
-		return &moe.GetGroupPostsResp{Posts: []*moe.GroupPost{}, Total: int32(total)}, nil
+		return &communityv1.GetGroupPostsReply{Posts: []*communityv1.GroupPost{}, Total: int32(total)}, nil
 	}
 	postIDs := make([]uint, 0, len(links))
 	for _, link := range links {
@@ -197,20 +197,20 @@ func ListGroupPosts(ctx context.Context, store CommunityStore, postStore postbiz
 		visiblePostIDs = append(visiblePostIDs, id)
 	}
 	liked := postbiz.LikedTargetIDSet(ctx, postStore, viewerUID, "post", visiblePostIDs)
-	out := make([]*moe.GroupPost, 0, len(links))
+	out := make([]*communityv1.GroupPost, 0, len(links))
 	for _, link := range links {
 		post, ok := postMap[link.PostID]
 		if !ok {
 			continue
 		}
 		user := userMap[post.UserID]
-		out = append(out, &moe.GroupPost{
+		out = append(out, &communityv1.GroupPost{
 			Id:        uint64(link.ID),
 			GroupId:   uint64(link.GroupID),
 			PostId:    uint64(link.PostID),
-			Post:      postbiz.BuildProtoPost(post, user, liked[post.ID]),
+			Post:      postbiz.BuildPostV1(post, user, liked[post.ID]),
 			CreatedAt: link.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	return &moe.GetGroupPostsResp{Posts: out, Total: int32(total)}, nil
+	return &communityv1.GetGroupPostsReply{Posts: out, Total: int32(total)}, nil
 }

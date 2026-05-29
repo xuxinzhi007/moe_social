@@ -7,29 +7,30 @@ import (
 	"strconv"
 	"strings"
 
+	giftv1 "backend/api/gift/v1"
 	"backend/internal/platform/socialhook"
+	"backend/pkg/achievement"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // Send 赠送礼物。
-func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, quantity int32) (*moe.SendGiftResp, error) {
+func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, quantity int32) (*giftv1.SendGiftReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	fromUserID, err := strconv.ParseUint(strings.TrimSpace(fromRaw), 10, 64)
 	if err != nil || fromUserID == 0 {
-		return &moe.SendGiftResp{Success: false, Message: "invalid sender id"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "invalid sender id"}, nil
 	}
 	toUserID, err := strconv.ParseUint(strings.TrimSpace(toRaw), 10, 64)
 	if err != nil || toUserID == 0 {
-		return &moe.SendGiftResp{Success: false, Message: "invalid receiver id"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "invalid receiver id"}, nil
 	}
 	giftID, err := strconv.ParseUint(strings.TrimSpace(giftRaw), 10, 64)
 	if err != nil || giftID == 0 {
-		return &moe.SendGiftResp{Success: false, Message: "invalid gift id"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "invalid gift id"}, nil
 	}
 	if quantity <= 0 {
 		quantity = 1
@@ -37,15 +38,15 @@ func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, 
 
 	sender, err := store.GetUserByID(ctx, uint(fromUserID))
 	if err != nil {
-		return &moe.SendGiftResp{Success: false, Message: "sender not found"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "sender not found"}, nil
 	}
 	receiver, err := store.GetUserByID(ctx, uint(toUserID))
 	if err != nil {
-		return &moe.SendGiftResp{Success: false, Message: "receiver not found"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "receiver not found"}, nil
 	}
 	gift, err := store.GetGiftByID(ctx, uint(giftID))
 	if err != nil {
-		return &moe.SendGiftResp{Success: false, Message: "gift not found"}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "gift not found"}, nil
 	}
 
 	var record model.GiftRecord
@@ -98,9 +99,9 @@ func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, 
 
 	if err != nil {
 		if errors.Is(err, ErrInsufficientBal) {
-			return &moe.SendGiftResp{Success: false, Message: "insufficient balance"}, nil
+			return &giftv1.SendGiftReply{Success: false, Message: "insufficient balance"}, nil
 		}
-		return &moe.SendGiftResp{Success: false, Message: "failed to send gift: " + err.Error()}, nil
+		return &giftv1.SendGiftReply{Success: false, Message: "failed to send gift: " + err.Error()}, nil
 	}
 
 	addValue := float64(gift.Price) * float64(quantity)
@@ -109,8 +110,8 @@ func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, 
 	})
 
 	giftProto := GiftToProto(gift, 0)
-	return &moe.SendGiftResp{
-		Success: true, Message: "gift sent successfully", NewAchievements: achUnlocks,
+	return &giftv1.SendGiftReply{
+		Success: true, Message: "gift sent successfully", NewAchievements: achievement.UnlocksToGiftV1(achUnlocks),
 		Record: RecordToProto(record, sender, receiver, giftProto),
 	}, nil
 }

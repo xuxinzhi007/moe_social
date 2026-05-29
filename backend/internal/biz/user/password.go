@@ -5,14 +5,14 @@ import (
 	"errors"
 	"strings"
 
-	"backend/rpc/pb/moe"
+	userv1 "backend/api/user/v1"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // UpdateUserPassword 校验旧密码后更新。
-func UpdateUserPassword(ctx context.Context, store UserStore, in *moe.UpdateUserPasswordReq) (*moe.UpdateUserPasswordResp, error) {
+func UpdateUserPassword(ctx context.Context, store UserStore, in *userv1.UpdateUserPasswordReq) (*userv1.UpdateUserPasswordResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -34,11 +34,11 @@ func UpdateUserPassword(ctx context.Context, store UserStore, in *moe.UpdateUser
 	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	return &moe.UpdateUserPasswordResp{}, nil
+	return &userv1.UpdateUserPasswordResp{}, nil
 }
 
 // ResetPassword 按邮箱重置密码。
-func ResetPassword(ctx context.Context, store UserStore, in *moe.ResetPasswordReq) (*moe.ResetPasswordResp, error) {
+func ResetPassword(ctx context.Context, store UserStore, in *userv1.ResetPasswordReq) (*userv1.ResetPasswordResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -53,11 +53,11 @@ func ResetPassword(ctx context.Context, store UserStore, in *moe.ResetPasswordRe
 	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	return &moe.ResetPasswordResp{}, nil
+	return &userv1.ResetPasswordResp{}, nil
 }
 
 // GetUserByEmail 按邮箱查询用户。
-func GetUserByEmail(ctx context.Context, store UserStore, in *moe.GetUserByEmailReq) (*moe.GetUserByEmailResp, error) {
+func GetUserByEmail(ctx context.Context, store UserStore, in *userv1.GetUserByEmailReq) (*userv1.GetUserByEmailResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -73,5 +73,5 @@ func GetUserByEmail(ctx context.Context, store UserStore, in *moe.GetUserByEmail
 		return nil, err
 	}
 	user, _ = store.ReloadUser(ctx, user.ID)
-	return &moe.GetUserByEmailResp{User: ModelToProto(&user)}, nil
+	return &userv1.GetUserByEmailResp{User: ModelToUserV1(&user)}, nil
 }

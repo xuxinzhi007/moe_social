@@ -7,6 +7,7 @@ import (
 	postbiz "backend/internal/biz/post"
 	postdata "backend/internal/data/post"
 	"backend/internal/platform/socialhook"
+	"backend/pkg/achievement"
 
 	"gorm.io/gorm"
 )
@@ -26,14 +27,10 @@ func New(db *gorm.DB, handDrawRequireModeration bool) *AppService {
 }
 
 func (s *AppService) MoeSearchPosts(ctx context.Context, in *postv1.MoeSearchPostsRequest) (*postv1.MoeSearchPostsReply, error) {
-	resp, err := postbiz.Search(ctx, s.store, postbiz.SearchInput{
+	return postbiz.Search(ctx, s.store, postbiz.SearchInput{
 		Query: in.GetQuery(), Limit: in.GetLimit(),
 		ViewerUserID: in.GetViewerUserId(), MoodTag: in.GetMoodTag(), TopicTagID: in.GetTopicTagId(),
 	})
-	if err != nil {
-		return nil, err
-	}
-	return postv1.MoeSearchPostsReplyFromMoe(resp), nil
 }
 
 func (s *AppService) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*postv1.GetPostReply, error) {
@@ -41,7 +38,7 @@ func (s *AppService) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*p
 	if err != nil {
 		return nil, err
 	}
-	return &postv1.GetPostReply{Post: postv1.PostFromMoe(post)}, nil
+	return &postv1.GetPostReply{Post: post}, nil
 }
 
 func (s *AppService) GetPosts(ctx context.Context, in *postv1.GetPostsRequest) (*postv1.GetPostsReply, error) {
@@ -52,7 +49,7 @@ func (s *AppService) GetPosts(ctx context.Context, in *postv1.GetPostsRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return &postv1.GetPostsReply{Posts: postv1.PostsFromMoe(posts), Total: total}, nil
+	return &postv1.GetPostsReply{Posts: posts, Total: total}, nil
 }
 
 func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (*postv1.CreatePostReply, error) {
@@ -85,7 +82,7 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 	post.TopicTags = postbiz.TopicTagsToPostV1(result.TopicTags)
 	return &postv1.CreatePostReply{
 		Post:            post,
-		NewAchievements: postv1.AchievementUnlocksFromMoe(achUnlocks),
+		NewAchievements: achievement.UnlocksToPostV1(achUnlocks),
 	}, nil
 }
 

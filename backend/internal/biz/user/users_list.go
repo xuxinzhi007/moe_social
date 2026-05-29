@@ -3,13 +3,13 @@ package userbiz
 import (
 	"context"
 
-	"backend/rpc/pb/moe"
+	userv1 "backend/api/user/v1"
 
 	"gorm.io/gorm"
 )
 
 // GetUsers 分页列出用户。
-func GetUsers(ctx context.Context, store UserStore, in *moe.GetUsersReq) (*moe.GetUsersResp, error) {
+func GetUsers(ctx context.Context, store UserStore, in *userv1.GetUsersReq) (*userv1.GetUsersResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -32,16 +32,16 @@ func GetUsers(ctx context.Context, store UserStore, in *moe.GetUsersReq) (*moe.G
 		return nil, err
 	}
 
-	respUsers := make([]*moe.User, len(users))
+	respUsers := make([]*userv1.User, len(users))
 	for i := range users {
 		u := users[i]
-		respUsers[i] = ModelToProto(&u)
+		respUsers[i] = ModelToUserV1(&u)
 	}
-	return &moe.GetUsersResp{Users: respUsers, Total: int32(total)}, nil
+	return &userv1.GetUsersResp{Users: respUsers, Total: int32(total)}, nil
 }
 
 // GetUserCount 返回用户总数。
-func GetUserCount(ctx context.Context, store UserStore, _ *moe.GetUserCountReq) (*moe.GetUserCountResp, error) {
+func GetUserCount(ctx context.Context, store UserStore, _ *userv1.GetUserCountReq) (*userv1.GetUserCountResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -49,5 +49,5 @@ func GetUserCount(ctx context.Context, store UserStore, _ *moe.GetUserCountReq) 
 	if err != nil {
 		return nil, err
 	}
-	return &moe.GetUserCountResp{Count: int32(total)}, nil
+	return &userv1.GetUserCountResp{Count: int32(total)}, nil
 }

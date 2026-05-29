@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	"gorm.io/gorm"
@@ -33,7 +33,7 @@ type UpdateAchievementInput struct {
 }
 
 // UpdateAchievement 更新成就定义。
-func UpdateAchievement(ctx context.Context, db *gorm.DB, in UpdateAchievementInput) (*moe.AdminAchievementItem, error) {
+func UpdateAchievement(ctx context.Context, db *gorm.DB, in UpdateAchievementInput) (*adminv1.AdminAchievementItem, error) {
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

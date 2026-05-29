@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
 
 	"backend/internal/platform/moelog"
 )
@@ -43,7 +43,7 @@ func recordChatTurnAsync(deps PlatformChatDeps, userID, sessionID, sourceMsgID, 
 	}
 	go func() {
 		ctx := context.Background()
-		_, _ = deps.Gateway.RecordLlmChatTurn(ctx, &moe.RecordLlmChatTurnReq{
+		_, _ = deps.Gateway.RecordLlmChatTurn(ctx, &llmv1.RecordLlmChatTurnReq{
 			UserId:      uid,
 			SessionId:   sessionID,
 			SourceMsgId: sourceMsgID,
@@ -66,7 +66,7 @@ func userMemoryAutoLearnEnabled(ctx context.Context, deps PlatformChatDeps, user
 	if deps.Gateway == nil || userID == "" {
 		return true
 	}
-	resp, err := deps.Gateway.GetAiUserConfig(ctx, &moe.GetAiUserConfigReq{UserId: userID})
+	resp, err := deps.Gateway.GetAiUserConfig(ctx, &llmv1.GetAiUserConfigReq{UserId: userID})
 	if err != nil || resp == nil {
 		return true
 	}
@@ -151,7 +151,7 @@ func extractAndSaveMemoriesWithSource(
 			if item.Key == "" || item.Value == "" {
 				continue
 			}
-			_, err := deps.Gateway.UpsertUserMemory(ctx, &moe.UpsertUserMemoryReq{
+			_, err := deps.Gateway.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
 				UserId:      userID,
 				Key:         item.Key,
 				Value:       item.Value,

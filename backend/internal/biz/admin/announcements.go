@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -39,8 +39,8 @@ func adminPageParams(page, pageSize int32) (int32, int32) {
 	return page, pageSize
 }
 
-func announcementToProto(row model.AdminAnnouncement) *moe.AdminAnnouncementItem {
-	item := &moe.AdminAnnouncementItem{
+func announcementToProto(row model.AdminAnnouncement) *adminv1.AdminAnnouncementItem {
+	item := &adminv1.AdminAnnouncementItem{
 		Id:        strconv.FormatUint(uint64(row.ID), 10),
 		Title:     row.Title,
 		Content:   row.Content,
@@ -55,8 +55,8 @@ func announcementToProto(row model.AdminAnnouncement) *moe.AdminAnnouncementItem
 	return item
 }
 
-func adminAuditLogToProto(row model.AdminAuditLog) *moe.AdminAuditLogItem {
-	return &moe.AdminAuditLogItem{
+func adminAuditLogToProto(row model.AdminAuditLog) *adminv1.AdminAuditLogItem {
+	return &adminv1.AdminAuditLogItem{
 		Id:         strconv.FormatUint(uint64(row.ID), 10),
 		AdminId:    strconv.FormatUint(uint64(row.AdminID), 10),
 		AdminName:  row.AdminName,
@@ -70,7 +70,7 @@ func adminAuditLogToProto(row model.AdminAuditLog) *moe.AdminAuditLogItem {
 }
 
 // ListAnnouncements 公告列表。
-func ListAnnouncements(ctx context.Context, store AdminStore, p AnnouncementPage) ([]*moe.AdminAnnouncementItem, int32, error) {
+func ListAnnouncements(ctx context.Context, store AdminStore, p AnnouncementPage) ([]*adminv1.AdminAnnouncementItem, int32, error) {
 	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -80,7 +80,7 @@ func ListAnnouncements(ctx context.Context, store AdminStore, p AnnouncementPage
 	if err != nil {
 		return nil, 0, err
 	}
-	items := make([]*moe.AdminAnnouncementItem, len(rows))
+	items := make([]*adminv1.AdminAnnouncementItem, len(rows))
 	for i, row := range rows {
 		items[i] = announcementToProto(row)
 	}
@@ -88,7 +88,7 @@ func ListAnnouncements(ctx context.Context, store AdminStore, p AnnouncementPage
 }
 
 // GetAnnouncement 公告详情。
-func GetAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*moe.AdminAnnouncementItem, error) {
+func GetAnnouncement(ctx context.Context, store AdminStore, idRaw string) (*adminv1.AdminAnnouncementItem, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -117,7 +117,7 @@ type AuditLogFilter struct {
 }
 
 // ListAuditLogs 审计日志列表。
-func ListAuditLogs(ctx context.Context, store AdminStore, f AuditLogFilter) ([]*moe.AdminAuditLogItem, int32, error) {
+func ListAuditLogs(ctx context.Context, store AdminStore, f AuditLogFilter) ([]*adminv1.AdminAuditLogItem, int32, error) {
 	if store == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -135,7 +135,7 @@ func ListAuditLogs(ctx context.Context, store AdminStore, f AuditLogFilter) ([]*
 	if err != nil {
 		return nil, 0, err
 	}
-	items := make([]*moe.AdminAuditLogItem, len(rows))
+	items := make([]*adminv1.AdminAuditLogItem, len(rows))
 	for i, row := range rows {
 		items[i] = adminAuditLogToProto(row)
 	}

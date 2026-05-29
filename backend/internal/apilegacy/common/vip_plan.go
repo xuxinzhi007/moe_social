@@ -6,7 +6,6 @@ import (
 	adminv1 "backend/api/admin/v1"
 	"backend/internal/legacy/types"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
 // VipPlanModelToTypes 将 model 转为 API types。
@@ -22,19 +21,8 @@ func VipPlanModelToTypes(p model.VipPlan) types.VipPlan {
 	}
 }
 
-func RpcVipPlanToTypes(p *moe.VipPlan) types.VipPlan {
-	if p == nil {
-		return types.VipPlan{}
-	}
-	return vipPlanFields(
-		p.GetId(),
-		p.GetName(),
-		p.GetDescription(),
-		float64(p.GetPrice()),
-		int(p.GetDurationDays()),
-		p.GetCreatedAt(),
-		p.GetUpdatedAt(),
-	)
+func RpcVipPlanToTypes(p *adminv1.VipPlan) types.VipPlan {
+	return AdminVipPlanToTypes(p)
 }
 
 // AdminVipPlanToTypes 将 admin 域 VIP 套餐消息转为 API types。

@@ -8,6 +8,7 @@ import (
 	commentbiz "backend/internal/biz/comment"
 	commentdata "backend/internal/data/comment"
 	"backend/internal/platform/socialhook"
+	"backend/pkg/achievement"
 
 	"gorm.io/gorm"
 )
@@ -30,7 +31,7 @@ func (s *AppService) GetPostComments(ctx context.Context, in *commentv1.GetPostC
 	if err != nil {
 		return nil, err
 	}
-	return &commentv1.GetPostCommentsReply{Comments: commentv1.CommentsFromMoe(items), Total: total}, nil
+	return &commentv1.GetPostCommentsReply{Comments: items, Total: total}, nil
 }
 
 func (s *AppService) CreateComment(ctx context.Context, in *commentv1.CreateCommentRequest) (*commentv1.CreateCommentReply, error) {
@@ -45,10 +46,10 @@ func (s *AppService) CreateComment(ctx context.Context, in *commentv1.CreateComm
 	achUnlocks := socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
 
 	return &commentv1.CreateCommentReply{
-		Comment: commentv1.CommentFromMoe(
-			commentbiz.BuildProtoComment(result.Comment, result.Comment.User, false, result.ReplyToUserName),
+		Comment: commentbiz.BuildCommentV1(
+			result.Comment, result.Comment.User, false, result.ReplyToUserName,
 		),
-		NewAchievements: commentv1.AchievementUnlocksFromMoe(achUnlocks),
+		NewAchievements: achievement.UnlocksToCommentV1(achUnlocks),
 	}, nil
 }
 
@@ -58,8 +59,6 @@ func (s *AppService) LikeComment(ctx context.Context, in *commentv1.LikeCommentR
 		return nil, err
 	}
 	return &commentv1.LikeCommentReply{
-		Comment: commentv1.CommentFromMoe(
-			commentbiz.BuildProtoComment(result.Comment, result.User, result.IsLiked, ""),
-		),
+		Comment: commentbiz.BuildCommentV1(result.Comment, result.User, result.IsLiked, ""),
 	}, nil
 }

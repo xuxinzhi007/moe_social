@@ -7,14 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"backend/rpc/pb/moe"
+	userv1 "backend/api/user/v1"
 	"backend/utils"
 
 	"gorm.io/gorm"
 )
 
 // UpdateUserInfo 更新用户资料字段。
-func UpdateUserInfo(ctx context.Context, store ProfileStore, in *moe.UpdateUserInfoReq) (*moe.UpdateUserInfoResp, error) {
+func UpdateUserInfo(ctx context.Context, store ProfileStore, in *userv1.UpdateUserInfoReq) (*userv1.UpdateUserInfoResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -123,11 +123,11 @@ func UpdateUserInfo(ctx context.Context, store ProfileStore, in *moe.UpdateUserI
 
 	if len(updates) == 0 {
 		user, _ = store.ReloadUser(ctx, uint(userID))
-		return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
+		return &userv1.UpdateUserInfoResp{User: ModelToUserV1(&user)}, nil
 	}
 	if err := store.UpdateUserFields(ctx, uint(userID), updates); err != nil {
 		return nil, err
 	}
 	user, _ = store.ReloadUser(ctx, uint(userID))
-	return &moe.UpdateUserInfoResp{User: ModelToProto(&user)}, nil
+	return &userv1.UpdateUserInfoResp{User: ModelToUserV1(&user)}, nil
 }

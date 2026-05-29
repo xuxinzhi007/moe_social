@@ -5,7 +5,6 @@ import (
 
 	llmv1 "backend/api/llm/v1"
 	userbiz "backend/internal/biz/user"
-	"backend/rpc/pb/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -84,10 +83,7 @@ func (s *Server) GetUserMemoriesDisplay(ctx context.Context, in *llmv1.GetUserMe
 	if err != nil {
 		return nil, err
 	}
-	display := userbiz.BuildUserMemoryDisplay(
-		userMemoriesToMoe(memResp.GetMemories()),
-		userMemoryProfilesToMoe(profResp.GetProfiles()),
-	)
+	display := userbiz.BuildUserMemoryDisplay(memResp.GetMemories(), profResp.GetProfiles())
 	return &llmv1.GetUserMemoriesDisplayResp{Data: userMemoryDisplayToProto(display)}, nil
 }
 
@@ -110,7 +106,7 @@ func (s *Server) SearchUserMemories(ctx context.Context, in *llmv1.SearchUserMem
 		Gateway:          s.memoryGW,
 		InferenceBaseURL: s.inferenceBaseURL,
 		UserID:           in.GetUserId(),
-		Memories:         userMemoriesToMoe(memResp.GetMemories()),
+		Memories:         memResp.GetMemories(),
 		Query:            in.GetQ(),
 		Limit:            int(limit),
 	})
@@ -134,28 +130,6 @@ func actorUserID(ctx context.Context) (string, error) {
 		return "", errUnauthorized
 	}
 	return bearerUserIDString(req)
-}
-
-func userMemoriesToMoe(items []*llmv1.UserMemory) []*moe.UserMemory {
-	if len(items) == 0 {
-		return nil
-	}
-	out := make([]*moe.UserMemory, len(items))
-	for i, m := range items {
-		out[i] = llmv1.UserMemoryToMoe(m)
-	}
-	return out
-}
-
-func userMemoryProfilesToMoe(items []*llmv1.UserMemoryProfile) []*moe.UserMemoryProfile {
-	if len(items) == 0 {
-		return nil
-	}
-	out := make([]*moe.UserMemoryProfile, len(items))
-	for i, p := range items {
-		out[i] = llmv1.UserMemoryProfileToMoe(p)
-	}
-	return out
 }
 
 func userMemoryDisplayToProto(d userbiz.UserMemoryDisplayData) *llmv1.UserMemoryDisplayData {

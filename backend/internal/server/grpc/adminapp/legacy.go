@@ -12,7 +12,6 @@ import (
 	"backend/internal/apilegacy/common"
 	adminbiz "backend/internal/biz/admin"
 	"backend/internal/platform/svc"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -37,11 +36,11 @@ func (s *Server) AdminUpdateAiAgent(ctx context.Context, in *adminv1.AdminUpdate
 	if s.ai == nil {
 		return nil, status.Error(codes.FailedPrecondition, "AI 网关未就绪")
 	}
-	_, err = s.ai.UpsertAiAgent(actx, aiv1.UpsertAiResourceReqFromMoe(&moe.UpsertAiResourceReq{
+	_, err = s.ai.UpsertAiAgent(actx, &aiv1.UpsertAiResourceReq{
 		UserId:      uid,
 		Id:          aid,
 		PayloadJson: payload,
-	}))
+	})
 	if err != nil {
 		return nil, err
 	}

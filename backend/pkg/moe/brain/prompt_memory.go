@@ -11,7 +11,8 @@ import (
 	"backend/pkg/memory"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/port"
-	"backend/rpc/pb/moe"
+
+	llmv1 "backend/api/llm/v1"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -110,11 +111,11 @@ func fetchSyncedMemories(ctx context.Context, rpc port.MoeToolPort, botUserID ui
 		return ""
 	}
 	uid := strconv.FormatUint(uint64(botUserID), 10)
-	memResp, err := rpc.GetUserMemories(ctx, &moe.GetUserMemoriesReq{UserId: uid})
+	memResp, err := rpc.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: uid})
 	if err != nil || memResp == nil {
 		return ""
 	}
-	records := memory.RecordsFromSuper(memResp.Memories)
+	records := memory.RecordsFromLLMV1(memResp.GetMemories())
 	res := memory.SearchFacing(records, "", 6)
 	if len(res.Items) == 0 {
 		return ""

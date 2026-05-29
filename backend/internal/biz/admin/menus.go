@@ -3,13 +3,13 @@ package adminbiz
 import (
 	"context"
 
-	"backend/rpc/pb/moe"
+	adminv1 "backend/api/admin/v1"
 
 	"gorm.io/gorm"
 )
 
 // ListMenus Admin 菜单树列表。
-func ListMenus(ctx context.Context, store AdminStore) ([]*moe.AdminMenuItem, error) {
+func ListMenus(ctx context.Context, store AdminStore) ([]*adminv1.AdminMenuItem, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -17,7 +17,7 @@ func ListMenus(ctx context.Context, store AdminStore) ([]*moe.AdminMenuItem, err
 	if err != nil {
 		return nil, err
 	}
-	items := make([]*moe.AdminMenuItem, len(rows))
+	items := make([]*adminv1.AdminMenuItem, len(rows))
 	for i, row := range rows {
 		items[i] = menuItemToProto(row)
 	}

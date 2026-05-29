@@ -3,10 +3,8 @@ package llmbiz
 import (
 	"context"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/pkg/llminference"
-	"backend/rpc/pb/moe"
-
-	"google.golang.org/grpc"
 )
 
 // PlatformChatMessage LLM 对话消息。
@@ -39,13 +37,13 @@ type PlatformChatOutcome struct {
 	Success        bool
 }
 
-// PlatformChatGateway 平台 chat 记忆与会话持久化 RPC。
+// PlatformChatGateway 平台 chat 记忆与会话持久化（进程内 llmv1 契约）。
 type PlatformChatGateway interface {
-	GetUserMemories(ctx context.Context, in *moe.GetUserMemoriesReq, opts ...grpc.CallOption) (*moe.GetUserMemoriesResp, error)
-	GetUserMemoryProfiles(ctx context.Context, in *moe.GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*moe.GetUserMemoryProfilesResp, error)
-	UpsertUserMemory(ctx context.Context, in *moe.UpsertUserMemoryReq, opts ...grpc.CallOption) (*moe.UpsertUserMemoryResp, error)
-	GetAiUserConfig(ctx context.Context, in *moe.GetAiUserConfigReq, opts ...grpc.CallOption) (*moe.GetAiUserConfigResp, error)
-	RecordLlmChatTurn(ctx context.Context, in *moe.RecordLlmChatTurnReq, opts ...grpc.CallOption) (*moe.RecordLlmChatTurnResp, error)
+	GetUserMemories(ctx context.Context, in *llmv1.GetUserMemoriesReq) (*llmv1.GetUserMemoriesResp, error)
+	GetUserMemoryProfiles(ctx context.Context, in *llmv1.GetUserMemoryProfilesReq) (*llmv1.GetUserMemoryProfilesResp, error)
+	UpsertUserMemory(ctx context.Context, in *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error)
+	GetAiUserConfig(ctx context.Context, in *llmv1.GetAiUserConfigReq) (*llmv1.GetAiUserConfigResp, error)
+	RecordLlmChatTurn(ctx context.Context, in *llmv1.RecordLlmChatTurnReq) (*llmv1.RecordLlmChatTurnResp, error)
 }
 
 // ChatCompleter 非流式推理补全（nil 时 ExecutePlatformChat 使用 PostChatCompletion）。

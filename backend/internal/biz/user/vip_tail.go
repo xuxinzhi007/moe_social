@@ -6,15 +6,15 @@ import (
 	"strconv"
 	"time"
 
+	vipv1 "backend/api/vip/v1"
 	"backend/model"
 	"backend/pkg/achievement"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
 
 // CreateVipOrder 钱包购买 VIP 套餐。
-func CreateVipOrder(ctx context.Context, store UserStore, in *moe.CreateVipOrderReq) (*moe.CreateVipOrderResp, error) {
+func CreateVipOrder(ctx context.Context, store UserStore, in *vipv1.CreateVipOrderReq) (*vipv1.CreateVipOrderResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -105,9 +105,9 @@ func CreateVipOrder(ctx context.Context, store UserStore, in *moe.CreateVipOrder
 		}
 	}
 
-	return &moe.CreateVipOrderResp{
-		NewAchievements: achievement.UnlocksToProto(achUnlocks),
-		Order: &moe.VipOrder{
+	return &vipv1.CreateVipOrderResp{
+		NewAchievements: achievementUnlocksToVipV1(achUnlocks),
+		Order: &vipv1.VipOrder{
 			Id:        strconv.FormatUint(uint64(order.ID), 10),
 			UserId:    in.GetUserId(),
 			PlanId:    strconv.FormatUint(uint64(order.PlanID), 10),
@@ -122,7 +122,7 @@ func CreateVipOrder(ctx context.Context, store UserStore, in *moe.CreateVipOrder
 }
 
 // UpdateUserVip 管理端设置 VIP 状态。
-func UpdateUserVip(ctx context.Context, store UserStore, in *moe.UpdateUserVipReq) (*moe.UpdateUserVipResp, error) {
+func UpdateUserVip(ctx context.Context, store UserStore, in *vipv1.UpdateUserVipReq) (*vipv1.UpdateUserVipResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -173,11 +173,11 @@ func UpdateUserVip(ctx context.Context, store UserStore, in *moe.UpdateUserVipRe
 	if err := store.SaveUser(ctx, &user); err != nil {
 		return nil, err
 	}
-	return &moe.UpdateUserVipResp{User: ModelToProto(&user)}, nil
+	return &vipv1.UpdateUserVipResp{User: ModelToVipUserV1(&user)}, nil
 }
 
 // SyncUserVipStatus 按过期时间同步 VIP 标记。
-func SyncUserVipStatus(ctx context.Context, store UserStore, in *moe.SyncUserVipStatusReq) (*moe.SyncUserVipStatusResp, error) {
+func SyncUserVipStatus(ctx context.Context, store UserStore, in *vipv1.SyncUserVipStatusReq) (*vipv1.SyncUserVipStatusResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -202,11 +202,11 @@ func SyncUserVipStatus(ctx context.Context, store UserStore, in *moe.SyncUserVip
 			_ = store.SaveUser(ctx, &user)
 		}
 	}
-	return &moe.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
+	return &vipv1.SyncUserVipStatusResp{IsVip: isVip, ExpiresAt: vipEndAt}, nil
 }
 
 // UpdateAutoRenew 占位（模型暂无字段）。
-func UpdateAutoRenew(ctx context.Context, store UserStore, in *moe.UpdateAutoRenewReq) (*moe.UpdateAutoRenewResp, error) {
+func UpdateAutoRenew(ctx context.Context, store UserStore, in *vipv1.UpdateAutoRenewReq) (*vipv1.UpdateAutoRenewResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -220,11 +220,11 @@ func UpdateAutoRenew(ctx context.Context, store UserStore, in *moe.UpdateAutoRen
 		}
 		return nil, err
 	}
-	return &moe.UpdateAutoRenewResp{}, nil
+	return &vipv1.UpdateAutoRenewResp{}, nil
 }
 
 // GetVipRecords 分页 VIP 订单记录。
-func GetVipRecords(ctx context.Context, store UserStore, in *moe.GetVipRecordsReq) (*moe.GetVipRecordsResp, error) {
+func GetVipRecords(ctx context.Context, store UserStore, in *vipv1.GetVipRecordsReq) (*vipv1.GetVipRecordsResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -247,7 +247,7 @@ func GetVipRecords(ctx context.Context, store UserStore, in *moe.GetVipRecordsRe
 		return nil, err
 	}
 
-	respRecords := make([]*moe.VipRecord, len(orders))
+	respRecords := make([]*vipv1.VipRecord, len(orders))
 	for i, order := range orders {
 		status := "inactive"
 		if order.IsActive {
@@ -260,7 +260,7 @@ func GetVipRecords(ctx context.Context, store UserStore, in *moe.GetVipRecordsRe
 		if order.EndAt != nil {
 			endAt = order.EndAt.Format("2006-01-02 15:04:05")
 		}
-		respRecords[i] = &moe.VipRecord{
+		respRecords[i] = &vipv1.VipRecord{
 			Id:        strconv.Itoa(int(order.ID)),
 			UserId:    in.GetUserId(),
 			PlanId:    strconv.Itoa(int(order.PlanID)),
@@ -271,11 +271,11 @@ func GetVipRecords(ctx context.Context, store UserStore, in *moe.GetVipRecordsRe
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
-	return &moe.GetVipRecordsResp{Records: respRecords, Total: int32(total)}, nil
+	return &vipv1.GetVipRecordsResp{Records: respRecords, Total: int32(total)}, nil
 }
 
 // GetUserActiveVipRecord 当前有效 VIP 订单。
-func GetUserActiveVipRecord(ctx context.Context, store UserStore, in *moe.GetUserActiveVipRecordReq) (*moe.GetUserActiveVipRecordResp, error) {
+func GetUserActiveVipRecord(ctx context.Context, store UserStore, in *vipv1.GetUserActiveVipRecordReq) (*vipv1.GetUserActiveVipRecordResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -287,8 +287,8 @@ func GetUserActiveVipRecord(ctx context.Context, store UserStore, in *moe.GetUse
 		return nil, err
 	}
 	plan, _ := store.GetVipPlan(ctx, order.PlanID)
-	return &moe.GetUserActiveVipRecordResp{
-		Record: &moe.VipRecord{
+	return &vipv1.GetUserActiveVipRecordResp{
+		Record: &vipv1.VipRecord{
 			Id:        strconv.Itoa(int(order.ID)),
 			UserId:    strconv.Itoa(int(order.UserID)),
 			PlanId:    strconv.Itoa(int(order.PlanID)),
@@ -299,4 +299,21 @@ func GetUserActiveVipRecord(ctx context.Context, store UserStore, in *moe.GetUse
 			CreatedAt: order.CreatedAt.Format("2006-01-02 15:04:05"),
 		},
 	}, nil
+}
+
+func achievementUnlocksToVipV1(unlocks []achievement.UnlockResult) []*vipv1.AchievementUnlock {
+	if len(unlocks) == 0 {
+		return nil
+	}
+	out := make([]*vipv1.AchievementUnlock, 0, len(unlocks))
+	for _, u := range unlocks {
+		out = append(out, &vipv1.AchievementUnlock{
+			BadgeId:    u.BadgeID,
+			Name:       u.Name,
+			ExpGranted: int32(u.ExpGranted),
+			LevelUp:    u.LevelUp,
+			NewLevel:   int32(u.NewLevel),
+		})
+	}
+	return out
 }

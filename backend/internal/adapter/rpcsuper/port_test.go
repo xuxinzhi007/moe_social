@@ -4,28 +4,29 @@ import (
 	"context"
 	"testing"
 
-	"backend/rpc/pb/moe"
+	llmv1 "backend/api/llm/v1"
+	postv1 "backend/api/post/v1"
 )
 
 type stubBridge struct{}
 
-func (stubBridge) GetUserMemories(context.Context, *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
-	return &moe.GetUserMemoriesResp{}, nil
+func (stubBridge) GetUserMemories(context.Context, *llmv1.GetUserMemoriesReq) (*llmv1.GetUserMemoriesResp, error) {
+	return &llmv1.GetUserMemoriesResp{}, nil
 }
-func (stubBridge) UpsertUserMemory(context.Context, *moe.UpsertUserMemoryReq) (*moe.UpsertUserMemoryResp, error) {
-	return &moe.UpsertUserMemoryResp{}, nil
+func (stubBridge) UpsertUserMemory(context.Context, *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error) {
+	return &llmv1.UpsertUserMemoryResp{}, nil
 }
-func (stubBridge) DeleteUserMemory(context.Context, *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
-	return &moe.DeleteUserMemoryResp{}, nil
+func (stubBridge) DeleteUserMemory(context.Context, *llmv1.DeleteUserMemoryReq) (*llmv1.DeleteUserMemoryResp, error) {
+	return &llmv1.DeleteUserMemoryResp{}, nil
 }
-func (stubBridge) CreatePost(context.Context, *moe.CreatePostReq) (*moe.CreatePostResp, error) {
-	return &moe.CreatePostResp{}, nil
+func (stubBridge) CreatePost(context.Context, *postv1.CreatePostRequest) (*postv1.CreatePostReply, error) {
+	return &postv1.CreatePostReply{}, nil
 }
-func (stubBridge) UpdatePost(context.Context, *moe.UpdatePostReq) (*moe.UpdatePostResp, error) {
-	return &moe.UpdatePostResp{}, nil
+func (stubBridge) UpdatePost(context.Context, *postv1.UpdatePostRequest) (*postv1.UpdatePostReply, error) {
+	return &postv1.UpdatePostReply{}, nil
 }
-func (stubBridge) GetPost(context.Context, *moe.GetPostReq) (*moe.GetPostResp, error) {
-	return &moe.GetPostResp{}, nil
+func (stubBridge) GetPost(context.Context, *postv1.GetPostRequest) (*postv1.GetPostReply, error) {
+	return &postv1.GetPostReply{}, nil
 }
 
 func TestNewMoeToolPort_NilBridge(t *testing.T) {
@@ -39,7 +40,7 @@ func TestNewMoeToolPort_Delegates(t *testing.T) {
 	if p == nil {
 		t.Fatal("expected port")
 	}
-	if _, err := p.GetPost(context.Background(), &moe.GetPostReq{}); err != nil {
+	if _, err := p.GetPost(context.Background(), &postv1.GetPostRequest{}); err != nil {
 		t.Fatalf("GetPost: %v", err)
 	}
 }

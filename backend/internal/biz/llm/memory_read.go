@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
+	llmv1 "backend/api/llm/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 
 	"gorm.io/gorm"
 )
@@ -18,7 +18,7 @@ var (
 )
 
 // GetUserMemories 分页查询用户记忆（排除设备同步项）。
-func GetUserMemories(ctx context.Context, st MemoryStore, in *moe.GetUserMemoriesReq) (*moe.GetUserMemoriesResp, error) {
+func GetUserMemories(ctx context.Context, st MemoryStore, in *llmv1.GetUserMemoriesReq) (*llmv1.GetUserMemoriesResp, error) {
 	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
@@ -58,12 +58,12 @@ func GetUserMemories(ctx context.Context, st MemoryStore, in *moe.GetUserMemorie
 		return nil, err
 	}
 
-	rpcMemories := make([]*moe.UserMemory, 0, len(memories))
+	rpcMemories := make([]*llmv1.UserMemory, 0, len(memories))
 	for _, m := range memories {
 		rpcMemories = append(rpcMemories, userMemoryToProto(m))
 	}
 
-	return &moe.GetUserMemoriesResp{
+	return &llmv1.GetUserMemoriesResp{
 		Memories: rpcMemories,
 		Total:    total,
 		Limit:    int32(limit),
@@ -73,7 +73,7 @@ func GetUserMemories(ctx context.Context, st MemoryStore, in *moe.GetUserMemorie
 }
 
 // GetUserMemoryProfiles 返回用户画像缓存（必要时重建）。
-func GetUserMemoryProfiles(ctx context.Context, st MemoryStore, in *moe.GetUserMemoryProfilesReq) (*moe.GetUserMemoryProfilesResp, error) {
+func GetUserMemoryProfiles(ctx context.Context, st MemoryStore, in *llmv1.GetUserMemoryProfilesReq) (*llmv1.GetUserMemoryProfilesResp, error) {
 	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
@@ -106,20 +106,20 @@ func GetUserMemoryProfiles(ctx context.Context, st MemoryStore, in *moe.GetUserM
 		return nil, err
 	}
 
-	profiles := make([]*moe.UserMemoryProfile, 0, len(caches))
+	profiles := make([]*llmv1.UserMemoryProfile, 0, len(caches))
 	for _, c := range caches {
-		profiles = append(profiles, &moe.UserMemoryProfile{
+		profiles = append(profiles, &llmv1.UserMemoryProfile{
 			MemoryType: c.MemoryType,
 			Summary:    c.Summary,
 			ItemCount:  int32(c.ItemCount),
 			Confidence: c.Confidence,
 		})
 	}
-	return &moe.GetUserMemoryProfilesResp{Profiles: profiles}, nil
+	return &llmv1.GetUserMemoryProfilesResp{Profiles: profiles}, nil
 }
 
 // DeleteUserMemory 按 user_id + key 删除记忆。
-func DeleteUserMemory(ctx context.Context, st MemoryStore, in *moe.DeleteUserMemoryReq) (*moe.DeleteUserMemoryResp, error) {
+func DeleteUserMemory(ctx context.Context, st MemoryStore, in *llmv1.DeleteUserMemoryReq) (*llmv1.DeleteUserMemoryResp, error) {
 	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
@@ -143,7 +143,7 @@ func DeleteUserMemory(ctx context.Context, st MemoryStore, in *moe.DeleteUserMem
 	if result.RowsAffected == 0 {
 		return nil, ErrMemoryNotFound
 	}
-	return &moe.DeleteUserMemoryResp{}, nil
+	return &llmv1.DeleteUserMemoryResp{}, nil
 }
 
 // EnsureUserMemoryProfileCache 若缓存过期则重建。
