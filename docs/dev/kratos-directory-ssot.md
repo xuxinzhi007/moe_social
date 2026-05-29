@@ -2,55 +2,33 @@
 
 > **权威参考**：[Kratos 项目布局](https://go-kratos.dev/zh-cn/docs/intro/layout/)  
 > **状态板**：[kratos-migration-status.md](./kratos-migration-status.md)  
-> **上次更新**：2026-05-27（P0/P1 收口） · **审计结论**：[kratos-architecture-audit.md](./kratos-architecture-audit.md)
+> **上次更新**：2026-05-29 · 迁移完成（HTTP-only）
 
 ---
 
-## 1. 官方 HTTP 两步（已对齐）
+## 1. 官方 HTTP 两步
 
 ```text
 api/<domain>/v1/*.proto + google.api.http
   → make gen → *_http.pb.go
-  → internal/server/http.go
-  → Register*HTTPServer（http_proto.go 调用生成代码）
-  → internal/service → biz → data
+  → internal/server/http_proto.go → Register*HTTPServer
+  → internal/server/protohttp/<domain>/ → service → biz → data
 ```
-
-过渡期旁路：`RegisterCompatHTTP` → `internal/server/httplegacy/*_compat.go`（逐域缩短，最终删除）。
 
 ---
 
-## 2. 当前目录（2026-05-27）
+## 2. 当前目录
 
 ```text
 backend/
-  api/<domain>/v1/*.proto, *.pb.go, *_grpc.pb.go, *_http.pb.go   # 契约 SSOT（18 域含 content）
-  api/defs/*.api                    # 存量 goctl（勿扩；make gen-api）
-  api/internal/handler/             # hybrid 构建残留
-  api/internal/logic/.gitkeep
-
-  internal/server/
-    http.go                         # NewHTTPServer（CORS + 双信封 + 路由）
-    http_envelope.go                # Proto 统一 JSON 信封
-    compat_envelope.go              # Compat BaseResp.data 压平 Filter
-    cors.go                         # Flutter Web CORS
-    http_proto.go                   # Register*HTTPServer（19 次注册 / 18 域）
-    http_compat.go                  # 编排 httplegacy compat
-    httplegacy/                     # intentional compat（11 条）+ route_stats + swagger bridge
-    grpc/<domain>/                  # proto HTTP 薄适配（adminapp、vipplans、content…）
-    grpc.go
-
-  internal/platform/
-    svc/                            # ServiceContext
-    wiring/                         # 启动装配
-    moesocial/                      # 生产 HTTP/gRPC 启动
-    kratosprogress/                 # /migration 进度
-
-  internal/apilegacy/               # swagger bridge、gw/common（随 D4 退役）
-  internal/legacy/types/            # 存量 goctl JSON types
-
-  third_party/google/api/           # protoc-gen-go-http 依赖
-  openapi.yaml                      # make gen 产出（~100+ /api 路径）
+  cmd/moe-social/
+  api/<domain>/v1/*.proto, *_http.pb.go
+  internal/server/protohttp/<domain>/    # proto HTTP 适配层
+  internal/server/transport/           # OAuth / WS / SSE
+  internal/platform/{svc,wiring,bootstrap,moesocial}/
+  config/config.yaml
+  openapi.yaml
+  third_party/google/api/
 ```
 
 ---

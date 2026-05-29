@@ -1,55 +1,28 @@
 ---
-description: Kratos 后端迁移纪律（compat / proto / service）
+description: Kratos 后端纪律（proto / protohttp / service）
 globs: backend/**/*
 alwaysApply: false
 ---
 
-# Kratos 迁移纪律（后端）
+# Kratos 后端纪律
 
-> **更新：2026-05-27** · SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md) · 存量 compat：[kratos-legacy-api-migration.md](../docs/dev/kratos-legacy-api-migration.md)
+> **更新：2026-05-29** · SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md) · [backend/LAYOUT.md](../backend/LAYOUT.md)
 
-**大任务并行**：多域 compat / 多文件迁移时，遵循 [.cursor/rules/parallel-agent-workflow.mdc](./parallel-agent-workflow.mdc)（子代理 + worktree），不要单会话串行扛完全部域。
+## 当前状态
 
-## 当前状态（摘要）
+- 生产：`make moe-social` · HTTP `:8888` · 单进程
+- 契约：`api/<domain>/v1/*.proto` → `make gen` → `openapi.yaml`
+- 实现：`internal/server/protohttp/<domain>/` + `internal/service`
 
-- 生产：`make moe-social` · HTTP `:8888` · `routes_native_gen = 0`
-- compat：**263** 条 · 约 **56** 条已直挂 `internal/service`
-- 验收：`make check` · `curl /migration`（**勿**再引用已删除的 `make verify-*`）
+## 新接口
 
-## 配置（`config.yaml` → `moe`）
-
-| 键 | 默认 | 作用 |
-|----|------|------|
-| `api_in_process` | true | Moe Admin → `biz/moe` |
-| `vip_api_in_process` | true | VIP 套餐 → `biz/vip` |
-| `user_api_in_process` | true | User 核心 → `biz/user` |
-
-## 新功能写在哪
-
-| 域 | 契约 | 实现 |
-|----|------|------|
-| Moe | `api/moe/v1/moe.proto` | `biz/moe` + `moeadmingw` |
-| VIP 套餐 | `api/vip/v1/` | `biz/vip` + `vipadmingw` |
-| User 核心 | 暂 `super.api` | `biz/user` + `usergw` |
-| 其它 | `super.api` / `super.proto` | legacy logic（迁移中） |
-
-## 生成
-
-```bash
-make gen-moe-proto
-make gen-moe-conf
-make gen-moe-admin   # 改 super.api 后
-```
-
-## 验收
-
-```bash
-cd backend && make check
-make moe-social
-curl -s http://127.0.0.1:8888/migration
-```
+1. 改 `api/<domain>/v1/*.proto`（加 `google.api.http`）
+2. `cd backend && make gen`
+3. 实现 `internal/service` + `internal/server/protohttp`
+4. `make check`
 
 ## 禁止
 
-- 新路由写进 `api/defs`（走域 proto + `*_compat.go`）
-- 多子代理同时改 `register_all.go` / `route_stats.go`（由父代理合并时单点改）
+- 新路由进已删除的 `api/defs` 或 `backend/rpc`
+- 手改 `*_pb.go` / `*_http.pb.go`
+- `make gen-api` / `make gen-rpc`（已退役）

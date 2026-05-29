@@ -21,28 +21,28 @@ import (
 	vipv1 "backend/api/vip/v1"
 	userbiz "backend/internal/biz/user"
 	"backend/internal/platform/svc"
-	grpcserver "backend/internal/server/grpc"
-	achievementgrpc "backend/internal/server/grpc/achievement"
-	adminappgrpc "backend/internal/server/grpc/adminapp"
-	admininsightsgrpc "backend/internal/server/grpc/admininsights"
-	aigrpc "backend/internal/server/grpc/ai"
-	behaviorgrpc "backend/internal/server/grpc/behavior"
-	chatgrpc "backend/internal/server/grpc/chat"
-	checkingrpc "backend/internal/server/grpc/checkin"
-	commentgrpc "backend/internal/server/grpc/comment"
-	communitygrpc "backend/internal/server/grpc/community"
-	contentgrpc "backend/internal/server/grpc/content"
-	giftgrpc "backend/internal/server/grpc/gift"
-	landinggrpc "backend/internal/server/grpc/landing"
-	llmgrpc "backend/internal/server/grpc/llm"
-	mediagrpc "backend/internal/server/grpc/media"
-	notifygrpc "backend/internal/server/grpc/notify"
-	platformgrpc "backend/internal/server/grpc/platform"
-	postgrpc "backend/internal/server/grpc/post"
-	usergrpc "backend/internal/server/grpc/user"
-	vipgrpc "backend/internal/server/grpc/vip"
-	vipplansgrpc "backend/internal/server/grpc/vipplans"
-	vipreadgrpc "backend/internal/server/grpc/vipread"
+	moeadminhttp "backend/internal/server/protohttp"
+	achievementhttp "backend/internal/server/protohttp/achievement"
+	adminapphttp "backend/internal/server/protohttp/adminapp"
+	admininsightshttp "backend/internal/server/protohttp/admininsights"
+	aihttp "backend/internal/server/protohttp/ai"
+	behaviorhttp "backend/internal/server/protohttp/behavior"
+	chathttp "backend/internal/server/protohttp/chat"
+	checkinhttp "backend/internal/server/protohttp/checkin"
+	commenthttp "backend/internal/server/protohttp/comment"
+	communityhttp "backend/internal/server/protohttp/community"
+	contenthttp "backend/internal/server/protohttp/content"
+	gifthttp "backend/internal/server/protohttp/gift"
+	landinghttp "backend/internal/server/protohttp/landing"
+	llmhttp "backend/internal/server/protohttp/llm"
+	mediahttp "backend/internal/server/protohttp/media"
+	notifyhttp "backend/internal/server/protohttp/notify"
+	platformhttp "backend/internal/server/protohttp/platform"
+	posthttp "backend/internal/server/protohttp/post"
+	userhttp "backend/internal/server/protohttp/user"
+	viphttp "backend/internal/server/protohttp/vip"
+	vipplanshttp "backend/internal/server/protohttp/vipplans"
+	vipreadhttp "backend/internal/server/protohttp/vipread"
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
@@ -95,76 +95,76 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		return
 	}
 	if d.LandingApp != nil {
-		landingv1.RegisterLandingHTTPServer(srv, landinggrpc.New(d.LandingApp))
+		landingv1.RegisterLandingHTTPServer(srv, landinghttp.New(d.LandingApp))
 	}
 	if d.CheckinApp != nil {
-		checkinv1.RegisterCheckinHTTPServer(srv, checkingrpc.New(d.CheckinApp))
+		checkinv1.RegisterCheckinHTTPServer(srv, checkinhttp.New(d.CheckinApp))
 	}
 	if d.AchievementApp != nil {
-		achievementv1.RegisterAchievementHTTPServer(srv, achievementgrpc.New(d.AchievementApp))
+		achievementv1.RegisterAchievementHTTPServer(srv, achievementhttp.New(d.AchievementApp))
 	}
 	if d.PostApp != nil {
-		postv1.RegisterPostServiceHTTPServer(srv, postgrpc.New(d.PostApp))
+		postv1.RegisterPostServiceHTTPServer(srv, posthttp.New(d.PostApp))
 	}
 	if d.GiftApp != nil {
-		giftv1.RegisterGiftServiceHTTPServer(srv, giftgrpc.New(d.GiftApp))
+		giftv1.RegisterGiftServiceHTTPServer(srv, gifthttp.New(d.GiftApp))
 	}
 	if d.UserApp != nil {
-		userv1.RegisterUserServiceHTTPServer(srv, usergrpc.New(d.UserApp))
+		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))
 	}
 	if d.CommentApp != nil {
-		commentv1.RegisterCommentServiceHTTPServer(srv, commentgrpc.New(d.CommentApp))
+		commentv1.RegisterCommentServiceHTTPServer(srv, commenthttp.New(d.CommentApp))
 	}
 	if d.CommunityApp != nil {
-		communityv1.RegisterCommunityHTTPServer(srv, communitygrpc.New(d.CommunityApp))
+		communityv1.RegisterCommunityHTTPServer(srv, communityhttp.New(d.CommunityApp))
 	}
 	if d.ChatApp != nil {
-		chatSrv := chatgrpc.New(d.ChatApp)
+		chatSrv := chathttp.New(d.ChatApp)
 		chatv1.RegisterPrivateMessageServiceHTTPServer(srv, chatSrv)
 		chatv1.RegisterPushNotificationServiceHTTPServer(srv, chatSrv)
 	}
-	chatv1.RegisterChatPresenceServiceHTTPServer(srv, chatgrpc.NewPresence())
+	chatv1.RegisterChatPresenceServiceHTTPServer(srv, chathttp.NewPresence())
 	if d.NotifyApp != nil {
-		notifyv1.RegisterNotifyServiceHTTPServer(srv, notifygrpc.New(d.NotifyApp))
+		notifyv1.RegisterNotifyServiceHTTPServer(srv, notifyhttp.New(d.NotifyApp))
 	}
 	if d.UserApp != nil {
-		vipv1.RegisterVipServiceHTTPServer(srv, vipgrpc.New(d.UserApp))
+		vipv1.RegisterVipServiceHTTPServer(srv, viphttp.New(d.UserApp))
 	}
 	if d.BehaviorApp != nil {
-		behaviorv1.RegisterBehaviorAppHTTPServer(srv, behaviorgrpc.New(d.BehaviorApp))
+		behaviorv1.RegisterBehaviorAppHTTPServer(srv, behaviorhttp.New(d.BehaviorApp))
 	}
 	if d.AIApp != nil {
-		aiv1.RegisterAiResourcesHTTPServer(srv, aigrpc.New(d.AIApp))
+		aiv1.RegisterAiResourcesHTTPServer(srv, aihttp.New(d.AIApp))
 	}
 	if d.LLMApp != nil {
-		llmv1.RegisterLlmChatHTTPServer(srv, llmgrpc.New(d.LLMApp,
-			llmgrpc.WithMemorySearch(d.LLMMemoryGateway, d.LLMInferenceBaseURL),
+		llmv1.RegisterLlmChatHTTPServer(srv, llmhttp.New(d.LLMApp,
+			llmhttp.WithMemorySearch(d.LLMMemoryGateway, d.LLMInferenceBaseURL),
 		))
 	}
 	if d.MediaApp != nil {
-		mediagrpc.RegisterHTTPServer(srv, mediagrpc.New(d.MediaApp))
+		mediahttp.RegisterHTTPServer(srv, mediahttp.New(d.MediaApp))
 	}
-	contentv1.RegisterContentServiceHTTPServer(srv, contentgrpc.New(contentapp.New()))
+	contentv1.RegisterContentServiceHTTPServer(srv, contenthttp.New(contentapp.New()))
 	if d.VipAdmin != nil {
-		vipv1.RegisterVipReadAdminHTTPServer(srv, vipreadgrpc.New(d.VipAdmin))
-		vipv1.RegisterVipPlansHTTPServer(srv, vipplansgrpc.New(d.VipAdmin))
+		vipv1.RegisterVipReadAdminHTTPServer(srv, vipreadhttp.New(d.VipAdmin))
+		vipv1.RegisterVipPlansHTTPServer(srv, vipplanshttp.New(d.VipAdmin))
 	}
 	if d.MoeAdmin != nil {
-		moeSrv := grpcserver.New(d.MoeAdmin, moeGRPCOptions(d)...)
+		moeSrv := moeadminhttp.New(d.MoeAdmin, moeAdminHTTPOptions(d)...)
 		moepb.RegisterMoeAdminHTTPServer(srv, moeSrv)
 	}
 	if d.AdminApp != nil {
-		adminv1.RegisterAdminInsightsHTTPServer(srv, admininsightsgrpc.New(d.AdminApp))
-		adminOpts := []adminappgrpc.Option{}
+		adminv1.RegisterAdminInsightsHTTPServer(srv, admininsightshttp.New(d.AdminApp))
+		adminOpts := []adminapphttp.Option{}
 		if d.AIApp != nil {
-			adminOpts = append(adminOpts, adminappgrpc.WithAIApp(d.AIApp))
+			adminOpts = append(adminOpts, adminapphttp.WithAIApp(d.AIApp))
 		}
 		if d.SvcCtx != nil {
-			adminOpts = append(adminOpts, adminappgrpc.WithServiceContext(d.SvcCtx))
+			adminOpts = append(adminOpts, adminapphttp.WithServiceContext(d.SvcCtx))
 		}
-		adminv1.RegisterAdminAppHTTPServer(srv, adminappgrpc.New(d.AdminApp, d.VipAdmin, adminOpts...))
+		adminv1.RegisterAdminAppHTTPServer(srv, adminapphttp.New(d.AdminApp, d.VipAdmin, adminOpts...))
 	}
 	if d.SvcCtx != nil {
-		platformv1.RegisterPlatformHTTPServer(srv, platformgrpc.New(d.SvcCtx))
+		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(d.SvcCtx))
 	}
 }

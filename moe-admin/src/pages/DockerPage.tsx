@@ -40,8 +40,8 @@ export function DockerPage() {
       let lines = (c.message || '') + '\n\n'
       lines += `backend_dir: ${c.backend_dir}\n存在: ${c.backend_dir_exists ? '是' : '否'}\n`
       lines += `compose: ${c.compose_file} 存在: ${c.compose_file_exists ? '是' : '否'}\n`
-      lines += `compose MOE_SUPER_RPC_ENDPOINT: ${c.compose_rpc_env_ok ? 'rpc:8080' : '未配置'}\n`
-      lines += `API→RPC 就绪: ${c.rpc_config_ok ? '是' : '否'}\n`
+      lines += `bin/moe-social: ${c.binary_exists ? '是' : '否'}\n`
+      lines += `容器 moe-social: ${c.container_running || '—'}\n`
       if (c.suggested_backend_dir) {
         lines += `\n建议 backend_dir: ${c.suggested_backend_dir}\n`
       }
@@ -78,7 +78,7 @@ export function DockerPage() {
 
   return (
     <>
-      <PageHead title="云服务器 · Docker" description="SSH 管理 compose 与 API/RPC 容器" />
+      <PageHead title="云服务器 · Docker" description="SSH 管理 compose 与 moe-social 容器" />
 
       <div className="panel">
         <div className="panel-head">

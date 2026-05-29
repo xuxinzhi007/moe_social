@@ -8,23 +8,19 @@ import (
 	deploycfg "backend/deploy/config"
 )
 
-// RemoteCheckResult is a structured VPS path / compose / API→RPC config inspection.
+// RemoteCheckResult is a structured VPS path / compose / moe-social binary inspection.
 type RemoteCheckResult struct {
-	OK                   bool     `json:"ok"`
-	Message              string   `json:"message"`
-	BackendDir           string   `json:"backend_dir"`
-	ComposeFile          string   `json:"compose_file"`
-	BackendDirExists     bool     `json:"backend_dir_exists"`
-	ComposeFileExists    bool     `json:"compose_file_exists"`
-	ComposeRpcEnvSet     bool     `json:"compose_rpc_env_set"`
-	ComposeRpcEnvOK      bool     `json:"compose_rpc_env_ok"`
-	ConfigRpcEndpointsOK bool     `json:"config_rpc_endpoints_ok"`
-	ApiContainerRpcEnvOK string   `json:"api_container_rpc_env_ok"` // yes | no | na
-	LegacySuperDocker    bool     `json:"legacy_super_docker_yaml"`
-	RpcConfigOK          bool     `json:"rpc_config_ok"`
-	SuggestedBackend     string   `json:"suggested_backend_dir,omitempty"`
-	ComposeCandidates    []string `json:"compose_candidates,omitempty"`
-	RawOutput            string   `json:"raw_output,omitempty"`
+	OK                 bool     `json:"ok"`
+	Message            string   `json:"message"`
+	BackendDir         string   `json:"backend_dir"`
+	ComposeFile        string   `json:"compose_file"`
+	BackendDirExists   bool     `json:"backend_dir_exists"`
+	ComposeFileExists  bool     `json:"compose_file_exists"`
+	BinaryExists       bool     `json:"binary_exists"`
+	ContainerRunning   string   `json:"container_running"` // yes | no | na
+	SuggestedBackend   string   `json:"suggested_backend_dir,omitempty"`
+	ComposeCandidates  []string `json:"compose_candidates,omitempty"`
+	RawOutput          string   `json:"raw_output,omitempty"`
 }
 
 // RemoteInspectScript builds a shell script to verify paths on the VPS.
@@ -35,23 +31,17 @@ func RemoteInspectScript(backendDir, composeFile string) string {
 		cfName = "docker-compose.binary.yml"
 	}
 	cf := shellQuote(cfName)
-	cfg := shellQuote(strings.TrimSpace(backendDir) + "/config/config.yaml")
+	bin := shellQuote(strings.TrimSpace(backendDir) + "/bin/moe-social")
 	return fmt.Sprintf(`echo MOE_CHECK_BEGIN
 echo backend_dir=%s
 if [ -d %s ]; then echo backend_dir_exists=yes; else echo backend_dir_exists=no; fi
 if [ -f %s/%s ]; then echo compose_exists=yes; else echo compose_exists=no; fi
-if grep -q 'MOE_SUPER_RPC_ENDPOINT' %s/%s 2>/dev/null; then echo compose_rpc_env_set=yes; else echo compose_rpc_env_set=no; fi
-if grep -E 'MOE_SUPER_RPC_ENDPOINT[=:].*rpc:8080' %s/%s 2>/dev/null; then echo compose_rpc_env_ok=yes; else echo compose_rpc_env_ok=no; fi
-if [ -f %s ] && grep -A3 'super_rpc_endpoints' %s 2>/dev/null | grep -q 'rpc:8080'; then echo config_rpc_ok=yes; else echo config_rpc_ok=no; fi
-if [ -f %s/api/etc/super-docker.yaml ]; then echo legacy_super_docker=yes; fi
-if docker inspect moe-social-api >/dev/null 2>&1; then
-  if docker inspect moe-social-api --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -q 'MOE_SUPER_RPC_ENDPOINT=rpc:8080'; then
-    echo api_env_rpc_ok=yes
-  else
-    echo api_env_rpc_ok=no
-  fi
+if [ -f %s ]; then echo binary_exists=yes; else echo binary_exists=no; fi
+if docker inspect moe-social >/dev/null 2>&1; then
+  st=$(docker inspect -f '{{.State.Status}}' moe-social 2>/dev/null || echo unknown)
+  if [ "$st" = "running" ]; then echo container_running=yes; else echo container_running=no; fi
 else
-  echo api_env_rpc_ok=na
+  echo container_running=na
 fi
 echo MOE_FIND_COMPOSE_BEGIN
 find /root /home /opt -maxdepth 6 -name 'docker-compose.binary.yml' 2>/dev/null | head -15
@@ -60,7 +50,7 @@ echo MOE_LS_ROOT
 ls -la /root 2>/dev/null | head -25
 echo MOE_LS_GOWORK
 ls -la /root/gowork 2>/dev/null | head -25
-echo MOE_CHECK_END`, be, be, be, cf, be, cf, be, cf, cfg, cfg, be)
+echo MOE_CHECK_END`, be, be, be, cf, bin)
 }
 
 // ParseRemoteInspectOutput parses probe script output.
@@ -79,16 +69,10 @@ func ParseRemoteInspectOutput(out, configuredBackend string) RemoteCheckResult {
 			res.BackendDirExists = true
 		case line == "compose_exists=yes":
 			res.ComposeFileExists = true
-		case line == "compose_rpc_env_set=yes":
-			res.ComposeRpcEnvSet = true
-		case line == "compose_rpc_env_ok=yes":
-			res.ComposeRpcEnvOK = true
-		case line == "config_rpc_ok=yes":
-			res.ConfigRpcEndpointsOK = true
-		case line == "legacy_super_docker=yes":
-			res.LegacySuperDocker = true
-		case strings.HasPrefix(line, "api_env_rpc_ok="):
-			res.ApiContainerRpcEnvOK = strings.TrimPrefix(line, "api_env_rpc_ok=")
+		case line == "binary_exists=yes":
+			res.BinaryExists = true
+		case strings.HasPrefix(line, "container_running="):
+			res.ContainerRunning = strings.TrimPrefix(line, "container_running=")
 		case strings.HasPrefix(line, "backend_dir="):
 			if v := strings.TrimPrefix(line, "backend_dir="); v != "" {
 				res.BackendDir = v
@@ -108,30 +92,9 @@ func ParseRemoteInspectOutput(out, configuredBackend string) RemoteCheckResult {
 			res.SuggestedBackend = strings.TrimSuffix(candidates[0], "\\"+res.ComposeFile)
 		}
 	}
-	res.RpcConfigOK = res.ComposeRpcEnvOK || res.ConfigRpcEndpointsOK
-	if res.ApiContainerRpcEnvOK == "no" {
-		res.RpcConfigOK = false
-	}
-	res.OK = res.BackendDirExists && res.ComposeFileExists && res.RpcConfigOK
+	res.OK = res.BackendDirExists && res.ComposeFileExists && (res.BinaryExists || res.ContainerRunning == "yes")
 	if res.OK {
-		res.Message = "远程路径、compose 与 API→RPC（MOE_SUPER_RPC_ENDPOINT=rpc:8080）就绪"
-		if res.LegacySuperDocker {
-			res.Message += "；可删除过期的 api/etc/super-docker.yaml"
-		}
-		return res
-	}
-	if res.BackendDirExists && res.ComposeFileExists && !res.RpcConfigOK {
-		var hints []string
-		if !res.ComposeRpcEnvOK && !res.ConfigRpcEndpointsOK {
-			hints = append(hints, "compose 需 environment.MOE_SUPER_RPC_ENDPOINT=rpc:8080，或在 config/config.yaml 配置 api.super_rpc_endpoints")
-		}
-		if res.ApiContainerRpcEnvOK == "no" {
-			hints = append(hints, "运行中 API 容器未注入 MOE_SUPER_RPC_ENDPOINT，执行 docker compose restart api")
-		}
-		if res.LegacySuperDocker {
-			hints = append(hints, "仍存在旧版 super-docker.yaml，请 git pull 后删除并改用环境变量")
-		}
-		res.Message = "路径就绪，但 API→RPC 配置异常：" + strings.Join(hints, "；")
+		res.Message = "远程路径、compose 与 moe-social 二进制/容器就绪"
 		return res
 	}
 	if !res.BackendDirExists {
@@ -144,7 +107,15 @@ func ParseRemoteInspectOutput(out, configuredBackend string) RemoteCheckResult {
 		res.Message = msg
 		return res
 	}
-	res.Message = fmt.Sprintf("compose 文件不存在: %s/%s", res.BackendDir, res.ComposeFile)
+	if !res.ComposeFileExists {
+		res.Message = fmt.Sprintf("compose 文件不存在: %s/%s", res.BackendDir, res.ComposeFile)
+		return res
+	}
+	if !res.BinaryExists && res.ContainerRunning != "yes" {
+		res.Message = "缺少 bin/moe-social，且 moe-social 容器未运行；请先 make build-linux 并上传或 docker compose up"
+		return res
+	}
+	res.Message = "巡检未通过，请查看原始输出"
 	return res
 }
 

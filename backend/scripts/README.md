@@ -7,7 +7,7 @@ cd backend
 make gen    # proto pb/grpc/http + openapi.yaml + 路由计数
 ```
 
-新接口：只改 `api/<domain>/v1/*.proto`（含 `google.api.http`），**禁止** goctl / `api/defs`。
+新接口：只改 `api/<domain>/v1/*.proto`（含 `google.api.http`），然后 `make gen`。
 
 | 命令 | 用途 |
 |------|------|

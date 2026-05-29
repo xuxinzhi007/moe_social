@@ -30,7 +30,7 @@ api/<domain>/v1/*.proto
     → make gen → *_http.pb.go
       → internal/server/http_proto.go
         → Register*HTTPServer（生成代码）
-          → internal/server/grpc/<domain>/（薄适配）
+          → internal/server/protohttp/<domain>/（薄适配）
             → internal/service → internal/biz → internal/data
 ```
 
