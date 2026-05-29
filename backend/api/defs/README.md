@@ -1,4 +1,7 @@
-# API 契约分片（FS-8 SSOT）
+# API 契约分片（FS-8 SSOT · **冻结维护**）
+
+> **新接口禁止写入本目录。** 请改 `api/<domain>/v1/*.proto` + `google.api.http` → `make gen`。  
+> 只读镜像：`scripts/archive/api-defs/`（灾难恢复用）。
 
 HTTP goctl 契约已按域拆分（FS-9）。**禁止**在 `moe.api` 中直接添加 `type` 或 `@server`。
 

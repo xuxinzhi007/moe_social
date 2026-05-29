@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package comment.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/comment/v1;commentv1";
 
 // Comment — 域 HTTP/gRPC 契约 SSOT（P6-0）。
@@ -63,7 +65,13 @@ message LikeCommentReply {
 }
 
 service CommentService {
-  rpc GetPostComments(GetPostCommentsRequest) returns (GetPostCommentsReply);
-  rpc CreateComment(CreateCommentRequest) returns (CreateCommentReply);
-  rpc LikeComment(LikeCommentRequest) returns (LikeCommentReply);
+  rpc GetPostComments(GetPostCommentsRequest) returns (GetPostCommentsReply) {
+    option (google.api.http) = { get: "/api/posts/{post_id}/comments" };
+  }
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentReply) {
+    option (google.api.http) = { post: "/api/comments" body: "*" };
+  }
+  rpc LikeComment(LikeCommentRequest) returns (LikeCommentReply) {
+    option (google.api.http) = { post: "/api/comments/{comment_id}/like" body: "*" };
+  }
 }

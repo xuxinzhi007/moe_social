@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package checkin.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/checkin/v1;checkinv1";
 
 // Checkin — 域 gRPC SSOT（P4-C；与 Super 并存）。
@@ -105,9 +107,19 @@ message GetExpLogsReply {
 }
 
 service Checkin {
-  rpc CheckIn(CheckInRequest) returns (CheckInReply);
-  rpc GetUserLevel(GetUserLevelRequest) returns (GetUserLevelReply);
-  rpc GetCheckInStatus(GetCheckInStatusRequest) returns (GetCheckInStatusReply);
-  rpc GetCheckInHistory(GetCheckInHistoryRequest) returns (GetCheckInHistoryReply);
-  rpc GetExpLogs(GetExpLogsRequest) returns (GetExpLogsReply);
+  rpc CheckIn(CheckInRequest) returns (CheckInReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/check-in" body: "*" };
+  }
+  rpc GetUserLevel(GetUserLevelRequest) returns (GetUserLevelReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/level" };
+  }
+  rpc GetCheckInStatus(GetCheckInStatusRequest) returns (GetCheckInStatusReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/check-in/status" };
+  }
+  rpc GetCheckInHistory(GetCheckInHistoryRequest) returns (GetCheckInHistoryReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/check-in/history" };
+  }
+  rpc GetExpLogs(GetExpLogsRequest) returns (GetExpLogsReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/exp/logs" };
+  }
 }

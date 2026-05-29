@@ -17,9 +17,9 @@ SKIP = {
 }
 
 IMPORT_RULES = [
-    (r"\bcommon\.", '"backend/api/internal/common"'),
+    (r"\bcommon\.", '"backend/internal/apilegacy/common"'),
     (r"\bhandlerutil\.", '"backend/api/internal/handler/handlerutil"'),
-    (r"\bmoebridge\.", '"backend/api/internal/moebridge"'),
+    (r"\bmoebridge\.", '"backend/internal/apilegacy/moebridge"'),
     (r"\bmoe\.", '"backend/rpc/pb/moe"'),
     (r"\butils\.", '"backend/utils"'),
     (r"\bmodel\.", '"backend/model"'),
@@ -121,8 +121,8 @@ def sort_imports(imps: set[str]) -> list[str]:
 def collect_imports(*chunks: str) -> list[str]:
     imps = {
         '"net/http"',
-        '"backend/api/internal/svc"',
-        '"backend/api/internal/types"',
+        '"backend/internal/apilegacy/svc"',
+        '"backend/internal/legacy/types"',
         '"github.com/zeromicro/go-zero/rest/httpx"',
     }
     text = "\n".join(chunks)
@@ -222,8 +222,8 @@ def migrate(handler_path: Path) -> str:
                 '\t"net/http"',
                 "",
                 '\t"backend/api/internal/handler/handlerutil"',
-                '\t"backend/api/internal/svc"',
-                '\t"backend/api/internal/types"',
+                '\t"backend/internal/apilegacy/svc"',
+                '\t"backend/internal/legacy/types"',
                 '\t"github.com/zeromicro/go-zero/rest/httpx"',
                 ")",
                 "",

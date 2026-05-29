@@ -1,0 +1,23 @@
+// FS-8: vip 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/vip/v1/vip_messages.proto · api/admin/v1 (admin VIP)
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: vip
+)
+service Super {
+	@handler getVipPlans
+	// P6 migrated → api/vip/v1/vip_messages.proto · api/admin/v1 (admin VIP) (GET /api/vip/plans)
+	get /api/vip/plans (EmptyReq) returns (GetVipPlansResp)
+
+	@handler getVipPlan
+	// P6 migrated → api/vip/v1/vip_messages.proto · api/admin/v1 (admin VIP) (GET /api/vip/plans/:plan_id)
+	get /api/vip/plans/:plan_id (GetVipPlanReq) returns (GetVipPlanResp)
+
+	@handler createVipPlan
+	// P6 migrated → api/vip/v1/vip_messages.proto · api/admin/v1 (admin VIP) (POST /api/vip/plans)
+	post /api/vip/plans (CreateVipPlanReq) returns (CreateVipPlanResp)
+}

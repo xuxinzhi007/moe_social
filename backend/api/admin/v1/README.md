@@ -8,4 +8,4 @@
 | `GET /api/admin/analytics/overview` | |
 | `GET /api/admin/topic-tags` | |
 
-试点注册：`api/moehttp/admin_insights_compat.go`
+试点注册：`internal/server/httplegacy/admin_insights_compat.go`（或 `http_proto` 若已迁入）

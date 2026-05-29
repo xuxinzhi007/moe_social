@@ -1,6 +1,6 @@
 # moe-social 运行时
 
-> **最后更新：2026-05-28**  
+> **最后更新：2026-05-29**  
 > 架构：[kratos-migration.md](./kratos-migration.md) · 状态：[kratos-migration-status.md](./kratos-migration-status.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)
 
 ## 是什么？
@@ -9,8 +9,8 @@
 
 | 维度 | 说明 |
 |------|------|
-| HTTP | Kratos `:8888` → `api/moehttp`（263 compat 路由） |
-| gRPC | Kratos `:8080` → 12 域服务 + `MoeAdmin`（**无 Super**） |
+| HTTP | Kratos `:8888` → `http_proto`（官方）+ `httplegacy`（过渡 compat） |
+| gRPC | Kratos `:8080` → `internal/server/grpc`（12 域 + MoeAdmin） |
 | 配置 SSOT | `backend/config/config.yaml` |
 | go-zero | **默认构建不进入依赖树**（P5-D）；回滚见下文 |
 
@@ -31,18 +31,19 @@ make moe-social-stop   # 端口占用时
 
 ```text
 HTTP  Client → :8888
-              → internal/platform/moesocial（Kratos HTTP）
-              → api/moehttp/register_all.go
-              → *_compat.go（Kratos ctx.Bind → internal/service → biz）
+              → internal/server/http.go（NewHTTPServer）
+              → RegisterProtoHTTP（Register*HTTPServer）
+              → RegisterCompatHTTP（httplegacy，仅未迁入 proto 的路由）
+              → internal/service → biz
 
 gRPC  Client → :8080
-              → internal/server/moegrpc/<domain>
+              → internal/server/grpc/<domain>
               → internal/service/<domain> → biz
 ```
 
 **不再经过**：go-zero `rest` 对外监听、`Super` gRPC、`api/internal/handler`（默认构建）。
 
-compat 清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)
+compat 余量清单：[kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-httplegacy-compat-清单)
 
 ## 紧急回滚（go-zero / zrpc）
 

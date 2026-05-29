@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	apirun "backend/api/runserver"
+	apirun "backend/internal/platform/wiring"
 	"backend/devports"
 	"backend/internal/platform/moewiring"
 	rpcrun "backend/rpc/runserver"

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_theme_extension.dart';
+import '../theme/moe_tokens.dart';
+import '../utils/moe_error_copy.dart';
+import '../widgets/moe_empty_state.dart';
+import '../widgets/moe_loading.dart';
+
 typedef DeferredRouteBuilder = Widget Function();
 
 /// Loads a deferred library before building the target page.
@@ -20,32 +26,58 @@ class DeferredRoute extends StatefulWidget {
 }
 
 class _DeferredRouteState extends State<DeferredRoute> {
-  late final Future<void> _loadFuture = widget.loadLibrary();
+  late Future<void> _loadFuture = widget.loadLibrary();
+
+  void _retry() {
+    setState(() {
+      _loadFuture = widget.loadLibrary();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
+
     return FutureBuilder<void>(
       future: _loadFuture,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
+          final presentation = MoeErrorCopy.resolve(
+            snapshot.error,
+            scene: MoeErrorScene.pageLoad,
+          );
           return Scaffold(
+            backgroundColor: moe.pageBackground,
             body: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text('页面加载失败：${snapshot.error}'),
+              child: MoeEmptyState(
+                icon: presentation.icon,
+                title: presentation.title,
+                subtitle: presentation.subtitle,
+                primaryAction: MoeEmptyStateAction(
+                  label: presentation.actionLabel,
+                  icon: Icons.refresh_rounded,
+                  onPressed: _retry,
+                ),
               ),
             ),
           );
         }
         if (snapshot.connectionState != ConnectionState.done) {
           return Scaffold(
+            backgroundColor: moe.pageBackground,
             body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 12),
-                  Text(widget.message),
+                  MoeLoading(color: moe.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.message,
+                    style: TextStyle(
+                      color: MoeTokens.hintText,
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
             ),

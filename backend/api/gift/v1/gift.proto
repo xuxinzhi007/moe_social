@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package gift.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/gift/v1;giftv1";
 
 // Gift — 域 HTTP/gRPC 契约 SSOT（P6-0）。
@@ -127,10 +129,22 @@ message GetGiftPurchaseOrdersReply {
 }
 
 service GiftService {
-  rpc GetGifts(GetGiftsRequest) returns (GetGiftsReply);
-  rpc GetGift(GetGiftRequest) returns (GetGiftReply);
-  rpc SendGift(SendGiftRequest) returns (SendGiftReply);
-  rpc PurchaseGift(PurchaseGiftRequest) returns (PurchaseGiftReply);
-  rpc GetGiftRecords(GetGiftRecordsRequest) returns (GetGiftRecordsReply);
-  rpc GetGiftPurchaseOrders(GetGiftPurchaseOrdersRequest) returns (GetGiftPurchaseOrdersReply);
+  rpc GetGifts(GetGiftsRequest) returns (GetGiftsReply) {
+    option (google.api.http) = { get: "/api/gifts" };
+  }
+  rpc GetGift(GetGiftRequest) returns (GetGiftReply) {
+    option (google.api.http) = { get: "/api/gifts/{gift_id}" };
+  }
+  rpc SendGift(SendGiftRequest) returns (SendGiftReply) {
+    option (google.api.http) = { post: "/api/user/{from_user_id}/gifts/send" body: "*" };
+  }
+  rpc PurchaseGift(PurchaseGiftRequest) returns (PurchaseGiftReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/gifts/purchase" body: "*" };
+  }
+  rpc GetGiftRecords(GetGiftRecordsRequest) returns (GetGiftRecordsReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/gifts/records" };
+  }
+  rpc GetGiftPurchaseOrders(GetGiftPurchaseOrdersRequest) returns (GetGiftPurchaseOrdersReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/gifts/purchase-orders" };
+  }
 }

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package chat.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/chat/v1;chatv1";
 
 // PrivateMessageService — 私信域 gRPC SSOT（P4-C；与 Super 并存）。
@@ -67,7 +69,13 @@ message ListPrivateConversationsReply {
 }
 
 service PrivateMessageService {
-  rpc SendPrivateMessage(SendPrivateMessageRequest) returns (SendPrivateMessageReply);
-  rpc ListPrivateMessages(ListPrivateMessagesRequest) returns (ListPrivateMessagesReply);
-  rpc ListPrivateConversations(ListPrivateConversationsRequest) returns (ListPrivateConversationsReply);
+  rpc SendPrivateMessage(SendPrivateMessageRequest) returns (SendPrivateMessageReply) {
+    option (google.api.http) = { post: "/api/private-messages" body: "*" };
+  }
+  rpc ListPrivateMessages(ListPrivateMessagesRequest) returns (ListPrivateMessagesReply) {
+    option (google.api.http) = { get: "/api/private-messages" };
+  }
+  rpc ListPrivateConversations(ListPrivateConversationsRequest) returns (ListPrivateConversationsReply) {
+    option (google.api.http) = { get: "/api/private-messages/conversations" };
+  }
 }

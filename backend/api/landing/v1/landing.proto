@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package landing.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/landing/v1;landingv1";
 
 // Landing — 域 gRPC SSOT（P4-C 试点；与 Super 并存，Super 仍保留兼容 RPC）。
@@ -44,6 +46,13 @@ message ListLandingFeedbackReply {
 }
 
 service Landing {
-  rpc SubmitLandingFeedback(SubmitLandingFeedbackRequest) returns (SubmitLandingFeedbackReply);
-  rpc ListLandingFeedback(ListLandingFeedbackRequest) returns (ListLandingFeedbackReply);
+  rpc SubmitLandingFeedback(SubmitLandingFeedbackRequest) returns (SubmitLandingFeedbackReply) {
+    option (google.api.http) = { post: "/api/landing/feedback" body: "*" };
+  }
+  rpc ListLandingFeedback(ListLandingFeedbackRequest) returns (ListLandingFeedbackReply) {
+    option (google.api.http) = {
+      get: "/api/admin/landing/feedback"
+      additional_bindings { get: "/api/ops/landing/feedback" }
+    };
+  }
 }

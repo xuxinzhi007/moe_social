@@ -1,5 +1,8 @@
 syntax = "proto3";
 package ai.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/ai/v1;aiv1";
 
 // P6: extracted from rpc/defs/common.proto (8 messages)
@@ -41,14 +44,34 @@ message UpsertAiResourceResp {
 }
 
 service AiResources {
-  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp);
-  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp);
-  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp);
-  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp);
-  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp);
-  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp);
-  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp);
-  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp);
-  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp);
-  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp);
+  rpc ListAiProviders(ListAiResourceReq) returns (ListAiResourceResp) {
+    option (google.api.http) = { get: "/api/ai/providers" };
+  }
+  rpc UpsertAiProvider(UpsertAiResourceReq) returns (UpsertAiResourceResp) {
+    option (google.api.http) = { post: "/api/ai/providers" body: "*" };
+  }
+  rpc DeleteAiProvider(DeleteAiResourceReq) returns (DeleteAiResourceResp) {
+    option (google.api.http) = { delete: "/api/ai/providers/{id}" };
+  }
+  rpc ListAiAgents(ListAiResourceReq) returns (ListAiResourceResp) {
+    option (google.api.http) = { get: "/api/ai/agents" };
+  }
+  rpc ListPublicAiAgents(ListPublicAiAgentsReq) returns (ListAiResourceResp) {
+    option (google.api.http) = { get: "/api/ai/agents/public" };
+  }
+  rpc UpsertAiAgent(UpsertAiResourceReq) returns (UpsertAiResourceResp) {
+    option (google.api.http) = { post: "/api/ai/agents" body: "*" };
+  }
+  rpc DeleteAiAgent(DeleteAiResourceReq) returns (DeleteAiResourceResp) {
+    option (google.api.http) = { delete: "/api/ai/agents/{id}" };
+  }
+  rpc ListAiLorebooks(ListAiResourceReq) returns (ListAiResourceResp) {
+    option (google.api.http) = { get: "/api/ai/lorebooks" };
+  }
+  rpc UpsertAiLorebook(UpsertAiResourceReq) returns (UpsertAiResourceResp) {
+    option (google.api.http) = { post: "/api/ai/lorebooks" body: "*" };
+  }
+  rpc DeleteAiLorebook(DeleteAiResourceReq) returns (DeleteAiResourceResp) {
+    option (google.api.http) = { delete: "/api/ai/lorebooks/{id}" };
+  }
 }

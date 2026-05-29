@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "api" / "internal"
-GWUTIL_IMPORT = '\t"backend/api/internal/gwutil"\n'
+GWUTIL_IMPORT = '\t"backend/internal/apilegacy/gwutil"\n'
 
 PACKAGES = [
     "postgw", "usergw", "commentgw", "communitygw", "checkinwg", "achievementgw",

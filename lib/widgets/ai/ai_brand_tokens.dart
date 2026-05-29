@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// AI 模块与「AI 酒馆」列表页一致的视觉 token。
+import '../../theme/moe_tokens.dart';
+
+/// AI 模块视觉 token；共享色值委托 [MoeTokens]，AI 专属渐变保留于此。
 abstract final class AiBrandTokens {
-  static const pageBackground = Color(0xFFF3F5FB);
-  static const chatBackground = Color(0xFFF5F7FA);
-  static const primary = Color(0xFF7F7FD5);
-  static const secondary = Color(0xFF86A8E7);
-  static const accent = Color(0xFF91EAE4);
+  static const pageBackground = MoeTokens.pageBackground;
+  static const chatBackground = MoeTokens.pageBackground;
+  static const primary = MoeTokens.primary;
+  static const secondary = MoeTokens.secondary;
+  static const accent = MoeTokens.accent;
   static const gradientPink = Color(0xFF8A2387);
   static const gradientCoral = Color(0xFFE94057);
   static const titleColor = Color(0xFF1F2430);
@@ -17,11 +19,7 @@ abstract final class AiBrandTokens {
     end: Alignment.bottomRight,
   );
 
-  static const heroGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primary, secondary, accent],
-  );
+  static const heroGradient = MoeTokens.heroGradient;
 
   static const identityGradient = LinearGradient(
     colors: [Color(0x1A8A2387), Color(0x14E94057)],

@@ -26,11 +26,13 @@
 **代码锚点**
 
 ```text
-backend/api/moehttp/register_all.go    # 注册入口
-backend/api/moehttp/route_stats.go     # PilotNativeCompatRoutes = 263
-backend/api/moehttp/routes_native_gen.go  # nativeDomainRouteCount = 0
-backend/api/internal/logic/            # .gitkeep（已退役）
+backend/internal/server/http_compat.go       # compat 编排入口
+backend/internal/server/httplegacy/route_stats.go
+backend/internal/server/httplegacy/routes_native_gen.go  # nativeDomainRouteCount = 0
+backend/api/internal/logic/                  # .gitkeep（已退役）
 ```
+
+> **2026-05-29**：16 域已迁入 `http_proto.go`（`Register*HTTPServer`）；上表 compat 文件中部分路由已摘除，**实际活跃 compat 路由数 < 263**。以 `route_stats.go` + `/migration` 为准。
 
 ---
 
@@ -82,7 +84,7 @@ HTTP **运行时**迁移已收口；主轨道为 **P6 契约**（defs → 域 pr
 | 传输层 Kratos :8888 | ✅ 268 条 goctl 路由均在 Kratos 注册 |
 | `routes_native_gen` | ✅ **0** |
 | `routes_bridge_gen` | **2**（swagger） |
-| `api/moehttp/*_compat.go` | ✅ **263** 条（`PilotNativeCompatRoutes`） |
+| `internal/server/httplegacy/*_compat.go` | 过渡（多域已迁 `http_proto`） |
 | 实现层 | ✅ 经 `internal/service` / `internal/biz`（**无** `api/internal/logic`） |
 | 生产 go-zero 依赖 | ✅ **0**（P5-D） |
 
@@ -98,7 +100,7 @@ HTTP **运行时**迁移已收口；主轨道为 **P6 契约**（defs → 域 pr
 | `rollout_percent` | **100** | 传输铺轨 |
 | **生产零 go-zero** | **达标** | `go list -deps ./cmd/moe-social` 无 `zeromicro/go-zero`（**不**等于仓库删光 go-zero 源文件） |
 
-代码口径：`backend/api/moehttp/route_stats.go`、`backend/internal/platform/kratosprogress/`。
+代码口径：`internal/server/httplegacy/route_stats.go`、`internal/platform/kratosprogress/`。
 
 ---
 
@@ -110,9 +112,11 @@ HTTP **运行时**迁移已收口；主轨道为 **P6 契约**（defs → 域 pr
 | `*_compat` | **263** | 见下表 · `register_all.go` 注册 |
 | `routes_bridge_gen` | **2** | swagger |
 
-### 2.1 `api/moehttp` compat 清单（263 路由）
+### 2.1 `httplegacy` compat 清单
 
-注册顺序见 `api/moehttp/register_all.go`。
+注册顺序见 `internal/server/http_compat.go`（`register_all.go` 已删除）。
+
+> 下列「路由数」为历史口径；post/landing/gift/notify 等域已迁入 proto HTTP，对应 compat 函数可能为空或仅保留未迁移路由。
 
 | 文件 | 路由数 | 实现方式 | 目标 App / 说明 |
 |------|--------|----------|-----------------|

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package moe.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/moe/v1;moev1";
 
 // Moe 域契约 SSOT（Phase 3 Sprint 2：与 super.proto Admin Moe 对齐）
@@ -247,15 +249,37 @@ message ListToolCallsReply {
 //   GET /api/admin/moe/brain/pipeline?agent_key=
 // 试点 :19032；灰度 moe.kratos_admin_http_enabled
 service MoeAdmin {
-  rpc ListRuntimes(ListRuntimesRequest) returns (ListRuntimesReply);
-  rpc UpsertRuntime(UpsertRuntimeRequest) returns (UpsertRuntimeReply);
-  rpc GetBrainPipeline(GetBrainPipelineRequest) returns (GetBrainPipelineReply);
-  rpc RunAgentOnce(RunAgentOnceRequest) returns (RunAgentOnceReply);
-  rpc GetBrainSnapshot(GetBrainSnapshotRequest) returns (GetBrainSnapshotReply);
-  rpc UpdateBrainPolicy(UpdateBrainPolicyRequest) returns (GetBrainSnapshotReply);
-  rpc DeleteBrainEpisode(DeleteBrainEpisodeRequest) returns (DeleteBrainEpisodeReply);
-  rpc RefineBrainEpisode(RefineBrainEpisodeRequest) returns (RefineBrainEpisodeReply);
-  rpc CurateBrain(CurateBrainRequest) returns (CurateBrainReply);
-  rpc QueryToolStats(QueryToolStatsRequest) returns (QueryToolStatsReply);
-  rpc ListToolCalls(ListToolCallsRequest) returns (ListToolCallsReply);
+  rpc ListRuntimes(ListRuntimesRequest) returns (ListRuntimesReply) {
+    option (google.api.http) = { get: "/api/admin/moe/runtimes" };
+  }
+  rpc UpsertRuntime(UpsertRuntimeRequest) returns (UpsertRuntimeReply) {
+    option (google.api.http) = { post: "/api/admin/moe/runtimes" body: "*" };
+  }
+  rpc GetBrainPipeline(GetBrainPipelineRequest) returns (GetBrainPipelineReply) {
+    option (google.api.http) = { get: "/api/admin/moe/brain/pipeline" };
+  }
+  rpc RunAgentOnce(RunAgentOnceRequest) returns (RunAgentOnceReply) {
+    option (google.api.http) = { post: "/api/admin/moe/agents/run-once" body: "*" };
+  }
+  rpc GetBrainSnapshot(GetBrainSnapshotRequest) returns (GetBrainSnapshotReply) {
+    option (google.api.http) = { get: "/api/admin/moe/brain/snapshot" };
+  }
+  rpc UpdateBrainPolicy(UpdateBrainPolicyRequest) returns (GetBrainSnapshotReply) {
+    option (google.api.http) = { put: "/api/admin/moe/brain/policy" body: "*" };
+  }
+  rpc DeleteBrainEpisode(DeleteBrainEpisodeRequest) returns (DeleteBrainEpisodeReply) {
+    option (google.api.http) = { delete: "/api/admin/moe/brain/episodes/{id}" };
+  }
+  rpc RefineBrainEpisode(RefineBrainEpisodeRequest) returns (RefineBrainEpisodeReply) {
+    option (google.api.http) = { post: "/api/admin/moe/brain/episodes/{id}/refine" body: "*" };
+  }
+  rpc CurateBrain(CurateBrainRequest) returns (CurateBrainReply) {
+    option (google.api.http) = { post: "/api/admin/moe/brain/curate" body: "*" };
+  }
+  rpc QueryToolStats(QueryToolStatsRequest) returns (QueryToolStatsReply) {
+    option (google.api.http) = { get: "/api/admin/moe/tools/stats" };
+  }
+  rpc ListToolCalls(ListToolCallsRequest) returns (ListToolCallsReply) {
+    option (google.api.http) = { get: "/api/admin/moe/tools/calls" };
+  }
 }

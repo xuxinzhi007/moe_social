@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/moe_tokens.dart';
 import '../../utils/responsive.dart';
 
 /// 页面级自适应骨架：
@@ -39,10 +40,11 @@ class AdaptivePageScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolvedPadding = padding ?? Responsive.pagePadding(context);
-    final resolvedMaxWidth = maxContentWidth ?? Responsive.contentMaxWidth(context);
+    final resolvedMaxWidth =
+        maxContentWidth ?? Responsive.contentMaxWidth(context);
 
     return Scaffold(
-      backgroundColor: backgroundColor ?? const Color(0xFFF5F7FA),
+      backgroundColor: backgroundColor ?? MoeTokens.pageBackground,
       appBar: appBar,
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,

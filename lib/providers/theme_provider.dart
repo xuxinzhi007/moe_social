@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme/moe_theme_extension.dart';
+import '../theme/moe_tokens.dart';
+
 class ThemeProvider with ChangeNotifier {
   // 主题模式：light、dark、system
   String _themeMode = 'system';
-  
+
   // 自定义主题颜色 - 默认改为 Moe 风格的薰衣草紫
-  Color _primaryColor = const Color(0xFF7F7FD5);
-  
-  // Moe 风格配色板
-  static const Color primaryPurple = Color(0xFF7F7FD5);
-  static const Color primaryBlue = Color(0xFF86A8E7);
-  static const Color primaryMint = Color(0xFF91EAE4);
-  
+  Color _primaryColor = MoeTokens.primary;
+
+  // Moe 风格配色板（兼容旧引用，SSOT 见 [MoeTokens]）
+  static const Color primaryPurple = MoeTokens.primary;
+  static const Color primaryBlue = MoeTokens.secondary;
+  static const Color primaryMint = MoeTokens.accent;
+
   // 主题模式常量
   static const String lightMode = 'light';
   static const String darkMode = 'dark';
@@ -57,7 +60,7 @@ class ThemeProvider with ChangeNotifier {
     if (_primaryColor != color) {
       _primaryColor = color;
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(primaryColorKey, color.value);
+      await prefs.setInt(primaryColorKey, color.toARGB32());
       notifyListeners();
     }
   }
@@ -78,7 +81,12 @@ class ThemeProvider with ChangeNotifier {
   // 构建主题
   ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    
+    final moeTheme = isDark
+        ? MoeTheme.dark(primary: _primaryColor)
+        : MoeTheme.light(primary: _primaryColor);
+    final surfaceColor = isDark ? Colors.grey[800]! : Colors.white;
+    final scaffoldBg = moeTheme.pageBackground;
+
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
@@ -87,25 +95,27 @@ class ThemeProvider with ChangeNotifier {
         primary: _primaryColor,
         secondary: primaryBlue, // 使用次色调
         tertiary: primaryMint, // 使用三色调
-        background: isDark ? Colors.grey[900]! : const Color(0xFFF5F7FA), // 浅灰背景，比纯白更有质感
-        surface: isDark ? Colors.grey[800]! : Colors.white,
+        surface: surfaceColor,
       ),
+      extensions: [moeTheme],
       useMaterial3: true,
       fontFamily: 'Roboto', // 建议后续引入圆形字体
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // 更圆润
-          elevation: 2,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)), // 更圆润
+          elevation: 0,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
         filled: true,
         fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
-      scaffoldBackgroundColor: isDark ? Colors.grey[900] : const Color(0xFFF5F7FA),
+      scaffoldBackgroundColor: scaffoldBg,
       // cardTheme: CardTheme(
       //   color: isDark ? Colors.grey[800] : Colors.white,
       //   elevation: 2,
@@ -135,9 +145,9 @@ class ThemeProvider with ChangeNotifier {
 
   // 预设主题颜色列表，符合二次元风格
   static List<Color> presetColors = [
-    const Color(0xFF7F7FD5), // 薰衣草紫
-    const Color(0xFF86A8E7), // 天空蓝
-    const Color(0xFF91EAE4), // 薄荷绿
+    MoeTokens.primary, // 薰衣草紫
+    MoeTokens.secondary, // 天空蓝
+    MoeTokens.accent, // 薄荷绿
     Colors.pinkAccent,
     Colors.orangeAccent,
     const Color(0xFFFAD961), // 奶油黄

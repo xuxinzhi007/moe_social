@@ -1,6 +1,6 @@
 # api/internal/handler — 生产壳
 
-> HTTP 业务在 `api/moehttp/*_compat.go`；本目录仅保留 Swagger。
+> HTTP 业务在 `internal/server/httplegacy/*_compat.go` 或 `http_proto.go`；本目录仅 hybrid 残留。
 
 | 文件 | 作用 |
 |------|------|

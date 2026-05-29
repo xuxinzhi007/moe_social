@@ -3,7 +3,7 @@ package bootstrap
 import (
 	moepb "backend/api/moe/v1"
 	"backend/internal/platform/moewiring"
-	moegrpcserver "backend/internal/server/moegrpc"
+	grpcserver "backend/internal/server/grpc"
 	"backend/rpc/internal/svc"
 
 	"google.golang.org/grpc"
@@ -17,5 +17,5 @@ func RegisterMoeGRPC(grpcServer *grpc.Server, svcCtx *svc.ServiceContext) {
 	if !moewiring.RegisterMoeGRPCEnabled() {
 		return
 	}
-	moepb.RegisterMoeAdminServer(grpcServer, moegrpcserver.New(svcCtx.MoeAdmin))
+	moepb.RegisterMoeAdminServer(grpcServer, grpcserver.New(svcCtx.MoeAdmin))
 }

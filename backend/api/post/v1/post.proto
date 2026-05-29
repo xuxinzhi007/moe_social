@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package post.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/post/v1;postv1";
 
 // Post — 域 HTTP/gRPC 契约 SSOT（P6-0）。
@@ -146,12 +148,28 @@ message ReportPostRequest {
 message ReportPostReply {}
 
 service PostService {
-  rpc GetPost(GetPostRequest) returns (GetPostReply);
-  rpc GetPosts(GetPostsRequest) returns (GetPostsReply);
-  rpc MoeSearchPosts(MoeSearchPostsRequest) returns (MoeSearchPostsReply);
-  rpc CreatePost(CreatePostRequest) returns (CreatePostReply);
-  rpc LikePost(LikePostRequest) returns (LikePostReply);
-  rpc UpdatePost(UpdatePostRequest) returns (UpdatePostReply);
-  rpc DeletePost(DeletePostRequest) returns (DeletePostReply);
-  rpc ReportPost(ReportPostRequest) returns (ReportPostReply);
+  rpc GetPost(GetPostRequest) returns (GetPostReply) {
+    option (google.api.http) = { get: "/api/posts/{post_id}" };
+  }
+  rpc GetPosts(GetPostsRequest) returns (GetPostsReply) {
+    option (google.api.http) = { get: "/api/posts" };
+  }
+  rpc MoeSearchPosts(MoeSearchPostsRequest) returns (MoeSearchPostsReply) {
+    option (google.api.http) = { get: "/api/posts/search" };
+  }
+  rpc CreatePost(CreatePostRequest) returns (CreatePostReply) {
+    option (google.api.http) = { post: "/api/posts" body: "*" };
+  }
+  rpc LikePost(LikePostRequest) returns (LikePostReply) {
+    option (google.api.http) = { post: "/api/posts/{post_id}/like" body: "*" };
+  }
+  rpc UpdatePost(UpdatePostRequest) returns (UpdatePostReply) {
+    option (google.api.http) = { put: "/api/posts/{post_id}" body: "*" };
+  }
+  rpc DeletePost(DeletePostRequest) returns (DeletePostReply) {
+    option (google.api.http) = { delete: "/api/posts/{post_id}" };
+  }
+  rpc ReportPost(ReportPostRequest) returns (ReportPostReply) {
+    option (google.api.http) = { post: "/api/posts/{post_id}/report" body: "*" };
+  }
 }

@@ -1,7 +1,7 @@
 # Backend 布局（Kratos 生产）
 
 > **更新：2026-05-29**  
-> 状态：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)
+> SSOT：[docs/dev/kratos-directory-ssot.md](../docs/dev/kratos-directory-ssot.md)
 
 ## 运行
 
@@ -9,69 +9,81 @@
 make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080
 ```
 
-配置 SSOT：`config/config.yaml`（`kratos_pure_enabled: true`、`super_grpc_retired: true`）。
-
 ---
 
-## 目标目录结构（与 core-platform 对齐）
+## 目录结构
 
 ```text
-cmd/moe-social/                 # 入口
-config/config.yaml              # 运行时 SSOT
+cmd/moe-social/                      # 生产入口
+config/config.yaml
 
-api/<domain>/v1/*.proto         # 契约 SSOT（新能力）
-api/<domain>/v1/*.pb.go         # make gen
+api/<domain>/v1/*.proto              # 契约 SSOT
+api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go
 
-internal/biz/<domain>/          # 业务
-internal/data/<domain>/         # 持久化
-internal/service/<domain>/      # 应用服务
-api/moehttp/                    # Kratos HTTP（*_compat.go）
-internal/server/moekratoshttp/  # /health、/migration
-internal/server/moegrpc/        # 12 域 gRPC + MoeAdmin
-internal/platform/moesocial/    # 启动编排
+internal/biz/<domain>/
+internal/data/<domain>/
+internal/service/<domain>/
+
+internal/server/
+  http.go                            # NewHTTPServer
+  http_proto.go                      # Register*HTTPServer（16 域）
+  http_compat.go                     # 编排 httplegacy
+  httplegacy/                        # 存量 compat（原 api/moehttp）
+  grpc.go + grpc/<domain>/
+
+internal/platform/
+  svc/                               # ServiceContext（原 api/internal/svc）
+  wiring/                            # 启动装配（原 api/runserver）
+  moesocial/                         # 生产启动
+
+internal/apilegacy/                  # 原 api/internal（gw/common/config）
+internal/legacy/types/               # 原 api/internal/types
+
+third_party/google/api/              # protoc HTTP 注解
 ```
 
-**新接口**：[docs/dev/new-api-kratos.md](../docs/dev/new-api-kratos.md)  
-**存量 compat**：[docs/dev/kratos-legacy-api-migration.md](../docs/dev/kratos-legacy-api-migration.md)
+---
+
+## HTTP 装配顺序
+
+```text
+NewHTTPServer
+  → RegisterOpsHTTP          # /health、/migration
+  → RegisterProtoHTTP        # protoc-gen-go-http（官方）
+  → RegisterCompatHTTP       # httplegacy（过渡，逐域缩短）
+```
 
 ---
 
-## `api/moehttp`
+## `internal/server/httplegacy`
 
-| 文件模式 | 作用 |
-|----------|------|
-| `*_compat.go` | 域路由 → `internal/service/*App` |
-| `compat_invoke.go` · `bind.go` | 共享绑定辅助 |
-| `register_all.go` | 统一注册 |
-| `routes_native_gen.go` | `nativeDomainRouteCount = 0` |
-| `routes_bridge_gen.go` | swagger **2** 条 |
-| `route_stats.go` | `/migration` 口径 |
-
----
-
-## 存量契约层（只读/生成，非运行时）
-
-| 目录 | 角色 |
+| 文件 | 作用 |
 |------|------|
-| `api/defs/*.api` | goctl 契约分片（`make gen-api`；**勿加新路由**） |
-| `api/internal/types/` | goctl HTTP types（compat 引用） |
-| `api/internal/handler/doc/` | Swagger 静态页 |
-| `api/internal/logic/` | 已退役（`.gitkeep`） |
-| `api/internal/*gw/` | 分体/in-process 网关（非 go-zero） |
-| `rpc/pb/moe/` | 冻结 message + bridge（无 Super 服务） |
-| `rpc/moe.proto` | message-only |
-| `scripts/gen/http-routes/fixtures/routes.go` | 路由表归档（gen-http-routes） |
+| `*_compat.go` | 未迁入 proto HTTP 的路由 |
+| `deps.go` | `PilotDeps` |
+| `routes_*_gen.go` | `make gen-http-routes` 生成 |
+
+`register_all.go` 已删除；编排入口为 `http_compat.go`。
+
+---
+
+## 存量（非新接口）
+
+| 路径 | 角色 |
+|------|------|
+| `api/defs/*.api` | goctl 契约（`make gen-api`） |
+| `internal/legacy/types/` | goctl JSON types |
+| `api/internal/handler/` | hybrid 残留 |
+| `rpc/pb/moe/` | 冻结 bridge message |
 
 ---
 
 ## 数据流
 
 ```text
-HTTP: Client → :8888 moehttp/*_compat → service → biz → data
-gRPC: Client → :8080 moegrpc/<domain> → service → biz → data
+HTTP: Client → :8888 → http_proto / httplegacy → service → biz → data
+gRPC: Client → :8080 → grpc/<domain> → service → biz → data
 ```
-
-**不经过**：go-zero `rest`、`api/internal/logic`、Super gRPC 服务。
 
 ---
 
@@ -79,9 +91,8 @@ gRPC: Client → :8080 moegrpc/<domain> → service → biz → data
 
 | 场景 | 命令 |
 |------|------|
-| 域 proto | `make gen` |
+| 改域 proto | **`make gen`** |
 | 同步路由表 | `make gen-http-routes` |
-| 改存量 defs | `make gen-api` |
-| 契约大改 | `make gen-all` |
+| 改存量 defs | `make gen-api`（慎用） |
 
-详见 [scripts/README.md](scripts/README.md)。
+新机器可选：`make init-proto-tools`（`make gen` 也会自动装插件）。

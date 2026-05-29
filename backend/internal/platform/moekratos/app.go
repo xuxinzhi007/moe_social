@@ -4,10 +4,10 @@ import (
 	"log"
 
 	moepb "backend/api/moe/v1"
-	"backend/api/moehttp"
+	"backend/internal/server/httplegacy"
 	moeconfv1 "backend/internal/conf/moe/v1"
-	moegrpcserver "backend/internal/server/moegrpc"
-	"backend/internal/server/moekratoshttp"
+	"backend/internal/server"
+	grpcserver "backend/internal/server/grpc"
 	adminapp "backend/internal/service/admin"
 	moeadmin "backend/internal/service/moe"
 
@@ -38,17 +38,18 @@ func newApp(
 	grpcAddr, httpAddr, superRPC string,
 	db *gorm.DB,
 ) *App {
-	moeGRPC := moegrpcserver.New(moeAdmin)
+	moeGRPC := grpcserver.New(moeAdmin)
 	grpcSrv := grpc.NewServer(grpc.Address(grpcAddr))
 	moepb.RegisterMoeAdminServer(grpcSrv, moeGRPC)
 
-	httpSrv := khttp.NewServer(khttp.Address(httpAddr))
-	moekratoshttp.Register(httpSrv, moeAdmin)
-	moehttp.RegisterAll(httpSrv, moehttp.PilotDeps{
+	httpSrv, err := server.NewHTTPServer(httpAddr, httplegacy.PilotDeps{
 		MoeAdmin: moeAdmin,
 		AdminApp: adminApp,
 		DB:       db,
 	})
+	if err != nil {
+		panic(err)
+	}
 
 	kratosApp := kratos.New(
 		kratos.Name("moe-kratos"),

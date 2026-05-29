@@ -1,0 +1,107 @@
+// FS-8: platform 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/behavior/v1 · api/moehttp/platform_compat.go
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: doc
+)
+service Super {
+	@handler swaggerUi
+	get /swagger (EmptyReq)
+
+	@handler swaggerDoc
+	get /swagger/doc.json (EmptyReq)
+}
+
+@server (
+	group: image
+)
+service Super {
+	// 上传图片
+	@handler uploadImage
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (POST /api/upload)
+	post /api/upload (UploadImageReq) returns (UploadImageResp)
+
+	// 获取图片列表
+	@handler getImageList
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/images)
+	get /api/images (GetImageListReq) returns (GetImageListResp)
+
+	// 删除图片
+	@handler deleteImage
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (DELETE /api/images/:filename)
+	delete /api/images/:filename (DeleteImageReq) returns (DeleteImageResp)
+
+	// 查看图片（直接返回图片文件）
+	@handler getImage
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/images/:filename)
+	get /api/images/:filename (DeleteImageReq) returns (EmptyResp)
+}
+
+@server (
+	group: appcfg
+)
+service Super {
+	@handler publicClientConfig
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/public/client-config)
+	get /api/public/client-config (EmptyReq) returns (PublicClientConfigResp)
+}
+
+@server (
+	group: checkin
+)
+service Super {
+	@handler checkIn
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (POST /api/user/:user_id/check-in)
+	post /api/user/:user_id/check-in (CheckInReq) returns (CheckInResp)
+
+	@handler getUserLevel
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/level)
+	get /api/user/:user_id/level (GetUserLevelReq) returns (GetUserLevelResp)
+
+	@handler getCheckInStatus
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/check-in/status)
+	get /api/user/:user_id/check-in/status (GetCheckInStatusReq) returns (GetCheckInStatusResp)
+
+	@handler getCheckInHistory
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/check-in/history)
+	get /api/user/:user_id/check-in/history (GetCheckInHistoryReq) returns (GetCheckInHistoryResp)
+
+	@handler getExpLogs
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/exp/logs)
+	get /api/user/:user_id/exp/logs (GetExpLogsReq) returns (GetExpLogsResp)
+}
+
+@server (
+	group: achievement
+)
+service Super {
+	@handler getUserAchievements
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/achievements)
+	get /api/user/:user_id/achievements (GetUserAchievementsReq) returns (GetUserAchievementsResp)
+
+	@handler getUserUnlockedAchievements
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/achievements/unlocked)
+	get /api/user/:user_id/achievements/unlocked (GetUserUnlockedAchievementsReq) returns (GetUserUnlockedAchievementsResp)
+
+	@handler getUserAchievementSummary
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (GET /api/user/:user_id/achievements/summary)
+	get /api/user/:user_id/achievements/summary (GetUserAchievementSummaryReq) returns (GetUserAchievementSummaryResp)
+
+	@handler ensureUserAchievements
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (POST /api/user/:user_id/achievements/ensure)
+	post /api/user/:user_id/achievements/ensure (EnsureUserAchievementsReq) returns (EnsureUserAchievementsResp)
+}
+
+// P6: HTTP 契约 SSOT → api/behavior/v1/behavior.proto（生产走 behavior_compat.go）
+@server (
+	group: behavior
+)
+service Super {
+	@handler trackUserBehaviorEvents
+	// P6 migrated → api/behavior/v1 · api/moehttp/platform_compat.go (POST /api/user/:user_id/behavior/events)
+	post /api/user/:user_id/behavior/events (TrackUserBehaviorEventsReq) returns (TrackUserBehaviorEventsResp)
+}

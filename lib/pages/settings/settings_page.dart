@@ -5,7 +5,10 @@ import 'package:provider/provider.dart';
 import '../../services/startup_update_preferences.dart';
 import '../../providers/device_info_provider.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
 import '../../providers/virtual_avatar_provider.dart';
 import 'modules/device_storage_module.dart';
@@ -62,11 +65,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final isWeb = kIsWeb;
     final isMobile = !isWeb;
-    
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('设置', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const Text('设置',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -105,7 +109,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                   ),
                 ),
               ),
@@ -136,7 +141,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildSearchResults() {
     final searchResults = _getSearchResults();
-    
+
     if (searchResults.isEmpty) {
       return Center(
         child: Padding(
@@ -157,12 +162,12 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // 按模块分类展示搜索结果
     final categorizedResults = _categorizeSearchResults(searchResults);
-    
+
     return Column(
       children: categorizedResults.entries.map((entry) {
         final moduleName = entry.key;
         final moduleResults = entry.value;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -403,9 +408,10 @@ class _SettingsPageState extends State<SettingsPage> {
     ];
   }
 
-  Map<String, List<Map<String, dynamic>>> _categorizeSearchResults(List<Map<String, dynamic>> results) {
+  Map<String, List<Map<String, dynamic>>> _categorizeSearchResults(
+      List<Map<String, dynamic>> results) {
     final categorized = <String, List<Map<String, dynamic>>>{};
-    
+
     for (final result in results) {
       final module = result['module'] as String;
       if (!categorized.containsKey(module)) {
@@ -413,42 +419,23 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       categorized[module]!.add(result);
     }
-    
+
     return categorized;
   }
 
   Widget _buildSearchResultItem(Map<String, dynamic> result) {
     return FadeInUp(
       delay: const Duration(milliseconds: 100),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF7F7FD5).withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ListTile(
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (result['color'] as Color).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(result['icon'] as IconData, color: result['color'] as Color, size: 20),
+      child: MoeMenuCard(
+        items: [
+          MoeMenuItem(
+            icon: result['icon'] as IconData,
+            title: result['title'] as String,
+            subtitle: result['description'] as String,
+            color: result['color'] as Color,
+            onTap: () => _navigateToSettingItem(result),
           ),
-          title: Text(result['title'] as String, style: const TextStyle(fontWeight: FontWeight.w500)),
-          subtitle: Text(result['description'] as String, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-          onTap: () {
-            _navigateToSettingItem(result);
-          },
-        ),
+        ],
       ),
     );
   }
@@ -489,7 +476,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _scrollToModule(String moduleName) {
     _onClearSearch();
-    
+
     // 使用 ScrollController 实现精确滚动
     final key = _moduleKeys[moduleName];
     if (key != null) {
@@ -514,157 +501,88 @@ class _SettingsPageState extends State<SettingsPage> {
       const SizedBox(height: 24),
       _buildSectionTitle('账户与安全', key: _moduleKeys['账户与安全']),
       const AccountSecurityModule(),
-
       const SizedBox(height: 24),
       _buildSectionTitle('聊天与隐私', key: _moduleKeys['聊天与隐私']),
       FadeInUp(
         delay: const Duration(milliseconds: 95),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7F7FD5).withOpacity(0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.teal.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.mark_chat_unread_outlined,
-                color: Colors.teal,
-                size: 20,
-              ),
+        child: MoeMenuCard(
+          items: [
+            MoeMenuItem(
+              icon: Icons.mark_chat_unread_outlined,
+              title: '私信记录保留',
+              subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',
+              color: Colors.teal,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MessageRetentionSettingsPage(),
+                  ),
+                );
+              },
             ),
-            title: const Text(
-              '私信记录保留',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            subtitle: const Text(
-              '发送方在服务端保留策略（与会员/VIP 规则配合）',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => const MessageRetentionSettingsPage(),
-                ),
-              );
-            },
-          ),
+          ],
         ),
       ),
-
       const SizedBox(height: 24),
       _buildSectionTitle('外观', key: _moduleKeys['外观']),
       const AppearanceModule(),
-
       const SizedBox(height: 24),
       _buildSectionTitle('常规设置', key: _moduleKeys['常规设置']),
       FadeInUp(
         delay: const Duration(milliseconds: 100),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7F7FD5).withOpacity(0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        child: MoeMenuCard(
+          items: [
+            MoeMenuItem(
+              icon: Icons.notifications_active_rounded,
+              title: '推送通知',
+              subtitle: '接收最新动态和系统通知',
+              color: Colors.orange,
+              trailing: Switch.adaptive(
+                value: _notificationsEnabled,
+                activeThumbColor: MoeTheme.of(context).primary,
+                onChanged: (bool value) async {
+                  setState(() {
+                    _notificationsEnabled = value;
+                  });
+                  if (!mounted) return;
+                  MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
+                },
               ),
-            ],
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.notifications_active_rounded, color: Colors.orange, size: 20),
-            ),
-            title: const Text('推送通知', style: TextStyle(fontWeight: FontWeight.w500)),
-            subtitle: const Text('接收最新动态和系统通知', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            trailing: Switch.adaptive(
-              value: _notificationsEnabled,
-              activeThumbColor: const Color(0xFF7F7FD5),
-              onChanged: (bool value) async {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
-                if (!mounted) return;
-                
-                // 显示操作结果反馈
-                MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
+              onTap: () {
+                final next = !_notificationsEnabled;
+                setState(() => _notificationsEnabled = next);
+                MoeToast.info(context, next ? '通知已开启' : '通知已关闭');
               },
             ),
-          ),
+            MoeMenuItem(
+              icon: Icons.smart_toy_rounded,
+              title: '虚拟助手',
+              subtitle: avatarProvider.enabled ? '已开启，可点击进入自定义' : '默认关闭，点击进入设置',
+              color: MoeTheme.of(context).primary,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch.adaptive(
+                    value: avatarProvider.enabled,
+                    activeThumbColor: MoeTheme.of(context).primary,
+                    onChanged: (bool value) async {
+                      await avatarProvider.setEnabled(value);
+                      if (!mounted) return;
+                      MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+                    },
+                  ),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      color: Colors.grey[300], size: 16),
+                ],
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/virtual-avatar-settings');
+              },
+            ),
+          ],
         ),
       ),
-      const SizedBox(height: 12),
-      FadeInUp(
-        delay: const Duration(milliseconds: 120),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF7F7FD5).withOpacity(0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.smart_toy_rounded,
-                  color: Color(0xFF7F7FD5), size: 20),
-            ),
-            title: const Text('虚拟助手',
-                style: TextStyle(fontWeight: FontWeight.w500)),
-            subtitle: Text(
-              avatarProvider.enabled ? '已开启，可点击进入自定义' : '默认关闭，点击进入设置',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Switch.adaptive(
-                  value: avatarProvider.enabled,
-                  activeThumbColor: const Color(0xFF7F7FD5),
-                  onChanged: (bool value) async {
-                    await avatarProvider.setEnabled(value);
-                    if (!mounted) return;
-                    MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
-                  },
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
-            onTap: () {
-              Navigator.pushNamed(context, '/virtual-avatar-settings');
-            },
-          ),
-        ),
-      ),
-
       const SizedBox(height: 24),
       _buildSectionTitle('设备与存储', key: _moduleKeys['设备与存储']),
       DeviceStorageModule(
@@ -674,11 +592,9 @@ class _SettingsPageState extends State<SettingsPage> {
           await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
         },
       ),
-      
       const SizedBox(height: 24),
       _buildSectionTitle('AI 模型', key: _moduleKeys['AI 模型']),
       const AiSettingsModule(),
-
       const SizedBox(height: 24),
       _buildSectionTitle('关于', key: _moduleKeys['关于']),
       const AboutModule(),
@@ -852,5 +768,3 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
-
-

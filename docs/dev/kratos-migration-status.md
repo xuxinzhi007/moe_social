@@ -1,6 +1,6 @@
 # Kratos 迁移 — 状态板（Current / Next）
 
-> **最后更新：2026-05-27**  
+> **最后更新：2026-05-29**  
 > **读这个**：本文 = **当前状态 + 下一步** 快照（汇报 / 勾选用）
 
 | 文档 | 用途 |
@@ -98,7 +98,7 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | service 已用 `*v1` 签名 | `internal/service/{behavior,landing,…,notify,ai,llm,admin,user,chat,post,vip,…}` | **主域已覆盖** |
 | service import `rpc/pb/moe` | — | **0**（`FromMoe` 过渡已迁至 biz `adminv1_out` / `proto_v1` / `post` helpers） |
 | Moe 工具端口命名 | `pkg/moe/port.MoeToolPort` · `MoeToolGRPCAdapter` · `AttachMoeToolPort` | **已统一**（原 SuperPort） |
-| compat 调 App 直传 `&moe.*` | `api/moehttp/*.go` | **0** |
+| compat 调 App 直传 `&moe.*` | `internal/server/httplegacy/*.go` | **0** |
 | 生成脚本 | `backend/scripts/gen/p6_*.py` | extract · migrate · wrap · `p6_mark_defs.py` |
 
 ### 2026-05-27 收口记录
@@ -119,6 +119,8 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 |--------|------|------|
 | — | ~~P6 / grpc 冒烟 / 分体联调 / 移除 hybrid go-zero~~ ✅ | 见下表 |
 | 1 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
+| 2 | ~~**D0–D1**：proto HTTP + 目录迁出~~ ✅ | [kratos-directory-ssot.md](./kratos-directory-ssot.md) |
+| 3 | **D2–D4**：compat 归零 · 删 `httplegacy` · `defs` 归档 | 同上 |
 
 ### 2026-05-29 完成项
 
@@ -130,6 +132,10 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | 移除 hybrid go-zero | 删 314 文件 · `go.mod` 无 go-zero · `go build ./...` ✅ |
 | **目录提纯** | 去 `!hybrid` 标签 · 重命名 `wrapNetHTTPHandler`/`TotalHTTPRoutes` · 删 p5d 脚本 |
 | **service 边界 + MoeToolPort** | `internal/service` 零 `rpc/pb/moe` · `SuperPort`→`MoeToolPort` · `go build ./...` ✅ |
+| **Server 命名 S0** | `moekratoshttp` → `internal/server/http.go`（`RegisterOpsHTTP`） |
+| **Server S1–S3** | `moegrpc`→`grpc/` · `grpc.go` · `NewHTTPServer` · `http_compat.go` · `cmd/moe-social` 补齐 |
+| **D0 proto HTTP** | 16 域 `*_http.pb.go` · `http_proto.go` · `Register*HTTPServer` |
+| **D1 目录迁出** | `httplegacy/` · `internal/platform/{svc,wiring}` · `internal/apilegacy/` · `internal/legacy/types` |
 
 ---
 
