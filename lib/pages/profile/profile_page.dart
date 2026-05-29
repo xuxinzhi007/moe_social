@@ -16,6 +16,7 @@ import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
@@ -111,13 +112,16 @@ class _ProfilePageState extends State<ProfilePage> {
           _isLoadingDetails = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _isLoadingDetails = false;
         });
-        MoeToast.error(context, '加载个人信息失败，请检查网络连接');
+        MoeToast.error(
+          context,
+          MoeErrorCopy.toast(e, scene: MoeErrorScene.profile),
+        );
       }
     }
   }

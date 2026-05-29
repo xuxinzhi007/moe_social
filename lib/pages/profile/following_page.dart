@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../widgets/avatar_image.dart';
+import '../../widgets/moe_error_state.dart';
 
 class FollowingPage extends StatefulWidget {
   final String userId;
@@ -19,7 +21,7 @@ class _FollowingPageState extends State<FollowingPage> {
   List<User> _followings = [];
   bool _isLoading = true;
   bool _hasError = false;
-  String _errorMessage = '';
+  Object? _loadError;
 
   @override
   void initState() {
@@ -28,26 +30,20 @@ class _FollowingPageState extends State<FollowingPage> {
   }
 
   Future<void> _loadFollowings() async {
-    print('🔍 开始加载关注列表: userId=${widget.userId}');
-
     if (mounted) {
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _loadError = null;
       });
     }
 
     try {
-      print('📡 发送API请求: userId=${widget.userId}, page=1, pageSize=10');
-      final result = await ApiService.getFollowings(widget.userId, page: 1, pageSize: 10);
+      final result =
+          await ApiService.getFollowings(widget.userId, page: 1, pageSize: 10);
 
-      print('📥 API响应: $result');
-
-      // ApiService.getFollowings 已经返回了 User 对象列表，直接使用即可
       if (result.containsKey('followings') && result['followings'] != null) {
         final followings = result['followings'] as List<User>;
-
-        print('📊 解析结果: followings=${followings.length}');
 
         if (mounted) {
           setState(() {
@@ -60,13 +56,11 @@ class _FollowingPageState extends State<FollowingPage> {
         throw Exception('API返回数据格式错误');
       }
     } catch (e) {
-      print('❌ 加载关注列表失败: $e');
-
       if (mounted) {
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = e.toString();
+          _loadError = e;
         });
       }
     }
@@ -90,31 +84,11 @@ class _FollowingPageState extends State<FollowingPage> {
 
     if (_hasError) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '加载失败',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage,
-              style: const TextStyle(color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadFollowings,
-              child: const Text('重试'),
-            ),
-          ],
+        child: MoeErrorState.fromError(
+          _loadError,
+          scene: MoeErrorScene.following,
+          variant: MoeErrorVariant.plain,
+          onRetry: _loadFollowings,
         ),
       );
     }
@@ -147,8 +121,7 @@ class _FollowingPageState extends State<FollowingPage> {
       child: ListView.builder(
         itemCount: _followings.length,
         itemBuilder: (context, index) {
-          final user = _followings[index];
-          return _buildUserItem(user);
+          return _buildUserItem(_followings[index]);
         },
       ),
     );

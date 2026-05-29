@@ -9,6 +9,8 @@ import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
+import '../../utils/moe_error_copy.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
@@ -38,7 +40,7 @@ class _HomePageState extends State<HomePage>
   int _currentPage = 1;
   bool _hasMore = true;
   static const int _pageSize = 10;
-  String? _feedErrorMessage;
+  Object? _feedError;
   String? _loadMoreErrorMessage;
   DateTime? _lastUpdatedAt;
   bool _isPrimaryRequestInFlight = false;
@@ -172,7 +174,7 @@ class _HomePageState extends State<HomePage>
     final hasExistingPosts = _displayPosts.isNotEmpty;
     if (mounted) {
       setState(() {
-        _feedErrorMessage = null;
+        _feedError = null;
         _loadMoreErrorMessage = null;
         _hasMore = true;
         _currentPage = 1;
@@ -197,15 +199,14 @@ class _HomePageState extends State<HomePage>
         _hasMore = _mode.supportsPagination
             ? result.posts.length < result.total
             : false;
-        _feedErrorMessage = null;
+        _feedError = null;
         _lastUpdatedAt = DateTime.now();
       });
       _refreshAvailableTags();
     } catch (e) {
-      final message = _friendlyErrorMessage(e);
       if (mounted) {
         setState(() {
-          _feedErrorMessage = message;
+          _feedError = e;
           _hasMore = false;
         });
       }
@@ -265,7 +266,8 @@ class _HomePageState extends State<HomePage>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _loadMoreErrorMessage = _friendlyErrorMessage(e);
+          _loadMoreErrorMessage =
+              MoeErrorCopy.resolve(e, scene: MoeErrorScene.feed).subtitle;
         });
       }
       _handleError(e);
@@ -417,10 +419,12 @@ class _HomePageState extends State<HomePage>
             if (_showTopicBar)
               SliverToBoxAdapter(child: _buildTopicTagsRow(context)),
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
-            if (_feedErrorMessage != null && _displayPosts.isNotEmpty)
+            if (_feedError != null && _displayPosts.isNotEmpty)
               SliverToBoxAdapter(
                 child: _buildInlineErrorBanner(
-                  message: _feedErrorMessage!,
+                  message: MoeErrorCopy.resolve(_feedError,
+                          scene: MoeErrorScene.feed)
+                      .subtitle,
                   onRetry: () => _fetchPosts(resetContent: false),
                 ),
               ),
@@ -431,9 +435,9 @@ class _HomePageState extends State<HomePage>
                   childCount: 6,
                 ),
               )
-            else if (_feedErrorMessage != null && _displayPosts.isEmpty)
+            else if (_feedError != null && _displayPosts.isEmpty)
               SliverToBoxAdapter(
-                child: _buildFeedErrorState(_feedErrorMessage!),
+                child: _buildFeedErrorState(),
               )
             else if (!_isLoading && _displayPosts.isEmpty)
               SliverToBoxAdapter(child: _buildFeedEmptyState())
@@ -822,13 +826,6 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  String _friendlyErrorMessage(dynamic error) {
-    final text = error.toString().trim();
-    if (text.isEmpty) return '网络开小差了，请稍后重试';
-    if (text.length > 80) return '数据加载失败，请稍后重试';
-    return text;
-  }
-
   String _lastUpdatedText() {
     if (_isRefreshing) return '正在刷新内容...';
     final updatedAt = _lastUpdatedAt;
@@ -885,25 +882,16 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildFeedErrorState(String message) {
-    return _buildUnifiedStatePanel(
-      icon: Icons.cloud_off_rounded,
-      title: '动态加载失败',
-      subtitle: message,
-      accentColor: const Color(0xFFFFB347),
-      action: ElevatedButton.icon(
-        onPressed: _isLoading ? null : () => _fetchPosts(resetContent: true),
-        icon: const Icon(Icons.refresh_rounded),
-        label: const Text('重新加载'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF7F7FD5),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-        ),
+  Widget _buildFeedErrorState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: MoeErrorState.fromError(
+        _feedError,
+        scene: MoeErrorScene.feed,
+        onRetry: () {
+          if (_isLoading) return;
+          _fetchPosts(resetContent: true);
+        },
       ),
     );
   }

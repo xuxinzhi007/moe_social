@@ -24,7 +24,7 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
 ## 1. 当前阶段（一句话）
 
 - **运行时**：Kratos 传输层对外；**一个进程** `cmd/moe-social`，配置 SSOT 为 `backend/config/config.yaml`。
-- **业务**：`internal/biz` + `internal/service`；HTTP 在 `api/moehttp/*_compat.go`（263 路由，`native_gen=0`）。
+- **业务**：`internal/biz` + `internal/service`；HTTP 主路径为 **`Register*HTTPServer`**（`http_proto.go`）；余量走 `httplegacy/*_compat.go`。
 - **gRPC**：12 域独立服务 + `MoeAdmin`；**无** `service Super`（P5-B）。
 - **契约**：新接口只加 `api/<domain>/v1/*.proto`；存量 `api/defs` 仅维护，日常 `make gen` 不跑 goctl api。
 - **go-zero**：生产 `moe-social` **依赖树零 go-zero**（P5-D）；紧急回滚 `go build -tags hybrid`。
@@ -43,11 +43,12 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
   internal/platform/moesocial     # 启动编排
         │
         ├─ Kratos HTTP :8888
-        │    ├─ internal/server/moekratoshttp   (/health, /migration)
-        │    └─ api/moehttp                     (*_compat.go；native_gen=0)
+        │    ├─ internal/server/http.go         (NewHTTPServer)
+        │    ├─ internal/server/http_proto.go   (Register*HTTPServer)
+        │    └─ internal/server/httplegacy/     (*_compat.go 过渡)
         │
         └─ Kratos gRPC :8080
-             ├─ internal/server/moegrpc/   # 12 域 + MoeAdmin
+             ├─ internal/server/grpc/      # 12 域 + MoeAdmin
              └─ rpc/internal/bootstrap/    # MoeAdmin / Bot 装配
 
   业务：internal/service/<domain> → internal/biz/<domain> → MySQL
@@ -61,20 +62,23 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
 |------|------|
 | `cmd/moe-social/` | 生产入口 |
 | `config/config.yaml` | 运行时 SSOT |
-| `api/<domain>/v1/*.proto` | **新** HTTP/gRPC 契约 |
+| `api/<domain>/v1/*.proto` + `*_http.pb.go` | **新** HTTP/gRPC 契约 |
 | `internal/biz/<domain>/` | 业务 |
 | `internal/service/<domain>/` | 应用服务 |
-| `api/moehttp/` | Kratos HTTP 注册 |
-| `internal/server/moekratoshttp/` | 健康检查、迁移进度 |
-| `internal/server/moegrpc/` | Kratos gRPC |
+| `internal/server/http_proto.go` | **官方** HTTP 注册 |
+| `internal/server/httplegacy/` | 存量 compat（过渡） |
+| `internal/server/http.go` | 健康检查、迁移进度 |
+| `internal/server/grpc/` | Kratos gRPC |
+| `internal/platform/{svc,wiring,moesocial}/` | 装配与启动 |
 
 **存量 / 回滚（默认构建不编译）**：
 
 | 路径 | 角色 |
 |------|------|
 | `api/defs/*.api` | 存量 HTTP 契约（慎改；`make gen-api`） |
-| `api/internal/handler/**` | `//go:build hybrid` 紧急回滚 |
-| `api/internal/types` | goctl 请求/响应类型（compat 仍用） |
+| `internal/legacy/types/` | goctl JSON types |
+| `internal/apilegacy/` | 原 gw/common（过渡） |
+| `api/internal/handler/**` | hybrid 残留 |
 | `rpc/moe.proto` | message-only（无 `service Super`） |
 
 ---
@@ -102,9 +106,9 @@ curl -s http://127.0.0.1:8888/migration | jq .
 
 | 场景 | 契约 | 生成 | 实现 |
 |------|------|------|------|
-| **新 HTTP 能力** | `api/<domain>/v1/*.proto` | `make gen` | `internal/service` + `api/moehttp/*_compat.go` |
-| **改老 HTTP** | `api/defs/*.api` | `make gen-api`（慎用） | `api/moehttp` + `internal/service` |
-| **改 gRPC** | `api/<domain>/v1/*.proto` | `make gen` | `internal/server/moegrpc` + `internal/service` |
+| **新 HTTP 能力** | `api/<domain>/v1/*.proto` + `google.api.http` | `make gen` | `internal/service` + `http_proto.go` |
+| **改老 HTTP** | `api/defs/*.api` | `make gen-api`（慎用） | `httplegacy` + `internal/service` |
+| **改 gRPC** | `api/<domain>/v1/*.proto` | `make gen` | `internal/server/grpc` + `internal/service` |
 
 详见 [new-api-kratos.md](./new-api-kratos.md)。
 

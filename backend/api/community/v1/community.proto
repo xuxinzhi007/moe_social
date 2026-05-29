@@ -5,6 +5,7 @@ package community.v1;
 option go_package = "backend/api/community/v1;communityv1";
 
 import "api/post/v1/post.proto";
+import "google/api/annotations.proto";
 
 // Community — 域契约 SSOT（P6）；HTTP: /api/community/groups/*
 
@@ -174,8 +175,16 @@ message GetGroupPostsReply {
 }
 
 service Community {
-  rpc GetGroups(GetGroupsRequest) returns (GetGroupsReply);
-  rpc GetGroup(GetGroupRequest) returns (GetGroupReply);
-  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupReply);
-  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupReply);
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsReply) {
+    option (google.api.http) = { get: "/api/community/groups" };
+  }
+  rpc GetGroup(GetGroupRequest) returns (GetGroupReply) {
+    option (google.api.http) = { get: "/api/community/groups/{group_id}" };
+  }
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupReply) {
+    option (google.api.http) = { post: "/api/community/groups" body: "*" };
+  }
+  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupReply) {
+    option (google.api.http) = { post: "/api/community/groups/{group_id}/join" body: "*" };
+  }
 }

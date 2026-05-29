@@ -1,5 +1,8 @@
 syntax = "proto3";
 package admin.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/admin/v1;adminv1";
 
 // P6: extracted from rpc/defs/common.proto (221 messages)
@@ -1481,9 +1484,19 @@ service AdminApp {
 }
 
 service AdminInsights {
-  rpc AdminListAiChatSessions(AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp);
-  rpc AdminListAiChatMessages(AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp);
-  rpc AdminExportAiChatMessages(AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp);
-  rpc AdminAnalyticsOverview(AdminGetMemoryStatsReq) returns (AdminAnalyticsOverviewResp);
-  rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp);
+  rpc AdminListAiChatSessions(AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp) {
+    option (google.api.http) = { get: "/api/admin/ai/chat/sessions" };
+  }
+  rpc AdminListAiChatMessages(AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp) {
+    option (google.api.http) = { get: "/api/admin/ai/chat/messages" };
+  }
+  rpc AdminExportAiChatMessages(AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp) {
+    option (google.api.http) = { get: "/api/admin/ai/chat/messages/export" };
+  }
+  rpc AdminAnalyticsOverview(AdminGetMemoryStatsReq) returns (AdminAnalyticsOverviewResp) {
+    option (google.api.http) = { get: "/api/admin/analytics/overview" };
+  }
+  rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp) {
+    option (google.api.http) = { get: "/api/admin/topic-tags" };
+  }
 }

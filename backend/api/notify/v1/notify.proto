@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package notify.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/notify/v1;notifyv1";
 
 // NotifyService — 通知域 gRPC SSOT（P4-C；与 Super 并存）。
@@ -52,8 +54,16 @@ message ReadAllNotificationsRequest {
 message ReadAllNotificationsReply {}
 
 service NotifyService {
-  rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsReply);
-  rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountReply);
-  rpc ReadNotification(ReadNotificationRequest) returns (ReadNotificationReply);
-  rpc ReadAllNotifications(ReadAllNotificationsRequest) returns (ReadAllNotificationsReply);
+  rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsReply) {
+    option (google.api.http) = { get: "/api/notifications" };
+  }
+  rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountReply) {
+    option (google.api.http) = { get: "/api/notifications/unread" };
+  }
+  rpc ReadNotification(ReadNotificationRequest) returns (ReadNotificationReply) {
+    option (google.api.http) = { post: "/api/notifications/{id}/read" body: "*" };
+  }
+  rpc ReadAllNotifications(ReadAllNotificationsRequest) returns (ReadAllNotificationsReply) {
+    option (google.api.http) = { post: "/api/notifications/read-all" body: "*" };
+  }
 }

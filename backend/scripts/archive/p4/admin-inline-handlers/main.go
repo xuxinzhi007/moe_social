@@ -67,9 +67,9 @@ func writeHelpersFile() {
 	sort.Strings(names)
 	var b strings.Builder
 	b.WriteString("package admin\n\nimport (\n")
-	b.WriteString("\t\"backend/api/internal/common\"\n")
-	b.WriteString("\t\"backend/api/internal/svc\"\n")
-	b.WriteString("\t\"backend/api/internal/types\"\n")
+	b.WriteString("\t\"backend/internal/apilegacy/common\"\n")
+	b.WriteString("\t\"backend/internal/platform/svc\"\n")
+	b.WriteString("\t\"backend/internal/legacy/types\"\n")
 	b.WriteString("\t\"backend/utils\"\n")
 	b.WriteString("\t\"strconv\"\n")
 	b.WriteString("\t\"strings\"\n")
@@ -212,8 +212,8 @@ import (
 	"net/http"
 
 	"backend/api/internal/handler/handlerutil"
-	"backend/api/internal/svc"
-	"backend/api/internal/types"
+	"backend/internal/platform/svc"
+	"backend/internal/legacy/types"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
@@ -397,13 +397,13 @@ func extractFreeFunc(src, name string) string {
 func collectImports(chunks ...string) []string {
 	text := strings.Join(chunks, "\n")
 	set := map[string]bool{
-		`"net/http"`: true, `"backend/api/internal/svc"`: true,
-		`"backend/api/internal/types"`: true, `"github.com/zeromicro/go-zero/rest/httpx"`: true,
+		`"net/http"`: true, `"backend/internal/platform/svc"`: true,
+		`"backend/internal/legacy/types"`: true, `"github.com/zeromicro/go-zero/rest/httpx"`: true,
 	}
 	rules := []struct{ rx, imp string }{
-		{`\bcommon\.`, `"backend/api/internal/common"`},
+		{`\bcommon\.`, `"backend/internal/apilegacy/common"`},
 		{`\bhandlerutil\.`, `"backend/api/internal/handler/handlerutil"`},
-		{`\bmoebridge\.`, `"backend/api/internal/moebridge"`},
+		{`\bmoebridge\.`, `"backend/internal/apilegacy/moebridge"`},
 		{`\bmoe\.`, `"backend/rpc/pb/moe"`},
 		{`\butils\.`, `"backend/utils"`},
 		{`\bmodel\.`, `"backend/model"`},

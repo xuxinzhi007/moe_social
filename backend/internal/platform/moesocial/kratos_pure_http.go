@@ -6,10 +6,9 @@ import (
 	"log"
 	"strings"
 
-	apirun "backend/api/runserver"
-	"backend/api/moehttp"
-	moekratoshttp "backend/internal/server/moekratoshttp"
+	apirun "backend/internal/platform/wiring"
 	"backend/internal/platform/kratosprogress"
+	"backend/internal/server"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -32,10 +31,11 @@ func newKratosPureHTTPServer(apiRes *apirun.StartResult, publicHost string, publ
 	}
 	addr := fmt.Sprintf("%s:%d", publicHost, publicPort)
 
-	httpSrv := khttp.NewServer(khttp.Address(addr))
 	deps := pilotDepsFromAPI(apiRes)
-	moekratoshttp.Register(httpSrv, deps.MoeAdmin)
-	moehttp.RegisterAll(httpSrv, deps)
+	httpSrv, err := server.NewHTTPServer(addr, deps)
+	if err != nil {
+		return nil, err
+	}
 
 	return &kratosPureHTTPServer{addr: addr, khttp: httpSrv}, nil
 }
@@ -66,4 +66,3 @@ func (s *kratosPureHTTPServer) Stop(ctx context.Context) error {
 	}
 	return nil
 }
-

@@ -6,6 +6,8 @@ import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../services/api_service.dart';
 import '../../utils/media_url.dart';
+import '../../utils/moe_error_copy.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_search_bar.dart';
 import '../../widgets/moe_toast.dart';
@@ -22,7 +24,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
   List<CommunityGroup> _myGroups = [];
   bool _loading = true;
   bool _loadingMyGroups = false;
-  String? _error;
+  Object? _loadError;
   String _keyword = '';
   Timer? _debounce;
 
@@ -38,9 +40,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     super.dispose();
   }
 
-  String _err(Object e) {
-    if (e is ApiException) return e.message;
-    return '加载失败';
+  String _formatError(Object e) {
+    return MoeErrorCopy.toast(e, scene: MoeErrorScene.community);
   }
 
   Future<void> showCreateGroup() => _showCreateGroup();
@@ -67,7 +68,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
   Future<void> _load({String? keyword}) async {
     setState(() {
       _loading = true;
-      _error = null;
+      _loadError = null;
     });
     try {
       final uid = AuthService.currentUser;
@@ -90,7 +91,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = _err(e);
+        _loadError = e;
       });
     }
   }
@@ -129,7 +130,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       }
       await _load(keyword: _keyword.isEmpty ? null : _keyword);
     } catch (e) {
-      if (mounted) MoeToast.error(context, _err(e));
+      if (mounted) MoeToast.error(context, _formatError(e));
     }
   }
 
@@ -148,7 +149,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       ),
       builder: (ctx) => _CreateInterestGroupSheet(
         userId: uid,
-        formatError: _err,
+        formatError: _formatError,
       ),
     );
     if (ok == true && mounted) {
@@ -160,7 +161,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final blocking = _loading && _groups.isEmpty && _error == null;
+    final blocking = _loading && _groups.isEmpty && _loadError == null;
     final showListProgress = _loading && _groups.isNotEmpty;
 
     return Material(
@@ -168,7 +169,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_myGroups.isNotEmpty || _loadingMyGroups) _buildMyGroupsRow(scheme),
+          if (_myGroups.isNotEmpty || _loadingMyGroups)
+            _buildMyGroupsRow(scheme),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: MoeSearchBar(
@@ -187,24 +189,13 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
               backgroundColor: Colors.transparent,
             ),
           Expanded(
-            child: _error != null
+            child: _loadError != null
                 ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.groups_2_outlined,
-                              size: 48, color: scheme.outline),
-                          const SizedBox(height: 12),
-                          Text(_error!, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: () => _load(),
-                            child: const Text('重试'),
-                          ),
-                        ],
-                      ),
+                    child: MoeErrorState.fromError(
+                      _loadError,
+                      scene: MoeErrorScene.community,
+                      variant: MoeErrorVariant.plain,
+                      onRetry: () => _load(),
                     ),
                   )
                 : blocking
@@ -255,14 +246,13 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                 ],
                               )
                             : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(
-                                    16, 12, 16, 24),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 12, 16, 24),
                                 itemCount: _groups.length + 1,
                                 itemBuilder: (context, i) {
                                   if (i == 0) {
                                     return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.only(bottom: 8),
                                       child: Text(
                                         '发现圈子',
                                         style: TextStyle(
@@ -344,8 +334,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                               child: cover.isNotEmpty
                                   ? Image.network(cover, fit: BoxFit.cover)
                                   : ColoredBox(
-                                      color: scheme.primary
-                                          .withValues(alpha: 0.1),
+                                      color:
+                                          scheme.primary.withValues(alpha: 0.1),
                                       child: Icon(Icons.groups_2_rounded,
                                           color: scheme.primary, size: 20),
                                     ),
@@ -594,9 +584,7 @@ class _GroupCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        group.description.isEmpty
-                            ? '暂无简介'
-                            : group.description,
+                        group.description.isEmpty ? '暂无简介' : group.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

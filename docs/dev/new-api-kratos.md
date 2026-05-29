@@ -1,158 +1,154 @@
-# 新接口开发（纯 Kratos 目录纪律）
+# 新接口开发（纯 Kratos · 对齐官网）
 
 > **生产入口**：`make moe-social`（Kratos HTTP `:8888` + gRPC `:8080`）  
-> **不要再往** `api/defs/*.api` **加新路由**（存量维护可用 `make gen-api`，新能力走本文）。
+> **目录 SSOT**：[kratos-directory-ssot.md](./kratos-directory-ssot.md)  
+> **勿往** `api/defs/*.api` **加新路由**。
 
 ---
 
-## 1. 目录结构（与 core-platform 对齐）
+## 1. 目录结构（当前有效）
 
 ```text
 backend/
-  cmd/moe-social/              # 进程入口
-  config/config.yaml           # 运行时 SSOT
+  cmd/moe-social/
+  config/config.yaml
 
-  api/<domain>/v1/*.proto      # ★ 新接口契约 SSOT（HTTP 路径写在 proto 注释）
-  api/<domain>/v1/*.pb.go      # make gen 生成
+  api/<domain>/v1/*.proto          # ★ 契约 SSOT（含 google.api.http）
+  api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go   # make gen
 
-  internal/biz/<domain>/       # ★ 业务逻辑
-  internal/service/<domain>/   # ★ 应用服务（编排 biz，供 HTTP/gRPC 调用）
+  internal/biz/<domain>/
+  internal/service/<domain>/
 
-  api/moehttp/                 # Kratos HTTP 路由注册（*_compat.go 手维护）
-  internal/server/moekratoshttp/  # /health、/migration
-  internal/server/moegrpc/     # Kratos gRPC 实现（按需）
+  internal/server/
+    http.go              # NewHTTPServer
+    http_proto.go        # Register*HTTPServer（官方生成路由）
+    http_compat.go       # 编排 httplegacy（过渡）
+    httplegacy/           # 存量 compat（逐域删除）
+    grpc/ + grpc.go
 
-  internal/platform/moesocial/ # 启动、装配 deps
+  internal/platform/{svc,wiring,moesocial}/
 
   ── 存量（勿为新接口扩展）──
-  api/defs/*.api               # goctl 契约分片（仅维护老接口）
-  api/internal/types/          # goctl HTTP types（compat 只读）
-  api/internal/handler/doc/    # Swagger
-  api/internal/logic/          # 已退役（.gitkeep）
-  rpc/pb/moe/                  # 冻结 message（bridge 过渡）
+  api/defs/*.api
+  internal/legacy/types/       # 原 goctl JSON types
+  internal/apilegacy/          # 原 api/internal gw/common
+  api/internal/handler/        # hybrid 残留
 ```
 
-**请求路径（生产）**：
+**生产请求路径**：
 
 ```text
-Client → :8888  Kratos HTTP (api/moehttp)
-              → internal/service/<domain>
-              → internal/biz/<domain>
+Client → :8888
+  → RegisterProtoHTTP（proto 生成路由，优先）
+  → RegisterCompatHTTP（httplegacy，仅未迁入 proto 的路由）
+  → internal/service → internal/biz → internal/data
 ```
 
-存量路由均在 `api/moehttp/*_compat.go` 注册；P3 已完成直挂 service/biz（logic **0** 文件）。
+---
+
+## 2. `make gen` 做什么？
+
+| 修改 | 命令 | 产出 |
+|------|------|------|
+| 域 proto | **`make gen`** | `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go` |
+| 路由表同步 | `make gen-http-routes` | `httplegacy/routes_*_gen.go` |
+| 存量 defs | `make gen-api`（慎用） | handler + 可能在 `api/internal/types` 重生 types |
+
+**日常只改 proto 时：`make gen` 足够。**
+
+- 新机器若缺 `protoc-gen-go-http`，`make gen` 会**自动 `go install`**。
+- 可选预装：`make init-proto-tools`（仅一次）。
+
+`make gen` **不会**生成 `internal/service` 或 HTTP 注册代码——需在 `http_proto.go` 增加 `Register*HTTPServer`（与 core-platform 相同）。
 
 ---
 
-## 2. `make gen` 能生成什么？
+## 3. 新 HTTP 接口步骤
 
-| 你做的修改 | 应执行的命令 | 生成物 |
-|------------|--------------|--------|
-| 新增/修改 `api/<domain>/v1/*.proto` | **`make gen`** | `*.pb.go`、`*_grpc.pb.go` |
-| 仅同步 Kratos 路由表（未改 defs） | `make gen-http-routes` | `api/moehttp/routes_*_gen.go`（`native=0` 时为空壳） |
-| 修改 `api/defs/*.api`（**存量**） | `make gen-api` | handler、types、routes.go + 上表路由 |
-| 修改 `rpc` 契约 | `make gen-rpc` | rpc server/pb 等 |
-| proto + defs 都改了 | `make gen-all` | 以上合并 |
-
-**结论**：新接口只改域 proto 时，**`make gen` 足够生成 pb**；**不会**自动生成 `internal/service` 或 `api/moehttp` 注册代码（与 core-platform 一样，服务层手写的薄封装）。
-
----
-
-## 3. 新 HTTP 接口步骤（推荐）
-
-以域 `example`、路径 `GET /api/v1/example/items` 为例。
-
-### 3.1 契约
-
-新建 `api/example/v1/example.proto`：
+### 3.1 Proto 契约
 
 ```protobuf
 syntax = "proto3";
 package example.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/example/v1;examplev1";
 
-// HTTP: GET /api/v1/example/items?page=&page_size=
 message ListItemsRequest { int32 page = 1; int32 page_size = 2; }
 message ListItemsReply { repeated string names = 1; }
 
-service ExampleAdmin {
-  rpc ListItems(ListItemsRequest) returns (ListItemsReply);
+service ExampleService {
+  rpc ListItems(ListItemsRequest) returns (ListItemsReply) {
+    option (google.api.http) = { get: "/api/v1/example/items" };
+  }
 }
 ```
 
-### 3.2 生成 pb
+### 3.2 生成
 
 ```bash
-cd backend
-make gen    # 或 make gen-moe-proto
+cd backend && make gen
 ```
 
 ### 3.3 业务 + 服务
 
-```bash
-# 业务
-internal/biz/example/list.go
-
-# 应用服务（薄层）
-internal/service/example/app.go   # 调用 biz，返回 proto 类型
+```text
+internal/biz/example/
+internal/service/example/app.go
+internal/server/grpc/example/server.go   # 可选，与 HTTP 共用
 ```
 
-### 3.4 HTTP 注册（Kratos）
+### 3.4 注册 HTTP（官方）
 
-在 `api/moehttp/example_compat.go` 中 `RegisterExampleCompat(srv, app)`，并在 `api/moehttp/register_all.go` 里调用。
+在 `internal/server/http_proto.go` 增加：
 
-在 `internal/platform/moesocial/kratos_front.go`（或 `pilotDepsFromAPI`）中注入 `ExampleApp`（若需 DB，挂到 `PilotDeps` / `svc.ServiceContext`）。
+```go
+if d.ExampleApp != nil {
+  examplev1.RegisterExampleServiceHTTPServer(srv, examplegrpc.New(d.ExampleApp))
+}
+```
+
+在 `internal/server/http_deps.go` 的 `ProtoHTTPDepsFromPilot` 注入 `ExampleApp`。
+
+**不要**再往 `httplegacy/*_compat.go` 加新路由。
 
 ### 3.5 校验
 
 ```bash
-make check
-make moe-social
-curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1&page_size=10"
+make check && make moe-social
+curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 ```
 
 ---
 
-## 4. 禁止混用（评审清单）
+## 4. 禁止混用
 
-| ❌ 不要 | ✅ 要 |
-|--------|------|
-| 新路由写进 `api/defs/*.api` | 写进 `api/<domain>/v1/*.proto` |
-| 新逻辑只写在 `api/internal/logic` 且不迁 service | `internal/biz` + `internal/service` |
-| 新接口只改 `routes_native_gen` | 写 `api/moehttp/*_compat.go` 并注册 |
-| 指望 `make gen` 出 handler/logic | `make gen` 只出 pb；服务与路由手写 |
-
----
-
-## 5. 参考实现
-
-### 直挂 `internal/service`（推荐对照）
-
-| 域 | Proto | Service | HTTP 注册 |
-|----|-------|---------|-----------|
-| Post | `api/post/v1/post.proto` | `internal/service/post/` | `api/moehttp/post_compat.go` |
-| Gift | `api/gift/v1/gift.proto` | `internal/service/gift/` | `api/moehttp/gift_compat.go` |
-| Comment | `api/comment/v1/comment.proto` | `internal/service/comment/` | `api/moehttp/comment_compat.go` |
-| Community | `api/community/v1/community.proto` | `internal/service/community/` | `api/moehttp/community_compat.go` |
-| Checkin | `api/checkin/v1/checkin.proto` | `internal/service/checkin/` | `api/moehttp/checkin_compat.go` |
-| Achievement / Behavior | 同目录 `api/*/v1/` | `internal/service/*/` | `achievement_compat.go` · `behavior_compat.go` |
-
-### Pilot / 读路径
-
-| 域 | Proto | Service | HTTP 注册 |
-|----|-------|---------|-----------|
-| VIP 读 | `api/vip/v1/vip_read.proto` | DB / biz | `api/moehttp/vip_compat.go` |
-| Landing | `api/landing/v1/landing.proto` | `internal/service/landing/` | `api/moehttp/landing_compat.go` · **gRPC** `landing.v1.Landing` |
-| LLM 读 | `api/llm/v1/llm_chat.proto` | `internal/service/llm/` | `api/moehttp/llm_read_compat.go` |
-| Moe Admin | `api/moe/v1/moe.proto` | `internal/service/moe/` | `api/moehttp/admin_compat.go` |
-| Admin Insights | `api/admin/v1/admin_insights.proto` | `internal/service/admin/` | `api/moehttp/admin_insights_compat.go` |
-
-完整 compat 清单见 [kratos-legacy-api-migration.md §2.1](./kratos-legacy-api-migration.md#21-apimoehttp-compat-清单263-路由)。
+| ❌ | ✅ |
+|----|-----|
+| 新路由进 `api/defs` | `api/<domain>/v1/*.proto` + `google.api.http` |
+| 新路由进 `httplegacy` | `make gen` + `http_proto.go` |
+| 指望 `make gen` 出 handler | 手写 service + Register*HTTPServer |
+| `make gen-api` 扩生产路由 | 仅存量维护 |
 
 ---
 
-## 6. 存量接口维护
+## 5. 参考实现（已迁入 proto HTTP）
 
-老接口契约在 `api/defs`（**勿新增路由**）。若必须改 defs：用 **`make gen-api`**（自动 prune logic + `gen-http-routes`）；业务在 `internal/biz` + `internal/service` + `api/moehttp/*_compat`。勿与上表新接口流程混在同一 PR。
+| 域 | Proto | Service | HTTP 注册 |
+|----|-------|---------|-----------|
+| Post | `api/post/v1/post.proto` | `internal/service/post/` | `http_proto.go` → `RegisterPostServiceHTTPServer` |
+| Gift | `api/gift/v1/gift.proto` | `internal/service/gift/` | 同上 |
+| Notify | `api/notify/v1/notify.proto` | `internal/service/notify/` | 同上 |
+| User（5 RPC） | `api/user/v1/user_messages.proto` | `internal/service/user/` | 同上 |
+| MoeAdmin | `api/moe/v1/moe.proto` | `internal/service/moe/` | 同上 |
+
+仍走 **httplegacy** 的域：admin 大批量 CRUD、user 社交余量、platform、llm 读配置等。见 [kratos-directory-ssot.md §D2](./kratos-directory-ssot.md)。
+
+---
+
+## 6. 存量接口
+
+老契约在 `api/defs`。**`make gen-api`** 会在 `api/internal/types` 重生 types（已迁到 `internal/legacy/types`），用后需手动合并或避免运行。业务维护在 `internal/biz` + `internal/service` + `httplegacy`。
 
 迁移进度：`GET http://127.0.0.1:8888/migration`。

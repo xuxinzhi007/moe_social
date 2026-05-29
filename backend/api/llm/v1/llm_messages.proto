@@ -1,5 +1,8 @@
 syntax = "proto3";
 package llm.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/llm/v1;llmv1";
 
 // P6: extracted from rpc/defs/common.proto (28 messages)
@@ -171,5 +174,7 @@ message UserMemoryRelationItem {
 }
 
 service LlmChat {
-  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp);
+  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp) {
+    option (google.api.http) = { post: "/api/llm/chat/turn" body: "*" };
+  }
 }

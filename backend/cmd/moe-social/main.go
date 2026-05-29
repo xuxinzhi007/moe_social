@@ -1,9 +1,9 @@
-// 生产 SSOT：Kratos 单进程 HTTP :8888 + gRPC :8080。
+// 生产入口：单进程 Kratos HTTP :8888 + gRPC :8080。
 //
-//	go run ./cmd/moe-social
 //	make moe-social
+//	go run ./cmd/moe-social -f config/config.yaml
 //
-// 配置 SSOT：config/config.yaml（-f）；API/RPC 结构片段由 runtime 段指向。
+// 开发附加 deploy-agent / RPC debug 请用 cmd/moe-social-stack（make moe-social-dev）。
 package main
 
 import (
@@ -28,6 +28,7 @@ func main() {
 		APIConfigFile:     *apiConfig,
 		RPCConfigFile:     *rpcConfig,
 		Migrate:           utils.MigrateOptions{Enabled: *migrate},
+		EnableRPCMonitor:  false,
 	}); err != nil {
 		log.Fatal(err)
 	}

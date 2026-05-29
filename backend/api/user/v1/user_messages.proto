@@ -1,5 +1,8 @@
 syntax = "proto3";
 package user.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/user/v1;userv1";
 
 // P6: extracted from rpc/defs/common.proto (105 messages)
@@ -620,9 +623,19 @@ message WechatLoginResp {
 }
 
 service UserService {
-  rpc Login(LoginReq) returns (LoginResp);
-  rpc Register(RegisterReq) returns (RegisterResp);
-  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp);
-  rpc GetUser(GetUserReq) returns (GetUserResp);
-  rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp);
+  rpc Login(LoginReq) returns (LoginResp) {
+    option (google.api.http) = { post: "/api/user/login" body: "*" };
+  }
+  rpc Register(RegisterReq) returns (RegisterResp) {
+    option (google.api.http) = { post: "/api/user/register" body: "*" };
+  }
+  rpc GetUserInfo(GetUserInfoReq) returns (GetUserInfoResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}" };
+  }
+  rpc GetUser(GetUserReq) returns (GetUserResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/detail" };
+  }
+  rpc UpdateUserInfo(UpdateUserInfoReq) returns (UpdateUserInfoResp) {
+    option (google.api.http) = { put: "/api/user/{user_id}" body: "*" };
+  }
 }

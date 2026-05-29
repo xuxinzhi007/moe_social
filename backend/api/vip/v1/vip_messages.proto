@@ -1,5 +1,8 @@
 syntax = "proto3";
 package vip.v1;
+
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/vip/v1;vipv1";
 
 // P6: extracted from rpc/defs/common.proto (29 messages)
@@ -197,7 +200,13 @@ message VipRecord {
 }
 
 service VipService {
-  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp);
-  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp);
-  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp);
+  rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/vip/records" };
+  }
+  rpc GetUserActiveVipRecord(GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/vip/active" };
+  }
+  rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp) {
+    option (google.api.http) = { post: "/api/user/{user_id}/vip/orders" body: "*" };
+  }
 }

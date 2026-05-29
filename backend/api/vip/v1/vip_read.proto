@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package vip.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/vip/v1;vipv1";
 
 // VipReadAdmin — PK-1 域 SSOT（勿再扩 api/defs/common.api）。
@@ -26,5 +28,7 @@ message ListPlansReply {
 }
 
 service VipReadAdmin {
-  rpc ListPlans(ListPlansRequest) returns (ListPlansReply);
+  rpc ListPlans(ListPlansRequest) returns (ListPlansReply) {
+    option (google.api.http) = { get: "/api/admin/vip/plans" };
+  }
 }

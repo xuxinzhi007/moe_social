@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 扫描 api/**/v1/*.proto → backend/api/<domain>/v1/*.pb.go（module=backend）
+# 扫描 api/**/v1/*.proto → backend/api/<domain>/v1/*.pb.go + *_grpc.pb.go + *_http.pb.go
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -8,14 +8,23 @@ if ! command -v protoc >/dev/null 2>&1; then
   exit 0
 fi
 
+if ! command -v protoc-gen-go-http >/dev/null 2>&1; then
+  echo "protoc-gen-go-http 未安装，自动执行 go install…" >&2
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+fi
+
 count=0
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   echo "protoc: $f"
   protoc \
     --proto_path=. \
+    --proto_path=./third_party \
     --go_out=. --go_opt=module=backend \
     --go-grpc_out=. --go-grpc_opt=module=backend \
+    --go-http_out=. --go-http_opt=module=backend \
     "$f"
   count=$((count + 1))
 done < <(find api -path '*/v1/*.proto' 2>/dev/null | sort)
@@ -24,4 +33,4 @@ if [ "$count" -eq 0 ]; then
   echo "no api/**/v1/*.proto found"
   exit 0
 fi
-echo "OK: gen-moe-proto (${count} file(s)) → backend/api/*/v1/*.pb.go"
+echo "OK: gen-moe-proto (${count} file(s)) → backend/api/*/v1/*.{pb,grpc.pb,http.pb}.go"

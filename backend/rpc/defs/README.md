@@ -24,7 +24,7 @@ make fs8-assemble-super-proto
 
 ## 生产 RPC
 
-- 域服务：`api/*/v1` + `internal/server/moegrpc/*`
+- 域服务：`api/*/v1` + `internal/server/grpc/*`
 - MoeAdmin：`moe.v1.MoeAdmin` + `internal/service/moe`
 - 类型：`rpc/pb/moe`（`SuperClient` 垫片保留供 gateway 可选回退，单进程为 nil）
 

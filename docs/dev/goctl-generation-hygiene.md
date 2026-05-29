@@ -8,7 +8,7 @@
 |------|------|
 | **logic 层已删除** | `api/internal/logic/` 仅 `.gitkeep` |
 | **handler 直调 GW/biz** | 见 `api/internal/handler/README.md` |
-| **生产不注册 handler** | `WireOnly=true` → 仅 `api/moehttp` |
+| **生产不注册 handler** | `WireOnly=true` → 仅 `httplegacy` + `http_proto` |
 | **P5-E** | hybrid handler / `tag-hybrid-routes` 已移除；**无** `//go:build hybrid` 日常构建 |
 
 `make gen-api` 后 **自动**执行：
@@ -19,7 +19,7 @@
 
 ## 改存量 HTTP 的推荐顺序
 
-1. **优先**：`api/moehttp/*_compat.go` + `internal/service` / `internal/biz`
+1. **优先**：proto `google.api.http` + `http_proto.go`；存量改 `httplegacy/*_compat.go` + `internal/service`
 2. **必须动 defs**：`make gen-api` → **diff handler/**（goctl 可能覆盖）→ 从 git 恢复已迁移 handler
 3. **禁止**：把业务写回 `api/internal/logic`
 

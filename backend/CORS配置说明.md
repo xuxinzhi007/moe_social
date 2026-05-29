@@ -3,7 +3,7 @@
 ## ✅ 已完成的配置
 
 ### 1. 创建CORS中间件
-- ✅ `backend/api/internal/middleware/corsmiddleware.go` - CORS中间件实现
+- ✅ `backend/internal/apilegacy/middleware/corsmiddleware.go` - CORS中间件实现
 
 ### 2. 注册中间件
 - ✅ `backend/api/super.go` - 在服务器启动时注册CORS中间件

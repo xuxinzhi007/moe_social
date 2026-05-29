@@ -1,0 +1,120 @@
+// FS-8: ai_llm 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/ai/v1 · api/llm/v1
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: llm
+)
+service Super {
+	// 获取可用模型列表
+	@handler models
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/llm/models)
+	get /api/llm/models (EmptyReq) returns (LlmModelsResp)
+
+	// 手机离线模型目录（GGUF 由服务端托管，App 下载到本机）
+	@handler localModelsCatalog
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/llm/local-models/catalog)
+	get /api/llm/local-models/catalog (EmptyReq) returns (LlmLocalModelsCatalogResp)
+
+	// 创建带有个性化系统提示词的新模型
+	@handler createAgent
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/agents)
+	post /api/llm/agents (LlmCreateAgentReq) returns (BaseResp)
+
+	// 下载模型
+	@handler downloadModel
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/models/download)
+	post /api/llm/models/download (LlmDownloadModelReq) returns (BaseResp)
+
+	// 删除模型
+	@handler deleteModel
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/models/delete)
+	post /api/llm/models/delete (LlmDeleteModelReq) returns (BaseResp)
+
+	// 发送聊天消息
+	@handler chat
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/chat)
+	post /api/llm/chat (LlmChatReq) returns (LlmChatResp)
+
+	// Ollama 原样转发（终端同款，无服务端记忆注入）
+	@handler modelsRaw
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/llm/models/raw)
+	get /api/llm/models/raw (EmptyReq)
+
+	@handler config
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/llm/config)
+	get /api/llm/config (EmptyReq)
+
+	@handler chatRaw
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/chat/raw)
+	post /api/llm/chat/raw (EmptyReq)
+
+	@handler showRaw
+	// P6 migrated → api/ai/v1 · api/llm/v1 (POST /api/llm/show/raw)
+	post /api/llm/show/raw (EmptyReq)
+}
+
+@server (
+	group: ai
+	jwt:   Auth
+)
+service Super {
+	@handler getUserConfig
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/config)
+	get /api/ai/config (EmptyReq) returns (AiUserConfigResp)
+
+	@handler upsertUserConfig
+	// P6 migrated → api/ai/v1 · api/llm/v1 (PUT /api/ai/config)
+	put /api/ai/config (AiUserConfigReq) returns (AiUserConfigResp)
+
+	@handler getAiMemorySettings
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/memory/settings)
+	get /api/ai/memory/settings (EmptyReq) returns (AiMemorySettingsResp)
+
+	@handler putAiMemorySettings
+	// P6 migrated → api/ai/v1 · api/llm/v1 (PUT /api/ai/memory/settings)
+	put /api/ai/memory/settings (AiMemorySettingsReq) returns (AiMemorySettingsResp)
+
+	@handler listProviders
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/providers)
+	get /api/ai/providers (EmptyReq) returns (AiProviderProfilesResp)
+
+	@handler upsertProvider
+	// P6 migrated → api/ai/v1 · api/llm/v1 (PUT /api/ai/providers)
+	put /api/ai/providers (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteProvider
+	// P6 migrated → api/ai/v1 · api/llm/v1 (DELETE /api/ai/providers)
+	delete /api/ai/providers (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listAgents
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/agents)
+	get /api/ai/agents (EmptyReq) returns (AiAgentsResp)
+
+	@handler listPublicAgents
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/agents/public)
+	get /api/ai/agents/public (ListPublicAiAgentsReq) returns (AiAgentsResp)
+
+	@handler upsertAgent
+	// P6 migrated → api/ai/v1 · api/llm/v1 (PUT /api/ai/agents)
+	put /api/ai/agents (AiResourceUpsertReq) returns (BaseResp)
+
+	@handler deleteAgent
+	// P6 migrated → api/ai/v1 · api/llm/v1 (DELETE /api/ai/agents)
+	delete /api/ai/agents (AiResourceDeleteReq) returns (BaseResp)
+
+	@handler listLorebooks
+	// P6 migrated → api/ai/v1 · api/llm/v1 (GET /api/ai/lorebooks)
+	get /api/ai/lorebooks (EmptyReq) returns (AiLorebooksResp)
+
+	@handler upsertLorebook
+	// P6 migrated → api/ai/v1 · api/llm/v1 (PUT /api/ai/lorebooks)
+	put /api/ai/lorebooks (AiLorebookUpsertReq) returns (BaseResp)
+
+	@handler deleteLorebook
+	// P6 migrated → api/ai/v1 · api/llm/v1 (DELETE /api/ai/lorebooks)
+	delete /api/ai/lorebooks (AiResourceDeleteReq) returns (BaseResp)
+}

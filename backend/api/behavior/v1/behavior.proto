@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package behavior.v1;
 
+import "google/api/annotations.proto";
+
 option go_package = "backend/api/behavior/v1;behaviorv1";
 
 // Behavior — 域 HTTP/gRPC 契约 SSOT（P6-0）。
@@ -28,5 +30,7 @@ message TrackUserBehaviorEventsReply {
 }
 
 service BehaviorApp {
-  rpc TrackEvents(TrackUserBehaviorEventsRequest) returns (TrackUserBehaviorEventsReply);
+  rpc TrackEvents(TrackUserBehaviorEventsRequest) returns (TrackUserBehaviorEventsReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/behavior/events" body: "*" };
+  }
 }

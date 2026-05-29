@@ -20,8 +20,8 @@ alwaysApply: false
   4) 涉及数据库/GORM/sqlx/事务/迁移时再加 `golang-gin-database`
 
 ## 实现要求
-- 生产分层：`api/moehttp` 适配 → `internal/service` → `internal/biz`；勿往 `api/internal/logic` 加业务。
-- 存量 goctl `handler` 仅 hybrid；新接口见 `docs/dev/new-api-kratos.md`。
+- 生产分层：`httplegacy` 过渡适配 → `internal/service` → `internal/biz`；新接口走 `http_proto.go` + proto HTTP（见 `docs/dev/new-api-kratos.md`）。
+- 勿往 `api/internal/logic` 加业务。
 - 请求参数校验必须完整，返回错误要有明确业务语义，不泄露内部细节。
 - 新增/修改接口时，保证路由、handler、请求结构体、响应结构体一致。
 - 涉及数据库或外部调用时，必须做错误处理和超时控制。

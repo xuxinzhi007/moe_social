@@ -1,0 +1,424 @@
+// FS-8: admin 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/admin/v1/admin_messages.proto
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
+syntax = "v1"
+
+import "common.api"
+@server (
+	group: admin_public
+)
+service Super {
+	@handler adminLogin
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/login)
+	post /api/admin/login (AdminLoginReq) returns (AdminLoginResp)
+
+	@handler adminBootstrapAccount
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/bootstrap/account)
+	post /api/admin/bootstrap/account (EmptyReq) returns (AdminBootstrapAccountResp)
+}
+
+@server (
+	group: admin
+)
+service Super {
+	@handler adminMe
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/me)
+	get /api/admin/me (EmptyReq) returns (AdminMeResp)
+
+	@handler adminDashboard
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/dashboard)
+	get /api/admin/dashboard (EmptyReq) returns (AdminDashboardResp)
+
+	@handler adminListUsers
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/users)
+	get /api/admin/users (AdminListUsersReq) returns (AdminListUsersResp)
+
+	@handler adminGetUser
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/users/:user_id)
+	get /api/admin/users/:user_id (AdminGetUserReq) returns (AdminGetUserResp)
+
+	@handler adminGetUserProfile
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/users/:user_id/profile)
+	get /api/admin/users/:user_id/profile (AdminGetUserProfileReq) returns (AdminGetUserProfileResp)
+
+	@handler adminUpdateUser
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/users/:user_id)
+	put /api/admin/users/:user_id (AdminUpdateUserReq) returns (AdminUpdateUserResp)
+
+	@handler adminListLandingFeedback
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/landing/feedback)
+	get /api/admin/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
+
+	@handler adminListVipPlans
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/vip/plans)
+	get /api/admin/vip/plans (AdminListVipPlansReq) returns (AdminListVipPlansResp)
+
+	@handler adminGetVipPlan
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/vip/plans/:plan_id)
+	get /api/admin/vip/plans/:plan_id (AdminGetVipPlanReq) returns (AdminGetVipPlanResp)
+
+	@handler adminCreateVipPlan
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/vip/plans)
+	post /api/admin/vip/plans (AdminCreateVipPlanReq) returns (AdminCreateVipPlanResp)
+
+	@handler adminUpdateVipPlan
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/vip/plans/:plan_id)
+	put /api/admin/vip/plans/:plan_id (AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp)
+
+	@handler adminDeleteVipPlan
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/vip/plans/:plan_id)
+	delete /api/admin/vip/plans/:plan_id (AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp)
+
+	@handler adminBootstrapVipPlans
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/vip/plans/bootstrap)
+	post /api/admin/vip/plans/bootstrap (EmptyReq) returns (AdminBootstrapVipPlansResp)
+
+	@handler adminBootstrapAchievements
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/achievements/bootstrap)
+	post /api/admin/achievements/bootstrap (EmptyReq) returns (AdminBootstrapAchievementsResp)
+
+	@handler adminListGifts
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/gifts)
+	get /api/admin/gifts (AdminListGiftsReq) returns (AdminListGiftsResp)
+
+	@handler adminGetGift
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/gifts/:gift_id)
+	get /api/admin/gifts/:gift_id (AdminGetGiftReq) returns (AdminGetGiftResp)
+
+	@handler adminCreateGift
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/gifts)
+	post /api/admin/gifts (AdminCreateGiftReq) returns (AdminCreateGiftResp)
+
+	@handler adminUpdateGift
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/gifts/:gift_id)
+	put /api/admin/gifts/:gift_id (AdminUpdateGiftReq) returns (AdminUpdateGiftResp)
+
+	@handler adminDeleteGift
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/gifts/:gift_id)
+	delete /api/admin/gifts/:gift_id (AdminDeleteGiftReq) returns (AdminDeleteGiftResp)
+
+	@handler adminBootstrapGifts
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/gifts/bootstrap)
+	post /api/admin/gifts/bootstrap (EmptyReq) returns (AdminBootstrapGiftsResp)
+
+	@handler adminDedupeGifts
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/gifts/dedupe)
+	post /api/admin/gifts/dedupe (EmptyReq) returns (AdminDedupeGiftsResp)
+
+	@handler adminListVipOrders
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/orders/vip)
+	get /api/admin/orders/vip (AdminListVipOrdersReq) returns (AdminListVipOrdersResp)
+
+	@handler adminListGiftPurchaseOrders
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/orders/gift-purchase)
+	get /api/admin/orders/gift-purchase (AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp)
+
+	@handler adminListPosts
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/posts)
+	get /api/admin/posts (AdminListPostsReq) returns (AdminListPostsResp)
+
+	@handler adminDeletePost
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/posts/:post_id)
+	delete /api/admin/posts/:post_id (AdminDeletePostReq) returns (AdminDeletePostResp)
+
+	@handler adminListComments
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/comments)
+	get /api/admin/comments (AdminListCommentsReq) returns (AdminListCommentsResp)
+
+	@handler adminDeleteComment
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/comments/:comment_id)
+	delete /api/admin/comments/:comment_id (AdminDeleteCommentReq) returns (AdminDeleteCommentResp)
+
+	@handler adminListPostReports
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/post-reports)
+	get /api/admin/post-reports (AdminListPostReportsReq) returns (AdminListPostReportsResp)
+
+	@handler adminListGroups
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/community/groups)
+	get /api/admin/community/groups (AdminListGroupsReq) returns (AdminListGroupsResp)
+
+	@handler adminDeleteGroup
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/community/groups/:group_id)
+	delete /api/admin/community/groups/:group_id (AdminDeleteGroupReq) returns (AdminDeleteGroupResp)
+
+	@handler adminListAchievements
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/growth/achievements)
+	get /api/admin/growth/achievements (AdminListAchievementsReq) returns (AdminListAchievementsResp)
+
+	@handler adminBootstrapLevels
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/growth/levels/bootstrap)
+	post /api/admin/growth/levels/bootstrap (EmptyReq) returns (AdminBootstrapLevelsResp)
+
+	@handler adminGetGrowthStats
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/growth/stats)
+	get /api/admin/growth/stats (EmptyReq) returns (AdminGetGrowthStatsResp)
+
+	@handler adminListLevelConfigs
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/growth/levels)
+	get /api/admin/growth/levels (EmptyReq) returns (AdminListLevelConfigsResp)
+
+	@handler adminUpdateLevelConfig
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/growth/levels/:level_id)
+	put /api/admin/growth/levels/:level_id (AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp)
+
+	@handler adminListCheckInRewards
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/growth/check-in-rewards)
+	get /api/admin/growth/check-in-rewards (EmptyReq) returns (AdminListCheckInRewardsResp)
+
+	@handler adminUpdateCheckInReward
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/growth/check-in-rewards/:reward_id)
+	put /api/admin/growth/check-in-rewards/:reward_id (AdminUpdateCheckInRewardReq) returns (AdminUpdateCheckInRewardResp)
+
+	@handler adminUpdateAchievement
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/growth/achievements/:achievement_id)
+	put /api/admin/growth/achievements/:achievement_id (AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp)
+
+	@handler adminListAnnouncements
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/announcements)
+	get /api/admin/announcements (AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp)
+
+	@handler adminGetAnnouncement
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/announcements/:announcement_id)
+	get /api/admin/announcements/:announcement_id (AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp)
+
+	@handler adminCreateAnnouncement
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/announcements)
+	post /api/admin/announcements (AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp)
+
+	@handler adminUpdateAnnouncement
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/announcements/:announcement_id)
+	put /api/admin/announcements/:announcement_id (AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp)
+
+	@handler adminDeleteAnnouncement
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/announcements/:announcement_id)
+	delete /api/admin/announcements/:announcement_id (AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp)
+
+	@handler adminPublishAnnouncement
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/announcements/:announcement_id/publish)
+	post /api/admin/announcements/:announcement_id/publish (AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp)
+
+	@handler adminBroadcastNotification
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/notifications/broadcast)
+	post /api/admin/notifications/broadcast (AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp)
+
+	@handler adminSendNotification
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/notifications/send)
+	post /api/admin/notifications/send (AdminSendNotificationReq) returns (AdminSendNotificationResp)
+
+	@handler adminListAiAgents
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/ai/agents)
+	get /api/admin/ai/agents (AdminListAiAgentsReq) returns (AdminListAiAgentsResp)
+
+	@handler adminDeleteAiAgent
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/ai/agents)
+	delete /api/admin/ai/agents (AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp)
+
+	@handler adminUpdateAiAgent
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/ai/agents)
+	put /api/admin/ai/agents (AdminUpdateAiAgentReq) returns (AdminUpdateAiAgentResp)
+
+	@handler adminListFollows
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/social/follows)
+	get /api/admin/social/follows (AdminListFollowsReq) returns (AdminListFollowsResp)
+
+	@handler adminListFriendRequests
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/social/friend-requests)
+	get /api/admin/social/friend-requests (AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp)
+
+	@handler adminDeleteFollow
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/social/follows/:follow_id)
+	delete /api/admin/social/follows/:follow_id (AdminDeleteFollowReq) returns (AdminDeleteFollowResp)
+
+	@handler adminListAccounts
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/accounts)
+	get /api/admin/accounts (AdminListAccountsReq) returns (AdminListAccountsResp)
+
+	@handler adminCreateAccount
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/accounts)
+	post /api/admin/accounts (AdminCreateAccountReq) returns (AdminCreateAccountResp)
+
+	@handler adminUpdateAccount
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/accounts/:account_id)
+	put /api/admin/accounts/:account_id (AdminUpdateAccountReq) returns (AdminUpdateAccountResp)
+
+	@handler adminDeleteAccount
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/accounts/:account_id)
+	delete /api/admin/accounts/:account_id (AdminDeleteAccountReq) returns (AdminDeleteAccountResp)
+
+	@handler adminListMenus
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/menus)
+	get /api/admin/menus (EmptyReq) returns (AdminListMenusResp)
+
+	@handler adminUpsertMenu
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/menus)
+	put /api/admin/menus (AdminUpsertMenuReq) returns (AdminUpsertMenuResp)
+
+	@handler adminDeleteMenu
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/menus/:menu_key)
+	delete /api/admin/menus/:menu_key (AdminDeleteMenuReq) returns (AdminDeleteMenuResp)
+
+	@handler adminBootstrapMenus
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/menus/bootstrap)
+	post /api/admin/menus/bootstrap (EmptyReq) returns (AdminBootstrapMenusResp)
+
+	@handler adminGetSchemaCatalog
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/schema/catalog)
+	get /api/admin/schema/catalog (EmptyReq) returns (AdminSchemaCatalogResp)
+
+	@handler adminListAuditLogs
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/audit-logs)
+	get /api/admin/audit-logs (AdminListAuditLogsReq) returns (AdminListAuditLogsResp)
+
+	@handler adminGetRuntimeConfig
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/runtime-config)
+	get /api/admin/runtime-config (EmptyReq) returns (AdminRuntimeConfigResp)
+
+	@handler adminUpdateRuntimeConfig
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/runtime-config)
+	put /api/admin/runtime-config (AdminUpdateRuntimeConfigReq) returns (AdminUpdateRuntimeConfigResp)
+
+	@handler adminListMediaImages
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/media/images)
+	get /api/admin/media/images (AdminListMediaImagesReq) returns (AdminListMediaImagesResp)
+
+	@handler adminDeleteMediaImage
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/media/images/:filename)
+	delete /api/admin/media/images/:filename (AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp)
+
+	@handler adminListMemories
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/memories)
+	get /api/admin/memories (AdminListMemoriesReq) returns (AdminListMemoriesResp)
+
+	@handler adminGetMemoryStats
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/memories/stats)
+	get /api/admin/memories/stats (EmptyReq) returns (AdminGetMemoryStatsResp)
+
+	@handler adminDeleteMemory
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/memories/:memory_id)
+	delete /api/admin/memories/:memory_id (AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp)
+
+	@handler adminListAiChatSessions
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/ai/chat/sessions)
+	get /api/admin/ai/chat/sessions (AdminListAiChatSessionsReq) returns (AdminListAiChatSessionsResp)
+
+	@handler adminListAiChatMessages
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/ai/chat/messages)
+	get /api/admin/ai/chat/messages (AdminListAiChatMessagesReq) returns (AdminListAiChatMessagesResp)
+
+	@handler adminExportAiChatMessages
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/ai/chat/messages/export)
+	get /api/admin/ai/chat/messages/export (AdminExportAiChatMessagesReq) returns (AdminExportAiChatMessagesResp)
+
+	@handler adminAnalyticsOverview
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/analytics/overview)
+	get /api/admin/analytics/overview (EmptyReq) returns (AdminAnalyticsOverviewResp)
+
+	@handler adminRuntimeOverview
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/runtime/overview)
+	get /api/admin/runtime/overview (EmptyReq) returns (AdminRuntimeOverviewResp)
+
+	@handler adminListTopicTags
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/topic-tags)
+	get /api/admin/topic-tags (AdminListTopicTagsReq) returns (AdminListTopicTagsResp)
+
+	@handler adminCreateTopicTag
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/topic-tags)
+	post /api/admin/topic-tags (AdminCreateTopicTagReq) returns (AdminCreateTopicTagResp)
+
+	@handler adminUpdateTopicTag
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/topic-tags/:tag_id)
+	put /api/admin/topic-tags/:tag_id (AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp)
+
+	@handler adminDeleteTopicTag
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/topic-tags/:tag_id)
+	delete /api/admin/topic-tags/:tag_id (AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp)
+
+	@handler adminBootstrapTopicTags
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/topic-tags/bootstrap)
+	post /api/admin/topic-tags/bootstrap (EmptyReq) returns (AdminBootstrapTopicTagsResp)
+
+	@handler adminListTagDictionary
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/tag-dictionary)
+	get /api/admin/tag-dictionary (AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp)
+
+	@handler adminCreateTagDictionary
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/tag-dictionary)
+	post /api/admin/tag-dictionary (AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp)
+
+	@handler adminUpdateTagDictionary
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/tag-dictionary/:entry_id)
+	put /api/admin/tag-dictionary/:entry_id (AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp)
+
+	@handler adminDeleteTagDictionary
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/tag-dictionary/:entry_id)
+	delete /api/admin/tag-dictionary/:entry_id (AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp)
+
+	@handler adminGetMoeInferenceStatus
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/inference/status)
+	get /api/admin/moe/inference/status (AdminGetMoeInferenceStatusReq) returns (AdminGetMoeInferenceStatusResp)
+
+	@handler adminGetMoeBrainPipeline
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/brain/pipeline)
+	get /api/admin/moe/brain/pipeline (AdminGetMoeBrainPipelineReq) returns (AdminGetMoeBrainPipelineResp)
+
+	@handler adminStreamMoeBrainPipeline
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/brain/pipeline/stream)
+	get /api/admin/moe/brain/pipeline/stream (AdminGetMoeBrainPipelineReq)
+
+	@handler adminListMoeRuntimes
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/runtimes)
+	get /api/admin/moe/runtimes returns (AdminListMoeRuntimesResp)
+
+	@handler adminUpsertMoeRuntime
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/moe/runtimes)
+	post /api/admin/moe/runtimes (AdminUpsertMoeRuntimeReq) returns (AdminUpsertMoeRuntimeResp)
+
+	@handler adminRunMoeAgentOnce
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/moe/runtimes/:agent_key/run-once)
+	post /api/admin/moe/runtimes/:agent_key/run-once (AdminRunMoeAgentReq) returns (AdminRunMoeAgentResp)
+
+	@handler adminGetMoeBrain
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/runtimes/:agent_key/brain)
+	get /api/admin/moe/runtimes/:agent_key/brain (AdminGetMoeBrainReq) returns (AdminGetMoeBrainResp)
+
+	@handler adminGetMoeBotFlow
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/runtimes/:agent_key/flow)
+	get /api/admin/moe/runtimes/:agent_key/flow (AdminGetMoeBotFlowReq) returns (AdminGetMoeBotFlowResp)
+
+	@handler adminUpsertMoeBotFlow
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/moe/runtimes/:agent_key/flow)
+	put /api/admin/moe/runtimes/:agent_key/flow (AdminUpsertMoeBotFlowReq) returns (AdminUpsertMoeBotFlowResp)
+
+	@handler adminDeleteMoeBotFlow
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/moe/runtimes/:agent_key/flow)
+	delete /api/admin/moe/runtimes/:agent_key/flow (AdminDeleteMoeBotFlowReq) returns (AdminDeleteMoeBotFlowResp)
+
+	@handler adminUpdateMoeBrainPolicy
+	// P6 migrated → api/admin/v1/admin_messages.proto (PUT /api/admin/moe/runtimes/:agent_key/brain/policy)
+	put /api/admin/moe/runtimes/:agent_key/brain/policy (AdminUpdateMoeBrainPolicyReq) returns (AdminGetMoeBrainResp)
+
+	@handler adminDeleteMoeBrainEpisode
+	// P6 migrated → api/admin/v1/admin_messages.proto (DELETE /api/admin/moe/brain/episodes/:id)
+	delete /api/admin/moe/brain/episodes/:id (AdminDeleteMoeBrainEpisodeReq) returns (BaseResp)
+
+	@handler AdminRefineMoeBrainEpisode
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/moe/brain/episodes/:id/refine)
+	post /api/admin/moe/brain/episodes/:id/refine (AdminRefineMoeBrainEpisodeReq) returns (AdminRefineMoeBrainEpisodeResp)
+
+	@handler AdminCurateMoeBrain
+	// P6 migrated → api/admin/v1/admin_messages.proto (POST /api/admin/moe/runtimes/:agent_key/brain/curate)
+	post /api/admin/moe/runtimes/:agent_key/brain/curate (AdminCurateMoeBrainReq) returns (AdminCurateMoeBrainResp)
+
+	@handler adminGetMoeToolsSchema
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/tools/schema)
+	get /api/admin/moe/tools/schema (EmptyReq) returns (AdminGetMoeToolsSchemaResp)
+
+	@handler adminGetMoeToolStats
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/tools/stats)
+	get /api/admin/moe/tools/stats (AdminGetMoeToolStatsReq) returns (AdminGetMoeToolStatsResp)
+
+	@handler adminListMoeToolCalls
+	// P6 migrated → api/admin/v1/admin_messages.proto (GET /api/admin/moe/tools/calls)
+	get /api/admin/moe/tools/calls (AdminListMoeToolCallsReq) returns (AdminListMoeToolCallsResp)
+}

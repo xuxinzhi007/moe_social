@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_tokens.dart';
+
 class MoeMenuItem {
   final IconData icon;
   final String title;
@@ -30,14 +32,8 @@ class MoeMenuCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
+        boxShadow: MoeTokens.cardShadow(),
       ),
       child: Column(
         children: items.map((item) {
@@ -52,17 +48,20 @@ class MoeMenuCard extends StatelessWidget {
                   borderRadius: BorderRadius.only(
                     topLeft: isFirst ? const Radius.circular(24) : Radius.zero,
                     topRight: isFirst ? const Radius.circular(24) : Radius.zero,
-                    bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
-                    bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
+                    bottomLeft:
+                        isLast ? const Radius.circular(24) : Radius.zero,
+                    bottomRight:
+                        isLast ? const Radius.circular(24) : Radius.zero,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 16),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: item.color.withOpacity(0.1),
+                            color: item.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(item.icon, color: item.color, size: 22),
@@ -77,7 +76,9 @@ class MoeMenuCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15,
-                                  color: item.isDestructive ? Colors.redAccent : const Color(0xFF333333),
+                                  color: item.isDestructive
+                                      ? Colors.redAccent
+                                      : const Color(0xFF333333),
                                 ),
                               ),
                               if (item.subtitle != null) ...[
@@ -109,7 +110,8 @@ class MoeMenuCard extends StatelessWidget {
               if (!isLast)
                 Padding(
                   padding: const EdgeInsets.only(left: 68, right: 20),
-                  child: Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+                  child: Divider(
+                      height: 1, color: Colors.grey.withValues(alpha: 0.1)),
                 ),
             ],
           );

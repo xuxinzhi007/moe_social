@@ -11,27 +11,30 @@
 |------|------|
 | `cmd/moe-social/` | **生产入口** |
 | `config/config.yaml` | 运行时配置 SSOT |
-| `api/<domain>/v1/*.proto` | **新** HTTP/gRPC 契约 |
+| `api/<domain>/v1/*.proto` | **新** HTTP/gRPC 契约（含 `google.api.http`） |
+| `api/<domain>/v1/*_http.pb.go` | `make gen` 生成 |
 | `internal/biz/<domain>/` | 业务逻辑 |
-| `internal/service/<domain>/` | 应用服务（HTTP/gRPC 调用） |
-| `api/moehttp/*_compat.go` | 存量 HTTP Kratos 路由（263） |
-| `internal/server/moekratoshttp/` | `/health`、`/migration` |
-| `internal/server/moegrpc/` | Kratos gRPC（12 域 + MoeAdmin） |
-| `api/defs/*.api` | **存量** goctl HTTP（慎改；`make gen-api`） |
+| `internal/service/<domain>/` | 应用服务 |
+| `internal/server/http.go` | `NewHTTPServer` + `RegisterProtoHTTP` |
+| `internal/server/httplegacy/` | 存量 compat（逐域删除） |
+| `internal/server/grpc/` | Kratos gRPC |
+| `internal/platform/{svc,wiring,moesocial}/` | 装配与启动 |
+| `internal/apilegacy/` | 原 `api/internal`（gw/common，过渡） |
+| `internal/legacy/types/` | 原 goctl JSON types |
+| `api/defs/*.api` | **存量** goctl（慎改；`make gen-api`） |
 | `api/internal/handler/` | goctl 生成；**仅 hybrid 构建** |
-| `api/internal/logic/` | **已退役**（`.gitkeep`） |
-| `rpc/moe.proto` | message-only（**无** `service Super`） |
-| `rpc/internal/bootstrap/` | MoeAdmin / Bot 装配 |
+| `third_party/google/api/` | protoc HTTP 注解依赖 |
 | `backend/Makefile` | `gen` / `moe-social` / `check` |
 
 ## 默认工作规则
 
-1. **新接口**：改 `api/<domain>/v1/*.proto` → `internal/service` + `api/moehttp` 注册 → `cd backend && make gen`（见 [new-api-kratos.md](../dev/new-api-kratos.md)）。
-2. **存量 HTTP**：改 `api/defs/*.api` → `make gen-api`（handler 仅 hybrid；生产走 compat）。
-3. **存量 RPC message**：改 `rpc/` 域 proto 或 `moe.proto` import → `make gen-rpc`。
-4. 日常契约同步：`make gen`（域 pb + HTTP 路由表；**不**默认跑 goctl api）。
-5. 除非明确需求，不重构无关模块，不跨层搬运逻辑。
-6. 生产验收：`make check` + `go build ./api ./rpc ./cmd/moe-social`；P5-D：`go list -deps ./cmd/moe-social` 无 go-zero。
+1. **新接口**：改 `api/<domain>/v1/*.proto`（加 `google.api.http`）→ `internal/service` → `cd backend && make gen` → 确认 `http_proto.go` 已注册（见 [new-api-kratos.md](../dev/new-api-kratos.md)）。
+2. **存量 HTTP**：改 `api/defs/*.api` → `make gen-api`（handler 仅 hybrid；生产走 compat/httplegacy）。
+3. **存量 RPC message**：改 `rpc/` 域 proto → `make gen-rpc`。
+4. 日常契约同步：**`make gen`**（域 pb + grpc + **http** + 路由表）。
+5. 新机器：`make gen` 缺插件时会自动 `go install`；也可先跑 `make init-proto-tools`。
+6. 除非明确需求，不重构无关模块。
+7. 生产验收：`make check` + `go build ./cmd/moe-social`。
 
 ## 技能使用顺序（后端规范化）
 
@@ -50,19 +53,19 @@
 
 ## 生成文件约定（不要手改）
 
-- `backend/api/internal/types/types.go`
-- `backend/api/<domain>/v1/*.pb.go`
+- `backend/internal/legacy/types/types.go`
+- `backend/api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go`
 - `backend/rpc/pb/**/*.pb.go`
-- `backend/api/moehttp/routes_*_gen.go`（由 `make gen-http-routes` 生成）
+- `backend/internal/server/httplegacy/routes_*_gen.go`
 
-存量 hybrid：`api/internal/handler/routes.go` 等（默认构建不编译）。
+存量 hybrid：`api/internal/handler/`（默认构建不编译）。
 
-新能力：在 `api/moehttp/<domain>_compat.go` 手维护 Kratos 路由，勿扩 goctl handler 生产路径。
+新能力：域 proto + `google.api.http` → `make gen` → `http_proto.go` 注册；**勿**扩 `httplegacy` 新路由。
 
 ## Go 开发约定（结合项目现状）
 
 - 当前 Go 版本以 `backend/go.mod` 为准（`go 1.25.5`）。
-- 生产分层：`moehttp` 适配 → `internal/service` → `internal/biz` → `internal/data`（按需）。
+- 生产分层：`httplegacy`（过渡）→ `internal/service` → `internal/biz` → `internal/data`。
 - 跨边界调用显式透传 `context.Context`，保持 `ctx` 为首参。
 - 错误处理优先返回可读业务错误，避免把底层细节直接透出到接口层。
 - 复用现有命名风格与目录组织，不引入 `common/helper/util` 式兜底目录。
@@ -83,7 +86,7 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 
 - `backend/Makefile`
 - 目标域 `api/<domain>/v1/*.proto` 或存量 `api/defs/*.api`
-- 相关 `api/moehttp/*_compat.go`、`internal/service/<domain>/`
+- 相关 `internal/server/httplegacy/*_compat.go`、`internal/service/<domain>/`、`internal/server/http_proto.go`
 - 若涉及 LLM/raw 路由，检查 `backend/api/internal/handler/routes_llm_raw.go`
 - 若改动 `moe-admin/`（React 管理台），另读 `docs/guidelines/Codex启动指南-前端.md`（路径为 `moe-admin/src/`，非 `lib/`）
 

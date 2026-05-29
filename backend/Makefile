@@ -18,7 +18,12 @@
 
 all: gen
 
-
+# 安装 proto 代码生成工具（对齐 Kratos 官方：含 protoc-gen-go-http）
+.PHONY: init-proto-tools
+init-proto-tools:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 
 # 日常安全生成：不跑 goctl api/rpc，不覆盖 api/internal/logic 与 rpc/internal/logic
 gen: gen-moe-proto gen-moe-conf gen-http-routes
@@ -35,7 +40,7 @@ gen-moe-proto:
 gen-moe-conf:
 	bash scripts/gen/moe-conf.sh
 
-# 从 api/internal/handler/routes.go → api/moehttp/routes_*_gen.go
+# 从 api/internal/handler/routes.go → internal/server/httplegacy/routes_*_gen.go
 gen-http-routes:
 	bash scripts/gen/stale-api-hint.sh
 	cd scripts/gen/http-routes && go run .
@@ -64,6 +69,7 @@ fs8-split-super-proto:
 gen-api:
 	bash scripts/gen/api-guard.sh
 	cd api && goctl api go -api moe.api -dir ./
+	bash scripts/gen/sync-api-types-to-legacy.sh
 	bash scripts/gen/prune-api-logic-shells.sh
 	bash scripts/gen/prune-api-logic-retired.sh
 	bash scripts/gen/post-gen-check.sh
@@ -94,7 +100,7 @@ fs8-split-api:
 # 日常检查：编译生产入口 + 核心包单测
 check:
 	go build -o /dev/null ./cmd/moe-social
-	go test ./internal/platform/moesocial/... ./api/moehttp/... ./internal/platform/kratosprogress/... -count=1
+	go test ./internal/platform/moesocial/... ./internal/server/httplegacy/... ./internal/platform/kratosprogress/... -count=1
 
 # P4 域 gRPC 冒烟（需 RPC :8080；bash 版）
 grpc-smoke:
@@ -132,8 +138,8 @@ else
 endif
 
 moe-platform:
-
-	go run ./cmd/moe-platform
+	@echo "DEPRECATED: cmd/moe-platform removed; use make moe-social"
+	@exit 1
 
 # DEPRECATED：已迁至 scripts/archive/fs8-rollback/fs9b-rewrite-imports/
 fs9b-rewrite-imports:

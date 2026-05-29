@@ -6,7 +6,8 @@ alwaysApply: false
 # Compound Engineering（按需）
 
 > 详表：[docs/guidelines/compound-engineering.md](../../docs/guidelines/compound-engineering.md)  
-> 插件：Cursor `compound-engineering`（`.cursor/settings.json`）
+> 插件：Cursor `compound-engineering`（`.cursor/settings.json`）  
+> **首次使用**：在 Agent 聊天运行 `/ce-setup` 做环境诊断与本地配置引导。
 
 ## 何时采用（自决 ✅）
 
@@ -31,6 +32,8 @@ alwaysApply: false
 4. **Compound**：收尾用 [sessions/_TEMPLATE.md](../../docs/guidelines/sessions/_TEMPLATE.md)；重复踩坑只**提议**写入 `.cursor/LESSONS.md`。
 
 用户在新会话中可显式调用：`/ce-brainstorm` → `/ce-plan` → `/ce-work` → `/ce-code-review` → `/ce-compound`（见指南文档）。
+
+**插件装不上**：见 [compound-engineering.md](../../docs/guidelines/compound-engineering.md) §故障排查（清 `~/.cursor/plugins/cache` 或手动 symlink）；`.cursor/settings.json` 的 `enabled` 不能代替下载。
 
 ## 与本仓库硬规则的关系
 

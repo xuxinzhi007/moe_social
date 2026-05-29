@@ -15,6 +15,8 @@ import '../../providers/notification_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../widgets/fade_in_up.dart';
 import '../chat/conversations_page.dart';
 
@@ -45,7 +47,7 @@ class _FriendsPageState extends State<FriendsPage>
   User? _selfProfile;
   bool _isLoading = true;
   bool _hasError = false;
-  String _errorMessage = '';
+  Object? _loadError;
   String _searchKeyword = '';
   Map<String, bool> _onlineStatus = {};
   Timer? _onlineTimer;
@@ -219,7 +221,7 @@ class _FriendsPageState extends State<FriendsPage>
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = '请先登录';
+          _loadError = '请先登录';
         });
       }
       return;
@@ -229,7 +231,7 @@ class _FriendsPageState extends State<FriendsPage>
       setState(() {
         _isLoading = true;
         _hasError = false;
-        _errorMessage = '';
+        _loadError = null;
       });
     }
 
@@ -249,7 +251,7 @@ class _FriendsPageState extends State<FriendsPage>
         _selfProfile = self;
         _isLoading = false;
         _hasError = false;
-        _errorMessage = '';
+        _loadError = null;
       });
 
       await _ensureOnlineStatus();
@@ -262,7 +264,7 @@ class _FriendsPageState extends State<FriendsPage>
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = e.toString();
+        _loadError = e;
       });
     }
   }
@@ -787,82 +789,10 @@ class _FriendsPageState extends State<FriendsPage>
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: _contactsAppBar(),
         body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 74,
-                    height: 74,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF7F7FD5).withOpacity(0.2),
-                          const Color(0xFF86A8E7).withOpacity(0.2),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.wifi_off_rounded,
-                      size: 38,
-                      color: Color(0xFF6A6CCB),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '联系人加载失败',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _errorMessage,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  FilledButton.icon(
-                    onPressed: _loadFriends,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF7F7FD5),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('重试'),
-                  ),
-                ],
-              ),
-            ),
+          child: MoeErrorState.fromError(
+            _loadError,
+            scene: MoeErrorScene.contacts,
+            onRetry: _loadFriends,
           ),
         ),
       );
