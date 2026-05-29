@@ -14,8 +14,7 @@ type linuxBuildTarget struct {
 }
 
 var linuxBuildTargets = []linuxBuildTarget{
-	{out: "api/moe-social-api", pkg: "./api"},
-	{out: "rpc/moe-social-rpc", pkg: "./rpc"},
+	{out: "bin/moe-social", pkg: "./cmd/moe-social"},
 }
 
 // runLinuxCrossBuild compiles api+rpc for linux/amd64 without shell env-var syntax.

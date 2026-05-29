@@ -1,9 +1,7 @@
 package svc
 
 import (
-	moepb "backend/api/moe/v1"
 	"backend/internal/apilegacy/config"
-	"backend/internal/platform/moewiring"
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
@@ -22,14 +20,11 @@ import (
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
 	"backend/utils"
-
-	"backend/internal/platform/grpcclient"
 )
 
 type ServiceContext struct {
 	Config         config.Config
 	MoeAdmin       *moeadmin.AdminService
-	MoeGRPC        moepb.MoeAdminClient
 	LandingApp     *landingapp.AppService
 	AdminApp       *adminapp.AppService
 	AIApp          *aiapp.AppService
@@ -50,19 +45,8 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	var moeGRPC moepb.MoeAdminClient
-	// 分体部署：super_grpc_retired=false 时仍可 dial MoeAdmin gRPC（无 Super 单体服务）
-	if !moewiring.SuperGrpcRetired() && moewiring.UseMoeGRPCEnabled() {
-		conn, err := grpcclient.Dial(c.SuperRpc)
-		if err != nil {
-			panic(err)
-		}
-		moeGRPC = moewiring.NewMoeGRPCAdminClient(conn)
-	}
-
 	return &ServiceContext{
 		Config:     c,
-		MoeGRPC:    moeGRPC,
 		ModelCache: utils.NewModelCache(),
 	}
 }

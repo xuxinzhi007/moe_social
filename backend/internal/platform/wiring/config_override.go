@@ -81,35 +81,6 @@ func ApplyUnifiedConfigOverrides(c *config.Config) {
 		}
 		_ = utils.ConfigureAdminJWT(secret, hours)
 	}
-	applySuperRPCOverrides(c, v)
-}
-
-func applySuperRPCOverrides(c *config.Config, v *viper.Viper) {
-	if ep := strings.TrimSpace(os.Getenv("MOE_SUPER_RPC_ENDPOINT")); ep != "" {
-		c.SuperRpc.Endpoints = splitRPCEndpoints(ep)
-	}
-	if v != nil {
-		if eps := v.GetStringSlice("api.super_rpc_endpoints"); len(eps) > 0 {
-			c.SuperRpc.Endpoints = eps
-		}
-		if ms := v.GetInt64("api.super_rpc_timeout_ms"); ms > 0 {
-			c.SuperRpc.Timeout = ms
-		}
-	}
-	if c.SuperRpc.Timeout <= 0 {
-		c.SuperRpc.Timeout = 600000
-	}
-}
-
-func splitRPCEndpoints(raw string) []string {
-	var out []string
-	for _, p := range strings.Split(raw, ",") {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
-		}
-	}
-	return out
 }
 
 func firstNonEmptyString(v *viper.Viper, keys ...string) string {

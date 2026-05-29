@@ -25,8 +25,7 @@ type binaryArtifact struct {
 }
 
 var backendBinaryArtifacts = []binaryArtifact{
-	{localRel: filepath.Join("api", "moe-social-api"), remoteRel: "api/moe-social-api"},
-	{localRel: filepath.Join("rpc", "moe-social-rpc"), remoteRel: "rpc/moe-social-rpc"},
+	{localRel: filepath.Join("bin", "moe-social"), remoteRel: "bin/moe-social"},
 }
 
 // RunBackendUpload copies Linux binaries from the local workspace to cloud via SFTP.
@@ -136,7 +135,7 @@ func (reg *Registry) RunBackendUpload(
 // recoverContainersUp 在上传失败且曾停止容器后拉起服务，避免 VPS 长时间不可用（沿用磁盘上已有二进制）。
 func recoverContainersUp(ctx context.Context, rp *RemotePlatform, composeFile string, services []string, sink LogSink) {
 	if sink != nil {
-		sink("\n【恢复】上传未完成，正在重新启动 api/rpc（使用 VPS 上当前文件，可能仍为旧版本）…\n")
+		sink("\n【恢复】上传未完成，正在重新启动 moe-social（使用 VPS 上当前文件，可能仍为旧版本）…\n")
 	}
 	code, err := runComposeUp(ctx, rp, composeFile, services, sink)
 	if sink != nil {
@@ -248,7 +247,7 @@ func uploadOneFile(ctx context.Context, client *sftp.Client, localPath, remotePa
 
 	dst, err := client.Create(tmpRemote)
 	if err != nil {
-		return fmt.Errorf("远程创建 %s: %w（可先停止 api/rpc 容器再上传）", tmpRemote, err)
+		return fmt.Errorf("远程创建 %s: %w（可先停止 moe-social 容器再上传）", tmpRemote, err)
 	}
 	if _, err := copyUploadWithProgress(dst, src, sink, label, st.Size()); err != nil {
 		_ = dst.Close()

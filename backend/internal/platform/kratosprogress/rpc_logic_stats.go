@@ -1,49 +1,18 @@
 package kratosprogress
 
-import (
-	"os"
-	"path/filepath"
-	"strings"
+import "backend/internal/platform/moewiring"
 
-	"backend/internal/platform/moewiring"
-)
-
-// RPCLegacyLogicBaseline P5 启动时 rpc/internal/logic 文件数（Super goctl 层）。
+// RPCLegacyLogicBaseline 历史 Super goctl logic 文件数（rpc/ 已删除）。
 const RPCLegacyLogicBaseline = 209
 
-// RPCLegacyLogicFileCount 当前 rpc/internal/logic 下 .go 文件数。
+// RPCLegacyLogicFileCount 已退役；rpc/internal/logic 不再存在。
 func RPCLegacyLogicFileCount() int {
-	root := filepath.Join("rpc", "internal", "logic")
-	n := 0
-	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
-			return err
-		}
-		if strings.HasSuffix(path, ".go") {
-			n++
-		}
-		return nil
-	})
-	return n
+	return 0
 }
 
 // RPCLegacyLogicRetiredPercent Super logic 清库进度（0～100）。
 func RPCLegacyLogicRetiredPercent() int {
-	left := RPCLegacyLogicFileCount()
-	if left == 0 {
-		return 100
-	}
-	if RPCLegacyLogicBaseline <= 0 {
-		return 0
-	}
-	if left >= RPCLegacyLogicBaseline {
-		return 0
-	}
-	p := (RPCLegacyLogicBaseline - left) * 100 / RPCLegacyLogicBaseline
-	if p > 100 {
-		return 100
-	}
-	return p
+	return 100
 }
 
 // P5SuperRuntimePercent P5-A：Super 运行时退役（不注册 gRPC、API 不走 zrpc 回环）。

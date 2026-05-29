@@ -6,7 +6,7 @@
 package kratosprogress
 
 import (
-	"backend/internal/server/httplegacy"
+	"backend/internal/server/routestats"
 	"backend/internal/platform/moewiring"
 )
 
@@ -40,8 +40,8 @@ func Current() Report {
 	biz := 100
 	contract := 100
 	rollout := rolloutPercent()
-	d2 := httplegacy.D2ProtoHTTPPercent()
-	d4 := httplegacy.D4LegacyCleanupPercent()
+	d2 := routestats.D2ProtoHTTPPercent()
+	d4 := routestats.D4LegacyCleanupPercent()
 	complete := overallMigrationPercent(d2, d4)
 	migrationType := "kratos-hybrid-to-pure"
 	if moewiring.KratosPureEnabled() {
@@ -69,10 +69,10 @@ func Current() Report {
 			"biz_moe_import_files_left":      BizMoeImportFileCount(),
 			"apilegacy_moe_import_files_left": ApilegacyMoeImportFileCount(),
 			"runtime_moe_pb_import_files_left": RuntimeMoePbImportFileCount(),
-			"proto_http_routes":              httplegacy.ProtoHTTPRouteCount(),
-			"compat_routes_active":           httplegacy.PilotNativeCompatRoutes,
-			"compat_routes_migratable":       httplegacy.PilotMigratableCompatRoutes(),
-			"compat_routes_intentional":      httplegacy.PilotIntentionalCompatRoutes,
+			"proto_http_routes":              routestats.ProtoHTTPRouteCount(),
+			"compat_routes_active":           routestats.PilotNativeCompatRoutes,
+			"compat_routes_migratable":       routestats.PilotMigratableCompatRoutes(),
+			"compat_routes_intentional":      routestats.PilotIntentionalCompatRoutes,
 			"http_native_handler_pct":        httpNativeHandlerPercent(),
 			"http_bridge_handler_pct":        httpBridgeHandlerPercent(),
 			"http_route_on_kratos_pct":       httpRouteCoveragePercent(),
@@ -159,7 +159,7 @@ func bridgeClearedPercent() int {
 	if total <= 0 {
 		return 0
 	}
-	bridge := httplegacy.TotalBridgeHTTPRoutes()
+	bridge := routestats.TotalBridgeHTTPRoutes()
 	left := (total - bridge) * 100 / total
 	if left < 0 {
 		return 0
@@ -184,16 +184,16 @@ func rolloutPercent() int {
 }
 
 func httpNativeHandlerPercent() int {
-	p := httplegacy.HTTPNativeHandlerPercent()
+	p := routestats.HTTPNativeHandlerPercent()
 	// PK-10b：仅 swagger 三件套留在 bridge 时视为 HTTP 层完成。
-	if httplegacy.TotalBridgeHTTPRoutes() <= 3 && p >= 95 {
+	if routestats.TotalBridgeHTTPRoutes() <= 3 && p >= 95 {
 		return 100
 	}
 	return p
 }
 
 func totalHTTPRoutes() int {
-	n := httplegacy.TotalHTTPRoutes()
+	n := routestats.TotalHTTPRoutes()
 	if n <= 0 {
 		return 268
 	}
@@ -201,14 +201,14 @@ func totalHTTPRoutes() int {
 }
 
 func registeredHTTPRoutes() int {
-	return httplegacy.RegisteredKratosHTTPRoutes()
+	return routestats.RegisteredKratosHTTPRoutes()
 }
 
 func httpBridgeHandlerPercent() int {
 	if totalHTTPRoutes() <= 0 {
 		return 0
 	}
-	n := httplegacy.TotalBridgeHTTPRoutes() * 100 / totalHTTPRoutes()
+	n := routestats.TotalBridgeHTTPRoutes() * 100 / totalHTTPRoutes()
 	if n < 0 {
 		return 0
 	}
@@ -282,7 +282,7 @@ func transportHTTPRolloutPercent() int {
 }
 
 func httpRouteCoveragePercent() int {
-	return httplegacy.HTTPRouteCoveragePercent()
+	return routestats.HTTPRouteCoveragePercent()
 }
 
 func boolPercent(ok bool) int {

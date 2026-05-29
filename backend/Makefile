@@ -1,8 +1,8 @@
-# 在 backend 目录执行，例如: make gen | make build | make rpc | make dev
+# 在 backend 目录执行，例如: make gen | make build | make moe-social
 
 
 
-.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
+.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-proto-route-count gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -26,14 +26,15 @@ init-proto-tools:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 
-# 日常安全生成：不跑 goctl api/rpc，不覆盖 api/internal/logic 与 rpc/internal/logic
-gen: gen-moe-proto gen-moe-conf gen-http-routes
+# 日常安全生成：域 proto + conf + proto HTTP 路由计数
+gen: gen-moe-proto gen-moe-conf gen-proto-route-count
 
-# 域 proto + conf + goctl API + RPC + Kratos 路由（改 .api / moe.proto 后用）
-gen-all: gen-moe-proto gen-moe-conf gen-api gen-rpc gen-http-routes
+# 日常生成：仅 proto + conf + OpenAPI + 路由计数
+gen-all: gen
 
-# goctl api + swagger（改 api/defs 后）
-gen-legacy-goctl: gen-api gen-swagger
+gen-legacy-goctl gen-api:
+	@echo "RETIRED: goctl 已移除。请改 api/<domain>/v1/*.proto 后执行 make gen"
+	@exit 1
 
 gen-moe-proto:
 	bash scripts/gen/moe-proto.sh
@@ -41,17 +42,18 @@ gen-moe-proto:
 gen-moe-conf:
 	bash scripts/gen/moe-conf.sh
 
-# 从 api/internal/handler/routes.go → internal/server/httplegacy/routes_*_gen.go
-gen-http-routes:
-	bash scripts/gen/stale-api-hint.sh
-	cd scripts/gen/http-routes && go run .
+# 从 api/**/v1/*_http.pb.go 统计 → internal/server/routestats/proto_routes_gen.go
+gen-proto-route-count:
+	cd scripts/gen/proto-route-count && go run .
 
 # 兼容旧文档 target 名
-gen-moekratospilot-get: gen-http-routes
+gen-moekratospilot-get: gen-proto-route-count
+gen-http-routes: gen-proto-route-count
 
-# P5/D4 Phase-4：rpc/pb/moe 已退役；域契约见 api/*/v1/*.proto
-gen-rpc: fs8-assemble-super-proto
-	@echo "D4 Phase-4: rpc/pb/moe retired. Domain gRPC/HTTP: api/*/v1 + make gen."
+# P5/D4 Phase-4：backend/rpc/ 已删除；域契约见 api/*/v1/*.proto
+gen-rpc:
+	@echo "RETIRED: backend/rpc removed. Domain HTTP: api/*/v1 + make gen."
+	@exit 1
 
 # DEPRECATED (P5 完成)：go-zero / Super logic 已删除；配套脚本在 scripts/archive/fs8-rollback/
 gen-rpc-legacy:
@@ -59,23 +61,13 @@ gen-rpc-legacy:
 	@exit 1
 
 fs8-assemble-super-proto:
-	python3 scripts/gen/fs8-assemble-rpc-proto.py
+	@echo "RETIRED: backend/rpc removed. Use api/<domain>/v1/*.proto + make gen."
+	@exit 1
 
 # DEPRECATED (P5 完成)：脚本已迁至 scripts/archive/fs8-rollback/
 fs8-split-super-proto:
 	@echo "DEPRECATED: scripts moved to scripts/archive/fs8-rollback/. Restore from git if disaster recovery needed."
 	@exit 1
-
-gen-api:
-	bash scripts/gen/api-guard.sh
-	cd api && goctl api go -api moe.api -dir ./
-	bash scripts/gen/sync-api-types-to-legacy.sh
-	bash scripts/gen/prune-api-logic-shells.sh
-	bash scripts/gen/prune-api-logic-retired.sh
-	bash scripts/gen/post-gen-check.sh
-	$(MAKE) gen-http-routes
-
-
 
 gen-swagger:
 	bash scripts/gen/openapi.sh
@@ -97,30 +89,33 @@ fs8-split-api:
 # 日常检查：编译生产入口 + 核心包单测
 check:
 	go build -o /dev/null ./cmd/moe-social
-	go test ./internal/platform/moesocial/... ./internal/server/httplegacy/... ./internal/platform/kratosprogress/... -count=1
+	go test ./internal/platform/moesocial/... ./internal/server/routestats/... ./internal/platform/kratosprogress/... -count=1
 
-# P4 域 gRPC 冒烟（需 RPC :8080；bash 版）
+# P4 域 gRPC 冒烟（已退役）
 grpc-smoke:
-	bash scripts/grpc-smoke-notify-chat-vip.sh
+	@echo "RETIRED: backend/rpc removed; use HTTP :8888 + openapi.yaml"
+	@exit 1
 
-# P5 分体联调：构建 api/rpc + 可选 grpc 冒烟
+# P5 分体联调（已退役）
 split-deploy-smoke:
-	bash scripts/split-deploy-smoke.sh
+	@echo "RETIRED: single-process HTTP-only; use make moe-social"
+	@exit 1
 
 # DEPRECATED (P5-E 已执行 2026-05-29)：脚本在 scripts/archive/p5/p5e-remove-hybrid-gozero.py
 remove-hybrid-gozero:
 	@echo "DEPRECATED: P5-E already applied. Script archived at scripts/archive/p5/p5e-remove-hybrid-gozero.py"
 	@exit 1
 
-# P3-W4：列出无 handler 引用的 logic 文件（Windows/Linux 均可）
+# 已退役：goctl logic 审计工具随 api/internal 删除
 audit-logic-orphans:
-	go run ./scripts/tools/logic-orphan-audit
+	@echo "RETIRED: goctl logic removed; contract SSOT is api/<domain>/v1/*.proto"
+	@exit 1
 
 moe-social:
 
 	go run ./cmd/moe-social
 
-# 开发：附带 deploy-agent (:19010) + RPC debug (:19011)
+# 开发：moe-social + deploy-agent (:19010)
 moe-social-dev:
 
 	go run ./cmd/moe-social-stack
@@ -144,7 +139,7 @@ fs9b-rewrite-imports:
 	@exit 1
 
 moe-kratos:
-	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888 + gRPC :8080)."
+	@echo "DEPRECATED: use make moe-social (Kratos HTTP :8888)."
 	@echo "  Pilot :1903x removed (moe.pilot_process_deprecated=true). Exiting."
 	@exit 1
 
@@ -159,10 +154,6 @@ build-moe-social:
 
 build: build-moe-social
 
-	go build -o api/moe-social-api ./api
-
-	go build -o rpc/moe-social-rpc ./rpc
-
 
 
 # 编 Linux 服务器用（amd64）。Windows 若失败可用 Git Bash / WSL 执行 make。
@@ -173,10 +164,6 @@ build-linux:
 
 	@mkdir -p bin
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/moe-social ./cmd/moe-social
-
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api/moe-social-api ./api
-
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rpc/moe-social-rpc ./rpc
 
 	@echo Done.
 
@@ -195,14 +182,10 @@ env-status:
 
 
 rpc:
-
-	go run ./rpc/super.go -f rpc/etc/moe.yaml
-
-
+	@echo "standalone rpc removed; use: make moe-social"
 
 api:
-
-	go run ./api/super.go -f api/etc/moe.yaml
+	@echo "standalone api removed; use: make moe-social"
 
 
 
@@ -222,11 +205,10 @@ rpc-migrate: db-migrate
 
 
 
-# RPC 进程内 debug API（:19011），Agent 将 /debug/* 转发到此
-
+# RPC debug 已随 backend/rpc 删除
 rpc-debug:
-
-	go run ./rpc/super.go -f rpc/etc/moe.yaml -debug
+	@echo "RETIRED: rpc-debug removed with backend/rpc; use make moe-social"
+	@exit 1
 
 
 
@@ -314,79 +296,25 @@ dev-docs:
 # 本地联调：仅 RPC + API，Ctrl+C 全部退出（监控/文档请另开终端 make rpc-monitor / make dev-docs）
 
 dev:
-
-	go run ./cmd/dev
+	@echo "RETIRED: 旧双进程 dev 已移除。请使用: make moe-social 或 make moe-social-dev"
+	@exit 1
 
 
 
 help:
-
-	@echo make gen           - 生成 RPC + API 代码
-
-	@echo make gen-rpc       - 仅 RPC 代码生成
-
-	@echo make gen-api       - 仅 API 代码生成
-
-	@echo make gen-swagger   - 生成 OpenAPI 3.0 YAML（backend/openapi.yaml，与 make gen 同源）
-
-	@echo make build         - 本机打包 api + rpc
-
-	@echo make build-linux   - 交叉编 Linux 包（不改全局 go 配置）
-
-	@echo make env-status    - 打印 GOOS/GOARCH
-
+	@echo make gen              - proto + conf + HTTP 路由计数
+	@echo make gen-swagger      - 生成 openapi.yaml（与 make gen 同源）
+	@echo make build            - 本机编译 bin/moe-social
+	@echo make build-linux      - 交叉编译 Linux bin/moe-social
+	@echo make check            - 编译 + 核心包单测
 	@echo ""
-
-	@echo --- 后端业务 ---
-
-	@echo make rpc           - 仅 RPC (:8080)，等同 go run super.go
-
-	@echo make api           - 仅 API (:8888)
-
-	@echo make db-migrate    - 仅 schema 迁移（推荐，跑完即退出）
-
-	@echo make rpc-migrate   - 同 db-migrate（兼容旧命令）
-
-	@echo make dev           - RPC + API 联调，Ctrl+C 全停
-
+	@echo --- 生产 / 开发 ---
+	@echo make moe-social         - Kratos HTTP :8888（生产入口）
+	@echo make moe-social-dev     - 同上 + deploy-agent :19010
+	@echo make moe-social-stop    - 释放开发端口
+	@echo make db-migrate         - 数据库 schema 迁移
+	@echo make deploy-agent       - 部署调试代理 :19010
 	@echo ""
-
-	@echo --- 开发工具（独立进程）---
-
-	@echo make deploy-agent      - 仅 Deploy Agent (:19010)；make dev / moe-social 默认已带
-
-	@echo make deploy-agent-stop - 释放 Agent 端口
-
-	@echo make admin             - RPC+API+Agent+Moe Admin 一键启动
-
-	@echo Moe Admin 前端: cd moe-admin && npm run dev  (:5173/ops/)
-
-	@echo make rpc-debug         - RPC debug API (:19011)
-
-	@echo make rpc-monitor       - 等同 deploy-agent（兼容别名）
-
-	@echo make dev-docs          - 静态文档 (:19012)
-
-	@echo ""
-
-	@echo --- Kratos 运行时 ---
-
-	@echo make moe-social          - 单进程 Kratos (:8888 HTTP + :8080 gRPC)，-f config/config.yaml
-	@echo make moe-social-dev      - 同上 + deploy-agent (:19010) + RPC debug (:19011)
-	@echo make moe-social-stop     - 释放开发端口
-	@echo make check               - 编译 cmd/moe-social + 核心包单测
-	@echo make gen                 - 安全：proto + conf + HTTP 路由（不碰 logic）
-	@echo make gen-api             - 改 api/defs 后（goctl handler/types/routes）
-	@echo make gen-rpc             - 改 rpc 契约后
-	@echo make gen-all             - gen-api + gen-rpc + proto + 路由
-	@echo make gen-http-routes     - routes.go → api/moehttp
-	@echo make build-moe-social    - 生产单二进制
-
-	@echo make moe-platform          - 迁移观测 (:19020)
-
-	@echo make help          - 本说明
-
-	@echo ""
-
-	@echo 若本机 go run 曾异常，可试: go env -u GOOS  或  go env -w GOOS=darwin
+	@echo 契约 SSOT: api/<domain>/v1/*.proto  Apifox: backend/openapi.yaml
+	@echo 布局说明: LAYOUT.md  迁移状态: docs/dev/kratos-migration-status.md
 

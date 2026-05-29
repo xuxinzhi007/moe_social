@@ -797,6 +797,43 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminUpdateAchievementResp'
+    /api/admin/growth/check-in-rewards:
+        get:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminListCheckInRewards
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminListCheckInRewardsResp'
+    /api/admin/growth/check-in-rewards/{rewardId}:
+        put:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminUpdateCheckInReward
+            parameters:
+                - name: rewardId
+                  in: path
+                  description: HTTP path /api/admin/growth/check-in-rewards/{reward_id}
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/admin.v1.AdminUpdateCheckInRewardReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminUpdateCheckInRewardResp'
     /api/admin/growth/levels:
         get:
             tags:
@@ -2206,6 +2243,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ai.v1.DeleteAiResourceResp'
+    /api/ai/config:
+        get:
+            tags:
+                - LlmChat
+            operationId: LlmChat_GetAiUserConfig
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.GetAiUserConfigResp'
+        put:
+            tags:
+                - LlmChat
+            operationId: LlmChat_UpsertAiUserConfig
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/llm.v1.UpsertAiUserConfigReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.UpsertAiUserConfigResp'
     /api/ai/lorebooks:
         get:
             tags:
@@ -2262,6 +2333,35 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ai.v1.DeleteAiResourceResp'
+    /api/ai/memory/settings:
+        get:
+            tags:
+                - LlmChat
+            operationId: LlmChat_GetAiMemorySettings
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.GetAiMemorySettingsResp'
+        put:
+            tags:
+                - LlmChat
+            operationId: LlmChat_PutAiMemorySettings
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/llm.v1.PutAiMemorySettingsReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.PutAiMemorySettingsResp'
     /api/ai/providers:
         get:
             tags:
@@ -2519,6 +2619,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.UpdateUserAvatarResp'
+    /api/chat/online:
+        get:
+            tags:
+                - ChatPresenceService
+            operationId: ChatPresenceService_GetChatOnline
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chat.v1.GetChatOnlineResp'
+    /api/chat/online/batch:
+        get:
+            tags:
+                - ChatPresenceService
+            operationId: ChatPresenceService_GetChatOnlineBatch
+            parameters:
+                - name: userIds
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chat.v1.GetChatOnlineBatchResp'
     /api/comments:
         post:
             tags:
@@ -2966,6 +3100,62 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/gift.v1.GetGiftReply'
+    /api/images:
+        get:
+            tags:
+                - Media
+            operationId: Media_ListImages
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/media.v1.ListImagesReply'
+    /api/images/{filename}:
+        get:
+            tags:
+                - Media
+            operationId: Media_ServeImage
+            parameters:
+                - name: filename
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        '*/*': {}
+        delete:
+            tags:
+                - Media
+            operationId: Media_DeleteImage
+            parameters:
+                - name: filename
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/media.v1.DeleteImageReply'
     /api/landing/feedback:
         post:
             tags:
@@ -2984,6 +3174,60 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/landing.v1.SubmitLandingFeedbackReply'
+    /api/llm/agents:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmCreateAgent
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmCreateAgentReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.BaseResp'
+    /api/llm/chat:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmChat
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmChatReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmChatResp'
+    /api/llm/chat/raw:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmChatRaw
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmRawProxyReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
     /api/llm/chat/turn:
         post:
             tags:
@@ -3002,6 +3246,138 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/llm.v1.RecordLlmChatTurnResp'
+    /api/llm/config:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetLlmConfig
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.GetLlmConfigResp'
+    /api/llm/local-models/catalog:
+        get:
+            tags:
+                - LlmChat
+            operationId: LlmChat_ListLlmLocalModelsCatalog
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.ListLlmLocalModelsCatalogResp'
+    /api/llm/models:
+        get:
+            tags:
+                - LlmChat
+            operationId: LlmChat_ListLlmModels
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/llm.v1.ListLlmModelsResp'
+    /api/llm/models/delete:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmDeleteModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmDeleteModelReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.BaseResp'
+    /api/llm/models/download:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmDownloadModel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmDownloadModelReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.BaseResp'
+    /api/llm/models/raw:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_LlmModelsRaw
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
+    /api/llm/show/raw:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_LlmShowRaw
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.LlmRawProxyReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
+    /api/moe/tools/execute:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_MoeExecuteTool
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.MoeToolExecuteReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.MoeToolExecuteResp'
+    /api/moe/tools/schema:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_MoeToolsSchema
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.MoeToolSchemaResp'
     /api/notification/broadcast:
         post:
             tags:
@@ -3479,6 +3855,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/chat.v1.ListPrivateConversationsReply'
+    /api/public/client-config:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetPublicClientConfig
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.GetPublicClientConfigResp'
     /api/transactions/{id}:
         get:
             tags:
@@ -3497,6 +3885,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.GetTransactionResp'
+    /api/upload:
+        post:
+            tags:
+                - Media
+            operationId: Media_UploadImage
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/media.v1.UploadImageRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/media.v1.UploadImageReply'
     /api/user/account:
         delete:
             tags:
@@ -3956,6 +4362,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/community.v1.GetUserGroupsReply'
+    /api/user/{userId}/content:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_ListUserContent
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: type
+                  in: query
+                  schema:
+                    type: string
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.ListUserContentResp'
     /api/user/{userId}/detail:
         get:
             tags:
@@ -5001,6 +5439,104 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/vip.v1.GetVipPlanResp'
+    /api/voice/answer:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_VoiceAnswer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.VoiceAnswerReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.VoiceAnswerResp'
+    /api/voice/call:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_VoiceCall
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.VoiceCallReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.VoiceCallResp'
+    /api/voice/cancel:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_VoiceCancel
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.VoiceCancelReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.VoiceSimpleResp'
+    /api/voice/reject:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_VoiceReject
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.VoiceRejectReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.VoiceSimpleResp'
+    /api/voice/token:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetVoiceToken
+            parameters:
+                - name: channelName
+                  in: query
+                  schema:
+                    type: string
+                - name: role
+                  in: query
+                  schema:
+                    type: integer
+                    format: uint32
+                - name: userAccount
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.GetVoiceTokenResp'
 components:
     schemas:
         achievement.v1.AchievementBadgeItem:
@@ -5354,6 +5890,19 @@ components:
                 notificationsCreated:
                     type: integer
                     format: int32
+        admin.v1.AdminCheckInRewardItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                consecutiveDays:
+                    type: integer
+                    format: int32
+                expReward:
+                    type: integer
+                    format: int32
+                extraReward:
+                    type: string
         admin.v1.AdminCreateAccountReq:
             type: object
             properties:
@@ -5737,6 +6286,13 @@ components:
                 total:
                     type: integer
                     format: int32
+        admin.v1.AdminListCheckInRewardsResp:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/admin.v1.AdminCheckInRewardItem'
         admin.v1.AdminListCommentsResp:
             type: object
             properties:
@@ -6257,6 +6813,33 @@ components:
             properties:
                 announcement:
                     $ref: '#/components/schemas/admin.v1.AdminAnnouncementItem'
+        admin.v1.AdminUpdateCheckInRewardReq:
+            type: object
+            properties:
+                id:
+                    type: string
+                consecutiveDays:
+                    type: integer
+                    format: int32
+                expReward:
+                    type: integer
+                    format: int32
+                extraReward:
+                    type: string
+                updateConsecutiveDays:
+                    type: boolean
+                updateExpReward:
+                    type: boolean
+                updateExtraReward:
+                    type: boolean
+                rewardId:
+                    type: string
+                    description: HTTP path /api/admin/growth/check-in-rewards/{reward_id}
+        admin.v1.AdminUpdateCheckInRewardResp:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/admin.v1.AdminCheckInRewardItem'
         admin.v1.AdminUpdateGiftReq:
             type: object
             properties:
@@ -6960,6 +7543,18 @@ components:
         chat.v1.BroadcastPushNotificationResp:
             type: object
             properties: {}
+        chat.v1.GetChatOnlineBatchResp:
+            type: object
+            properties:
+                online:
+                    type: object
+                    additionalProperties:
+                        type: boolean
+        chat.v1.GetChatOnlineResp:
+            type: object
+            properties:
+                online:
+                    type: boolean
         chat.v1.ListPrivateConversationsReply:
             type: object
             properties:
@@ -7718,6 +8313,20 @@ components:
                 quantity:
                     type: integer
                     format: int32
+        google.protobuf.ListValue:
+            type: object
+            properties:
+                values:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/google.protobuf.Value'
+                    description: Repeated field of dynamically typed values.
+            description: |-
+                `ListValue` is a wrapper around a repeated field of values.
+
+                 The JSON representation for `ListValue` is JSON array.
+        google.protobuf.Value:
+            description: Represents a dynamically typed value which can be either null, a number, a string, a boolean, a recursive struct value, or a list of values.
         landing.v1.LandingFeedbackItem:
             type: object
             properties:
@@ -7777,6 +8386,18 @@ components:
         llm.v1.DeleteUserMemoryResp:
             type: object
             properties: {}
+        llm.v1.GetAiMemorySettingsResp:
+            type: object
+            properties:
+                autoLearn:
+                    type: boolean
+        llm.v1.GetAiUserConfigResp:
+            type: object
+            properties:
+                userPersona:
+                    type: string
+                preferencesJson:
+                    type: string
         llm.v1.GetUserMemoriesDisplayResp:
             type: object
             properties:
@@ -7806,6 +8427,52 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/llm.v1.UserMemoryProfile'
+        llm.v1.ListLlmLocalModelsCatalogResp:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/llm.v1.LlmLocalModelCatalogItem'
+        llm.v1.ListLlmModelsResp:
+            type: object
+            properties:
+                models:
+                    type: array
+                    items:
+                        type: string
+        llm.v1.LlmLocalModelCatalogItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                filename:
+                    type: string
+                sizeBytes:
+                    type: string
+                sha256:
+                    type: string
+                description:
+                    type: string
+                parametersB:
+                    type: number
+                    format: double
+                recommended:
+                    type: boolean
+                downloadPath:
+                    type: string
+        llm.v1.PutAiMemorySettingsReq:
+            type: object
+            properties:
+                autoLearn:
+                    type: boolean
+        llm.v1.PutAiMemorySettingsResp:
+            type: object
+            properties:
+                autoLearn:
+                    type: boolean
         llm.v1.RebuildUserMemoryEmbeddingsReq:
             type: object
             properties:
@@ -7877,6 +8544,24 @@ components:
             properties:
                 memory:
                     $ref: '#/components/schemas/llm.v1.UserMemory'
+        llm.v1.UpsertAiUserConfigReq:
+            type: object
+            properties:
+                userId:
+                    type: string
+                userPersona:
+                    type: string
+                hasUserPersona:
+                    type: boolean
+                preferencesJson:
+                    type: string
+        llm.v1.UpsertAiUserConfigResp:
+            type: object
+            properties:
+                userPersona:
+                    type: string
+                preferencesJson:
+                    type: string
         llm.v1.UpsertUserMemoryReq:
             type: object
             properties:
@@ -7982,6 +8667,48 @@ components:
                 confidence:
                     type: number
                     format: double
+        media.v1.DeleteImageReply:
+            type: object
+            properties: {}
+        media.v1.ImageInfo:
+            type: object
+            properties:
+                id:
+                    type: string
+                filename:
+                    type: string
+                url:
+                    type: string
+                size:
+                    type: string
+                createdAt:
+                    type: string
+        media.v1.ListImagesReply:
+            type: object
+            properties:
+                images:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/media.v1.ImageInfo'
+                total:
+                    type: integer
+                    format: int32
+        media.v1.UploadImageReply:
+            type: object
+            properties:
+                id:
+                    type: string
+                filename:
+                    type: string
+                url:
+                    type: string
+                size:
+                    type: string
+                createdAt:
+                    type: string
+        media.v1.UploadImageRequest:
+            type: object
+            properties: {}
         moe.v1.AgentRuntime:
             type: object
             properties:
@@ -8623,6 +9350,276 @@ components:
                     type: string
                 userId:
                     type: string
+        platform.v1.BaseResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+        platform.v1.ContentItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                userId:
+                    type: string
+                type:
+                    type: string
+                prompt:
+                    type: string
+                url:
+                    type: string
+                content:
+                    type: string
+                createdAt:
+                    type: string
+        platform.v1.GetLlmConfigResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    type: object
+        platform.v1.GetPublicClientConfigResp:
+            type: object
+            properties:
+                apiBaseUrl:
+                    type: string
+        platform.v1.GetVoiceTokenResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                token:
+                    type: string
+                appId:
+                    type: string
+        platform.v1.ListUserContentResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/platform.v1.ContentItem'
+                total:
+                    type: integer
+                    format: int32
+        platform.v1.LlmChatReq:
+            type: object
+            properties:
+                model:
+                    type: string
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/platform.v1.LlmMessage'
+                sessionId:
+                    type: string
+                sourceMsgId:
+                    type: string
+                clientMemoryApplied:
+                    type: boolean
+                stream:
+                    type: boolean
+                temperature:
+                    type: number
+                    format: double
+                topP:
+                    type: number
+                    format: double
+                maxTokens:
+                    type: integer
+                    format: int32
+                repeatPenalty:
+                    type: number
+                    format: double
+        platform.v1.LlmChatResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                content:
+                    type: string
+                remainingRatio:
+                    type: number
+                    format: double
+                summarized:
+                    type: boolean
+        platform.v1.LlmCreateAgentReq:
+            type: object
+            properties:
+                name:
+                    type: string
+                baseModel:
+                    type: string
+                systemPrompt:
+                    type: string
+        platform.v1.LlmDeleteModelReq:
+            type: object
+            properties:
+                model:
+                    type: string
+        platform.v1.LlmDownloadModelReq:
+            type: object
+            properties:
+                model:
+                    type: string
+        platform.v1.LlmMessage:
+            type: object
+            properties:
+                role:
+                    type: string
+                content:
+                    type: string
+        platform.v1.LlmRawProxyReq:
+            type: object
+            properties: {}
+        platform.v1.LlmRawProxyResp:
+            type: object
+            properties: {}
+        platform.v1.MoeToolExecuteData:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                result:
+                    type: string
+                error:
+                    type: string
+        platform.v1.MoeToolExecuteReq:
+            type: object
+            properties:
+                tool:
+                    type: string
+                arguments:
+                    type: string
+                agentKey:
+                    type: string
+                idempotencyKey:
+                    type: string
+        platform.v1.MoeToolExecuteResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    $ref: '#/components/schemas/platform.v1.MoeToolExecuteData'
+        platform.v1.MoeToolSchemaData:
+            type: object
+            properties:
+                tier:
+                    type: string
+                tools:
+                    $ref: '#/components/schemas/google.protobuf.ListValue'
+        platform.v1.MoeToolSchemaResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    $ref: '#/components/schemas/platform.v1.MoeToolSchemaData'
+        platform.v1.VoiceAnswerData:
+            type: object
+            properties:
+                channelName:
+                    type: string
+        platform.v1.VoiceAnswerReq:
+            type: object
+            properties:
+                callId:
+                    type: string
+        platform.v1.VoiceAnswerResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    $ref: '#/components/schemas/platform.v1.VoiceAnswerData'
+        platform.v1.VoiceCallData:
+            type: object
+            properties:
+                callId:
+                    type: string
+                channelName:
+                    type: string
+        platform.v1.VoiceCallReq:
+            type: object
+            properties:
+                receiverId:
+                    type: string
+        platform.v1.VoiceCallResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                data:
+                    $ref: '#/components/schemas/platform.v1.VoiceCallData'
+        platform.v1.VoiceCancelReq:
+            type: object
+            properties:
+                callId:
+                    type: string
+        platform.v1.VoiceRejectReq:
+            type: object
+            properties:
+                callId:
+                    type: string
+        platform.v1.VoiceSimpleResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
         post.v1.AchievementUnlock:
             type: object
             properties:
@@ -9857,6 +10854,7 @@ tags:
     - name: AdminInsights
     - name: AiResources
     - name: BehaviorApp
+    - name: ChatPresenceService
     - name: Checkin
     - name: CommentService
     - name: Community
@@ -9864,6 +10862,7 @@ tags:
     - name: GiftService
     - name: Landing
     - name: LlmChat
+    - name: Media
     - name: MoeAdmin
       description: |-
         MoeAdmin — PK-1 域 SSOT。HTTP 灰度读路径（PK-2）：
@@ -9871,6 +10870,7 @@ tags:
            GET /api/admin/moe/brain/pipeline?agent_key=
          试点 :19032；灰度 moe.kratos_admin_http_enabled
     - name: NotifyService
+    - name: Platform
     - name: PostService
     - name: PrivateMessageService
     - name: PushNotificationService

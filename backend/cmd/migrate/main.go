@@ -6,7 +6,7 @@
 //	go run ./cmd/migrate -models users,moe_agent_runtimes
 //	go run ./cmd/migrate -force
 //
-// 若习惯迁移后直接启动 RPC，可在 rpc/ 目录: go run super.go -migrate
+// 迁移完成后启动：make moe-social
 package main
 
 import (
@@ -37,6 +37,6 @@ func main() {
 	if err := utils.InitDBWithMigrate(opts); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
-	log.Println("migrate finished; start RPC with: cd rpc && go run super.go")
+	log.Println("migrate finished; start with: make moe-social")
 	os.Exit(0)
 }

@@ -45,17 +45,7 @@ func APIInProcessEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.api_in_process"}, false)
 }
 
-// RegisterMoeGRPCEnabled config.yaml: moe.register_moe_grpc（兼容旧键 register_v1_grpc）
-func RegisterMoeGRPCEnabled() bool {
-	return boolOr(moeViper(), []string{"moe.register_moe_grpc", "moe.register_v1_grpc"}, true)
-}
-
-// UseMoeGRPCEnabled config.yaml: moe.use_moe_grpc（兼容旧键 use_v1_grpc）
-func UseMoeGRPCEnabled() bool {
-	return boolOr(moeViper(), []string{"moe.use_moe_grpc", "moe.use_v1_grpc"}, true)
-}
-
-// SingleProcessEnabled 使用 cmd/moe-social 单进程时建议为 true（强制 api_in_process 语义）。
+// SingleProcessEnabled 使用 cmd/moe-social 单进程时建议为 true。
 func SingleProcessEnabled() bool {
 	return boolOr(moeViper(), []string{"moe.single_process"}, false)
 }
@@ -148,21 +138,17 @@ func KratosPureHTTPWithoutLegacy() bool {
 	return KratosPureEnabled()
 }
 
-// SuperGrpcRetired P5：单进程生产不再注册 Super gRPC、API 不走 Super 回环（域 gRPC + 进程内 App）。
+// SuperGrpcRetired 单进程生产不再走 Super gRPC 回环（域服务进程内 App）。
 func SuperGrpcRetired() bool {
-	if !boolOr(moeViper(), []string{"moe.super_grpc_retired"}, false) {
-		return false
-	}
-	// 分体部署（api/rpc 容器）需 Super 回环，仅单进程允许退役。
-	return SingleProcessEnabled()
-}
-
-// KratosPK8GoctlRetired PK-8：日常 make gen 不跑 goctl api；改 defs 用 make gen-api；HTTP 由 http_proto + httplegacy 注册。
-func KratosPK8GoctlRetired() bool {
-	if KratosPureEnabled() {
+	if SingleProcessEnabled() {
 		return true
 	}
-	return boolOr(moeViper(), []string{"moe.kratos_pk8_goctl_retired"}, true)
+	return boolOr(moeViper(), []string{"moe.super_grpc_retired"}, true)
+}
+
+// KratosPK8GoctlRetired goctl api 已退役；契约 SSOT 为 api/<domain>/v1/*.proto + make gen。
+func KratosPK8GoctlRetired() bool {
+	return true
 }
 
 // KratosHybridHTTPFallback PK-8 后是否允许 go-zero rest 回退路径（仅紧急回滚）。

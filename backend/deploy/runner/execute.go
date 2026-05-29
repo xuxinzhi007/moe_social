@@ -142,7 +142,7 @@ func DisplayCommand(spec CommandSpec) string {
 
 func displayCommand(spec CommandSpec) string {
 	if spec.LinuxCrossBuild {
-		return "go build -o api/moe-social-api ./api && go build -o rpc/moe-social-rpc ./rpc  (GOOS=linux GOARCH=amd64)"
+		return "go build -o bin/moe-social ./cmd/moe-social  (GOOS=linux GOARCH=amd64)"
 	}
 	if spec.SSH != nil {
 		return fmt.Sprintf("ssh %s@%s %s", spec.SSH.User, spec.SSH.Host, spec.ShellLine)
