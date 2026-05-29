@@ -1,4 +1,7 @@
 // FS-8: user 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/user/v1/user_messages.proto
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
 syntax = "v1"
 
 import "common.api"
@@ -7,168 +10,221 @@ import "common.api"
 )
 service Super {
 	@handler register
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/register)
 	post /api/user/register (RegisterReq) returns (RegisterResp)
 
 	@handler login
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/login)
 	post /api/user/login (LoginReq) returns (LoginResp)
 
 	@handler refreshToken
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/refresh-token)
 	post /api/user/refresh-token (EmptyReq) returns (RefreshTokenResp)
 
 	@handler getUserInfo
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id)
 	get /api/user/:user_id (GetUserInfoReq) returns (GetUserInfoResp)
 
 	@handler getUser
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/detail)
 	get /api/user/:user_id/detail (GetUserReq) returns (GetUserResp)
 
 	@handler updateUserInfo
+	// P6 migrated → api/user/v1/user_messages.proto (PUT /api/user/:user_id)
 	put /api/user/:user_id (UpdateUserInfoReq) returns (UpdateUserInfoResp)
 
 	@handler updateUserPassword
+	// P6 migrated → api/user/v1/user_messages.proto (PUT /api/user/:user_id/password)
 	put /api/user/:user_id/password (UpdateUserPasswordReq) returns (UpdateUserPasswordResp)
 
 	@handler checkUserByEmail
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/check-email)
 	post /api/user/check-email (GetUserByEmailReq) returns (GetUserByEmailResp)
 
 	@handler resetPassword
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/reset-password)
 	post /api/user/reset-password (ResetPasswordReq) returns (ResetPasswordResp)
 
 	@handler deleteUser
+	// P6 migrated → api/user/v1/user_messages.proto (DELETE /api/user/:user_id)
 	delete /api/user/:user_id (DeleteUserReq) returns (DeleteUserResp)
 
 	@handler updateUserVip
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/vip)
 	post /api/user/:user_id/vip (UpdateUserVipReq) returns (UpdateUserVipResp)
 
 	@handler getUsers
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/users)
 	get /api/users (GetUsersReq) returns (GetUsersResp)
 
 	@handler getUserCount
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/users/count)
 	get /api/users/count (EmptyReq) returns (GetUserCountResp)
 
 	// VIP相关用户API
 	@handler getUserVipStatus
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/vip)
 	get /api/user/:user_id/vip (GetUserInfoReq) returns (GetUserVipStatusResp)
 
 	@handler checkUserVip
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/vip/check)
 	get /api/user/:user_id/vip/check (CheckUserVipReq) returns (CheckUserVipResp)
 
 	@handler updateAutoRenew
+	// P6 migrated → api/user/v1/user_messages.proto (PUT /api/user/:user_id/vip/auto-renew)
 	put /api/user/:user_id/vip/auto-renew (UpdateAutoRenewReq) returns (BaseResp)
 
 	@handler syncUserVipStatus
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/vip/sync)
 	post /api/user/:user_id/vip/sync (SyncUserVipStatusReq) returns (SyncUserVipStatusResp)
 
 	@handler getVipOrders
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/vip/orders)
 	get /api/user/:user_id/vip/orders (GetVipOrdersReq) returns (GetVipOrdersResp)
 
 	@handler getVipHistory
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/vip/records)
 	get /api/user/:user_id/vip/records (GetVipHistoryReq) returns (GetVipHistoryResp)
 
 	@handler createVipOrder
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/vip/orders)
 	post /api/user/:user_id/vip/orders (CreateVipOrderReq) returns (CreateVipOrderResp)
 
 	@handler getUserActiveVipRecord
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/vip/active)
 	get /api/user/:user_id/vip/active (GetUserActiveVipRecordReq) returns (GetUserActiveVipRecordResp)
 
 	// 钱包相关API
 	@handler getTransactions
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/transactions)
 	get /api/user/:user_id/transactions (GetTransactionsReq) returns (GetTransactionsResp)
 
 	@handler getTransaction
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/transactions/:transaction_id)
 	get /api/transactions/:transaction_id (GetTransactionReq) returns (GetTransactionResp)
 
 	@handler recharge
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/wallet/recharge)
 	post /api/user/:user_id/wallet/recharge (RechargeReq) returns (RechargeResp)
 
 	// 用户记忆相关API（需登录，从JWT中获取真实用户ID）
 	@handler upsertUserMemory
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/memories)
 	post /api/user/:user_id/memories (UpsertUserMemoryReq) returns (UpsertUserMemoryResp)
 
 	@handler getUserMemories
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/memories)
 	get /api/user/:user_id/memories (GetUserMemoriesReq) returns (GetUserMemoriesResp)
 
 	@handler searchUserMemories
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/memories/search)
 	get /api/user/:user_id/memories/search (SearchUserMemoriesReq) returns (SearchUserMemoriesResp)
 
 	@handler getUserMemoriesDisplay
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/memories/display)
 	get /api/user/:user_id/memories/display (GetUserMemoriesReq) returns (GetUserMemoriesDisplayResp)
 
 	@handler rebuildUserMemoryEmbeddings
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/memories/reindex)
 	post /api/user/:user_id/memories/reindex (RebuildUserMemoryEmbeddingsReq)
 
 	@handler getUserMemoryProfiles
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/memories/profiles)
 	get /api/user/:user_id/memories/profiles (GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp)
 
 	@handler deleteUserMemory
+	// P6 migrated → api/user/v1/user_messages.proto (DELETE /api/user/:user_id/memories)
 	delete /api/user/:user_id/memories (DeleteUserMemoryReq) returns (DeleteUserMemoryResp)
 
 	@handler submitUserMemoryFeedback
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/memories/feedback)
 	post /api/user/:user_id/memories/feedback (SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp)
 
 	@handler syncUserDevice
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/devices/sync)
 	post /api/user/:user_id/devices/sync (SyncUserDeviceReq) returns (SyncUserDeviceResp)
 
 	@handler listUserDevices
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/devices)
 	get /api/user/:user_id/devices (ListUserDevicesReq) returns (ListUserDevicesResp)
 
 	// 飞书 OAuth（无需 JWT）
 	@handler feishuAuthorizeURL
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/auth/feishu/authorize-url)
 	get /api/auth/feishu/authorize-url (FeishuAuthorizeURLReq) returns (FeishuAuthorizeURLResp)
 
 	@handler feishuLogin
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/auth/feishu/login)
 	post /api/auth/feishu/login (FeishuLoginReq) returns (FeishuLoginResp)
 
 	@handler wechatAuthorizeURL
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/auth/wechat/authorize-url)
 	get /api/auth/wechat/authorize-url (WechatAuthorizeURLReq) returns (WechatAuthorizeURLResp)
 
 	@handler wechatLogin
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/auth/wechat/login)
 	post /api/auth/wechat/login (WechatLoginReq) returns (WechatLoginResp)
 
 	@handler wechatOAuthCallback
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/auth/wechat/callback)
 	get /api/auth/wechat/callback (WechatOAuthCallbackReq)
 
 	@handler feishuOAuthCallback
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/auth/feishu/callback)
 	get /api/auth/feishu/callback (FeishuOAuthCallbackReq)
 
 	@handler feishuPublicConfig
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/auth/feishu/public-config)
 	get /api/auth/feishu/public-config (EmptyReq) returns (FeishuPublicConfigResp)
 
 	// 关注相关API
 	@handler followUser
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/follow)
 	post /api/user/:user_id/follow (FollowUserReq) returns (FollowUserResp)
 
 	@handler unfollowUser
+	// P6 migrated → api/user/v1/user_messages.proto (DELETE /api/user/:user_id/follow)
 	delete /api/user/:user_id/follow (UnfollowUserReq) returns (FollowUserResp)
 
 	@handler getFollowings
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/following)
 	get /api/user/:user_id/following (GetFollowingsReq) returns (GetFollowingsResp)
 
 	@handler getFollowers
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/followers)
 	get /api/user/:user_id/followers (GetFollowersReq) returns (GetFollowersResp)
 
 	@handler checkFollow
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:follower_id/follow/:following_id/check)
 	get /api/user/:follower_id/follow/:following_id/check (CheckFollowReq) returns (CheckFollowResp)
 
 	// 好友（申请制），需 Authorization Bearer（业务逻辑见 friendlogic）
 	@handler sendFriendRequest
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/friend-requests)
 	post /api/user/:user_id/friend-requests (SendFriendRequestReq) returns (SendFriendRequestResp)
 
 	@handler listIncomingFriendRequests
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/friend-requests/incoming)
 	get /api/user/:user_id/friend-requests/incoming (FriendUserPathReq) returns (ListFriendRequestsResp)
 
 	@handler listOutgoingFriendRequests
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/friend-requests/outgoing)
 	get /api/user/:user_id/friend-requests/outgoing (FriendUserPathReq) returns (ListFriendRequestsResp)
 
 	@handler acceptFriendRequest
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/friend-requests/:request_id/accept)
 	post /api/user/:user_id/friend-requests/:request_id/accept (FriendRequestActionReq) returns (FriendRequestActionResp)
 
 	@handler rejectFriendRequest
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/:user_id/friend-requests/:request_id/reject)
 	post /api/user/:user_id/friend-requests/:request_id/reject (FriendRequestActionReq) returns (FriendRequestActionResp)
 
 	@handler listFriends
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/friends)
 	get /api/user/:user_id/friends (FriendUserPathReq) returns (ListFriendsResp)
 
 	@handler getFriendStatus
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/friends/status/:other_user_id)
 	get /api/user/:user_id/friends/status/:other_user_id (FriendStatusPathReq) returns (FriendStatusResp)
 }
 
@@ -177,25 +233,32 @@ service Super {
 )
 service Super {
 	@handler getNotifications
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/notifications)
 	get /api/notifications (GetNotificationsReq) returns (GetNotificationsResp)
 
 	@handler getUnreadCount
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/notifications/unread)
 	get /api/notifications/unread (GetUnreadCountReq) returns (GetUnreadCountResp)
 
 	@handler readNotification
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/notifications/:id/read)
 	post /api/notifications/:id/read (ReadNotificationReq) returns (BaseResp)
 
 	@handler readAllNotifications
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/notifications/read-all)
 	post /api/notifications/read-all (ReadAllNotificationsReq) returns (BaseResp)
 
 	// 推送通知相关API
 	@handler sendNotification
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/notification/send)
 	post /api/notification/send (SendNotificationReq) returns (BaseResp)
 
 	@handler sendBatchNotification
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/notification/send-batch)
 	post /api/notification/send-batch (SendBatchNotificationReq) returns (BaseResp)
 
 	@handler broadcastNotification
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/notification/broadcast)
 	post /api/notification/broadcast (BroadcastNotificationReq) returns (BaseResp)
 }
 
@@ -205,22 +268,27 @@ service Super {
 service Super {
 	// 获取用户形象
 	@handler getUserAvatar
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/avatar/:user_id)
 	get /api/avatar/:user_id (GetUserAvatarReq) returns (GetUserAvatarResp)
 
 	// 更新用户形象
 	@handler updateUserAvatar
+	// P6 migrated → api/user/v1/user_messages.proto (PUT /api/avatar/:user_id)
 	put /api/avatar/:user_id (UpdateUserAvatarReq) returns (UpdateUserAvatarResp)
 
 	// 获取装扮物品列表
 	@handler getAvatarOutfits
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/avatar/outfits)
 	get /api/avatar/outfits (GetAvatarOutfitsReq) returns (GetAvatarOutfitsResp)
 
 	// 获取装扮物品详情
 	@handler getAvatarOutfit
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/avatar/outfits/:outfit_id)
 	get /api/avatar/outfits/:outfit_id (GetAvatarOutfitReq) returns (GetAvatarOutfitResp)
 
 	// 购买装扮物品
 	@handler purchaseAvatarOutfit
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/avatar/outfits/:outfit_id/purchase)
 	post /api/avatar/outfits/:outfit_id/purchase (PurchaseAvatarOutfitReq) returns (PurchaseAvatarOutfitResp)
 }
 
@@ -230,22 +298,27 @@ service Super {
 service Super {
 	// 获取表情包包列表
 	@handler getEmojiPacks
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/emoji/packs)
 	get /api/emoji/packs (GetEmojiPacksReq) returns (GetEmojiPacksResp)
 
 	// 获取表情包包详情
 	@handler getEmojiPack
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/emoji/packs/:pack_id)
 	get /api/emoji/packs/:pack_id (GetEmojiPackReq) returns (GetEmojiPackResp)
 
 	// 购买表情包包
 	@handler purchaseEmojiPack
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/emoji/packs/:pack_id/purchase)
 	post /api/emoji/packs/:pack_id/purchase (PurchaseEmojiPackReq) returns (PurchaseEmojiPackResp)
 
 	// 获取用户已拥有的表情包包
 	@handler getUserEmojiPacks
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/user/:user_id/emoji/packs)
 	get /api/user/:user_id/emoji/packs (GetUserEmojiPacksReq) returns (GetUserEmojiPacksResp)
 
 	// 收藏表情包包
 	@handler favoriteEmojiPack
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/emoji/packs/:pack_id/favorite)
 	post /api/emoji/packs/:pack_id/favorite (FavoriteEmojiPackReq) returns (FavoriteEmojiPackResp)
 }
 
@@ -255,15 +328,19 @@ service Super {
 )
 service Super {
 	@handler bindFeishu
+	// P6 migrated → api/user/v1/user_messages.proto (PUT /api/user/feishu/bind)
 	put /api/user/feishu/bind (BindFeishuReq) returns (BindFeishuResp)
 
 	@handler unbindFeishu
+	// P6 migrated → api/user/v1/user_messages.proto (DELETE /api/user/feishu/bind)
 	delete /api/user/feishu/bind (EmptyReq) returns (UnbindFeishuResp)
 
 	@handler sendFeishuTestCard
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/user/feishu/test-card)
 	post /api/user/feishu/test-card (EmptyReq) returns (SendFeishuTestCardResp)
 
 	@handler deleteMyAccount
+	// P6 migrated → api/user/v1/user_messages.proto (DELETE /api/user/account)
 	delete /api/user/account (EmptyReq) returns (DeleteUserResp)
 }
 
@@ -273,11 +350,14 @@ service Super {
 )
 service Super {
 	@handler sendPrivateMessage
+	// P6 migrated → api/user/v1/user_messages.proto (POST /api/private-messages)
 	post /api/private-messages (SendPrivateMessageReq) returns (SendPrivateMessageResp)
 
 	@handler listPrivateMessages
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/private-messages)
 	get /api/private-messages (ListPrivateMessagesReq) returns (ListPrivateMessagesResp)
 
 	@handler listPrivateConversations
+	// P6 migrated → api/user/v1/user_messages.proto (GET /api/private-messages/conversations)
 	get /api/private-messages/conversations (ListPrivateConversationsReq) returns (ListPrivateConversationsResp)
 }

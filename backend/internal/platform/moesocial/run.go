@@ -24,7 +24,7 @@ type Options struct {
 func Run(opts Options) error {
 	opts.NormalizeOptions()
 	if !moewiring.KratosSuperGRPCNative() {
-		return fmt.Errorf("zrpc RPC path removed in default build; set moe.kratos_super_grpc_native=true or build with -tags hybrid")
+		return fmt.Errorf("zrpc RPC path removed; set moe.kratos_super_grpc_native=true in config")
 	}
 	return runWithKratosGRPC(opts)
 }

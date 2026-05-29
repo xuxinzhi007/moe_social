@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status \
+.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-http-routes gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -71,7 +71,6 @@ gen-api:
 	cd api && goctl api go -api moe.api -dir ./
 	bash scripts/gen/prune-api-logic-shells.sh
 	bash scripts/gen/prune-api-logic-retired.sh
-	bash scripts/gen/tag-hybrid-routes.sh
 	bash scripts/gen/post-gen-check.sh
 	$(MAKE) gen-http-routes
 
@@ -100,6 +99,19 @@ fs8-split-api:
 check:
 	go build -o /dev/null ./cmd/moe-social
 	go test ./internal/platform/moesocial/... ./api/moehttp/... ./internal/platform/kratosprogress/... -count=1
+
+# P4 域 gRPC 冒烟（需 RPC :8080；bash 版）
+grpc-smoke:
+	bash scripts/grpc-smoke-notify-chat-vip.sh
+
+# P5 分体联调：构建 api/rpc + 可选 grpc 冒烟
+split-deploy-smoke:
+	bash scripts/split-deploy-smoke.sh
+
+# P5-E：删除 hybrid go-zero 源并从 go.mod 移除 go-zero（一次性）
+remove-hybrid-gozero:
+	python3 scripts/p5e-remove-hybrid-gozero.py
+	go mod tidy
 
 # P3-W4：列出无 handler 引用的 logic 文件（Windows/Linux 均可）
 audit-logic-orphans:

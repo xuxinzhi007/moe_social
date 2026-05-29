@@ -1,4 +1,7 @@
 // FS-8: 全站 HTTP 共享类型（各域 .api 通过 import 引用，禁止跨域复制 type）
+// P6: Production HTTP SSOT → api/defs/common.api (shared types only)
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
 syntax = "v1"
 type BaseResp {
 	Code    int    `json:"code"`

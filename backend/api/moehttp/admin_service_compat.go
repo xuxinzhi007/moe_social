@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
-	adminv1 "backend/api/admin/v1"
 	adminapp "backend/internal/service/admin"
 	"backend/rpc/pb/moe"
 
@@ -1388,13 +1388,13 @@ func adminGetVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				BaseResp: common.HandleRPCError(fmt.Errorf("vip admin unavailable"), ""),
 			})
 		}
-		rpcResp, err := svcCtx.VipAdmin.AdminGetVipPlan(ctx, &moe.AdminGetVipPlanReq{PlanId: req.PlanId})
+		rpcResp, err := svcCtx.VipAdmin.AdminGetVipPlan(ctx, &adminv1.AdminGetVipPlanReq{PlanId: req.PlanId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminGetVipPlanResp{BaseResp: common.HandleVipGWError(err, "")})
 		}
 		return ctx.JSON(http.StatusOK, types.AdminGetVipPlanResp{
 			BaseResp: common.HandleRPCError(nil, "ok"),
-			Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
+			Data:     common.AdminVipPlanToTypes(rpcResp.GetPlan()),
 		})
 	}
 }
@@ -1412,7 +1412,7 @@ func adminUpdateVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				BaseResp: common.HandleRPCError(fmt.Errorf("vip admin unavailable"), ""),
 			})
 		}
-		rpcResp, err := svcCtx.VipAdmin.AdminUpdateVipPlan(ctx, &moe.AdminUpdateVipPlanReq{
+		rpcResp, err := svcCtx.VipAdmin.AdminUpdateVipPlan(ctx, &adminv1.AdminUpdateVipPlanReq{
 			PlanId: req.PlanId, Name: req.Name, Description: req.Description, Price: float32(req.Price),
 			DurationDays: int32(req.DurationDays),
 			UpdateName:   req.UpdateName, UpdateDescription: req.UpdateDescription,
@@ -1423,7 +1423,7 @@ func adminUpdateVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 		}
 		resp := types.AdminUpdateVipPlanResp{
 			BaseResp: common.HandleRPCError(nil, "更新成功"),
-			Data:     common.RpcVipPlanToTypes(rpcResp.GetPlan()),
+			Data:     common.AdminVipPlanToTypes(rpcResp.GetPlan()),
 		}
 		if resp.BaseResp.Success {
 			common.TryRecordAdminAudit(ctx, svcCtx, "update", "vip_plan", req.PlanId, "更新 VIP 套餐")
@@ -1445,7 +1445,7 @@ func adminDeleteVipPlan(svcCtx *svc.ServiceContext) func(khttp.Context) error {
 				BaseResp: common.HandleRPCError(fmt.Errorf("vip admin unavailable"), ""),
 			})
 		}
-		_, err := svcCtx.VipAdmin.AdminDeleteVipPlan(ctx, &moe.AdminDeleteVipPlanReq{PlanId: req.PlanId})
+		_, err := svcCtx.VipAdmin.AdminDeleteVipPlan(ctx, &adminv1.AdminDeleteVipPlanReq{PlanId: req.PlanId})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminDeleteVipPlanResp{BaseResp: common.HandleVipGWError(err, "")})
 		}
@@ -1470,7 +1470,7 @@ func adminBootstrapVipPlans(svcCtx *svc.ServiceContext) func(khttp.Context) erro
 				BaseResp: common.HandleRPCError(fmt.Errorf("vip admin unavailable"), ""),
 			})
 		}
-		rpcResp, err := svcCtx.VipAdmin.AdminBootstrapVipPlans(ctx, &moe.AdminBootstrapVipPlansReq{})
+		rpcResp, err := svcCtx.VipAdmin.AdminBootstrapVipPlans(ctx, &adminv1.AdminBootstrapVipPlansReq{})
 		if err != nil {
 			return ctx.JSON(http.StatusOK, types.AdminBootstrapVipPlansResp{BaseResp: common.HandleVipGWError(err, "")})
 		}

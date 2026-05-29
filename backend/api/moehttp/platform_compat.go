@@ -9,6 +9,7 @@ import (
 	"backend/api/internal/common"
 	"backend/api/internal/svc"
 	"backend/api/internal/types"
+	userv1 "backend/api/user/v1"
 	contentbiz "backend/internal/biz/content"
 	llmbiz "backend/internal/biz/llm"
 	moebiz "backend/internal/biz/moe"
@@ -19,7 +20,6 @@ import (
 	moeadmin "backend/internal/service/moe"
 	voiceapp "backend/internal/service/voice"
 	"backend/pkg/llminference"
-	"backend/rpc/pb/moe"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -246,27 +246,10 @@ func newPlatformMoeToolExecutor(svcCtx *svc.ServiceContext) moeadmin.ToolExecuto
 }
 
 func (e *platformMoeToolExecutor) ExecuteTool(ctx context.Context, in moebiz.ExecuteToolInput) (moebiz.ExecuteToolResult, error) {
-	if e == nil || e.svcCtx == nil {
+	if e == nil || e.svcCtx == nil || e.svcCtx.MoeAdmin == nil {
 		return moebiz.ExecuteToolResult{}, errors.New("moe backend unavailable")
 	}
-	if e.svcCtx.MoeGW != nil {
-		resp, err := e.svcCtx.MoeGW.MoeExecuteTool(ctx, &moe.MoeExecuteToolReq{
-			Tool:           in.Tool,
-			ArgumentsJson:  in.ArgumentsJSON,
-			AgentKey:       in.AgentKey,
-			ActorUserId:    uint64(in.ActorUserID),
-			IdempotencyKey: in.IdempotencyKey,
-			Source:         in.Source,
-		})
-		if err != nil {
-			return moebiz.ExecuteToolResult{}, err
-		}
-		return moebiz.ExecuteToolResult{OK: resp.GetOk(), Result: resp.GetResult(), Error: resp.GetError()}, nil
-	}
-	if e.svcCtx.MoeAdmin != nil {
-		return e.svcCtx.MoeAdmin.ExecuteTool(ctx, in)
-	}
-	return moebiz.ExecuteToolResult{}, errors.New("moe backend unavailable")
+	return e.svcCtx.MoeAdmin.ExecuteTool(ctx, in)
 }
 
 type voiceUserResolver struct {
@@ -280,14 +263,14 @@ func newVoiceUserResolver(svcCtx *svc.ServiceContext) voicebiz.UserDisplayResolv
 func (r *voiceUserResolver) ResolveVoiceUserDisplay(ctx context.Context, userID string) (displayName, avatar string) {
 	displayName = "用户"
 	avatar = ""
-	if r == nil || r.svcCtx == nil || r.svcCtx.UserGW == nil {
+	if r == nil || r.svcCtx == nil || r.svcCtx.UserApp == nil {
 		return displayName, avatar
 	}
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
 		return displayName, avatar
 	}
-	resp, err := r.svcCtx.UserGW.GetUser(ctx, &moe.GetUserReq{UserId: userID})
+	resp, err := r.svcCtx.UserApp.GetUser(ctx, &userv1.GetUserReq{UserId: userID})
 	if err != nil || resp == nil || resp.GetUser() == nil {
 		return displayName, avatar
 	}

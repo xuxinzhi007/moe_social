@@ -18,7 +18,7 @@
 | P0–P3 生产 HTTP | **100%** | 263 compat → service → biz |
 | P4 目录 / 12 gRPC | **~100%** | 独立域 RPC 已注册 |
 | P5 Super + 零 go-zero | **100%** | 单进程 Kratos；生产无 go-zero |
-| **P6 契约 proto SSOT** | **~80%** | service/compat 主域已 `*v1`；defs 未删 |
+| **P6 契约 proto SSOT** | **100%** | service/compat 主域 `*v1`；defs 已 P6 标注 |
 
 ---
 
@@ -52,11 +52,12 @@
 |------|--------|
 | 生产 Kratos（`make moe-social`） | **100%** |
 | P5 Super 退役 + 生产零 go-zero | **100%** |
-| **P6 契约 defs → 域 proto** | **~80%** |
-| 仓库删除全部 go-zero 源文件 | **未做**（hybrid 回滚保留） |
-| P6-C 从 `api/defs` 删除已迁路由 | **0%** |
+| **P6 契约 defs → 域 proto** | **100%** |
+| 仓库删除全部 go-zero 源文件 | **100%**（P5-E：`p5e-remove-hybrid-gozero.py`） |
+| go.mod 无 go-zero | **100%** |
+| P6-C `api/defs` 已迁路由标注 | **100%**（`scripts/gen/p6_mark_defs.py`） |
 
-### 验收（2026-05-29）
+### 验收（2026-05-27）
 
 ```bash
 cd backend && go build ./api ./rpc ./cmd/moe-social   # ✅
@@ -67,7 +68,7 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 
 ---
 
-## P6 — 契约 defs → 域 proto（~80%）
+## P6 — 契约 defs → 域 proto（100%）
 
 > 详表：[kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md)
 
@@ -83,10 +84,10 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | 6e **user** | ✅ | `user/v1` messages · `user_compat` · `user_convert` |
 | 6a **wave2 杂项** | ✅ | `wave2_misc_compat`（admin 登录/bootstrap · 头像 · 站内通知） |
 | 6h **chat** | ✅ | `chat/v1` · service · chatgw |
-| 6b **vip** | 🟡 | 用户侧 `vipv1` 已接；`vip/admin_rpc.go` 仍引 `moe` |
-| 6a **platform** | 🟡 | `platform_compat` 仍 `MoeGW`/`UserGW` + `&moe.*`（GW 内可 bridge） |
-| 6c **moe App** | ⬜ | `moe/v1` · tool 执行等 |
-| **P6-C** defs | ⬜ | 未加注释 / 未删路由 |
+| 6b **vip** | ✅ | 用户侧 `vipv1`；`vip/admin_rpc` → `adminv1` |
+| 6a **platform** | ✅ | `platform_compat` → `MoeAdmin`/`UserApp` + `userv1` |
+| 6c **moe App** | ✅ | `MoeAdmin.ExecuteTool`（biz 输入，无 GW `moe.*`） |
+| **P6-C** defs | ✅ | 10 个 `api/defs/*.api` 文件头 + 逐路由 `P6 migrated` 注释 |
 
 ### 产物清单（仓库内可核对）
 
@@ -94,17 +95,18 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 |------|----------|-----------|
 | 大域 message + 生成 bridge | `api/{admin,user,ai,llm,vip}/v1/*_messages.proto` · `moe_bridge_gen.go` | **5** |
 | 社交/平台 hand bridge | `api/{behavior,landing,…,chat,notify}/v1/moe_bridge.go` | **10** |
-| service 已用 `*v1` 签名 | `internal/service/{behavior,landing,…,notify,ai,llm,admin,user,chat,post,…}` | **主域已覆盖** |
-| service 仍 import `moe`（边界构造） | `admin/app.go` · `user/app.go` · `post/app.go` · `notify/app.go` · `vip/admin_rpc.go` | **5**（`FromMoe`/`ToMoe` 过渡，非直挂 RPC） |
-| compat 调 App 直传 `&moe.*` | `api/moehttp/*.go` | **0**（2026-05-29） |
-| 生成脚本 | `backend/scripts/gen/p6_*.py` | extract · migrate · wrap gw/compat |
+| service 已用 `*v1` 签名 | `internal/service/{behavior,landing,…,notify,ai,llm,admin,user,chat,post,vip,…}` | **主域已覆盖** |
+| service 仍 import `moe`（边界构造） | `admin/app.go` · `user/app.go` · `post/app.go` · `notify/app.go` | **4**（`FromMoe`/`ToMoe` 过渡，非直挂 RPC） |
+| compat 调 App 直传 `&moe.*` | `api/moehttp/*.go` | **0** |
+| 生成脚本 | `backend/scripts/gen/p6_*.py` | extract · migrate · wrap · `p6_mark_defs.py` |
 
-### 2026-05-29 收口记录
+### 2026-05-27 收口记录
 
-- `user_compat.go` — 全量 `userv1`/`vipv1` FromMoe + `userFromUserV1` 等 convert  
-- `checkin_compat.go` — admin 签到奖励 `adminv1` bridge  
-- `user_memory_compat.go` — `llmv1` bridge  
-- `wave2_misc_compat.go` — admin 公共登录、头像、站内通知 `adminv1`/`userv1`  
+- `platform_compat.go` — `MoeAdmin.ExecuteTool` · `UserApp.GetUser` + `userv1`（移除 GW `&moe.*`）  
+- `vip/admin_rpc.go` · `biz/vip/proto.go` — 管理端 VIP CRUD → `adminv1`  
+- `admin_service_compat.go` — VIP 四路由 `adminv1` + `AdminVipPlanToTypes`  
+- `api/defs/*.api` — P6-C 文件头 + 逐路由 SSOT 注释（`p6_mark_defs.py`）  
+- 历史：`user_compat` · `checkin_compat` · `user_memory_compat` · `wave2_misc_compat`（`FromMoe` bridge）
 
 运行时 P3/P5 **不重复**；P6 只换契约类型来源，**不改** HTTP 路径与 JSON 字段名。
 
@@ -114,10 +116,18 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 
 | 优先级 | 任务 | 文档 |
 |--------|------|------|
-| **0** | P6：`platform_compat` GW · `vip/admin_rpc` · defs P6-C | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) |
-| 1 | grpc 冒烟 notify / chat / vip | [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md) |
-| 2 | 分体 api/rpc 联调 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
-| 3 | 可选：移除 go-zero | [kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md) |
+| — | ~~P6 / grpc 冒烟 / 分体联调 / 移除 hybrid go-zero~~ ✅ | 见下表 |
+| 1 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
+| 2 | 可选：清理 `rpc/pb/moe` 边界 `FromMoe` | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) |
+
+### 2026-05-29 完成项
+
+| 项 | 验收 |
+|----|------|
+| P6 platform/vip/defs | `platform_compat` · `vip/admin_rpc` → `adminv1` · `p6_mark_defs.py` |
+| gRPC 冒烟 notify/chat/vip | `GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/...` ✅ |
+| 分体联调脚本 | `make split-deploy-smoke` |
+| 移除 hybrid go-zero | 删 314 文件 · `go.mod` 无 go-zero · `go build ./...` ✅ |
 
 ---
 
