@@ -100,7 +100,7 @@ func (h *Handler) info(w http.ResponseWriter, r *http.Request) {
 			"compose_file": cloudCompose,
 			"compose_path": strings.TrimRight(cloud.BackendDir, "/") + "/" + cloudCompose,
 			"host":         cloud.Host,
-			"containers":   []string{"moe-social-api", "moe-social-rpc"},
+			"containers":   []string{"moe-social"},
 		},
 		"default_target": h.Cfg.DefaultTarget(),
 	})

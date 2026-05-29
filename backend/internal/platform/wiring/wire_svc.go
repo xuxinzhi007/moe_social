@@ -149,9 +149,6 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 
 	if moewiring.APIInProcessEnabled() {
 		appPort := moewiring.NewAppAdapter(ctx.PostApp, ctx.LLMApp)
-		if !moewiring.SuperGrpcRetired() {
-			appPort = nil
-		}
 		adm, err := moewiring.NewAPIAdminService(appPort)
 		if err != nil {
 			rep.domainWarn("moe", "rpc", err.Error())

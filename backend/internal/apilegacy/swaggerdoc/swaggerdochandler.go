@@ -38,13 +38,6 @@ func loadOpenAPISpec() ([]byte, error) {
 		"./openapi.yaml",
 		"../openapi.yaml",
 		"../../openapi.yaml",
-		"./openapi.json",
-		"../openapi.json",
-		"../../openapi.json",
-		// legacy fallback (Swagger 2.0)
-		"./rest.swagger.json",
-		"../rest.swagger.json",
-		"../../rest.swagger.json",
 	}
 	for _, p := range candidates {
 		if b, err := os.ReadFile(p); err == nil {

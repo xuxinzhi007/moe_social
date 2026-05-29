@@ -1,4 +1,4 @@
-// 开发专用：在 cmd/moe-social 基础上附加 deploy-agent (:19010) 与 RPC debug (:19011)。
+// 开发专用：moe-social + 可选 deploy-agent (:19010)。
 //
 //	make moe-social-dev
 //	go run ./cmd/moe-social-stack
@@ -19,12 +19,10 @@ import (
 )
 
 var (
-	configFile  = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
-	apiConfig   = flag.String("f-api", "", "Optional override: API struct fragment YAML")
-	rpcConfig   = flag.String("f-rpc", "", "Optional override: RPC struct fragment YAML")
-	migrate     = flag.Bool("migrate", false, "run schema migrate before starting")
-	withAgent   = flag.Bool("agent", true, "start deploy-agent on :19010 (devtools / deploy proxy)")
-	withMonitor = flag.Bool("monitor", true, "RPC debug API on :19011 for moe-admin RPC monitor")
+	configFile = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
+	apiConfig  = flag.String("f-api", "", "Optional override: API struct fragment YAML")
+	migrate    = flag.Bool("migrate", false, "run schema migrate before starting")
+	withAgent  = flag.Bool("agent", true, "start deploy-agent on :19010 (devtools / deploy proxy)")
 )
 
 func main() {
@@ -60,9 +58,7 @@ func main() {
 	if err := moesocial.Run(moesocial.Options{
 		UnifiedConfigFile: *configFile,
 		APIConfigFile:     *apiConfig,
-		RPCConfigFile:     *rpcConfig,
 		Migrate:           utils.MigrateOptions{Enabled: *migrate},
-		EnableRPCMonitor:  *withMonitor,
 	}); err != nil {
 		log.Fatal(err)
 	}

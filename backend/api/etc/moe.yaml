@@ -1,8 +1,7 @@
 # PK-13 结构片段（SSOT：config/config.yaml）。改端口/鉴权/LLM 请改 config.yaml。
-Name: Super
+Name: moe-social
 Host: 0.0.0.0
 Port: 8888
-# go-zero REST 超时（毫秒）。不设置时常见默认约 3s，会导致 LLM 首次加载模型直接被 cancel。
 Timeout: 600000
 
 Auth:
@@ -41,15 +40,3 @@ Image:
   PublicBaseUrl: ""
   # 1GB = 1073741824（0 表示不限制/不展示容量）
   MaxBytes: 1073741824
-
-# RPC 默认本机地址；Docker 由 compose 环境变量 MOE_SUPER_RPC_ENDPOINT=rpc:8080 覆盖
-SuperRpc:
-  Endpoints:
-    - 127.0.0.1:8080
-  NonBlock: true
-  # gRPC 客户端超时（毫秒）。Moe 试跑/润色会调 LLM，默认 2s 会 DeadlineExceeded
-  Timeout: 600000
-#  Etcd:
-#    Hosts:
-#    - 127.0.0.1:2379
-#    Key: super.rpc

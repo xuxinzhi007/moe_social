@@ -33,7 +33,7 @@ func Phase2BridgeRetiredPercent() int {
 // RuntimeMoePbImportFileCount counts non-archive .go files importing rpc/pb/moe (excludes rpc/pb itself).
 func RuntimeMoePbImportFileCount() int {
 	n := 0
-	roots := []string{"internal", "pkg", "cmd", "rpc/internal"}
+	roots := []string{"internal", "pkg", "cmd"}
 	for _, root := range roots {
 		n += countMoeImports(root)
 	}

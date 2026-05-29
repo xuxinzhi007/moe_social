@@ -28,7 +28,7 @@ func TestCleanBuildCache(t *testing.T) {
 	_ = os.WriteFile(filepath.Join(tmp, "x"), []byte("hello"), 0o644)
 
 	backend := t.TempDir()
-	bin := filepath.Join(backend, "api", "moe-social-api")
+	bin := filepath.Join(backend, "bin", "moe-social")
 	_ = os.MkdirAll(filepath.Dir(bin), 0o755)
 	_ = os.WriteFile(bin, []byte("bin"), 0o644)
 

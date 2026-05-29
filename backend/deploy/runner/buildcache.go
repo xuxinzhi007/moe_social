@@ -46,8 +46,7 @@ func ApplyDeployBuildCache(env []string, root string) []string {
 
 // LinuxCrossBinaries are outputs from backend_build_linux.
 var LinuxCrossBinaries = []string{
-	"api/moe-social-api",
-	"rpc/moe-social-rpc",
+	"bin/moe-social",
 }
 
 // BuildCacheArtifact describes a file on disk.

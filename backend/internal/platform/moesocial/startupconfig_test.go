@@ -17,20 +17,20 @@ func TestMain(m *testing.M) {
 }
 
 func TestResolveStartupPathsDefault(t *testing.T) {
-	p := ResolveStartupPaths("", "", "")
+	p := ResolveStartupPaths("", "")
 	if p.Unified != defaultUnifiedConfig {
 		t.Fatalf("unified=%q", p.Unified)
 	}
-	if p.APIFragment != defaultAPIFragment || p.RPCFragment != defaultRPCFragment {
-		t.Fatalf("fragments api=%q rpc=%q", p.APIFragment, p.RPCFragment)
+	if p.APIFragment != defaultAPIFragment {
+		t.Fatalf("api fragment=%q", p.APIFragment)
 	}
 }
 
 func TestNormalizeOptions(t *testing.T) {
 	o := Options{UnifiedConfigFile: "config/config.yaml"}
 	o.NormalizeOptions()
-	if o.APIConfigFile == "" || o.RPCConfigFile == "" {
-		t.Fatalf("api=%q rpc=%q", o.APIConfigFile, o.RPCConfigFile)
+	if o.APIConfigFile == "" {
+		t.Fatalf("api=%q", o.APIConfigFile)
 	}
 }
 

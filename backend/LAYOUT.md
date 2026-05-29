@@ -1,15 +1,16 @@
 # Backend 布局（Kratos 生产）
 
-> **更新：2026-05-27（P0/P1 收口）**  
+> **更新：2026-05-29**  
 > SSOT：[docs/dev/kratos-directory-ssot.md](../docs/dev/kratos-directory-ssot.md) · 状态板：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)
 
 ## 运行
 
 ```bash
-make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080
+make moe-social    # 单进程 Kratos HTTP :8888
+make gen           # proto + conf + HTTP 路由计数
 ```
 
-**路由进度（2026-05-29）**：proto **254** · compat **11**（全部 intentional）· `d2_proto_http_pct` **100%** · `percent` **~80%**
+**路由进度（2026-05-29）**：proto **258** · transport **7** · swagger **3** · `d2_proto_http_pct` **100%**
 
 ---
 
@@ -18,7 +19,7 @@ make moe-social    # 单进程 Kratos HTTP :8888 + gRPC :8080
 ```text
 cmd/moe-social/
 config/config.yaml
-openapi.yaml                         # make gen 产出（OpenAPI 3.0）
+openapi.yaml                         # make gen 产出
 
 api/<domain>/v1/*.proto
 api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go
@@ -28,23 +29,24 @@ internal/data/<domain>/
 internal/service/<domain>/
 
 internal/server/
-  http.go                            # NewHTTPServer
-  http_envelope.go                   # Proto 响应信封
-  compat_envelope.go                 # Compat data 压平（P0）
-  cors.go
-  http_proto.go                      # Register*HTTPServer（19 次 / 18 域）
-  http_compat.go                     # 编排 httplegacy
-  httplegacy/                        # 11 条 intentional compat + route_stats
-  grpc.go + grpc/<domain>/           # adminapp、llm、vipplans、content…
+  http.go                            # NewHTTPServer（唯一装配入口）
+  http_proto.go                      # Register*HTTPServer
+  http_transport.go                  # OAuth / WS / SSE
+  http_docs.go                       # /swagger
+  http_envelope.go                   # Proto JSON 信封
+  transport/                         # 非 JSON transport handlers
+  routestats/                        # /migration 路由指标（make gen 更新 proto 计数）
+  grpc/<domain>/                     # proto HTTP server 实现
 
 internal/platform/
   svc/                               # ServiceContext
   wiring/                            # 启动装配
+  bootstrap/                         # 成就钩子、Bot 调度、私信清理
   moesocial/                         # 生产启动
   kratosprogress/                    # /migration
 
-internal/apilegacy/swaggerdoc/       # /swagger UI + openapi.yaml
-internal/legacy/types/
+internal/apilegacy/swaggerdoc/       # Swagger UI
+internal/legacy/types/               # OAuth/SSE 请求类型（待逐步 proto 化）
 
 third_party/google/api/
 ```
@@ -55,57 +57,26 @@ third_party/google/api/
 
 ```text
 NewHTTPServer
-  → corsFilter + compatEnvelopeFilter + EnvelopeResponseEncoder
-  → RegisterOpsHTTP          # /health、/migration
-  → RegisterProtoHTTP        # 227 条 proto 路由
-  → RegisterCompatHTTP       # 11 条 intentional compat
-  → RegisterBridgeHTTP       # /swagger 三件套
+  → corsFilter + EnvelopeResponseEncoder
+  → RegisterOpsHTTP
+  → RegisterProtoHTTP
+  → RegisterDocsHTTP
+  → RegisterTransportHTTP
 ```
 
 ---
 
-## `internal/server/httplegacy`
-
-| 文件 | 作用 |
-|------|------|
-| `*_compat.go` | 未迁入 proto 的路由（常量见各文件 `PilotNative*CompatRoutes`） |
-| `route_stats.go` | `PilotNativeCompatRoutes` 合计 **11**（intentional only） |
-| `routes_native_gen.go` | `nativeDomainRouteCount = 227` |
-| `routes_bridge_gen.go` | `bridgeRouteCount = 3` |
-| `deps.go` | `PilotDeps` |
-
-活跃 compat 分布见 [docs/dev/kratos-architecture-audit.md §2.4](../docs/dev/kratos-architecture-audit.md)。
-
----
-
-## 存量（非新接口）
+## 归档
 
 | 路径 | 角色 |
 |------|------|
-| `api/defs/*.api` | goctl 契约（`make gen-api`） |
-| `internal/legacy/types/` | goctl JSON types |
-| `api/internal/handler/` | hybrid 残留 |
-| `rpc/pb/moe/` | bridge message（D4 目标归零） |
+| `scripts/archive/rpc-retired/` | 已删除的 `backend/rpc/` 契约分片与说明 |
+| `api/super_stub.go` | 独立 api 二进制已移除 |
 
 ---
 
 ## 数据流
 
 ```text
-HTTP: Client → :8888 → grpc/<domain>（proto）或 httplegacy（compat）→ service → biz → data
-gRPC: Client → :8080 → grpc/<domain> → service → biz → data
+HTTP: Client → :8888 → grpc/<domain>（proto HTTP）或 transport（OAuth/WS/SSE）→ service → biz
 ```
-
----
-
-## 生成命令
-
-| 场景 | 命令 |
-|------|------|
-| 改域 proto | **`make gen`**（含 `openapi.yaml`） |
-| 仅 OpenAPI 文档 | `make gen-swagger` |
-| 同步路由表 | `make gen-http-routes` |
-| 改存量 defs | `make gen-api`（慎用） |
-
-OpenAPI / Apifox：[docs/dev/openapi-apifox.md](../docs/dev/openapi-apifox.md)。  
-新机器可选：`make init-proto-tools`（`make gen` 也会自动装插件）。

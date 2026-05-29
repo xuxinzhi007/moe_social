@@ -7,9 +7,9 @@ import (
 	deploycfg "backend/deploy/config"
 )
 
-var deployContainerNames = []string{"moe-social-api", "moe-social-rpc"}
+var deployContainerNames = []string{"moe-social"}
 
-// VerifyCloudContainers checks api/rpc after deploy; dumps logs when not healthy.
+// VerifyCloudContainers checks moe-social after deploy; dumps logs when not healthy.
 func (reg *Registry) VerifyCloudContainers(
 	ctx context.Context,
 	targetID string,
@@ -37,7 +37,7 @@ cd %s
 echo "=== docker compose ps ==="
 docker compose -f %s ps 2>/dev/null || docker-compose -f %s ps
 fail=0
-for name in moe-social-api moe-social-rpc; do
+for name in moe-social; do
   if ! docker inspect "$name" >/dev/null 2>&1; then
     echo "=== $name: 容器不存在 ==="
     fail=1
@@ -73,7 +73,7 @@ exit $fail
 		return -1, runErr
 	}
 	if code != 0 && sink != nil {
-		sink("【检查】api/rpc 存在异常，请查看上方日志\n")
+		sink("【检查】moe-social 存在异常，请查看上方日志\n")
 	}
 	return code, nil
 }

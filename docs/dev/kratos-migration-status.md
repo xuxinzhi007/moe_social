@@ -70,14 +70,16 @@
 | P6-C `api/defs` 已迁路由标注 | **100%**（`scripts/gen/p6_mark_defs.py`） |
 | **P0/P1 审计（架构）** | **100%** | 见 [kratos-architecture-audit.md §4](./kratos-architecture-audit.md) |
 
-### 验收（2026-05-27）
+### 验收（2026-05-29）
 
 ```bash
-cd backend && go build ./api ./rpc ./cmd/moe-social   # ✅
-cd backend && go build ./...                        # ✅
-go test ./internal/platform/kratosprogress/... -count=1
-go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
+cd backend && go build ./cmd/moe-social   # ✅ HTTP-only 生产入口
+cd backend && go build ./...              # ✅
+go test ./internal/platform/moesocial/... ./internal/platform/kratosprogress/... -count=1
+go list -deps ./cmd/moe-social | grep go-zero   # P5-D：应无输出
 ```
+
+> **2026-05-29（完整性清理）**：`backend/rpc/` 已删；部署/Docker/配置统一为单二进制 `moe-social`；死代码（moekratos、SuperRpc dial、双容器 compose）已移除。
 
 ---
 
@@ -147,7 +149,11 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | `d4_legacy_cleanup_pct` | **100%** |
 | `percent`（综合） | **100%** |
 
-**2026-05-29 media/v1：** 图片四路由迁入 `api/media/v1` + `mediagrpc`；删除 `wave2_misc_compat.go`；intentional 降至 7 条
+**2026-05-29 goctl 清库：** 删除 `api/defs/*.api`、`rest.swagger.json`、`cmd/dev`；`make gen-api` 退役；默认 `moe.http_only: true`（仅 :8888）
+
+**2026-05-29 目录提纯：** 删除 `httplegacy/`、`api/internal/`、`rpc/pb/moe|super`；OAuth/WS/SSE 迁入 `internal/server/transport/`；proto 路由数由 `make gen` → `gen-proto-route-count` 统计
+
+**2026-05-29 media/v1：** 图片四路由迁入 `api/media/v1` + `mediagrpc`；intentional 降至 7 条
 
 **2026-05-29 D4 Phase-0：** 删除 26 个 zero-route compat/convert 文件；`httplegacy` 无 `rpc/pb/moe` import；仅保留 7 条 intentional compat
 

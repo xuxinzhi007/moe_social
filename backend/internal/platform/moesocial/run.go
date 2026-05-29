@@ -2,59 +2,23 @@ package moesocial
 
 import (
 	"fmt"
-	"net"
 	"strings"
-	"time"
 
-	"backend/internal/platform/moewiring"
 	"backend/internal/platform/yamlconf"
 	"backend/utils"
 )
 
-// Options 单进程启动参数（PK-13：UnifiedConfigFile 为 SSOT，API/RPC 片段自动解析）。
+// Options 单进程启动参数（PK-13：UnifiedConfigFile 为 SSOT，API 片段自动解析）。
 type Options struct {
 	UnifiedConfigFile string
 	APIConfigFile     string
-	RPCConfigFile     string
 	Migrate           utils.MigrateOptions
-	EnableRPCMonitor  bool
 }
 
-// Run 在单个 OS 进程内启动 RPC + HTTP（生产：Kratos gRPC + 纯 Kratos HTTP）。
+// Run 启动 Kratos HTTP-only（:8888，proto + transport）。
 func Run(opts Options) error {
 	opts.NormalizeOptions()
-	if !moewiring.KratosSuperGRPCNative() {
-		return fmt.Errorf("zrpc RPC path removed; set moe.kratos_super_grpc_native=true in config")
-	}
-	return runWithKratosGRPC(opts)
-}
-
-func waitRPCListen(unified, rpcFragment string, timeout time.Duration) error {
-	addr, err := rpcListenAddr(unified, rpcFragment)
-	if err != nil {
-		return err
-	}
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", addr, 200*time.Millisecond)
-		if err == nil {
-			_ = conn.Close()
-			return nil
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	return fmt.Errorf("rpc not ready on %s within %s", addr, timeout)
-}
-
-func rpcListenAddr(unified, rpcFragment string) (string, error) {
-	if addr := grpcListenFromUnified(unified); addr != "" {
-		return normalizeListenAddr(addr, "8080"), nil
-	}
-	var c struct {
-		ListenOn string `yaml:"ListenOn"`
-	}
-	yamlconf.MustLoad(rpcFragment, &c)
-	return normalizeListenAddr(c.ListenOn, "8080"), nil
+	return runHTTPOnly(opts)
 }
 
 func externalHTTPPort(unified, apiFragment string) int {

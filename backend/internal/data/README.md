@@ -22,7 +22,7 @@ ai/       llm/      moe/（含 pipeline/tools）
 1. `internal/biz/<domain>/store.go` — 接口
 2. `internal/data/<domain>/store.go` — GORM
 3. `internal/service/<domain>/app.go` — 注入
-4. RPC logic：`l.svcCtx.XStore()`（见 `rpc/internal/svc/stores.go`）
+4. 域 Store：`internal/data/<domain>/`（经 `wire_svc` 注入 App）
 
 ## Store getters（RPC）
 
@@ -31,6 +31,6 @@ ai/       llm/      moe/（含 pipeline/tools）
 ## 验收
 
 ```bash
-cd backend && go build ./api ./rpc ./cmd/moe-social
+cd backend && go build ./cmd/moe-social
 go test ./internal/biz/llm/... ./internal/biz/user/... ./internal/biz/admin/... ./internal/biz/moe/... -count=1
 ```

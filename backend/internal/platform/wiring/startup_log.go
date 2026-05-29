@@ -74,6 +74,5 @@ func logWireSummary(r *wireReporter, c *config.Config) {
 	if c != nil {
 		log.Printf("  图片: dir=%s public=%s max=%d",
 			c.Image.LocalDir, c.Image.PublicBaseUrl, c.Image.MaxBytes)
-		log.Printf("  SuperRpc: %v timeout=%dms", c.SuperRpc.Endpoints, c.SuperRpc.Timeout)
 	}
 }

@@ -50,10 +50,10 @@ func (r *RemotePlatform) ResolveCommand(req JobRequest) (CommandSpec, error) {
 		script = fmt.Sprintf("cd %s && go env GOOS GOARCH CGO_ENABLED 2>/dev/null; docker --version; docker compose version 2>/dev/null || docker-compose --version", shellQuote(be))
 	case "backend_build_linux":
 		label = "remote build-linux"
-		script = fmt.Sprintf("cd %s && (make build-linux 2>/dev/null || (CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api/moe-social-api ./api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rpc/moe-social-rpc ./rpc))", shellQuote(be))
+		script = fmt.Sprintf("cd %s && (make build-linux 2>/dev/null || (CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/moe-social ./cmd/moe-social))", shellQuote(be))
 	case "backend_build_local":
 		label = "remote build"
-		script = fmt.Sprintf("cd %s && (make build 2>/dev/null || (go build -o api/moe-social-api ./api && go build -o rpc/moe-social-rpc ./rpc))", shellQuote(be))
+		script = fmt.Sprintf("cd %s && (make build 2>/dev/null || go build -o bin/moe-social ./cmd/moe-social)", shellQuote(be))
 	case "docker_ps":
 		label = "remote docker ps"
 		script = r.composeScriptWithContainerFallback(cf, "ps")
@@ -113,7 +113,7 @@ func (r *RemotePlatform) composeScriptWithContainerFallback(composeFile string, 
 	cf := shellQuote(composeFile)
 	argStr := strings.Join(args, " ")
 	return fmt.Sprintf(
-		`if [ -d %s ] && [ -f %s/%s ]; then %s; else echo "=== compose 目录不可用 (%s)，按容器名查看 moe-social-api / moe-social-rpc ==="; docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | grep -E '^(NAMES|moe-social-api|moe-social-rpc)'; fi`,
+		`if [ -d %s ] && [ -f %s/%s ]; then %s; else echo "=== compose 目录不可用 (%s)，按容器名查看 moe-social ==="; docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | grep -E '^(NAMES|moe-social)'; fi`,
 		be, be, composeFile,
 		fmt.Sprintf("cd %s && (docker compose -f %s %s || docker-compose -f %s %s)", be, cf, argStr, cf, argStr),
 		r.Target.BackendDir,

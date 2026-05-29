@@ -214,19 +214,24 @@ func (p *Platform) goBuildLocal() CommandSpec {
 }
 
 func buildGoLinuxScript(goos string) string {
-	const tpl = `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o api/moe-social-api ./api && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o rpc/moe-social-rpc ./rpc`
+	const tpl = `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/moe-social ./cmd/moe-social`
 	if goos == "windows" && !useGitBashOnWindows() {
-		return `set CGO_ENABLED=0&& set GOOS=linux&& set GOARCH=amd64&& go build -o api/moe-social-api ./api && set CGO_ENABLED=0&& set GOOS=linux&& set GOARCH=amd64&& go build -o rpc/moe-social-rpc ./rpc`
+		return `set CGO_ENABLED=0&& set GOOS=linux&& set GOARCH=amd64&& go build -o bin/moe-social ./cmd/moe-social`
 	}
 	return tpl
 }
 
 func buildGoLocalScript(goos string) string {
-	const tpl = `go build -o api/moe-social-api ./api && go build -o rpc/moe-social-rpc ./rpc`
-	if goos == "windows" {
-		return tpl
+	return `go build -o bin/moe-social ./cmd/moe-social`
+}
+
+func containerName(service string) string {
+	switch strings.ToLower(strings.TrimSpace(service)) {
+	case "api", "rpc", "", "moe-social", "moe":
+		return "moe-social"
+	default:
+		return service
 	}
-	return tpl
 }
 
 // ComposePs returns docker compose ps.
@@ -269,17 +274,6 @@ func (p *Platform) DockerLogs(service string, tail int) CommandSpec {
 		Label:   "docker logs " + name,
 		Argv:    []string{"docker", "logs", "--tail", fmt.Sprintf("%d", tail), name},
 		Shell:   false,
-	}
-}
-
-func containerName(service string) string {
-	switch strings.ToLower(strings.TrimSpace(service)) {
-	case "rpc":
-		return "moe-social-rpc"
-	case "api", "":
-		return "moe-social-api"
-	default:
-		return service
 	}
 }
 

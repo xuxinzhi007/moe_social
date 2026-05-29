@@ -1,38 +1,23 @@
 package config
 
-import "backend/internal/platform/grpcclient"
-
-// Config API 片段（api/etc/moe.yaml）；P5-D 不再嵌入 go-zero RestConf。
+// Config API 片段（api/etc/moe.yaml）；运行时值以 config/config.yaml 为准。
 type Config struct {
 	Name    string `json:"Name" yaml:"Name"`
 	Host    string `json:"Host" yaml:"Host"`
 	Port    int    `json:"Port" yaml:"Port"`
 	Timeout int64  `json:"Timeout" yaml:"Timeout"`
 
-	// JWT 认证配置
 	Auth struct {
 		AccessSecret string
 		AccessExpire int64
 	} `json:"Auth" yaml:"Auth"`
 
-	// RPC 客户端（分体部署 dial MoeAdmin gRPC）
-	SuperRpc grpcclient.Conf `json:"SuperRpc" yaml:"SuperRpc"`
-
-	// LLMInference 本机/内网推理（llama-server OpenAI 兼容）；主配置见 backend/config/config.yaml 的 llm_inference.*
 	LLMInference LLMInferenceConf `json:"LLMInference" yaml:"LLMInference"`
+	LocalModels  LocalModelsConf  `json:"LocalModels" yaml:"LocalModels"`
+	Agora        AgoraConf        `json:"Agora" yaml:"Agora"`
+	Image        ImageConf        `json:"Image" yaml:"Image"`
 
-	// LocalModels 手机可下载的 GGUF 托管目录与清单
-	LocalModels LocalModelsConf `json:"LocalModels" yaml:"LocalModels"`
-
-	// Agora 配置
-	Agora AgoraConf `json:"Agora" yaml:"Agora"`
-
-	// 本地“云空间”配置（图片上传落盘）
-	Image ImageConf `json:"Image" yaml:"Image"`
-
-	// 客户端 GET /api/public/client-config 使用的公网 API 根地址。
-	// 仅由 super.go 的 applyUnifiedConfigOverrides 从 backend/config/config.yaml 写入；
-	// yaml:"-" 表示不参与 etc/super.yaml 解析，不必在 go-zero 主配置里重复配置。
+	// ClientPublicApiBaseUrl 由 wiring 从 config/config.yaml 写入；不参与 api/etc 解析。
 	ClientPublicApiBaseUrl string `json:"-" yaml:"-"`
 }
 
@@ -53,18 +38,12 @@ type LocalModelsConf struct {
 }
 
 type LLMInferenceConf struct {
-	// BaseUrl 例如：http://127.0.0.1:6633（llama-server / llama.cpp）
-	BaseUrl string `json:"BaseUrl" yaml:"BaseUrl"`
-	// ApiStyle 固定 openai（OpenAI 兼容 chat/completions）
-	ApiStyle string `json:"ApiStyle" yaml:"ApiStyle"`
-	// TimeoutSeconds 请求推理服务的超时（秒）
-	TimeoutSeconds int `json:"TimeoutSeconds" yaml:"TimeoutSeconds"`
-	// MemoryModel 用于总结和记忆提取的模型，不配置则默认使用聊天模型
-	MemoryModel string `json:"MemoryModel" yaml:"MemoryModel"`
-	// MemorySummaryPrompt 总结对话时使用的系统提示词
-	MemorySummaryPrompt string `json:"MemorySummaryPrompt" yaml:"MemorySummaryPrompt"`
-	// MemoryExtractPrompt 记忆提取时使用的系统提示词
-	MemoryExtractPrompt string `json:"MemoryExtractPrompt" yaml:"MemoryExtractPrompt"`
+	BaseUrl               string `json:"BaseUrl" yaml:"BaseUrl"`
+	ApiStyle              string `json:"ApiStyle" yaml:"ApiStyle"`
+	TimeoutSeconds        int    `json:"TimeoutSeconds" yaml:"TimeoutSeconds"`
+	MemoryModel           string `json:"MemoryModel" yaml:"MemoryModel"`
+	MemorySummaryPrompt   string `json:"MemorySummaryPrompt" yaml:"MemorySummaryPrompt"`
+	MemoryExtractPrompt   string `json:"MemoryExtractPrompt" yaml:"MemoryExtractPrompt"`
 }
 
 type AgoraConf struct {
@@ -73,17 +52,8 @@ type AgoraConf struct {
 }
 
 type ImageConf struct {
-	// LocalDir: 图片落盘目录（服务端机器的本地路径）
-	// - Windows: "C:/Users/xxx/Desktop/moe_social_data/images"
-	// - Linux/Mac: "/data/moe_social/images"
-	LocalDir string `json:"LocalDir" yaml:"LocalDir"`
-
-	// PublicBaseUrl: 对外访问的 API base（用于拼图片 URL）
-	// - 本地调试: "http://localhost:8888"
-	// - cpolar: "http://xxxx.r3.cpolar.top"
+	LocalDir      string `json:"LocalDir" yaml:"LocalDir"`
 	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
-
-	// MaxBytes: 云空间最大容量（字节）。0 表示不限制/不展示容量。
-	// 例如 1073741824 = 1GB
-	MaxBytes int64 `json:"MaxBytes" yaml:"MaxBytes"`
+	MaxBytes      int64  `json:"MaxBytes" yaml:"MaxBytes"`
 }
+

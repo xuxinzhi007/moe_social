@@ -1,160 +1,37 @@
-# 萌社区后端服务部署文档
+# 部署（单进程 Kratos HTTP）
 
-## 项目结构
+> **SSOT**：[LAYOUT.md](./LAYOUT.md) · 云平台上传见 [docs/dev/deploy-platform.md](../docs/dev/deploy-platform.md)
 
-```
-backend/
-├── Dockerfile          # 单容器版本（同时运行 API + RPC）
-├── Dockerfile.api      # API 服务容器
-├── Dockerfile.rpc      # RPC 服务容器
-├── docker-compose.yml  # 多容器编排
-├── api/                # API 服务代码
-├── rpc/                # RPC 服务代码
-├── config/             # 配置文件
-└── ...
-```
-
-## 部署方式
-
-### 方式一：使用 docker-compose（推荐）
-
-#### 1. 构建并运行
+## 本地 / 服务器
 
 ```bash
-# 在 backend 目录执行
-docker-compose up -d --build
+cd backend
+make build-linux          # 产出 bin/moe-social
+make moe-social           # 开发：go run ./cmd/moe-social
 ```
 
-#### 2. 查看服务状态
+默认监听 **:8888**，配置 `config/config.yaml`。
+
+## Docker
 
 ```bash
-docker-compose ps
+cd backend
+docker compose up -d --build    # 单服务 moe-social
+docker logs moe-social
+docker compose down
 ```
 
-#### 3. 查看日志
+二进制挂载部署（deploy-agent 上传后）：
 
 ```bash
-# 查看 API 服务日志
-docker logs moe-social-api
-
-# 查看 RPC 服务日志
-docker logs moe-social-rpc
+docker compose -f docker-compose.binary.yml up -d
 ```
 
-#### 4. 停止服务
+## 迁移
 
 ```bash
-docker-compose down
+make db-migrate
+# 或启动时：go run ./cmd/moe-social -migrate
 ```
 
-### 方式二：单独构建运行
-
-#### 构建 RPC 服务
-
-```bash
-docker build -t moe-social-rpc -f Dockerfile.rpc .
-docker run -d -p 8080:8080 --name moe-social-rpc moe-social-rpc
-```
-
-#### 构建 API 服务
-
-```bash
-docker build -t moe-social-api -f Dockerfile.api .
-docker run -d -p 8888:8888 --name moe-social-api --link moe-social-rpc:rpc moe-social-api
-```
-
-### 方式三：单容器运行（快速部署）
-
-```bash
-docker build -t moe-social .
-docker run -d -p 8888:8888 -p 8080:8080 --name moe-social moe-social
-```
-
-## 配置说明
-
-### 1. 数据库配置
-
-修改 `config/config.yaml` 中的数据库配置：
-
-```yaml
-database:
-  host: "数据库地址"
-  port: 3306
-  user: "数据库用户名"
-  password: "数据库密码"
-  dbname: "go_react_demo"
-  charset: "utf8mb4"
-  parseTime: true
-  loc: "Local"
-```
-
-### 2. Ollama 配置
-
-修改 `config/config.yaml` 中的 Ollama 配置：
-
-```yaml
-ollama:
-  base_url: "http://Ollama服务地址:11434"
-  timeout_seconds: 300
-```
-
-### 3. API 配置
-
-**Docker Compose** 下在 `docker-compose*.yml` 的 `api` 服务注入环境变量（唯一 API etc 文件仍为 `api/etc/super.yaml`）：
-
-```yaml
-environment:
-  MOE_SUPER_RPC_ENDPOINT: rpc:8080
-```
-
-本机 `go run` 不设该变量，沿用 `api/etc/super.yaml` 的 `127.0.0.1:8080`。也可在 `config/config.yaml` 写 `api.super_rpc_endpoints` 作为兜底。
-
-## 端口说明
-
-| 服务 | 容器端口 | 主机端口 | 用途 |
-|------|----------|----------|------|
-| API  | 8888     | 8888     | HTTP API 服务 |
-| RPC  | 8080     | 8080     | gRPC 服务 |
-
-## 常见问题
-
-### 1. RPC 服务连接失败
-
-**症状**：API 服务日志显示 `dial tcp: lookup rpc: no such host`
-
-**解决方案**：
-- 使用 docker-compose 部署，确保两个服务在同一个网络中
-- 单独部署时，使用 `--link` 参数连接两个容器
-- 检查 compose 是否设置 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`，且 API 容器环境变量已生效
-
-### 2. 数据库连接失败
-
-**症状**：RPC 服务日志显示数据库连接错误
-
-**解决方案**：
-- 确保数据库服务正在运行
-- 检查 `config/config.yaml` 中的数据库配置
-- 确保数据库用户有正确的权限
-
-### 3. Ollama 连接失败
-
-**症状**：API 服务日志显示 Ollama 连接错误
-
-**解决方案**：
-- 确保 Ollama 服务正在运行
-- 检查 `config/config.yaml` 中的 Ollama 地址配置
-- 确保容器可以访问 Ollama 服务
-
-### 4. 图片上传失败
-
-**症状**：图片上传接口返回错误
-
-**解决方案**：
-- 确保 `data/images` 目录存在且有写入权限
-- 检查 `super-direct.yaml` 中的图片存储配置
-
-## 版本信息
-
-- Go 版本：1.25.5
-- Docker 版本：推荐 20.10+  
-- docker-compose 版本：推荐 1.29+
+历史 api+rpc 双容器文档已过时；归档见 `docs/archive/backend/`。

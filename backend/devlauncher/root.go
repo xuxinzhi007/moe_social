@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// FindBackendRoot walks up from cwd until api/super.go and rpc/super.go exist.
+// FindBackendRoot walks up from cwd until go.mod and cmd/moe-social exist.
 func FindBackendRoot() (string, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -18,7 +18,7 @@ func FindBackendRoot() (string, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", errors.New("backend root not found (no go.mod with api/super.go); run from backend/ or repo root")
+			return "", errors.New("backend root not found (need go.mod + cmd/moe-social); run from backend/ or repo root")
 		}
 		dir = parent
 	}
@@ -28,10 +28,7 @@ func isBackendRoot(dir string) bool {
 	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
 		return false
 	}
-	if _, err := os.Stat(filepath.Join(dir, "api", "super.go")); err != nil {
-		return false
-	}
-	if _, err := os.Stat(filepath.Join(dir, "rpc", "super.go")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "cmd", "moe-social", "main.go")); err != nil {
 		return false
 	}
 	return true

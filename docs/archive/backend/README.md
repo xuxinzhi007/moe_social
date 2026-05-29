@@ -1,14 +1,10 @@
-# 后端历史文档归档
+# 已归档的后端根目录文档
 
-| 文件 | 说明 |
-|------|------|
-| 后端实现状态.md | 早期 API/RPC 实现清单（已过时） |
-| API层调整完成.md | Post/Comment 迁 RPC 完成记录 |
-| 架构修复说明.md | 架构修复步骤（与现网 `架构调整说明.md` 重复） |
+自 2026-05-29 起，生产路径为 **单进程 Kratos HTTP**（`make moe-social`）。
 
-**当前有效：**
+当前 SSOT：
 
-- `backend/README.md`
-- `backend/架构说明.md`（精简版）
-- `backend/架构调整说明.md`
-- `backend/待完成事项.md`
+- [backend/LAYOUT.md](../../backend/LAYOUT.md)
+- [docs/dev/kratos-migration-status.md](../dev/kratos-migration-status.md)
+
+本目录内文档描述 go-zero / api+rpc 双进程时代，仅供考古。

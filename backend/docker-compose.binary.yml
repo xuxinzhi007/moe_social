@@ -1,39 +1,15 @@
+# 上传 bin/moe-social 后的二进制部署（见 deploy-agent backend_upload_binaries）
 services:
-  rpc:
-    build:
-      context: .
-      dockerfile: Dockerfile.binary.rpc
-    container_name: moe-social-rpc
+  moe-social:
+    image: alpine:latest
+    container_name: moe-social
+    working_dir: /app
+    command: ["/app/moe-social", "-f", "config/config.yaml"]
     restart: always
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./rpc/moe-social-rpc:/app/rpc/moe-social-rpc
-      - ./rpc/etc:/app/rpc/etc
-      - ./config:/app/config
-    networks:
-      - moe-network
-
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile.binary.api
-    container_name: moe-social-api
-    restart: always
-    environment:
-      MOE_SUPER_RPC_ENDPOINT: rpc:8080
     ports:
       - "8888:8888"
-    depends_on:
-      - rpc
     volumes:
-      - ./api/moe-social-api:/app/api/moe-social-api
-      - ./api/etc:/app/etc
+      - ./bin/moe-social:/app/moe-social
+      - ./api/etc:/app/api/etc
       - ./config:/app/config
       - /root/gowork/moe_images:/app/data/images
-    networks:
-      - moe-network
-
-networks:
-  moe-network:
-    driver: bridge

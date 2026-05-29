@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"backend/internal/server/httplegacy"
+	"backend/internal/server"
 	apirun "backend/internal/platform/wiring"
 	"backend/utils"
 )
 
-func pilotDepsFromAPI(res *apirun.StartResult) httplegacy.PilotDeps {
-	d := httplegacy.PilotDeps{
+func pilotDepsFromAPI(res *apirun.StartResult) server.PilotDeps {
+	d := server.PilotDeps{
 		MoeAdmin: res.Svc.MoeAdmin,
 		AdminApp: res.Svc.AdminApp,
 		Svc:      res.Svc,

@@ -4,9 +4,9 @@ server:
 
 # ===== Moe Social 统一配置（SSOT，PK-13）=====
 # 启动：make moe-social  →  go run ./cmd/moe-social  →  默认 -f config/config.yaml
-# 对外端口：runtime.http_port / runtime.grpc_listen（Flutter / moe-admin 仍 :8888）
-# API/RPC 片段（goctl 结构体模板，值以本文件 runtime / api / auth 等为准）：
-#   runtime.api_config_fragment / runtime.rpc_config_fragment
+# 对外端口：runtime.http_port（Flutter / moe-admin :8888）
+# API 片段（goctl 结构体模板，值以本文件 runtime / api / auth 等为准）：
+#   runtime.api_config_fragment
 auth:
   access_secret: "u8K9x2L1n4Q7v5Z0m3P6r9Y2b5X8j1W4"
   access_expire_seconds: 432000  # 5 天
@@ -15,11 +15,8 @@ auth:
 runtime:
   http_host: "0.0.0.0"
   http_port: 8888
-  grpc_listen: "0.0.0.0:8080"
-  rpc_timeout_ms: 600000
   hand_draw_require_moderation: false
   api_config_fragment: api/etc/moe.yaml
-  rpc_config_fragment: rpc/etc/moe.yaml
 
 # Moe Admin 管理后台（本地使用；与 App JWT 分离）
 admin:
@@ -195,53 +192,13 @@ moe:
   community_api_in_process: true
   chat_api_in_process: true
   admin_readonly_api_in_process: true
-  # 在 RPC :8080 同时注册 moe.v1.MoeAdmin gRPC（与 super.Super 并存）
-  register_moe_grpc: true
-  # API Admin Moe 在无 api_in_process 时优先走 moe gRPC（否则 super Admin*）
-  use_moe_grpc: true
-  # 单进程：make moe-social 时为 true；与 api_in_process 搭配，Moe Admin 全走进程内分层
+  # 单进程 Kratos HTTP（make moe-social）
   single_process: true
-  # PK-2 纯 Kratos 灰度（需并行 make moe-kratos；对外仍 :8888）
-  # Moe Admin 读：ListRuntimes、GetBrainPipeline
-  kratos_admin_http_enabled: false
-  # VIP 套餐列表读：GET /api/admin/vip/plans
-  kratos_vip_http_enabled: false
-  # Admin Insights 读（ai chat / analytics / topic-tags）
-  kratos_admin_insights_http_enabled: false
-  # 一键开启上述 Moe/VIP/Insights 读灰度（团队 Kratos 联调）
-  kratos_pilot_read_enabled: false
-  # PK-9 传输铺轨（rollout_percent=100）：Kratos HTTP :8888 + gRPC 生命周期；完整纯 Kratos percent 见 /migration
-  # 回滚 Hybrid：设为 false
   kratos_pure_enabled: true
-  # PK-8：日常 make gen 不跑 goctl api（改 api/defs 后 make gen-api；双端契约 make gen-all）
-  kratos_pk8_goctl_retired: true
-  # 紧急回滚 go-zero rest（仅 kratos_pure_enabled=false 时生效）
-  kratos_hybrid_http_fallback: false
-  # PK-10：:1903x 试点进程已收敛到 moe-social :8888
-  pilot_process_deprecated: true
-  # PK-4（kratos_pure=false 时）：Kratos 前置 + go-zero 内网回退
-  kratos_http_front_enabled: false
-  kratos_internal_http_port: 18888
-  # PK-7（kratos_pure=true 时自动开启；显式 true 便于运维识别）
-  kratos_grpc_managed: true
-  # PK-11（kratos_pure=true 时自动开启）：Super 使用 kratos/transport/grpc，非 zrpc
-  kratos_super_grpc_native: true
   kratos_admin_base_url: "http://127.0.0.1:8888"
-  # P5：单进程退役 Super gRPC（域 gRPC 12/12 + 进程内 App）；分体部署 api/rpc 容器时设为 false
-  super_grpc_retired: true
-  # Phase 4 试点进程默认值（cmd/moe-kratos；CLI 参数可覆盖）
-  # 生产对外端口不变：Flutter / moe-admin 仍 :8888（由 moe-social / go-zero API 提供）
   production:
     unified_entry: moe-social
     external_http_port: "8888"
-    internal_grpc_port: "8080"
-    pilot_http_port: "19032"
-    pilot_grpc_port: "19031"
-  pilot:
-    grpc_addr: ":19031"
-    http_addr: ":19032"
-    super_rpc_endpoint: ""
-    vip_admin_read_enabled: true
 
 # 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
 memory:

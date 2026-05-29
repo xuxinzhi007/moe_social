@@ -2,11 +2,10 @@ package server
 
 import (
 	grpcserver "backend/internal/server/grpc"
-	"backend/internal/server/httplegacy"
 )
 
 // ProtoHTTPDepsFromPilot 从 PilotDeps 提取 proto HTTP 注册依赖。
-func ProtoHTTPDepsFromPilot(d httplegacy.PilotDeps) ProtoHTTPDeps {
+func ProtoHTTPDepsFromPilot(d PilotDeps) ProtoHTTPDeps {
 	out := ProtoHTTPDeps{MoeAdmin: d.MoeAdmin}
 	if d.Svc == nil {
 		return out
