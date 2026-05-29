@@ -132,21 +132,18 @@ app_client:
 
 # 可选：覆盖 api/etc/moe.yaml 里的 Image（不配置则完全沿用 moe.yaml）。
 
-# 图片“云空间”（实际落到服务端本地目录）
+# 图片「云图库」（文件落在 API 所在机器的 LocalDir；Flutter 连云 API 时即云上磁盘）
+# 上传落盘位置由「请求打到哪台 API」决定，不是 PublicBaseUrl 决定。
+# PublicBaseUrl 只影响列表/管理台拼出来的完整图片 URL。
 Image:
-  # 服务端机器的本地目录（与 docker-compose 挂载路径一致）
   LocalDir: "/app/data/images"
-  # 对外访问地址（用于拼接图片 url；cpolar/服务器域名放这里）
-  # 建议留空：后端会根据本次请求的 Host 自动拼接（cpolar 域名变了也不用改配置）
-  PublicBaseUrl: ""
-  # 1GB = 1073741824（0 表示不限制/不展示容量）
+  PublicBaseUrl: "http://47.106.175.49:8888"
   MaxBytes: 1073741824
 
-
-# 本地开发示例（取消注释并改成你的路径即可）：
+# 仅本机 go run 后端、且要用本机磁盘存图时取消注释（与 Docker 云部署无关）：
 # image:
-#   local_dir: "/Users/you/moe_social_data/images"
-#   public_base_url: ""   # 空则按请求 Host 自动拼图片 URL
+#   local_dir: "./data/images"
+#   public_base_url: "http://127.0.0.1:8888"
 #   max_bytes: 1073741824
 
 # 私信持久化 private_messages 表（保留天数在写入时按发送方 VIP 快照；见 docs/private_messages.md）
@@ -236,14 +233,14 @@ memory:
 #线上ip ：
 
 database:
- host: "47.106.175.49"
- port: 3306
- user: "root"
- password: "123456xxZ."
- dbname: "go_react_demo"
- charset: "utf8mb4"
- parseTime: true
- loc: "Local"
+  host: "47.106.175.49"
+  port: 3306
+  user: "root"
+  password: "123456xxZ."
+  dbname: "go_react_demo"
+  charset: "utf8mb4"
+  parseTime: true
+  loc: "Local"
 
 
 #本地ip :

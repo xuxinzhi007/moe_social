@@ -33,8 +33,36 @@ class ApiResponse {
     token ??= _stringOrNull(flat['token']);
 
     if (userMap == null || token == null || token.isEmpty) return null;
+    final uid = coerceUserId(userMap['id']);
+    if (uid == null) return null;
+    userMap['id'] = uid;
     return (user: userMap, token: token);
   }
+
+  /// 后端 user.id 可能是 string / int；过滤 0 与空。
+  static String? coerceUserId(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is String) {
+      final s = raw.trim();
+      if (s.isEmpty || s == '0') return null;
+      return s;
+    }
+    if (raw is int) {
+      if (raw <= 0) return null;
+      return raw.toString();
+    }
+    if (raw is num) {
+      final n = raw.toInt();
+      if (n <= 0) return null;
+      return n.toString();
+    }
+    final s = raw.toString().trim();
+    if (s.isEmpty || s == '0') return null;
+    return s;
+  }
+
+  static bool isValidUserId(String? raw) =>
+      coerceUserId(raw) != null;
 
   /// 业务字段（去掉 code/message/success/reason 信封层）。
   static Map<String, dynamic> payload(Map<String, dynamic> json) {

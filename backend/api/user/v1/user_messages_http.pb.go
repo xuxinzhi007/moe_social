@@ -712,9 +712,6 @@ func _UserService_FollowUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx h
 func _UserService_UnfollowUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in UnfollowUserReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
@@ -1848,10 +1845,10 @@ func (c *UserServiceHTTPClientImpl) UnbindFeishu(ctx context.Context, in *Unbind
 func (c *UserServiceHTTPClientImpl) UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...http.CallOption) (*FollowUserResp, error) {
 	var out FollowUserResp
 	pattern := "/api/user/{user_id}/follow"
-	path := binding.EncodeURL(pattern, in, false)
+	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserServiceUnfollowUser))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

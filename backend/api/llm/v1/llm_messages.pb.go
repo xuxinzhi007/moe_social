@@ -2771,12 +2771,12 @@ const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
 	"\rdownload_path\x18\t \x01(\tR\fdownloadPath\"\x1e\n" +
 	"\x1cListLlmLocalModelsCatalogReq\"W\n" +
 	"\x1dListLlmLocalModelsCatalogResp\x126\n" +
-	"\x05items\x18\x01 \x03(\v2 .llm.v1.LlmLocalModelCatalogItemR\x05items2\xf3\x0e\n" +
+	"\x05items\x18\x01 \x03(\v2 .llm.v1.LlmLocalModelCatalogItemR\x05items2\xf0\x0e\n" +
 	"\aLlmChat\x12o\n" +
 	"\x11RecordLlmChatTurn\x12\x1c.llm.v1.RecordLlmChatTurnReq\x1a\x1d.llm.v1.RecordLlmChatTurnResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/llm/chat/turn\x12v\n" +
 	"\x10UpsertUserMemory\x12\x1b.llm.v1.UpsertUserMemoryReq\x1a\x1c.llm.v1.UpsertUserMemoryResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/user/{user_id}/memories\x12p\n" +
-	"\x0fGetUserMemories\x12\x1a.llm.v1.GetUserMemoriesReq\x1a\x1b.llm.v1.GetUserMemoriesResp\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/user/{user_id}/memories\x12v\n" +
-	"\x10DeleteUserMemory\x12\x1b.llm.v1.DeleteUserMemoryReq\x1a\x1c.llm.v1.DeleteUserMemoryResp\"'\x82\xd3\xe4\x93\x02!:\x01**\x1c/api/user/{user_id}/memories\x12\x8d\x01\n" +
+	"\x0fGetUserMemories\x12\x1a.llm.v1.GetUserMemoriesReq\x1a\x1b.llm.v1.GetUserMemoriesResp\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/api/user/{user_id}/memories\x12s\n" +
+	"\x10DeleteUserMemory\x12\x1b.llm.v1.DeleteUserMemoryReq\x1a\x1c.llm.v1.DeleteUserMemoryResp\"$\x82\xd3\xe4\x93\x02\x1e*\x1c/api/user/{user_id}/memories\x12\x8d\x01\n" +
 	"\x16GetUserMemoriesDisplay\x12!.llm.v1.GetUserMemoriesDisplayReq\x1a\".llm.v1.GetUserMemoriesDisplayResp\",\x82\xd3\xe4\x93\x02&\x12$/api/user/{user_id}/memories/display\x12\x97\x01\n" +
 	"\x18SubmitUserMemoryFeedback\x12#.llm.v1.SubmitUserMemoryFeedbackReq\x1a$.llm.v1.SubmitUserMemoryFeedbackResp\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/api/user/{user_id}/memories/feedback\x12\x8b\x01\n" +
 	"\x15GetUserMemoryProfiles\x12 .llm.v1.GetUserMemoryProfilesReq\x1a!.llm.v1.GetUserMemoryProfilesResp\"-\x82\xd3\xe4\x93\x02'\x12%/api/user/{user_id}/memories/profiles\x12\x9f\x01\n" +

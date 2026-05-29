@@ -15,10 +15,10 @@ import (
 // runHTTPOnly 单进程纯 Kratos HTTP（:8888），不监听 gRPC。
 func runHTTPOnly(opts Options) error {
 	opts.NormalizeOptions()
+	if err := utils.InitConfig(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
 	if opts.Migrate.Enabled {
-		if err := utils.InitConfig(); err != nil {
-			return fmt.Errorf("config: %w", err)
-		}
 		if err := utils.InitDBWithMigrate(opts.Migrate); err != nil {
 			return fmt.Errorf("migrate: %w", err)
 		}

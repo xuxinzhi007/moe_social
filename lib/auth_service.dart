@@ -65,8 +65,10 @@ class AuthService {
     _token = prefs.getString(_tokenKey);
     _currentUser = prefs.getString(_userIdKey);
 
-    // If token is missing, treat as logged out to avoid half-authenticated state
-    if (_token == null || _token!.isEmpty) {
+    // If token is missing or user id invalid, treat as logged out
+    if (_token == null ||
+        _token!.isEmpty ||
+        !ApiResponse.isValidUserId(_currentUser)) {
       _token = null;
       _currentUser = null;
       await prefs.remove(_tokenKey);
@@ -101,7 +103,10 @@ class AuthService {
         if (session == null) {
           return AuthResult.failure('登录响应异常');
         }
-        _currentUser = session.user['id'] as String;
+        _currentUser = ApiResponse.coerceUserId(session.user['id']);
+        if (_currentUser == null) {
+          return AuthResult.failure('登录响应异常');
+        }
         _token = session.token;
 
         await _saveAuthData();
@@ -158,7 +163,10 @@ class AuthService {
       if (session == null) {
         return AuthResult.failure('微信登录响应异常');
       }
-      _currentUser = session.user['id'] as String;
+      _currentUser = ApiResponse.coerceUserId(session.user['id']);
+      if (_currentUser == null) {
+        return AuthResult.failure('登录响应异常');
+      }
       _token = session.token;
 
       await _saveAuthData();
@@ -184,7 +192,10 @@ class AuthService {
       if (session == null) {
         return AuthResult.failure('飞书登录响应异常');
       }
-      _currentUser = session.user['id'] as String;
+      _currentUser = ApiResponse.coerceUserId(session.user['id']);
+      if (_currentUser == null) {
+        return AuthResult.failure('登录响应异常');
+      }
       _token = session.token;
       final userData = session.user;
 
@@ -221,7 +232,10 @@ class AuthService {
       if (session == null) {
         return AuthResult.failure('注册响应异常');
       }
-      _currentUser = session.user['id'] as String;
+      _currentUser = ApiResponse.coerceUserId(session.user['id']);
+      if (_currentUser == null) {
+        return AuthResult.failure('登录响应异常');
+      }
       _token = session.token;
       final userData = session.user;
 

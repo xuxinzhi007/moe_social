@@ -157,12 +157,15 @@ paths:
             tags:
                 - AdminApp
             operationId: AdminApp_AdminDeleteAiAgent
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminDeleteAiAgentReq'
-                required: true
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: agentId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -4544,12 +4547,10 @@ paths:
                   required: true
                   schema:
                     type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/user.v1.UnfollowUserReq'
-                required: true
+                - name: followingId
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -4948,12 +4949,10 @@ paths:
                   required: true
                   schema:
                     type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.DeleteUserMemoryReq'
-                required: true
+                - name: key
+                  in: query
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -6007,13 +6006,6 @@ components:
         admin.v1.AdminDeleteAccountResp:
             type: object
             properties: {}
-        admin.v1.AdminDeleteAiAgentReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                agentId:
-                    type: string
         admin.v1.AdminDeleteAiAgentResp:
             type: object
             properties: {}
@@ -8376,13 +8368,6 @@ components:
                     type: string
                 userAgent:
                     type: string
-        llm.v1.DeleteUserMemoryReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                key:
-                    type: string
         llm.v1.DeleteUserMemoryResp:
             type: object
             properties: {}
@@ -10358,13 +10343,6 @@ components:
             properties:
                 user:
                     $ref: '#/components/schemas/user.v1.User'
-        user.v1.UnfollowUserReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                followingId:
-                    type: string
         user.v1.UpdateUserAvatarReq:
             type: object
             properties:
