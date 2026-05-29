@@ -1,3 +1,5 @@
+import '../utils/api_json.dart';
+
 class NotificationModel {
   // 通知类型常量
   static const int like = 1;
@@ -5,6 +7,7 @@ class NotificationModel {
   static const int follow = 3;
   static const int system = 4;
   static const int directMessage = 6;
+  static const int announcement = 7;
 
   final String id;
   final int type; // 1:like, 2:comment, 3:follow, 4:system
@@ -30,6 +33,10 @@ class NotificationModel {
     this.senderAvatar,
   });
 
+  /// 公告 ID（type=announcement 时由 post_id 承载）。
+  String? get announcementId =>
+      type == announcement && (postId ?? '').isNotEmpty ? postId : null;
+
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     final idRaw = json['id'];
     final typeRaw = json['type'];
@@ -41,7 +48,7 @@ class NotificationModel {
       isRead: json['is_read'] as bool? ?? false,
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
-      postId: json['post_id']?.toString(),
+      postId: apiField(json, 'post_id', 'postId')?.toString(),
       senderId: senderRaw?.toString(),
       senderName: json['sender_name']?.toString(),
       senderAvatar: json['sender_avatar']?.toString(),
@@ -84,6 +91,8 @@ class NotificationModel {
         return senderName != null ? '$senderName 关注了你' : '有人关注了你';
       case system:
         return '系统通知';
+      case announcement:
+        return '系统公告';
       case directMessage:
         return senderName != null ? '$senderName 给你发来了私信' : '收到一条新的私信';
       default:

@@ -1,5 +1,6 @@
 import type { AdminClientOptions, MoeBrainPipelineData } from '../api/adminClient'
 import { adminApiPath } from './adminApi'
+import { normalizePipelineData } from './pipelineData'
 
 type BaseResp<T> = {
   success: boolean
@@ -51,8 +52,9 @@ export function openMoeBrainPipelineSse(
     try {
       const body = JSON.parse(String(ev.data)) as BaseResp<MoeBrainPipelineData>
       if (body.success && body.data) {
-        last = body.data
-        onData(body.data)
+        const normalized = normalizePipelineData(body.data)
+        last = normalized
+        onData(normalized)
       }
     } catch {
       /* ignore malformed */

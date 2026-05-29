@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
+import '../models/hand_draw_card.dart';
 import '../auth_service.dart';
 import '../services/api_service.dart';
 import '../services/like_state_manager.dart';
@@ -272,7 +275,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                   onOpenReplay: () =>
                       _openHandDrawViewer(context, widget.post),
                 ),
-              ] else if (widget.post.handDrawCard != null) ...[
+              ] else if (widget.post.hasHandDraw || widget.post.handDrawCard != null) ...[
                 if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
                 Material(
                   color: Colors.transparent,
@@ -285,9 +288,22 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                         constraints: const BoxConstraints(maxHeight: 280),
                         child: AspectRatio(
                           aspectRatio: 3 / 4,
-                          child: HandDrawCardStatic(
-                            data: widget.post.handDrawCard!,
-                          ),
+                          child: widget.post.handDrawCard != null
+                              ? HandDrawCardStatic(
+                                  data: widget.post.handDrawCard!,
+                                )
+                              : ColoredBox(
+                                  color: Colors.grey.shade200,
+                                  child: Center(
+                                    child: Text(
+                                      '手绘动态',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
@@ -791,12 +807,34 @@ class _HandDrawThumbnail extends StatelessWidget {
 }
 
 void _openHandDrawViewer(BuildContext context, Post post) {
-  final card = post.handDrawCard;
+  unawaited(_openHandDrawViewerImpl(context, post));
+}
+
+Future<void> _openHandDrawViewerImpl(BuildContext context, Post post) async {
+  HandDrawCardData? card = post.handDrawCard;
   final thumb = post.handDrawThumbUrl;
 
+  if (card == null && (post.hasHandDraw || thumb.isNotEmpty)) {
+    try {
+      final viewerId = AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+      final loaded = await ApiService.getPostHandDraw(
+        post.id,
+        viewerUserId: viewerId,
+      );
+      if (loaded.handDrawCard.isNotEmpty) {
+        card = HandDrawCardData.tryParseJsonString(loaded.handDrawCard);
+      }
+    } catch (_) {
+      // 无笔迹时仍可用缩略图大图查看
+    }
+  }
+
+  if (!context.mounted) return;
+
   if (card != null) {
+    final replayCard = card;
     final duration = Duration(
-      milliseconds: (1600 + card.strokes.length * 35).clamp(1200, 3800),
+      milliseconds: (1600 + replayCard.strokes.length * 35).clamp(1200, 3800),
     );
     showDialog<void>(
       context: context,
@@ -821,7 +859,7 @@ void _openHandDrawViewer(BuildContext context, Post post) {
               ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxH, maxWidth: maxW),
                 child: HandDrawCardReplay(
-                  data: card,
+                  data: replayCard,
                   autoPlay: true,
                   duration: duration,
                 ),

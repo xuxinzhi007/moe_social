@@ -526,6 +526,13 @@ class _SettingsPageState extends State<SettingsPage> {
         child: MoeMenuCard(
           items: [
             MoeMenuItem(
+              icon: Icons.campaign_outlined,
+              title: '系统公告',
+              subtitle: '查看运营发布的平台公告',
+              color: const Color(0xFF7F7FD5),
+              onTap: () => Navigator.pushNamed(context, '/announcements'),
+            ),
+            MoeMenuItem(
               icon: Icons.mark_chat_unread_outlined,
               title: '私信记录保留',
               subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',

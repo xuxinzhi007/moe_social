@@ -171,6 +171,15 @@ func (s *AdminService) GetBrainSnapshot(ctx context.Context, agentKey string) (*
 	return moebiz.GetBrainSnapshot(ctx, s.store, rpc, agentKey)
 }
 
+// GetBrainGraph 构建 Bot 知识图谱视图。
+func (s *AdminService) GetBrainGraph(ctx context.Context, agentKey string, limit int) (brain.GraphView, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.GraphView{}, err
+	}
+	return moebiz.GetBrainGraph(ctx, s.store, rpc, agentKey, limit)
+}
+
 // UpdateBrainPolicy 更新标签策略并返回最新快照。
 func (s *AdminService) UpdateBrainPolicy(ctx context.Context, agentKey string, forbiddenTags, preferredTags []string) (*brain.Snapshot, error) {
 	rpc, err := s.requireMoeToolPort(ctx)
@@ -233,6 +242,112 @@ func (s *AdminService) CurateBrain(ctx context.Context, agentKey string, opts br
 		return nil, err
 	}
 	return moebiz.CurateBrain(ctx, deps, agentKey, opts)
+}
+
+// GetBrainRpg 加载 Memory RPG 快照。
+func (s *AdminService) GetBrainRpg(ctx context.Context, agentKey string) (brain.RpgView, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.RpgView{}, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.RpgView{}, err
+	}
+	return moebiz.GetBrainRpg(ctx, s.store, rpc, refine, agentKey)
+}
+
+// RunBrainDream 入梦 consolidation。
+func (s *AdminService) RunBrainDream(ctx context.Context, agentKey string, skipCurate bool) (brain.DreamResult, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.DreamResult{}, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.DreamResult{}, err
+	}
+	return moebiz.RunBrainDream(ctx, s.store, rpc, refine, agentKey, skipCurate)
+}
+
+// CompressBrainMemories 压缩近期认可自传。
+func (s *AdminService) CompressBrainMemories(ctx context.Context, agentKey string, days int) (brain.CompressResult, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.CompressResult{}, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.CompressResult{}, err
+	}
+	return moebiz.CompressBrainMemories(ctx, s.store, rpc, refine, agentKey, days)
+}
+
+// TidyBrainFragments 整理低分碎片。
+func (s *AdminService) TidyBrainFragments(ctx context.Context, agentKey string, maxEpisodes int) (brain.TidyResult, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.TidyResult{}, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.TidyResult{}, err
+	}
+	return moebiz.TidyBrainFragments(ctx, s.store, rpc, refine, agentKey, maxEpisodes)
+}
+
+// LockBrainSkill 锁定/解锁技能 tag。
+func (s *AdminService) LockBrainSkill(ctx context.Context, agentKey, tag string, lock bool) ([]string, error) {
+	return moebiz.LockBrainSkill(ctx, s.store, agentKey, tag, lock)
+}
+
+// ForgetBrainMemory 遗忘 bot 记忆。
+func (s *AdminService) ForgetBrainMemory(ctx context.Context, agentKey, memoryKey string) (bool, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return false, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return false, err
+	}
+	return moebiz.ForgetBrainMemory(ctx, s.store, rpc, refine, agentKey, memoryKey)
+}
+
+// GetBrainPresence 查询 Bot 在场状态（游戏 UI）。
+func (s *AdminService) GetBrainPresence(ctx context.Context, agentKey string) (brain.PresenceView, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return brain.PresenceView{}, err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return brain.PresenceView{}, err
+	}
+	return moebiz.GetBrainPresence(ctx, s.store, rpc, refine, agentKey)
+}
+
+// UpdateBrainDreamSchedule 更新定时入梦配置。
+func (s *AdminService) UpdateBrainDreamSchedule(ctx context.Context, agentKey string, enabled bool, cronExpr string) (brain.RpgConfig, error) {
+	return moebiz.UpdateBrainDreamSchedule(ctx, s.store, agentKey, enabled, cronExpr)
+}
+
+// UpdateBrainAutonomousMind 开关自主思考。
+func (s *AdminService) UpdateBrainAutonomousMind(ctx context.Context, agentKey string, enabled bool) (brain.RpgConfig, error) {
+	return moebiz.UpdateBrainAutonomousMind(ctx, s.store, agentKey, enabled)
+}
+
+// GenerateBrainThought 调用模型生成 Bot 想法。
+func (s *AdminService) GenerateBrainThought(ctx context.Context, agentKey string) (string, error) {
+	rpc, err := s.requireMoeToolPort(ctx)
+	if err != nil {
+		return "", err
+	}
+	refine, err := s.requireBrainRefineDeps(ctx)
+	if err != nil {
+		return "", err
+	}
+	return moebiz.GenerateBrainThought(ctx, s.store, rpc, refine, agentKey)
 }
 
 // QueryToolStats 工具调用统计。

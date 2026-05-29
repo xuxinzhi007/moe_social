@@ -15,7 +15,8 @@ import {
   type PhaseStatus,
   type PipelinePhase,
 } from '../lib/brainPipelinePhases'
-import { openMoeBrainPipelineSse } from '../lib/moePipelineSse'
+import { openMoeBrainPipelineWs } from '../lib/moePipelineWs'
+import { normalizePipelineData } from '../lib/pipelineData'
 
 type Props = {
   agentKey: string
@@ -143,6 +144,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState<PhaseId>('load')
   const [showTechnical, setShowTechnical] = useState(false)
+  const [liveTick, setLiveTick] = useState(0)
 
   const load = useCallback(async () => {
     if (!agentKey.trim()) {
@@ -154,7 +156,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
     try {
       const res = await client.getMoeBrainPipeline(agentKey)
       if (res.success && res.data) {
-        setData(res.data)
+        setData(normalizePipelineData(res.data))
       } else {
         setData(null)
         setError(res.message || '加载流水线失败')
@@ -175,9 +177,15 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
   const showRunning = running || serverRunning
 
   useEffect(() => {
+    if (!showRunning) return
+    const t = window.setInterval(() => setLiveTick((n) => n + 1), 500)
+    return () => window.clearInterval(t)
+  }, [showRunning])
+
+  useEffect(() => {
     if (!showRunning || !agentKey.trim()) return
-    const url = client.brainPipelineStreamUrl(agentKey)
-    const handle = openMoeBrainPipelineSse(url, (next) => {
+    const url = client.brainPipelineWsUrl(agentKey)
+    const handle = openMoeBrainPipelineWs(url, (next) => {
       setData(next)
       setError('')
     })
@@ -213,6 +221,18 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
     .filter((s) => s.key.startsWith('gen_attempt') || s.key === 'generate')
     .reduce((sum, s) => sum + (s.duration_ms ?? 0), 0)
 
+  const liveTotalMs = (() => {
+    void liveTick
+    if (showRunning) {
+      if (data?.total_duration_ms && data.total_duration_ms > 0) return data.total_duration_ms
+      if (data?.run_started_at) {
+        const start = Date.parse(data.run_started_at.replace(' ', 'T'))
+        if (!Number.isNaN(start)) return Date.now() - start
+      }
+    }
+    return data?.total_duration_ms ?? 0
+  })()
+
   const runPhaseLabel =
     serverRunning && data?.current_phase
       ? phaseLabel(data.current_phase as PhaseId)
@@ -231,7 +251,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
       <header className="platform-section-head brain-pipeline-head">
         <div>
           <h3>发帖流水线</h3>
-          <p className="muted">阶段脉冲视图：默认只看 6 步；生成重试折叠在「生成」阶段内。</p>
+          <p className="muted">WebSocket 实时推送 · 6 步脉冲视图；生成重试折叠在「生成」内。</p>
         </div>
         {data && hasRun ? (
           <label className="brain-pulse-tech-toggle">
@@ -298,7 +318,12 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
                 />
                 {data ? (
                   <>
-                    <span className="brain-pulse-stat">总耗时 {formatMs(data.total_duration_ms)}</span>
+                    <span className="brain-pulse-stat">
+                      总耗时{' '}
+                      <span className={showRunning ? 'brain-pulse-live-ms' : undefined}>
+                        {formatMs(showRunning ? liveTotalMs : data.total_duration_ms)}
+                      </span>
+                    </span>
                     <span className="brain-pulse-stat">生成 {formatMs(generateMs || undefined)}</span>
                     {data.run_at ? <span className="muted brain-pulse-run-at">{data.run_at}</span> : null}
                   </>
@@ -344,8 +369,14 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
                         <span className="brain-pulse-node-label">{phase.label}</span>
                         <span className={`brain-pulse-node-dot brain-pulse-node-dot--${st}`} />
                         <span className="brain-pulse-node-summary">{phase.summary}</span>
-                        {phase.durationMs > 0 ? (
-                          <span className="brain-pulse-node-ms">{formatMs(phase.durationMs)}</span>
+                        {phase.durationMs > 0 || (showRunning && st === 'running') ? (
+                          <span className="brain-pulse-node-ms brain-pulse-live-ms">
+                            {formatMs(
+                              showRunning && st === 'running' && phase.durationMs <= 0
+                                ? liveTotalMs
+                                : phase.durationMs,
+                            )}
+                          </span>
                         ) : null}
                       </button>
                     </div>
@@ -358,7 +389,13 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
                   <header className="brain-pulse-detail-head">
                     <strong>{selected.label}</strong>
                     <AdminTag label={phaseStatusLabel(selected.status)} tone={phaseTone(selected.status)} />
-                    <span className="brain-pulse-detail-ms">{formatMs(selected.durationMs)}</span>
+                    <span className="brain-pulse-detail-ms">
+                      {formatMs(
+                        showRunning && selected.status === 'running' && selected.durationMs <= 0
+                          ? liveTotalMs
+                          : selected.durationMs,
+                      )}
+                    </span>
                   </header>
                   <PhaseDetail
                     phase={selected}

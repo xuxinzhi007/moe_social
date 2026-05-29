@@ -37,6 +37,7 @@ import { SocialPage } from './pages/SocialPage'
 import { AdminAccountsPage } from './pages/AdminAccountsPage'
 import { MenusPage } from './pages/MenusPage'
 import { AuditLogsPage } from './pages/AuditLogsPage'
+import { MediaGalleryPage } from './pages/MediaGalleryPage'
 import { PlatformPage } from './pages/PlatformPage'
 
 function PlatformRedirect({ tab }: { tab: string }) {
@@ -82,7 +83,8 @@ export default function App() {
                     <Route path="system/platform" element={<PlatformPage />} />
                     <Route path="system/data" element={<PlatformRedirect tab="data" />} />
                     <Route path="system/app-config" element={<PlatformRedirect tab="config" />} />
-                    <Route path="system/media" element={<PlatformRedirect tab="media" />} />
+                    <Route path="system/media-gallery" element={<MediaGalleryPage />} />
+                    <Route path="system/media" element={<Navigate to="/system/media-gallery" replace />} />
                     <Route path="system/audit" element={<AuditLogsPage />} />
                     <Route path="deploy" element={<OverviewPage />} />
                     <Route path="rpc" element={<RpcPage />} />

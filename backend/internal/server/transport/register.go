@@ -9,7 +9,7 @@ import (
 // HTTP route counts（OAuth / WebSocket / SSE；与 routestats 同步）。
 const (
 	OAuthRoutes     = 2
-	WebSocketRoutes = 4
+	WebSocketRoutes = 5
 	SSERoutes       = 1
 	RouteCount      = OAuthRoutes + WebSocketRoutes + SSERoutes
 )

@@ -110,7 +110,10 @@ func (s *store) ListPosts(ctx context.Context, f postbiz.ListPostsFilter) ([]mod
 		return nil, 0, err
 	}
 	var posts []model.Post
-	err := listQuery.Preload("TopicTags").Offset(f.Offset).Limit(f.Limit).Find(&posts).Error
+	err := listQuery.
+		Select(`id, user_id, content, images, hand_draw_thumb_url, moderation_status, mood_tag, likes, comments, created_at, updated_at, deleted_at, (CASE WHEN hand_draw_card IS NOT NULL AND hand_draw_card <> '' THEN 1 ELSE 0 END) AS has_hand_draw`).
+		Preload("TopicTags").
+		Offset(f.Offset).Limit(f.Limit).Find(&posts).Error
 	return posts, total, err
 }
 

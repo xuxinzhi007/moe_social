@@ -3,9 +3,12 @@ package adminapp
 
 import (
 	"context"
+	"strconv"
 
 	adminv1 "backend/api/admin/v1"
+	platformv1 "backend/api/platform/v1"
 	adminbiz "backend/internal/biz/admin"
+	chatbiz "backend/internal/biz/chat"
 	notifybiz "backend/internal/biz/notify"
 	admindata "backend/internal/data/admin"
 	communitydata "backend/internal/data/community"
@@ -65,7 +68,17 @@ func (s *AppService) BroadcastNotification(ctx context.Context, in *adminv1.Admi
 	if err != nil {
 		return nil, err
 	}
-	return &adminv1.AdminBroadcastNotificationResp{NotificationsCreated: created}, nil
+	wsSent := int32(chatbiz.BroadcastPush(chatbiz.BroadcastPushInput{
+		Type: "system_notification",
+		Data: map[string]interface{}{
+			"title":   in.GetTitle(),
+			"content": in.GetContent(),
+		},
+	}))
+	return &adminv1.AdminBroadcastNotificationResp{
+		NotificationsCreated: created,
+		WsSent:               wsSent,
+	}, nil
 }
 
 // SendNotification 向单用户发送系统通知。
@@ -133,7 +146,33 @@ func (s *AppService) PublishAnnouncement(ctx context.Context, in *adminv1.AdminP
 	if err != nil {
 		return nil, err
 	}
-	return adminbiz.PublishAnnouncementV1(item), nil
+	annID, _ := strconv.ParseUint(item.GetId(), 10, 64)
+	created, _ := notifybiz.BroadcastAnnouncement(ctx, s.notify, annID, item.GetTitle(), item.GetContent())
+	wsSent := int32(chatbiz.BroadcastPush(chatbiz.BroadcastPushInput{
+		Type: "announcement_published",
+		Data: map[string]interface{}{
+			"announcement_id": item.GetId(),
+			"title":           item.GetTitle(),
+			"content":         item.GetContent(),
+		},
+	}))
+	return adminbiz.PublishAnnouncementV1(item, created, wsSent), nil
+}
+
+func (s *AppService) ListPublishedAnnouncements(ctx context.Context, in *platformv1.ListAnnouncementsReq) (*platformv1.ListAnnouncementsResp, error) {
+	items, total, err := adminbiz.ListPublishedAnnouncements(ctx, s.store, in.GetPage(), in.GetPageSize())
+	if err != nil {
+		return nil, err
+	}
+	return &platformv1.ListAnnouncementsResp{Items: items, Total: total}, nil
+}
+
+func (s *AppService) GetPublishedAnnouncement(ctx context.Context, in *platformv1.GetAnnouncementReq) (*platformv1.GetAnnouncementResp, error) {
+	item, err := adminbiz.GetPublishedAnnouncement(ctx, s.store, in.GetAnnouncementId())
+	if err != nil {
+		return nil, err
+	}
+	return &platformv1.GetAnnouncementResp{Item: item}, nil
 }
 
 func (s *AppService) DeleteAnnouncement(ctx context.Context, in *adminv1.AdminDeleteAnnouncementReq) (*adminv1.AdminDeleteAnnouncementResp, error) {

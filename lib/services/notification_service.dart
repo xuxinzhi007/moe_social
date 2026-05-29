@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../models/notification.dart';
 import '../auth_service.dart';
+import '../models/notification.dart';
 import 'api_service.dart';
 import 'api_response.dart';
 
@@ -10,6 +10,9 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   static bool _localInitialized = false;
+
+  /// WS 推送公告/系统通知时触发，供 [NotificationProvider] 刷新未读。
+  static VoidCallback? onRealtimeRefresh;
 
   static Future<void> initLocalNotifications() async {
     if (kIsWeb || _localInitialized) {

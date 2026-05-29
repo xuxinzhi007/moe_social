@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"io/fs"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,21 +31,33 @@ type AdminMediaOwnerSummary struct {
 	TotalBytes   int64
 }
 
+// ResolveImageLocalDir 解析云图库磁盘路径：配置目录不存在时，本机开发可回退 ./data/images。
+func ResolveImageLocalDir(configured string) string {
+	dir := strings.TrimSpace(configured)
+	if dir == "" {
+		dir = "./data/images"
+	}
+	if st, err := os.Stat(dir); err == nil && st.IsDir() {
+		return dir
+	}
+	fallback := "./data/images"
+	if dir != fallback {
+		if st, err := os.Stat(fallback); err == nil && st.IsDir() {
+			return fallback
+		}
+	}
+	return dir
+}
+
 // ListAdminMediaImages 递归扫描本地图片目录，支持按用户目录/类型/关键字过滤与分页。
 func ListAdminMediaImages(localDir, publicBase string, page, pageSize int, keyword, ownerFolder, mediaKind string) ([]AdminMediaImage, []AdminMediaOwnerSummary, int, error) {
-	imgDir := strings.TrimSpace(localDir)
-	if imgDir == "" {
-		imgDir = "./data/images"
-	}
-	base := strings.TrimRight(strings.TrimSpace(publicBase), "/")
-	if base == "" {
-		base = "http://localhost:8888"
-	}
+	imgDir := ResolveImageLocalDir(localDir)
+	_ = publicBase // 管理台预览 URL 由前端按当前 API 环境拼接；此处仅扫描本地目录
 	kw := strings.ToLower(strings.TrimSpace(keyword))
 	ownerFilter := strings.TrimSpace(ownerFolder)
 	kindFilter := strings.ToLower(strings.TrimSpace(mediaKind))
 
-	all, err := scanAdminMediaImages(imgDir, base)
+	all, err := scanAdminMediaImages(imgDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []AdminMediaImage{}, []AdminMediaOwnerSummary{}, 0, nil
@@ -93,7 +104,7 @@ func ListAdminMediaImages(localDir, publicBase string, page, pageSize int, keywo
 	return filtered[start:end], owners, total, nil
 }
 
-func scanAdminMediaImages(imgDir, base string) ([]AdminMediaImage, error) {
+func scanAdminMediaImages(imgDir string) ([]AdminMediaImage, error) {
 	all := make([]AdminMediaImage, 0, 64)
 	err := filepath.WalkDir(imgDir, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -123,7 +134,7 @@ func scanAdminMediaImages(imgDir, base string) ([]AdminMediaImage, error) {
 			FileName:    fileName,
 			OwnerFolder: folder,
 			MediaKind:   ClassifyAdminMediaKind(fileName),
-			URL:         fmt.Sprintf("%s/api/images/%s", base, url.PathEscape(key)),
+			URL:         fmt.Sprintf("/api/images/%s", key),
 			Size:        info.Size(),
 			CreatedAt:   info.ModTime().Format(time.DateTime),
 			OwnerHint:   parseImageOwnerHint(key),
@@ -210,10 +221,7 @@ func DeleteAdminMediaImage(localDir, filename string) error {
 	if key == "" || key == "." || strings.Contains(key, "..") || strings.Contains(key, "/") || strings.Contains(key, "\\") {
 		return fmt.Errorf("invalid filename")
 	}
-	imgDir := strings.TrimSpace(localDir)
-	if imgDir == "" {
-		imgDir = "./data/images"
-	}
+	imgDir := ResolveImageLocalDir(localDir)
 	target, err := adminMediaFilePath(imgDir, key)
 	if err != nil {
 		return err
@@ -234,6 +242,10 @@ func adminMediaStorageParts(rel string) (key, folder, fileName string, ok bool) 
 	}
 	if strings.Contains(rel, "/") {
 		parts := strings.Split(rel, "/")
+		if len(parts) < 2 {
+			return "", "", "", false
+		}
+		// 与 UploadImage 一致：{userFolder}/{timestamp}_file.ext}；忽略更深层级（无法 /api/images 访问）
 		if len(parts) != 2 {
 			return "", "", "", false
 		}

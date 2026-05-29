@@ -8,6 +8,7 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { usePlatform } from '../context/PlatformContext'
 import { DeployApiError } from '../api/deployClient'
+import { normalizeMoeToolStats, type MoeToolStats } from '../lib/analyticsData'
 
 type Tab = 'overview' | 'tools' | 'calls'
 
@@ -40,13 +41,7 @@ export function MoeToolsPage() {
 
   const [tools, setTools] = useState<ToolRow[]>([])
   const [defaultTier, setDefaultTier] = useState('s2')
-  const [stats, setStats] = useState<{
-    total_calls: number
-    success_calls: number
-    failed_calls: number
-    by_tool: Array<{ tool: string; total_calls: number; success_calls: number; failed_calls: number }>
-    by_day: Array<{ date: string; total_calls: number; success_calls: number }>
-  } | null>(null)
+  const [stats, setStats] = useState<MoeToolStats | null>(null)
   const [runtimes, setRuntimes] = useState<RuntimeRow[]>([])
   const [calls, setCalls] = useState<MoeToolCallRow[]>([])
   const [callsTotal, setCallsTotal] = useState(0)
@@ -106,7 +101,7 @@ export function MoeToolsPage() {
       }
       setTools(schemaRes.data.tools || [])
       setDefaultTier(schemaRes.data.default_tier || 's2')
-      if (statsRes.success && statsRes.data) setStats(statsRes.data)
+      if (statsRes.success && statsRes.data) setStats(normalizeMoeToolStats(statsRes.data))
       else setStats(null)
       if (rtRes.success && rtRes.data) {
         setRuntimes(

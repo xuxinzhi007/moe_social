@@ -167,6 +167,9 @@ moe:
   # API 进程内 Bot 定时发帖（cron + smart 模式）
   bot_scheduler_enabled: true
   bot_scheduler_tick_seconds: 60
+  # Memory RPG 定时入梦（consolidation）
+  dream_scheduler_enabled: true
+  dream_scheduler_tick_seconds: 300
   # 智能发送：LLM 判断此刻是否发帖
   bot_smart_retry_minutes: 30
   bot_smart_min_interval_hours: 2

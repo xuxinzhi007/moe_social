@@ -10,6 +10,8 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { usePlatform } from '../context/PlatformContext'
 import { formatBytes, formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { useDirectAdminApi } from '../lib/adminApi'
+import { resolveMediaViewUrl } from '../lib/mediaUrl'
 
 type Tab = 'overview' | 'config' | 'media' | 'data' | 'memory'
 
@@ -56,7 +58,12 @@ const TABS: { key: Tab; label: string; hint: string }[] = [
 
 export function PlatformPage() {
   const { client } = useAdminAuth()
-  const { apiTargetLabel, health } = usePlatform()
+  const { apiTarget, apiTargetLabel, health } = usePlatform()
+  const devDirect = useDirectAdminApi()
+  const apiBase = useMemo(() => {
+    const h = apiTarget === 'cloud' ? health?.cloud_api : health?.local_api
+    return h?.base_url?.replace(/\/$/, '') || ''
+  }, [apiTarget, health])
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'overview'
   const memoryUserId = params.get('user_id') || ''
@@ -88,6 +95,8 @@ export function PlatformPage() {
   const [catalog, setCatalog] = useState<{ summary: Record<string, number>; items: CatalogRow[] } | null>(null)
 
   const [mediaItems, setMediaItems] = useState<Array<{ filename: string; url: string; size: number }>>([])
+  const [mediaTotal, setMediaTotal] = useState(0)
+  const [mediaOwnerCount, setMediaOwnerCount] = useState(0)
   const [memories, setMemories] = useState<MemoryRow[]>([])
   const [memoryTotal, setMemoryTotal] = useState(0)
   const [memoryPage, setMemoryPage] = useState(1)
@@ -171,9 +180,19 @@ export function PlatformPage() {
   const loadMedia = useCallback(async () => {
     try {
       const res = await client.listMediaImages({ page: 1, page_size: 12 })
-      if (res.success && res.data) setMediaItems(res.data.items || [])
+      if (res.success && res.data) {
+        setMediaItems(res.data.items || [])
+        setMediaTotal(res.data.total || 0)
+        setMediaOwnerCount(res.data.owners?.length || 0)
+      } else {
+        setMediaItems([])
+        setMediaTotal(0)
+        setMediaOwnerCount(0)
+      }
     } catch {
       setMediaItems([])
+      setMediaTotal(0)
+      setMediaOwnerCount(0)
     }
   }, [client])
 
@@ -201,7 +220,7 @@ export function PlatformPage() {
 
   useEffect(() => {
     if (tab === 'media') void loadMedia()
-  }, [tab, loadMedia])
+  }, [tab, loadMedia, apiTarget])
 
   useEffect(() => {
     if (tab === 'memory') void loadMemories()
@@ -397,19 +416,50 @@ export function PlatformPage() {
       {tab === 'media' ? (
         <section className="panel platform-panel">
           <div className="page-head-row" style={{ marginBottom: 12 }}>
-            <h3 style={{ margin: 0 }}>云图库预览</h3>
-            <Link to="/system/platform?tab=config" className="btn btn-ghost btn-sm">图库 URL 配置</Link>
+            <div>
+              <h3 style={{ margin: 0 }}>云图库预览</h3>
+              <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>
+                当前环境：<strong>{apiTargetLabel}</strong>
+                {config?.image_local_dir ? (
+                  <> · 扫描目录 <code>{config.image_local_dir}</code></>
+                ) : null}
+                {mediaTotal > 0 ? (
+                  <> · 共 <strong>{mediaTotal}</strong> 张 · {mediaOwnerCount} 个用户目录</>
+                ) : null}
+              </p>
+            </div>
+            <div className="btn-row">
+              <Link to="/system/media-gallery" className="btn btn-primary btn-sm">完整图库</Link>
+              <Link to="/system/platform?tab=config" className="btn btn-ghost btn-sm">图库 URL 配置</Link>
+            </div>
           </div>
+          {apiTarget === 'local' ? (
+            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5 }}>
+              本机 API 只扫描<strong>本机磁盘</strong>上的图库目录；你在 VPS（如宝塔 <code>/root/gowork/moe_images</code>）上的图片，
+              请把顶部「数据环境」切到<strong>云端 API</strong> 后再查看。此处最多预览最近 12 张。
+            </p>
+          ) : (
+            <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+              已连接云端 API，列表与 App 上传落盘一致（Docker 内通常为 <code>/app/data/images</code>，挂载到宿主机图库目录）。
+            </p>
+          )}
           <div className="platform-media-grid">
             {mediaItems.length === 0 ? (
-              <p className="muted">暂无图片，或请确认 Image.LocalDir 路径</p>
+              <p className="muted">
+                {apiTarget === 'local'
+                  ? '本机图库为空或目录未配置。云上图库请切换「云端 API」，或在本机 config 中设置 image.local_dir。'
+                  : '暂无图片，请确认 Image.LocalDir 路径与磁盘挂载。'}
+              </p>
             ) : (
-              mediaItems.map((item) => (
-                <a key={item.filename} className="platform-media-thumb" href={item.url} target="_blank" rel="noreferrer">
-                  <img src={item.url} alt="" loading="lazy" />
-                  <span>{item.filename}</span>
-                </a>
-              ))
+              mediaItems.map((item) => {
+                const viewUrl = resolveMediaViewUrl(item.url, apiBase, devDirect, apiTarget)
+                return (
+                  <a key={item.filename} className="platform-media-thumb" href={viewUrl} target="_blank" rel="noreferrer">
+                    <img src={viewUrl} alt="" loading="lazy" />
+                    <span>{item.filename}</span>
+                  </a>
+                )
+              })
             )}
           </div>
         </section>

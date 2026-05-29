@@ -107,12 +107,15 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
               .toList();
           break;
         case _VisualKind.handDraw:
-          list = list.where((p) => p.handDrawCardJson.isNotEmpty).toList();
+          list = list
+              .where((p) => p.hasHandDraw || p.handDrawCardJson.isNotEmpty)
+              .toList();
           break;
         case _VisualKind.text:
           list = list
               .where((p) =>
                   p.images.isEmpty &&
+                  !p.hasHandDraw &&
                   p.handDrawCardJson.isEmpty &&
                   p.handDrawThumbUrl.isEmpty)
               .toList();

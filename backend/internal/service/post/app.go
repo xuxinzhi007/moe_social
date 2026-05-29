@@ -4,6 +4,7 @@ import (
 	"context"
 
 	postv1 "backend/api/post/v1"
+	mediabiz "backend/internal/biz/media"
 	postbiz "backend/internal/biz/post"
 	postdata "backend/internal/data/post"
 	"backend/internal/platform/socialhook"
@@ -16,13 +17,15 @@ import (
 type AppService struct {
 	store                     postbiz.PostStore
 	handDrawRequireModeration bool
+	imageCfg                  mediabiz.ImageConfig
 }
 
 // New 构造 AppService。
-func New(db *gorm.DB, handDrawRequireModeration bool) *AppService {
+func New(db *gorm.DB, handDrawRequireModeration bool, imageCfg mediabiz.ImageConfig) *AppService {
 	return &AppService{
 		store:                     postdata.NewStore(db),
 		handDrawRequireModeration: handDrawRequireModeration,
+		imageCfg:                  imageCfg,
 	}
 }
 
@@ -39,6 +42,10 @@ func (s *AppService) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*p
 		return nil, err
 	}
 	return &postv1.GetPostReply{Post: post}, nil
+}
+
+func (s *AppService) GetPostHandDraw(ctx context.Context, in *postv1.GetPostHandDrawRequest) (*postv1.GetPostHandDrawReply, error) {
+	return postbiz.GetHandDraw(ctx, s.store, in.GetPostId(), in.GetViewerUserId())
 }
 
 func (s *AppService) GetPosts(ctx context.Context, in *postv1.GetPostsRequest) (*postv1.GetPostsReply, error) {
@@ -70,6 +77,11 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		return nil, err
 	}
 
+	if thumb, err := postbiz.EnsureHandDrawThumb(ctx, s.imageCfg, result.User, result.Post.HandDrawCard, result.Post.HandDrawThumbURL); err == nil && thumb != "" && thumb != result.Post.HandDrawThumbURL {
+		result.Post.HandDrawThumbURL = thumb
+		_ = s.store.WithContext(ctx).SavePost(ctx, &result.Post)
+	}
+
 	achUnlocks := socialhook.ApplyPostCreatedAchievements(s.store.Raw(), socialhook.PostCreatedMeta{
 		UserID: result.Post.UserID, ImageCount: result.ImageCount,
 		TopicTagCount: result.TopicTagCount, ContentRuneLen: result.ContentRuneLen,
@@ -77,7 +89,7 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		HandDrawApproved: result.HandDrawApproved,
 	})
 
-	post := postbiz.BuildPostV1(result.Post, result.User, false)
+	post := postbiz.BuildPostV1ForDetail(result.Post, result.User, false)
 	post.Images = result.Images
 	post.TopicTags = postbiz.TopicTagsToPostV1(result.TopicTags)
 	return &postv1.CreatePostReply{
@@ -126,8 +138,12 @@ func (s *AppService) UpdatePost(ctx context.Context, in *postv1.UpdatePostReques
 	if err != nil {
 		return nil, err
 	}
+	if thumb, err := postbiz.EnsureHandDrawThumb(ctx, s.imageCfg, result.User, result.Post.HandDrawCard, result.Post.HandDrawThumbURL); err == nil && thumb != "" && thumb != result.Post.HandDrawThumbURL {
+		result.Post.HandDrawThumbURL = thumb
+		_ = s.store.WithContext(ctx).SavePost(ctx, &result.Post)
+	}
 	return &postv1.UpdatePostReply{
-		Post: postbiz.BuildPostV1(result.Post, result.User, result.IsLiked),
+		Post: postbiz.BuildPostV1ForDetail(result.Post, result.User, result.IsLiked),
 	}, nil
 }
 

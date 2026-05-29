@@ -1,6 +1,7 @@
 /** Bot 能力 hub：中心 Bot + 工具卡片接入（画布展示用） */
 
-import type { MoeBotFlowData, MoeFlowEdgeItem } from '../api/adminClient'
+import type { MoeBotFlowData, MoeFlowEdgeItem, MoeFlowNodeItem } from '../api/adminClient'
+import { asArray } from './apiRecord'
 
 export const HUB_CORE_ID = 'core'
 export const HUB_CENTER = { x: 420, y: 220 }
@@ -33,7 +34,9 @@ export function hubDefaultFlow(agentKey: string): MoeBotFlowData {
 
 /** 旧版线性步骤图转为 hub 视图（步骤节点隐藏，只保留 Bot + 工具） */
 export function toHubView(flow: MoeBotFlowData, agentLabel: string): MoeBotFlowData {
-  let core = flow.nodes.find((n) => n.type === 'core')
+  const nodes = asArray<MoeFlowNodeItem>(flow.nodes)
+  const flowEdges = asArray<MoeFlowEdgeItem>(flow.edges)
+  let core = nodes.find((n) => n.type === 'core')
   if (!core) {
     core = {
       id: HUB_CORE_ID,
@@ -44,11 +47,11 @@ export function toHubView(flow: MoeBotFlowData, agentLabel: string): MoeBotFlowD
       position_y: HUB_CENTER.y,
     }
   }
-  const tools = flow.nodes.filter((n) => n.type === 'tool')
+  const tools = nodes.filter((n) => n.type === 'tool')
   const toolIds = new Set(tools.map((t) => t.id))
   const edges: MoeFlowEdgeItem[] = []
   const seen = new Set<string>()
-  for (const e of flow.edges) {
+  for (const e of flowEdges) {
     const linksCore = e.source === core.id || e.target === core.id
     const linksTool = toolIds.has(e.source) || toolIds.has(e.target)
     if (linksCore && linksTool) {

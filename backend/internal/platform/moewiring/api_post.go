@@ -3,8 +3,20 @@ package moewiring
 import (
 	postapp "backend/internal/service/post"
 	commentapp "backend/internal/service/comment"
+	mediabiz "backend/internal/biz/media"
 	"backend/utils"
 )
+
+func imageConfigFromMoe() mediabiz.ImageConfig {
+	v := moeViper()
+	if v == nil {
+		return mediabiz.ImageConfig{}
+	}
+	return mediabiz.ImageConfig{
+		LocalDir:      v.GetString("Image.LocalDir"),
+		PublicBaseURL: v.GetString("Image.PublicBaseUrl"),
+	}
+}
 
 func PostAPIInProcessEnabled() bool {
 	if SingleProcessEnabled() || APIInProcessEnabled() {
@@ -31,7 +43,7 @@ func NewAPIPostService() (*postapp.AppService, error) {
 	if db == nil {
 		return nil, nil
 	}
-	return postapp.New(db, handDrawRequireModeration()), nil
+	return postapp.New(db, handDrawRequireModeration(), imageConfigFromMoe()), nil
 }
 
 func handDrawRequireModeration() bool {

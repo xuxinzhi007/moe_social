@@ -14,4 +14,5 @@ func AfterWire(parent context.Context, svc *platformsvc.ServiceContext) {
 		utils.StartPrivateMessageCleanup(db)
 	}
 	StartMoeBotScheduler(parent, svc)
+	StartDreamScheduler(parent, svc)
 }

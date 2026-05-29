@@ -72,6 +72,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "moe_tool_calls", Model: &model.MoeToolCall{}},
 		{Key: "moe_agent_run_logs", Model: &model.MoeAgentRunLog{}},
 		{Key: "moe_agent_flow_configs", Model: &model.MoeAgentFlowConfig{}},
+		{Key: "moe_brain_dream_logs", Model: &model.MoeBrainDreamLog{}},
 		{Key: "ai_chat_sessions", Model: &model.AiChatSession{}},
 		{Key: "ai_chat_messages", Model: &model.AiChatMessage{}},
 		{Key: "tag_dictionary_entries", Model: &model.TagDictionaryEntry{}},

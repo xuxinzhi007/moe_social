@@ -28,6 +28,7 @@
 |------|------|
 | [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | 推理 + 记忆 |
 | [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | 记忆架构 |
+| [moe-brain-memory-rpg.md](./moe-brain-memory-rpg.md) | **记忆 RPG**（游戏化 consolidation · 开放世界 UI） |
 
 ## 已归档
 

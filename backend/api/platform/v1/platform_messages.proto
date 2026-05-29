@@ -193,6 +193,32 @@ message LlmDownloadModelReq {
   string model = 1;
 }
 
+// 用户侧公告（仅 published）。
+message AnnouncementItem {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string published_at = 4;
+}
+
+message ListAnnouncementsReq {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListAnnouncementsResp {
+  repeated AnnouncementItem items = 1;
+  int32 total = 2;
+}
+
+message GetAnnouncementReq {
+  string announcement_id = 1;
+}
+
+message GetAnnouncementResp {
+  AnnouncementItem item = 1;
+}
+
 service Platform {
   rpc GetPublicClientConfig(GetPublicClientConfigReq) returns (GetPublicClientConfigResp) {
     option (google.api.http) = { get: "/api/public/client-config" };
@@ -244,5 +270,11 @@ service Platform {
   }
   rpc LlmDownloadModel(LlmDownloadModelReq) returns (BaseResp) {
     option (google.api.http) = { post: "/api/llm/models/download" body: "*" };
+  }
+  rpc ListAnnouncements(ListAnnouncementsReq) returns (ListAnnouncementsResp) {
+    option (google.api.http) = { get: "/api/announcements" };
+  }
+  rpc GetAnnouncement(GetAnnouncementReq) returns (GetAnnouncementResp) {
+    option (google.api.http) = { get: "/api/announcements/{announcement_id}" };
   }
 }

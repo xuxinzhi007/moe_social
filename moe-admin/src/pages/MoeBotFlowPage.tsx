@@ -8,7 +8,10 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import type { MoeBotFlowData, MoeBrainPipelineData } from '../api/adminClient'
 import { clientDefaultFlow } from '../lib/botFlowTemplate'
-import { openMoeBrainPipelineSse, waitMoeBrainPipelineSse } from '../lib/moePipelineSse'
+import { normalizeBotFlowData } from '../lib/botFlowData'
+import { openMoeBrainPipelineWs, waitMoeBrainPipelineWs } from '../lib/moePipelineWs'
+import { normalizePipelineData } from '../lib/pipelineData'
+import { asArray } from '../lib/apiRecord'
 import { MonitorPageLayout } from '../ui'
 
 type RuntimeRow = { agent_key: string; display_name: string }
@@ -37,9 +40,9 @@ export function MoeBotFlowPage() {
   const loadAgents = useCallback(async () => {
     try {
       const res = await client.listMoeRuntimes()
-      if (res.success && res.data?.items) {
+      if (res.success && res.data) {
         setAgents(
-          res.data.items.map((it) => ({
+          asArray<{ agent_key: string; display_name?: string }>(res.data.items).map((it) => ({
             agent_key: it.agent_key,
             display_name: it.display_name || it.agent_key,
           })),
@@ -55,7 +58,7 @@ export function MoeBotFlowPage() {
     try {
       const res = await client.getMoeBrainPipeline(agentKey)
       if (res.success && res.data) {
-        setPipeline(res.data)
+        setPipeline(normalizePipelineData(res.data))
       }
     } catch {
       /* pipeline optional for canvas */
@@ -68,8 +71,13 @@ export function MoeBotFlowPage() {
     setError('')
     try {
       const res = await client.getMoeBotFlow(agentKey)
-      if (res.success && res.data?.nodes?.length) {
-        setFlow(res.data)
+      if (res.success && res.data) {
+        const normalized = normalizeBotFlowData(res.data)
+        if (normalized.nodes.length > 0) {
+          setFlow(normalized)
+        } else {
+          setFlow(clientDefaultFlow(agentKey))
+        }
       } else {
         setFlow(clientDefaultFlow(agentKey))
         if (!res.success) {
@@ -91,11 +99,11 @@ export function MoeBotFlowPage() {
   const loadTools = useCallback(async () => {
     try {
       const res = await client.getMoeToolsSchema()
-      if (res.success && res.data?.tools) {
+      if (res.success && res.data) {
         setTools(
-          res.data.tools.map((t) => ({
+          asArray<{ name: string; description?: string }>(res.data.tools).map((t) => ({
             name: t.name,
-            description: t.description,
+            description: t.description || '',
           })),
         )
       }
@@ -127,8 +135,8 @@ export function MoeBotFlowPage() {
 
   useEffect(() => {
     if (!runActive || !agentKey.trim()) return
-    const url = client.brainPipelineStreamUrl(agentKey)
-    const handle = openMoeBrainPipelineSse(url, (next) => setPipeline(next))
+    const url = client.brainPipelineWsUrl(agentKey)
+    const handle = openMoeBrainPipelineWs(url, (next) => setPipeline(next))
     return () => handle.close()
   }, [runActive, agentKey, client])
 
@@ -145,7 +153,7 @@ export function MoeBotFlowPage() {
       try {
         const res = await client.putMoeBotFlow(agentKey, payload)
         if (res.success && res.data) {
-          setFlow(res.data)
+          setFlow(normalizeBotFlowData(res.data))
         } else {
           setError(res.message || '保存失败')
         }
@@ -172,7 +180,7 @@ export function MoeBotFlowPage() {
         return
       }
       if (res.data?.accepted) {
-        await waitMoeBrainPipelineSse(client.brainPipelineStreamUrl(agentKey))
+        await waitMoeBrainPipelineWs(client.brainPipelineWsUrl(agentKey))
       }
       setPollTick((n) => n + 1)
     } catch (e) {
@@ -188,7 +196,7 @@ export function MoeBotFlowPage() {
     try {
       const res = await client.deleteMoeBotFlow(agentKey)
       if (res.success && res.data) {
-        setFlow(res.data)
+        setFlow(normalizeBotFlowData(res.data))
       } else {
         setError(res.message || '重置失败')
       }
@@ -295,7 +303,7 @@ export function MoeBotFlowPage() {
       <section className="panel bot-flow-panel">
         {loading && !flow?.nodes?.length ? (
           <p className="muted">加载画布…</p>
-        ) : flow && flow.nodes.length > 0 ? (
+        ) : flow && (flow.nodes?.length ?? 0) > 0 ? (
           <BotFlowCanvas
             agentLabel={agentLabel}
             flow={flow}

@@ -695,9 +695,18 @@ export function createAdminClient(opts: AdminClientOptions) {
             id: string
             post_id: string
             reporter_user_id: string
+            reporter_user_name?: string
+            reporter_user_avatar?: string
+            post_author_id?: string
+            post_author_name?: string
+            post_author_avatar?: string
             reason: string
             created_at: string
             post_content_preview: string
+            post_content?: string
+            post_images?: string[]
+            hand_draw_thumb_url?: string
+            has_hand_draw?: boolean
           }>
           total: number
         }>
@@ -1002,7 +1011,12 @@ export function createAdminClient(opts: AdminClientOptions) {
       api<BaseResp<unknown>>(adminApiPath(`/announcements/${id}`), { method: 'DELETE' }),
 
     publishAnnouncement: (id: string) =>
-      api<BaseResp<Record<string, unknown>>>(
+      api<
+        BaseResp<{
+          notifications_created?: number
+          ws_sent?: number
+        }>
+      >(
         adminApiPath(`/announcements/${id}/publish`),
         { method: 'POST' },
       ),
@@ -1532,6 +1546,51 @@ export function createAdminClient(opts: AdminClientOptions) {
       )
     },
 
+    brainPipelineWsUrl: (agentKey: string) => {
+      const q = new URLSearchParams({
+        agent_key: agentKey.trim(),
+        admin_token: opts.token,
+      })
+      const path = `/ws/admin/moe/brain/pipeline?${q}`
+      if (typeof window !== 'undefined' && (window.location.port === '5173' || window.location.port === '4173')) {
+        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        return `${proto}//${window.location.host}${path}`
+      }
+      const httpUrl = resolveAdminRequestUrl(path, opts)
+      const u = new URL(httpUrl)
+      u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
+      return u.toString()
+    },
+
+    getMoeBrainGraph: (agentKey: string, limit = 80) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          nodes: Array<{
+            id: string
+            kind: string
+            label: string
+            summary: string
+            weight: number
+            ref_id: string
+          }>
+          edges: Array<{
+            id: string
+            source: string
+            target: string
+            relation: string
+            weight: number
+          }>
+          episode_count: number
+          memory_count: number
+          tag_count: number
+        }>
+      >(
+        adminApiPath(
+          `/moe/runtimes/${encodeURIComponent(agentKey)}/brain/graph?limit=${limit}`,
+        ),
+      ),
+
     getMoeBotFlow: (agentKey: string) =>
       api<BaseResp<MoeBotFlowData>>(
         adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/flow`),
@@ -1665,6 +1724,194 @@ export function createAdminClient(opts: AdminClientOptions) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body ?? {}),
+      }),
+
+    getMoeBrainRpg: (agentKey: string) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          level: number
+          xp: number
+          xp_to_next: number
+          stability_score: number
+          skills: Array<{
+            tag: string
+            label: string
+            level: number
+            locked: boolean
+            usage_count: number
+          }>
+          fragments: Array<{
+            id: number
+            kind: string
+            title: string
+            status: string
+            quality_score: number
+            approved: boolean
+            created_at: string
+            memory_key: string
+          }>
+          recent_dreams: Array<{
+            id: number
+            ran_at: string
+            summary: string
+            refined: number
+            merged: number
+            archived: number
+            xp_gained: number
+          }>
+          stats: {
+            total_fragments: number
+            solid_memories: number
+            pending_tidy: number
+            locked_skills: number
+            graph_nodes: number
+          }
+          last_dream_at: string
+          dream_enabled: boolean
+          dream_cron: string
+          next_dream_at: string
+          autonomous_mind_enabled: boolean
+          pending_delete_count: number
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg`)),
+
+    runMoeBrainDream: (agentKey: string, body?: { skip_curate?: boolean }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          summary: string
+          refined: number
+          merged: number
+          archived: number
+          xp_gained: number
+          level: number
+          xp: number
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/dream`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+      }),
+
+    compressMoeBrainMemories: (agentKey: string, body?: { days?: number }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          memory_key: string
+          summary: string
+          source_count: number
+          xp_gained: number
+          swept_count: number
+          merged_clusters: number
+          marked_count: number
+          pending_remaining: number
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/compress`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+      }),
+
+    tidyMoeBrainFragments: (agentKey: string, body?: { max_episodes?: number }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          total: number
+          approved: number
+          xp_gained: number
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/tidy`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body ?? {}),
+      }),
+
+    lockMoeBrainSkill: (agentKey: string, body: { tag: string; lock: boolean }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          locked_skills: string[]
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/skills`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    forgetMoeBrainMemory: (agentKey: string, body: { memory_key: string }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          memory_key: string
+          deleted: boolean
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/forget`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    getMoeBrainPresence: (agentKey: string) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          display_name: string
+          activity: string
+          mood: string
+          thought: string
+          pipeline_step: string
+          pipeline_running: boolean
+          dream_enabled: boolean
+          dream_cron: string
+          next_dream_at: string
+          dreaming: boolean
+          autonomous_mind_enabled: boolean
+          thought_source: string
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/presence`)),
+
+    updateMoeBrainAutonomousMind: (agentKey: string, body: { autonomous_mind_enabled: boolean }) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          autonomous_mind_enabled: boolean
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/autonomous-mind`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
+    generateMoeBrainThought: (agentKey: string) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          thought: string
+          thought_source: string
+          generated_at: string
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/think`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }),
+
+    updateMoeBrainDreamSchedule: (
+      agentKey: string,
+      body: { dream_enabled: boolean; dream_cron?: string },
+    ) =>
+      api<
+        BaseResp<{
+          agent_key: string
+          dream_enabled: boolean
+          dream_cron: string
+          next_dream_at: string
+        }>
+      >(adminApiPath(`/moe/runtimes/${encodeURIComponent(agentKey)}/brain/rpg/dream-schedule`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       }),
 
     listAiChatSessions: (params: {

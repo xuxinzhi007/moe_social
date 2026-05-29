@@ -22,6 +22,7 @@ const _ = http.SupportPackageIsVersion1
 const OperationPostServiceCreatePost = "/post.v1.PostService/CreatePost"
 const OperationPostServiceDeletePost = "/post.v1.PostService/DeletePost"
 const OperationPostServiceGetPost = "/post.v1.PostService/GetPost"
+const OperationPostServiceGetPostHandDraw = "/post.v1.PostService/GetPostHandDraw"
 const OperationPostServiceGetPosts = "/post.v1.PostService/GetPosts"
 const OperationPostServiceLikePost = "/post.v1.PostService/LikePost"
 const OperationPostServiceMoeSearchPosts = "/post.v1.PostService/MoeSearchPosts"
@@ -32,6 +33,7 @@ type PostServiceHTTPServer interface {
 	CreatePost(context.Context, *CreatePostRequest) (*CreatePostReply, error)
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostReply, error)
 	GetPost(context.Context, *GetPostRequest) (*GetPostReply, error)
+	GetPostHandDraw(context.Context, *GetPostHandDrawRequest) (*GetPostHandDrawReply, error)
 	GetPosts(context.Context, *GetPostsRequest) (*GetPostsReply, error)
 	LikePost(context.Context, *LikePostRequest) (*LikePostReply, error)
 	MoeSearchPosts(context.Context, *MoeSearchPostsRequest) (*MoeSearchPostsReply, error)
@@ -42,6 +44,7 @@ type PostServiceHTTPServer interface {
 func RegisterPostServiceHTTPServer(s *http.Server, srv PostServiceHTTPServer) {
 	r := s.Route("/")
 	r.GET("/api/posts/{post_id}", _PostService_GetPost0_HTTP_Handler(srv))
+	r.GET("/api/posts/{post_id}/hand-draw", _PostService_GetPostHandDraw0_HTTP_Handler(srv))
 	r.GET("/api/posts", _PostService_GetPosts0_HTTP_Handler(srv))
 	r.GET("/api/posts/search", _PostService_MoeSearchPosts0_HTTP_Handler(srv))
 	r.POST("/api/posts", _PostService_CreatePost0_HTTP_Handler(srv))
@@ -69,6 +72,28 @@ func _PostService_GetPost0_HTTP_Handler(srv PostServiceHTTPServer) func(ctx http
 			return err
 		}
 		reply := out.(*GetPostReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _PostService_GetPostHandDraw0_HTTP_Handler(srv PostServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetPostHandDrawRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPostServiceGetPostHandDraw)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetPostHandDraw(ctx, req.(*GetPostHandDrawRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetPostHandDrawReply)
 		return ctx.Result(200, reply)
 	}
 }
@@ -234,6 +259,7 @@ type PostServiceHTTPClient interface {
 	CreatePost(ctx context.Context, req *CreatePostRequest, opts ...http.CallOption) (rsp *CreatePostReply, err error)
 	DeletePost(ctx context.Context, req *DeletePostRequest, opts ...http.CallOption) (rsp *DeletePostReply, err error)
 	GetPost(ctx context.Context, req *GetPostRequest, opts ...http.CallOption) (rsp *GetPostReply, err error)
+	GetPostHandDraw(ctx context.Context, req *GetPostHandDrawRequest, opts ...http.CallOption) (rsp *GetPostHandDrawReply, err error)
 	GetPosts(ctx context.Context, req *GetPostsRequest, opts ...http.CallOption) (rsp *GetPostsReply, err error)
 	LikePost(ctx context.Context, req *LikePostRequest, opts ...http.CallOption) (rsp *LikePostReply, err error)
 	MoeSearchPosts(ctx context.Context, req *MoeSearchPostsRequest, opts ...http.CallOption) (rsp *MoeSearchPostsReply, err error)
@@ -280,6 +306,19 @@ func (c *PostServiceHTTPClientImpl) GetPost(ctx context.Context, in *GetPostRequ
 	pattern := "/api/posts/{post_id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationPostServiceGetPost))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PostServiceHTTPClientImpl) GetPostHandDraw(ctx context.Context, in *GetPostHandDrawRequest, opts ...http.CallOption) (*GetPostHandDrawReply, error) {
+	var out GetPostHandDrawReply
+	pattern := "/api/posts/{post_id}/hand-draw"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationPostServiceGetPostHandDraw))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

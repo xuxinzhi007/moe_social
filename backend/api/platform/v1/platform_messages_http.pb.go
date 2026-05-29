@@ -19,9 +19,11 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationPlatformGetAnnouncement = "/platform.v1.Platform/GetAnnouncement"
 const OperationPlatformGetLlmConfig = "/platform.v1.Platform/GetLlmConfig"
 const OperationPlatformGetPublicClientConfig = "/platform.v1.Platform/GetPublicClientConfig"
 const OperationPlatformGetVoiceToken = "/platform.v1.Platform/GetVoiceToken"
+const OperationPlatformListAnnouncements = "/platform.v1.Platform/ListAnnouncements"
 const OperationPlatformListUserContent = "/platform.v1.Platform/ListUserContent"
 const OperationPlatformLlmChat = "/platform.v1.Platform/LlmChat"
 const OperationPlatformLlmChatRaw = "/platform.v1.Platform/LlmChatRaw"
@@ -38,9 +40,11 @@ const OperationPlatformVoiceCancel = "/platform.v1.Platform/VoiceCancel"
 const OperationPlatformVoiceReject = "/platform.v1.Platform/VoiceReject"
 
 type PlatformHTTPServer interface {
+	GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error)
 	GetLlmConfig(context.Context, *GetLlmConfigReq) (*GetLlmConfigResp, error)
 	GetPublicClientConfig(context.Context, *GetPublicClientConfigReq) (*GetPublicClientConfigResp, error)
 	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
+	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
 	LlmChatRaw(context.Context, *LlmRawProxyReq) (*LlmRawProxyResp, error)
@@ -76,6 +80,8 @@ func RegisterPlatformHTTPServer(s *http.Server, srv PlatformHTTPServer) {
 	r.POST("/api/llm/chat", _Platform_LlmChat0_HTTP_Handler(srv))
 	r.POST("/api/llm/models/delete", _Platform_LlmDeleteModel0_HTTP_Handler(srv))
 	r.POST("/api/llm/models/download", _Platform_LlmDownloadModel0_HTTP_Handler(srv))
+	r.GET("/api/announcements", _Platform_ListAnnouncements0_HTTP_Handler(srv))
+	r.GET("/api/announcements/{announcement_id}", _Platform_GetAnnouncement0_HTTP_Handler(srv))
 }
 
 func _Platform_GetPublicClientConfig0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
@@ -437,10 +443,53 @@ func _Platform_LlmDownloadModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx h
 	}
 }
 
+func _Platform_ListAnnouncements0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListAnnouncementsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformListAnnouncements)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListAnnouncements(ctx, req.(*ListAnnouncementsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListAnnouncementsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Platform_GetAnnouncement0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetAnnouncementReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformGetAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetAnnouncement(ctx, req.(*GetAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type PlatformHTTPClient interface {
+	GetAnnouncement(ctx context.Context, req *GetAnnouncementReq, opts ...http.CallOption) (rsp *GetAnnouncementResp, err error)
 	GetLlmConfig(ctx context.Context, req *GetLlmConfigReq, opts ...http.CallOption) (rsp *GetLlmConfigResp, err error)
 	GetPublicClientConfig(ctx context.Context, req *GetPublicClientConfigReq, opts ...http.CallOption) (rsp *GetPublicClientConfigResp, err error)
 	GetVoiceToken(ctx context.Context, req *GetVoiceTokenReq, opts ...http.CallOption) (rsp *GetVoiceTokenResp, err error)
+	ListAnnouncements(ctx context.Context, req *ListAnnouncementsReq, opts ...http.CallOption) (rsp *ListAnnouncementsResp, err error)
 	ListUserContent(ctx context.Context, req *ListUserContentReq, opts ...http.CallOption) (rsp *ListUserContentResp, err error)
 	LlmChat(ctx context.Context, req *LlmChatReq, opts ...http.CallOption) (rsp *LlmChatResp, err error)
 	LlmChatRaw(ctx context.Context, req *LlmRawProxyReq, opts ...http.CallOption) (rsp *LlmRawProxyResp, err error)
@@ -463,6 +512,19 @@ type PlatformHTTPClientImpl struct {
 
 func NewPlatformHTTPClient(client *http.Client) PlatformHTTPClient {
 	return &PlatformHTTPClientImpl{client}
+}
+
+func (c *PlatformHTTPClientImpl) GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...http.CallOption) (*GetAnnouncementResp, error) {
+	var out GetAnnouncementResp
+	pattern := "/api/announcements/{announcement_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationPlatformGetAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *PlatformHTTPClientImpl) GetLlmConfig(ctx context.Context, in *GetLlmConfigReq, opts ...http.CallOption) (*GetLlmConfigResp, error) {
@@ -496,6 +558,19 @@ func (c *PlatformHTTPClientImpl) GetVoiceToken(ctx context.Context, in *GetVoice
 	pattern := "/api/voice/token"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationPlatformGetVoiceToken))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PlatformHTTPClientImpl) ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...http.CallOption) (*ListAnnouncementsResp, error) {
+	var out ListAnnouncementsResp
+	pattern := "/api/announcements"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationPlatformListAnnouncements))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

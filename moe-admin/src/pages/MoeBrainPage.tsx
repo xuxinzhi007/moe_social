@@ -3,49 +3,20 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AdminIcon } from '../components/AdminIcon'
 import { AdminTag } from '../components/AdminTag'
 import { BrainPipelinePanel } from '../components/BrainPipelinePanel'
+import { BrainKnowledgeGraph } from '../components/BrainKnowledgeGraph'
+import { BrainRpgPanel } from '../components/BrainRpgPanel'
 import { MonitorPageLayout } from '../ui'
 import { InferenceStatusBar } from '../components/InferenceStatusBar'
 import { MemoryInfluencePanel } from '../components/MemoryInfluencePanel'
-import type { MoeBrainGenerationMeta } from '../api/adminClient'
 import { FormField } from '../components/FormField'
 import { PageMessage } from '../components/PageMessage'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { DeployApiError } from '../api/deployClient'
-import { waitMoeBrainPipelineSse } from '../lib/moePipelineSse'
-
-type BrainData = {
-  agent_key: string
-  display_name: string
-  bot_user_id: string
-  forbidden_tags: string[]
-  preferred_tags: string[]
-  tag_stats: Array<{ tag: string; count: number }>
-  episodes: Array<{
-    id: number
-    post_id: string
-    content: string
-    tags: string[]
-    mood_tag: string
-    style_score: number
-    quality_score: number
-    approved: boolean
-    revision_count: number
-    memory_key: string
-    source: string
-    created_at: string
-  }>
-  memories: Array<{
-    key: string
-    value: string
-    memory_type: string
-    updated_at: string
-  }>
-  generation_meta?: MoeBrainGenerationMeta
-  stability_score?: number
-  stability_delta?: number
-  avg_episode_quality?: number
-}
+import { waitMoeBrainPipelineWs } from '../lib/moePipelineWs'
+import { normalizeBrainData, type BrainData } from '../lib/brainData'
+import { normalizeBrainGraphData, type BrainGraphData, type BrainGraphNode } from '../lib/brainGraphData'
+import { asArray } from '../lib/apiRecord'
 
 const DEFAULT_FORBIDDEN = `risk:诗意腔
 tone:官方
@@ -55,6 +26,8 @@ const DEFAULT_PREFERRED = `tone:口语
 type:提问
 topic:日常
 topic:手绘`
+
+type BrainTab = 'workbench' | 'graph' | 'rpg'
 
 export function MoeBrainPage() {
   const { agentKey: paramKey } = useParams<{ agentKey: string }>()
@@ -77,6 +50,10 @@ export function MoeBrainPage() {
   const [messageTone, setMessageTone] = useState<'ok' | 'warn' | 'err'>('ok')
   const [opsRefresh, setOpsRefresh] = useState(0)
   const [runningOnce, setRunningOnce] = useState(false)
+  const [pageTab, setPageTab] = useState<BrainTab>('workbench')
+  const [graph, setGraph] = useState<BrainGraphData | null>(null)
+  const [graphLoading, setGraphLoading] = useState(false)
+  const [selectedGraphNode, setSelectedGraphNode] = useState<BrainGraphNode | null>(null)
 
   function bumpOpsRefresh() {
     setOpsRefresh((n) => n + 1)
@@ -85,9 +62,9 @@ export function MoeBrainPage() {
   const loadAgents = useCallback(async () => {
     try {
       const res = await client.listMoeRuntimes()
-      if (res.success && res.data?.items) {
+      if (res.success && res.data) {
         setAgents(
-          res.data.items.map((item) => ({
+          asArray<{ agent_key: string; display_name?: string }>(res.data.items).map((item) => ({
             agent_key: item.agent_key,
             display_name: item.display_name || item.agent_key,
           })),
@@ -109,13 +86,31 @@ export function MoeBrainPage() {
         setBrain(null)
         return
       }
-      setBrain(res.data as BrainData)
-      setForbiddenText((res.data.forbidden_tags || []).join('\n') || DEFAULT_FORBIDDEN)
-      setPreferredText((res.data.preferred_tags || []).join('\n') || DEFAULT_PREFERRED)
+      const normalized = normalizeBrainData(res.data)
+      setBrain(normalized)
+      setForbiddenText(normalized.forbidden_tags.join('\n') || DEFAULT_FORBIDDEN)
+      setPreferredText(normalized.preferred_tags.join('\n') || DEFAULT_PREFERRED)
     } catch (e) {
       setError(e instanceof DeployApiError ? e.message : '加载失败')
     } finally {
       setLoading(false)
+    }
+  }, [agentKey, client])
+
+  const loadGraph = useCallback(async () => {
+    if (!agentKey) return
+    setGraphLoading(true)
+    try {
+      const res = await client.getMoeBrainGraph(agentKey, 80)
+      if (res.success && res.data) {
+        setGraph(normalizeBrainGraphData(res.data))
+      } else {
+        setGraph(null)
+      }
+    } catch {
+      setGraph(null)
+    } finally {
+      setGraphLoading(false)
     }
   }, [agentKey, client])
 
@@ -126,6 +121,10 @@ export function MoeBrainPage() {
   useEffect(() => {
     void loadBrain()
   }, [loadBrain])
+
+  useEffect(() => {
+    if (pageTab === 'graph') void loadGraph()
+  }, [pageTab, loadGraph])
 
   function onSelectAgent(key: string) {
     setSearchParams({ agent: key })
@@ -151,7 +150,7 @@ export function MoeBrainPage() {
         setError(res.message || '保存失败')
         return
       }
-      setBrain(res.data as BrainData)
+      setBrain(normalizeBrainData(res.data))
       setMessage('标签策略已保存')
       showToast('AI 大脑策略已更新')
     } catch (e) {
@@ -171,6 +170,7 @@ export function MoeBrainPage() {
       }
       showToast('已删除')
       await loadBrain()
+      await loadGraph()
     } catch (e) {
       showToast(e instanceof DeployApiError ? e.message : '删除失败')
     }
@@ -193,6 +193,7 @@ export function MoeBrainPage() {
       )
       setMessage(detail.detail)
       await loadBrain()
+      await loadGraph()
     } catch (e) {
       showToast(e instanceof DeployApiError ? e.message : '润色失败')
     } finally {
@@ -208,6 +209,7 @@ export function MoeBrainPage() {
     }
     setRunningOnce(true)
     setMessage('')
+    let pipelineFinal: Awaited<ReturnType<typeof waitMoeBrainPipelineWs>> = null
     try {
       const res = await client.runMoeAgentOnce(key, { async: true })
       if (!res.success) {
@@ -219,15 +221,22 @@ export function MoeBrainPage() {
         return
       }
       if (res.data?.accepted) {
-        const final = await waitMoeBrainPipelineSse(client.brainPipelineStreamUrl(key))
+        pipelineFinal = await waitMoeBrainPipelineWs(client.brainPipelineWsUrl(key))
         bumpOpsRefresh()
         await loadBrain()
-        if (final) {
-          const ok = Boolean(final.ok)
-          const detail = final.detail?.trim() || (ok ? '试跑完成' : '试跑未成功')
-          showToast(detail)
-          setMessage(detail)
-          setMessageTone(ok ? 'ok' : 'warn')
+        await loadGraph()
+        if (pipelineFinal) {
+          if (pipelineFinal.running) {
+            showToast('试跑仍在进行，请查看流水线进度')
+            setMessage('试跑进行中…')
+            setMessageTone('warn')
+          } else {
+            const ok = Boolean(pipelineFinal.ok)
+            const detail = pipelineFinal.detail?.trim() || (ok ? '试跑完成' : '试跑未成功')
+            showToast(detail)
+            setMessage(detail)
+            setMessageTone(ok ? 'ok' : 'warn')
+          }
         }
         return
       }
@@ -238,10 +247,13 @@ export function MoeBrainPage() {
       setMessageTone(ok ? 'ok' : 'warn')
       bumpOpsRefresh()
       await loadBrain()
+      await loadGraph()
     } catch (e) {
       showToast(e instanceof DeployApiError ? e.message : '试跑失败')
     } finally {
-      setRunningOnce(false)
+      if (!pipelineFinal?.running) {
+        setRunningOnce(false)
+      }
     }
   }
 
@@ -266,6 +278,7 @@ export function MoeBrainPage() {
       setMessage(`共处理 ${detail.total} 条，${detail.approved} 条达认可标准`)
       bumpOpsRefresh()
       await loadBrain()
+      await loadGraph()
     } catch (e) {
       showToast(e instanceof DeployApiError ? e.message : '整理失败')
     } finally {
@@ -280,18 +293,21 @@ export function MoeBrainPage() {
   }
 
   const activeKey = brain?.agent_key || agentKey
-  const riskTags = (brain?.tag_stats || []).filter((tag) => tag.tag.startsWith('risk:'))
+  const episodes = brain?.episodes ?? []
+  const tagStats = brain?.tag_stats ?? []
+  const memories = brain?.memories ?? []
+  const riskTags = tagStats.filter((tag) => tag.tag.startsWith('risk:'))
   const avgEpisodeQuality =
     brain?.avg_episode_quality ??
-    (brain?.episodes.length
+    (episodes.length > 0
       ? Math.round(
-          brain.episodes.reduce((sum, episode) => sum + (episode.quality_score || 0), 0) /
-            brain.episodes.length,
+          episodes.reduce((sum, episode) => sum + (episode.quality_score || 0), 0) /
+            episodes.length,
         )
       : 0)
   const stabilityScore = brain?.stability_score ?? 70
   const stabilityDelta = brain?.stability_delta ?? 0
-  const approvedCount = (brain?.episodes || []).filter((episode) => episode.approved).length
+  const approvedCount = episodes.filter((episode) => episode.approved).length
 
   return (
     <MonitorPageLayout
@@ -326,6 +342,7 @@ export function MoeBrainPage() {
             onClick={() => {
               bumpOpsRefresh()
               void loadBrain()
+              void loadGraph()
             }}
           >
             {loading ? '刷新中…' : '刷新'}
@@ -370,7 +387,7 @@ export function MoeBrainPage() {
             </div>
             <div className="summary-card">
               <span className="summary-label">自传记录</span>
-              <strong className="summary-value">{brain?.episodes.length || 0}</strong>
+              <strong className="summary-value">{episodes.length}</strong>
               <span className="summary-note">已累计生成</span>
             </div>
             <div className="summary-card">
@@ -415,6 +432,65 @@ export function MoeBrainPage() {
       {loading ? <p className="muted">加载中…</p> : null}
 
       {brain && !loading ? (
+        <>
+          <div className="brain-page-tabs" role="tablist" aria-label="大脑视图">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pageTab === 'workbench'}
+              className={`brain-page-tab ${pageTab === 'workbench' ? 'brain-page-tab--active' : ''}`}
+              onClick={() => setPageTab('workbench')}
+            >
+              工作台
+              <span className="brain-page-tab-hint">策略 · 自传列表 · 标签 · 评分</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pageTab === 'graph'}
+              className={`brain-page-tab ${pageTab === 'graph' ? 'brain-page-tab--active' : ''}`}
+              onClick={() => setPageTab('graph')}
+            >
+              知识图谱
+              <span className="brain-page-tab-hint">关联网络 · 可交互探索</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={pageTab === 'rpg'}
+              className={`brain-page-tab ${pageTab === 'rpg' ? 'brain-page-tab--active' : ''}`}
+              onClick={() => setPageTab('rpg')}
+            >
+              记忆 RPG
+              <span className="brain-page-tab-hint">入梦 · 压缩 · 技能 · 碎片</span>
+            </button>
+          </div>
+
+          {pageTab === 'rpg' ? (
+            <BrainRpgPanel
+              agentKey={activeKey}
+              client={client}
+              refreshKey={opsRefresh}
+              onRefreshBrain={() => {
+                void loadBrain()
+                void loadGraph()
+              }}
+              showToast={showToast}
+            />
+          ) : pageTab === 'graph' ? (
+            <BrainKnowledgeGraph
+              graph={graph}
+              episodes={episodes}
+              loading={graphLoading}
+              selectedId={selectedGraphNode?.id ?? null}
+              onSelect={setSelectedGraphNode}
+              onRefresh={() => void loadGraph()}
+              onOpenWorkbench={() => {
+                setPageTab('workbench')
+                setSelectedGraphNode(null)
+              }}
+            />
+          ) : (
         <section className="brain-workbench">
           <div className="brain-main-stack">
             <div className="panel content-panel-table">
@@ -469,14 +545,14 @@ export function MoeBrainPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {brain.episodes.length === 0 ? (
+                    {episodes.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="muted table-empty">
                           暂无，请试跑发帖
                         </td>
                       </tr>
                     ) : (
-                      brain.episodes.map((episode) => (
+                      episodes.map((episode) => (
                         <tr key={episode.id}>
                           <td className="muted" style={{ whiteSpace: 'nowrap' }}>
                             {episode.created_at}
@@ -540,11 +616,11 @@ export function MoeBrainPage() {
                   <span>看近期生成结果的标签分布与风险命中。</span>
                 </div>
               </div>
-              {brain.tag_stats.length === 0 ? (
+              {tagStats.length === 0 ? (
                 <p className="muted">暂无标签，试跑发帖后会自动生成</p>
               ) : (
                 <div className="brain-tag-cluster">
-                  {brain.tag_stats.map((tag) => (
+                  {tagStats.map((tag) => (
                     <AdminTag
                       key={tag.tag}
                       spec={{
@@ -589,14 +665,14 @@ export function MoeBrainPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {brain.memories.length === 0 ? (
+                    {memories.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="muted table-empty">
                           暂无 Bot 自传记忆
                         </td>
                       </tr>
                     ) : (
-                      brain.memories.map((memory) => (
+                      memories.map((memory) => (
                         <tr key={memory.key}>
                           <td className="muted">{memory.key}</td>
                           <td style={{ maxWidth: 400 }}>{memory.value}</td>
@@ -610,6 +686,8 @@ export function MoeBrainPage() {
             </div>
           </div>
         </section>
+          )}
+        </>
       ) : null}
     </MonitorPageLayout>
   )

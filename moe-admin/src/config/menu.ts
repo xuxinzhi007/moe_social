@@ -245,6 +245,13 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
     children: [
       {
         kind: 'item',
+        to: '/system/media-gallery',
+        label: '云图库',
+        status: 'ready',
+        appDomain: 'media',
+      },
+      {
+        kind: 'item',
         to: '/system/platform',
         label: '平台治理',
         status: 'ready',

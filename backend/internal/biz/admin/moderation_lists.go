@@ -2,6 +2,7 @@ package adminbiz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -119,7 +120,10 @@ func ListPosts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostsReq) 
 
 	var rows []model.Post
 	offset := int((page - 1) * pageSize)
-	if err := q.Preload("TopicTags").Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
+	if err := q.
+		Select(`id, user_id, content, images, hand_draw_thumb_url, moderation_status, mood_tag, likes, comments, created_at, updated_at, deleted_at, (CASE WHEN hand_draw_card IS NOT NULL AND hand_draw_card <> '' THEN 1 ELSE 0 END) AS has_hand_draw`).
+		Preload("TopicTags").
+		Order("id DESC").Offset(offset).Limit(int(pageSize)).Find(&rows).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrListPosts, err)
 	}
 
@@ -138,7 +142,7 @@ func ListPosts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostsReq) 
 
 	posts := make([]*adminv1.Post, len(rows))
 	for i, post := range rows {
-		posts[i] = postModelToAdminV1(post, userMap[post.UserID], false)
+		posts[i] = postModelToAdminV1ForList(post, userMap[post.UserID], false)
 	}
 	return &adminv1.AdminListPostsResp{Posts: posts, Total: int32(total)}, nil
 }
@@ -353,28 +357,55 @@ func ListPostReports(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPost
 		return nil, fmt.Errorf("%w: %v", ErrListPostReports, err)
 	}
 
-	postPreview := map[uint]string{}
+	postMap := map[uint]model.Post{}
+	userMap := map[uint]model.User{}
 	if len(rows) > 0 {
 		postIDs := make([]uint, 0, len(rows))
+		userIDs := make([]uint, 0, len(rows)*2)
 		for _, r := range rows {
 			postIDs = append(postIDs, r.PostID)
+			userIDs = append(userIDs, r.ReporterUserID)
 		}
 		var posts []model.Post
-		_ = db.WithContext(ctx).Unscoped().Select("id", "content").Where("id IN ?", postIDs).Find(&posts).Error
+		_ = db.WithContext(ctx).Unscoped().
+			Select(`id, user_id, content, images, hand_draw_thumb_url, (CASE WHEN hand_draw_card IS NOT NULL AND hand_draw_card <> '' THEN 1 ELSE 0 END) AS has_hand_draw`).
+			Where("id IN ?", postIDs).Find(&posts).Error
 		for _, p := range posts {
-			postPreview[p.ID] = previewContent(p.Content)
+			postMap[p.ID] = p
+			userIDs = append(userIDs, p.UserID)
+		}
+		var users []model.User
+		_ = db.WithContext(ctx).Where("id IN ?", userIDs).Find(&users).Error
+		for _, u := range users {
+			userMap[u.ID] = u
 		}
 	}
 
 	reports := make([]*adminv1.AdminPostReportItem, len(rows))
 	for i, r := range rows {
+		post := postMap[r.PostID]
+		reporter := userMap[r.ReporterUserID]
+		author := userMap[post.UserID]
+		var images []string
+		if post.Images != "" {
+			_ = json.Unmarshal([]byte(post.Images), &images)
+		}
 		reports[i] = &adminv1.AdminPostReportItem{
 			Id:                 strconv.FormatUint(uint64(r.ID), 10),
 			PostId:             strconv.FormatUint(uint64(r.PostID), 10),
 			ReporterUserId:     strconv.FormatUint(uint64(r.ReporterUserID), 10),
 			Reason:             r.Reason,
 			CreatedAt:          r.CreatedAt.Format("2006-01-02 15:04:05"),
-			PostContentPreview: postPreview[r.PostID],
+			PostContentPreview: previewContent(post.Content),
+			PostContent:        post.Content,
+			ReporterUserName:   adminUserLabel(reporter),
+			ReporterUserAvatar: adminUserAvatar(reporter),
+			PostAuthorId:       strconv.FormatUint(uint64(post.UserID), 10),
+			PostAuthorName:     adminUserLabel(author),
+			PostAuthorAvatar:   adminUserAvatar(author),
+			PostImages:         images,
+			HandDrawThumbUrl:   post.HandDrawThumbURL,
+			HasHandDraw:        post.HasHandDraw || post.HandDrawThumbURL != "" || post.HandDrawCard != "",
 		}
 	}
 	return &adminv1.AdminListPostReportsResp{Reports: reports, Total: int32(total)}, nil

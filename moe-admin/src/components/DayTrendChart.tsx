@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { asArray } from '../lib/apiRecord'
 
 type DayPoint = { date: string; count: number }
 
@@ -23,7 +24,7 @@ export function DayTrendChart({
   color = '#7f7fd5',
   height = 220,
 }: Props) {
-  const chartData = data.map((d) => ({
+  const chartData = asArray<DayPoint>(data).map((d) => ({
     ...d,
     label: d.date.slice(5),
   }))

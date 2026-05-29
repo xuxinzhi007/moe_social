@@ -90,7 +90,13 @@ export function UsersPage() {
           counts: res.data.counts as Record<string, number>,
           level: res.data.level,
           links: res.data.links || [],
-          behavior: res.data.behavior,
+          behavior: res.data.behavior
+            ? {
+                ...res.data.behavior,
+                tags: res.data.behavior.tags || [],
+                top_screens: res.data.behavior.top_screens || [],
+              }
+            : undefined,
         })
       }
     } catch {

@@ -33,6 +33,14 @@ func (s *Server) GetPost(ctx context.Context, in *postv1.GetPostRequest) (*postv
 	return app.GetPost(ctx, in)
 }
 
+func (s *Server) GetPostHandDraw(ctx context.Context, in *postv1.GetPostHandDrawRequest) (*postv1.GetPostHandDrawReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetPostHandDraw(ctx, in)
+}
+
 func (s *Server) GetPosts(ctx context.Context, in *postv1.GetPostsRequest) (*postv1.GetPostsReply, error) {
 	app, err := s.requireApp()
 	if err != nil {

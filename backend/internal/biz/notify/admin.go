@@ -2,6 +2,7 @@ package notifybiz
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,46 @@ func Broadcast(ctx context.Context, st NotifyStore, title, content string) (int3
 	}
 	return created, nil
 }
+
+// BroadcastAnnouncement 发布公告后向全部用户写入公告通知并返回创建条数。
+func BroadcastAnnouncement(ctx context.Context, st NotifyStore, announcementID uint64, title, content string) (int32, error) {
+	if st == nil {
+		return 0, gorm.ErrInvalidDB
+	}
+	body := SystemNotificationContent(title, content)
+	if body == "" {
+		return 0, ErrEmptyContent
+	}
+	if announcementID == 0 {
+		return 0, ErrInvalidAnnouncementID
+	}
+
+	st = st.WithContext(ctx)
+	userIDs, err := st.ListAllUserIDs(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	created := int32(0)
+	annID := uint(announcementID)
+	for _, uid := range userIDs {
+		n := model.Notification{
+			UserID:   uid,
+			SenderID: 0,
+			Type:     AnnouncementNotificationType,
+			PostID:   annID,
+			Content:  body,
+			IsRead:   false,
+		}
+		if err := st.CreateNotification(ctx, &n, false); err != nil {
+			continue
+		}
+		created++
+	}
+	return created, nil
+}
+
+var ErrInvalidAnnouncementID = errors.New("invalid announcement id")
 
 // SendToUser 向指定用户发送系统通知。
 func SendToUser(ctx context.Context, st NotifyStore, userIDRaw, title, content string) (uint, error) {

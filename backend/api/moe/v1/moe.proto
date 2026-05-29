@@ -156,6 +156,217 @@ message GetBrainSnapshotReply {
   int32 avg_episode_quality = 12;
 }
 
+message BrainGraphNode {
+  string id = 1;
+  string kind = 2;
+  string label = 3;
+  string summary = 4;
+  int32 weight = 5;
+  string ref_id = 6;
+}
+
+message BrainGraphEdge {
+  string id = 1;
+  string source = 2;
+  string target = 3;
+  string relation = 4;
+  double weight = 5;
+}
+
+message GetBrainGraphRequest {
+  string agent_key = 1;
+  int32 limit = 2;
+}
+
+message GetBrainGraphReply {
+  string agent_key = 1;
+  repeated BrainGraphNode nodes = 2;
+  repeated BrainGraphEdge edges = 3;
+  int32 episode_count = 4;
+  int32 memory_count = 5;
+  int32 tag_count = 6;
+}
+
+message BrainRpgSkill {
+  string tag = 1;
+  string label = 2;
+  int32 level = 3;
+  bool locked = 4;
+  int32 usage_count = 5;
+}
+
+message BrainRpgFragment {
+  uint64 id = 1;
+  string kind = 2;
+  string title = 3;
+  string status = 4;
+  int32 quality_score = 5;
+  bool approved = 6;
+  string created_at = 7;
+  string memory_key = 8;
+}
+
+message BrainRpgDreamLog {
+  uint64 id = 1;
+  string ran_at = 2;
+  string summary = 3;
+  int32 refined = 4;
+  int32 merged = 5;
+  int32 archived = 6;
+  int32 xp_gained = 7;
+}
+
+message BrainRpgStats {
+  int32 total_fragments = 1;
+  int32 solid_memories = 2;
+  int32 pending_tidy = 3;
+  int32 locked_skills = 4;
+  int32 graph_nodes = 5;
+}
+
+message GetBrainRpgRequest {
+  string agent_key = 1;
+}
+
+message GetBrainRpgReply {
+  string agent_key = 1;
+  int32 level = 2;
+  int32 xp = 3;
+  int32 xp_to_next = 4;
+  int32 stability_score = 5;
+  repeated BrainRpgSkill skills = 6;
+  repeated BrainRpgFragment fragments = 7;
+  repeated BrainRpgDreamLog recent_dreams = 8;
+  BrainRpgStats stats = 9;
+  string last_dream_at = 10;
+  bool dream_enabled = 11;
+  string dream_cron = 12;
+  string next_dream_at = 13;
+  bool autonomous_mind_enabled = 14;
+  int32 pending_delete_count = 15;
+}
+
+message RunBrainDreamRequest {
+  string agent_key = 1;
+  bool skip_curate = 2;
+}
+
+message RunBrainDreamReply {
+  string agent_key = 1;
+  string summary = 2;
+  int32 refined = 3;
+  int32 merged = 4;
+  int32 archived = 5;
+  int32 xp_gained = 6;
+  int32 level = 7;
+  int32 xp = 8;
+}
+
+message CompressBrainMemoriesRequest {
+  string agent_key = 1;
+  int32 days = 2;
+}
+
+message CompressBrainMemoriesReply {
+  string agent_key = 1;
+  string memory_key = 2;
+  string summary = 3;
+  int32 source_count = 4;
+  int32 xp_gained = 5;
+  int32 swept_count = 6;
+  int32 merged_clusters = 7;
+  int32 marked_count = 8;
+  int32 pending_remaining = 9;
+}
+
+message TidyBrainFragmentsRequest {
+  string agent_key = 1;
+  int32 max_episodes = 2;
+}
+
+message TidyBrainFragmentsReply {
+  string agent_key = 1;
+  int32 total = 2;
+  int32 approved = 3;
+  int32 xp_gained = 4;
+}
+
+message LockBrainSkillRequest {
+  string agent_key = 1;
+  string tag = 2;
+  bool lock = 3;
+}
+
+message LockBrainSkillReply {
+  string agent_key = 1;
+  repeated string locked_skills = 2;
+}
+
+message ForgetBrainMemoryRequest {
+  string agent_key = 1;
+  string memory_key = 2;
+}
+
+message ForgetBrainMemoryReply {
+  string agent_key = 1;
+  string memory_key = 2;
+  bool deleted = 3;
+}
+
+message GetBrainPresenceRequest {
+  string agent_key = 1;
+}
+
+message GetBrainPresenceReply {
+  string agent_key = 1;
+  string display_name = 2;
+  string activity = 3;
+  string mood = 4;
+  string thought = 5;
+  string pipeline_step = 6;
+  bool pipeline_running = 7;
+  bool dream_enabled = 8;
+  string dream_cron = 9;
+  string next_dream_at = 10;
+  bool dreaming = 11;
+  bool autonomous_mind_enabled = 12;
+  string thought_source = 13;
+}
+
+message UpdateBrainDreamScheduleRequest {
+  string agent_key = 1;
+  bool dream_enabled = 2;
+  string dream_cron = 3;
+}
+
+message UpdateBrainDreamScheduleReply {
+  string agent_key = 1;
+  bool dream_enabled = 2;
+  string dream_cron = 3;
+  string next_dream_at = 4;
+}
+
+message UpdateBrainAutonomousMindRequest {
+  string agent_key = 1;
+  bool autonomous_mind_enabled = 2;
+}
+
+message UpdateBrainAutonomousMindReply {
+  string agent_key = 1;
+  bool autonomous_mind_enabled = 2;
+}
+
+message GenerateBrainThoughtRequest {
+  string agent_key = 1;
+}
+
+message GenerateBrainThoughtReply {
+  string agent_key = 1;
+  string thought = 2;
+  string thought_source = 3;
+  string generated_at = 4;
+}
+
 message UpdateBrainPolicyRequest {
   string agent_key = 1;
   repeated string forbidden_tags = 2;
@@ -359,6 +570,63 @@ service MoeAdmin {
   }
   rpc GetBrainSnapshot(GetBrainSnapshotRequest) returns (GetBrainSnapshotReply) {
     option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/brain" };
+  }
+  rpc GetBrainGraph(GetBrainGraphRequest) returns (GetBrainGraphReply) {
+    option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/brain/graph" };
+  }
+  rpc GetBrainRpg(GetBrainRpgRequest) returns (GetBrainRpgReply) {
+    option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/brain/rpg" };
+  }
+  rpc RunBrainDream(RunBrainDreamRequest) returns (RunBrainDreamReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream"
+      body: "*"
+    };
+  }
+  rpc CompressBrainMemories(CompressBrainMemoriesRequest) returns (CompressBrainMemoriesReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/compress"
+      body: "*"
+    };
+  }
+  rpc TidyBrainFragments(TidyBrainFragmentsRequest) returns (TidyBrainFragmentsReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/tidy"
+      body: "*"
+    };
+  }
+  rpc LockBrainSkill(LockBrainSkillRequest) returns (LockBrainSkillReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/skills"
+      body: "*"
+    };
+  }
+  rpc ForgetBrainMemory(ForgetBrainMemoryRequest) returns (ForgetBrainMemoryReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/forget"
+      body: "*"
+    };
+  }
+  rpc GetBrainPresence(GetBrainPresenceRequest) returns (GetBrainPresenceReply) {
+    option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/brain/presence" };
+  }
+  rpc UpdateBrainDreamSchedule(UpdateBrainDreamScheduleRequest) returns (UpdateBrainDreamScheduleReply) {
+    option (google.api.http) = {
+      put: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/dream-schedule"
+      body: "*"
+    };
+  }
+  rpc UpdateBrainAutonomousMind(UpdateBrainAutonomousMindRequest) returns (UpdateBrainAutonomousMindReply) {
+    option (google.api.http) = {
+      put: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/autonomous-mind"
+      body: "*"
+    };
+  }
+  rpc GenerateBrainThought(GenerateBrainThoughtRequest) returns (GenerateBrainThoughtReply) {
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/rpg/think"
+      body: "*"
+    };
   }
   rpc UpdateBrainPolicy(UpdateBrainPolicyRequest) returns (GetBrainSnapshotReply) {
     option (google.api.http) = {
