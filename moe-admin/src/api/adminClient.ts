@@ -1048,12 +1048,14 @@ export function createAdminClient(opts: AdminClientOptions) {
       >(`${adminApiPath('/ai/agents')}${qs ? `?${qs}` : ''}`)
     },
 
-    deleteAiAgent: (body: { user_id: string; agent_id: string }) =>
-      api<BaseResp<unknown>>(adminApiPath('/ai/agents'), {
+    deleteAiAgent: (body: { user_id: string; agent_id: string }) => {
+      const q = new URLSearchParams()
+      q.set('user_id', body.user_id)
+      q.set('agent_id', body.agent_id)
+      return api<BaseResp<unknown>>(`${adminApiPath('/ai/agents')}?${q}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
+      })
+    },
 
     updateAiAgent: (body: {
       user_id: string

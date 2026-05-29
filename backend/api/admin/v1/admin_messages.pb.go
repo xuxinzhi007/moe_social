@@ -17136,7 +17136,7 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x0eprocesses_note\x18\x05 \x01(\tR\rprocessesNote\x12(\n" +
 	"\x10estimated_rss_mb\x18\x06 \x01(\x01R\x0eestimatedRssMb\"\r\n" +
 	"\vPingRequest\"\v\n" +
-	"\tPingReply2\x9cK\n" +
+	"\tPingReply2\x99K\n" +
 	"\bAdminApp\x122\n" +
 	"\x04Ping\x12\x15.admin.v1.PingRequest\x1a\x13.admin.v1.PingReply\x12\x89\x01\n" +
 	"\x15AdminBootstrapAccount\x12\".admin.v1.AdminBootstrapAccountReq\x1a#.admin.v1.AdminBootstrapAccountResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/admin/bootstrap/account\x12\\\n" +
@@ -17147,8 +17147,8 @@ const file_api_admin_v1_admin_messages_proto_rawDesc = "" +
 	"\x12AdminUpdateAccount\x12\x1f.admin.v1.AdminUpdateAccountReq\x1a .admin.v1.AdminUpdateAccountResp\"+\x82\xd3\xe4\x93\x02%:\x01*\x1a /api/admin/accounts/{account_id}\x12\x81\x01\n" +
 	"\x12AdminDeleteAccount\x12\x1f.admin.v1.AdminDeleteAccountReq\x1a .admin.v1.AdminDeleteAccountResp\"(\x82\xd3\xe4\x93\x02\"* /api/admin/accounts/{account_id}\x12\x9d\x01\n" +
 	"\x1aAdminBootstrapAchievements\x12'.admin.v1.AdminBootstrapAchievementsReq\x1a(.admin.v1.AdminBootstrapAchievementsResp\",\x82\xd3\xe4\x93\x02&:\x01*\"!/api/admin/achievements/bootstrap\x12r\n" +
-	"\x11AdminListAiAgents\x12\x1e.admin.v1.AdminListAiAgentsReq\x1a\x1f.admin.v1.AdminListAiAgentsResp\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/admin/ai/agents\x12x\n" +
-	"\x12AdminDeleteAiAgent\x12\x1f.admin.v1.AdminDeleteAiAgentReq\x1a .admin.v1.AdminDeleteAiAgentResp\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01**\x14/api/admin/ai/agents\x12\x85\x01\n" +
+	"\x11AdminListAiAgents\x12\x1e.admin.v1.AdminListAiAgentsReq\x1a\x1f.admin.v1.AdminListAiAgentsResp\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/admin/ai/agents\x12u\n" +
+	"\x12AdminDeleteAiAgent\x12\x1f.admin.v1.AdminDeleteAiAgentReq\x1a .admin.v1.AdminDeleteAiAgentResp\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/admin/ai/agents\x12\x85\x01\n" +
 	"\x16AdminListAnnouncements\x12#.admin.v1.AdminListAnnouncementsReq\x1a$.admin.v1.AdminListAnnouncementsResp\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/admin/announcements\x12\x8b\x01\n" +
 	"\x17AdminCreateAnnouncement\x12$.admin.v1.AdminCreateAnnouncementReq\x1a%.admin.v1.AdminCreateAnnouncementResp\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/api/admin/announcements\x12\x91\x01\n" +
 	"\x14AdminGetAnnouncement\x12!.admin.v1.AdminGetAnnouncementReq\x1a\".admin.v1.AdminGetAnnouncementResp\"2\x82\xd3\xe4\x93\x02,\x12*/api/admin/announcements/{announcement_id}\x12\x9d\x01\n" +

@@ -1,5 +1,45 @@
 const ENVELOPE_KEYS = new Set(['code', 'message', 'success', 'reason'])
 
+/**
+ * Proto 列表字段名（与 Flutter `api_response.dart` listOf keys 对齐）。
+ * 管理台页面统一读 `data.items`；此处把 proto 域名字段别名到 items。
+ */
+const LIST_ARRAY_KEYS = [
+  'items',
+  'users',
+  'posts',
+  'comments',
+  'orders',
+  'plans',
+  'gifts',
+  'groups',
+  'reports',
+  'memories',
+  'messages',
+  'sessions',
+  'conversations',
+  'records',
+  'logs',
+  'devices',
+  'images',
+  'transactions',
+  'followings',
+  'followers',
+  'friends',
+  'badges',
+  'packs',
+  'outfits',
+  'models',
+  'providers',
+  'agents',
+  'lorebooks',
+  'tools',
+  'notifications',
+  'members',
+  'history',
+  'data',
+] as const
+
 /** 与 Flutter `api_response.dart` 对齐：兼容嵌套 data 与 proto/compat 压平信封。 */
 export function isApiSuccess(json: Record<string, unknown>): boolean {
   if (json.success === false) return false
@@ -38,6 +78,26 @@ export function withSnakeAliases(
   return out
 }
 
+/** 将 proto 列表字段（users/posts/orders…）统一别名到 items，供管理台页面读取。 */
+export function normalizeListPayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  if (Array.isArray(payload.items)) {
+    return payload
+  }
+  for (const key of LIST_ARRAY_KEYS) {
+    const value = payload[key]
+    if (Array.isArray(value)) {
+      return { ...payload, items: value }
+    }
+  }
+  return payload
+}
+
+function normalizePayload(payload: Record<string, unknown>): Record<string, unknown> {
+  return normalizeListPayload(withSnakeAliases(payload))
+}
+
 export type NormalizedResp<T> = {
   success: boolean
   code?: number
@@ -65,11 +125,11 @@ export function normalizeAdminResponse<T>(
       success,
       code: raw.code as number | undefined,
       message: raw.message as string | undefined,
-      data: withSnakeAliases(nested as Record<string, unknown>) as T,
+      data: normalizePayload(nested as Record<string, unknown>) as T,
     }
   }
 
-  const payload = withSnakeAliases(apiPayload(raw))
+  const payload = normalizePayload(apiPayload(raw))
   const hasPayload = Object.keys(payload).length > 0
   return {
     success,
@@ -79,13 +139,21 @@ export function normalizeAdminResponse<T>(
   }
 }
 
-/** 列表接口：兼容 `data: T[]` 与 proto `data: { items: T[] }`。 */
+/** 列表接口：兼容 `data: T[]`、proto `data: { items }` 与域名字段 `users/posts/…`。 */
 export function unwrapListItems<T>(
-  data: T[] | { items?: T[] } | null | undefined,
+  data: T[] | Record<string, unknown> | null | undefined,
 ): T[] {
   if (Array.isArray(data)) return data
-  if (data && typeof data === 'object' && Array.isArray(data.items)) {
-    return data.items
+  if (data && typeof data === 'object') {
+    if (Array.isArray(data.items)) {
+      return data.items as T[]
+    }
+    for (const key of LIST_ARRAY_KEYS) {
+      const value = data[key]
+      if (Array.isArray(value)) {
+        return value as T[]
+      }
+    }
   }
   return []
 }

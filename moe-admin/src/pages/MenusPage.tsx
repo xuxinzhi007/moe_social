@@ -37,7 +37,7 @@ export function MenusPage() {
         return
       }
       setItems(
-        unwrapListItems(res.data).sort((a, b) => a.sort_order - b.sort_order),
+        unwrapListItems<MenuRow>(res.data).sort((a, b) => a.sort_order - b.sort_order),
       )
     } catch (e) {
       setError(e instanceof DeployApiError ? e.message : '加载失败')

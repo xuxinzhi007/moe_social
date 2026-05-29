@@ -422,9 +422,6 @@ func _AdminApp_AdminListAiAgents0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx 
 func _AdminApp_AdminDeleteAiAgent0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AdminDeleteAiAgentReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
@@ -2079,10 +2076,10 @@ func (c *AdminAppHTTPClientImpl) AdminDeleteAccount(ctx context.Context, in *Adm
 func (c *AdminAppHTTPClientImpl) AdminDeleteAiAgent(ctx context.Context, in *AdminDeleteAiAgentReq, opts ...http.CallOption) (*AdminDeleteAiAgentResp, error) {
 	var out AdminDeleteAiAgentResp
 	pattern := "/api/admin/ai/agents"
-	path := binding.EncodeURL(pattern, in, false)
+	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteAiAgent))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

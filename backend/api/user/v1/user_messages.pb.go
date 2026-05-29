@@ -8072,7 +8072,7 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\thelp_text\x18\x02 \x01(\tR\bhelpText\x12\x18\n" +
 	"\aenabled\x18\x03 \x01(\bR\aenabled\"\x14\n" +
 	"\x12DeleteMyAccountReq\"\x15\n" +
-	"\x13DeleteMyAccountResp2\x97+\n" +
+	"\x13DeleteMyAccountResp2\x94+\n" +
 	"\vUserService\x12J\n" +
 	"\x05Login\x12\x11.user.v1.LoginReq\x1a\x12.user.v1.LoginResp\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/user/login\x12V\n" +
 	"\bRegister\x12\x14.user.v1.RegisterReq\x1a\x15.user.v1.RegisterResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/user/register\x12]\n" +
@@ -8099,8 +8099,8 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\n" +
 	"DeleteUser\x12\x16.user.v1.DeleteUserReq\x1a\x17.user.v1.DeleteUserResp\"\x1b\x82\xd3\xe4\x93\x02\x15*\x13/api/user/{user_id}\x12d\n" +
 	"\n" +
-	"FollowUser\x12\x16.user.v1.FollowUserReq\x1a\x17.user.v1.FollowUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/user/{user_id}/follow\x12h\n" +
-	"\fUnfollowUser\x12\x18.user.v1.UnfollowUserReq\x1a\x17.user.v1.FollowUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01**\x1a/api/user/{user_id}/follow\x12j\n" +
+	"FollowUser\x12\x16.user.v1.FollowUserReq\x1a\x17.user.v1.FollowUserResp\"%\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/api/user/{user_id}/follow\x12e\n" +
+	"\fUnfollowUser\x12\x18.user.v1.UnfollowUserReq\x1a\x17.user.v1.FollowUserResp\"\"\x82\xd3\xe4\x93\x02\x1c*\x1a/api/user/{user_id}/follow\x12j\n" +
 	"\fGetFollowers\x12\x18.user.v1.GetFollowersReq\x1a\x19.user.v1.GetFollowersResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/user/{user_id}/followers\x12m\n" +
 	"\rGetFollowings\x12\x19.user.v1.GetFollowingsReq\x1a\x1a.user.v1.GetFollowingsResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/user/{user_id}/following\x12~\n" +
 	"\x12UpdateUserPassword\x12\x1e.user.v1.UpdateUserPasswordReq\x1a\x1f.user.v1.UpdateUserPasswordResp\"'\x82\xd3\xe4\x93\x02!:\x01*\x1a\x1c/api/user/{user_id}/password\x12v\n" +

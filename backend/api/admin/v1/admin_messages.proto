@@ -1633,7 +1633,7 @@ service AdminApp {
     option (google.api.http) = { get: "/api/admin/ai/agents" };
   }
   rpc AdminDeleteAiAgent(AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp) {
-    option (google.api.http) = { delete: "/api/admin/ai/agents" body: "*" };
+    option (google.api.http) = { delete: "/api/admin/ai/agents" };
   }
   rpc AdminListAnnouncements(AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp) {
     option (google.api.http) = { get: "/api/admin/announcements" };

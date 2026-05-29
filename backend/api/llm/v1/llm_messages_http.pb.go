@@ -144,9 +144,6 @@ func _LlmChat_GetUserMemories0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http
 func _LlmChat_DeleteUserMemory0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in DeleteUserMemoryReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
 		if err := ctx.BindQuery(&in); err != nil {
 			return err
 		}
@@ -431,10 +428,10 @@ func NewLlmChatHTTPClient(client *http.Client) LlmChatHTTPClient {
 func (c *LlmChatHTTPClientImpl) DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...http.CallOption) (*DeleteUserMemoryResp, error) {
 	var out DeleteUserMemoryResp
 	pattern := "/api/user/{user_id}/memories"
-	path := binding.EncodeURL(pattern, in, false)
+	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationLlmChatDeleteUserMemory))
 	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

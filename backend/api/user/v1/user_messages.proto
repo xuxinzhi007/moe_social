@@ -854,7 +854,7 @@ service UserService {
     option (google.api.http) = { post: "/api/user/{user_id}/follow" body: "*" };
   }
   rpc UnfollowUser(UnfollowUserReq) returns (FollowUserResp) {
-    option (google.api.http) = { delete: "/api/user/{user_id}/follow" body: "*" };
+    option (google.api.http) = { delete: "/api/user/{user_id}/follow" };
   }
   rpc GetFollowers(GetFollowersReq) returns (GetFollowersResp) {
     option (google.api.http) = { get: "/api/user/{user_id}/followers" };

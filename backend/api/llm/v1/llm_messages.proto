@@ -271,10 +271,7 @@ service LlmChat {
     option (google.api.http) = { get: "/api/user/{user_id}/memories" };
   }
   rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp) {
-    option (google.api.http) = {
-      delete: "/api/user/{user_id}/memories"
-      body: "*"
-    };
+    option (google.api.http) = { delete: "/api/user/{user_id}/memories" };
   }
   rpc GetUserMemoriesDisplay(GetUserMemoriesDisplayReq) returns (GetUserMemoriesDisplayResp) {
     option (google.api.http) = { get: "/api/user/{user_id}/memories/display" };

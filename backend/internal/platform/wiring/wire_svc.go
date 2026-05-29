@@ -38,7 +38,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.VIPAPIInProcessEnabled() {
 		vipAdm, err := moewiring.NewAPIVipAdminService()
 		if err != nil {
-			rep.domainWarn("vip", "rpc", err.Error())
+			rep.domainWarn("vip", "db", err.Error())
 		} else if vipAdm != nil {
 			ctx.VipAdmin = vipAdm
 		}
@@ -47,7 +47,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.UserAPIInProcessEnabled() {
 		userApp, err := moewiring.NewAPIUserService()
 		if err != nil {
-			rep.domainWarn("user", "rpc", err.Error())
+			rep.domainWarn("user", "db", err.Error())
 		} else if userApp != nil {
 			ctx.UserApp = userApp
 		}
@@ -56,7 +56,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.LandingAPIInProcessEnabled() {
 		landingApp, err := moewiring.NewAPILandingService()
 		if err != nil {
-			rep.domainWarn("landing", "rpc", err.Error())
+			rep.domainWarn("landing", "db", err.Error())
 		} else if landingApp != nil {
 			ctx.LandingApp = landingApp
 		}
@@ -65,7 +65,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.AdminReadonlyAPIInProcessEnabled() {
 		adminApp, err := moewiring.NewAPIAdminReadonlyService()
 		if err != nil {
-			rep.domainWarn("admin", "rpc", err.Error())
+			rep.domainWarn("admin", "db", err.Error())
 		} else if adminApp != nil {
 			ctx.AdminApp = adminApp
 		}
@@ -77,7 +77,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.AIAPIInProcessEnabled() {
 		aiApp, err := moewiring.NewAPIAIService()
 		if err != nil {
-			rep.domainWarn("ai", "rpc", err.Error())
+			rep.domainWarn("ai", "db", err.Error())
 		} else if aiApp != nil {
 			ctx.AIApp = aiApp
 		}
@@ -86,7 +86,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.BehaviorAPIInProcessEnabled() {
 		behaviorApp, err := moewiring.NewAPIBehaviorService()
 		if err != nil {
-			rep.domainWarn("behavior", "rpc", err.Error())
+			rep.domainWarn("behavior", "db", err.Error())
 		} else if behaviorApp != nil {
 			ctx.BehaviorApp = behaviorApp
 		}
@@ -95,7 +95,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.PostAPIInProcessEnabled() {
 		postApp, err := moewiring.NewAPIPostService()
 		if err != nil {
-			rep.domainWarn("post", "rpc", err.Error())
+			rep.domainWarn("post", "db", err.Error())
 		} else if postApp != nil {
 			ctx.PostApp = postApp
 		}
@@ -104,7 +104,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.CommentAPIInProcessEnabled() {
 		commentApp, err := moewiring.NewAPICommentService()
 		if err != nil {
-			rep.domainWarn("comment", "rpc", err.Error())
+			rep.domainWarn("comment", "db", err.Error())
 		} else if commentApp != nil {
 			ctx.CommentApp = commentApp
 		}
@@ -113,7 +113,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.CheckInAPIInProcessEnabled() {
 		checkInApp, err := moewiring.NewAPICheckInService()
 		if err != nil {
-			rep.domainWarn("checkin", "rpc", err.Error())
+			rep.domainWarn("checkin", "db", err.Error())
 		} else if checkInApp != nil {
 			ctx.CheckInApp = checkInApp
 		}
@@ -122,7 +122,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.AchievementAPIInProcessEnabled() {
 		achApp, err := moewiring.NewAPIAchievementService()
 		if err != nil {
-			rep.domainWarn("achievement", "rpc", err.Error())
+			rep.domainWarn("achievement", "db", err.Error())
 		} else if achApp != nil {
 			ctx.AchievementApp = achApp
 		}
@@ -131,7 +131,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.GiftAPIInProcessEnabled() {
 		giftApp, err := moewiring.NewAPIGiftService()
 		if err != nil {
-			rep.domainWarn("gift", "rpc", err.Error())
+			rep.domainWarn("gift", "db", err.Error())
 		} else if giftApp != nil {
 			ctx.GiftApp = giftApp
 		}
@@ -140,7 +140,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.LLMAPIInProcessEnabled() {
 		llmApp, err := moewiring.NewAPILLMService()
 		if err != nil {
-			rep.domainWarn("llm", "rpc", err.Error())
+			rep.domainWarn("llm", "db", err.Error())
 		} else if llmApp != nil {
 			ctx.LLMApp = llmApp
 			ctx.LLMApp.SetPlatformChatGateway(ctx.LLMApp.PlatformChatGateway())
@@ -151,7 +151,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 		appPort := moewiring.NewAppAdapter(ctx.PostApp, ctx.LLMApp)
 		adm, err := moewiring.NewAPIAdminService(appPort)
 		if err != nil {
-			rep.domainWarn("moe", "rpc", err.Error())
+			rep.domainWarn("moe", "db", err.Error())
 		} else if adm != nil {
 			ctx.MoeAdmin = adm
 		}
@@ -160,7 +160,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.ChatAPIInProcessEnabled() {
 		chatApp, err := moewiring.NewAPIChatService()
 		if err != nil {
-			rep.domainWarn("chat", "rpc", err.Error())
+			rep.domainWarn("chat", "db", err.Error())
 		} else if chatApp != nil {
 			ctx.ChatApp = chatApp
 		}
@@ -178,7 +178,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	if moewiring.CommunityAPIInProcessEnabled() {
 		communityApp, err := moewiring.NewAPICommunityService()
 		if err != nil {
-			rep.domainWarn("community", "rpc", err.Error())
+			rep.domainWarn("community", "db", err.Error())
 		} else if communityApp != nil {
 			ctx.CommunityApp = communityApp
 		}

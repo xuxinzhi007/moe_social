@@ -1870,8 +1870,11 @@ class ApiService {
   // 取消关注用户
   static Future<Map<String, dynamic>> unfollowUser(
       String userId, String followingId) async {
-    return await _request('/api/user/$userId/follow',
-        method: 'DELETE', body: {'following_id': followingId});
+    final q = Uri.encodeQueryComponent(followingId);
+    return await _request(
+      '/api/user/$userId/follow?following_id=$q',
+      method: 'DELETE',
+    );
   }
 
   // 获取关注列表

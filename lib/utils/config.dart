@@ -3,17 +3,17 @@
 // =============================================================================
 //
 // 修改后请 **完整重启 App**（Stop + Run），不要只热重载。
-// 真机上的 127.0.0.1 是「手机访问自己」，连不到你电脑上的后端；必须用 productionUrl。
 //
-// • isProduction = true  → productionUrl（线上 VPS，真机 debug 包也用这项）
-// • isProduction = false → developmentUrl（本机 / 模拟器）
+// • isProduction = true  → productionUrl（默认：云 VPS；开发也建议连云，与 DB/图库一致）
+// • isProduction = false → developmentUrl（仅本机调试后端时用 127.0.0.1）
 //
 // 与 Flutter debug/release 无关；右上角 Debug 横幅不代表连本地 API。
+// 云地址应与 backend/config/config.yaml 的 app_client.public_api_base_url 一致。
 // =============================================================================
 
 class AppConfig {
-  /// true = 线上； false = 本地
-  static const bool isProduction = false;
+  /// true = 线上云 API；false = 本机 API
+  static const bool isProduction = true;
 
   /// 线上 API（无末尾 /）
   static const String productionUrl = 'http://47.106.175.49:8888';

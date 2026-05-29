@@ -20,9 +20,19 @@ var DB *gorm.DB
 var dbInitOnce sync.Once
 var dbInitErr error
 
-// EnsureDB 在 API 等进程中懒加载一次数据库（与 RPC 共用全局 DB；已连接则直接复用）。
+// EnsureDB 懒加载数据库（会先确保已读取 config/config.yaml）。
 func EnsureDB() error {
+	if err := ensureConfigLoaded(); err != nil {
+		return err
+	}
 	return InitDBWithMigrate(MigrateOptions{Enabled: false})
+}
+
+func ensureConfigLoaded() error {
+	if viper.ConfigFileUsed() != "" {
+		return nil
+	}
+	return InitConfig()
 }
 
 // InitConfig 初始化配置
@@ -70,6 +80,9 @@ func InitDBWithMigrate(opts MigrateOptions) error {
 func initDBWithMigrateOnce(opts MigrateOptions) error {
 	if DB != nil {
 		return nil
+	}
+	if err := ensureConfigLoaded(); err != nil {
+		return err
 	}
 	logMode := logger.Info
 	if opts.Enabled {
