@@ -128,7 +128,7 @@ class _DynamicAvatarState extends State<DynamicAvatar> with SingleTickerProvider
                 ],
                 stops: [0.0, 0.5, 0.8, 1.0],
               ),
-              border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
             ),
           ),
         );
@@ -147,12 +147,12 @@ class _DynamicAvatarState extends State<DynamicAvatar> with SingleTickerProvider
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.pinkAccent.withOpacity((math.sin(_controller.value * 2 * math.pi) + 1) / 2 * 0.5 + 0.2),
+              color: Colors.pinkAccent.withValues(alpha: (math.sin(_controller.value * 2 * math.pi) + 1) / 2 * 0.5 + 0.2),
               width: 3,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.pink.withOpacity(0.3),
+                color: Colors.pink.withValues(alpha: 0.3),
                 blurRadius: 10 * ((math.sin(_controller.value * 2 * math.pi) + 1) / 2),
               )
             ]

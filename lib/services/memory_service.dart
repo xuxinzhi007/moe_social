@@ -4,6 +4,7 @@ import '../models/ai_memory.dart';
 import '../models/user_memory.dart';
 import '../models/user_memory_display.dart';
 import '../models/user_memory_profile.dart';
+import 'api_response.dart';
 import 'api_service.dart';
 
 /// MemoryService 包含两类功能：
@@ -39,15 +40,17 @@ class MemoryService {
     final result = await ApiService.get(
       '/api/user/$userId/memories?limit=$safeLimit&offset=$safeOffset',
     );
-    final List<dynamic> list = result['data'] ?? [];
+    final list = ApiResponse.listOf(result, keys: const ['memories', 'items', 'data']);
     return {
       'items': list
-          .map((json) => UserMemory.fromJson(json as Map<String, dynamic>))
+          .whereType<Map>()
+          .map((json) => UserMemory.fromJson(Map<String, dynamic>.from(json)))
           .toList(),
-      'total': (result['total'] as num?)?.toInt() ?? list.length,
-      'limit': (result['limit'] as num?)?.toInt() ?? safeLimit,
-      'offset': (result['offset'] as num?)?.toInt() ?? safeOffset,
-      'has_more': result['has_more'] == true,
+      'total': ApiResponse.intField(result, 'total') ?? list.length,
+      'limit': ApiResponse.intField(result, 'limit') ?? safeLimit,
+      'offset': ApiResponse.intField(result, 'offset') ?? safeOffset,
+      'has_more': result['has_more'] == true ||
+          ApiResponse.payload(result)['has_more'] == true,
     };
   }
 
@@ -74,8 +77,8 @@ class MemoryService {
     final result = await ApiService.get(
       '/api/user/$userId/memories/search?q=$encodedQ&limit=$safeLimit',
     );
-    final data = Map<String, dynamic>.from(result['data'] ?? const {});
-    final List<dynamic> list = data['items'] ?? [];
+    final data = ApiResponse.object(result);
+    final list = ApiResponse.listOf(data, keys: const ['items']);
     return list.map((json) {
       final item = Map<String, dynamic>.from(json as Map);
       return UserMemory(
@@ -95,8 +98,7 @@ class MemoryService {
     final result = await ApiService.get(
       '/api/user/$userId/memories/display',
     );
-    final data = Map<String, dynamic>.from(result['data'] ?? const {});
-    return UserMemoryDisplayData.fromJson(data);
+    return UserMemoryDisplayData.fromJson(ApiResponse.object(result));
   }
 
   /// 获取后端聚合画像摘要
@@ -107,9 +109,10 @@ class MemoryService {
     final safeLimit = limit <= 0 ? 6 : limit;
     final result = await ApiService.get(
         '/api/user/$userId/memories/profiles?limit=$safeLimit');
-    final List<dynamic> list = result['data'] ?? [];
+    final list = ApiResponse.listOf(result, keys: const ['profiles', 'data']);
     return list
-        .map((json) => UserMemoryProfile.fromJson(json as Map<String, dynamic>))
+        .whereType<Map>()
+        .map((json) => UserMemoryProfile.fromJson(Map<String, dynamic>.from(json)))
         .toList();
   }
 
@@ -144,8 +147,9 @@ class MemoryService {
         if (sessionId != null && sessionId.isNotEmpty) 'session_id': sessionId,
       },
     );
-    final data = Map<String, dynamic>.from(result['data'] ?? const {});
-    return UserMemory.fromJson(data);
+    return UserMemory.fromJson(
+      ApiResponse.object(result, keys: const ['memory']),
+    );
   }
 
   /// 按对话相关性选取要注入的记忆（OpenClaw 式：关键词命中 + 新近度兜底）。
@@ -249,8 +253,9 @@ class MemoryService {
         if (reason != null && reason.isNotEmpty) 'reason': reason,
       },
     );
-    final data = Map<String, dynamic>.from(result['data'] ?? const {});
-    return UserMemory.fromJson(data);
+    return UserMemory.fromJson(
+      ApiResponse.object(result, keys: const ['memory']),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

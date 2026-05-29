@@ -3,8 +3,9 @@ package grpcserver
 import (
 	"context"
 
-	moebiz "backend/internal/biz/moe"
 	moev1pb "backend/api/moe/v1"
+	"backend/internal/apilegacy/config"
+	moebiz "backend/internal/biz/moe"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
 )
@@ -12,12 +13,17 @@ import (
 // Server 实现 moe.v1.MoeAdmin gRPC（Phase 3 Sprint 2，与 legacy Super 并存）。
 type Server struct {
 	moev1pb.UnimplementedMoeAdminServer
-	admin *moeadmin.AdminService
+	admin        *moeadmin.AdminService
+	inferenceCfg config.LLMInferenceConf
 }
 
 // New 构造 Moe v1 gRPC 服务。
-func New(admin *moeadmin.AdminService) *Server {
-	return &Server{admin: admin}
+func New(admin *moeadmin.AdminService, opts ...Option) *Server {
+	s := &Server{admin: admin}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
 }
 
 func (s *Server) requireAdmin() (*moeadmin.AdminService, error) {
@@ -92,17 +98,25 @@ func (s *Server) RunAgentOnce(ctx context.Context, in *moev1pb.RunAgentOnceReque
 	if err != nil {
 		return nil, err
 	}
-	inv, err := admin.RunAgentOnce(ctx, in.GetAgentKey(), false)
+	out, err := admin.RunAgentOnce(ctx, in.GetAgentKey(), in.GetAsync())
 	if err != nil {
 		return nil, err
 	}
-	r := inv.Result
-	return &moev1pb.RunAgentOnceReply{
-		AgentKey: r.AgentKey,
-		Ok:       r.OK,
-		Detail:   r.Detail,
-		PostId:   r.PostID,
-	}, nil
+	reply := &moev1pb.RunAgentOnceReply{
+		AgentKey:       in.GetAgentKey(),
+		Accepted:       out.Accepted,
+		AlreadyRunning: out.AlreadyRunning,
+	}
+	if !out.Accepted && !out.AlreadyRunning {
+		r := out.Result
+		reply.Ok = r.OK
+		reply.Detail = r.Detail
+		reply.PostId = r.PostID
+		if reply.AgentKey == "" {
+			reply.AgentKey = r.AgentKey
+		}
+	}
+	return reply, nil
 }
 
 func (s *Server) GetBrainSnapshot(ctx context.Context, in *moev1pb.GetBrainSnapshotRequest) (*moev1pb.GetBrainSnapshotReply, error) {

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
+import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import 'community_discussions_tab.dart';
 import 'interest_groups_page.dart';
 
@@ -60,17 +63,25 @@ class _CommunityHomePageState extends State<CommunityHomePage>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final moe = MoeTheme.of(context);
     final onCirclesTab = _tabController.index == 0;
 
     return Scaffold(
-      backgroundColor: scheme.surfaceContainerLowest,
+      backgroundColor: moe.pageBackground,
       body: SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(scheme),
-            _buildSegmented(scheme),
+            FadeInUp(
+              duration: MoeTokens.motionFadeDuration,
+              child: _buildHeader(scheme),
+            ),
+            FadeInUp(
+              duration: MoeTokens.motionFadeDuration,
+              delay: MoeTokens.motionStaggerStep,
+              child: _buildSegmented(scheme),
+            ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,

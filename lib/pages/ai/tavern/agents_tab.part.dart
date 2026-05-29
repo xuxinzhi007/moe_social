@@ -10,7 +10,7 @@ extension TavernAgentsTabPart on _AgentListPageState {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -121,10 +121,10 @@ extension TavernAgentsTabPart on _AgentListPageState {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.14)),
+        border: Border.all(color: color.withValues(alpha: 0.14)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -263,13 +263,13 @@ extension TavernAgentsTabPart on _AgentListPageState {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.08),
+                        color: Colors.grey.withValues(alpha: 0.08),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
                     ],
                     border: Border.all(
-                      color: agentColor.withOpacity(0.2),
+                      color: agentColor.withValues(alpha: 0.2),
                       width: 1,
                     ),
                   ),
@@ -306,13 +306,13 @@ extension TavernAgentsTabPart on _AgentListPageState {
                                   end: Alignment.bottomRight,
                                   colors: [
                                     agentColor,
-                                    agentColor.withOpacity(0.7)
+                                    agentColor.withValues(alpha: 0.7)
                                   ],
                                 ),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: agentColor.withOpacity(0.3),
+                                    color: agentColor.withValues(alpha: 0.3),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   ),
@@ -386,7 +386,7 @@ extension TavernAgentsTabPart on _AgentListPageState {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
-                                          color: agentColor.withOpacity(0.1),
+                                          color: agentColor.withValues(alpha: 0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),
@@ -407,7 +407,7 @@ extension TavernAgentsTabPart on _AgentListPageState {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: providerColor.withOpacity(0.1),
+                                          color: providerColor.withValues(alpha: 0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                         ),

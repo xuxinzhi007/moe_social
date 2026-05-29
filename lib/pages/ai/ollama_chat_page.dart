@@ -1121,7 +1121,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFF5F7FA),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
                           ),
                           child: TextField(
                             controller: _promptController,
@@ -1243,7 +1243,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.reply_rounded, color: Color(0xFF7F7FD5)),
@@ -1258,7 +1258,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.copy_rounded, color: Colors.blue),
@@ -1273,7 +1273,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.format_quote_rounded, color: Colors.green),
@@ -1397,7 +1397,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                     borderRadius: borderRadius,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
+                        color: Colors.black.withValues(alpha: 0.08),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
@@ -1432,14 +1432,14 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                                   _isSpeaking && _speakingIndex == index
                                       ? Icons.volume_off_rounded
                                       : Icons.volume_up_rounded,
-                                  color: textColor.withOpacity(0.8),
+                                  color: textColor.withValues(alpha: 0.8),
                                 ),
                                 onPressed: () => _playMessageTts(message.content, index),
                               ),
                               Text(
                                 _formatTime(message.time),
                                 style: TextStyle(
-                                  color: textColor.withOpacity(0.6),
+                                  color: textColor.withValues(alpha: 0.6),
                                   fontSize: 11,
                                 ),
                               ),
@@ -1452,7 +1452,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                           child: Text(
                             _formatTime(message.time),
                             style: TextStyle(
-                              color: textColor.withOpacity(0.6),
+                              color: textColor.withValues(alpha: 0.6),
                               fontSize: 11,
                             ),
                           ),
@@ -1491,7 +1491,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -1510,7 +1510,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: (_isListening ? Colors.redAccent : const Color(0xFF7F7FD5)).withOpacity(0.4),
+                    color: (_isListening ? Colors.redAccent : const Color(0xFF7F7FD5)).withValues(alpha: 0.4),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -1529,7 +1529,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7FA),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
               ),
               child: TextField(
                 controller: _controller,
@@ -1558,7 +1558,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                  shape: BoxShape.circle,
                  boxShadow: [
                    BoxShadow(
-                     color: (_isSending ? Colors.redAccent : const Color(0xFF7F7FD5)).withOpacity(0.4),
+                     color: (_isSending ? Colors.redAccent : const Color(0xFF7F7FD5)).withValues(alpha: 0.4),
                      blurRadius: 8,
                      offset: const Offset(0, 4),
                    ),
@@ -1673,7 +1673,7 @@ class _OllamaChatPageState extends State<OllamaChatPage> {
                       ),
                     ),
                     selected: isActive,
-                    selectedTileColor: const Color(0xFF7F7FD5).withOpacity(0.1),
+                    selectedTileColor: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                     onTap: () {
                       Navigator.pop(context);
                       _switchSession(session.id);

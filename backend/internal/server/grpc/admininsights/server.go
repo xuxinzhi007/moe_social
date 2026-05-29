@@ -64,3 +64,29 @@ func (s *Server) AdminListTopicTags(ctx context.Context, in *adminv1.AdminListTo
 	}
 	return app.ListTopicTags(ctx, in)
 }
+
+func (s *Server) AdminDashboard(ctx context.Context, in *adminv1.AdminDashboardReq) (*adminv1.AdminDashboardResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.Dashboard(ctx, in)
+}
+
+func (s *Server) AdminGrowthStats(ctx context.Context, in *adminv1.AdminGetGrowthStatsReq) (*adminv1.AdminGetGrowthStatsResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	_ = in
+	return app.GrowthStats(ctx)
+}
+
+func (s *Server) AdminSchemaCatalog(ctx context.Context, in *adminv1.AdminGetSchemaCatalogReq) (*adminv1.AdminGetSchemaCatalogResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	_ = in
+	return app.SchemaCatalog(ctx)
+}

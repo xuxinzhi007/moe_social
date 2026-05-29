@@ -5,6 +5,7 @@ import 'package:moe_social/models/vip_order.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 import 'package:moe_social/pages/commerce/wallet_page.dart';
+import '../../theme/moe_theme_extension.dart';
 
 /// 订单中心：礼物购买订单、VIP 订单、钱包流水摘要
 class OrderCenterPage extends StatefulWidget {
@@ -32,15 +33,16 @@ class _OrderCenterPageState extends State<OrderCenterPage>
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: moe.pageBackground,
       appBar: AppBar(
         title: const Text('订单中心', style: TextStyle(fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tab,
-          labelColor: const Color(0xFF7F7FD5),
+          labelColor: moe.primary,
           unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color(0xFF7F7FD5),
+          indicatorColor: moe.primary,
           tabs: const [
             Tab(text: '礼物订单'),
             Tab(text: 'VIP订单'),

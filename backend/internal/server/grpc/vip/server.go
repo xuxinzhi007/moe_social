@@ -48,3 +48,51 @@ func (s *Server) CreateVipOrder(ctx context.Context, in *vipv1.CreateVipOrderReq
 	}
 	return app.CreateVipOrder(ctx, in)
 }
+
+func (s *Server) GetUserVipStatus(ctx context.Context, in *vipv1.GetUserVipStatusReq) (*vipv1.GetUserVipStatusResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetUserVipStatus(ctx, in)
+}
+
+func (s *Server) UpdateUserVip(ctx context.Context, in *vipv1.UpdateUserVipReq) (*vipv1.UpdateUserVipResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.UpdateUserVip(ctx, in)
+}
+
+func (s *Server) UpdateAutoRenew(ctx context.Context, in *vipv1.UpdateAutoRenewReq) (*vipv1.UpdateAutoRenewResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.UpdateAutoRenew(ctx, in)
+}
+
+func (s *Server) CheckUserVip(ctx context.Context, in *vipv1.CheckUserVipReq) (*vipv1.CheckUserVipResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.CheckUserVip(ctx, in)
+}
+
+func (s *Server) GetVipOrders(ctx context.Context, in *vipv1.GetVipOrdersReq) (*vipv1.GetVipOrdersResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetVipOrders(ctx, in)
+}
+
+func (s *Server) SyncUserVipStatus(ctx context.Context, in *vipv1.SyncUserVipStatusReq) (*vipv1.SyncUserVipStatusResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.SyncUserVipStatus(ctx, in)
+}

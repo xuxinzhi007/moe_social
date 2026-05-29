@@ -120,7 +120,7 @@ class ThemeProvider with ChangeNotifier {
       //   color: isDark ? Colors.grey[800] : Colors.white,
       //   elevation: 2,
       //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), // 卡片更圆润
-      //   shadowColor: Colors.black.withOpacity(0.1),
+      //   shadowColor: Colors.black.withValues(alpha: 0.1),
       // ),
       appBarTheme: AppBarTheme(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,

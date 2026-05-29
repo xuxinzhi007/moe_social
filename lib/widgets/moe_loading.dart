@@ -66,13 +66,13 @@ class _MoeLoadingState extends State<MoeLoading> with SingleTickerProviderStateM
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      themeColor.withOpacity(0.6),
+                      themeColor.withValues(alpha: 0.6),
                       themeColor,
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: themeColor.withOpacity(0.3),
+                      color: themeColor.withValues(alpha: 0.3),
                       blurRadius: widget.size / 2,
                       spreadRadius: _scaleAnimation.value * 2,
                     ),
@@ -110,7 +110,7 @@ class MoeSmallLoading extends StatelessWidget {
       child: CircularProgressIndicator(
         strokeWidth: 2.5,
         valueColor: AlwaysStoppedAnimation<Color>(themeColor),
-        backgroundColor: themeColor.withOpacity(0.1),
+        backgroundColor: themeColor.withValues(alpha: 0.1),
       ),
     );
   }

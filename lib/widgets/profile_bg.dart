@@ -63,7 +63,7 @@ class _ProfileBgState extends State<ProfileBg> with SingleTickerProviderStateMix
             width: 200,
             height: 200,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
           ),
@@ -83,7 +83,7 @@ class _ProfileBgState extends State<ProfileBg> with SingleTickerProviderStateMix
             width: 160,
             height: 160,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
           ),

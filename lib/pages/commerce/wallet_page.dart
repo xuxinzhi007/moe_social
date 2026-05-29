@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
+import 'package:moe_social/services/api_response.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/pages/commerce/recharge_page.dart';
 import 'package:moe_social/pages/commerce/order_center_page.dart';
 import '../../widgets/fade_in_up.dart'; // 恢复导入
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../widgets/moe_loading.dart';
+import '../../theme/moe_tokens.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -14,6 +18,8 @@ class WalletPage extends StatefulWidget {
 }
 
 class _WalletPageState extends State<WalletPage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   double _balance = 0.0;
   List<dynamic> _transactions = [];
   bool _isLoading = false;
@@ -63,8 +69,11 @@ class _WalletPageState extends State<WalletPage> {
         pageSize: _pageSize,
       );
 
-      final transactions = result['data'] as List;
-      final total = result['total'] as int;
+      final transactions = ApiResponse.listOf(
+        result,
+        keys: const ['transactions', 'data'],
+      );
+      final total = ApiResponse.intField(result, 'total') ?? transactions.length;
 
       // 解析amount为double
       final parsedTransactions = transactions.map((t) {
@@ -145,7 +154,7 @@ class _WalletPageState extends State<WalletPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _moe.pageBackground,
       appBar: AppBar(
         title: const Text('我的钱包', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         centerTitle: true,
@@ -162,14 +171,14 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               );
             },
-            icon: const Icon(Icons.receipt_long_outlined, size: 20, color: Color(0xFF7F7FD5)),
-            label: const Text('订单', style: TextStyle(color: Color(0xFF7F7FD5))),
+            icon: Icon(Icons.receipt_long_outlined, size: 20, color: _moe.primary),
+            label: Text('订单', style: TextStyle(color: _moe.primary)),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
-        color: const Color(0xFF7F7FD5),
+        color: _moe.primary,
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 40),
@@ -196,7 +205,7 @@ class _WalletPageState extends State<WalletPage> {
                         width: 4, 
                         height: 18, 
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7F7FD5),
+                          color: _moe.primary,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -247,9 +256,9 @@ class _WalletPageState extends State<WalletPage> {
                   itemBuilder: (context, index) {
                     if (index == _transactions.length) {
                       if (_isLoading) {
-                        return const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5))),
+                        return Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Center(child: MoeLoading(color: _moe.primary)),
                         );
                       } else if (_hasMore) {
                         return Padding(
@@ -257,7 +266,7 @@ class _WalletPageState extends State<WalletPage> {
                           child: Center(
                             child: TextButton(
                               onPressed: _loadTransactions,
-                              child: const Text('点击加载更多', style: TextStyle(color: Color(0xFF7F7FD5))),
+                              child: Text('点击加载更多', style: TextStyle(color: _moe.primary)),
                             ),
                           ),
                         );
@@ -286,15 +295,15 @@ class _WalletPageState extends State<WalletPage> {
       constraints: const BoxConstraints(minHeight: 180),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)], // 薰衣草 -> 天空蓝
+        gradient: LinearGradient(
+          colors: [_moe.primary, MoeTokens.secondary], // 薰衣草 -> 天空蓝
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.4),
+            color: _moe.primary.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -310,7 +319,7 @@ class _WalletPageState extends State<WalletPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
@@ -319,7 +328,7 @@ class _WalletPageState extends State<WalletPage> {
               Text(
                 '账户余额',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -371,7 +380,7 @@ class _WalletPageState extends State<WalletPage> {
               label: const Text('立即充值'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: _moe.primary,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -397,7 +406,7 @@ class _WalletPageState extends State<WalletPage> {
         borderRadius: BorderRadius.circular(20), // 保持统一圆角
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withOpacity(0.05), // 使用主色调的淡阴影
+            color: _moe.primary.withValues(alpha: 0.05), // 使用主色调的淡阴影
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -409,7 +418,7 @@ class _WalletPageState extends State<WalletPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(

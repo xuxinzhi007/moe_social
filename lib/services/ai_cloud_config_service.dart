@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'api_response.dart';
 import 'api_service.dart';
 
 class AiCloudConfigSnapshot {
@@ -29,7 +30,7 @@ class AiCloudConfigService {
   Future<AiCloudConfigSnapshot?> fetch() async {
     try {
       final resp = await ApiService.get('/api/ai/config').timeout(_readTimeout);
-      final data = (resp['data'] as Map?)?.cast<String, dynamic>() ?? {};
+      final data = ApiResponse.object(resp);
       final profiles = (data['provider_profiles'] as List?)
               ?.whereType<Map>()
               .map((e) => Map<String, dynamic>.from(e))
@@ -63,8 +64,8 @@ class AiCloudConfigService {
     try {
       final resp =
           await ApiService.get('/api/ai/providers').timeout(_readTimeout);
-      return (resp['data'] as List?)
-          ?.whereType<Map>()
+      return ApiResponse.listOf(resp, keys: const ['providers', 'data'])
+          .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {
@@ -84,8 +85,8 @@ class AiCloudConfigService {
   Future<List<Map<String, dynamic>>?> fetchAgents() async {
     try {
       final resp = await ApiService.get('/api/ai/agents').timeout(_readTimeout);
-      return (resp['data'] as List?)
-          ?.whereType<Map>()
+      return ApiResponse.listOf(resp, keys: const ['agents', 'data'])
+          .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {
@@ -100,8 +101,8 @@ class AiCloudConfigService {
       final resp = await ApiService.get(
         '/api/ai/agents/public?limit=$limit',
       ).timeout(_readTimeout);
-      return (resp['data'] as List?)
-          ?.whereType<Map>()
+      return ApiResponse.listOf(resp, keys: const ['agents', 'data'])
+          .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {
@@ -122,8 +123,8 @@ class AiCloudConfigService {
     try {
       final resp =
           await ApiService.get('/api/ai/lorebooks').timeout(_readTimeout);
-      return (resp['data'] as List?)
-          ?.whereType<Map>()
+      return ApiResponse.listOf(resp, keys: const ['lorebooks', 'data'])
+          .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {

@@ -79,8 +79,8 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion> w
               boxShadow: [
                 BoxShadow(
                   color: isUnlocked 
-                      ? badge.rarity.tierGradient.last.withOpacity(_glowAnimation.value * 0.5)
-                      : Colors.black.withOpacity(0.1),
+                      ? badge.rarity.tierGradient.last.withValues(alpha: _glowAnimation.value * 0.5)
+                      : Colors.black.withValues(alpha: 0.1),
                   blurRadius: size * 0.2,
                   spreadRadius: size * 0.05,
                 ),
@@ -92,14 +92,14 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion> w
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: isUnlocked
-                      ? [Colors.white, Colors.white.withOpacity(0.8)]
+                      ? [Colors.white, Colors.white.withValues(alpha: 0.8)]
                       : [Colors.grey.shade100, Colors.grey.shade200],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -122,7 +122,7 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion> w
                         height: size * 0.3,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                         ),
                         child: const Icon(
                           Icons.lock_rounded,
@@ -138,12 +138,12 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion> w
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: badge.rarity.tierGradient.first.withOpacity(0.6),
+                            color: badge.rarity.tierGradient.first.withValues(alpha: 0.6),
                             width: size * 0.02,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: badge.rarity.tierGradient.last.withOpacity(0.3),
+                              color: badge.rarity.tierGradient.last.withValues(alpha: 0.3),
                               blurRadius: size * 0.1,
                               spreadRadius: size * 0.02,
                             ),

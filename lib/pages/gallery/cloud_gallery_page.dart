@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../services/api_response.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
@@ -78,8 +79,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   Future<void> _loadQuota() async {
     try {
       final result = await ApiService.get('/api/images/quota');
-      final data = result['data'];
-      if (data is Map) {
+      final data = ApiResponse.object(result, keys: const ['quota']);
+      if (data.isNotEmpty) {
         final used = data['used_bytes'];
         final max = data['max_bytes'];
         setState(() {
@@ -100,8 +101,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     
     try {
       final result = await ApiService.get('/api/images?page=$_currentPage&page_size=$_pageSize');
-      if (result['success'] == true) {
-        final images = result['data'] as List;
+      if (ApiResponse.isSuccess(result)) {
+        final images = ApiResponse.listOf(result, keys: const ['images', 'data']);
         setState(() {
           for (final it in images) {
             if (it is! Map) continue;
@@ -114,7 +115,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               _images.add(it);
             }
           }
-          _total = result['total'] as int;
+          _total = ApiResponse.intField(result, 'total') ?? _images.length;
           _hasMore = _images.length < _total;
           _currentPage++;
         });
@@ -310,7 +311,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
                     child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
                   ),
                   title: const Text('从相册选择', style: TextStyle(fontWeight: FontWeight.w500)),
@@ -320,7 +321,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle),
                     child: const Icon(Icons.camera_alt_outlined, color: Colors.purple),
                   ),
                   title: const Text('拍照上传', style: TextStyle(fontWeight: FontWeight.w500)),
@@ -387,7 +388,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -401,7 +402,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: (isWarning ? Colors.red : Colors.blue).withOpacity(0.1),
+                  color: (isWarning ? Colors.red : Colors.blue).withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -619,7 +620,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
+                                          color: Colors.black.withValues(alpha: 0.05),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -646,7 +647,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                 if (isSelected)
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.4),
+                                      color: Colors.black.withValues(alpha: 0.4),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: Colors.blueAccent, width: 3),
                                     ),
@@ -657,7 +658,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                     right: 8,
                                     child: Icon(
                                       isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                                      color: isSelected ? Colors.blueAccent : Colors.white.withOpacity(0.8),
+                                      color: isSelected ? Colors.blueAccent : Colors.white.withValues(alpha: 0.8),
                                       size: 24,
                                     ),
                                   ),

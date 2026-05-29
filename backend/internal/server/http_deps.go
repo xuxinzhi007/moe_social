@@ -1,6 +1,7 @@
 package server
 
 import (
+	grpcserver "backend/internal/server/grpc"
 	"backend/internal/server/httplegacy"
 )
 
@@ -24,7 +25,21 @@ func ProtoHTTPDepsFromPilot(d httplegacy.PilotDeps) ProtoHTTPDeps {
 	out.BehaviorApp = s.BehaviorApp
 	out.AIApp = s.AIApp
 	out.LLMApp = s.LLMApp
+	if s.LLMGW != nil {
+		out.LLMMemoryGateway = s.LLMGW
+	}
+	if s.Config.LLMInference.BaseUrl != "" {
+		out.LLMInferenceBaseURL = s.Config.LLMInference.BaseUrl
+	}
 	out.VipAdmin = s.VipAdmin
 	out.AdminApp = s.AdminApp
+	out.SvcCtx = s
 	return out
+}
+
+func moeGRPCOptions(d ProtoHTTPDeps) []grpcserver.Option {
+	if d.SvcCtx == nil {
+		return nil
+	}
+	return []grpcserver.Option{grpcserver.WithInferenceConfig(d.SvcCtx.Config.LLMInference)}
 }

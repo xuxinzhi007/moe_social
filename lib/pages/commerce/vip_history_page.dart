@@ -190,7 +190,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(record.status).withOpacity(0.1),
+                    color: _getStatusColor(record.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(

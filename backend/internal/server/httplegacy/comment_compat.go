@@ -13,7 +13,7 @@ import (
 )
 
 // PilotNativeCommentCompatRoutes 评论写操作 Kratos HTTP（internal/service/comment）。
-const PilotNativeCommentCompatRoutes = 2
+const PilotNativeCommentCompatRoutes = 0
 
 // RegisterCommentCompat D2：已迁入 RegisterCommentServiceHTTPServer。
 func RegisterCommentCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

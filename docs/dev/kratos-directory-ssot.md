@@ -2,7 +2,7 @@
 
 > **权威参考**：[Kratos 项目布局](https://go-kratos.dev/zh-cn/docs/intro/layout/)  
 > **状态板**：[kratos-migration-status.md](./kratos-migration-status.md)  
-> **上次更新**：2026-05-29 · **审计结论**：[kratos-architecture-audit.md](./kratos-architecture-audit.md)
+> **上次更新**：2026-05-27（P0/P1 收口） · **审计结论**：[kratos-architecture-audit.md](./kratos-architecture-audit.md)
 
 ---
 
@@ -20,31 +20,37 @@ api/<domain>/v1/*.proto + google.api.http
 
 ---
 
-## 2. 当前目录（2026-05-29）
+## 2. 当前目录（2026-05-27）
 
 ```text
 backend/
-  api/<domain>/v1/*.proto, *.pb.go, *_grpc.pb.go, *_http.pb.go   # 契约 SSOT
+  api/<domain>/v1/*.proto, *.pb.go, *_grpc.pb.go, *_http.pb.go   # 契约 SSOT（18 域含 content）
   api/defs/*.api                    # 存量 goctl（勿扩；make gen-api）
   api/internal/handler/             # hybrid 构建残留
   api/internal/logic/.gitkeep
 
   internal/server/
-    http.go                         # NewHTTPServer
-    http_proto.go                   # Register*HTTPServer（17 域，含 AdminInsights）
+    http.go                         # NewHTTPServer（CORS + 双信封 + 路由）
+    http_envelope.go                # Proto 统一 JSON 信封
+    compat_envelope.go              # Compat BaseResp.data 压平 Filter
+    cors.go                         # Flutter Web CORS
+    http_proto.go                   # Register*HTTPServer（19 次注册 / 18 域）
     http_compat.go                  # 编排 httplegacy compat
-    httplegacy/                     # 存量 compat（原 api/moehttp）
-    grpc/ + grpc.go
+    httplegacy/                     # 存量 compat（45 条活跃）
+    grpc/<domain>/                  # proto HTTP 薄适配（adminapp、vipplans、content…）
+    grpc.go
 
   internal/platform/
-    svc/                            # ServiceContext（原 api/internal/svc）
-    wiring/                         # 启动装配（原 api/runserver）
+    svc/                            # ServiceContext
+    wiring/                         # 启动装配
     moesocial/                      # 生产 HTTP/gRPC 启动
+    kratosprogress/                 # /migration 进度
 
-  internal/apilegacy/               # 原 api/internal（gw/common/config/…）
-  internal/legacy/types/            # 原 api/internal/types（goctl 契约 JSON）
+  internal/apilegacy/               # swagger bridge、gw/common（随 D4 退役）
+  internal/legacy/types/            # 存量 goctl JSON types
 
   third_party/google/api/           # protoc-gen-go-http 依赖
+  openapi.yaml                      # make gen 产出（~100+ /api 路径）
 ```
 
 ---
@@ -86,8 +92,8 @@ protoc --proto_path=. --proto_path=./third_party \
 
 - [x] `third_party/google/api/`
 - [x] `protoc-gen-go-http` + `moe-proto.sh`
-- [x] 17 域 `*_http.pb.go`（含 admin AdminInsights）
-- [x] `http_proto.go` → **17 域** `Register*HTTPServer`
+- [x] 18 域 `*_http.pb.go`（含 `content`、`admin` AdminApp、扩展 `user`/`vip`/`llm`）
+- [x] `http_proto.go` → **19** 次 `Register*HTTPServer`（同域多 service 如 Vip/Chat/Admin）
 
 ### D1 — `api/` 瘦身 ✅（部分）
 
@@ -95,14 +101,28 @@ protoc --proto_path=. --proto_path=./third_party \
 - [x] `api/runserver/` → `internal/platform/wiring/`
 - [x] `api/internal/{svc,gw,common,…}` → `internal/apilegacy/` + `internal/platform/svc`
 - [x] `api/internal/types` → `internal/legacy/types`
-- [x] `api/internal/types` → `internal/legacy/types`
-- [x] `api/defs/` 只读镜像 → `scripts/archive/api-defs/`（`moe.api` 仍 import 活跃 defs）
+- [x] `api/defs/` 只读镜像 → `scripts/archive/api-defs/`
 
-### D2 — compat → proto HTTP（进行中，~25%）
+### D2 — compat → proto HTTP（~83%，P0/P1 ✅）
 
-已迁入 proto HTTP 并摘除 compat 路由的域：post、landing、checkin（用户侧）、achievement、gift、comment、behavior、vipread、moeadmin、ai（CRUD）、notify（收件箱）、user（5 RPC）、community（4 RPC）、chat（私信）、vip（3 RPC）、**admin insights（5 路由）** 等。
+| 指标 | 数值 | 核对 |
+|------|------|------|
+| Proto HTTP 路由 | **227** | `api/**/*_http.pb.go` 中 `r.GET/POST/…` 计数 |
+| Compat 活跃路由 | **45** | `httplegacy/*_compat.go` 常量之和 |
+| Bridge | **3** | `/swagger`、`/swagger/openapi.yaml`、`/swagger/doc.json` |
+| `nativeDomainRouteCount` | **227** | `routes_native_gen.go` |
+| `PilotNativeCompatRoutes` | **45** | `route_stats.go` |
 
-仍走 compat（约 198 条活跃路由）：admin 大批量 CRUD、user 社交/VIP 余量、platform、llm 读、websocket 等。详见 [kratos-architecture-audit.md](./kratos-architecture-audit.md)。
+**P0/P1 已迁入 proto（compat no-op 或仅保留例外）：**
+
+- Admin：`admin_service`（55）· `admin_legacy`（28→1 SSE）· `admin_readonly`（3）
+- User：社交/VIP/钱包/OAuth（40→2 OAuth 回调）
+- 记忆：`user_memory`（8）→ `LlmChat`
+- wave2：19→4（图片 multipart 静态保留）
+
+**仍走 compat（P2 / 有意保留，45 条）：** `platform`（17）· `community`（7）· `chat`（6）· `ai`（4）· `wave2` 图片（4）· `user` OAuth（2）· `llm_read`（2）· `checkin`（2）· `admin_legacy` SSE（1）。详见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
+
+**响应格式（P0 ✅）：** proto 走 `http_envelope.go`；compat 经 `compat_envelope.go` 压平后与 proto 同形。Flutter `api_response.dart` 仍兼容历史 `data` 嵌套。
 
 ### D3 — 清空 `api/internal` ⏳
 

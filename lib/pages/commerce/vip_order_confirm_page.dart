@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 
 import 'package:flutter/material.dart';
 
@@ -26,6 +28,8 @@ class VipOrderConfirmPage extends StatefulWidget {
 }
 
 class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   late double _balance;
   bool _isAgreeProtocol = false;
   bool _isPaying = false;
@@ -197,7 +201,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
             ElevatedButton(
               onPressed: () => Navigator.pop(dialogContext, 'vip_center'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7F7FD5),
+                backgroundColor: _moe.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -215,7 +219,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _moe.pageBackground,
       appBar: AppBar(
         title: const Text(
           '确认订单',
@@ -265,15 +269,15 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+        gradient: LinearGradient(
+          colors: [_moe.primary, MoeTokens.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.22),
+            color: _moe.primary.withValues(alpha: 0.22),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -339,7 +343,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+            color: _moe.primary.withValues(alpha: 0.1),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -351,7 +355,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
           const SizedBox(height: 10),
           _buildInfoRow('当前余额', '¥${_balance.toStringAsFixed(2)}'),
           const SizedBox(height: 10),
-          Divider(color: const Color(0xFF7F7FD5).withValues(alpha: 0.15)),
+          Divider(color: _moe.primary.withValues(alpha: 0.15)),
           const SizedBox(height: 10),
           _buildInfoRow(
             _shortfall > 0 ? '还需支付' : '支付后余额',
@@ -436,7 +440,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+            color: _moe.primary.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -447,7 +451,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         children: [
           Checkbox(
             value: _isAgreeProtocol,
-            activeColor: const Color(0xFF7F7FD5),
+            activeColor: _moe.primary,
             onChanged: (value) {
               setState(() {
                 _isAgreeProtocol = value ?? false;
@@ -484,9 +488,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.account_balance_wallet_rounded,
-            color: Color(0xFF7F7FD5),
+          Icon(Icons.account_balance_wallet_rounded, color: _moe.primary,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -521,7 +523,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+            color: _moe.primary.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, -6),
           ),
@@ -539,7 +541,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
               child: ElevatedButton(
                 onPressed: canPay ? _confirmPay : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: _moe.primary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor: const Color(0xFFCACEEB),
                   elevation: 0,
@@ -584,7 +586,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                   TextButton(
                     onPressed: _goRecharge,
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF7F7FD5),
+                      foregroundColor: _moe.primary,
                       textStyle: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
@@ -601,7 +603,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
   }
 
   Widget _buildInfoRow(String label, String value, {bool highlight = false}) {
-    final color = highlight ? const Color(0xFF7F7FD5) : const Color(0xFF333333);
+    final color = highlight ? _moe.primary : const Color(0xFF333333);
     final weight = highlight ? FontWeight.w800 : FontWeight.w600;
     return Row(
       children: [

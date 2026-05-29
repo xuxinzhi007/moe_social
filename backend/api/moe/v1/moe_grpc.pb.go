@@ -28,6 +28,11 @@ const (
 	MoeAdmin_DeleteBrainEpisode_FullMethodName = "/moe.v1.MoeAdmin/DeleteBrainEpisode"
 	MoeAdmin_RefineBrainEpisode_FullMethodName = "/moe.v1.MoeAdmin/RefineBrainEpisode"
 	MoeAdmin_CurateBrain_FullMethodName        = "/moe.v1.MoeAdmin/CurateBrain"
+	MoeAdmin_GetBotFlow_FullMethodName         = "/moe.v1.MoeAdmin/GetBotFlow"
+	MoeAdmin_UpsertBotFlow_FullMethodName      = "/moe.v1.MoeAdmin/UpsertBotFlow"
+	MoeAdmin_DeleteBotFlow_FullMethodName      = "/moe.v1.MoeAdmin/DeleteBotFlow"
+	MoeAdmin_GetInferenceStatus_FullMethodName = "/moe.v1.MoeAdmin/GetInferenceStatus"
+	MoeAdmin_GetToolsSchema_FullMethodName     = "/moe.v1.MoeAdmin/GetToolsSchema"
 	MoeAdmin_QueryToolStats_FullMethodName     = "/moe.v1.MoeAdmin/QueryToolStats"
 	MoeAdmin_ListToolCalls_FullMethodName      = "/moe.v1.MoeAdmin/ListToolCalls"
 )
@@ -52,6 +57,11 @@ type MoeAdminClient interface {
 	DeleteBrainEpisode(ctx context.Context, in *DeleteBrainEpisodeRequest, opts ...grpc.CallOption) (*DeleteBrainEpisodeReply, error)
 	RefineBrainEpisode(ctx context.Context, in *RefineBrainEpisodeRequest, opts ...grpc.CallOption) (*RefineBrainEpisodeReply, error)
 	CurateBrain(ctx context.Context, in *CurateBrainRequest, opts ...grpc.CallOption) (*CurateBrainReply, error)
+	GetBotFlow(ctx context.Context, in *GetBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error)
+	UpsertBotFlow(ctx context.Context, in *UpsertBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error)
+	DeleteBotFlow(ctx context.Context, in *DeleteBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error)
+	GetInferenceStatus(ctx context.Context, in *GetInferenceStatusRequest, opts ...grpc.CallOption) (*GetInferenceStatusReply, error)
+	GetToolsSchema(ctx context.Context, in *GetToolsSchemaRequest, opts ...grpc.CallOption) (*GetToolsSchemaReply, error)
 	QueryToolStats(ctx context.Context, in *QueryToolStatsRequest, opts ...grpc.CallOption) (*QueryToolStatsReply, error)
 	ListToolCalls(ctx context.Context, in *ListToolCallsRequest, opts ...grpc.CallOption) (*ListToolCallsReply, error)
 }
@@ -154,6 +164,56 @@ func (c *moeAdminClient) CurateBrain(ctx context.Context, in *CurateBrainRequest
 	return out, nil
 }
 
+func (c *moeAdminClient) GetBotFlow(ctx context.Context, in *GetBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BotFlowReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetBotFlow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) UpsertBotFlow(ctx context.Context, in *UpsertBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BotFlowReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_UpsertBotFlow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) DeleteBotFlow(ctx context.Context, in *DeleteBotFlowRequest, opts ...grpc.CallOption) (*BotFlowReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BotFlowReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_DeleteBotFlow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GetInferenceStatus(ctx context.Context, in *GetInferenceStatusRequest, opts ...grpc.CallOption) (*GetInferenceStatusReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetInferenceStatusReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetInferenceStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moeAdminClient) GetToolsSchema(ctx context.Context, in *GetToolsSchemaRequest, opts ...grpc.CallOption) (*GetToolsSchemaReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetToolsSchemaReply)
+	err := c.cc.Invoke(ctx, MoeAdmin_GetToolsSchema_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *moeAdminClient) QueryToolStats(ctx context.Context, in *QueryToolStatsRequest, opts ...grpc.CallOption) (*QueryToolStatsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryToolStatsReply)
@@ -194,6 +254,11 @@ type MoeAdminServer interface {
 	DeleteBrainEpisode(context.Context, *DeleteBrainEpisodeRequest) (*DeleteBrainEpisodeReply, error)
 	RefineBrainEpisode(context.Context, *RefineBrainEpisodeRequest) (*RefineBrainEpisodeReply, error)
 	CurateBrain(context.Context, *CurateBrainRequest) (*CurateBrainReply, error)
+	GetBotFlow(context.Context, *GetBotFlowRequest) (*BotFlowReply, error)
+	UpsertBotFlow(context.Context, *UpsertBotFlowRequest) (*BotFlowReply, error)
+	DeleteBotFlow(context.Context, *DeleteBotFlowRequest) (*BotFlowReply, error)
+	GetInferenceStatus(context.Context, *GetInferenceStatusRequest) (*GetInferenceStatusReply, error)
+	GetToolsSchema(context.Context, *GetToolsSchemaRequest) (*GetToolsSchemaReply, error)
 	QueryToolStats(context.Context, *QueryToolStatsRequest) (*QueryToolStatsReply, error)
 	ListToolCalls(context.Context, *ListToolCallsRequest) (*ListToolCallsReply, error)
 	mustEmbedUnimplementedMoeAdminServer()
@@ -232,6 +297,21 @@ func (UnimplementedMoeAdminServer) RefineBrainEpisode(context.Context, *RefineBr
 }
 func (UnimplementedMoeAdminServer) CurateBrain(context.Context, *CurateBrainRequest) (*CurateBrainReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method CurateBrain not implemented")
+}
+func (UnimplementedMoeAdminServer) GetBotFlow(context.Context, *GetBotFlowRequest) (*BotFlowReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBotFlow not implemented")
+}
+func (UnimplementedMoeAdminServer) UpsertBotFlow(context.Context, *UpsertBotFlowRequest) (*BotFlowReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertBotFlow not implemented")
+}
+func (UnimplementedMoeAdminServer) DeleteBotFlow(context.Context, *DeleteBotFlowRequest) (*BotFlowReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteBotFlow not implemented")
+}
+func (UnimplementedMoeAdminServer) GetInferenceStatus(context.Context, *GetInferenceStatusRequest) (*GetInferenceStatusReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetInferenceStatus not implemented")
+}
+func (UnimplementedMoeAdminServer) GetToolsSchema(context.Context, *GetToolsSchemaRequest) (*GetToolsSchemaReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetToolsSchema not implemented")
 }
 func (UnimplementedMoeAdminServer) QueryToolStats(context.Context, *QueryToolStatsRequest) (*QueryToolStatsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method QueryToolStats not implemented")
@@ -422,6 +502,96 @@ func _MoeAdmin_CurateBrain_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MoeAdmin_GetBotFlow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBotFlowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetBotFlow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetBotFlow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetBotFlow(ctx, req.(*GetBotFlowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_UpsertBotFlow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertBotFlowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).UpsertBotFlow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_UpsertBotFlow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).UpsertBotFlow(ctx, req.(*UpsertBotFlowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_DeleteBotFlow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBotFlowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).DeleteBotFlow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_DeleteBotFlow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).DeleteBotFlow(ctx, req.(*DeleteBotFlowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GetInferenceStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetInferenceStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetInferenceStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetInferenceStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetInferenceStatus(ctx, req.(*GetInferenceStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MoeAdmin_GetToolsSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetToolsSchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MoeAdminServer).GetToolsSchema(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MoeAdmin_GetToolsSchema_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MoeAdminServer).GetToolsSchema(ctx, req.(*GetToolsSchemaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _MoeAdmin_QueryToolStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryToolStatsRequest)
 	if err := dec(in); err != nil {
@@ -500,6 +670,26 @@ var MoeAdmin_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CurateBrain",
 			Handler:    _MoeAdmin_CurateBrain_Handler,
+		},
+		{
+			MethodName: "GetBotFlow",
+			Handler:    _MoeAdmin_GetBotFlow_Handler,
+		},
+		{
+			MethodName: "UpsertBotFlow",
+			Handler:    _MoeAdmin_UpsertBotFlow_Handler,
+		},
+		{
+			MethodName: "DeleteBotFlow",
+			Handler:    _MoeAdmin_DeleteBotFlow_Handler,
+		},
+		{
+			MethodName: "GetInferenceStatus",
+			Handler:    _MoeAdmin_GetInferenceStatus_Handler,
+		},
+		{
+			MethodName: "GetToolsSchema",
+			Handler:    _MoeAdmin_GetToolsSchema_Handler,
 		},
 		{
 			MethodName: "QueryToolStats",

@@ -10,12 +10,15 @@
 
 | 命令 | 用途 |
 |------|------|
-| **`make gen`** | 域 proto → `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go` + conf + 路由表 |
-| `make init-proto-tools` | 可选：新机器预装 protoc 插件（`make gen` 也会自动装） |
+| **`make gen`** | 域 proto → `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go` + **`openapi.yaml`** + conf + 路由表 |
+| `make gen-swagger` | 仅重新生成 `openapi.yaml`（OpenAPI 3.0.3） |
+| `make init-proto-tools` | 可选：新机器预装 protoc 插件（含 `protoc-gen-openapi`） |
 | `make gen-http-routes` | 同步 `internal/server/httplegacy/routes_*_gen.go` |
-| `make gen-moe-proto` | 仅 proto pb/grpc/http |
+| `make gen-moe-proto` | 仅 proto pb/grpc/http + openapi |
 | `make gen-api` | 改 `api/defs` 后（慎用） |
 | `make check` | 编译 + 核心单测 |
+
+OpenAPI / Apifox 导入详见 [docs/dev/openapi-apifox.md](../docs/dev/openapi-apifox.md)。
 
 ## 覆盖范围
 
@@ -29,7 +32,8 @@
 
 ```text
 scripts/gen/
-  moe-proto.sh          # 含 --go-http_out
+  moe-proto.sh          # 含 --go-http_out；末尾调用 openapi.sh
+  openapi.sh            # protoc-gen-openapi → openapi.yaml
   moe-conf.sh
   http-routes/          → internal/server/httplegacy/routes_*_gen.go
   prune-api-logic-*.sh

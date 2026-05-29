@@ -131,7 +131,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -184,10 +184,10 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
+                        color: Colors.blue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.blue.withOpacity(0.3),
+                          color: Colors.blue.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
@@ -208,9 +208,9 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: tag.color.withOpacity(0.1),
+                                  color: tag.color.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: tag.color.withOpacity(0.5)),
+                                  border: Border.all(color: tag.color.withValues(alpha: 0.5)),
                                 ),
                                 child: Text(
                                   tag.name,
@@ -290,10 +290,10 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: gift.color.withOpacity(0.3)),
+                            border: Border.all(color: gift.color.withValues(alpha: 0.3)),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -495,7 +495,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

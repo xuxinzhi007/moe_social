@@ -9,7 +9,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-const bridgeRouteCount = 2
+const bridgeRouteCount = 3
 
 func RegisterBridgeHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext) {
 	if srv == nil || svc == nil {
@@ -17,5 +17,6 @@ func RegisterBridgeHTTPHandlers(srv *khttp.Server, svc *svc.ServiceContext) {
 	}
 	r := srv.Route("/")
 	r.GET("/swagger", wrapNetHTTPHandler(hdoc.SwaggerUiHandler(svc)))
+	r.GET("/swagger/openapi.yaml", wrapNetHTTPHandler(hdoc.SwaggerOpenAPIHandler(svc)))
 	r.GET("/swagger/doc.json", wrapNetHTTPHandler(hdoc.SwaggerDocHandler(svc)))
 }

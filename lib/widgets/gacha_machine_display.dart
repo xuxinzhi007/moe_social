@@ -176,10 +176,10 @@ class GachaBallsPainter extends CustomPainter {
     final center = Offset(size.width * 0.5, size.height * 0.85);
     final double gearRadius = size.width * 0.22;
     final Paint gearPaint = Paint()
-      ..color = Colors.white.withOpacity(0.9)
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..style = PaintingStyle.fill;
     final Paint gearBorderPaint = Paint()
-      ..color = Colors.pink.withOpacity(0.25)
+      ..color = Colors.pink.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
 
@@ -215,7 +215,7 @@ class GachaBallsPainter extends CustomPainter {
       center,
       gearRadius * 0.25,
       Paint()
-        ..color = Colors.pinkAccent.withOpacity(isPlaying ? 0.9 : 0.6)
+        ..color = Colors.pinkAccent.withValues(alpha: isPlaying ? 0.9 : 0.6)
         ..style = PaintingStyle.fill,
     );
 
@@ -227,7 +227,7 @@ class GachaBallsPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
         
       final borderPaint = Paint()
-        ..color = Colors.white.withOpacity(0.5)
+        ..color = Colors.white.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1;
 
@@ -253,7 +253,7 @@ class GachaBallsPainter extends CustomPainter {
 
       // 绘制高光 (模拟 Positioned 里的内部 Container)
       final highlightPaint = Paint()
-        ..color = Colors.white.withOpacity(0.3)
+        ..color = Colors.white.withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
       
       // 高光稍微偏一点

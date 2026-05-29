@@ -21,7 +21,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-const PilotNativeAiCompatRoutes = 14
+const PilotNativeAiCompatRoutes = 4
 
 func RegisterAiCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	if srv == nil || svcCtx == nil {

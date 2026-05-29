@@ -25,7 +25,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withOpacity(0.1),
+                color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -37,7 +37,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                color: const Color(0xFF2196F3).withOpacity(0.1),
+                color: const Color(0xFF2196F3).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -177,7 +177,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -197,7 +197,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: gradient[0].withOpacity(0.3),
+                    color: gradient[0].withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -253,7 +253,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -292,7 +292,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: const Color(0xFF4CAF50).withOpacity(0.1),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(icon, size: 16, color: const Color(0xFF4CAF50)),

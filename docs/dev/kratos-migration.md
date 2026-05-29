@@ -1,7 +1,7 @@
 # Kratos 后端架构（SSOT）
 
-> **更新：2026-05-29**  
-> **当前阶段**：**纯 Kratos 生产** · **P0–P6 完成** · `make moe-social` · HTTP `:8888` + gRPC `:8080`
+> **更新：2026-05-27（P0/P1 收口）**  
+> **当前阶段**：**纯 Kratos 生产** · **P0–P6 + P0/P1 审计完成** · `make moe-social` · HTTP `:8888` + gRPC `:8080`
 
 | 文档 | 用途 |
 |------|------|
@@ -24,7 +24,7 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
 ## 1. 当前阶段（一句话）
 
 - **运行时**：Kratos 传输层对外；**一个进程** `cmd/moe-social`，配置 SSOT 为 `backend/config/config.yaml`。
-- **业务**：`internal/biz` + `internal/service`；HTTP 主路径为 **`Register*HTTPServer`**（`http_proto.go`）；余量走 `httplegacy/*_compat.go`。
+- **HTTP**：**227** 条 proto 路由（`http_proto.go`）+ **45** 条 compat 余量（`httplegacy`）；双信封（`http_envelope.go` + `compat_envelope.go`）。
 - **gRPC**：12 域独立服务 + `MoeAdmin`；**无** `service Super`（P5-B）。
 - **契约**：新接口只加 `api/<domain>/v1/*.proto`；存量 `api/defs` 仅维护，日常 `make gen` 不跑 goctl api。
 - **go-zero**：生产 `moe-social` **依赖树零 go-zero**（P5-D）；紧急回滚 `go build -tags hybrid`。
@@ -43,15 +43,15 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
   internal/platform/moesocial     # 启动编排
         │
         ├─ Kratos HTTP :8888
-        │    ├─ internal/server/http.go         (NewHTTPServer)
-        │    ├─ internal/server/http_proto.go   (Register*HTTPServer)
-        │    └─ internal/server/httplegacy/     (*_compat.go 过渡)
+        │    ├─ internal/server/http.go         (CORS + 信封 Filter)
+        │    ├─ internal/server/http_proto.go   (Register*HTTPServer · 227 路由)
+        │    └─ internal/server/httplegacy/       (compat 45 条)
         │
         └─ Kratos gRPC :8080
              ├─ internal/server/grpc/      # 12 域 + MoeAdmin
              └─ rpc/internal/bootstrap/    # MoeAdmin / Bot 装配
 
-  业务：internal/service/<domain> → internal/biz/<domain> → MySQL
+  业务：internal/server/grpc/<domain> → internal/service/<domain> → internal/biz → MySQL
 ```
 
 ---
@@ -65,8 +65,9 @@ P4/P5 阶段专文 → [../archive/dev/kratos/](../archive/dev/kratos/)（`docs/
 | `api/<domain>/v1/*.proto` + `*_http.pb.go` | **新** HTTP/gRPC 契约 |
 | `internal/biz/<domain>/` | 业务 |
 | `internal/service/<domain>/` | 应用服务 |
-| `internal/server/http_proto.go` | **官方** HTTP 注册 |
-| `internal/server/httplegacy/` | 存量 compat（过渡） |
+| `internal/server/http_proto.go` | **官方** HTTP 注册（19 次 Register） |
+| `internal/server/compat_envelope.go` | Compat JSON 压平（P0） |
+| `internal/server/httplegacy/` | 存量 compat（**45** 条活跃） |
 | `internal/server/http.go` | 健康检查、迁移进度 |
 | `internal/server/grpc/` | Kratos gRPC |
 | `internal/platform/{svc,wiring,moesocial}/` | 装配与启动 |

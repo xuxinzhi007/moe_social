@@ -1988,12 +1988,23 @@ const file_api_vip_v1_vip_messages_proto_rawDesc = "" +
 	"\x06end_at\x18\x06 \x01(\tR\x05endAt\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\b \x01(\tR\tcreatedAt2\xf9\x02\n" +
+	"created_at\x18\b \x01(\tR\tcreatedAt2\xa2\x02\n" +
+	"\bVipPlans\x12_\n" +
+	"\rCreateVipPlan\x12\x18.vip.v1.CreateVipPlanReq\x1a\x19.vip.v1.CreateVipPlanResp\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/api/vip/plans\x12]\n" +
+	"\n" +
+	"GetVipPlan\x12\x15.vip.v1.GetVipPlanReq\x1a\x16.vip.v1.GetVipPlanResp\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/api/vip/plans/{plan_id}\x12V\n" +
+	"\vGetVipPlans\x12\x16.vip.v1.GetVipPlansReq\x1a\x17.vip.v1.GetVipPlansResp\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/api/vip/plans2\x9e\b\n" +
 	"\n" +
 	"VipService\x12m\n" +
 	"\rGetVipRecords\x12\x18.vip.v1.GetVipRecordsReq\x1a\x19.vip.v1.GetVipRecordsResp\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/user/{user_id}/vip/records\x12\x87\x01\n" +
 	"\x16GetUserActiveVipRecord\x12!.vip.v1.GetUserActiveVipRecordReq\x1a\".vip.v1.GetUserActiveVipRecordResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/user/{user_id}/vip/active\x12r\n" +
-	"\x0eCreateVipOrder\x12\x19.vip.v1.CreateVipOrderReq\x1a\x1a.vip.v1.CreateVipOrderResp\")\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/user/{user_id}/vip/ordersB\x1aZ\x18backend/api/vip/v1;vipv1b\x06proto3"
+	"\x0eCreateVipOrder\x12\x19.vip.v1.CreateVipOrderReq\x1a\x1a.vip.v1.CreateVipOrderResp\")\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/user/{user_id}/vip/orders\x12n\n" +
+	"\x10GetUserVipStatus\x12\x1b.vip.v1.GetUserVipStatusReq\x1a\x1c.vip.v1.GetUserVipStatusResp\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/user/{user_id}/vip\x12h\n" +
+	"\rUpdateUserVip\x12\x18.vip.v1.UpdateUserVipReq\x1a\x19.vip.v1.UpdateUserVipResp\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/user/{user_id}/vip\x12y\n" +
+	"\x0fUpdateAutoRenew\x12\x1a.vip.v1.UpdateAutoRenewReq\x1a\x1b.vip.v1.UpdateAutoRenewResp\"-\x82\xd3\xe4\x93\x02':\x01*\x1a\"/api/user/{user_id}/vip/auto-renew\x12h\n" +
+	"\fCheckUserVip\x12\x17.vip.v1.CheckUserVipReq\x1a\x18.vip.v1.CheckUserVipResp\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/user/{user_id}/vip/check\x12i\n" +
+	"\fGetVipOrders\x12\x17.vip.v1.GetVipOrdersReq\x1a\x18.vip.v1.GetVipOrdersResp\"&\x82\xd3\xe4\x93\x02 \x12\x1e/api/user/{user_id}/vip/orders\x12y\n" +
+	"\x11SyncUserVipStatus\x12\x1c.vip.v1.SyncUserVipStatusReq\x1a\x1d.vip.v1.SyncUserVipStatusResp\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/api/user/{user_id}/vip/syncB\x1aZ\x18backend/api/vip/v1;vipv1b\x06proto3"
 
 var (
 	file_api_vip_v1_vip_messages_proto_rawDescOnce sync.Once
@@ -2049,14 +2060,32 @@ var file_api_vip_v1_vip_messages_proto_depIdxs = []int32{
 	27, // 6: vip.v1.GetVipPlansResp.plans:type_name -> vip.v1.VipPlan
 	28, // 7: vip.v1.GetVipRecordsResp.records:type_name -> vip.v1.VipRecord
 	25, // 8: vip.v1.UpdateUserVipResp.user:type_name -> vip.v1.User
-	17, // 9: vip.v1.VipService.GetVipRecords:input_type -> vip.v1.GetVipRecordsReq
-	7,  // 10: vip.v1.VipService.GetUserActiveVipRecord:input_type -> vip.v1.GetUserActiveVipRecordReq
-	3,  // 11: vip.v1.VipService.CreateVipOrder:input_type -> vip.v1.CreateVipOrderReq
-	18, // 12: vip.v1.VipService.GetVipRecords:output_type -> vip.v1.GetVipRecordsResp
-	8,  // 13: vip.v1.VipService.GetUserActiveVipRecord:output_type -> vip.v1.GetUserActiveVipRecordResp
-	4,  // 14: vip.v1.VipService.CreateVipOrder:output_type -> vip.v1.CreateVipOrderResp
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
+	5,  // 9: vip.v1.VipPlans.CreateVipPlan:input_type -> vip.v1.CreateVipPlanReq
+	13, // 10: vip.v1.VipPlans.GetVipPlan:input_type -> vip.v1.GetVipPlanReq
+	15, // 11: vip.v1.VipPlans.GetVipPlans:input_type -> vip.v1.GetVipPlansReq
+	17, // 12: vip.v1.VipService.GetVipRecords:input_type -> vip.v1.GetVipRecordsReq
+	7,  // 13: vip.v1.VipService.GetUserActiveVipRecord:input_type -> vip.v1.GetUserActiveVipRecordReq
+	3,  // 14: vip.v1.VipService.CreateVipOrder:input_type -> vip.v1.CreateVipOrderReq
+	9,  // 15: vip.v1.VipService.GetUserVipStatus:input_type -> vip.v1.GetUserVipStatusReq
+	23, // 16: vip.v1.VipService.UpdateUserVip:input_type -> vip.v1.UpdateUserVipReq
+	21, // 17: vip.v1.VipService.UpdateAutoRenew:input_type -> vip.v1.UpdateAutoRenewReq
+	1,  // 18: vip.v1.VipService.CheckUserVip:input_type -> vip.v1.CheckUserVipReq
+	11, // 19: vip.v1.VipService.GetVipOrders:input_type -> vip.v1.GetVipOrdersReq
+	19, // 20: vip.v1.VipService.SyncUserVipStatus:input_type -> vip.v1.SyncUserVipStatusReq
+	6,  // 21: vip.v1.VipPlans.CreateVipPlan:output_type -> vip.v1.CreateVipPlanResp
+	14, // 22: vip.v1.VipPlans.GetVipPlan:output_type -> vip.v1.GetVipPlanResp
+	16, // 23: vip.v1.VipPlans.GetVipPlans:output_type -> vip.v1.GetVipPlansResp
+	18, // 24: vip.v1.VipService.GetVipRecords:output_type -> vip.v1.GetVipRecordsResp
+	8,  // 25: vip.v1.VipService.GetUserActiveVipRecord:output_type -> vip.v1.GetUserActiveVipRecordResp
+	4,  // 26: vip.v1.VipService.CreateVipOrder:output_type -> vip.v1.CreateVipOrderResp
+	10, // 27: vip.v1.VipService.GetUserVipStatus:output_type -> vip.v1.GetUserVipStatusResp
+	24, // 28: vip.v1.VipService.UpdateUserVip:output_type -> vip.v1.UpdateUserVipResp
+	22, // 29: vip.v1.VipService.UpdateAutoRenew:output_type -> vip.v1.UpdateAutoRenewResp
+	2,  // 30: vip.v1.VipService.CheckUserVip:output_type -> vip.v1.CheckUserVipResp
+	12, // 31: vip.v1.VipService.GetVipOrders:output_type -> vip.v1.GetVipOrdersResp
+	20, // 32: vip.v1.VipService.SyncUserVipStatus:output_type -> vip.v1.SyncUserVipStatusResp
+	21, // [21:33] is the sub-list for method output_type
+	9,  // [9:21] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
@@ -2075,7 +2104,7 @@ func file_api_vip_v1_vip_messages_proto_init() {
 			NumEnums:      0,
 			NumMessages:   29,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_api_vip_v1_vip_messages_proto_goTypes,
 		DependencyIndexes: file_api_vip_v1_vip_messages_proto_depIdxs,

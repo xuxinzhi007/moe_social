@@ -199,6 +199,18 @@ message VipRecord {
   string created_at = 8;
 }
 
+service VipPlans {
+  rpc CreateVipPlan(CreateVipPlanReq) returns (CreateVipPlanResp) {
+    option (google.api.http) = { post: "/api/vip/plans" body: "*" };
+  }
+  rpc GetVipPlan(GetVipPlanReq) returns (GetVipPlanResp) {
+    option (google.api.http) = { get: "/api/vip/plans/{plan_id}" };
+  }
+  rpc GetVipPlans(GetVipPlansReq) returns (GetVipPlansResp) {
+    option (google.api.http) = { get: "/api/vip/plans" };
+  }
+}
+
 service VipService {
   rpc GetVipRecords(GetVipRecordsReq) returns (GetVipRecordsResp) {
     option (google.api.http) = { get: "/api/user/{user_id}/vip/records" };
@@ -208,5 +220,26 @@ service VipService {
   }
   rpc CreateVipOrder(CreateVipOrderReq) returns (CreateVipOrderResp) {
     option (google.api.http) = { post: "/api/user/{user_id}/vip/orders" body: "*" };
+  }
+  rpc GetUserVipStatus(GetUserVipStatusReq) returns (GetUserVipStatusResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/vip" };
+  }
+  rpc UpdateUserVip(UpdateUserVipReq) returns (UpdateUserVipResp) {
+    option (google.api.http) = { post: "/api/user/{user_id}/vip" body: "*" };
+  }
+  rpc UpdateAutoRenew(UpdateAutoRenewReq) returns (UpdateAutoRenewResp) {
+    option (google.api.http) = {
+      put: "/api/user/{user_id}/vip/auto-renew"
+      body: "*"
+    };
+  }
+  rpc CheckUserVip(CheckUserVipReq) returns (CheckUserVipResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/vip/check" };
+  }
+  rpc GetVipOrders(GetVipOrdersReq) returns (GetVipOrdersResp) {
+    option (google.api.http) = { get: "/api/user/{user_id}/vip/orders" };
+  }
+  rpc SyncUserVipStatus(SyncUserVipStatusReq) returns (SyncUserVipStatusResp) {
+    option (google.api.http) = { post: "/api/user/{user_id}/vip/sync" body: "*" };
   }
 }

@@ -152,7 +152,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   Widget _buildApiConfigSection() {
     return Card(
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -177,7 +177,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   Widget _buildTaskConfigSection() {
     return Card(
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -202,7 +202,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   Widget _buildSystemConfigSection() {
     return Card(
       elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -559,9 +559,9 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
             ),
             child: const Row(
               children: [
@@ -891,10 +891,10 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF7F7FD5).withOpacity(0.1),
+        color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0xFF7F7FD5).withOpacity(0.3),
+          color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
           width: 1,
         ),
       ),

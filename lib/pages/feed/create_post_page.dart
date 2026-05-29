@@ -441,7 +441,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 4,
               ),
             ],
@@ -467,7 +467,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   elevation: 2,
-                  shadowColor: primaryColor.withOpacity(0.3),
+                  shadowColor: primaryColor.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
@@ -535,7 +535,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Row(
@@ -666,9 +666,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       children: _selectedTopicTags.map((tag) => Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: tag.color.withOpacity(0.1),
+                          color: tag.color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: tag.color.withOpacity(0.3)),
+                          border: Border.all(color: tag.color.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -710,7 +710,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.15),
+                    color: primaryColor.withValues(alpha: 0.15),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -756,7 +756,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             borderRadius: BorderRadius.circular(4),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 4,
                 offset: const Offset(2, 2),
               ),
@@ -801,7 +801,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           _selectedMoodTag = on ? value : null;
         });
       },
-      selectedColor: const Color(0xFF7F7FD5).withOpacity(0.2),
+      selectedColor: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
       checkmarkColor: const Color(0xFF7F7FD5),
     );
   }
@@ -815,7 +815,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 22),

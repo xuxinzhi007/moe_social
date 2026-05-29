@@ -16,7 +16,7 @@ import (
 )
 
 // PilotNativePostCompatRoutes 帖子域 Kratos HTTP（internal/service/post + comment）。
-const PilotNativePostCompatRoutes = 9
+const PilotNativePostCompatRoutes = 0
 
 // RegisterPostCompat D2：已迁入 RegisterPostServiceHTTPServer + RegisterCommentServiceHTTPServer。
 func RegisterPostCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

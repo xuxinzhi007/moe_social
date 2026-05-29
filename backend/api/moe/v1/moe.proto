@@ -91,12 +91,15 @@ message GetBrainPipelineReply {
 
 message RunAgentOnceRequest {
   string agent_key = 1;
+  bool async = 2;
 }
 message RunAgentOnceReply {
   string agent_key = 1;
   bool ok = 2;
   string detail = 3;
   string post_id = 4;
+  bool accepted = 5;
+  bool already_running = 6;
 }
 
 message BrainTagStat {
@@ -148,6 +151,9 @@ message GetBrainSnapshotReply {
   repeated BrainEpisode episodes = 7;
   repeated BrainMemory memories = 8;
   BrainGenerationMeta generation_meta = 9;
+  int32 stability_score = 10;
+  int32 stability_delta = 11;
+  int32 avg_episode_quality = 12;
 }
 
 message UpdateBrainPolicyRequest {
@@ -244,6 +250,93 @@ message ListToolCallsReply {
   repeated ToolCallRow items = 2;
 }
 
+message MoeFlowNode {
+  string id = 1;
+  string type = 2;
+  string kind = 3;
+  string label = 4;
+  string subtitle = 5;
+  string step_key = 6;
+  string tool_name = 7;
+  double position_x = 8;
+  double position_y = 9;
+  bool enabled = 10;
+  string on_fail = 11;
+  int32 retry_max = 12;
+}
+
+message MoeFlowEdge {
+  string id = 1;
+  string source = 2;
+  string target = 3;
+  string kind = 4;
+  string label = 5;
+}
+
+message BotFlowReply {
+  string agent_key = 1;
+  int32 version = 2;
+  string entry_node_id = 3;
+  repeated MoeFlowNode nodes = 4;
+  repeated MoeFlowEdge edges = 5;
+  double viewport_zoom = 6;
+  double viewport_x = 7;
+  double viewport_y = 8;
+  string updated_at = 9;
+  bool is_default = 10;
+  repeated string warnings = 11;
+}
+
+message GetBotFlowRequest {
+  string agent_key = 1;
+}
+
+message UpsertBotFlowRequest {
+  string agent_key = 1;
+  repeated MoeFlowNode nodes = 2;
+  repeated MoeFlowEdge edges = 3;
+  double viewport_zoom = 4;
+  double viewport_x = 5;
+  double viewport_y = 6;
+}
+
+message DeleteBotFlowRequest {
+  string agent_key = 1;
+}
+
+message GetInferenceStatusRequest {
+  string agent_key = 1;
+}
+
+message GetInferenceStatusReply {
+  bool online = 1;
+  string base_url = 2;
+  repeated string models = 3;
+  string default_post_model = 4;
+  string preferred_model = 5;
+  string runtime_model = 6;
+  string effective_model = 7;
+  bool auto_discovered = 8;
+  bool model_loaded = 9;
+  int32 context_limit = 10;
+  string context_source = 11;
+  string message = 12;
+}
+
+message MoeToolSchemaItem {
+  string name = 1;
+  string description = 2;
+  repeated string allowed_tiers = 3;
+}
+
+message GetToolsSchemaRequest {}
+
+message GetToolsSchemaReply {
+  string default_tier = 1;
+  repeated MoeToolSchemaItem tools = 2;
+  string openai_tools_json = 3;
+}
+
 // MoeAdmin — PK-1 域 SSOT。HTTP 灰度读路径（PK-2）：
 //   GET /api/admin/moe/runtimes
 //   GET /api/admin/moe/brain/pipeline?agent_key=
@@ -259,13 +352,19 @@ service MoeAdmin {
     option (google.api.http) = { get: "/api/admin/moe/brain/pipeline" };
   }
   rpc RunAgentOnce(RunAgentOnceRequest) returns (RunAgentOnceReply) {
-    option (google.api.http) = { post: "/api/admin/moe/agents/run-once" body: "*" };
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/run-once"
+      body: "*"
+    };
   }
   rpc GetBrainSnapshot(GetBrainSnapshotRequest) returns (GetBrainSnapshotReply) {
-    option (google.api.http) = { get: "/api/admin/moe/brain/snapshot" };
+    option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/brain" };
   }
   rpc UpdateBrainPolicy(UpdateBrainPolicyRequest) returns (GetBrainSnapshotReply) {
-    option (google.api.http) = { put: "/api/admin/moe/brain/policy" body: "*" };
+    option (google.api.http) = {
+      put: "/api/admin/moe/runtimes/{agent_key}/brain/policy"
+      body: "*"
+    };
   }
   rpc DeleteBrainEpisode(DeleteBrainEpisodeRequest) returns (DeleteBrainEpisodeReply) {
     option (google.api.http) = { delete: "/api/admin/moe/brain/episodes/{id}" };
@@ -274,7 +373,28 @@ service MoeAdmin {
     option (google.api.http) = { post: "/api/admin/moe/brain/episodes/{id}/refine" body: "*" };
   }
   rpc CurateBrain(CurateBrainRequest) returns (CurateBrainReply) {
-    option (google.api.http) = { post: "/api/admin/moe/brain/curate" body: "*" };
+    option (google.api.http) = {
+      post: "/api/admin/moe/runtimes/{agent_key}/brain/curate"
+      body: "*"
+    };
+  }
+  rpc GetBotFlow(GetBotFlowRequest) returns (BotFlowReply) {
+    option (google.api.http) = { get: "/api/admin/moe/runtimes/{agent_key}/flow" };
+  }
+  rpc UpsertBotFlow(UpsertBotFlowRequest) returns (BotFlowReply) {
+    option (google.api.http) = {
+      put: "/api/admin/moe/runtimes/{agent_key}/flow"
+      body: "*"
+    };
+  }
+  rpc DeleteBotFlow(DeleteBotFlowRequest) returns (BotFlowReply) {
+    option (google.api.http) = { delete: "/api/admin/moe/runtimes/{agent_key}/flow" };
+  }
+  rpc GetInferenceStatus(GetInferenceStatusRequest) returns (GetInferenceStatusReply) {
+    option (google.api.http) = { get: "/api/admin/moe/inference/status" };
+  }
+  rpc GetToolsSchema(GetToolsSchemaRequest) returns (GetToolsSchemaReply) {
+    option (google.api.http) = { get: "/api/admin/moe/tools/schema" };
   }
   rpc QueryToolStats(QueryToolStatsRequest) returns (QueryToolStatsReply) {
     option (google.api.http) = { get: "/api/admin/moe/tools/stats" };

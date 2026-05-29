@@ -19,6 +19,142 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationPushNotificationServiceBroadcastPushNotification = "/chat.v1.PushNotificationService/BroadcastPushNotification"
+const OperationPushNotificationServiceSendBatchPushNotification = "/chat.v1.PushNotificationService/SendBatchPushNotification"
+const OperationPushNotificationServiceSendPushNotification = "/chat.v1.PushNotificationService/SendPushNotification"
+
+type PushNotificationServiceHTTPServer interface {
+	BroadcastPushNotification(context.Context, *BroadcastPushNotificationReq) (*BroadcastPushNotificationResp, error)
+	SendBatchPushNotification(context.Context, *SendBatchPushNotificationReq) (*SendBatchPushNotificationResp, error)
+	SendPushNotification(context.Context, *SendPushNotificationReq) (*SendPushNotificationResp, error)
+}
+
+func RegisterPushNotificationServiceHTTPServer(s *http.Server, srv PushNotificationServiceHTTPServer) {
+	r := s.Route("/")
+	r.POST("/api/notification/broadcast", _PushNotificationService_BroadcastPushNotification0_HTTP_Handler(srv))
+	r.POST("/api/notification/send", _PushNotificationService_SendPushNotification0_HTTP_Handler(srv))
+	r.POST("/api/notification/send-batch", _PushNotificationService_SendBatchPushNotification0_HTTP_Handler(srv))
+}
+
+func _PushNotificationService_BroadcastPushNotification0_HTTP_Handler(srv PushNotificationServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in BroadcastPushNotificationReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPushNotificationServiceBroadcastPushNotification)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.BroadcastPushNotification(ctx, req.(*BroadcastPushNotificationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*BroadcastPushNotificationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _PushNotificationService_SendPushNotification0_HTTP_Handler(srv PushNotificationServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SendPushNotificationReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPushNotificationServiceSendPushNotification)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SendPushNotification(ctx, req.(*SendPushNotificationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SendPushNotificationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _PushNotificationService_SendBatchPushNotification0_HTTP_Handler(srv PushNotificationServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SendBatchPushNotificationReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPushNotificationServiceSendBatchPushNotification)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SendBatchPushNotification(ctx, req.(*SendBatchPushNotificationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SendBatchPushNotificationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+type PushNotificationServiceHTTPClient interface {
+	BroadcastPushNotification(ctx context.Context, req *BroadcastPushNotificationReq, opts ...http.CallOption) (rsp *BroadcastPushNotificationResp, err error)
+	SendBatchPushNotification(ctx context.Context, req *SendBatchPushNotificationReq, opts ...http.CallOption) (rsp *SendBatchPushNotificationResp, err error)
+	SendPushNotification(ctx context.Context, req *SendPushNotificationReq, opts ...http.CallOption) (rsp *SendPushNotificationResp, err error)
+}
+
+type PushNotificationServiceHTTPClientImpl struct {
+	cc *http.Client
+}
+
+func NewPushNotificationServiceHTTPClient(client *http.Client) PushNotificationServiceHTTPClient {
+	return &PushNotificationServiceHTTPClientImpl{client}
+}
+
+func (c *PushNotificationServiceHTTPClientImpl) BroadcastPushNotification(ctx context.Context, in *BroadcastPushNotificationReq, opts ...http.CallOption) (*BroadcastPushNotificationResp, error) {
+	var out BroadcastPushNotificationResp
+	pattern := "/api/notification/broadcast"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationPushNotificationServiceBroadcastPushNotification))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PushNotificationServiceHTTPClientImpl) SendBatchPushNotification(ctx context.Context, in *SendBatchPushNotificationReq, opts ...http.CallOption) (*SendBatchPushNotificationResp, error) {
+	var out SendBatchPushNotificationResp
+	pattern := "/api/notification/send-batch"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationPushNotificationServiceSendBatchPushNotification))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PushNotificationServiceHTTPClientImpl) SendPushNotification(ctx context.Context, in *SendPushNotificationReq, opts ...http.CallOption) (*SendPushNotificationResp, error) {
+	var out SendPushNotificationResp
+	pattern := "/api/notification/send"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationPushNotificationServiceSendPushNotification))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 const OperationPrivateMessageServiceListPrivateConversations = "/chat.v1.PrivateMessageService/ListPrivateConversations"
 const OperationPrivateMessageServiceListPrivateMessages = "/chat.v1.PrivateMessageService/ListPrivateMessages"
 const OperationPrivateMessageServiceSendPrivateMessage = "/chat.v1.PrivateMessageService/SendPrivateMessage"

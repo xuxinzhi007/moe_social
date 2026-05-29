@@ -1,4 +1,5 @@
 import '../utils/api_datetime.dart';
+import '../utils/api_json.dart';
 
 class Comment {
   final String id;
@@ -60,26 +61,37 @@ class Comment {
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     try {
-      final createdAt = parseApiDateTime(json['created_at'] as String?);
+      final createdRaw = apiField(json, 'created_at', 'createdAt');
+      final createdAt = parseApiDateTime(createdRaw?.toString());
 
-      final rawParent = json['parent_id'];
+      final rawParent = apiField(json, 'parent_id', 'parentId');
       final parentId = rawParent == null
           ? ''
           : rawParent.toString().trim();
 
+      final likesRaw = apiField(json, 'likes', 'likes');
+      final isLikedRaw = apiField(json, 'is_liked', 'isLiked');
+
       return Comment(
         id: (json['id'] ?? '').toString(),
-        postId: (json['post_id'] ?? '').toString(),
-        userId: (json['user_id'] ?? '').toString(),
-        userName: (json['user_name'] ?? '未知用户').toString(),
-        userAvatar:
-            (json['user_avatar'] ?? 'https://picsum.photos/150').toString(),
+        postId: apiString(json, 'post_id', 'postId'),
+        userId: apiString(json, 'user_id', 'userId'),
+        userName: apiString(json, 'user_name', 'userName', fallback: '未知用户'),
+        userAvatar: apiString(
+          json,
+          'user_avatar',
+          'userAvatar',
+          fallback: 'https://picsum.photos/150',
+        ),
         content: (json['content'] ?? '').toString(),
-        likes: (json['likes'] as int?) ?? 0,
-        isLiked: (json['is_liked'] ?? false) as bool,
+        likes: (likesRaw as num?)?.toInt() ?? 0,
+        isLiked: isLikedRaw is bool
+            ? isLikedRaw
+            : (isLikedRaw is num ? isLikedRaw != 0 : false),
         createdAt: createdAt,
         parentId: parentId == '0' ? '' : parentId,
-        replyToUserName: (json['reply_to_user_name'] ?? '').toString(),
+        replyToUserName:
+            apiString(json, 'reply_to_user_name', 'replyToUserName'),
       );
     } catch (e, stackTrace) {
       print('❌ Comment.fromJson错误: $e');

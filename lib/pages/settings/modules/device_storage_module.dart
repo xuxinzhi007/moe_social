@@ -1,34 +1,99 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import '../../../auth_service.dart';
+import '../../../services/app_storage_service.dart';
 import '../../../services/device_service.dart';
 import '../../../providers/device_info_provider.dart';
-import '../../../widgets/settings/setting_item.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/dialogs/confirm_dialog.dart';
 
-class DeviceStorageModule extends StatelessWidget {
+class DeviceStorageModule extends StatefulWidget {
   final bool autoUpdateOnLaunch;
   final ValueChanged<bool>? onAutoUpdateChanged;
 
   const DeviceStorageModule({
-    Key? key,
+    super.key,
     required this.autoUpdateOnLaunch,
     this.onAutoUpdateChanged,
-  }) : super(key: key);
+  });
+
+  @override
+  State<DeviceStorageModule> createState() => _DeviceStorageModuleState();
+}
+
+class _DeviceStorageModuleState extends State<DeviceStorageModule> {
+  String _cacheSubtitle = '正在计算…';
+  bool _clearingCache = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_refreshCacheSubtitle());
+  }
+
+  Future<void> _refreshCacheSubtitle() async {
+    if (kIsWeb) {
+      if (mounted) {
+        setState(() {
+          _cacheSubtitle = '网页版请清理浏览器缓存';
+        });
+      }
+      return;
+    }
+
+    final cacheMb = await AppStorageService.measureCacheMb();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _cacheSubtitle = cacheMb > 0
+          ? '当前缓存约 ${AppStorageService.formatMb(cacheMb)}，点击清理'
+          : '释放本应用临时文件';
+    });
+  }
+
+  Future<void> _confirmAndClearCache(BuildContext context) async {
+    if (kIsWeb) {
+      MoeToast.info(context, '网页版请使用浏览器清理站点数据');
+      return;
+    }
+
+    final ok = await showConfirmDialog(
+      context,
+      title: '清理缓存',
+      message: '将删除本应用的临时文件，不会影响登录状态与个人数据。',
+    );
+    if (!ok || !mounted) {
+      return;
+    }
+
+    setState(() => _clearingCache = true);
+    try {
+      await AppStorageService.clearAppCache();
+      if (!mounted) {
+        return;
+      }
+      MoeToast.success(context, '缓存已清理');
+      await _refreshCacheSubtitle();
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '清理失败，请稍后重试');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _clearingCache = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isWeb = kIsWeb;
-    
+
     return FadeInUp(
       delay: const Duration(milliseconds: 200),
       child: MoeMenuCard(
@@ -40,9 +105,9 @@ class DeviceStorageModule extends StatelessWidget {
             color: const Color(0xFF7F7FD5),
             onTap: () {},
             trailing: Switch.adaptive(
-              value: autoUpdateOnLaunch,
+              value: widget.autoUpdateOnLaunch,
               activeColor: const Color(0xFF7F7FD5),
-              onChanged: onAutoUpdateChanged,
+              onChanged: widget.onAutoUpdateChanged,
             ),
           ),
           MoeMenuItem(
@@ -54,18 +119,26 @@ class DeviceStorageModule extends StatelessWidget {
           ),
           MoeMenuItem(
             icon: Icons.devices_other_rounded,
-            title: '远程设备列表',
-            subtitle: '查看登录过的设备（仅版本与平台等基础信息）',
+            title: '已登录设备',
+            subtitle: '查看账号在各设备上的登录记录',
             color: Colors.cyan,
             onTap: () => _showRemoteDevicesSheet(context),
           ),
-          if (!isWeb) // 在Web端可能不需要存储空间管理功能
+          if (!isWeb)
             MoeMenuItem(
-              icon: Icons.storage_rounded,
-              title: '存储空间管理',
-              subtitle: '查看应用存储使用情况，清理缓存',
+              icon: Icons.cleaning_services_rounded,
+              title: '清理缓存',
+              subtitle: _cacheSubtitle,
               color: Colors.amber,
-              onTap: () => _showStorageInfoSheet(context),
+              onTap:
+                  _clearingCache ? () {} : () => _confirmAndClearCache(context),
+              trailing: _clearingCache
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
             ),
         ],
       ),
@@ -89,19 +162,26 @@ class DeviceStorageModule extends StatelessWidget {
           builder: (context, provider, child) {
             final size = MediaQuery.of(context).size;
             final items = <MapEntry<String, String>>[
-              MapEntry('设备ID', provider.deviceId.isEmpty ? '未生成' : provider.deviceId),
-              MapEntry('设备类型', provider.deviceType.isEmpty ? '未知' : provider.deviceType),
-              MapEntry('系统版本', provider.osVersion.isEmpty ? '未知' : provider.osVersion),
+              MapEntry('设备ID',
+                  provider.deviceId.isEmpty ? '未生成' : provider.deviceId),
+              MapEntry('设备类型',
+                  provider.deviceType.isEmpty ? '未知' : provider.deviceType),
+              MapEntry('系统版本',
+                  provider.osVersion.isEmpty ? '未知' : provider.osVersion),
               MapEntry('应用版本', provider.versionDisplayLabel),
               MapEntry(
                 '屏幕分辨率',
                 '${size.width.toStringAsFixed(0)} x ${size.height.toStringAsFixed(0)}',
               ),
-              MapEntry('网络状态', provider.networkType.isEmpty ? '未知' : provider.networkType),
-              MapEntry('WiFi 名称', provider.wifiName.isEmpty ? '未知' : provider.wifiName),
+              MapEntry('网络状态',
+                  provider.networkType.isEmpty ? '未知' : provider.networkType),
+              MapEntry('WiFi 名称',
+                  provider.wifiName.isEmpty ? '未知' : provider.wifiName),
               MapEntry(
                 '电量',
-                provider.batteryLevel != null ? '${provider.batteryLevel}%' : '未知',
+                provider.batteryLevel != null
+                    ? '${provider.batteryLevel}%'
+                    : '未知',
               ),
               MapEntry(
                 '定位',
@@ -127,7 +207,7 @@ class DeviceStorageModule extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                   Container(
+                  Container(
                     margin: const EdgeInsets.only(top: 12, bottom: 8),
                     width: 40,
                     height: 4,
@@ -176,10 +256,9 @@ class DeviceStorageModule extends StatelessWidget {
                                 child: Text(
                                   e.value,
                                   style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF333333),
-                                    fontWeight: FontWeight.w500
-                                  ),
+                                      fontSize: 14,
+                                      color: Color(0xFF333333),
+                                      fontWeight: FontWeight.w500),
                                 ),
                               ),
                             ],
@@ -197,7 +276,8 @@ class DeviceStorageModule extends StatelessWidget {
     );
   }
 
-  Future<List<_RemoteDeviceInfo>> _loadRemoteDevices(BuildContext context) async {
+  Future<List<_RemoteDeviceInfo>> _loadRemoteDevices(
+      BuildContext context) async {
     final userId = await AuthService.getUserId();
     final records = await DeviceService.listUserDevices(userId);
     final List<_RemoteDeviceInfo> devices = [];
@@ -211,8 +291,8 @@ class DeviceStorageModule extends StatelessWidget {
         final platform = (value['platform'] as String?) ?? '';
         final osVersion = (value['os_version'] as String?) ?? '';
         final appVersion = (value['app_version'] as String?) ?? '';
-        final deviceName =
-            (value['device_name'] as String?) ?? _buildDeviceName(platform, deviceId);
+        final deviceName = (value['device_name'] as String?) ??
+            _buildDeviceName(platform, deviceId);
         final lastSeenStr = (value['last_seen'] as String?) ?? '';
         DateTime lastSeen;
         if (lastSeenStr.isNotEmpty) {
@@ -287,7 +367,7 @@ class DeviceStorageModule extends StatelessWidget {
           ),
           child: Column(
             children: [
-               Container(
+              Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
                 width: 40,
                 height: 4,
@@ -299,7 +379,7 @@ class DeviceStorageModule extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  '远程设备列表',
+                  '已登录设备',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -307,10 +387,10 @@ class DeviceStorageModule extends StatelessWidget {
                 child: FutureBuilder<List<_RemoteDeviceInfo>>(
                   future: _loadRemoteDevices(context),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF7F7FD5)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF7F7FD5)),
                       );
                     }
 
@@ -343,8 +423,7 @@ class DeviceStorageModule extends StatelessWidget {
                     return ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: devices.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final device = devices[index];
                         final subtitle = StringBuffer();
@@ -370,7 +449,8 @@ class DeviceStorageModule extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                                color:
+                                    const Color(0xFF7F7FD5).withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -381,7 +461,8 @@ class DeviceStorageModule extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                                  color:
+                                      const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
@@ -397,17 +478,23 @@ class DeviceStorageModule extends StatelessWidget {
                                   children: [
                                     Row(
                                       children: [
-                                        Text(device.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(device.name,
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16)),
                                         if (device.isCurrentDevice)
                                           Container(
-                                            margin: const EdgeInsets.only(left: 8),
+                                            margin:
+                                                const EdgeInsets.only(left: 8),
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 6,
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF7F7FD5).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(0xFF7F7FD5)
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: const Text(
                                               '本机',
@@ -429,7 +516,7 @@ class DeviceStorageModule extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                     Text(
+                                    Text(
                                       '最近在线: ${device.lastSeenDisplay}',
                                       style: TextStyle(
                                         color: Colors.grey[500],
@@ -473,394 +560,6 @@ class DeviceStorageModule extends StatelessWidget {
         );
       },
     );
-  }
-
-  Future<void> _showStorageInfoSheet(BuildContext context) async {
-    // 获取真实的存储空间数据
-    final storageInfo = await _getStorageInfo();
-    final totalStorage = storageInfo['totalStorage'] ?? 1024.0;
-    final usedStorage = storageInfo['usedStorage'] ?? 640.0;
-    final freeStorage = totalStorage - usedStorage;
-    
-    final storageDetails = [
-      {'name': '应用本身', 'size': storageInfo['appSize'] ?? 150.0, 'color': const Color(0xFF7F7FD5)},
-      {'name': '缓存文件', 'size': storageInfo['cacheSize'] ?? 200.0, 'color': const Color(0xFF86A8E7)},
-      {'name': '用户数据', 'size': storageInfo['dataSize'] ?? 180.0, 'color': const Color(0xFF91EAE4)},
-      {'name': '其他文件', 'size': storageInfo['otherSize'] ?? 110.0, 'color': const Color(0xFFF7797D)},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  '存储空间管理',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      // 总存储容量信息
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F7FA),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              '总存储容量',
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${totalStorage.toStringAsFixed(0)} MB',
-                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 16),
-                            // 存储使用进度条
-                            Container(
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Stack(
-                                children: [
-                                  Container(
-                                    width: (usedStorage / totalStorage) * 100,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          const Color(0xFF7F7FD5),
-                                          const Color(0xFF86A8E7),
-                                        ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '已使用: ${usedStorage.toStringAsFixed(0)} MB',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                ),
-                                Text(
-                                  '可用: ${freeStorage.toStringAsFixed(0)} MB',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // 存储使用详情
-                      const Text(
-                        '存储使用详情',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: storageDetails.length,
-                          itemBuilder: (context, index) {
-                            final item = storageDetails[index];
-                            final percentage = ((item['size'] as double) / totalStorage) * 100;
-                            
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        item['name'] as String,
-                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                                      ),
-                                      Text(
-                                        '${(item['size'] as double).toStringAsFixed(0)} MB',
-                                        style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Container(
-                                      width: percentage,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: item['color'] as Color,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // 清理按钮
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final ok = await showConfirmDialog(
-                                  context,
-                                  title: '确认操作',
-                                  message: '确定要清理缓存吗？这将删除临时文件，但不会影响您的个人数据。',
-                                );
-                                if (!ok) return;
-                                try {
-                                  await _clearCache();
-                                  if (!context.mounted) return;
-                                  Navigator.pop(context);
-                                  MoeToast.success(context, '缓存清理成功');
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  MoeToast.error(context, '缓存清理失败：${e.toString()}');
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7F7FD5),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text('清理缓存'),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () async {
-                                final ok = await showConfirmDialog(
-                                  context,
-                                  title: '警告',
-                                  message: '确定要清理所有数据吗？这将删除所有应用数据，包括您的设置和缓存。',
-                                  isDestructive: true,
-                                );
-                                if (!ok) return;
-                                try {
-                                  await _clearAllData();
-                                  if (!context.mounted) return;
-                                  Navigator.pop(context);
-                                  MoeToast.success(context, '所有数据清理成功');
-                                } catch (e) {
-                                  if (!context.mounted) return;
-                                  MoeToast.error(context, '数据清理失败：${e.toString()}');
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.red),
-                                foregroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text('清理所有数据'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // 获取存储空间信息
-  Future<Map<String, double>> _getStorageInfo() async {
-    try {
-      // 获取应用目录
-      final cacheDir = await getTemporaryDirectory();
-      final docsDir = await getApplicationDocumentsDirectory();
-      
-      // 计算各目录大小
-      final cacheSize = await _getDirectorySize(cacheDir);
-      final dataSize = await _getDirectorySize(docsDir);
-      
-      // 应用本身大小（估算）
-      final appSize = await _getAppSize();
-      final otherSize = 0.0; // 其他文件大小，暂时设为0
-      
-      final usedStorage = appSize + cacheSize + dataSize + otherSize;
-      
-      // 尝试获取总存储容量
-      double totalStorage = await _getTotalStorage();
-      
-      return {
-        'totalStorage': totalStorage,
-        'usedStorage': usedStorage,
-        'appSize': appSize,
-        'cacheSize': cacheSize,
-        'dataSize': dataSize,
-        'otherSize': otherSize,
-      };
-    } catch (e) {
-      // 如果获取失败，返回默认值
-      return {
-        'totalStorage': 1024.0,
-        'usedStorage': 640.0,
-        'appSize': 150.0,
-        'cacheSize': 200.0,
-        'dataSize': 180.0,
-        'otherSize': 110.0,
-      };
-    }
-  }
-
-  // 获取应用本身大小（估算）
-  Future<double> _getAppSize() async {
-    try {
-      if (kIsWeb) {
-        // Web平台无法直接获取应用大小，返回估算值
-        return 100.0; // 估算100MB
-      }
-      
-      if (Platform.isAndroid) {
-        // Android平台可以通过PackageManager获取
-        // 这里返回估算值
-        return 150.0; // 估算150MB
-      } else if (Platform.isIOS) {
-        // iOS平台可以通过NSBundle获取
-        // 这里返回估算值
-        return 120.0; // 估算120MB
-      }
-      
-      return 100.0; // 默认估算100MB
-    } catch (e) {
-      return 100.0; // 出错时返回默认值
-    }
-  }
-
-  // 获取总存储容量
-  Future<double> _getTotalStorage() async {
-    try {
-      if (kIsWeb) {
-        // Web平台无法获取总存储容量，返回默认值
-        return 1024.0; // 默认1GB
-      }
-      
-      if (Platform.isAndroid) {
-        // Android平台可以通过StorageManager获取
-        // 这里返回默认值
-        return 16384.0; // 默认16GB
-      } else if (Platform.isIOS) {
-        // iOS平台可以通过NSFileManager获取
-        // 这里返回默认值
-        return 32768.0; // 默认32GB
-      }
-      
-      return 1024.0; // 默认1GB
-    } catch (e) {
-      return 1024.0; // 出错时返回默认值
-    }
-  }
-
-  // 计算目录大小
-  Future<double> _getDirectorySize(Directory directory) async {
-    try {
-      if (!directory.existsSync()) {
-        return 0.0;
-      }
-      
-      double size = 0.0;
-      final files = directory.listSync(recursive: true);
-      
-      for (final file in files) {
-        if (file is File) {
-          final fileStat = await file.stat();
-          size += fileStat.size;
-        }
-      }
-      
-      // 转换为MB
-      return size / (1024 * 1024);
-    } catch (e) {
-      return 0.0;
-    }
-  }
-
-  // 清理缓存
-  Future<void> _clearCache() async {
-    try {
-      final cacheDir = await getTemporaryDirectory();
-      if (cacheDir.existsSync()) {
-        cacheDir.deleteSync(recursive: true);
-        cacheDir.createSync();
-      }
-    } catch (e) {
-      // 清理失败，忽略错误
-    }
-  }
-
-  // 清理所有数据
-  Future<void> _clearAllData() async {
-    try {
-      // 清理缓存
-      await _clearCache();
-      
-      // 清理文档目录
-      final docsDir = await getApplicationDocumentsDirectory();
-      if (docsDir.existsSync()) {
-        docsDir.deleteSync(recursive: true);
-        docsDir.createSync();
-      }
-    } catch (e) {
-      // 清理失败，忽略错误
-    }
   }
 }
 

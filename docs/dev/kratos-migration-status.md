@@ -1,12 +1,13 @@
 # Kratos 迁移 — 状态板（Current / Next）
 
-> **最后更新：2026-05-29**  
-> **读这个**：本文 = **当前状态 + 下一步** 快照（汇报 / 勾选用）
+> **最后更新：2026-05-27（P0/P1 收口同步）**  
+> **读这个**：本文 = **当前状态 + 下一步** 快照（汇报 / 勾选用）  
+> **架构审计（双轨 / 遗留问题）**：[kratos-architecture-audit.md](./kratos-architecture-audit.md)
 
 | 文档 | 用途 |
 |------|------|
 | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | P6 批次、DoD、桥接约定、产物清单 |
-| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | P3 路由 263、compat 注册锚点 |
+| [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 历史清单（§2 路由表；**活跃数以本文 D2 表为准**） |
 | [kratos-migration.md](./kratos-migration.md) | 架构 SSOT |
 
 ---
@@ -15,10 +16,15 @@
 
 | 阶段 | 完成度 | 一句话 |
 |------|--------|--------|
-| P0–P3 生产 HTTP | **100%** | 263 compat → service → biz |
+| P0–P3 生产 HTTP | **100%** | compat 逻辑已进 service → biz（运行时 Kratos） |
 | P4 目录 / 12 gRPC | **~100%** | 独立域 RPC 已注册 |
 | P5 Super + 零 go-zero | **100%** | 单进程 Kratos；生产无 go-zero |
 | **P6 契约 proto SSOT** | **100%** | service/compat 主域 `*v1`；defs 已 P6 标注 |
+| **P0/P1 审计（HTTP 契约 + Admin/User）** | **100%** | 信封统一 · Admin/User/记忆/wave2 已 proto HTTP |
+| **D2 compat → proto HTTP** | **~83%** | **227** proto 路由 vs **45** 活跃 compat |
+| **D4 删遗留层** | **0%** | `httplegacy` / `apilegacy` / `rpc/pb/moe` 仍在 |
+
+> **易混淆**：P6「契约 100%」≠ HTTP 全走 proto。余量 **45** 条 compat 见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
 
 ---
 
@@ -26,7 +32,7 @@
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| **P0–P3（生产）** | ✅ **100%** | compat 263 · api logic 0 · `/migration percent=100` |
+| **P0–P3（生产）** | ✅ **100%** | 运行时 Kratos · api logic 0 · `/migration percent=100` |
 | **P4（理想目录）** | ✅ **~100%** | data 20/21 域 · 独立 gRPC **12/12** |
 | **P5-A（Super 运行时）** | ✅ **100%** | 单进程不注册 Super · API 无 zrpc 回环 · AppAdapter |
 | **P5-B（logic + 契约）** | ✅ **100%** | `rpc/internal/logic` **0** · `superserver` 已删 |
@@ -56,6 +62,7 @@
 | 仓库删除全部 go-zero 源文件 | **100%**（P5-E：`scripts/archive/p5/p5e-remove-hybrid-gozero.py`） |
 | go.mod 无 go-zero | **100%** |
 | P6-C `api/defs` 已迁路由标注 | **100%**（`scripts/gen/p6_mark_defs.py`） |
+| **P0/P1 审计（架构）** | **100%** | 见 [kratos-architecture-audit.md §4](./kratos-architecture-audit.md) |
 
 ### 验收（2026-05-27）
 
@@ -79,10 +86,10 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | 6-0 **behavior** | ✅ | `behavior/v1` · service · compat |
 | 6f **social 六域** | ✅ | landing · achievement · checkin · comment · gift · post · community |
 | 6f **notify**（gRPC） | ✅ | `notify/v1` · `service/notify`；HTTP 通知列表走 `UserApp` + `userv1` |
-| 6g **ai / llm** | ✅ | `ai/v1` · `llm/v1` · `ai_compat` · `user_memory_compat` |
-| 6d **admin** | ✅ | `admin/v1` messages · service · `admin_*_compat` · `admingw` bridge |
-| 6e **user** | ✅ | `user/v1` messages · `user_compat` · `user_convert` |
-| 6a **wave2 杂项** | ✅ | `wave2_misc_compat`（admin 登录/bootstrap · 头像 · 站内通知） |
+| 6g **ai / llm** | ✅ | `ai/v1` · `llm/v1`（含用户记忆 8 路由 HTTP） |
+| 6d **admin** | ✅ | `admin/v1` · `AdminApp` + `AdminInsights` proto HTTP |
+| 6e **user** | ✅ | `user/v1` · 社交/VIP/OAuth 已 proto HTTP（OAuth 回调 2 条 compat） |
+| 6a **wave2 杂项** | ✅ | 大部分迁入 proto；图片 upload 4 条 compat |
 | 6h **chat** | ✅ | `chat/v1` · service · chatgw |
 | 6b **vip** | ✅ | 用户侧 `vipv1`；`vip/admin_rpc` → `adminv1` |
 | 6a **platform** | ✅ | `platform_compat` → `MoeAdmin`/`UserApp` + `userv1` |
@@ -117,12 +124,41 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 
 | 优先级 | 任务 | 文档 |
 |--------|------|------|
-| — | ~~P6 / grpc 冒烟 / 分体联调 / 移除 hybrid go-zero~~ ✅ | 见下表 |
-| 1 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
-| 2 | ~~**D0–D1**：proto HTTP + 目录迁出~~ ✅ | [kratos-directory-ssot.md](./kratos-directory-ssot.md) |
-| 3 | **D2–D4**：compat 归零 · 删 `httplegacy` · `defs` 归档 | 同上 |
+| ~~0~~ | ~~P0/P1 审计项~~ | ✅ 2026-05-27 完成，见 [kratos-architecture-audit.md §4](./kratos-architecture-audit.md) |
+| 1 | **D2 余量**：platform / community / chat / ai / checkin compat → proto | [kratos-directory-ssot.md §D2](./kratos-directory-ssot.md) |
+| 2 | 图片 upload 静态资源 proto 化或专用 transport | 同上 |
+| 3 | **D4**：删 `httplegacy` 死代码 · `apilegacy` · `rpc/pb/moe` runtime 引用 | 同上 |
+| 4 | 生产分体容器化切流 | [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) |
 
-### 2026-05-29 完成项
+### D2 — HTTP 路由实测（2026-05-27 P0/P1 收口）
+
+| 指标 | 数值 |
+|------|------|
+| Proto HTTP 路由 | **227** |
+| Compat 活跃路由 | **45** |
+| P0/P1 审计完成度 | **100%** |
+| 有意保留 compat | OAuth 回调 2 · SSE 1 · 图片 4 · P2 平台等 38 |
+
+### 2026-05-27 P0/P1 收口
+
+| 项 | 验收 |
+|----|------|
+| P0 compat 信封 | `compat_envelope.go` Filter ✅ |
+| P1 AdminApp / legacy / readonly | proto HTTP；legacy 仅 SSE 1 条 ✅ |
+| P1 User 社交/VIP + 记忆 + wave2 | proto HTTP；OAuth/图片有意保留 compat ✅ |
+| 进度口径 | `nativeDomainRouteCount=227` · `PilotNativeCompatRoutes=45` ✅ |
+| `go test ./internal/platform/kratosprogress/...` | ✅ |
+
+### 2026-05-27 完成项（信封 / 客户端）
+
+| 项 | 验收 |
+|----|------|
+| Proto 统一响应信封 | `http_envelope.go` + 单测 ✅ |
+| CORS（Flutter Web） | `cors.go` ✅ |
+| Flutter `ApiResponse` 全量迁移 | `lib/services/api_response.dart` ✅ |
+| 架构审计文档复核 | 本文 + `kratos-architecture-audit.md` ✅ |
+
+### 2026-05-29 历史完成项
 
 | 项 | 验收 |
 |----|------|
@@ -134,7 +170,7 @@ go list -deps ./cmd/moe-social | grep go-zero          # P5-D：应无输出
 | **service 边界 + MoeToolPort** | `internal/service` 零 `rpc/pb/moe` · `SuperPort`→`MoeToolPort` · `go build ./...` ✅ |
 | **Server 命名 S0** | `moekratoshttp` → `internal/server/http.go`（`RegisterOpsHTTP`） |
 | **Server S1–S3** | `moegrpc`→`grpc/` · `grpc.go` · `NewHTTPServer` · `http_compat.go` · `cmd/moe-social` 补齐 |
-| **D0 proto HTTP** | 16 域 `*_http.pb.go` · `http_proto.go` · `Register*HTTPServer` |
+| **D0 proto HTTP** | 18 域 `*_http.pb.go` · `http_proto.go` · **227** 路由 |
 | **D1 目录迁出** | `httplegacy/` · `internal/platform/{svc,wiring}` · `internal/apilegacy/` · `internal/legacy/types` |
 
 ---

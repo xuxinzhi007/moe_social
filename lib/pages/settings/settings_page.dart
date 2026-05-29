@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import '../../services/notification_preferences.dart';
 import '../../services/startup_update_preferences.dart';
 import '../../providers/device_info_provider.dart';
 import '../../widgets/fade_in_up.dart';
@@ -12,11 +13,11 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
 import '../../providers/virtual_avatar_provider.dart';
 import 'modules/device_storage_module.dart';
-import 'modules/ai_settings_module.dart';
 import 'modules/appearance_module.dart';
 import 'modules/account_security_module.dart';
 import 'modules/about_module.dart';
 import 'message_retention_settings_page.dart';
+import 'widgets/settings_advanced_section.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -37,7 +38,15 @@ class _SettingsPageState extends State<SettingsPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DeviceInfoProvider>(context, listen: false).init();
       unawaited(_loadStartupUpdatePref());
+      unawaited(_loadNotificationPref());
     });
+  }
+
+  Future<void> _loadNotificationPref() async {
+    final enabled = await NotificationPreferences.getEnabled();
+    if (mounted) {
+      setState(() => _notificationsEnabled = enabled);
+    }
   }
 
   Future<void> _loadStartupUpdatePref() async {
@@ -88,7 +97,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7F7FD5).withOpacity(0.08),
+                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -220,190 +229,200 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '接收最新动态和系统通知',
         'icon': Icons.notifications_active_rounded,
         'color': Colors.orange,
-        'module': '常规设置',
+        'module': '账号与隐私',
         'keywords': ['通知', '消息', '提醒', 'push'],
         'action': 'scroll',
-        'target': '常规设置',
+        'target': '账号与隐私',
       },
       {
-        'title': '虚拟助手开关',
+        'title': '虚拟助手',
         'description': '开启或关闭悬浮虚拟助手',
         'icon': Icons.smart_toy_rounded,
         'color': Colors.deepPurple,
-        'module': '常规设置',
+        'module': '外观与体验',
         'keywords': ['虚拟', '助手', '角色', '悬浮', '开关'],
         'action': 'scroll',
-        'target': '常规设置',
+        'target': '外观与体验',
       },
       {
         'title': '虚拟助手设置',
         'description': '自定义快捷功能、皮肤与角色',
         'icon': Icons.tune_rounded,
         'color': Colors.deepPurpleAccent,
-        'module': '常规设置',
+        'module': '外观与体验',
         'keywords': ['虚拟', '助手', '皮肤', '角色', '快捷功能'],
         'action': 'route',
         'target': '/virtual-avatar-settings',
       },
       {
-        'title': '启动自动检查更新',
+        'title': '启动时检查更新',
         'description': '打开应用时自动检查新版本',
         'icon': Icons.system_update_alt_rounded,
         'color': Colors.blue,
-        'module': '设备与存储',
+        'module': '设备与数据',
         'keywords': ['更新', '启动', '自动更新', '版本'],
         'action': 'scroll',
-        'target': '设备与存储',
+        'target': '设备与数据',
       },
       {
         'title': '本机设备信息',
         'description': '查看设备ID、系统版本、网络状态等',
         'icon': Icons.phone_iphone_rounded,
         'color': Colors.blueGrey,
-        'module': '设备与存储',
+        'module': '设备与数据',
         'keywords': ['设备', '系统', '版本', '网络', 'ID'],
         'action': 'scroll',
-        'target': '设备与存储',
+        'target': '设备与数据',
       },
       {
-        'title': '存储空间管理',
-        'description': '清理缓存和临时数据',
-        'icon': Icons.storage_rounded,
+        'title': '已登录设备',
+        'description': '查看账号在各设备上的登录记录',
+        'icon': Icons.devices_other_rounded,
+        'color': Colors.cyan,
+        'module': '设备与数据',
+        'keywords': ['设备', '登录', '远程'],
+        'action': 'scroll',
+        'target': '设备与数据',
+      },
+      {
+        'title': '清理缓存',
+        'description': '释放本应用临时文件',
+        'icon': Icons.cleaning_services_rounded,
         'color': Colors.amber,
-        'module': '设备与存储',
+        'module': '设备与数据',
         'keywords': ['缓存', '清理', '存储', '空间'],
         'action': 'scroll',
-        'target': '设备与存储',
+        'target': '设备与数据',
       },
       {
-        'title': '终端同款（本地推理）',
-        'description': '经后端转发本机 llama.cpp，尽量对齐终端输出',
+        'title': 'raw 调试模式（本地推理）',
+        'description': '仅调试时开启；日常建议走服务端记忆链路',
         'icon': Icons.terminal_rounded,
         'color': Colors.deepPurpleAccent,
-        'module': 'AI 模型',
-        'keywords': ['ai', '模型', 'llama', '终端', '推理'],
+        'module': '高级选项',
+        'keywords': ['ai', '模型', 'llama', '终端', '推理', 'raw'],
         'action': 'scroll',
-        'target': 'AI 模型',
+        'target': '高级选项',
       },
       {
         'title': '模型记忆线',
         'description': '查看模型记录的所有记忆',
         'icon': Icons.psychology_rounded,
         'color': Colors.deepPurple,
-        'module': 'AI 模型',
+        'module': '高级选项',
         'keywords': ['记忆', 'ai', '模型', '上下文'],
         'action': 'scroll',
-        'target': 'AI 模型',
+        'target': '高级选项',
+      },
+      {
+        'title': '飞书通知',
+        'description': '企业内机器人推送（可选）',
+        'icon': Icons.notifications_active_rounded,
+        'color': const Color(0xFF3370FF),
+        'module': '高级选项',
+        'keywords': ['飞书', '企业', '通知'],
+        'action': 'scroll',
+        'target': '高级选项',
       },
       {
         'title': '主题模式',
         'description': '切换浅色/深色/跟随系统',
         'icon': Icons.color_lens_rounded,
         'color': Colors.purple,
-        'module': '外观',
+        'module': '外观与体验',
         'keywords': ['主题', '深色', '浅色', '模式'],
         'action': 'scroll',
-        'target': '外观',
+        'target': '外观与体验',
       },
       {
         'title': '主题颜色',
         'description': '自定义应用主色调',
         'icon': Icons.palette_rounded,
         'color': Colors.pink,
-        'module': '外观',
+        'module': '外观与体验',
         'keywords': ['颜色', '主题色', '皮肤'],
         'action': 'scroll',
-        'target': '外观',
-      },
-      {
-        'title': '字体大小',
-        'description': '调整应用字体大小',
-        'icon': Icons.text_fields_rounded,
-        'color': Colors.green,
-        'module': '外观',
-        'keywords': ['字体', '字号', '文字'],
-        'action': 'scroll',
-        'target': '外观',
+        'target': '外观与体验',
       },
       {
         'title': '修改密码',
         'description': '修改账户登录密码',
         'icon': Icons.lock_rounded,
         'color': Colors.blue,
-        'module': '账户与安全',
+        'module': '账号与隐私',
         'keywords': ['密码', '安全', '账户'],
         'action': 'scroll',
-        'target': '账户与安全',
+        'target': '账号与隐私',
       },
       {
         'title': '隐私设置',
         'description': '管理应用权限和隐私设置',
         'icon': Icons.privacy_tip_rounded,
         'color': Colors.green,
-        'module': '账户与安全',
+        'module': '账号与隐私',
         'keywords': ['隐私', '权限', '安全'],
         'action': 'scroll',
-        'target': '账户与安全',
+        'target': '账号与隐私',
       },
       {
         'title': '私信记录保留',
         'description': '发送方私信在服务端保留天数偏好',
         'icon': Icons.mark_chat_unread_outlined,
         'color': Colors.teal,
-        'module': '聊天与隐私',
+        'module': '账号与隐私',
         'keywords': ['私信', '聊天记录', '保留', '删除', '消息'],
         'action': 'route',
         'target': '/message-retention-settings',
       },
       {
         'title': '账号安全',
-        'description': '查看登录历史，管理登录设备',
+        'description': '查看登录历史与两步验证',
         'icon': Icons.shield_rounded,
         'color': Colors.red,
-        'module': '账户与安全',
-        'keywords': ['账号', '安全', '登录设备'],
+        'module': '账号与隐私',
+        'keywords': ['账号', '安全', '登录历史'],
         'action': 'scroll',
-        'target': '账户与安全',
+        'target': '账号与隐私',
       },
       {
         'title': '注销账号',
         'description': '永久删除账号与登录绑定',
         'icon': Icons.person_off_rounded,
         'color': Colors.red,
-        'module': '账户与安全',
+        'module': '账号与隐私',
         'keywords': ['注销', '删除账号', '销号', '账号'],
         'action': 'scroll',
-        'target': '账户与安全',
+        'target': '账号与隐私',
       },
       {
         'title': '软件版本',
         'description': '点击检查更新',
         'icon': Icons.info_rounded,
         'color': Colors.teal,
-        'module': '关于',
+        'module': '关于与支持',
         'keywords': ['版本', '更新', '软件'],
         'action': 'scroll',
-        'target': '关于',
+        'target': '关于与支持',
       },
       {
         'title': '意见反馈',
         'description': '问题描述与联系方式',
         'icon': Icons.feedback_outlined,
         'color': Colors.deepOrange,
-        'module': '关于',
+        'module': '关于与支持',
         'keywords': ['反馈', '问题', '建议', 'bug'],
         'action': 'scroll',
-        'target': '关于',
+        'target': '关于与支持',
       },
       {
         'title': '用户协议',
         'description': '查看用户协议和隐私政策',
         'icon': Icons.description_rounded,
         'color': Colors.grey,
-        'module': '关于',
+        'module': '关于与支持',
         'keywords': ['协议', '条款', '隐私政策'],
         'action': 'scroll',
-        'target': '关于',
+        'target': '关于与支持',
       },
     ];
   }
@@ -459,13 +478,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // 模块滚动位置映射
   final Map<String, GlobalKey> _moduleKeys = {
-    '账户与安全': GlobalKey(),
-    '聊天与隐私': GlobalKey(),
-    '外观': GlobalKey(),
-    '常规设置': GlobalKey(),
-    '设备与存储': GlobalKey(),
-    'AI 模型': GlobalKey(),
-    '关于': GlobalKey(),
+    '账号与隐私': GlobalKey(),
+    '外观与体验': GlobalKey(),
+    '设备与数据': GlobalKey(),
+    '高级选项': GlobalKey(),
+    '关于与支持': GlobalKey(),
   };
 
   @override
@@ -477,18 +494,23 @@ class _SettingsPageState extends State<SettingsPage> {
   void _scrollToModule(String moduleName) {
     _onClearSearch();
 
-    // 使用 ScrollController 实现精确滚动
-    final key = _moduleKeys[moduleName];
-    if (key != null) {
-      final context = key.currentContext;
-      if (context != null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final key = _moduleKeys[moduleName];
+      if (key == null) {
+        return;
+      }
+      final targetContext = key.currentContext;
+      if (targetContext != null) {
         Scrollable.ensureVisible(
-          context,
+          targetContext,
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
       }
-    }
+    });
   }
 
   List<Widget> _buildNormalSettings() {
@@ -496,13 +518,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return [
       _buildExperienceDashboard(avatarProvider),
-      const SizedBox(height: 14),
-      _buildQuickActionGrid(),
       const SizedBox(height: 24),
-      _buildSectionTitle('账户与安全', key: _moduleKeys['账户与安全']),
+      _buildSectionTitle('账号与隐私', key: _moduleKeys['账号与隐私']),
       const AccountSecurityModule(),
-      const SizedBox(height: 24),
-      _buildSectionTitle('聊天与隐私', key: _moduleKeys['聊天与隐私']),
       FadeInUp(
         delay: const Duration(milliseconds: 95),
         child: MoeMenuCard(
@@ -521,18 +539,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 );
               },
             ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 24),
-      _buildSectionTitle('外观', key: _moduleKeys['外观']),
-      const AppearanceModule(),
-      const SizedBox(height: 24),
-      _buildSectionTitle('常规设置', key: _moduleKeys['常规设置']),
-      FadeInUp(
-        delay: const Duration(milliseconds: 100),
-        child: MoeMenuCard(
-          items: [
             MoeMenuItem(
               icon: Icons.notifications_active_rounded,
               title: '推送通知',
@@ -541,40 +547,35 @@ class _SettingsPageState extends State<SettingsPage> {
               trailing: Switch.adaptive(
                 value: _notificationsEnabled,
                 activeThumbColor: MoeTheme.of(context).primary,
-                onChanged: (bool value) async {
-                  setState(() {
-                    _notificationsEnabled = value;
-                  });
-                  if (!mounted) return;
-                  MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
-                },
+                onChanged: (bool value) => _onNotificationToggle(value),
               ),
-              onTap: () {
-                final next = !_notificationsEnabled;
-                setState(() => _notificationsEnabled = next);
-                MoeToast.info(context, next ? '通知已开启' : '通知已关闭');
-              },
+              onTap: () => _onNotificationToggle(!_notificationsEnabled),
             ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 24),
+      _buildSectionTitle('外观与体验', key: _moduleKeys['外观与体验']),
+      const AppearanceModule(),
+      FadeInUp(
+        delay: const Duration(milliseconds: 100),
+        child: MoeMenuCard(
+          items: [
             MoeMenuItem(
               icon: Icons.smart_toy_rounded,
               title: '虚拟助手',
-              subtitle: avatarProvider.enabled ? '已开启，可点击进入自定义' : '默认关闭，点击进入设置',
+              subtitle: avatarProvider.enabled
+                  ? '已开启，点击右侧开关或进入自定义'
+                  : '默认关闭，开启后可自定义形象',
               color: MoeTheme.of(context).primary,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Switch.adaptive(
-                    value: avatarProvider.enabled,
-                    activeThumbColor: MoeTheme.of(context).primary,
-                    onChanged: (bool value) async {
-                      await avatarProvider.setEnabled(value);
-                      if (!mounted) return;
-                      MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
-                    },
-                  ),
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      color: Colors.grey[300], size: 16),
-                ],
+              trailing: Switch.adaptive(
+                value: avatarProvider.enabled,
+                activeThumbColor: MoeTheme.of(context).primary,
+                onChanged: (bool value) async {
+                  await avatarProvider.setEnabled(value);
+                  if (!mounted) return;
+                  MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+                },
               ),
               onTap: () {
                 Navigator.pushNamed(context, '/virtual-avatar-settings');
@@ -584,7 +585,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       const SizedBox(height: 24),
-      _buildSectionTitle('设备与存储', key: _moduleKeys['设备与存储']),
+      _buildSectionTitle('设备与数据', key: _moduleKeys['设备与数据']),
       DeviceStorageModule(
         autoUpdateOnLaunch: _autoUpdateOnLaunch,
         onAutoUpdateChanged: (bool value) async {
@@ -593,12 +594,25 @@ class _SettingsPageState extends State<SettingsPage> {
         },
       ),
       const SizedBox(height: 24),
-      _buildSectionTitle('AI 模型', key: _moduleKeys['AI 模型']),
-      const AiSettingsModule(),
+      _buildSectionTitle('高级选项', key: _moduleKeys['高级选项']),
+      const SettingsAdvancedSection(),
       const SizedBox(height: 24),
-      _buildSectionTitle('关于', key: _moduleKeys['关于']),
+      _buildSectionTitle('关于与支持', key: _moduleKeys['关于与支持']),
       const AboutModule(),
     ];
+  }
+
+  Future<void> _onNotificationToggle(bool value) async {
+    final ok = await NotificationPreferences.setEnabled(value);
+    if (!mounted) {
+      return;
+    }
+    if (value && !ok) {
+      MoeToast.error(context, '未获得通知权限，请在系统设置中允许通知');
+      return;
+    }
+    setState(() => _notificationsEnabled = value);
+    MoeToast.info(context, value ? '通知已开启' : '通知已关闭');
   }
 
   Widget _buildExperienceDashboard(VirtualAvatarProvider avatarProvider) {
@@ -610,144 +624,69 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return FadeInUp(
       delay: const Duration(milliseconds: 60),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _scrollToModule('账号与隐私'),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF7F7FD5).withOpacity(0.22),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                shape: BoxShape.circle,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: const Icon(Icons.tune_rounded, color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '当前体验状态',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    summary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.92),
-                      fontSize: 12,
-                      height: 1.25,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionGrid() {
-    final shortcuts = [
-      (
-        icon: Icons.shield_rounded,
-        title: '账号安全',
-        onTap: () => _scrollToModule('账户与安全')
-      ),
-      (
-        icon: Icons.color_lens_rounded,
-        title: '外观主题',
-        onTap: () => _scrollToModule('外观')
-      ),
-      (
-        icon: Icons.smart_toy_rounded,
-        title: '虚拟助手',
-        onTap: () => Navigator.pushNamed(context, '/virtual-avatar-settings')
-      ),
-      (
-        icon: Icons.psychology_rounded,
-        title: 'AI 模型',
-        onTap: () => _scrollToModule('AI 模型')
-      ),
-    ];
-
-    return FadeInUp(
-      delay: const Duration(milliseconds: 80),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF7F7FD5).withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: GridView.builder(
-          shrinkWrap: true,
-          itemCount: shortcuts.length,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 0.9,
-          ),
-          itemBuilder: (context, index) {
-            final item = shortcuts[index];
-            return Material(
-              color: const Color(0xFFF8F9FF),
-              borderRadius: BorderRadius.circular(14),
-              child: InkWell(
-                onTap: item.onTap,
-                borderRadius: BorderRadius.circular(14),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(item.icon, color: const Color(0xFF7F7FD5), size: 20),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF444444),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.22),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.tune_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '当前体验状态',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        summary,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 12,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

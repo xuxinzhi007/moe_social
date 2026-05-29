@@ -56,3 +56,59 @@ func (s *Server) JoinGroup(ctx context.Context, in *communityv1.JoinGroupRequest
 	}
 	return app.JoinGroup(ctx, in)
 }
+
+func (s *Server) UpdateGroup(ctx context.Context, in *communityv1.UpdateGroupRequest) (*communityv1.UpdateGroupReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.UpdateGroup(ctx, in)
+}
+
+func (s *Server) DeleteGroup(ctx context.Context, in *communityv1.DeleteGroupRequest) (*communityv1.DeleteGroupReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.DeleteGroup(ctx, in)
+}
+
+func (s *Server) LeaveGroup(ctx context.Context, in *communityv1.LeaveGroupRequest) (*communityv1.LeaveGroupReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.LeaveGroup(ctx, in)
+}
+
+func (s *Server) GetGroupMembers(ctx context.Context, in *communityv1.GetGroupMembersRequest) (*communityv1.GetGroupMembersReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetGroupMembers(ctx, in)
+}
+
+func (s *Server) GetUserGroups(ctx context.Context, in *communityv1.GetUserGroupsRequest) (*communityv1.GetUserGroupsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetUserGroups(ctx, in)
+}
+
+func (s *Server) CreateGroupPost(ctx context.Context, in *communityv1.CreateGroupPostRequest) (*communityv1.CreateGroupPostReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.CreateGroupPost(ctx, in)
+}
+
+func (s *Server) GetGroupPosts(ctx context.Context, in *communityv1.GetGroupPostsRequest) (*communityv1.GetGroupPostsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetGroupPosts(ctx, in)
+}

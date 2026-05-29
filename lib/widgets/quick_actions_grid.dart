@@ -96,10 +96,10 @@ class QuickActionsGrid extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: scheme.outline.withOpacity(0.12)),
+        border: Border.all(color: scheme.outline.withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withOpacity(0.06),
+            color: scheme.shadow.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -177,10 +177,10 @@ class QuickActionsGrid extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: color.withOpacity(0.25),
+                    color: color.withValues(alpha: 0.25),
                     width: 1,
                   ),
                 ),

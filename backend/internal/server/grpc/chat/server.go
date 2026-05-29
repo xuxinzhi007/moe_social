@@ -7,9 +7,10 @@ import (
 	chatapp "backend/internal/service/chat"
 )
 
-// Server 实现 chat.v1.PrivateMessageService gRPC（P4-C；与 Super 并存）。
+// Server 实现 chat.v1.PrivateMessageService / PushNotificationService gRPC（P4-C；与 Super 并存）。
 type Server struct {
 	chatv1.UnimplementedPrivateMessageServiceServer
+	chatv1.UnimplementedPushNotificationServiceServer
 	app *chatapp.AppService
 }
 

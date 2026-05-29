@@ -67,7 +67,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5).withOpacity(0.1),
+                color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
             ),
@@ -113,18 +113,18 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [room.gradient[0].withOpacity(0.9), room.gradient[1].withOpacity(0.9)],
+            colors: [room.gradient[0].withValues(alpha: 0.9), room.gradient[1].withValues(alpha: 0.9)],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: room.gradient[0].withOpacity(0.4),
+              color: room.gradient[0].withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
           border: Border.all(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -139,7 +139,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
             ),
@@ -151,7 +151,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                 height: 100,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -169,7 +169,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: room.gradient[0].withOpacity(0.4),
+                              color: room.gradient[0].withValues(alpha: 0.4),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -193,7 +193,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                             const SizedBox(height: 3),
                             Text(
                               room.description,
-                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                             ),
                           ],
                         ),
@@ -201,10 +201,10 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
@@ -229,7 +229,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                   width: 20,
                                   height: 20,
                                   decoration: BoxDecoration(
-                                    color: isUrgent ? Colors.redAccent.withOpacity(0.2) : Colors.white.withOpacity(0.1),
+                                    color: isUrgent ? Colors.redAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(Icons.timer_rounded, color: isUrgent ? Colors.redAccent : Colors.white70, size: 14),
@@ -258,7 +258,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
                                 value: room.countdown / room.totalTime,
-                                backgroundColor: Colors.white.withOpacity(0.1),
+                                backgroundColor: Colors.white.withValues(alpha: 0.1),
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   isUrgent ? Colors.redAccent : room.gradient[0],
                                 ),
@@ -276,7 +276,7 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: hasBet ? Colors.green.withOpacity(0.3) : room.gradient[0].withOpacity(0.3),
+                              color: hasBet ? Colors.green.withValues(alpha: 0.3) : room.gradient[0].withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),

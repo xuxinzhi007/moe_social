@@ -10,6 +10,7 @@ import (
 	context "context"
 	http "github.com/go-kratos/kratos/v2/transport/http"
 	binding "github.com/go-kratos/kratos/v2/transport/http/binding"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,18 +20,104 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationUserServiceAcceptFriendRequest = "/user.v1.UserService/AcceptFriendRequest"
+const OperationUserServiceBindFeishu = "/user.v1.UserService/BindFeishu"
+const OperationUserServiceCheckFollow = "/user.v1.UserService/CheckFollow"
+const OperationUserServiceDeleteMyAccount = "/user.v1.UserService/DeleteMyAccount"
+const OperationUserServiceDeleteUser = "/user.v1.UserService/DeleteUser"
+const OperationUserServiceFavoriteEmojiPack = "/user.v1.UserService/FavoriteEmojiPack"
+const OperationUserServiceFeishuAuthorizeURL = "/user.v1.UserService/FeishuAuthorizeURL"
+const OperationUserServiceFeishuLogin = "/user.v1.UserService/FeishuLogin"
+const OperationUserServiceFeishuPublicConfig = "/user.v1.UserService/FeishuPublicConfig"
+const OperationUserServiceFollowUser = "/user.v1.UserService/FollowUser"
+const OperationUserServiceGetAvatarOutfit = "/user.v1.UserService/GetAvatarOutfit"
+const OperationUserServiceGetAvatarOutfits = "/user.v1.UserService/GetAvatarOutfits"
+const OperationUserServiceGetEmojiPack = "/user.v1.UserService/GetEmojiPack"
+const OperationUserServiceGetEmojiPacks = "/user.v1.UserService/GetEmojiPacks"
+const OperationUserServiceGetFollowers = "/user.v1.UserService/GetFollowers"
+const OperationUserServiceGetFollowings = "/user.v1.UserService/GetFollowings"
+const OperationUserServiceGetFriendRelation = "/user.v1.UserService/GetFriendRelation"
+const OperationUserServiceGetTransaction = "/user.v1.UserService/GetTransaction"
+const OperationUserServiceGetTransactions = "/user.v1.UserService/GetTransactions"
 const OperationUserServiceGetUser = "/user.v1.UserService/GetUser"
+const OperationUserServiceGetUserAvatar = "/user.v1.UserService/GetUserAvatar"
+const OperationUserServiceGetUserByEmail = "/user.v1.UserService/GetUserByEmail"
+const OperationUserServiceGetUserCount = "/user.v1.UserService/GetUserCount"
+const OperationUserServiceGetUserEmojiPacks = "/user.v1.UserService/GetUserEmojiPacks"
 const OperationUserServiceGetUserInfo = "/user.v1.UserService/GetUserInfo"
+const OperationUserServiceGetUsers = "/user.v1.UserService/GetUsers"
+const OperationUserServiceListFriends = "/user.v1.UserService/ListFriends"
+const OperationUserServiceListIncomingFriendRequests = "/user.v1.UserService/ListIncomingFriendRequests"
+const OperationUserServiceListOutgoingFriendRequests = "/user.v1.UserService/ListOutgoingFriendRequests"
+const OperationUserServiceListUserDevices = "/user.v1.UserService/ListUserDevices"
 const OperationUserServiceLogin = "/user.v1.UserService/Login"
+const OperationUserServicePurchaseAvatarOutfit = "/user.v1.UserService/PurchaseAvatarOutfit"
+const OperationUserServicePurchaseEmojiPack = "/user.v1.UserService/PurchaseEmojiPack"
+const OperationUserServiceRecharge = "/user.v1.UserService/Recharge"
+const OperationUserServiceRefreshToken = "/user.v1.UserService/RefreshToken"
 const OperationUserServiceRegister = "/user.v1.UserService/Register"
+const OperationUserServiceRejectFriendRequest = "/user.v1.UserService/RejectFriendRequest"
+const OperationUserServiceResetPassword = "/user.v1.UserService/ResetPassword"
+const OperationUserServiceSendFeishuTestCard = "/user.v1.UserService/SendFeishuTestCard"
+const OperationUserServiceSendFriendRequest = "/user.v1.UserService/SendFriendRequest"
+const OperationUserServiceSyncUserDevice = "/user.v1.UserService/SyncUserDevice"
+const OperationUserServiceUnbindFeishu = "/user.v1.UserService/UnbindFeishu"
+const OperationUserServiceUnfollowUser = "/user.v1.UserService/UnfollowUser"
+const OperationUserServiceUpdateUserAvatar = "/user.v1.UserService/UpdateUserAvatar"
 const OperationUserServiceUpdateUserInfo = "/user.v1.UserService/UpdateUserInfo"
+const OperationUserServiceUpdateUserPassword = "/user.v1.UserService/UpdateUserPassword"
+const OperationUserServiceWechatAuthorizeURL = "/user.v1.UserService/WechatAuthorizeURL"
+const OperationUserServiceWechatLogin = "/user.v1.UserService/WechatLogin"
 
 type UserServiceHTTPServer interface {
+	AcceptFriendRequest(context.Context, *AcceptFriendRequestReq) (*AcceptFriendRequestResp, error)
+	BindFeishu(context.Context, *BindFeishuReq) (*BindFeishuResp, error)
+	CheckFollow(context.Context, *CheckFollowReq) (*CheckFollowResp, error)
+	DeleteMyAccount(context.Context, *DeleteMyAccountReq) (*DeleteMyAccountResp, error)
+	DeleteUser(context.Context, *DeleteUserReq) (*DeleteUserResp, error)
+	FavoriteEmojiPack(context.Context, *FavoriteEmojiPackReq) (*FavoriteEmojiPackResp, error)
+	FeishuAuthorizeURL(context.Context, *FeishuAuthorizeURLReq) (*FeishuAuthorizeURLResp, error)
+	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
+	FeishuPublicConfig(context.Context, *emptypb.Empty) (*FeishuPublicConfigResp, error)
+	FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error)
+	GetAvatarOutfit(context.Context, *GetAvatarOutfitReq) (*GetAvatarOutfitResp, error)
+	GetAvatarOutfits(context.Context, *GetAvatarOutfitsReq) (*GetAvatarOutfitsResp, error)
+	GetEmojiPack(context.Context, *GetEmojiPackReq) (*GetEmojiPackResp, error)
+	GetEmojiPacks(context.Context, *GetEmojiPacksReq) (*GetEmojiPacksResp, error)
+	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error)
+	GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error)
+	GetFriendRelation(context.Context, *GetFriendRelationReq) (*GetFriendRelationResp, error)
+	GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error)
+	GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error)
 	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
+	GetUserAvatar(context.Context, *GetUserAvatarReq) (*GetUserAvatarResp, error)
+	GetUserByEmail(context.Context, *GetUserByEmailReq) (*GetUserByEmailResp, error)
+	GetUserCount(context.Context, *GetUserCountReq) (*GetUserCountResp, error)
+	GetUserEmojiPacks(context.Context, *GetUserEmojiPacksReq) (*GetUserEmojiPacksResp, error)
 	GetUserInfo(context.Context, *GetUserInfoReq) (*GetUserInfoResp, error)
+	GetUsers(context.Context, *GetUsersReq) (*GetUsersResp, error)
+	ListFriends(context.Context, *ListFriendsReq) (*ListFriendsResp, error)
+	ListIncomingFriendRequests(context.Context, *ListIncomingFriendRequestsReq) (*ListIncomingFriendRequestsResp, error)
+	ListOutgoingFriendRequests(context.Context, *ListOutgoingFriendRequestsReq) (*ListOutgoingFriendRequestsResp, error)
+	ListUserDevices(context.Context, *ListUserDevicesReq) (*ListUserDevicesResp, error)
 	Login(context.Context, *LoginReq) (*LoginResp, error)
+	PurchaseAvatarOutfit(context.Context, *PurchaseAvatarOutfitReq) (*PurchaseAvatarOutfitResp, error)
+	PurchaseEmojiPack(context.Context, *PurchaseEmojiPackReq) (*PurchaseEmojiPackResp, error)
+	Recharge(context.Context, *RechargeReq) (*RechargeResp, error)
+	RefreshToken(context.Context, *RefreshTokenReq) (*RefreshTokenResp, error)
 	Register(context.Context, *RegisterReq) (*RegisterResp, error)
+	RejectFriendRequest(context.Context, *RejectFriendRequestReq) (*RejectFriendRequestResp, error)
+	ResetPassword(context.Context, *ResetPasswordReq) (*ResetPasswordResp, error)
+	SendFeishuTestCard(context.Context, *SendFeishuTestCardReq) (*SendFeishuTestCardResp, error)
+	SendFriendRequest(context.Context, *SendFriendRequestReq) (*SendFriendRequestResp, error)
+	SyncUserDevice(context.Context, *SyncUserDeviceReq) (*SyncUserDeviceResp, error)
+	UnbindFeishu(context.Context, *UnbindFeishuReq) (*UnbindFeishuResp, error)
+	UnfollowUser(context.Context, *UnfollowUserReq) (*FollowUserResp, error)
+	UpdateUserAvatar(context.Context, *UpdateUserAvatarReq) (*UpdateUserAvatarResp, error)
 	UpdateUserInfo(context.Context, *UpdateUserInfoReq) (*UpdateUserInfoResp, error)
+	UpdateUserPassword(context.Context, *UpdateUserPasswordReq) (*UpdateUserPasswordResp, error)
+	WechatAuthorizeURL(context.Context, *WechatAuthorizeURLReq) (*WechatAuthorizeURLResp, error)
+	WechatLogin(context.Context, *WechatLoginReq) (*WechatLoginResp, error)
 }
 
 func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
@@ -40,6 +127,49 @@ func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r.GET("/api/user/{user_id}", _UserService_GetUserInfo0_HTTP_Handler(srv))
 	r.GET("/api/user/{user_id}/detail", _UserService_GetUser0_HTTP_Handler(srv))
 	r.PUT("/api/user/{user_id}", _UserService_UpdateUserInfo0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/devices/sync", _UserService_SyncUserDevice0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/devices", _UserService_ListUserDevices0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/friends", _UserService_ListFriends0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/friends/status/{other_user_id}", _UserService_GetFriendRelation0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/friend-requests", _UserService_SendFriendRequest0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/friend-requests/{request_id}/accept", _UserService_AcceptFriendRequest0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/friend-requests/{request_id}/reject", _UserService_RejectFriendRequest0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/friend-requests/incoming", _UserService_ListIncomingFriendRequests0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/friend-requests/outgoing", _UserService_ListOutgoingFriendRequests0_HTTP_Handler(srv))
+	r.GET("/api/auth/feishu/authorize-url", _UserService_FeishuAuthorizeURL0_HTTP_Handler(srv))
+	r.POST("/api/auth/feishu/login", _UserService_FeishuLogin0_HTTP_Handler(srv))
+	r.GET("/api/auth/feishu/public-config", _UserService_FeishuPublicConfig0_HTTP_Handler(srv))
+	r.GET("/api/auth/wechat/authorize-url", _UserService_WechatAuthorizeURL0_HTTP_Handler(srv))
+	r.POST("/api/auth/wechat/login", _UserService_WechatLogin0_HTTP_Handler(srv))
+	r.POST("/api/user/refresh-token", _UserService_RefreshToken0_HTTP_Handler(srv))
+	r.GET("/api/transactions/{id}", _UserService_GetTransaction0_HTTP_Handler(srv))
+	r.GET("/api/user/{follower_id}/follow/{following_id}/check", _UserService_CheckFollow0_HTTP_Handler(srv))
+	r.DELETE("/api/user/{user_id}", _UserService_DeleteUser0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/follow", _UserService_FollowUser0_HTTP_Handler(srv))
+	r.DELETE("/api/user/{user_id}/follow", _UserService_UnfollowUser0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/followers", _UserService_GetFollowers0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/following", _UserService_GetFollowings0_HTTP_Handler(srv))
+	r.PUT("/api/user/{user_id}/password", _UserService_UpdateUserPassword0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/transactions", _UserService_GetTransactions0_HTTP_Handler(srv))
+	r.POST("/api/user/{user_id}/wallet/recharge", _UserService_Recharge0_HTTP_Handler(srv))
+	r.POST("/api/user/check-email", _UserService_GetUserByEmail0_HTTP_Handler(srv))
+	r.POST("/api/user/reset-password", _UserService_ResetPassword0_HTTP_Handler(srv))
+	r.GET("/api/users", _UserService_GetUsers0_HTTP_Handler(srv))
+	r.GET("/api/users/count", _UserService_GetUserCount0_HTTP_Handler(srv))
+	r.DELETE("/api/user/account", _UserService_DeleteMyAccount0_HTTP_Handler(srv))
+	r.PUT("/api/user/feishu/bind", _UserService_BindFeishu0_HTTP_Handler(srv))
+	r.DELETE("/api/user/feishu/bind", _UserService_UnbindFeishu0_HTTP_Handler(srv))
+	r.POST("/api/user/feishu/test-card", _UserService_SendFeishuTestCard0_HTTP_Handler(srv))
+	r.GET("/api/avatar/{user_id}", _UserService_GetUserAvatar0_HTTP_Handler(srv))
+	r.PUT("/api/avatar/{user_id}", _UserService_UpdateUserAvatar0_HTTP_Handler(srv))
+	r.GET("/api/avatar/outfits", _UserService_GetAvatarOutfits0_HTTP_Handler(srv))
+	r.GET("/api/avatar/outfits/{outfit_id}", _UserService_GetAvatarOutfit0_HTTP_Handler(srv))
+	r.POST("/api/avatar/outfits/{outfit_id}/purchase", _UserService_PurchaseAvatarOutfit0_HTTP_Handler(srv))
+	r.GET("/api/emoji/packs", _UserService_GetEmojiPacks0_HTTP_Handler(srv))
+	r.GET("/api/emoji/packs/{pack_id}", _UserService_GetEmojiPack0_HTTP_Handler(srv))
+	r.POST("/api/emoji/packs/{pack_id}/favorite", _UserService_FavoriteEmojiPack0_HTTP_Handler(srv))
+	r.POST("/api/emoji/packs/{pack_id}/purchase", _UserService_PurchaseEmojiPack0_HTTP_Handler(srv))
+	r.GET("/api/user/{user_id}/emoji/packs", _UserService_GetUserEmojiPacks0_HTTP_Handler(srv))
 }
 
 func _UserService_Login0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
@@ -155,12 +285,1010 @@ func _UserService_UpdateUserInfo0_HTTP_Handler(srv UserServiceHTTPServer) func(c
 	}
 }
 
+func _UserService_SyncUserDevice0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SyncUserDeviceReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceSyncUserDevice)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SyncUserDevice(ctx, req.(*SyncUserDeviceReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SyncUserDeviceResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_ListUserDevices0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListUserDevicesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceListUserDevices)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListUserDevices(ctx, req.(*ListUserDevicesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListUserDevicesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_ListFriends0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListFriendsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceListFriends)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListFriends(ctx, req.(*ListFriendsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListFriendsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetFriendRelation0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetFriendRelationReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetFriendRelation)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetFriendRelation(ctx, req.(*GetFriendRelationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetFriendRelationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_SendFriendRequest0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SendFriendRequestReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceSendFriendRequest)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SendFriendRequest(ctx, req.(*SendFriendRequestReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SendFriendRequestResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_AcceptFriendRequest0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AcceptFriendRequestReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceAcceptFriendRequest)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AcceptFriendRequest(ctx, req.(*AcceptFriendRequestReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AcceptFriendRequestResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_RejectFriendRequest0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RejectFriendRequestReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceRejectFriendRequest)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.RejectFriendRequest(ctx, req.(*RejectFriendRequestReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RejectFriendRequestResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_ListIncomingFriendRequests0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListIncomingFriendRequestsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceListIncomingFriendRequests)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListIncomingFriendRequests(ctx, req.(*ListIncomingFriendRequestsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListIncomingFriendRequestsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_ListOutgoingFriendRequests0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListOutgoingFriendRequestsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceListOutgoingFriendRequests)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListOutgoingFriendRequests(ctx, req.(*ListOutgoingFriendRequestsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListOutgoingFriendRequestsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_FeishuAuthorizeURL0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in FeishuAuthorizeURLReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceFeishuAuthorizeURL)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.FeishuAuthorizeURL(ctx, req.(*FeishuAuthorizeURLReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FeishuAuthorizeURLResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_FeishuLogin0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in FeishuLoginReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceFeishuLogin)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.FeishuLogin(ctx, req.(*FeishuLoginReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FeishuLoginResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_FeishuPublicConfig0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in emptypb.Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceFeishuPublicConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.FeishuPublicConfig(ctx, req.(*emptypb.Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FeishuPublicConfigResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_WechatAuthorizeURL0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in WechatAuthorizeURLReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceWechatAuthorizeURL)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.WechatAuthorizeURL(ctx, req.(*WechatAuthorizeURLReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*WechatAuthorizeURLResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_WechatLogin0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in WechatLoginReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceWechatLogin)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.WechatLogin(ctx, req.(*WechatLoginReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*WechatLoginResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_RefreshToken0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RefreshTokenReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceRefreshToken)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.RefreshToken(ctx, req.(*RefreshTokenReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RefreshTokenResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetTransaction0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetTransactionReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetTransaction)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetTransaction(ctx, req.(*GetTransactionReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetTransactionResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_CheckFollow0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in CheckFollowReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceCheckFollow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.CheckFollow(ctx, req.(*CheckFollowReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*CheckFollowResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_DeleteUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteUserReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceDeleteUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteUser(ctx, req.(*DeleteUserReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteUserResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_FollowUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in FollowUserReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceFollowUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.FollowUser(ctx, req.(*FollowUserReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FollowUserResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_UnfollowUser0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UnfollowUserReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceUnfollowUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UnfollowUser(ctx, req.(*UnfollowUserReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FollowUserResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetFollowers0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetFollowersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetFollowers)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetFollowers(ctx, req.(*GetFollowersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetFollowersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetFollowings0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetFollowingsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetFollowings)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetFollowings(ctx, req.(*GetFollowingsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetFollowingsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_UpdateUserPassword0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateUserPasswordReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceUpdateUserPassword)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateUserPassword(ctx, req.(*UpdateUserPasswordReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateUserPasswordResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetTransactions0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetTransactionsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetTransactions)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetTransactions(ctx, req.(*GetTransactionsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetTransactionsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_Recharge0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RechargeReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceRecharge)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Recharge(ctx, req.(*RechargeReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RechargeResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetUserByEmail0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserByEmailReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetUserByEmail)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserByEmail(ctx, req.(*GetUserByEmailReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserByEmailResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_ResetPassword0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ResetPasswordReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceResetPassword)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ResetPassword(ctx, req.(*ResetPasswordReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ResetPasswordResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetUsers0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUsersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetUsers)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUsers(ctx, req.(*GetUsersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUsersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetUserCount0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserCountReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetUserCount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserCount(ctx, req.(*GetUserCountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserCountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_DeleteMyAccount0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteMyAccountReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceDeleteMyAccount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteMyAccount(ctx, req.(*DeleteMyAccountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteMyAccountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_BindFeishu0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in BindFeishuReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceBindFeishu)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.BindFeishu(ctx, req.(*BindFeishuReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*BindFeishuResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_UnbindFeishu0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UnbindFeishuReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceUnbindFeishu)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UnbindFeishu(ctx, req.(*UnbindFeishuReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UnbindFeishuResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_SendFeishuTestCard0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SendFeishuTestCardReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceSendFeishuTestCard)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SendFeishuTestCard(ctx, req.(*SendFeishuTestCardReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SendFeishuTestCardResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetUserAvatar0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserAvatarReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetUserAvatar)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserAvatar(ctx, req.(*GetUserAvatarReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserAvatarResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_UpdateUserAvatar0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateUserAvatarReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceUpdateUserAvatar)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateUserAvatar(ctx, req.(*UpdateUserAvatarReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateUserAvatarResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetAvatarOutfits0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetAvatarOutfitsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetAvatarOutfits)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetAvatarOutfits(ctx, req.(*GetAvatarOutfitsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetAvatarOutfitsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetAvatarOutfit0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetAvatarOutfitReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetAvatarOutfit)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetAvatarOutfit(ctx, req.(*GetAvatarOutfitReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetAvatarOutfitResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_PurchaseAvatarOutfit0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in PurchaseAvatarOutfitReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServicePurchaseAvatarOutfit)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.PurchaseAvatarOutfit(ctx, req.(*PurchaseAvatarOutfitReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*PurchaseAvatarOutfitResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetEmojiPacks0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetEmojiPacksReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetEmojiPacks)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetEmojiPacks(ctx, req.(*GetEmojiPacksReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetEmojiPacksResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetEmojiPack0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetEmojiPackReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetEmojiPack)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetEmojiPack(ctx, req.(*GetEmojiPackReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetEmojiPackResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_FavoriteEmojiPack0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in FavoriteEmojiPackReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceFavoriteEmojiPack)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.FavoriteEmojiPack(ctx, req.(*FavoriteEmojiPackReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*FavoriteEmojiPackResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_PurchaseEmojiPack0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in PurchaseEmojiPackReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServicePurchaseEmojiPack)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.PurchaseEmojiPack(ctx, req.(*PurchaseEmojiPackReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*PurchaseEmojiPackResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetUserEmojiPacks0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetUserEmojiPacksReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetUserEmojiPacks)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetUserEmojiPacks(ctx, req.(*GetUserEmojiPacksReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetUserEmojiPacksResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type UserServiceHTTPClient interface {
+	AcceptFriendRequest(ctx context.Context, req *AcceptFriendRequestReq, opts ...http.CallOption) (rsp *AcceptFriendRequestResp, err error)
+	BindFeishu(ctx context.Context, req *BindFeishuReq, opts ...http.CallOption) (rsp *BindFeishuResp, err error)
+	CheckFollow(ctx context.Context, req *CheckFollowReq, opts ...http.CallOption) (rsp *CheckFollowResp, err error)
+	DeleteMyAccount(ctx context.Context, req *DeleteMyAccountReq, opts ...http.CallOption) (rsp *DeleteMyAccountResp, err error)
+	DeleteUser(ctx context.Context, req *DeleteUserReq, opts ...http.CallOption) (rsp *DeleteUserResp, err error)
+	FavoriteEmojiPack(ctx context.Context, req *FavoriteEmojiPackReq, opts ...http.CallOption) (rsp *FavoriteEmojiPackResp, err error)
+	FeishuAuthorizeURL(ctx context.Context, req *FeishuAuthorizeURLReq, opts ...http.CallOption) (rsp *FeishuAuthorizeURLResp, err error)
+	FeishuLogin(ctx context.Context, req *FeishuLoginReq, opts ...http.CallOption) (rsp *FeishuLoginResp, err error)
+	FeishuPublicConfig(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *FeishuPublicConfigResp, err error)
+	FollowUser(ctx context.Context, req *FollowUserReq, opts ...http.CallOption) (rsp *FollowUserResp, err error)
+	GetAvatarOutfit(ctx context.Context, req *GetAvatarOutfitReq, opts ...http.CallOption) (rsp *GetAvatarOutfitResp, err error)
+	GetAvatarOutfits(ctx context.Context, req *GetAvatarOutfitsReq, opts ...http.CallOption) (rsp *GetAvatarOutfitsResp, err error)
+	GetEmojiPack(ctx context.Context, req *GetEmojiPackReq, opts ...http.CallOption) (rsp *GetEmojiPackResp, err error)
+	GetEmojiPacks(ctx context.Context, req *GetEmojiPacksReq, opts ...http.CallOption) (rsp *GetEmojiPacksResp, err error)
+	GetFollowers(ctx context.Context, req *GetFollowersReq, opts ...http.CallOption) (rsp *GetFollowersResp, err error)
+	GetFollowings(ctx context.Context, req *GetFollowingsReq, opts ...http.CallOption) (rsp *GetFollowingsResp, err error)
+	GetFriendRelation(ctx context.Context, req *GetFriendRelationReq, opts ...http.CallOption) (rsp *GetFriendRelationResp, err error)
+	GetTransaction(ctx context.Context, req *GetTransactionReq, opts ...http.CallOption) (rsp *GetTransactionResp, err error)
+	GetTransactions(ctx context.Context, req *GetTransactionsReq, opts ...http.CallOption) (rsp *GetTransactionsResp, err error)
 	GetUser(ctx context.Context, req *GetUserReq, opts ...http.CallOption) (rsp *GetUserResp, err error)
+	GetUserAvatar(ctx context.Context, req *GetUserAvatarReq, opts ...http.CallOption) (rsp *GetUserAvatarResp, err error)
+	GetUserByEmail(ctx context.Context, req *GetUserByEmailReq, opts ...http.CallOption) (rsp *GetUserByEmailResp, err error)
+	GetUserCount(ctx context.Context, req *GetUserCountReq, opts ...http.CallOption) (rsp *GetUserCountResp, err error)
+	GetUserEmojiPacks(ctx context.Context, req *GetUserEmojiPacksReq, opts ...http.CallOption) (rsp *GetUserEmojiPacksResp, err error)
 	GetUserInfo(ctx context.Context, req *GetUserInfoReq, opts ...http.CallOption) (rsp *GetUserInfoResp, err error)
+	GetUsers(ctx context.Context, req *GetUsersReq, opts ...http.CallOption) (rsp *GetUsersResp, err error)
+	ListFriends(ctx context.Context, req *ListFriendsReq, opts ...http.CallOption) (rsp *ListFriendsResp, err error)
+	ListIncomingFriendRequests(ctx context.Context, req *ListIncomingFriendRequestsReq, opts ...http.CallOption) (rsp *ListIncomingFriendRequestsResp, err error)
+	ListOutgoingFriendRequests(ctx context.Context, req *ListOutgoingFriendRequestsReq, opts ...http.CallOption) (rsp *ListOutgoingFriendRequestsResp, err error)
+	ListUserDevices(ctx context.Context, req *ListUserDevicesReq, opts ...http.CallOption) (rsp *ListUserDevicesResp, err error)
 	Login(ctx context.Context, req *LoginReq, opts ...http.CallOption) (rsp *LoginResp, err error)
+	PurchaseAvatarOutfit(ctx context.Context, req *PurchaseAvatarOutfitReq, opts ...http.CallOption) (rsp *PurchaseAvatarOutfitResp, err error)
+	PurchaseEmojiPack(ctx context.Context, req *PurchaseEmojiPackReq, opts ...http.CallOption) (rsp *PurchaseEmojiPackResp, err error)
+	Recharge(ctx context.Context, req *RechargeReq, opts ...http.CallOption) (rsp *RechargeResp, err error)
+	RefreshToken(ctx context.Context, req *RefreshTokenReq, opts ...http.CallOption) (rsp *RefreshTokenResp, err error)
 	Register(ctx context.Context, req *RegisterReq, opts ...http.CallOption) (rsp *RegisterResp, err error)
+	RejectFriendRequest(ctx context.Context, req *RejectFriendRequestReq, opts ...http.CallOption) (rsp *RejectFriendRequestResp, err error)
+	ResetPassword(ctx context.Context, req *ResetPasswordReq, opts ...http.CallOption) (rsp *ResetPasswordResp, err error)
+	SendFeishuTestCard(ctx context.Context, req *SendFeishuTestCardReq, opts ...http.CallOption) (rsp *SendFeishuTestCardResp, err error)
+	SendFriendRequest(ctx context.Context, req *SendFriendRequestReq, opts ...http.CallOption) (rsp *SendFriendRequestResp, err error)
+	SyncUserDevice(ctx context.Context, req *SyncUserDeviceReq, opts ...http.CallOption) (rsp *SyncUserDeviceResp, err error)
+	UnbindFeishu(ctx context.Context, req *UnbindFeishuReq, opts ...http.CallOption) (rsp *UnbindFeishuResp, err error)
+	UnfollowUser(ctx context.Context, req *UnfollowUserReq, opts ...http.CallOption) (rsp *FollowUserResp, err error)
+	UpdateUserAvatar(ctx context.Context, req *UpdateUserAvatarReq, opts ...http.CallOption) (rsp *UpdateUserAvatarResp, err error)
 	UpdateUserInfo(ctx context.Context, req *UpdateUserInfoReq, opts ...http.CallOption) (rsp *UpdateUserInfoResp, err error)
+	UpdateUserPassword(ctx context.Context, req *UpdateUserPasswordReq, opts ...http.CallOption) (rsp *UpdateUserPasswordResp, err error)
+	WechatAuthorizeURL(ctx context.Context, req *WechatAuthorizeURLReq, opts ...http.CallOption) (rsp *WechatAuthorizeURLResp, err error)
+	WechatLogin(ctx context.Context, req *WechatLoginReq, opts ...http.CallOption) (rsp *WechatLoginResp, err error)
 }
 
 type UserServiceHTTPClientImpl struct {
@@ -171,11 +1299,310 @@ func NewUserServiceHTTPClient(client *http.Client) UserServiceHTTPClient {
 	return &UserServiceHTTPClientImpl{client}
 }
 
+func (c *UserServiceHTTPClientImpl) AcceptFriendRequest(ctx context.Context, in *AcceptFriendRequestReq, opts ...http.CallOption) (*AcceptFriendRequestResp, error) {
+	var out AcceptFriendRequestResp
+	pattern := "/api/user/{user_id}/friend-requests/{request_id}/accept"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceAcceptFriendRequest))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) BindFeishu(ctx context.Context, in *BindFeishuReq, opts ...http.CallOption) (*BindFeishuResp, error) {
+	var out BindFeishuResp
+	pattern := "/api/user/feishu/bind"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceBindFeishu))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) CheckFollow(ctx context.Context, in *CheckFollowReq, opts ...http.CallOption) (*CheckFollowResp, error) {
+	var out CheckFollowResp
+	pattern := "/api/user/{follower_id}/follow/{following_id}/check"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceCheckFollow))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) DeleteMyAccount(ctx context.Context, in *DeleteMyAccountReq, opts ...http.CallOption) (*DeleteMyAccountResp, error) {
+	var out DeleteMyAccountResp
+	pattern := "/api/user/account"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceDeleteMyAccount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...http.CallOption) (*DeleteUserResp, error) {
+	var out DeleteUserResp
+	pattern := "/api/user/{user_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceDeleteUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) FavoriteEmojiPack(ctx context.Context, in *FavoriteEmojiPackReq, opts ...http.CallOption) (*FavoriteEmojiPackResp, error) {
+	var out FavoriteEmojiPackResp
+	pattern := "/api/emoji/packs/{pack_id}/favorite"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceFavoriteEmojiPack))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) FeishuAuthorizeURL(ctx context.Context, in *FeishuAuthorizeURLReq, opts ...http.CallOption) (*FeishuAuthorizeURLResp, error) {
+	var out FeishuAuthorizeURLResp
+	pattern := "/api/auth/feishu/authorize-url"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceFeishuAuthorizeURL))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) FeishuLogin(ctx context.Context, in *FeishuLoginReq, opts ...http.CallOption) (*FeishuLoginResp, error) {
+	var out FeishuLoginResp
+	pattern := "/api/auth/feishu/login"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceFeishuLogin))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) FeishuPublicConfig(ctx context.Context, in *emptypb.Empty, opts ...http.CallOption) (*FeishuPublicConfigResp, error) {
+	var out FeishuPublicConfigResp
+	pattern := "/api/auth/feishu/public-config"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceFeishuPublicConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) FollowUser(ctx context.Context, in *FollowUserReq, opts ...http.CallOption) (*FollowUserResp, error) {
+	var out FollowUserResp
+	pattern := "/api/user/{user_id}/follow"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceFollowUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetAvatarOutfit(ctx context.Context, in *GetAvatarOutfitReq, opts ...http.CallOption) (*GetAvatarOutfitResp, error) {
+	var out GetAvatarOutfitResp
+	pattern := "/api/avatar/outfits/{outfit_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetAvatarOutfit))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetAvatarOutfits(ctx context.Context, in *GetAvatarOutfitsReq, opts ...http.CallOption) (*GetAvatarOutfitsResp, error) {
+	var out GetAvatarOutfitsResp
+	pattern := "/api/avatar/outfits"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetAvatarOutfits))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetEmojiPack(ctx context.Context, in *GetEmojiPackReq, opts ...http.CallOption) (*GetEmojiPackResp, error) {
+	var out GetEmojiPackResp
+	pattern := "/api/emoji/packs/{pack_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetEmojiPack))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetEmojiPacks(ctx context.Context, in *GetEmojiPacksReq, opts ...http.CallOption) (*GetEmojiPacksResp, error) {
+	var out GetEmojiPacksResp
+	pattern := "/api/emoji/packs"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetEmojiPacks))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetFollowers(ctx context.Context, in *GetFollowersReq, opts ...http.CallOption) (*GetFollowersResp, error) {
+	var out GetFollowersResp
+	pattern := "/api/user/{user_id}/followers"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetFollowers))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetFollowings(ctx context.Context, in *GetFollowingsReq, opts ...http.CallOption) (*GetFollowingsResp, error) {
+	var out GetFollowingsResp
+	pattern := "/api/user/{user_id}/following"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetFollowings))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetFriendRelation(ctx context.Context, in *GetFriendRelationReq, opts ...http.CallOption) (*GetFriendRelationResp, error) {
+	var out GetFriendRelationResp
+	pattern := "/api/user/{user_id}/friends/status/{other_user_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetFriendRelation))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetTransaction(ctx context.Context, in *GetTransactionReq, opts ...http.CallOption) (*GetTransactionResp, error) {
+	var out GetTransactionResp
+	pattern := "/api/transactions/{id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetTransaction))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetTransactions(ctx context.Context, in *GetTransactionsReq, opts ...http.CallOption) (*GetTransactionsResp, error) {
+	var out GetTransactionsResp
+	pattern := "/api/user/{user_id}/transactions"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetTransactions))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *UserServiceHTTPClientImpl) GetUser(ctx context.Context, in *GetUserReq, opts ...http.CallOption) (*GetUserResp, error) {
 	var out GetUserResp
 	pattern := "/api/user/{user_id}/detail"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationUserServiceGetUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetUserAvatar(ctx context.Context, in *GetUserAvatarReq, opts ...http.CallOption) (*GetUserAvatarResp, error) {
+	var out GetUserAvatarResp
+	pattern := "/api/avatar/{user_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetUserAvatar))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetUserByEmail(ctx context.Context, in *GetUserByEmailReq, opts ...http.CallOption) (*GetUserByEmailResp, error) {
+	var out GetUserByEmailResp
+	pattern := "/api/user/check-email"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceGetUserByEmail))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetUserCount(ctx context.Context, in *GetUserCountReq, opts ...http.CallOption) (*GetUserCountResp, error) {
+	var out GetUserCountResp
+	pattern := "/api/users/count"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetUserCount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetUserEmojiPacks(ctx context.Context, in *GetUserEmojiPacksReq, opts ...http.CallOption) (*GetUserEmojiPacksResp, error) {
+	var out GetUserEmojiPacksResp
+	pattern := "/api/user/{user_id}/emoji/packs"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetUserEmojiPacks))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -197,11 +1624,128 @@ func (c *UserServiceHTTPClientImpl) GetUserInfo(ctx context.Context, in *GetUser
 	return &out, nil
 }
 
+func (c *UserServiceHTTPClientImpl) GetUsers(ctx context.Context, in *GetUsersReq, opts ...http.CallOption) (*GetUsersResp, error) {
+	var out GetUsersResp
+	pattern := "/api/users"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceGetUsers))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) ListFriends(ctx context.Context, in *ListFriendsReq, opts ...http.CallOption) (*ListFriendsResp, error) {
+	var out ListFriendsResp
+	pattern := "/api/user/{user_id}/friends"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceListFriends))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) ListIncomingFriendRequests(ctx context.Context, in *ListIncomingFriendRequestsReq, opts ...http.CallOption) (*ListIncomingFriendRequestsResp, error) {
+	var out ListIncomingFriendRequestsResp
+	pattern := "/api/user/{user_id}/friend-requests/incoming"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceListIncomingFriendRequests))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) ListOutgoingFriendRequests(ctx context.Context, in *ListOutgoingFriendRequestsReq, opts ...http.CallOption) (*ListOutgoingFriendRequestsResp, error) {
+	var out ListOutgoingFriendRequestsResp
+	pattern := "/api/user/{user_id}/friend-requests/outgoing"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceListOutgoingFriendRequests))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) ListUserDevices(ctx context.Context, in *ListUserDevicesReq, opts ...http.CallOption) (*ListUserDevicesResp, error) {
+	var out ListUserDevicesResp
+	pattern := "/api/user/{user_id}/devices"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceListUserDevices))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *UserServiceHTTPClientImpl) Login(ctx context.Context, in *LoginReq, opts ...http.CallOption) (*LoginResp, error) {
 	var out LoginResp
 	pattern := "/api/user/login"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationUserServiceLogin))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) PurchaseAvatarOutfit(ctx context.Context, in *PurchaseAvatarOutfitReq, opts ...http.CallOption) (*PurchaseAvatarOutfitResp, error) {
+	var out PurchaseAvatarOutfitResp
+	pattern := "/api/avatar/outfits/{outfit_id}/purchase"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServicePurchaseAvatarOutfit))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) PurchaseEmojiPack(ctx context.Context, in *PurchaseEmojiPackReq, opts ...http.CallOption) (*PurchaseEmojiPackResp, error) {
+	var out PurchaseEmojiPackResp
+	pattern := "/api/emoji/packs/{pack_id}/purchase"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServicePurchaseEmojiPack))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) Recharge(ctx context.Context, in *RechargeReq, opts ...http.CallOption) (*RechargeResp, error) {
+	var out RechargeResp
+	pattern := "/api/user/{user_id}/wallet/recharge"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceRecharge))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) RefreshToken(ctx context.Context, in *RefreshTokenReq, opts ...http.CallOption) (*RefreshTokenResp, error) {
+	var out RefreshTokenResp
+	pattern := "/api/user/refresh-token"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceRefreshToken))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
@@ -223,6 +1767,110 @@ func (c *UserServiceHTTPClientImpl) Register(ctx context.Context, in *RegisterRe
 	return &out, nil
 }
 
+func (c *UserServiceHTTPClientImpl) RejectFriendRequest(ctx context.Context, in *RejectFriendRequestReq, opts ...http.CallOption) (*RejectFriendRequestResp, error) {
+	var out RejectFriendRequestResp
+	pattern := "/api/user/{user_id}/friend-requests/{request_id}/reject"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceRejectFriendRequest))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) ResetPassword(ctx context.Context, in *ResetPasswordReq, opts ...http.CallOption) (*ResetPasswordResp, error) {
+	var out ResetPasswordResp
+	pattern := "/api/user/reset-password"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceResetPassword))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) SendFeishuTestCard(ctx context.Context, in *SendFeishuTestCardReq, opts ...http.CallOption) (*SendFeishuTestCardResp, error) {
+	var out SendFeishuTestCardResp
+	pattern := "/api/user/feishu/test-card"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceSendFeishuTestCard))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) SendFriendRequest(ctx context.Context, in *SendFriendRequestReq, opts ...http.CallOption) (*SendFriendRequestResp, error) {
+	var out SendFriendRequestResp
+	pattern := "/api/user/{user_id}/friend-requests"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceSendFriendRequest))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) SyncUserDevice(ctx context.Context, in *SyncUserDeviceReq, opts ...http.CallOption) (*SyncUserDeviceResp, error) {
+	var out SyncUserDeviceResp
+	pattern := "/api/user/{user_id}/devices/sync"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceSyncUserDevice))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) UnbindFeishu(ctx context.Context, in *UnbindFeishuReq, opts ...http.CallOption) (*UnbindFeishuResp, error) {
+	var out UnbindFeishuResp
+	pattern := "/api/user/feishu/bind"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceUnbindFeishu))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) UnfollowUser(ctx context.Context, in *UnfollowUserReq, opts ...http.CallOption) (*FollowUserResp, error) {
+	var out FollowUserResp
+	pattern := "/api/user/{user_id}/follow"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceUnfollowUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) UpdateUserAvatar(ctx context.Context, in *UpdateUserAvatarReq, opts ...http.CallOption) (*UpdateUserAvatarResp, error) {
+	var out UpdateUserAvatarResp
+	pattern := "/api/avatar/{user_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceUpdateUserAvatar))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *UserServiceHTTPClientImpl) UpdateUserInfo(ctx context.Context, in *UpdateUserInfoReq, opts ...http.CallOption) (*UpdateUserInfoResp, error) {
 	var out UpdateUserInfoResp
 	pattern := "/api/user/{user_id}"
@@ -230,6 +1878,45 @@ func (c *UserServiceHTTPClientImpl) UpdateUserInfo(ctx context.Context, in *Upda
 	opts = append(opts, http.Operation(OperationUserServiceUpdateUserInfo))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) UpdateUserPassword(ctx context.Context, in *UpdateUserPasswordReq, opts ...http.CallOption) (*UpdateUserPasswordResp, error) {
+	var out UpdateUserPasswordResp
+	pattern := "/api/user/{user_id}/password"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceUpdateUserPassword))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) WechatAuthorizeURL(ctx context.Context, in *WechatAuthorizeURLReq, opts ...http.CallOption) (*WechatAuthorizeURLResp, error) {
+	var out WechatAuthorizeURLResp
+	pattern := "/api/auth/wechat/authorize-url"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationUserServiceWechatAuthorizeURL))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) WechatLogin(ctx context.Context, in *WechatLoginReq, opts ...http.CallOption) (*WechatLoginResp, error) {
+	var out WechatLoginResp
+	pattern := "/api/auth/wechat/login"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceWechatLogin))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

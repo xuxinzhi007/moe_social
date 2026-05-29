@@ -24,10 +24,13 @@ class PostService {
       topicTagId: topicTagId,
       authorUserId: authorUserId,
     );
-    List<Post> posts = result['posts'];
+    final rawPosts = result['posts'];
+    final posts = rawPosts is List<Post>
+        ? rawPosts
+        : (rawPosts as List).map((e) => e as Post).toList();
 
     final manager = LikeStateManager();
-    for (var post in posts) {
+    for (final post in posts) {
       manager.syncState(post.id, post.isLiked, post.likes);
     }
     // 统一在服务层裁剪缓存，避免页面各自实现导致策略分散。

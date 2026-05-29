@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -15,8 +16,11 @@ import '../../widgets/achievement_badge_display.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/fade_in_up.dart';
-import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../theme/moe_tokens.dart';
+import '../../theme/moe_theme_extension.dart';
 import '../../utils/moe_error_copy.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
@@ -37,9 +41,12 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   User? _user;
   bool _isLoading = true;
   bool _isLoadingDetails = false;
+  Object? _loadError;
   bool _isVip = false;
   int _postCount = 0;
   int _followingCount = 0;
@@ -57,9 +64,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ─── Data loading ─────────────────────────────────────────────────────────
 
-  Future<void> _loadUserInfo() {
-    if (_ongoingProfileLoad != null) return _ongoingProfileLoad!;
-    final f = _loadUserInfoImpl();
+  Future<void> _loadUserInfo({bool forceRefresh = false}) {
+    if (_ongoingProfileLoad != null && !forceRefresh) {
+      return _ongoingProfileLoad!;
+    }
+    final f = _loadUserInfoImpl(forceRefresh: forceRefresh);
     _ongoingProfileLoad = f;
     f.whenComplete(() {
       if (identical(_ongoingProfileLoad, f)) _ongoingProfileLoad = null;
@@ -67,24 +76,59 @@ class _ProfilePageState extends State<ProfilePage> {
     return f;
   }
 
-  Future<void> _loadUserInfoImpl() async {
-    await AuthService.init();
+  Future<void> _loadUserInfoImpl({bool forceRefresh = false}) async {
     final userId = AuthService.currentUser;
     if (userId == null) {
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      final user = await ApiService.getUserInfo(userId);
-      await _achievementService.initializeUserBadges(userId);
       if (mounted) {
         setState(() {
-          _user = user;
           _isLoading = false;
-          _isLoadingDetails = true;
+          _loadError = null;
         });
       }
+      return;
+    }
+    final blockingLoad = _user == null;
+    if (mounted) {
+      setState(() {
+        if (blockingLoad) {
+          _isLoading = true;
+        } else {
+          _isLoadingDetails = true;
+        }
+        _loadError = null;
+      });
+    }
+    try {
+      // 与同好页等一致：优先读 AuthService 本地缓存，再按需拉远端
+      final user = await AuthService.getUserInfo(forceRefresh: forceRefresh);
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _isLoading = false;
+        _isLoadingDetails = true;
+        _loadError = null;
+      });
+      unawaited(_loadProfileDetails(userId));
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingDetails = false;
+          _loadError = e;
+        });
+        if (_user != null) {
+          MoeToast.error(
+            context,
+            MoeErrorCopy.toast(e, scene: MoeErrorScene.profile),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _loadProfileDetails(String userId) async {
+    try {
+      await _achievementService.initializeUserBadges(userId);
       final results = await Future.wait([
         ApiService.getUserVipStatus(userId)
             .timeout(const Duration(seconds: 5))
@@ -96,6 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final vipStatus = results[0] as Map<String, dynamic>;
       final userBadges = _achievementService.getUserBadges(userId);
 
+      if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final lp = context.read<UserLevelProvider>();
@@ -114,14 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isLoadingDetails = false;
-        });
-        MoeToast.error(
-          context,
-          MoeErrorCopy.toast(e, scene: MoeErrorScene.profile),
-        );
+        setState(() => _isLoadingDetails = false);
       }
     }
   }
@@ -258,27 +296,52 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _user == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              MoeLoading(color: Color(0xFF7F7FD5)),
-              SizedBox(height: 16),
-              Text('正在加载个人信息…',
-                  style: TextStyle(color: Colors.grey, fontSize: 16)),
-            ],
+      return Scaffold(
+        backgroundColor: MoeTokens.pageBackground,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
+          slivers: [
+            _buildSliverAppBar(),
+            SliverFillRemaining(
+              child: Center(
+                child: MoeLoading(color: MoeTheme.of(context).primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_loadError != null && _user == null) {
+      return Scaffold(
+        backgroundColor: MoeTokens.pageBackground,
+        body: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            _buildSliverAppBar(),
+            SliverFillRemaining(
+              child: Center(
+                child: MoeErrorState.fromError(
+                  _loadError,
+                  scene: MoeErrorScene.profile,
+                  onRetry: () => _loadUserInfo(forceRefresh: true),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       body: RefreshIndicator(
-        onRefresh: _loadUserInfo,
-        color: const Color(0xFF7F7FD5),
+        onRefresh: () => _loadUserInfo(forceRefresh: true),
+        color: MoeTheme.of(context).primary,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics()),
@@ -310,7 +373,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.cloud_queue_rounded,
                             title: '云端图库',
                             subtitle: '管理你的美好回忆',
-                            color: const Color(0xFF86A8E7),
+                            color: MoeTokens.secondary,
                             onTap: () async {
                               HapticFeedback.lightImpact();
                               await Navigator.push(
@@ -338,7 +401,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _MenuItem(
                           icon: Icons.smart_toy_rounded,
                           title: 'AutoGLM 助手',
-                          color: const Color(0xFF7F7FD5),
+                          color: _moe.primary,
                           onTap: () {
                             HapticFeedback.lightImpact();
                             Navigator.push(
@@ -350,7 +413,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             scale: 0.8,
                             child: Switch(
                               value: AutoGLMService.enableOverlay,
-                              activeThumbColor: const Color(0xFF7F7FD5),
+                              activeThumbColor: _moe.primary,
                               onChanged: (v) async {
                                 HapticFeedback.lightImpact();
                                 setState(
@@ -430,11 +493,12 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── SliverAppBar ─────────────────────────────────────────────────────────
 
   Widget _buildSliverAppBar() {
+    final moe = MoeTheme.of(context);
     return SliverAppBar(
       expandedHeight: 340,
       pinned: true,
       stretch: true,
-      backgroundColor: const Color(0xFF7F7FD5),
+      backgroundColor: moe.primary,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       title: Row(
@@ -484,7 +548,7 @@ class _ProfilePageState extends State<ProfilePage> {
   // ─── Header (avatar + name + stats) ──────────────────────────────────────
 
   Widget _buildHeader() {
-    const primaryGlow = Color(0xFF7F7FD5);
+    final primaryGlow = _moe.primary;
     final sig = (_user?.signature ?? '').trim();
 
     return Stack(
@@ -809,7 +873,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       _QuickAction(
         icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
-        iconColor: _isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5),
+        iconColor: _isVip ? const Color(0xFFFFB347) : _moe.primary,
         label: '会员',
         subtitle: _isVip ? '权益生效中' : '开通享特权',
         isCta: !_isVip,
@@ -901,7 +965,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: isCta
-                                ? const Color(0xFF7F7FD5)
+                                ? _moe.primary
                                 : const Color(0xFF76798D),
                             height: 1.2,
                           ),
@@ -958,7 +1022,7 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFF7F7FD5).withValues(alpha: 0.07),
+                color: _moe.primary.withValues(alpha: 0.07),
                 blurRadius: 16,
                 offset: const Offset(0, 6))
           ],
@@ -1064,14 +1128,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             : 0,
                         strokeWidth: 4,
                         backgroundColor: Colors.grey.shade200,
-                        color: const Color(0xFF7F7FD5),
+                        color: _moe.primary,
                       ),
                       Text(
                         '${stats.totalBadges > 0 ? (stats.unlockedBadges * 100 ~/ stats.totalBadges) : 0}%',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF7F7FD5)),
+                            color: _moe.primary),
                       ),
                     ],
                   ),
@@ -1106,7 +1170,7 @@ class _ProfilePageState extends State<ProfilePage> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.07),
+                  color: _moe.primary.withValues(alpha: 0.07),
                   blurRadius: 16,
                   offset: const Offset(0, 6))
             ],
@@ -1196,7 +1260,7 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 4,
             height: 16,
             decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5),
+                color: _moe.primary,
                 borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 10),
         Text(t,

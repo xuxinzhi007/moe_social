@@ -1002,6 +1002,8 @@ message AdminUpdateAchievementReq {
   bool update_enabled = 9;
   bool update_exp_reward = 10;
   bool update_sort_order = 11;
+  // HTTP path /api/admin/growth/achievements/{achievement_id}
+  string achievement_id = 12;
 }
 
 message AdminUpdateAchievementResp {
@@ -1066,6 +1068,8 @@ message AdminUpdateLevelConfigReq {
   bool update_max_exp = 9;
   bool update_privileges = 10;
   bool update_badge_url = 11;
+  // HTTP path /api/admin/growth/levels/{level_id}
+  uint64 level_id = 12;
 }
 
 message AdminUpdateLevelConfigResp {
@@ -1476,11 +1480,373 @@ message VipPlan {
   string updated_at = 7;
 }
 
+message AdminMeReq {}
+
+message AdminMeResp {
+  uint64 admin_id = 1;
+  string username = 2;
+  string role = 3;
+}
+
+message AdminUpdateAiAgentReq {
+  string user_id = 1;
+  string agent_id = 2;
+  string payload_json = 3;
+}
+
+message AdminUpdateAiAgentResp {}
+
+message AdminMediaImageItem {
+  string filename = 1;
+  string image_basename = 2;
+  string owner_folder = 3;
+  string media_kind = 4;
+  string url = 5;
+  int64 size = 6;
+  string created_at = 7;
+  string owner_hint = 8;
+}
+
+message AdminMediaOwnerSummary {
+  string owner_folder = 1;
+  string user_id = 2;
+  string username_hint = 3;
+  int32 file_count = 4;
+  int64 total_bytes = 5;
+}
+
+message AdminListMediaImagesReq {
+  int32 page = 1;
+  int32 page_size = 2;
+  string keyword = 3;
+  string owner_folder = 4;
+  string media_kind = 5;
+}
+
+message AdminListMediaImagesResp {
+  repeated AdminMediaImageItem items = 1;
+  int32 total = 2;
+  repeated AdminMediaOwnerSummary owners = 3;
+}
+
+message AdminDeleteMediaImageReq {
+  string filename = 1;
+}
+
+message AdminDeleteMediaImageResp {}
+
+message AdminGetRuntimeConfigReq {}
+
+message AdminGetRuntimeConfigResp {
+  string public_api_base_url = 1;
+  string api_public_base_url = 2;
+  string image_public_base_url = 3;
+  string image_local_dir = 4;
+  int64 image_max_bytes = 5;
+  string config_file = 6;
+  bool requires_restart = 7;
+}
+
+message AdminUpdateRuntimeConfigReq {
+  string public_api_base_url = 1;
+  bool update_public_api_base_url = 2;
+  string api_public_base_url = 3;
+  bool update_api_public_base_url = 4;
+  string image_public_base_url = 5;
+  bool update_image_public_base_url = 6;
+  string image_local_dir = 7;
+  bool update_image_local_dir = 8;
+  int64 image_max_bytes = 9;
+  bool update_image_max_bytes = 10;
+}
+
+message AdminUpdateRuntimeConfigResp {
+  string public_api_base_url = 1;
+  string api_public_base_url = 2;
+  string image_public_base_url = 3;
+  string image_local_dir = 4;
+  int64 image_max_bytes = 5;
+  string config_file = 6;
+  bool requires_restart = 7;
+}
+
+message AdminRuntimeProcessInfo {
+  string role = 1;
+  int32 pid = 2;
+  double go_alloc_mb = 3;
+  double go_sys_mb = 4;
+  double rss_mb = 5;
+  int32 goroutines = 6;
+  int32 num_cpu = 7;
+  bool reachable = 8;
+  bool same_process = 9;
+}
+
+message AdminGetRuntimeOverviewReq {}
+
+message AdminGetRuntimeOverviewResp {
+  AdminRuntimeProcessInfo api_process = 1;
+  AdminRuntimeProcessInfo rpc_process = 2;
+  bool rpc_monitor_online = 3;
+  string layout = 4;
+  string processes_note = 5;
+  double estimated_rss_mb = 6;
+}
+
 message PingRequest {}
 message PingReply {}
 
 service AdminApp {
   rpc Ping(PingRequest) returns (PingReply);
+
+  rpc AdminBootstrapAccount(AdminBootstrapAccountReq) returns (AdminBootstrapAccountResp) {
+    option (google.api.http) = {
+      post: "/api/admin/bootstrap/account"
+      body: "*"
+    };
+  }
+  rpc AdminLogin(AdminLoginReq) returns (AdminLoginResp) {
+    option (google.api.http) = { post: "/api/admin/login" body: "*" };
+  }
+
+  rpc AdminListAccounts(AdminListAccountsReq) returns (AdminListAccountsResp) {
+    option (google.api.http) = { get: "/api/admin/accounts" };
+  }
+  rpc AdminCreateAccount(AdminCreateAccountReq) returns (AdminCreateAccountResp) {
+    option (google.api.http) = { post: "/api/admin/accounts" body: "*" };
+  }
+  rpc AdminUpdateAccount(AdminUpdateAccountReq) returns (AdminUpdateAccountResp) {
+    option (google.api.http) = {
+      put: "/api/admin/accounts/{account_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteAccount(AdminDeleteAccountReq) returns (AdminDeleteAccountResp) {
+    option (google.api.http) = { delete: "/api/admin/accounts/{account_id}" };
+  }
+  rpc AdminBootstrapAchievements(AdminBootstrapAchievementsReq) returns (AdminBootstrapAchievementsResp) {
+    option (google.api.http) = { post: "/api/admin/achievements/bootstrap" body: "*" };
+  }
+  rpc AdminListAiAgents(AdminListAiAgentsReq) returns (AdminListAiAgentsResp) {
+    option (google.api.http) = { get: "/api/admin/ai/agents" };
+  }
+  rpc AdminDeleteAiAgent(AdminDeleteAiAgentReq) returns (AdminDeleteAiAgentResp) {
+    option (google.api.http) = { delete: "/api/admin/ai/agents" body: "*" };
+  }
+  rpc AdminListAnnouncements(AdminListAnnouncementsReq) returns (AdminListAnnouncementsResp) {
+    option (google.api.http) = { get: "/api/admin/announcements" };
+  }
+  rpc AdminCreateAnnouncement(AdminCreateAnnouncementReq) returns (AdminCreateAnnouncementResp) {
+    option (google.api.http) = { post: "/api/admin/announcements" body: "*" };
+  }
+  rpc AdminGetAnnouncement(AdminGetAnnouncementReq) returns (AdminGetAnnouncementResp) {
+    option (google.api.http) = { get: "/api/admin/announcements/{announcement_id}" };
+  }
+  rpc AdminUpdateAnnouncement(AdminUpdateAnnouncementReq) returns (AdminUpdateAnnouncementResp) {
+    option (google.api.http) = {
+      put: "/api/admin/announcements/{announcement_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteAnnouncement(AdminDeleteAnnouncementReq) returns (AdminDeleteAnnouncementResp) {
+    option (google.api.http) = { delete: "/api/admin/announcements/{announcement_id}" };
+  }
+  rpc AdminPublishAnnouncement(AdminPublishAnnouncementReq) returns (AdminPublishAnnouncementResp) {
+    option (google.api.http) = {
+      post: "/api/admin/announcements/{announcement_id}/publish"
+      body: "*"
+    };
+  }
+  rpc AdminListAuditLogs(AdminListAuditLogsReq) returns (AdminListAuditLogsResp) {
+    option (google.api.http) = { get: "/api/admin/audit-logs" };
+  }
+  rpc AdminListComments(AdminListCommentsReq) returns (AdminListCommentsResp) {
+    option (google.api.http) = { get: "/api/admin/comments" };
+  }
+  rpc AdminDeleteComment(AdminDeleteCommentReq) returns (AdminDeleteCommentResp) {
+    option (google.api.http) = { delete: "/api/admin/comments/{comment_id}" };
+  }
+  rpc AdminListGroups(AdminListGroupsReq) returns (AdminListGroupsResp) {
+    option (google.api.http) = { get: "/api/admin/community/groups" };
+  }
+  rpc AdminDeleteGroup(AdminDeleteGroupReq) returns (AdminDeleteGroupResp) {
+    option (google.api.http) = { delete: "/api/admin/community/groups/{group_id}" };
+  }
+  rpc AdminListGifts(AdminListGiftsReq) returns (AdminListGiftsResp) {
+    option (google.api.http) = { get: "/api/admin/gifts" };
+  }
+  rpc AdminCreateGift(AdminCreateGiftReq) returns (AdminCreateGiftResp) {
+    option (google.api.http) = { post: "/api/admin/gifts" body: "*" };
+  }
+  rpc AdminGetGift(AdminGetGiftReq) returns (AdminGetGiftResp) {
+    option (google.api.http) = { get: "/api/admin/gifts/{gift_id}" };
+  }
+  rpc AdminUpdateGift(AdminUpdateGiftReq) returns (AdminUpdateGiftResp) {
+    option (google.api.http) = {
+      put: "/api/admin/gifts/{gift_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteGift(AdminDeleteGiftReq) returns (AdminDeleteGiftResp) {
+    option (google.api.http) = { delete: "/api/admin/gifts/{gift_id}" };
+  }
+  rpc AdminBootstrapGifts(AdminBootstrapGiftsReq) returns (AdminBootstrapGiftsResp) {
+    option (google.api.http) = { post: "/api/admin/gifts/bootstrap" body: "*" };
+  }
+  rpc AdminDedupeGifts(AdminDedupeGiftsReq) returns (AdminDedupeGiftsResp) {
+    option (google.api.http) = { post: "/api/admin/gifts/dedupe" body: "*" };
+  }
+  rpc AdminListAchievements(AdminListAchievementsReq) returns (AdminListAchievementsResp) {
+    option (google.api.http) = { get: "/api/admin/growth/achievements" };
+  }
+  rpc AdminUpdateAchievement(AdminUpdateAchievementReq) returns (AdminUpdateAchievementResp) {
+    option (google.api.http) = {
+      put: "/api/admin/growth/achievements/{achievement_id}"
+      body: "*"
+    };
+  }
+  rpc AdminListLevelConfigs(AdminListLevelConfigsReq) returns (AdminListLevelConfigsResp) {
+    option (google.api.http) = { get: "/api/admin/growth/levels" };
+  }
+  rpc AdminUpdateLevelConfig(AdminUpdateLevelConfigReq) returns (AdminUpdateLevelConfigResp) {
+    option (google.api.http) = {
+      put: "/api/admin/growth/levels/{level_id}"
+      body: "*"
+    };
+  }
+  rpc AdminBootstrapLevels(AdminBootstrapLevelsReq) returns (AdminBootstrapLevelsResp) {
+    option (google.api.http) = { post: "/api/admin/growth/levels/bootstrap" body: "*" };
+  }
+  rpc AdminBroadcastNotification(AdminBroadcastNotificationReq) returns (AdminBroadcastNotificationResp) {
+    option (google.api.http) = { post: "/api/admin/notifications/broadcast" body: "*" };
+  }
+  rpc AdminSendNotification(AdminSendNotificationReq) returns (AdminSendNotificationResp) {
+    option (google.api.http) = { post: "/api/admin/notifications/send" body: "*" };
+  }
+  rpc AdminListGiftPurchaseOrders(AdminListGiftPurchaseOrdersReq) returns (AdminListGiftPurchaseOrdersResp) {
+    option (google.api.http) = { get: "/api/admin/orders/gift-purchase" };
+  }
+  rpc AdminListVipOrders(AdminListVipOrdersReq) returns (AdminListVipOrdersResp) {
+    option (google.api.http) = { get: "/api/admin/orders/vip" };
+  }
+  rpc AdminListPostReports(AdminListPostReportsReq) returns (AdminListPostReportsResp) {
+    option (google.api.http) = { get: "/api/admin/post-reports" };
+  }
+  rpc AdminListPosts(AdminListPostsReq) returns (AdminListPostsResp) {
+    option (google.api.http) = { get: "/api/admin/posts" };
+  }
+  rpc AdminDeletePost(AdminDeletePostReq) returns (AdminDeletePostResp) {
+    option (google.api.http) = { delete: "/api/admin/posts/{post_id}" };
+  }
+  rpc AdminListFollows(AdminListFollowsReq) returns (AdminListFollowsResp) {
+    option (google.api.http) = { get: "/api/admin/social/follows" };
+  }
+  rpc AdminDeleteFollow(AdminDeleteFollowReq) returns (AdminDeleteFollowResp) {
+    option (google.api.http) = { delete: "/api/admin/social/follows/{follow_id}" };
+  }
+  rpc AdminListFriendRequests(AdminListFriendRequestsReq) returns (AdminListFriendRequestsResp) {
+    option (google.api.http) = { get: "/api/admin/social/friend-requests" };
+  }
+  rpc AdminListTagDictionary(AdminListTagDictionaryReq) returns (AdminListTagDictionaryResp) {
+    option (google.api.http) = { get: "/api/admin/tag-dictionary" };
+  }
+  rpc AdminCreateTagDictionary(AdminCreateTagDictionaryReq) returns (AdminCreateTagDictionaryResp) {
+    option (google.api.http) = { post: "/api/admin/tag-dictionary" body: "*" };
+  }
+  rpc AdminUpdateTagDictionary(AdminUpdateTagDictionaryReq) returns (AdminUpdateTagDictionaryResp) {
+    option (google.api.http) = {
+      put: "/api/admin/tag-dictionary/{entry_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteTagDictionary(AdminDeleteTagDictionaryReq) returns (AdminDeleteTagDictionaryResp) {
+    option (google.api.http) = { delete: "/api/admin/tag-dictionary/{entry_id}" };
+  }
+  rpc AdminUpdateTopicTag(AdminUpdateTopicTagReq) returns (AdminUpdateTopicTagResp) {
+    option (google.api.http) = {
+      put: "/api/admin/topic-tags/{tag_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteTopicTag(AdminDeleteTopicTagReq) returns (AdminDeleteTopicTagResp) {
+    option (google.api.http) = { delete: "/api/admin/topic-tags/{tag_id}" };
+  }
+  rpc AdminBootstrapTopicTags(AdminBootstrapTopicTagsReq) returns (AdminBootstrapTopicTagsResp) {
+    option (google.api.http) = { post: "/api/admin/topic-tags/bootstrap" body: "*" };
+  }
+  rpc AdminListUsers(AdminListUsersReq) returns (AdminListUsersResp) {
+    option (google.api.http) = { get: "/api/admin/users" };
+  }
+  rpc AdminGetUser(AdminGetUserReq) returns (AdminGetUserResp) {
+    option (google.api.http) = { get: "/api/admin/users/{user_id}" };
+  }
+  rpc AdminUpdateUser(AdminUpdateUserReq) returns (AdminUpdateUserResp) {
+    option (google.api.http) = {
+      put: "/api/admin/users/{user_id}"
+      body: "*"
+    };
+  }
+  rpc AdminGetUserProfile(AdminGetUserProfileReq) returns (AdminGetUserProfileResp) {
+    option (google.api.http) = { get: "/api/admin/users/{user_id}/profile" };
+  }
+  rpc AdminGetVipPlan(AdminGetVipPlanReq) returns (AdminGetVipPlanResp) {
+    option (google.api.http) = { get: "/api/admin/vip/plans/{plan_id}" };
+  }
+  rpc AdminUpdateVipPlan(AdminUpdateVipPlanReq) returns (AdminUpdateVipPlanResp) {
+    option (google.api.http) = {
+      put: "/api/admin/vip/plans/{plan_id}"
+      body: "*"
+    };
+  }
+  rpc AdminDeleteVipPlan(AdminDeleteVipPlanReq) returns (AdminDeleteVipPlanResp) {
+    option (google.api.http) = { delete: "/api/admin/vip/plans/{plan_id}" };
+  }
+  rpc AdminBootstrapVipPlans(AdminBootstrapVipPlansReq) returns (AdminBootstrapVipPlansResp) {
+    option (google.api.http) = { post: "/api/admin/vip/plans/bootstrap" body: "*" };
+  }
+
+  rpc AdminUpdateAiAgent(AdminUpdateAiAgentReq) returns (AdminUpdateAiAgentResp) {
+    option (google.api.http) = { put: "/api/admin/ai/agents" body: "*" };
+  }
+  rpc AdminMe(AdminMeReq) returns (AdminMeResp) {
+    option (google.api.http) = { get: "/api/admin/me" };
+  }
+  rpc AdminListMediaImages(AdminListMediaImagesReq) returns (AdminListMediaImagesResp) {
+    option (google.api.http) = { get: "/api/admin/media/images" };
+  }
+  rpc AdminDeleteMediaImage(AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp) {
+    option (google.api.http) = { delete: "/api/admin/media/images/{filename}" };
+  }
+  rpc AdminListMemories(AdminListMemoriesReq) returns (AdminListMemoriesResp) {
+    option (google.api.http) = { get: "/api/admin/memories" };
+  }
+  rpc AdminDeleteMemory(AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp) {
+    option (google.api.http) = { delete: "/api/admin/memories/{memory_id}" };
+  }
+  rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp) {
+    option (google.api.http) = { get: "/api/admin/memories/stats" };
+  }
+  rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp) {
+    option (google.api.http) = { get: "/api/admin/menus" };
+  }
+  rpc AdminUpsertMenu(AdminUpsertMenuReq) returns (AdminUpsertMenuResp) {
+    option (google.api.http) = { put: "/api/admin/menus" body: "*" };
+  }
+  rpc AdminDeleteMenu(AdminDeleteMenuReq) returns (AdminDeleteMenuResp) {
+    option (google.api.http) = { delete: "/api/admin/menus/{menu_key}" };
+  }
+  rpc AdminBootstrapMenus(AdminBootstrapMenusReq) returns (AdminBootstrapMenusResp) {
+    option (google.api.http) = { post: "/api/admin/menus/bootstrap" body: "*" };
+  }
+  rpc AdminGetRuntimeConfig(AdminGetRuntimeConfigReq) returns (AdminGetRuntimeConfigResp) {
+    option (google.api.http) = { get: "/api/admin/runtime-config" };
+  }
+  rpc AdminUpdateRuntimeConfig(AdminUpdateRuntimeConfigReq) returns (AdminUpdateRuntimeConfigResp) {
+    option (google.api.http) = { put: "/api/admin/runtime-config" body: "*" };
+  }
+  rpc AdminRuntimeOverview(AdminGetRuntimeOverviewReq) returns (AdminGetRuntimeOverviewResp) {
+    option (google.api.http) = { get: "/api/admin/runtime/overview" };
+  }
 }
 
 service AdminInsights {
@@ -1498,5 +1864,14 @@ service AdminInsights {
   }
   rpc AdminListTopicTags(AdminListTopicTagsReq) returns (AdminListTopicTagsResp) {
     option (google.api.http) = { get: "/api/admin/topic-tags" };
+  }
+  rpc AdminDashboard(AdminDashboardReq) returns (AdminDashboardResp) {
+    option (google.api.http) = { get: "/api/admin/dashboard" };
+  }
+  rpc AdminGrowthStats(AdminGetGrowthStatsReq) returns (AdminGetGrowthStatsResp) {
+    option (google.api.http) = { get: "/api/admin/growth/stats" };
+  }
+  rpc AdminSchemaCatalog(AdminGetSchemaCatalogReq) returns (AdminGetSchemaCatalogResp) {
+    option (google.api.http) = { get: "/api/admin/schema/catalog" };
   }
 }

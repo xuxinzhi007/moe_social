@@ -5,6 +5,8 @@ import '../../models/vip_plan.dart';
 import 'vip_order_confirm_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 
 class VipPurchasePage extends StatefulWidget {
   const VipPurchasePage({super.key});
@@ -14,6 +16,8 @@ class VipPurchasePage extends StatefulWidget {
 }
 
 class _VipPurchasePageState extends State<VipPurchasePage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   List<VipPlan> _plans = [];
   bool _isLoading = true;
   bool _isOpeningConfirm = false;
@@ -153,7 +157,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _moe.pageBackground,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -165,9 +169,9 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           // 顶部背景
           Container(
             height: 320,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+            decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                colors: [_moe.primary, MoeTokens.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -184,7 +188,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                     child: CircularProgressIndicator(color: Colors.white),
                   )
                 : RefreshIndicator(
-                    color: const Color(0xFF7F7FD5),
+                    color: _moe.primary,
                     onRefresh: _handleRefresh,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(
@@ -296,7 +300,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                     width: 4,
                                     height: 18,
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF7F7FD5),
+                                      color: _moe.primary,
                                       borderRadius: BorderRadius.circular(2),
                                     ),
                                   ),
@@ -331,7 +335,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+              color: _moe.primary.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -367,9 +371,9 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                         const SizedBox(width: 10),
                         Text(
                           '钱包余额 ¥${_balance.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF7F7FD5),
+                            color: _moe.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -385,7 +389,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                 ? null
                                 : _goOrderConfirm,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF7F7FD5),
+                          backgroundColor: _moe.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(26),
@@ -551,7 +555,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               '点击选择套餐',
               style: TextStyle(
                 fontSize: 11,
-                color: isSelected ? const Color(0xFF7F7FD5) : Colors.grey[500],
+                color: isSelected ? _moe.primary : Colors.grey[500],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -614,8 +618,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded,
-                  color: Color(0xFF7F7FD5), size: 42),
+              Icon(Icons.cloud_off_rounded, color: _moe.primary, size: 42),
               const SizedBox(height: 10),
               Text(
                 _loadErrorMessage ?? '加载失败，请稍后重试',
@@ -631,7 +634,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('重试'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: _moe.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(

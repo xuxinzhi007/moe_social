@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../services/api_response.dart';
 import '../services/api_service.dart';
 import 'moe_capability_tier.dart';
 
@@ -13,8 +14,8 @@ class MoeToolService {
   /// OpenAI 兼容 tools 列表 + 默认档位。
   Future<MoeToolSchema> fetchSchema() async {
     final raw = await ApiService.get('/api/moe/tools/schema');
-    final data = raw['data'] as Map<String, dynamic>? ?? {};
-    final tools = (data['tools'] as List<dynamic>?) ?? [];
+    final data = ApiResponse.object(raw);
+    final tools = ApiResponse.listOf(data, keys: const ['tools']);
     return MoeToolSchema(
       tier: (data['tier'] ?? MoeCapabilityTier.defaultTier).toString(),
       tools: tools,
@@ -36,7 +37,7 @@ class MoeToolService {
         'idempotency_key': idempotencyKey,
     };
     final raw = await ApiService.post('/api/moe/tools/execute', body: body);
-    final data = raw['data'] as Map<String, dynamic>? ?? {};
+    final data = ApiResponse.object(raw);
     return MoeToolExecuteResult(
       ok: data['ok'] == true,
       result: (data['result'] ?? '').toString(),
@@ -60,8 +61,8 @@ class MoeToolService {
         'viewer_user_id=${Uri.encodeQueryComponent(viewerUserId)}',
     ];
     final raw = await ApiService.get('/api/posts/search?${parts.join('&')}');
-    final data = raw['data'] as Map<String, dynamic>? ?? {};
-    final items = (data['items'] as List<dynamic>?) ?? [];
+    final data = ApiResponse.object(raw);
+    final items = ApiResponse.listOf(data, keys: const ['items', 'posts']);
     return items
         .whereType<Map>()
         .map((e) => MoePostSearchHit.fromMap(Map<String, dynamic>.from(e)))

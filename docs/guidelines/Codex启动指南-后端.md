@@ -112,7 +112,7 @@ make migrate-moe    # 仅 Moe / AI 聊天相关表
 4. `super.api` 中每个路由必须带 `@handler`，且与现有 handler 命名一致，避免半生成状态。
 5. **推荐**：改 Moe/Admin 相关接口后执行 `cd backend && make gen-moe-admin`（`scripts/gen-moe-admin.sh` 会跑 gen 并自动删已知空壳再编译）。
 6. **Kratos（2026-05-28）**：P0–P5 完成；状态板 [kratos-migration-status.md](../dev/kratos-migration-status.md)。**开发**：`make moe-social`。**P5-D**：`go list -deps ./cmd/moe-social` 无 go-zero。
-7. **生成**：`make gen` = 域 proto pb + HTTP 路由同步；改 `api/defs` 用 `make gen-api`；新接口用域 proto + `internal/service`。
+7. **生成**：`make gen` = 域 proto pb + HTTP + **`openapi.yaml`** + 路由同步；仅文档用 `make gen-swagger`；改 `api/defs` 用 `make gen-api`；新接口用域 proto + `internal/service`。详见 [openapi-apifox.md](../dev/openapi-apifox.md)。
 8. **配置**（`moe`）：`kratos_pure_enabled`、`super_grpc_retired`、`single_process` 等见 `config/config.yaml`。对外 **:8888** HTTP、**:8080** gRPC。
 9. **部署**：生产默认单进程 `moe-social`；分体见 [kratos-p5-split-deploy.md](../dev/kratos-p5-split-deploy.md)。hybrid 回滚：`go build -tags hybrid`。
 10. **推理模型**：发帖从 `/v1/models` 自动匹配；管理台显示 `effective_model` / `auto_discovered`。

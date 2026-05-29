@@ -13,7 +13,7 @@ import (
 )
 
 // PilotNativeGiftCompatRoutes 礼物域 Kratos HTTP（internal/service/gift）。
-const PilotNativeGiftCompatRoutes = 6
+const PilotNativeGiftCompatRoutes = 0
 
 // RegisterGiftCompat D2：已迁入 RegisterGiftServiceHTTPServer。
 func RegisterGiftCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

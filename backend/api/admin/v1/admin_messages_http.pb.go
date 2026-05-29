@@ -19,18 +19,2770 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationAdminAppAdminBootstrapAccount = "/admin.v1.AdminApp/AdminBootstrapAccount"
+const OperationAdminAppAdminBootstrapAchievements = "/admin.v1.AdminApp/AdminBootstrapAchievements"
+const OperationAdminAppAdminBootstrapGifts = "/admin.v1.AdminApp/AdminBootstrapGifts"
+const OperationAdminAppAdminBootstrapLevels = "/admin.v1.AdminApp/AdminBootstrapLevels"
+const OperationAdminAppAdminBootstrapMenus = "/admin.v1.AdminApp/AdminBootstrapMenus"
+const OperationAdminAppAdminBootstrapTopicTags = "/admin.v1.AdminApp/AdminBootstrapTopicTags"
+const OperationAdminAppAdminBootstrapVipPlans = "/admin.v1.AdminApp/AdminBootstrapVipPlans"
+const OperationAdminAppAdminBroadcastNotification = "/admin.v1.AdminApp/AdminBroadcastNotification"
+const OperationAdminAppAdminCreateAccount = "/admin.v1.AdminApp/AdminCreateAccount"
+const OperationAdminAppAdminCreateAnnouncement = "/admin.v1.AdminApp/AdminCreateAnnouncement"
+const OperationAdminAppAdminCreateGift = "/admin.v1.AdminApp/AdminCreateGift"
+const OperationAdminAppAdminCreateTagDictionary = "/admin.v1.AdminApp/AdminCreateTagDictionary"
+const OperationAdminAppAdminDedupeGifts = "/admin.v1.AdminApp/AdminDedupeGifts"
+const OperationAdminAppAdminDeleteAccount = "/admin.v1.AdminApp/AdminDeleteAccount"
+const OperationAdminAppAdminDeleteAiAgent = "/admin.v1.AdminApp/AdminDeleteAiAgent"
+const OperationAdminAppAdminDeleteAnnouncement = "/admin.v1.AdminApp/AdminDeleteAnnouncement"
+const OperationAdminAppAdminDeleteComment = "/admin.v1.AdminApp/AdminDeleteComment"
+const OperationAdminAppAdminDeleteFollow = "/admin.v1.AdminApp/AdminDeleteFollow"
+const OperationAdminAppAdminDeleteGift = "/admin.v1.AdminApp/AdminDeleteGift"
+const OperationAdminAppAdminDeleteGroup = "/admin.v1.AdminApp/AdminDeleteGroup"
+const OperationAdminAppAdminDeleteMediaImage = "/admin.v1.AdminApp/AdminDeleteMediaImage"
+const OperationAdminAppAdminDeleteMemory = "/admin.v1.AdminApp/AdminDeleteMemory"
+const OperationAdminAppAdminDeleteMenu = "/admin.v1.AdminApp/AdminDeleteMenu"
+const OperationAdminAppAdminDeletePost = "/admin.v1.AdminApp/AdminDeletePost"
+const OperationAdminAppAdminDeleteTagDictionary = "/admin.v1.AdminApp/AdminDeleteTagDictionary"
+const OperationAdminAppAdminDeleteTopicTag = "/admin.v1.AdminApp/AdminDeleteTopicTag"
+const OperationAdminAppAdminDeleteVipPlan = "/admin.v1.AdminApp/AdminDeleteVipPlan"
+const OperationAdminAppAdminGetAnnouncement = "/admin.v1.AdminApp/AdminGetAnnouncement"
+const OperationAdminAppAdminGetGift = "/admin.v1.AdminApp/AdminGetGift"
+const OperationAdminAppAdminGetMemoryStats = "/admin.v1.AdminApp/AdminGetMemoryStats"
+const OperationAdminAppAdminGetRuntimeConfig = "/admin.v1.AdminApp/AdminGetRuntimeConfig"
+const OperationAdminAppAdminGetUser = "/admin.v1.AdminApp/AdminGetUser"
+const OperationAdminAppAdminGetUserProfile = "/admin.v1.AdminApp/AdminGetUserProfile"
+const OperationAdminAppAdminGetVipPlan = "/admin.v1.AdminApp/AdminGetVipPlan"
+const OperationAdminAppAdminListAccounts = "/admin.v1.AdminApp/AdminListAccounts"
+const OperationAdminAppAdminListAchievements = "/admin.v1.AdminApp/AdminListAchievements"
+const OperationAdminAppAdminListAiAgents = "/admin.v1.AdminApp/AdminListAiAgents"
+const OperationAdminAppAdminListAnnouncements = "/admin.v1.AdminApp/AdminListAnnouncements"
+const OperationAdminAppAdminListAuditLogs = "/admin.v1.AdminApp/AdminListAuditLogs"
+const OperationAdminAppAdminListComments = "/admin.v1.AdminApp/AdminListComments"
+const OperationAdminAppAdminListFollows = "/admin.v1.AdminApp/AdminListFollows"
+const OperationAdminAppAdminListFriendRequests = "/admin.v1.AdminApp/AdminListFriendRequests"
+const OperationAdminAppAdminListGiftPurchaseOrders = "/admin.v1.AdminApp/AdminListGiftPurchaseOrders"
+const OperationAdminAppAdminListGifts = "/admin.v1.AdminApp/AdminListGifts"
+const OperationAdminAppAdminListGroups = "/admin.v1.AdminApp/AdminListGroups"
+const OperationAdminAppAdminListLevelConfigs = "/admin.v1.AdminApp/AdminListLevelConfigs"
+const OperationAdminAppAdminListMediaImages = "/admin.v1.AdminApp/AdminListMediaImages"
+const OperationAdminAppAdminListMemories = "/admin.v1.AdminApp/AdminListMemories"
+const OperationAdminAppAdminListMenus = "/admin.v1.AdminApp/AdminListMenus"
+const OperationAdminAppAdminListPostReports = "/admin.v1.AdminApp/AdminListPostReports"
+const OperationAdminAppAdminListPosts = "/admin.v1.AdminApp/AdminListPosts"
+const OperationAdminAppAdminListTagDictionary = "/admin.v1.AdminApp/AdminListTagDictionary"
+const OperationAdminAppAdminListUsers = "/admin.v1.AdminApp/AdminListUsers"
+const OperationAdminAppAdminListVipOrders = "/admin.v1.AdminApp/AdminListVipOrders"
+const OperationAdminAppAdminLogin = "/admin.v1.AdminApp/AdminLogin"
+const OperationAdminAppAdminMe = "/admin.v1.AdminApp/AdminMe"
+const OperationAdminAppAdminPublishAnnouncement = "/admin.v1.AdminApp/AdminPublishAnnouncement"
+const OperationAdminAppAdminRuntimeOverview = "/admin.v1.AdminApp/AdminRuntimeOverview"
+const OperationAdminAppAdminSendNotification = "/admin.v1.AdminApp/AdminSendNotification"
+const OperationAdminAppAdminUpdateAccount = "/admin.v1.AdminApp/AdminUpdateAccount"
+const OperationAdminAppAdminUpdateAchievement = "/admin.v1.AdminApp/AdminUpdateAchievement"
+const OperationAdminAppAdminUpdateAiAgent = "/admin.v1.AdminApp/AdminUpdateAiAgent"
+const OperationAdminAppAdminUpdateAnnouncement = "/admin.v1.AdminApp/AdminUpdateAnnouncement"
+const OperationAdminAppAdminUpdateGift = "/admin.v1.AdminApp/AdminUpdateGift"
+const OperationAdminAppAdminUpdateLevelConfig = "/admin.v1.AdminApp/AdminUpdateLevelConfig"
+const OperationAdminAppAdminUpdateRuntimeConfig = "/admin.v1.AdminApp/AdminUpdateRuntimeConfig"
+const OperationAdminAppAdminUpdateTagDictionary = "/admin.v1.AdminApp/AdminUpdateTagDictionary"
+const OperationAdminAppAdminUpdateTopicTag = "/admin.v1.AdminApp/AdminUpdateTopicTag"
+const OperationAdminAppAdminUpdateUser = "/admin.v1.AdminApp/AdminUpdateUser"
+const OperationAdminAppAdminUpdateVipPlan = "/admin.v1.AdminApp/AdminUpdateVipPlan"
+const OperationAdminAppAdminUpsertMenu = "/admin.v1.AdminApp/AdminUpsertMenu"
+
+type AdminAppHTTPServer interface {
+	AdminBootstrapAccount(context.Context, *AdminBootstrapAccountReq) (*AdminBootstrapAccountResp, error)
+	AdminBootstrapAchievements(context.Context, *AdminBootstrapAchievementsReq) (*AdminBootstrapAchievementsResp, error)
+	AdminBootstrapGifts(context.Context, *AdminBootstrapGiftsReq) (*AdminBootstrapGiftsResp, error)
+	AdminBootstrapLevels(context.Context, *AdminBootstrapLevelsReq) (*AdminBootstrapLevelsResp, error)
+	AdminBootstrapMenus(context.Context, *AdminBootstrapMenusReq) (*AdminBootstrapMenusResp, error)
+	AdminBootstrapTopicTags(context.Context, *AdminBootstrapTopicTagsReq) (*AdminBootstrapTopicTagsResp, error)
+	AdminBootstrapVipPlans(context.Context, *AdminBootstrapVipPlansReq) (*AdminBootstrapVipPlansResp, error)
+	AdminBroadcastNotification(context.Context, *AdminBroadcastNotificationReq) (*AdminBroadcastNotificationResp, error)
+	AdminCreateAccount(context.Context, *AdminCreateAccountReq) (*AdminCreateAccountResp, error)
+	AdminCreateAnnouncement(context.Context, *AdminCreateAnnouncementReq) (*AdminCreateAnnouncementResp, error)
+	AdminCreateGift(context.Context, *AdminCreateGiftReq) (*AdminCreateGiftResp, error)
+	AdminCreateTagDictionary(context.Context, *AdminCreateTagDictionaryReq) (*AdminCreateTagDictionaryResp, error)
+	AdminDedupeGifts(context.Context, *AdminDedupeGiftsReq) (*AdminDedupeGiftsResp, error)
+	AdminDeleteAccount(context.Context, *AdminDeleteAccountReq) (*AdminDeleteAccountResp, error)
+	AdminDeleteAiAgent(context.Context, *AdminDeleteAiAgentReq) (*AdminDeleteAiAgentResp, error)
+	AdminDeleteAnnouncement(context.Context, *AdminDeleteAnnouncementReq) (*AdminDeleteAnnouncementResp, error)
+	AdminDeleteComment(context.Context, *AdminDeleteCommentReq) (*AdminDeleteCommentResp, error)
+	AdminDeleteFollow(context.Context, *AdminDeleteFollowReq) (*AdminDeleteFollowResp, error)
+	AdminDeleteGift(context.Context, *AdminDeleteGiftReq) (*AdminDeleteGiftResp, error)
+	AdminDeleteGroup(context.Context, *AdminDeleteGroupReq) (*AdminDeleteGroupResp, error)
+	AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error)
+	AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error)
+	AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error)
+	AdminDeletePost(context.Context, *AdminDeletePostReq) (*AdminDeletePostResp, error)
+	AdminDeleteTagDictionary(context.Context, *AdminDeleteTagDictionaryReq) (*AdminDeleteTagDictionaryResp, error)
+	AdminDeleteTopicTag(context.Context, *AdminDeleteTopicTagReq) (*AdminDeleteTopicTagResp, error)
+	AdminDeleteVipPlan(context.Context, *AdminDeleteVipPlanReq) (*AdminDeleteVipPlanResp, error)
+	AdminGetAnnouncement(context.Context, *AdminGetAnnouncementReq) (*AdminGetAnnouncementResp, error)
+	AdminGetGift(context.Context, *AdminGetGiftReq) (*AdminGetGiftResp, error)
+	AdminGetMemoryStats(context.Context, *AdminGetMemoryStatsReq) (*AdminGetMemoryStatsResp, error)
+	AdminGetRuntimeConfig(context.Context, *AdminGetRuntimeConfigReq) (*AdminGetRuntimeConfigResp, error)
+	AdminGetUser(context.Context, *AdminGetUserReq) (*AdminGetUserResp, error)
+	AdminGetUserProfile(context.Context, *AdminGetUserProfileReq) (*AdminGetUserProfileResp, error)
+	AdminGetVipPlan(context.Context, *AdminGetVipPlanReq) (*AdminGetVipPlanResp, error)
+	AdminListAccounts(context.Context, *AdminListAccountsReq) (*AdminListAccountsResp, error)
+	AdminListAchievements(context.Context, *AdminListAchievementsReq) (*AdminListAchievementsResp, error)
+	AdminListAiAgents(context.Context, *AdminListAiAgentsReq) (*AdminListAiAgentsResp, error)
+	AdminListAnnouncements(context.Context, *AdminListAnnouncementsReq) (*AdminListAnnouncementsResp, error)
+	AdminListAuditLogs(context.Context, *AdminListAuditLogsReq) (*AdminListAuditLogsResp, error)
+	AdminListComments(context.Context, *AdminListCommentsReq) (*AdminListCommentsResp, error)
+	AdminListFollows(context.Context, *AdminListFollowsReq) (*AdminListFollowsResp, error)
+	AdminListFriendRequests(context.Context, *AdminListFriendRequestsReq) (*AdminListFriendRequestsResp, error)
+	AdminListGiftPurchaseOrders(context.Context, *AdminListGiftPurchaseOrdersReq) (*AdminListGiftPurchaseOrdersResp, error)
+	AdminListGifts(context.Context, *AdminListGiftsReq) (*AdminListGiftsResp, error)
+	AdminListGroups(context.Context, *AdminListGroupsReq) (*AdminListGroupsResp, error)
+	AdminListLevelConfigs(context.Context, *AdminListLevelConfigsReq) (*AdminListLevelConfigsResp, error)
+	AdminListMediaImages(context.Context, *AdminListMediaImagesReq) (*AdminListMediaImagesResp, error)
+	AdminListMemories(context.Context, *AdminListMemoriesReq) (*AdminListMemoriesResp, error)
+	AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error)
+	AdminListPostReports(context.Context, *AdminListPostReportsReq) (*AdminListPostReportsResp, error)
+	AdminListPosts(context.Context, *AdminListPostsReq) (*AdminListPostsResp, error)
+	AdminListTagDictionary(context.Context, *AdminListTagDictionaryReq) (*AdminListTagDictionaryResp, error)
+	AdminListUsers(context.Context, *AdminListUsersReq) (*AdminListUsersResp, error)
+	AdminListVipOrders(context.Context, *AdminListVipOrdersReq) (*AdminListVipOrdersResp, error)
+	AdminLogin(context.Context, *AdminLoginReq) (*AdminLoginResp, error)
+	AdminMe(context.Context, *AdminMeReq) (*AdminMeResp, error)
+	AdminPublishAnnouncement(context.Context, *AdminPublishAnnouncementReq) (*AdminPublishAnnouncementResp, error)
+	AdminRuntimeOverview(context.Context, *AdminGetRuntimeOverviewReq) (*AdminGetRuntimeOverviewResp, error)
+	AdminSendNotification(context.Context, *AdminSendNotificationReq) (*AdminSendNotificationResp, error)
+	AdminUpdateAccount(context.Context, *AdminUpdateAccountReq) (*AdminUpdateAccountResp, error)
+	AdminUpdateAchievement(context.Context, *AdminUpdateAchievementReq) (*AdminUpdateAchievementResp, error)
+	AdminUpdateAiAgent(context.Context, *AdminUpdateAiAgentReq) (*AdminUpdateAiAgentResp, error)
+	AdminUpdateAnnouncement(context.Context, *AdminUpdateAnnouncementReq) (*AdminUpdateAnnouncementResp, error)
+	AdminUpdateGift(context.Context, *AdminUpdateGiftReq) (*AdminUpdateGiftResp, error)
+	AdminUpdateLevelConfig(context.Context, *AdminUpdateLevelConfigReq) (*AdminUpdateLevelConfigResp, error)
+	AdminUpdateRuntimeConfig(context.Context, *AdminUpdateRuntimeConfigReq) (*AdminUpdateRuntimeConfigResp, error)
+	AdminUpdateTagDictionary(context.Context, *AdminUpdateTagDictionaryReq) (*AdminUpdateTagDictionaryResp, error)
+	AdminUpdateTopicTag(context.Context, *AdminUpdateTopicTagReq) (*AdminUpdateTopicTagResp, error)
+	AdminUpdateUser(context.Context, *AdminUpdateUserReq) (*AdminUpdateUserResp, error)
+	AdminUpdateVipPlan(context.Context, *AdminUpdateVipPlanReq) (*AdminUpdateVipPlanResp, error)
+	AdminUpsertMenu(context.Context, *AdminUpsertMenuReq) (*AdminUpsertMenuResp, error)
+}
+
+func RegisterAdminAppHTTPServer(s *http.Server, srv AdminAppHTTPServer) {
+	r := s.Route("/")
+	r.POST("/api/admin/bootstrap/account", _AdminApp_AdminBootstrapAccount0_HTTP_Handler(srv))
+	r.POST("/api/admin/login", _AdminApp_AdminLogin0_HTTP_Handler(srv))
+	r.GET("/api/admin/accounts", _AdminApp_AdminListAccounts0_HTTP_Handler(srv))
+	r.POST("/api/admin/accounts", _AdminApp_AdminCreateAccount0_HTTP_Handler(srv))
+	r.PUT("/api/admin/accounts/{account_id}", _AdminApp_AdminUpdateAccount0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/accounts/{account_id}", _AdminApp_AdminDeleteAccount0_HTTP_Handler(srv))
+	r.POST("/api/admin/achievements/bootstrap", _AdminApp_AdminBootstrapAchievements0_HTTP_Handler(srv))
+	r.GET("/api/admin/ai/agents", _AdminApp_AdminListAiAgents0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/ai/agents", _AdminApp_AdminDeleteAiAgent0_HTTP_Handler(srv))
+	r.GET("/api/admin/announcements", _AdminApp_AdminListAnnouncements0_HTTP_Handler(srv))
+	r.POST("/api/admin/announcements", _AdminApp_AdminCreateAnnouncement0_HTTP_Handler(srv))
+	r.GET("/api/admin/announcements/{announcement_id}", _AdminApp_AdminGetAnnouncement0_HTTP_Handler(srv))
+	r.PUT("/api/admin/announcements/{announcement_id}", _AdminApp_AdminUpdateAnnouncement0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/announcements/{announcement_id}", _AdminApp_AdminDeleteAnnouncement0_HTTP_Handler(srv))
+	r.POST("/api/admin/announcements/{announcement_id}/publish", _AdminApp_AdminPublishAnnouncement0_HTTP_Handler(srv))
+	r.GET("/api/admin/audit-logs", _AdminApp_AdminListAuditLogs0_HTTP_Handler(srv))
+	r.GET("/api/admin/comments", _AdminApp_AdminListComments0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/comments/{comment_id}", _AdminApp_AdminDeleteComment0_HTTP_Handler(srv))
+	r.GET("/api/admin/community/groups", _AdminApp_AdminListGroups0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/community/groups/{group_id}", _AdminApp_AdminDeleteGroup0_HTTP_Handler(srv))
+	r.GET("/api/admin/gifts", _AdminApp_AdminListGifts0_HTTP_Handler(srv))
+	r.POST("/api/admin/gifts", _AdminApp_AdminCreateGift0_HTTP_Handler(srv))
+	r.GET("/api/admin/gifts/{gift_id}", _AdminApp_AdminGetGift0_HTTP_Handler(srv))
+	r.PUT("/api/admin/gifts/{gift_id}", _AdminApp_AdminUpdateGift0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/gifts/{gift_id}", _AdminApp_AdminDeleteGift0_HTTP_Handler(srv))
+	r.POST("/api/admin/gifts/bootstrap", _AdminApp_AdminBootstrapGifts0_HTTP_Handler(srv))
+	r.POST("/api/admin/gifts/dedupe", _AdminApp_AdminDedupeGifts0_HTTP_Handler(srv))
+	r.GET("/api/admin/growth/achievements", _AdminApp_AdminListAchievements0_HTTP_Handler(srv))
+	r.PUT("/api/admin/growth/achievements/{achievement_id}", _AdminApp_AdminUpdateAchievement0_HTTP_Handler(srv))
+	r.GET("/api/admin/growth/levels", _AdminApp_AdminListLevelConfigs0_HTTP_Handler(srv))
+	r.PUT("/api/admin/growth/levels/{level_id}", _AdminApp_AdminUpdateLevelConfig0_HTTP_Handler(srv))
+	r.POST("/api/admin/growth/levels/bootstrap", _AdminApp_AdminBootstrapLevels0_HTTP_Handler(srv))
+	r.POST("/api/admin/notifications/broadcast", _AdminApp_AdminBroadcastNotification0_HTTP_Handler(srv))
+	r.POST("/api/admin/notifications/send", _AdminApp_AdminSendNotification0_HTTP_Handler(srv))
+	r.GET("/api/admin/orders/gift-purchase", _AdminApp_AdminListGiftPurchaseOrders0_HTTP_Handler(srv))
+	r.GET("/api/admin/orders/vip", _AdminApp_AdminListVipOrders0_HTTP_Handler(srv))
+	r.GET("/api/admin/post-reports", _AdminApp_AdminListPostReports0_HTTP_Handler(srv))
+	r.GET("/api/admin/posts", _AdminApp_AdminListPosts0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/posts/{post_id}", _AdminApp_AdminDeletePost0_HTTP_Handler(srv))
+	r.GET("/api/admin/social/follows", _AdminApp_AdminListFollows0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/social/follows/{follow_id}", _AdminApp_AdminDeleteFollow0_HTTP_Handler(srv))
+	r.GET("/api/admin/social/friend-requests", _AdminApp_AdminListFriendRequests0_HTTP_Handler(srv))
+	r.GET("/api/admin/tag-dictionary", _AdminApp_AdminListTagDictionary0_HTTP_Handler(srv))
+	r.POST("/api/admin/tag-dictionary", _AdminApp_AdminCreateTagDictionary0_HTTP_Handler(srv))
+	r.PUT("/api/admin/tag-dictionary/{entry_id}", _AdminApp_AdminUpdateTagDictionary0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/tag-dictionary/{entry_id}", _AdminApp_AdminDeleteTagDictionary0_HTTP_Handler(srv))
+	r.PUT("/api/admin/topic-tags/{tag_id}", _AdminApp_AdminUpdateTopicTag0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/topic-tags/{tag_id}", _AdminApp_AdminDeleteTopicTag0_HTTP_Handler(srv))
+	r.POST("/api/admin/topic-tags/bootstrap", _AdminApp_AdminBootstrapTopicTags0_HTTP_Handler(srv))
+	r.GET("/api/admin/users", _AdminApp_AdminListUsers0_HTTP_Handler(srv))
+	r.GET("/api/admin/users/{user_id}", _AdminApp_AdminGetUser0_HTTP_Handler(srv))
+	r.PUT("/api/admin/users/{user_id}", _AdminApp_AdminUpdateUser0_HTTP_Handler(srv))
+	r.GET("/api/admin/users/{user_id}/profile", _AdminApp_AdminGetUserProfile0_HTTP_Handler(srv))
+	r.GET("/api/admin/vip/plans/{plan_id}", _AdminApp_AdminGetVipPlan0_HTTP_Handler(srv))
+	r.PUT("/api/admin/vip/plans/{plan_id}", _AdminApp_AdminUpdateVipPlan0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/vip/plans/{plan_id}", _AdminApp_AdminDeleteVipPlan0_HTTP_Handler(srv))
+	r.POST("/api/admin/vip/plans/bootstrap", _AdminApp_AdminBootstrapVipPlans0_HTTP_Handler(srv))
+	r.PUT("/api/admin/ai/agents", _AdminApp_AdminUpdateAiAgent0_HTTP_Handler(srv))
+	r.GET("/api/admin/me", _AdminApp_AdminMe0_HTTP_Handler(srv))
+	r.GET("/api/admin/media/images", _AdminApp_AdminListMediaImages0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/media/images/{filename}", _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv))
+	r.GET("/api/admin/memories", _AdminApp_AdminListMemories0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/memories/{memory_id}", _AdminApp_AdminDeleteMemory0_HTTP_Handler(srv))
+	r.GET("/api/admin/memories/stats", _AdminApp_AdminGetMemoryStats0_HTTP_Handler(srv))
+	r.GET("/api/admin/menus", _AdminApp_AdminListMenus0_HTTP_Handler(srv))
+	r.PUT("/api/admin/menus", _AdminApp_AdminUpsertMenu0_HTTP_Handler(srv))
+	r.DELETE("/api/admin/menus/{menu_key}", _AdminApp_AdminDeleteMenu0_HTTP_Handler(srv))
+	r.POST("/api/admin/menus/bootstrap", _AdminApp_AdminBootstrapMenus0_HTTP_Handler(srv))
+	r.GET("/api/admin/runtime-config", _AdminApp_AdminGetRuntimeConfig0_HTTP_Handler(srv))
+	r.PUT("/api/admin/runtime-config", _AdminApp_AdminUpdateRuntimeConfig0_HTTP_Handler(srv))
+	r.GET("/api/admin/runtime/overview", _AdminApp_AdminRuntimeOverview0_HTTP_Handler(srv))
+}
+
+func _AdminApp_AdminBootstrapAccount0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapAccountReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapAccount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapAccount(ctx, req.(*AdminBootstrapAccountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapAccountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminLogin0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminLoginReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminLogin)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminLogin(ctx, req.(*AdminLoginReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminLoginResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListAccounts0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListAccountsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListAccounts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListAccounts(ctx, req.(*AdminListAccountsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListAccountsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminCreateAccount0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminCreateAccountReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminCreateAccount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminCreateAccount(ctx, req.(*AdminCreateAccountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminCreateAccountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateAccount0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateAccountReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateAccount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateAccount(ctx, req.(*AdminUpdateAccountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateAccountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteAccount0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteAccountReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteAccount)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteAccount(ctx, req.(*AdminDeleteAccountReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteAccountResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapAchievements0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapAchievementsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapAchievements)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapAchievements(ctx, req.(*AdminBootstrapAchievementsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapAchievementsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListAiAgents0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListAiAgentsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListAiAgents)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListAiAgents(ctx, req.(*AdminListAiAgentsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListAiAgentsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteAiAgent0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteAiAgentReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteAiAgent)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteAiAgent(ctx, req.(*AdminDeleteAiAgentReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteAiAgentResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListAnnouncements0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListAnnouncementsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListAnnouncements)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListAnnouncements(ctx, req.(*AdminListAnnouncementsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListAnnouncementsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminCreateAnnouncement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminCreateAnnouncementReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminCreateAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminCreateAnnouncement(ctx, req.(*AdminCreateAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminCreateAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetAnnouncement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetAnnouncementReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetAnnouncement(ctx, req.(*AdminGetAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateAnnouncement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateAnnouncementReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateAnnouncement(ctx, req.(*AdminUpdateAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteAnnouncement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteAnnouncementReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteAnnouncement(ctx, req.(*AdminDeleteAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminPublishAnnouncement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminPublishAnnouncementReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminPublishAnnouncement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminPublishAnnouncement(ctx, req.(*AdminPublishAnnouncementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminPublishAnnouncementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListAuditLogs0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListAuditLogsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListAuditLogs)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListAuditLogs(ctx, req.(*AdminListAuditLogsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListAuditLogsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListComments0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListCommentsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListComments)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListComments(ctx, req.(*AdminListCommentsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListCommentsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteComment0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteCommentReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteComment)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteComment(ctx, req.(*AdminDeleteCommentReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteCommentResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListGroups0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListGroupsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListGroups)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListGroups(ctx, req.(*AdminListGroupsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListGroupsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteGroup0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteGroupReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteGroup)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteGroup(ctx, req.(*AdminDeleteGroupReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteGroupResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListGifts0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListGiftsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListGifts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListGifts(ctx, req.(*AdminListGiftsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListGiftsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminCreateGift0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminCreateGiftReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminCreateGift)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminCreateGift(ctx, req.(*AdminCreateGiftReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminCreateGiftResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetGift0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetGiftReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetGift)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetGift(ctx, req.(*AdminGetGiftReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetGiftResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateGift0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateGiftReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateGift)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateGift(ctx, req.(*AdminUpdateGiftReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateGiftResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteGift0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteGiftReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteGift)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteGift(ctx, req.(*AdminDeleteGiftReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteGiftResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapGifts0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapGiftsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapGifts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapGifts(ctx, req.(*AdminBootstrapGiftsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapGiftsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDedupeGifts0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDedupeGiftsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDedupeGifts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDedupeGifts(ctx, req.(*AdminDedupeGiftsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDedupeGiftsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListAchievements0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListAchievementsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListAchievements)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListAchievements(ctx, req.(*AdminListAchievementsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListAchievementsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateAchievement0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateAchievementReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateAchievement)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateAchievement(ctx, req.(*AdminUpdateAchievementReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateAchievementResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListLevelConfigs0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListLevelConfigsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListLevelConfigs)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListLevelConfigs(ctx, req.(*AdminListLevelConfigsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListLevelConfigsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateLevelConfig0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateLevelConfigReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateLevelConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateLevelConfig(ctx, req.(*AdminUpdateLevelConfigReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateLevelConfigResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapLevels0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapLevelsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapLevels)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapLevels(ctx, req.(*AdminBootstrapLevelsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapLevelsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBroadcastNotification0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBroadcastNotificationReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBroadcastNotification)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBroadcastNotification(ctx, req.(*AdminBroadcastNotificationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBroadcastNotificationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminSendNotification0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminSendNotificationReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminSendNotification)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminSendNotification(ctx, req.(*AdminSendNotificationReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminSendNotificationResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListGiftPurchaseOrders0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListGiftPurchaseOrdersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListGiftPurchaseOrders)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListGiftPurchaseOrders(ctx, req.(*AdminListGiftPurchaseOrdersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListGiftPurchaseOrdersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListVipOrders0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListVipOrdersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListVipOrders)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListVipOrders(ctx, req.(*AdminListVipOrdersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListVipOrdersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListPostReports0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListPostReportsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListPostReports)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListPostReports(ctx, req.(*AdminListPostReportsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListPostReportsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListPosts0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListPostsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListPosts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListPosts(ctx, req.(*AdminListPostsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListPostsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeletePost0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeletePostReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeletePost)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeletePost(ctx, req.(*AdminDeletePostReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeletePostResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListFollows0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListFollowsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListFollows)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListFollows(ctx, req.(*AdminListFollowsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListFollowsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteFollow0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteFollowReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteFollow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteFollow(ctx, req.(*AdminDeleteFollowReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteFollowResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListFriendRequests0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListFriendRequestsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListFriendRequests)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListFriendRequests(ctx, req.(*AdminListFriendRequestsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListFriendRequestsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListTagDictionary0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListTagDictionaryReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListTagDictionary)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListTagDictionary(ctx, req.(*AdminListTagDictionaryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListTagDictionaryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminCreateTagDictionary0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminCreateTagDictionaryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminCreateTagDictionary)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminCreateTagDictionary(ctx, req.(*AdminCreateTagDictionaryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminCreateTagDictionaryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateTagDictionary0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateTagDictionaryReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateTagDictionary)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateTagDictionary(ctx, req.(*AdminUpdateTagDictionaryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateTagDictionaryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteTagDictionary0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteTagDictionaryReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteTagDictionary)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteTagDictionary(ctx, req.(*AdminDeleteTagDictionaryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteTagDictionaryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateTopicTag0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateTopicTagReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateTopicTag)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateTopicTag(ctx, req.(*AdminUpdateTopicTagReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateTopicTagResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteTopicTag0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteTopicTagReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteTopicTag)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteTopicTag(ctx, req.(*AdminDeleteTopicTagReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteTopicTagResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapTopicTags0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapTopicTagsReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapTopicTags)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapTopicTags(ctx, req.(*AdminBootstrapTopicTagsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapTopicTagsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListUsers0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListUsersReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListUsers)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListUsers(ctx, req.(*AdminListUsersReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListUsersResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetUser0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetUserReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetUser(ctx, req.(*AdminGetUserReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetUserResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateUser0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateUserReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateUser)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateUser(ctx, req.(*AdminUpdateUserReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateUserResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetUserProfile0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetUserProfileReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetUserProfile)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetUserProfile(ctx, req.(*AdminGetUserProfileReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetUserProfileResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetVipPlan0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetVipPlanReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetVipPlan)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetVipPlan(ctx, req.(*AdminGetVipPlanReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetVipPlanResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateVipPlan0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateVipPlanReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateVipPlan)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateVipPlan(ctx, req.(*AdminUpdateVipPlanReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateVipPlanResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteVipPlan0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteVipPlanReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteVipPlan)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteVipPlan(ctx, req.(*AdminDeleteVipPlanReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteVipPlanResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapVipPlans0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapVipPlansReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapVipPlans)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapVipPlans(ctx, req.(*AdminBootstrapVipPlansReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapVipPlansResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateAiAgent0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateAiAgentReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateAiAgent)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateAiAgent(ctx, req.(*AdminUpdateAiAgentReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateAiAgentResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminMe0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminMeReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminMe)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminMe(ctx, req.(*AdminMeReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminMeResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListMediaImages0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListMediaImagesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListMediaImages)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListMediaImages(ctx, req.(*AdminListMediaImagesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListMediaImagesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteMediaImageReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteMediaImage)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteMediaImage(ctx, req.(*AdminDeleteMediaImageReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteMediaImageResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListMemories0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListMemoriesReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListMemories)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListMemories(ctx, req.(*AdminListMemoriesReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListMemoriesResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteMemory0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteMemoryReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteMemory)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteMemory(ctx, req.(*AdminDeleteMemoryReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteMemoryResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetMemoryStats0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetMemoryStatsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetMemoryStats)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetMemoryStats(ctx, req.(*AdminGetMemoryStatsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetMemoryStatsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminListMenus0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminListMenusReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminListMenus)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminListMenus(ctx, req.(*AdminListMenusReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminListMenusResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpsertMenu0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpsertMenuReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpsertMenu)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpsertMenu(ctx, req.(*AdminUpsertMenuReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpsertMenuResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminDeleteMenu0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDeleteMenuReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminDeleteMenu)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDeleteMenu(ctx, req.(*AdminDeleteMenuReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDeleteMenuResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminBootstrapMenus0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminBootstrapMenusReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminBootstrapMenus)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminBootstrapMenus(ctx, req.(*AdminBootstrapMenusReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminBootstrapMenusResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminGetRuntimeConfig0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetRuntimeConfigReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminGetRuntimeConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGetRuntimeConfig(ctx, req.(*AdminGetRuntimeConfigReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetRuntimeConfigResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminUpdateRuntimeConfig0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminUpdateRuntimeConfigReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminUpdateRuntimeConfig)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminUpdateRuntimeConfig(ctx, req.(*AdminUpdateRuntimeConfigReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminUpdateRuntimeConfigResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminApp_AdminRuntimeOverview0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetRuntimeOverviewReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminAppAdminRuntimeOverview)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminRuntimeOverview(ctx, req.(*AdminGetRuntimeOverviewReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetRuntimeOverviewResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+type AdminAppHTTPClient interface {
+	AdminBootstrapAccount(ctx context.Context, req *AdminBootstrapAccountReq, opts ...http.CallOption) (rsp *AdminBootstrapAccountResp, err error)
+	AdminBootstrapAchievements(ctx context.Context, req *AdminBootstrapAchievementsReq, opts ...http.CallOption) (rsp *AdminBootstrapAchievementsResp, err error)
+	AdminBootstrapGifts(ctx context.Context, req *AdminBootstrapGiftsReq, opts ...http.CallOption) (rsp *AdminBootstrapGiftsResp, err error)
+	AdminBootstrapLevels(ctx context.Context, req *AdminBootstrapLevelsReq, opts ...http.CallOption) (rsp *AdminBootstrapLevelsResp, err error)
+	AdminBootstrapMenus(ctx context.Context, req *AdminBootstrapMenusReq, opts ...http.CallOption) (rsp *AdminBootstrapMenusResp, err error)
+	AdminBootstrapTopicTags(ctx context.Context, req *AdminBootstrapTopicTagsReq, opts ...http.CallOption) (rsp *AdminBootstrapTopicTagsResp, err error)
+	AdminBootstrapVipPlans(ctx context.Context, req *AdminBootstrapVipPlansReq, opts ...http.CallOption) (rsp *AdminBootstrapVipPlansResp, err error)
+	AdminBroadcastNotification(ctx context.Context, req *AdminBroadcastNotificationReq, opts ...http.CallOption) (rsp *AdminBroadcastNotificationResp, err error)
+	AdminCreateAccount(ctx context.Context, req *AdminCreateAccountReq, opts ...http.CallOption) (rsp *AdminCreateAccountResp, err error)
+	AdminCreateAnnouncement(ctx context.Context, req *AdminCreateAnnouncementReq, opts ...http.CallOption) (rsp *AdminCreateAnnouncementResp, err error)
+	AdminCreateGift(ctx context.Context, req *AdminCreateGiftReq, opts ...http.CallOption) (rsp *AdminCreateGiftResp, err error)
+	AdminCreateTagDictionary(ctx context.Context, req *AdminCreateTagDictionaryReq, opts ...http.CallOption) (rsp *AdminCreateTagDictionaryResp, err error)
+	AdminDedupeGifts(ctx context.Context, req *AdminDedupeGiftsReq, opts ...http.CallOption) (rsp *AdminDedupeGiftsResp, err error)
+	AdminDeleteAccount(ctx context.Context, req *AdminDeleteAccountReq, opts ...http.CallOption) (rsp *AdminDeleteAccountResp, err error)
+	AdminDeleteAiAgent(ctx context.Context, req *AdminDeleteAiAgentReq, opts ...http.CallOption) (rsp *AdminDeleteAiAgentResp, err error)
+	AdminDeleteAnnouncement(ctx context.Context, req *AdminDeleteAnnouncementReq, opts ...http.CallOption) (rsp *AdminDeleteAnnouncementResp, err error)
+	AdminDeleteComment(ctx context.Context, req *AdminDeleteCommentReq, opts ...http.CallOption) (rsp *AdminDeleteCommentResp, err error)
+	AdminDeleteFollow(ctx context.Context, req *AdminDeleteFollowReq, opts ...http.CallOption) (rsp *AdminDeleteFollowResp, err error)
+	AdminDeleteGift(ctx context.Context, req *AdminDeleteGiftReq, opts ...http.CallOption) (rsp *AdminDeleteGiftResp, err error)
+	AdminDeleteGroup(ctx context.Context, req *AdminDeleteGroupReq, opts ...http.CallOption) (rsp *AdminDeleteGroupResp, err error)
+	AdminDeleteMediaImage(ctx context.Context, req *AdminDeleteMediaImageReq, opts ...http.CallOption) (rsp *AdminDeleteMediaImageResp, err error)
+	AdminDeleteMemory(ctx context.Context, req *AdminDeleteMemoryReq, opts ...http.CallOption) (rsp *AdminDeleteMemoryResp, err error)
+	AdminDeleteMenu(ctx context.Context, req *AdminDeleteMenuReq, opts ...http.CallOption) (rsp *AdminDeleteMenuResp, err error)
+	AdminDeletePost(ctx context.Context, req *AdminDeletePostReq, opts ...http.CallOption) (rsp *AdminDeletePostResp, err error)
+	AdminDeleteTagDictionary(ctx context.Context, req *AdminDeleteTagDictionaryReq, opts ...http.CallOption) (rsp *AdminDeleteTagDictionaryResp, err error)
+	AdminDeleteTopicTag(ctx context.Context, req *AdminDeleteTopicTagReq, opts ...http.CallOption) (rsp *AdminDeleteTopicTagResp, err error)
+	AdminDeleteVipPlan(ctx context.Context, req *AdminDeleteVipPlanReq, opts ...http.CallOption) (rsp *AdminDeleteVipPlanResp, err error)
+	AdminGetAnnouncement(ctx context.Context, req *AdminGetAnnouncementReq, opts ...http.CallOption) (rsp *AdminGetAnnouncementResp, err error)
+	AdminGetGift(ctx context.Context, req *AdminGetGiftReq, opts ...http.CallOption) (rsp *AdminGetGiftResp, err error)
+	AdminGetMemoryStats(ctx context.Context, req *AdminGetMemoryStatsReq, opts ...http.CallOption) (rsp *AdminGetMemoryStatsResp, err error)
+	AdminGetRuntimeConfig(ctx context.Context, req *AdminGetRuntimeConfigReq, opts ...http.CallOption) (rsp *AdminGetRuntimeConfigResp, err error)
+	AdminGetUser(ctx context.Context, req *AdminGetUserReq, opts ...http.CallOption) (rsp *AdminGetUserResp, err error)
+	AdminGetUserProfile(ctx context.Context, req *AdminGetUserProfileReq, opts ...http.CallOption) (rsp *AdminGetUserProfileResp, err error)
+	AdminGetVipPlan(ctx context.Context, req *AdminGetVipPlanReq, opts ...http.CallOption) (rsp *AdminGetVipPlanResp, err error)
+	AdminListAccounts(ctx context.Context, req *AdminListAccountsReq, opts ...http.CallOption) (rsp *AdminListAccountsResp, err error)
+	AdminListAchievements(ctx context.Context, req *AdminListAchievementsReq, opts ...http.CallOption) (rsp *AdminListAchievementsResp, err error)
+	AdminListAiAgents(ctx context.Context, req *AdminListAiAgentsReq, opts ...http.CallOption) (rsp *AdminListAiAgentsResp, err error)
+	AdminListAnnouncements(ctx context.Context, req *AdminListAnnouncementsReq, opts ...http.CallOption) (rsp *AdminListAnnouncementsResp, err error)
+	AdminListAuditLogs(ctx context.Context, req *AdminListAuditLogsReq, opts ...http.CallOption) (rsp *AdminListAuditLogsResp, err error)
+	AdminListComments(ctx context.Context, req *AdminListCommentsReq, opts ...http.CallOption) (rsp *AdminListCommentsResp, err error)
+	AdminListFollows(ctx context.Context, req *AdminListFollowsReq, opts ...http.CallOption) (rsp *AdminListFollowsResp, err error)
+	AdminListFriendRequests(ctx context.Context, req *AdminListFriendRequestsReq, opts ...http.CallOption) (rsp *AdminListFriendRequestsResp, err error)
+	AdminListGiftPurchaseOrders(ctx context.Context, req *AdminListGiftPurchaseOrdersReq, opts ...http.CallOption) (rsp *AdminListGiftPurchaseOrdersResp, err error)
+	AdminListGifts(ctx context.Context, req *AdminListGiftsReq, opts ...http.CallOption) (rsp *AdminListGiftsResp, err error)
+	AdminListGroups(ctx context.Context, req *AdminListGroupsReq, opts ...http.CallOption) (rsp *AdminListGroupsResp, err error)
+	AdminListLevelConfigs(ctx context.Context, req *AdminListLevelConfigsReq, opts ...http.CallOption) (rsp *AdminListLevelConfigsResp, err error)
+	AdminListMediaImages(ctx context.Context, req *AdminListMediaImagesReq, opts ...http.CallOption) (rsp *AdminListMediaImagesResp, err error)
+	AdminListMemories(ctx context.Context, req *AdminListMemoriesReq, opts ...http.CallOption) (rsp *AdminListMemoriesResp, err error)
+	AdminListMenus(ctx context.Context, req *AdminListMenusReq, opts ...http.CallOption) (rsp *AdminListMenusResp, err error)
+	AdminListPostReports(ctx context.Context, req *AdminListPostReportsReq, opts ...http.CallOption) (rsp *AdminListPostReportsResp, err error)
+	AdminListPosts(ctx context.Context, req *AdminListPostsReq, opts ...http.CallOption) (rsp *AdminListPostsResp, err error)
+	AdminListTagDictionary(ctx context.Context, req *AdminListTagDictionaryReq, opts ...http.CallOption) (rsp *AdminListTagDictionaryResp, err error)
+	AdminListUsers(ctx context.Context, req *AdminListUsersReq, opts ...http.CallOption) (rsp *AdminListUsersResp, err error)
+	AdminListVipOrders(ctx context.Context, req *AdminListVipOrdersReq, opts ...http.CallOption) (rsp *AdminListVipOrdersResp, err error)
+	AdminLogin(ctx context.Context, req *AdminLoginReq, opts ...http.CallOption) (rsp *AdminLoginResp, err error)
+	AdminMe(ctx context.Context, req *AdminMeReq, opts ...http.CallOption) (rsp *AdminMeResp, err error)
+	AdminPublishAnnouncement(ctx context.Context, req *AdminPublishAnnouncementReq, opts ...http.CallOption) (rsp *AdminPublishAnnouncementResp, err error)
+	AdminRuntimeOverview(ctx context.Context, req *AdminGetRuntimeOverviewReq, opts ...http.CallOption) (rsp *AdminGetRuntimeOverviewResp, err error)
+	AdminSendNotification(ctx context.Context, req *AdminSendNotificationReq, opts ...http.CallOption) (rsp *AdminSendNotificationResp, err error)
+	AdminUpdateAccount(ctx context.Context, req *AdminUpdateAccountReq, opts ...http.CallOption) (rsp *AdminUpdateAccountResp, err error)
+	AdminUpdateAchievement(ctx context.Context, req *AdminUpdateAchievementReq, opts ...http.CallOption) (rsp *AdminUpdateAchievementResp, err error)
+	AdminUpdateAiAgent(ctx context.Context, req *AdminUpdateAiAgentReq, opts ...http.CallOption) (rsp *AdminUpdateAiAgentResp, err error)
+	AdminUpdateAnnouncement(ctx context.Context, req *AdminUpdateAnnouncementReq, opts ...http.CallOption) (rsp *AdminUpdateAnnouncementResp, err error)
+	AdminUpdateGift(ctx context.Context, req *AdminUpdateGiftReq, opts ...http.CallOption) (rsp *AdminUpdateGiftResp, err error)
+	AdminUpdateLevelConfig(ctx context.Context, req *AdminUpdateLevelConfigReq, opts ...http.CallOption) (rsp *AdminUpdateLevelConfigResp, err error)
+	AdminUpdateRuntimeConfig(ctx context.Context, req *AdminUpdateRuntimeConfigReq, opts ...http.CallOption) (rsp *AdminUpdateRuntimeConfigResp, err error)
+	AdminUpdateTagDictionary(ctx context.Context, req *AdminUpdateTagDictionaryReq, opts ...http.CallOption) (rsp *AdminUpdateTagDictionaryResp, err error)
+	AdminUpdateTopicTag(ctx context.Context, req *AdminUpdateTopicTagReq, opts ...http.CallOption) (rsp *AdminUpdateTopicTagResp, err error)
+	AdminUpdateUser(ctx context.Context, req *AdminUpdateUserReq, opts ...http.CallOption) (rsp *AdminUpdateUserResp, err error)
+	AdminUpdateVipPlan(ctx context.Context, req *AdminUpdateVipPlanReq, opts ...http.CallOption) (rsp *AdminUpdateVipPlanResp, err error)
+	AdminUpsertMenu(ctx context.Context, req *AdminUpsertMenuReq, opts ...http.CallOption) (rsp *AdminUpsertMenuResp, err error)
+}
+
+type AdminAppHTTPClientImpl struct {
+	cc *http.Client
+}
+
+func NewAdminAppHTTPClient(client *http.Client) AdminAppHTTPClient {
+	return &AdminAppHTTPClientImpl{client}
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapAccount(ctx context.Context, in *AdminBootstrapAccountReq, opts ...http.CallOption) (*AdminBootstrapAccountResp, error) {
+	var out AdminBootstrapAccountResp
+	pattern := "/api/admin/bootstrap/account"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapAccount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapAchievements(ctx context.Context, in *AdminBootstrapAchievementsReq, opts ...http.CallOption) (*AdminBootstrapAchievementsResp, error) {
+	var out AdminBootstrapAchievementsResp
+	pattern := "/api/admin/achievements/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapAchievements))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapGifts(ctx context.Context, in *AdminBootstrapGiftsReq, opts ...http.CallOption) (*AdminBootstrapGiftsResp, error) {
+	var out AdminBootstrapGiftsResp
+	pattern := "/api/admin/gifts/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapGifts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapLevels(ctx context.Context, in *AdminBootstrapLevelsReq, opts ...http.CallOption) (*AdminBootstrapLevelsResp, error) {
+	var out AdminBootstrapLevelsResp
+	pattern := "/api/admin/growth/levels/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapLevels))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapMenus(ctx context.Context, in *AdminBootstrapMenusReq, opts ...http.CallOption) (*AdminBootstrapMenusResp, error) {
+	var out AdminBootstrapMenusResp
+	pattern := "/api/admin/menus/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapMenus))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapTopicTags(ctx context.Context, in *AdminBootstrapTopicTagsReq, opts ...http.CallOption) (*AdminBootstrapTopicTagsResp, error) {
+	var out AdminBootstrapTopicTagsResp
+	pattern := "/api/admin/topic-tags/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapTopicTags))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBootstrapVipPlans(ctx context.Context, in *AdminBootstrapVipPlansReq, opts ...http.CallOption) (*AdminBootstrapVipPlansResp, error) {
+	var out AdminBootstrapVipPlansResp
+	pattern := "/api/admin/vip/plans/bootstrap"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBootstrapVipPlans))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminBroadcastNotification(ctx context.Context, in *AdminBroadcastNotificationReq, opts ...http.CallOption) (*AdminBroadcastNotificationResp, error) {
+	var out AdminBroadcastNotificationResp
+	pattern := "/api/admin/notifications/broadcast"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminBroadcastNotification))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminCreateAccount(ctx context.Context, in *AdminCreateAccountReq, opts ...http.CallOption) (*AdminCreateAccountResp, error) {
+	var out AdminCreateAccountResp
+	pattern := "/api/admin/accounts"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminCreateAccount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminCreateAnnouncement(ctx context.Context, in *AdminCreateAnnouncementReq, opts ...http.CallOption) (*AdminCreateAnnouncementResp, error) {
+	var out AdminCreateAnnouncementResp
+	pattern := "/api/admin/announcements"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminCreateAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminCreateGift(ctx context.Context, in *AdminCreateGiftReq, opts ...http.CallOption) (*AdminCreateGiftResp, error) {
+	var out AdminCreateGiftResp
+	pattern := "/api/admin/gifts"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminCreateGift))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminCreateTagDictionary(ctx context.Context, in *AdminCreateTagDictionaryReq, opts ...http.CallOption) (*AdminCreateTagDictionaryResp, error) {
+	var out AdminCreateTagDictionaryResp
+	pattern := "/api/admin/tag-dictionary"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminCreateTagDictionary))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDedupeGifts(ctx context.Context, in *AdminDedupeGiftsReq, opts ...http.CallOption) (*AdminDedupeGiftsResp, error) {
+	var out AdminDedupeGiftsResp
+	pattern := "/api/admin/gifts/dedupe"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDedupeGifts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteAccount(ctx context.Context, in *AdminDeleteAccountReq, opts ...http.CallOption) (*AdminDeleteAccountResp, error) {
+	var out AdminDeleteAccountResp
+	pattern := "/api/admin/accounts/{account_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteAccount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteAiAgent(ctx context.Context, in *AdminDeleteAiAgentReq, opts ...http.CallOption) (*AdminDeleteAiAgentResp, error) {
+	var out AdminDeleteAiAgentResp
+	pattern := "/api/admin/ai/agents"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteAiAgent))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteAnnouncement(ctx context.Context, in *AdminDeleteAnnouncementReq, opts ...http.CallOption) (*AdminDeleteAnnouncementResp, error) {
+	var out AdminDeleteAnnouncementResp
+	pattern := "/api/admin/announcements/{announcement_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteComment(ctx context.Context, in *AdminDeleteCommentReq, opts ...http.CallOption) (*AdminDeleteCommentResp, error) {
+	var out AdminDeleteCommentResp
+	pattern := "/api/admin/comments/{comment_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteComment))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteFollow(ctx context.Context, in *AdminDeleteFollowReq, opts ...http.CallOption) (*AdminDeleteFollowResp, error) {
+	var out AdminDeleteFollowResp
+	pattern := "/api/admin/social/follows/{follow_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteFollow))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteGift(ctx context.Context, in *AdminDeleteGiftReq, opts ...http.CallOption) (*AdminDeleteGiftResp, error) {
+	var out AdminDeleteGiftResp
+	pattern := "/api/admin/gifts/{gift_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteGift))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteGroup(ctx context.Context, in *AdminDeleteGroupReq, opts ...http.CallOption) (*AdminDeleteGroupResp, error) {
+	var out AdminDeleteGroupResp
+	pattern := "/api/admin/community/groups/{group_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteGroup))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteMediaImage(ctx context.Context, in *AdminDeleteMediaImageReq, opts ...http.CallOption) (*AdminDeleteMediaImageResp, error) {
+	var out AdminDeleteMediaImageResp
+	pattern := "/api/admin/media/images/{filename}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMediaImage))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemoryReq, opts ...http.CallOption) (*AdminDeleteMemoryResp, error) {
+	var out AdminDeleteMemoryResp
+	pattern := "/api/admin/memories/{memory_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMemory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...http.CallOption) (*AdminDeleteMenuResp, error) {
+	var out AdminDeleteMenuResp
+	pattern := "/api/admin/menus/{menu_key}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMenu))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeletePost(ctx context.Context, in *AdminDeletePostReq, opts ...http.CallOption) (*AdminDeletePostResp, error) {
+	var out AdminDeletePostResp
+	pattern := "/api/admin/posts/{post_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeletePost))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteTagDictionary(ctx context.Context, in *AdminDeleteTagDictionaryReq, opts ...http.CallOption) (*AdminDeleteTagDictionaryResp, error) {
+	var out AdminDeleteTagDictionaryResp
+	pattern := "/api/admin/tag-dictionary/{entry_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteTagDictionary))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteTopicTag(ctx context.Context, in *AdminDeleteTopicTagReq, opts ...http.CallOption) (*AdminDeleteTopicTagResp, error) {
+	var out AdminDeleteTopicTagResp
+	pattern := "/api/admin/topic-tags/{tag_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteTopicTag))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminDeleteVipPlan(ctx context.Context, in *AdminDeleteVipPlanReq, opts ...http.CallOption) (*AdminDeleteVipPlanResp, error) {
+	var out AdminDeleteVipPlanResp
+	pattern := "/api/admin/vip/plans/{plan_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteVipPlan))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetAnnouncement(ctx context.Context, in *AdminGetAnnouncementReq, opts ...http.CallOption) (*AdminGetAnnouncementResp, error) {
+	var out AdminGetAnnouncementResp
+	pattern := "/api/admin/announcements/{announcement_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetGift(ctx context.Context, in *AdminGetGiftReq, opts ...http.CallOption) (*AdminGetGiftResp, error) {
+	var out AdminGetGiftResp
+	pattern := "/api/admin/gifts/{gift_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetGift))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetMemoryStats(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...http.CallOption) (*AdminGetMemoryStatsResp, error) {
+	var out AdminGetMemoryStatsResp
+	pattern := "/api/admin/memories/stats"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetMemoryStats))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetRuntimeConfig(ctx context.Context, in *AdminGetRuntimeConfigReq, opts ...http.CallOption) (*AdminGetRuntimeConfigResp, error) {
+	var out AdminGetRuntimeConfigResp
+	pattern := "/api/admin/runtime-config"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetRuntimeConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetUser(ctx context.Context, in *AdminGetUserReq, opts ...http.CallOption) (*AdminGetUserResp, error) {
+	var out AdminGetUserResp
+	pattern := "/api/admin/users/{user_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetUserProfile(ctx context.Context, in *AdminGetUserProfileReq, opts ...http.CallOption) (*AdminGetUserProfileResp, error) {
+	var out AdminGetUserProfileResp
+	pattern := "/api/admin/users/{user_id}/profile"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetUserProfile))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminGetVipPlan(ctx context.Context, in *AdminGetVipPlanReq, opts ...http.CallOption) (*AdminGetVipPlanResp, error) {
+	var out AdminGetVipPlanResp
+	pattern := "/api/admin/vip/plans/{plan_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminGetVipPlan))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListAccounts(ctx context.Context, in *AdminListAccountsReq, opts ...http.CallOption) (*AdminListAccountsResp, error) {
+	var out AdminListAccountsResp
+	pattern := "/api/admin/accounts"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListAccounts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListAchievements(ctx context.Context, in *AdminListAchievementsReq, opts ...http.CallOption) (*AdminListAchievementsResp, error) {
+	var out AdminListAchievementsResp
+	pattern := "/api/admin/growth/achievements"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListAchievements))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListAiAgents(ctx context.Context, in *AdminListAiAgentsReq, opts ...http.CallOption) (*AdminListAiAgentsResp, error) {
+	var out AdminListAiAgentsResp
+	pattern := "/api/admin/ai/agents"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListAiAgents))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListAnnouncements(ctx context.Context, in *AdminListAnnouncementsReq, opts ...http.CallOption) (*AdminListAnnouncementsResp, error) {
+	var out AdminListAnnouncementsResp
+	pattern := "/api/admin/announcements"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListAnnouncements))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListAuditLogs(ctx context.Context, in *AdminListAuditLogsReq, opts ...http.CallOption) (*AdminListAuditLogsResp, error) {
+	var out AdminListAuditLogsResp
+	pattern := "/api/admin/audit-logs"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListAuditLogs))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListComments(ctx context.Context, in *AdminListCommentsReq, opts ...http.CallOption) (*AdminListCommentsResp, error) {
+	var out AdminListCommentsResp
+	pattern := "/api/admin/comments"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListComments))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListFollows(ctx context.Context, in *AdminListFollowsReq, opts ...http.CallOption) (*AdminListFollowsResp, error) {
+	var out AdminListFollowsResp
+	pattern := "/api/admin/social/follows"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListFollows))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListFriendRequests(ctx context.Context, in *AdminListFriendRequestsReq, opts ...http.CallOption) (*AdminListFriendRequestsResp, error) {
+	var out AdminListFriendRequestsResp
+	pattern := "/api/admin/social/friend-requests"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListFriendRequests))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListGiftPurchaseOrders(ctx context.Context, in *AdminListGiftPurchaseOrdersReq, opts ...http.CallOption) (*AdminListGiftPurchaseOrdersResp, error) {
+	var out AdminListGiftPurchaseOrdersResp
+	pattern := "/api/admin/orders/gift-purchase"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListGiftPurchaseOrders))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListGifts(ctx context.Context, in *AdminListGiftsReq, opts ...http.CallOption) (*AdminListGiftsResp, error) {
+	var out AdminListGiftsResp
+	pattern := "/api/admin/gifts"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListGifts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListGroups(ctx context.Context, in *AdminListGroupsReq, opts ...http.CallOption) (*AdminListGroupsResp, error) {
+	var out AdminListGroupsResp
+	pattern := "/api/admin/community/groups"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListGroups))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListLevelConfigs(ctx context.Context, in *AdminListLevelConfigsReq, opts ...http.CallOption) (*AdminListLevelConfigsResp, error) {
+	var out AdminListLevelConfigsResp
+	pattern := "/api/admin/growth/levels"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListLevelConfigs))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListMediaImages(ctx context.Context, in *AdminListMediaImagesReq, opts ...http.CallOption) (*AdminListMediaImagesResp, error) {
+	var out AdminListMediaImagesResp
+	pattern := "/api/admin/media/images"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListMediaImages))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListMemories(ctx context.Context, in *AdminListMemoriesReq, opts ...http.CallOption) (*AdminListMemoriesResp, error) {
+	var out AdminListMemoriesResp
+	pattern := "/api/admin/memories"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListMemories))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...http.CallOption) (*AdminListMenusResp, error) {
+	var out AdminListMenusResp
+	pattern := "/api/admin/menus"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListMenus))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListPostReports(ctx context.Context, in *AdminListPostReportsReq, opts ...http.CallOption) (*AdminListPostReportsResp, error) {
+	var out AdminListPostReportsResp
+	pattern := "/api/admin/post-reports"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListPostReports))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListPosts(ctx context.Context, in *AdminListPostsReq, opts ...http.CallOption) (*AdminListPostsResp, error) {
+	var out AdminListPostsResp
+	pattern := "/api/admin/posts"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListPosts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListTagDictionary(ctx context.Context, in *AdminListTagDictionaryReq, opts ...http.CallOption) (*AdminListTagDictionaryResp, error) {
+	var out AdminListTagDictionaryResp
+	pattern := "/api/admin/tag-dictionary"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListTagDictionary))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListUsers(ctx context.Context, in *AdminListUsersReq, opts ...http.CallOption) (*AdminListUsersResp, error) {
+	var out AdminListUsersResp
+	pattern := "/api/admin/users"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListUsers))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminListVipOrders(ctx context.Context, in *AdminListVipOrdersReq, opts ...http.CallOption) (*AdminListVipOrdersResp, error) {
+	var out AdminListVipOrdersResp
+	pattern := "/api/admin/orders/vip"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminListVipOrders))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminLogin(ctx context.Context, in *AdminLoginReq, opts ...http.CallOption) (*AdminLoginResp, error) {
+	var out AdminLoginResp
+	pattern := "/api/admin/login"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminLogin))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminMe(ctx context.Context, in *AdminMeReq, opts ...http.CallOption) (*AdminMeResp, error) {
+	var out AdminMeResp
+	pattern := "/api/admin/me"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminMe))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminPublishAnnouncement(ctx context.Context, in *AdminPublishAnnouncementReq, opts ...http.CallOption) (*AdminPublishAnnouncementResp, error) {
+	var out AdminPublishAnnouncementResp
+	pattern := "/api/admin/announcements/{announcement_id}/publish"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminPublishAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminRuntimeOverview(ctx context.Context, in *AdminGetRuntimeOverviewReq, opts ...http.CallOption) (*AdminGetRuntimeOverviewResp, error) {
+	var out AdminGetRuntimeOverviewResp
+	pattern := "/api/admin/runtime/overview"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminAppAdminRuntimeOverview))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminSendNotification(ctx context.Context, in *AdminSendNotificationReq, opts ...http.CallOption) (*AdminSendNotificationResp, error) {
+	var out AdminSendNotificationResp
+	pattern := "/api/admin/notifications/send"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminSendNotification))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateAccount(ctx context.Context, in *AdminUpdateAccountReq, opts ...http.CallOption) (*AdminUpdateAccountResp, error) {
+	var out AdminUpdateAccountResp
+	pattern := "/api/admin/accounts/{account_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateAccount))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateAchievement(ctx context.Context, in *AdminUpdateAchievementReq, opts ...http.CallOption) (*AdminUpdateAchievementResp, error) {
+	var out AdminUpdateAchievementResp
+	pattern := "/api/admin/growth/achievements/{achievement_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateAchievement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateAiAgent(ctx context.Context, in *AdminUpdateAiAgentReq, opts ...http.CallOption) (*AdminUpdateAiAgentResp, error) {
+	var out AdminUpdateAiAgentResp
+	pattern := "/api/admin/ai/agents"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateAiAgent))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateAnnouncement(ctx context.Context, in *AdminUpdateAnnouncementReq, opts ...http.CallOption) (*AdminUpdateAnnouncementResp, error) {
+	var out AdminUpdateAnnouncementResp
+	pattern := "/api/admin/announcements/{announcement_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateAnnouncement))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateGift(ctx context.Context, in *AdminUpdateGiftReq, opts ...http.CallOption) (*AdminUpdateGiftResp, error) {
+	var out AdminUpdateGiftResp
+	pattern := "/api/admin/gifts/{gift_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateGift))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateLevelConfig(ctx context.Context, in *AdminUpdateLevelConfigReq, opts ...http.CallOption) (*AdminUpdateLevelConfigResp, error) {
+	var out AdminUpdateLevelConfigResp
+	pattern := "/api/admin/growth/levels/{level_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateLevelConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateRuntimeConfig(ctx context.Context, in *AdminUpdateRuntimeConfigReq, opts ...http.CallOption) (*AdminUpdateRuntimeConfigResp, error) {
+	var out AdminUpdateRuntimeConfigResp
+	pattern := "/api/admin/runtime-config"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateRuntimeConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateTagDictionary(ctx context.Context, in *AdminUpdateTagDictionaryReq, opts ...http.CallOption) (*AdminUpdateTagDictionaryResp, error) {
+	var out AdminUpdateTagDictionaryResp
+	pattern := "/api/admin/tag-dictionary/{entry_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateTagDictionary))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateTopicTag(ctx context.Context, in *AdminUpdateTopicTagReq, opts ...http.CallOption) (*AdminUpdateTopicTagResp, error) {
+	var out AdminUpdateTopicTagResp
+	pattern := "/api/admin/topic-tags/{tag_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateTopicTag))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateUser(ctx context.Context, in *AdminUpdateUserReq, opts ...http.CallOption) (*AdminUpdateUserResp, error) {
+	var out AdminUpdateUserResp
+	pattern := "/api/admin/users/{user_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateUser))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpdateVipPlan(ctx context.Context, in *AdminUpdateVipPlanReq, opts ...http.CallOption) (*AdminUpdateVipPlanResp, error) {
+	var out AdminUpdateVipPlanResp
+	pattern := "/api/admin/vip/plans/{plan_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpdateVipPlan))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminAppHTTPClientImpl) AdminUpsertMenu(ctx context.Context, in *AdminUpsertMenuReq, opts ...http.CallOption) (*AdminUpsertMenuResp, error) {
+	var out AdminUpsertMenuResp
+	pattern := "/api/admin/menus"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationAdminAppAdminUpsertMenu))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 const OperationAdminInsightsAdminAnalyticsOverview = "/admin.v1.AdminInsights/AdminAnalyticsOverview"
+const OperationAdminInsightsAdminDashboard = "/admin.v1.AdminInsights/AdminDashboard"
 const OperationAdminInsightsAdminExportAiChatMessages = "/admin.v1.AdminInsights/AdminExportAiChatMessages"
+const OperationAdminInsightsAdminGrowthStats = "/admin.v1.AdminInsights/AdminGrowthStats"
 const OperationAdminInsightsAdminListAiChatMessages = "/admin.v1.AdminInsights/AdminListAiChatMessages"
 const OperationAdminInsightsAdminListAiChatSessions = "/admin.v1.AdminInsights/AdminListAiChatSessions"
 const OperationAdminInsightsAdminListTopicTags = "/admin.v1.AdminInsights/AdminListTopicTags"
+const OperationAdminInsightsAdminSchemaCatalog = "/admin.v1.AdminInsights/AdminSchemaCatalog"
 
 type AdminInsightsHTTPServer interface {
 	AdminAnalyticsOverview(context.Context, *AdminGetMemoryStatsReq) (*AdminAnalyticsOverviewResp, error)
+	AdminDashboard(context.Context, *AdminDashboardReq) (*AdminDashboardResp, error)
 	AdminExportAiChatMessages(context.Context, *AdminExportAiChatMessagesReq) (*AdminExportAiChatMessagesResp, error)
+	AdminGrowthStats(context.Context, *AdminGetGrowthStatsReq) (*AdminGetGrowthStatsResp, error)
 	AdminListAiChatMessages(context.Context, *AdminListAiChatMessagesReq) (*AdminListAiChatMessagesResp, error)
 	AdminListAiChatSessions(context.Context, *AdminListAiChatSessionsReq) (*AdminListAiChatSessionsResp, error)
 	AdminListTopicTags(context.Context, *AdminListTopicTagsReq) (*AdminListTopicTagsResp, error)
+	AdminSchemaCatalog(context.Context, *AdminGetSchemaCatalogReq) (*AdminGetSchemaCatalogResp, error)
 }
 
 func RegisterAdminInsightsHTTPServer(s *http.Server, srv AdminInsightsHTTPServer) {
@@ -40,6 +2792,9 @@ func RegisterAdminInsightsHTTPServer(s *http.Server, srv AdminInsightsHTTPServer
 	r.GET("/api/admin/ai/chat/messages/export", _AdminInsights_AdminExportAiChatMessages0_HTTP_Handler(srv))
 	r.GET("/api/admin/analytics/overview", _AdminInsights_AdminAnalyticsOverview0_HTTP_Handler(srv))
 	r.GET("/api/admin/topic-tags", _AdminInsights_AdminListTopicTags0_HTTP_Handler(srv))
+	r.GET("/api/admin/dashboard", _AdminInsights_AdminDashboard0_HTTP_Handler(srv))
+	r.GET("/api/admin/growth/stats", _AdminInsights_AdminGrowthStats0_HTTP_Handler(srv))
+	r.GET("/api/admin/schema/catalog", _AdminInsights_AdminSchemaCatalog0_HTTP_Handler(srv))
 }
 
 func _AdminInsights_AdminListAiChatSessions0_HTTP_Handler(srv AdminInsightsHTTPServer) func(ctx http.Context) error {
@@ -137,12 +2892,72 @@ func _AdminInsights_AdminListTopicTags0_HTTP_Handler(srv AdminInsightsHTTPServer
 	}
 }
 
+func _AdminInsights_AdminDashboard0_HTTP_Handler(srv AdminInsightsHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminDashboardReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminInsightsAdminDashboard)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminDashboard(ctx, req.(*AdminDashboardReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminDashboardResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminInsights_AdminGrowthStats0_HTTP_Handler(srv AdminInsightsHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetGrowthStatsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminInsightsAdminGrowthStats)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminGrowthStats(ctx, req.(*AdminGetGrowthStatsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetGrowthStatsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _AdminInsights_AdminSchemaCatalog0_HTTP_Handler(srv AdminInsightsHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in AdminGetSchemaCatalogReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationAdminInsightsAdminSchemaCatalog)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.AdminSchemaCatalog(ctx, req.(*AdminGetSchemaCatalogReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*AdminGetSchemaCatalogResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type AdminInsightsHTTPClient interface {
 	AdminAnalyticsOverview(ctx context.Context, req *AdminGetMemoryStatsReq, opts ...http.CallOption) (rsp *AdminAnalyticsOverviewResp, err error)
+	AdminDashboard(ctx context.Context, req *AdminDashboardReq, opts ...http.CallOption) (rsp *AdminDashboardResp, err error)
 	AdminExportAiChatMessages(ctx context.Context, req *AdminExportAiChatMessagesReq, opts ...http.CallOption) (rsp *AdminExportAiChatMessagesResp, err error)
+	AdminGrowthStats(ctx context.Context, req *AdminGetGrowthStatsReq, opts ...http.CallOption) (rsp *AdminGetGrowthStatsResp, err error)
 	AdminListAiChatMessages(ctx context.Context, req *AdminListAiChatMessagesReq, opts ...http.CallOption) (rsp *AdminListAiChatMessagesResp, err error)
 	AdminListAiChatSessions(ctx context.Context, req *AdminListAiChatSessionsReq, opts ...http.CallOption) (rsp *AdminListAiChatSessionsResp, err error)
 	AdminListTopicTags(ctx context.Context, req *AdminListTopicTagsReq, opts ...http.CallOption) (rsp *AdminListTopicTagsResp, err error)
+	AdminSchemaCatalog(ctx context.Context, req *AdminGetSchemaCatalogReq, opts ...http.CallOption) (rsp *AdminGetSchemaCatalogResp, err error)
 }
 
 type AdminInsightsHTTPClientImpl struct {
@@ -166,11 +2981,37 @@ func (c *AdminInsightsHTTPClientImpl) AdminAnalyticsOverview(ctx context.Context
 	return &out, nil
 }
 
+func (c *AdminInsightsHTTPClientImpl) AdminDashboard(ctx context.Context, in *AdminDashboardReq, opts ...http.CallOption) (*AdminDashboardResp, error) {
+	var out AdminDashboardResp
+	pattern := "/api/admin/dashboard"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminInsightsAdminDashboard))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *AdminInsightsHTTPClientImpl) AdminExportAiChatMessages(ctx context.Context, in *AdminExportAiChatMessagesReq, opts ...http.CallOption) (*AdminExportAiChatMessagesResp, error) {
 	var out AdminExportAiChatMessagesResp
 	pattern := "/api/admin/ai/chat/messages/export"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAdminInsightsAdminExportAiChatMessages))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminInsightsHTTPClientImpl) AdminGrowthStats(ctx context.Context, in *AdminGetGrowthStatsReq, opts ...http.CallOption) (*AdminGetGrowthStatsResp, error) {
+	var out AdminGetGrowthStatsResp
+	pattern := "/api/admin/growth/stats"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminInsightsAdminGrowthStats))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -210,6 +3051,19 @@ func (c *AdminInsightsHTTPClientImpl) AdminListTopicTags(ctx context.Context, in
 	pattern := "/api/admin/topic-tags"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAdminInsightsAdminListTopicTags))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *AdminInsightsHTTPClientImpl) AdminSchemaCatalog(ctx context.Context, in *AdminGetSchemaCatalogReq, opts ...http.CallOption) (*AdminGetSchemaCatalogResp, error) {
+	var out AdminGetSchemaCatalogResp
+	pattern := "/api/admin/schema/catalog"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationAdminInsightsAdminSchemaCatalog))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

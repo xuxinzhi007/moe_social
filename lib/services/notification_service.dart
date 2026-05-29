@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../models/notification.dart';
 import '../auth_service.dart';
 import 'api_service.dart';
+import 'api_response.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
@@ -73,25 +74,22 @@ class NotificationService {
     try {
       final response = await ApiService.get(
           '/api/notifications?user_id=$userId&page=$page&page_size=$pageSize');
-      final code = response['code'];
-      final ok = code == 200 || code == 0 || response['success'] == true;
-      if (ok) {
-        final data = response['data'];
-        if (data is List) {
-          final out = <NotificationModel>[];
-          for (final e in data) {
-            if (e is! Map<String, dynamic>) continue;
-            try {
-              out.add(NotificationModel.fromJson(e));
-            } catch (_) {
-              // 单条解析失败时跳过，避免整页空白
-            }
-          }
-          return out;
+      if (!ApiResponse.isSuccess(response)) return [];
+
+      final data = ApiResponse.listOf(
+        response,
+        keys: const ['notifications', 'data'],
+      );
+      final out = <NotificationModel>[];
+      for (final e in data) {
+        if (e is! Map) continue;
+        try {
+          out.add(NotificationModel.fromJson(Map<String, dynamic>.from(e)));
+        } catch (_) {
+          // 单条解析失败时跳过，避免整页空白
         }
-        return [];
       }
-      return [];
+      return out;
     } catch (e) {
       debugPrint('Notification API Error: $e');
       return [];
@@ -106,13 +104,14 @@ class NotificationService {
     try {
       final response =
           await ApiService.get('/api/notifications/unread?user_id=$userId');
-      final code = response['code'];
-      final ok = code == 200 || code == 0 || response['success'] == true;
-      if (ok) {
-        final d = response['data'];
-        if (d is int) return d;
-        if (d is num) return d.toInt();
-      }
+      if (!ApiResponse.isSuccess(response)) return 0;
+
+      final count = ApiResponse.intField(response, 'count');
+      if (count != null) return count;
+
+      final d = response['data'];
+      if (d is int) return d;
+      if (d is num) return d.toInt();
       return 0;
     } catch (e) {
       return 0;
@@ -160,5 +159,4 @@ class NotificationService {
       return false;
     }
   }
-
 }

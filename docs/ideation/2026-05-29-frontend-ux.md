@@ -5,33 +5,59 @@
 - 目录：`lib/`（Flutter App）
 - 重点域：主框架 Tab（首页 / 同好 / 社区 / 探索 / 我的）、设置、私信、会员商业化
 - 方法：规范对照 + 代码扫描 + 高频页抽样
-- 静态检查：`flutter analyze lib/` → 0 error（info 主要为历史 `withOpacity`）
+- 静态检查：改动域 `flutter analyze` → **0 error**（info 为历史 `avoid_print` 等）
 
 ## 摘要
 
-项目已有较完整的「萌系」组件层。**P0 地基已落地**（2026-05-29）：`MoeTokens` / `MoeTheme` extension、`MoeEmptyState`、懒加载品牌化、`settings_page` 统一 `MoeMenuCard`。剩余硬编码色迁移与消息域空态为 **P1**。
+项目已有较完整的「萌系」组件层。**P0–P4（文档主战场）已完成**：
+
+- 设计 token / 错误文案 SSOT、设置与会话域统一
+- 全库 `withOpacity` → `withValues`（0 残留）
+- 五大 Tab + 商业化核心页主色/背景跟 `MoeTheme`
+- `community_posts_feed` 错误态统一
+
+**P5 待续**（文档范围外深域）：AI 聊天（`ollama_chat_page` 等）、游戏/AutoGLM、`edit_profile_page`、`MoePageScaffold` 全页 adoption、`friends_page` 好友卡片继续拆分。
 
 ---
 
-## 错误文案统一管理（2026-05-29 新增）
+## 完成度总览
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| P0 地基 | ✅ | Token、Theme、MoeMenuCard、MoeEmptyState、deferred 品牌化 |
+| P1 主框架痛点 | ✅ | 会话/设置/我的 loading & 错误；账户安全 sheet |
+| P2 动效 & opacity | ✅ | 76 文件 opacity 迁移；主 Tab 页头 FadeInUp；深色背景 |
+| P3 主 Tab token 化 | ✅ | home / friends / profile / community / discover 主色清零* |
+| P4 商业化 & 讨论流 | ✅ | vip/wallet/recharge/gacha/order；`community_posts_feed` 错误态 |
+| P5 深域 | ⏳ | AI/游戏/编辑资料等 ~30 文件仍有 `0xFF7F7FD5` |
+
+\*主 Tab 页面内按钮/渐变已改用 `_moe.primary`；子页（发帖、评论）未纳入 P4。
+
+---
+
+## 「我的」页加载行为说明
+
+### 现象（历史，已修复）
+
+曾出现全屏「正在加载个人信息…」长时间阻塞；根因为绕过 `AuthService` 缓存 + 独有全屏文案。
+
+### 当前逻辑（`lib/pages/profile/profile_page.dart`）
+
+| 阶段 | 行为 |
+|------|------|
+| **用户信息** | `AuthService.getUserInfo()`：本地缓存优先 |
+| **首屏 UI** | 无缓存：AppBar + 居中 `MoeLoading`（与同好页一致） |
+| **后台** | 成就/VIP/统计并行；AppBar 小 spinner |
+| **下拉刷新** | `forceRefresh: true`，有缓存不挡全屏 |
+| **失败** | 无缓存 → `MoeErrorState`；有缓存 → Toast |
+
+---
+
+## 错误文案统一管理
 
 **SSOT**：`lib/utils/moe_error_copy.dart`  
-**UI 组件**：`lib/widgets/moe_error_state.dart`  
-**Toast 入口**：`lib/utils/error_handler.dart` → `MoeErrorCopy.toast()`
-
-### 用法
-
-```dart
-// 页面错误态
-MoeErrorState.fromError(
-  error,
-  scene: MoeErrorScene.feed, // contacts / community / profile …
-  onRetry: _reload,
-);
-
-// Toast
-MoeToast.error(context, MoeErrorCopy.toast(error, scene: MoeErrorScene.profile));
-```
+**UI**：`lib/widgets/moe_error_state.dart`  
+**Toast**：`lib/utils/error_handler.dart` → `MoeErrorCopy.toast()`
 
 ### 已接入页面
 
@@ -40,122 +66,135 @@ MoeToast.error(context, MoeErrorCopy.toast(error, scene: MoeErrorScene.profile))
 | `friends_page` | `contacts` |
 | `home_page` | `feed` |
 | `interest_groups_page` | `community` |
+| **`community_posts_feed`** | **`community`** |
 | `profile_page` | `profile`（Toast） |
 | `followers_page` / `following_page` | `followers` / `following` |
+| `conversations_page` | `messages` |
 | `deferred_route` | `pageLoad` |
 
-### 统一后的网络错误文案
+### 统一网络副文案
 
-- 标题：按场景（如「暂时没能加载同好」「暂时没能加载动态」）
-- 副文案：**网络不太稳定，请检查连接后重试**（不再出现「服务器是否开启」）
-
----
-
-
-| # | 项 | 状态 | 涉及文件 |
-|---|-----|------|----------|
-| 1 | 设计 token SSOT | ✅ 已建 | `lib/theme/moe_tokens.dart`、`lib/theme/moe_theme_extension.dart` |
-| 2 | ThemeProvider 接入 extension | ✅ | `lib/providers/theme_provider.dart`（`extensions: [MoeTheme]`，按钮 elevation 0） |
-| 3 | 设置页统一 MoeMenuCard | ✅ | `lib/pages/settings/settings_page.dart`（含搜索结果的 ListTile 已移除） |
-| 4 | 懒加载品牌化 + 可重试 | ✅ | `lib/app/deferred_route.dart` |
-| 5 | 全局空态组件 | ✅ | `lib/widgets/moe_empty_state.dart` |
-| 6 | AI token 合并 | ✅ | `lib/widgets/ai/ai_brand_tokens.dart` → 委托 `MoeTokens` |
-| 7 | 菜单卡片 token 化 | ✅ | `lib/widgets/moe_menu_card.dart` |
-| 8 | 页面壳别名 | ✅ | `lib/theme/moe_page_scaffold.dart`（`AdaptivePageScaffold` 默认背景改 `MoeTokens`） |
-| 9 | 全库硬编码色迁移 | ⏳ P1 | 70+ 文件仍硬编码，新代码应读 `MoeTheme.of(context)` |
-
-### 新增 / 修改文件清单
-
-```
-lib/theme/moe_tokens.dart              [新增]
-lib/theme/moe_theme_extension.dart     [新增]
-lib/theme/moe_page_scaffold.dart       [新增]
-lib/widgets/moe_empty_state.dart       [新增]
-lib/providers/theme_provider.dart      [修改]
-lib/app/deferred_route.dart            [修改]
-lib/pages/settings/settings_page.dart  [修改]
-lib/widgets/moe_menu_card.dart         [修改]
-lib/widgets/ai/ai_brand_tokens.dart    [修改]
-lib/widgets/layout/adaptive_page_scaffold.dart [修改]
-```
-
-### 受影响的用户路径（需人工验收）
-
-| 路径 | 操作 | 预期 |
-|------|------|------|
-| **设置** | 我的 → 设置 | 「聊天与隐私」「常规设置」卡片与「账户与安全」等同风格；Switch 可切换并 Toast |
-| **设置搜索** | 设置顶栏搜索任意项 | 结果为 `MoeMenuCard` 单条，点击可跳转 |
-| **虚拟助手** | 设置 → 虚拟助手行点击 / Switch | 开关有效；点击行进入虚拟形象设置 |
-| **懒加载页** | 进入 VIP 中心 / 钱包 / 扫码 / 扭蛋等 deferred 路由 | 加载为紫色 `MoeLoading` + 文案；失败显示友好空态 +「重试」 |
-| **主题色** | 设置 → 外观 → 换主题颜色 | AppBar/按钮/Switch  thumb 随主色变化（卡片渐变仍部分硬编码，属 P1） |
-| **AI 探索** | 探索 Tab | 背景色与全局 `F5F7FA` 一致（`AiBrandTokens.pageBackground` 已对齐） |
-
-### 验收命令
-
-```bash
-cd /Users/xuxinzhi/Documents/gowork/moe_social
-dart format lib/theme lib/widgets/moe_empty_state.dart lib/app/deferred_route.dart \
-  lib/providers/theme_provider.dart lib/pages/settings/settings_page.dart \
-  lib/widgets/moe_menu_card.dart lib/widgets/ai/ai_brand_tokens.dart \
-  lib/widgets/layout/adaptive_page_scaffold.dart lib/theme/moe_page_scaffold.dart
-flutter analyze lib/theme lib/widgets/moe_empty_state.dart lib/app/deferred_route.dart \
-  lib/providers/theme_provider.dart lib/pages/settings/settings_page.dart \
-  lib/widgets/moe_menu_card.dart lib/widgets/ai/ai_brand_tokens.dart \
-  lib/widgets/layout/adaptive_page_scaffold.dart
-```
+**网络不太稳定，请检查连接后重试**
 
 ---
 
-## 发现（按优先级）
+## P0 基础设施
 
-### P0 — 已完成项见上表
+| # | 项 | 状态 |
+|---|-----|------|
+| 1 | `MoeTokens` / `MoeTheme` | ✅ |
+| 2 | ThemeProvider extension | ✅ |
+| 3 | 设置页 `MoeMenuCard` | ✅ |
+| 4 | `deferred_route` 品牌化 | ✅ |
+| 5 | `MoeEmptyState` | ✅ |
+| 6 | `AiBrandTokens` → `MoeTokens` | ✅ |
+| 7 | `moe_menu_card` token 化 | ✅ |
+| 8 | `MoePageScaffold` 别名 | ✅ 定义；页面 adoption ⏳ P5 |
+| 9 | 全库硬编码色 | ✅ 主 Tab + commerce；⏳ AI/游戏等深域 |
+
+---
+
+## P1–P4 明细
+
+### P1（✅）
 
 | # | 问题 | 状态 |
 |---|------|------|
-| 1 | 设计 token 分散 | ✅ 基础设施；全库迁移 ⏳ P1 |
-| 2 | 设置页 ListTile 混用 | ✅ |
-| 3 | 懒加载路由品牌化 | ✅ |
-| 4 | 主题定制 vs 硬编码 | ⏳ extension 已接入，页面分批替换 |
+| 5–8 | 会话加载/空态/错误；账户安全 sheet | ✅ |
+| 9 | `friends_page` 过大 | ⏳ 已拆 3 widget（~400 行）；主文件仍 ~1670 行 |
+| 10 | 首页背景 | ✅ `MoeTheme.pageBackground` |
+| 11 | 我的首屏 loading | ✅ 缓存优先 + 与同好一致 |
 
-### P1（下一步）
+### P2（✅）
 
-| # | 问题 | 位置 | 建议 |
-|---|------|------|------|
-| 5 | 加载指示器不统一 | `conversations_page.dart` 等 | `MoeLoading` / `MoeSmallLoading` |
-| 6 | 会话空态无 CTA | `conversations_page.dart` | 使用 `MoeEmptyState` + 跳转同好/探索 |
-| 7 | 错误重试按钮 Material 化 | `conversations_page.dart` | `CustomButton` |
-| 8 | 账户安全 sheet 内 ListTile | `account_security_module.dart` | `MoeMenuCard` 紧凑变体 |
-| 9 | `friends_page` 过大 | `friends_page.dart` | 拆 widget |
-| 10 | 首页背景 | `home_page.dart` | `MoePageScaffold` |
+| # | 项 | 说明 |
+|---|-----|------|
+| 12 | `withOpacity` → `withValues` | 全库 0 残留 |
+| 13 | `FadeInUp` | 社区/探索页头 + 首页快捷区；`MoeTokens.motion*` |
+| 14 | 深色背景 | 五大 Tab + 圈子流 `MoeTheme.pageBackground` |
 
-### P2
+### P3（✅）
 
-- `FadeInUp` 覆盖不均
-- 全库 `withOpacity` → `withValues`
-- 深色模式硬编码浅色验证
+| # | 项 | 说明 |
+|---|-----|------|
+| 15 | 主 Tab 主色 | `home` / `friends` / `profile` / `community` / `discover` 无 `0xFF7F7FD5` |
+| 16 | `friends_page` 拆分 | `add_friend_bottom_sheet`、`friends_hub_tab_strip`、`friends_logged_out_body` |
+| 17 | 圈子流 token | `interest_groups_page`、`community_posts_feed` RefreshIndicator |
+
+### P4（✅ 2026-05-29）
+
+| # | 项 | 文件 |
+|---|-----|------|
+| 18 | 讨论流错误态 | `community_posts_feed.dart` → `MoeErrorState` + `MoeLoading` |
+| 19 | 商业化主色/背景 | `vip_center_page`、`wallet_page`、`vip_purchase_page`、`vip_order_confirm_page`、`recharge_page`、`gacha_page`、`order_center_page` |
+| 20 | 商业化加载 | VIP/钱包页 `CircularProgressIndicator` → `MoeLoading`（关键路径） |
 
 ---
 
-## 复用性评估（2026-05-29）
+## P5 待续（下一轮）
+
+- AI 子域：`ollama_chat_page`、`chat_page` 等 `ListTile` / 硬编码色
+- 游戏 / AutoGLM / `edit_profile_page` 硬编码色
+- `friends_page` 抽出 `FriendsFriendCard` widget
+- `MoePageScaffold` 新页面默认 adoption
+- 全库 `CircularProgressIndicator` → `MoeLoading`（~70 处，低优先级）
+
+---
+
+## 验收路径
+
+| 路径 | 预期 |
+|------|------|
+| **我的** | 二次进入瞬间出头像；无缓存仅居中 loading |
+| **同好 → 会话** | 空态 CTA；失败 `MoeErrorState` |
+| **社区 → 讨论** | 失败显示「暂时没能加载…」+ 重试（非 Material 按钮） |
+| **VIP / 钱包** | 加载为 `MoeLoading`；主色随设置 → 外观变化 |
+| **深色模式** | 五大 Tab 背景变深（非固定 `#F5F7FA`） |
+
+### 验证命令
+
+```bash
+cd /Users/xuxinzhi/Documents/gowork/moe_social
+flutter analyze \
+  lib/pages/feed/home_page.dart \
+  lib/pages/profile/friends_page.dart \
+  lib/pages/profile/profile_page.dart \
+  lib/pages/community/community_posts_feed.dart \
+  lib/pages/commerce/vip_center_page.dart \
+  lib/pages/commerce/wallet_page.dart \
+  lib/pages/commerce/vip_purchase_page.dart \
+  lib/pages/commerce/vip_order_confirm_page.dart \
+  lib/pages/commerce/recharge_page.dart \
+  lib/pages/commerce/gacha_page.dart \
+  lib/pages/commerce/order_center_page.dart \
+  lib/pages/profile/widgets/
+```
+
+---
+
+## 复用性评估
 
 | 资产 | 落地情况 |
 |------|----------|
-| `MoeTokens` / `MoeTheme` | 新 SSOT；`ThemeProvider` 已注册 |
-| `MoeEmptyState` | 已用于 `deferred_route`；待推广至会话等 |
-| `MoePageScaffold` | 别名已有；页面 Adoption 为 P1 |
-| `MoeMenuCard` | 设置域已统一；全库仍有 ~20 处 `ListTile` |
-| `AiBrandTokens` | 已委托 `MoeTokens`，减少双轨 |
+| `MoeTokens` / `MoeTheme` | SSOT；主 Tab + commerce 已接入 |
+| `MoeEmptyState` | `deferred_route`、`conversations_page` |
+| `MoeErrorState` | 主 Tab + 讨论流 + deferred |
+| `MoePageScaffold` | 别名已有；P5 adoption |
+| `MoeMenuCard` | 设置域；AI/聊天仍有 `ListTile` |
 
 ---
 
 ## 建议的下一轮 CE
 
-1. **`/ce-work`** — P1：`conversations_page` 空态 + 加载统一
-2. **`/ce-plan`** — 硬编码色分批迁移计划（commerce → profile → community）
+1. **`/ce-work`** — P5：`ollama_chat_page` 色值 + `ListTile` 收敛
+2. **`/ce-work`** — `friends_page` 抽出 `FriendsFriendCard`
 
 ---
 
 ## 附录
 
-- P0 验证：`flutter analyze` 针对改动文件 **0 error**（2026-05-29）
+- P0–P4 验证：`flutter analyze` 上表路径 → **0 error**（2026-05-29）
+- `withOpacity` 全库：**0 残留**
+- `lib/pages/commerce/**` 硬编码 `0xFF7F7FD5`：**0 残留**
+- `lib/pages` 深域仍有硬编码主色：**~30 文件**（AI/游戏/认证/编辑资料等）
 - 未覆盖：`moe-admin/`

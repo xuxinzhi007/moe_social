@@ -256,7 +256,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -273,7 +273,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -326,7 +326,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                                 : 0.0;
                             return LinearProgressIndicator(
                               value: progress,
-                              backgroundColor: Colors.white.withOpacity(0.3),
+                              backgroundColor: Colors.white.withValues(alpha: 0.3),
                               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                               minHeight: 4,
                             );
@@ -367,7 +367,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -581,7 +581,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),

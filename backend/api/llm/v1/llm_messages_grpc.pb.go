@@ -19,7 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LlmChat_RecordLlmChatTurn_FullMethodName = "/llm.v1.LlmChat/RecordLlmChatTurn"
+	LlmChat_RecordLlmChatTurn_FullMethodName           = "/llm.v1.LlmChat/RecordLlmChatTurn"
+	LlmChat_UpsertUserMemory_FullMethodName            = "/llm.v1.LlmChat/UpsertUserMemory"
+	LlmChat_GetUserMemories_FullMethodName             = "/llm.v1.LlmChat/GetUserMemories"
+	LlmChat_DeleteUserMemory_FullMethodName            = "/llm.v1.LlmChat/DeleteUserMemory"
+	LlmChat_GetUserMemoriesDisplay_FullMethodName      = "/llm.v1.LlmChat/GetUserMemoriesDisplay"
+	LlmChat_SubmitUserMemoryFeedback_FullMethodName    = "/llm.v1.LlmChat/SubmitUserMemoryFeedback"
+	LlmChat_GetUserMemoryProfiles_FullMethodName       = "/llm.v1.LlmChat/GetUserMemoryProfiles"
+	LlmChat_RebuildUserMemoryEmbeddings_FullMethodName = "/llm.v1.LlmChat/RebuildUserMemoryEmbeddings"
+	LlmChat_SearchUserMemories_FullMethodName          = "/llm.v1.LlmChat/SearchUserMemories"
 )
 
 // LlmChatClient is the client API for LlmChat service.
@@ -27,6 +35,14 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LlmChatClient interface {
 	RecordLlmChatTurn(ctx context.Context, in *RecordLlmChatTurnReq, opts ...grpc.CallOption) (*RecordLlmChatTurnResp, error)
+	UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error)
+	GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error)
+	DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error)
+	GetUserMemoriesDisplay(ctx context.Context, in *GetUserMemoriesDisplayReq, opts ...grpc.CallOption) (*GetUserMemoriesDisplayResp, error)
+	SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error)
+	GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error)
+	RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*RebuildUserMemoryEmbeddingsResp, error)
+	SearchUserMemories(ctx context.Context, in *SearchUserMemoriesReq, opts ...grpc.CallOption) (*SearchUserMemoriesResp, error)
 }
 
 type llmChatClient struct {
@@ -47,11 +63,99 @@ func (c *llmChatClient) RecordLlmChatTurn(ctx context.Context, in *RecordLlmChat
 	return out, nil
 }
 
+func (c *llmChatClient) UpsertUserMemory(ctx context.Context, in *UpsertUserMemoryReq, opts ...grpc.CallOption) (*UpsertUserMemoryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertUserMemoryResp)
+	err := c.cc.Invoke(ctx, LlmChat_UpsertUserMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) GetUserMemories(ctx context.Context, in *GetUserMemoriesReq, opts ...grpc.CallOption) (*GetUserMemoriesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserMemoriesResp)
+	err := c.cc.Invoke(ctx, LlmChat_GetUserMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) DeleteUserMemory(ctx context.Context, in *DeleteUserMemoryReq, opts ...grpc.CallOption) (*DeleteUserMemoryResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUserMemoryResp)
+	err := c.cc.Invoke(ctx, LlmChat_DeleteUserMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) GetUserMemoriesDisplay(ctx context.Context, in *GetUserMemoriesDisplayReq, opts ...grpc.CallOption) (*GetUserMemoriesDisplayResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserMemoriesDisplayResp)
+	err := c.cc.Invoke(ctx, LlmChat_GetUserMemoriesDisplay_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) SubmitUserMemoryFeedback(ctx context.Context, in *SubmitUserMemoryFeedbackReq, opts ...grpc.CallOption) (*SubmitUserMemoryFeedbackResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitUserMemoryFeedbackResp)
+	err := c.cc.Invoke(ctx, LlmChat_SubmitUserMemoryFeedback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) GetUserMemoryProfiles(ctx context.Context, in *GetUserMemoryProfilesReq, opts ...grpc.CallOption) (*GetUserMemoryProfilesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserMemoryProfilesResp)
+	err := c.cc.Invoke(ctx, LlmChat_GetUserMemoryProfiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) RebuildUserMemoryEmbeddings(ctx context.Context, in *RebuildUserMemoryEmbeddingsReq, opts ...grpc.CallOption) (*RebuildUserMemoryEmbeddingsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RebuildUserMemoryEmbeddingsResp)
+	err := c.cc.Invoke(ctx, LlmChat_RebuildUserMemoryEmbeddings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *llmChatClient) SearchUserMemories(ctx context.Context, in *SearchUserMemoriesReq, opts ...grpc.CallOption) (*SearchUserMemoriesResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchUserMemoriesResp)
+	err := c.cc.Invoke(ctx, LlmChat_SearchUserMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LlmChatServer is the server API for LlmChat service.
 // All implementations must embed UnimplementedLlmChatServer
 // for forward compatibility.
 type LlmChatServer interface {
 	RecordLlmChatTurn(context.Context, *RecordLlmChatTurnReq) (*RecordLlmChatTurnResp, error)
+	UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error)
+	GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error)
+	DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error)
+	GetUserMemoriesDisplay(context.Context, *GetUserMemoriesDisplayReq) (*GetUserMemoriesDisplayResp, error)
+	SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error)
+	GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error)
+	RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error)
+	SearchUserMemories(context.Context, *SearchUserMemoriesReq) (*SearchUserMemoriesResp, error)
 	mustEmbedUnimplementedLlmChatServer()
 }
 
@@ -64,6 +168,30 @@ type UnimplementedLlmChatServer struct{}
 
 func (UnimplementedLlmChatServer) RecordLlmChatTurn(context.Context, *RecordLlmChatTurnReq) (*RecordLlmChatTurnResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecordLlmChatTurn not implemented")
+}
+func (UnimplementedLlmChatServer) UpsertUserMemory(context.Context, *UpsertUserMemoryReq) (*UpsertUserMemoryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertUserMemory not implemented")
+}
+func (UnimplementedLlmChatServer) GetUserMemories(context.Context, *GetUserMemoriesReq) (*GetUserMemoriesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserMemories not implemented")
+}
+func (UnimplementedLlmChatServer) DeleteUserMemory(context.Context, *DeleteUserMemoryReq) (*DeleteUserMemoryResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteUserMemory not implemented")
+}
+func (UnimplementedLlmChatServer) GetUserMemoriesDisplay(context.Context, *GetUserMemoriesDisplayReq) (*GetUserMemoriesDisplayResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserMemoriesDisplay not implemented")
+}
+func (UnimplementedLlmChatServer) SubmitUserMemoryFeedback(context.Context, *SubmitUserMemoryFeedbackReq) (*SubmitUserMemoryFeedbackResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SubmitUserMemoryFeedback not implemented")
+}
+func (UnimplementedLlmChatServer) GetUserMemoryProfiles(context.Context, *GetUserMemoryProfilesReq) (*GetUserMemoryProfilesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUserMemoryProfiles not implemented")
+}
+func (UnimplementedLlmChatServer) RebuildUserMemoryEmbeddings(context.Context, *RebuildUserMemoryEmbeddingsReq) (*RebuildUserMemoryEmbeddingsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method RebuildUserMemoryEmbeddings not implemented")
+}
+func (UnimplementedLlmChatServer) SearchUserMemories(context.Context, *SearchUserMemoriesReq) (*SearchUserMemoriesResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchUserMemories not implemented")
 }
 func (UnimplementedLlmChatServer) mustEmbedUnimplementedLlmChatServer() {}
 func (UnimplementedLlmChatServer) testEmbeddedByValue()                 {}
@@ -104,6 +232,150 @@ func _LlmChat_RecordLlmChatTurn_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LlmChat_UpsertUserMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertUserMemoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).UpsertUserMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_UpsertUserMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).UpsertUserMemory(ctx, req.(*UpsertUserMemoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_GetUserMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserMemoriesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).GetUserMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_GetUserMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).GetUserMemories(ctx, req.(*GetUserMemoriesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_DeleteUserMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUserMemoryReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).DeleteUserMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_DeleteUserMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).DeleteUserMemory(ctx, req.(*DeleteUserMemoryReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_GetUserMemoriesDisplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserMemoriesDisplayReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).GetUserMemoriesDisplay(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_GetUserMemoriesDisplay_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).GetUserMemoriesDisplay(ctx, req.(*GetUserMemoriesDisplayReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_SubmitUserMemoryFeedback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitUserMemoryFeedbackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).SubmitUserMemoryFeedback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_SubmitUserMemoryFeedback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).SubmitUserMemoryFeedback(ctx, req.(*SubmitUserMemoryFeedbackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_GetUserMemoryProfiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserMemoryProfilesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).GetUserMemoryProfiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_GetUserMemoryProfiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).GetUserMemoryProfiles(ctx, req.(*GetUserMemoryProfilesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_RebuildUserMemoryEmbeddings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RebuildUserMemoryEmbeddingsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).RebuildUserMemoryEmbeddings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_RebuildUserMemoryEmbeddings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).RebuildUserMemoryEmbeddings(ctx, req.(*RebuildUserMemoryEmbeddingsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LlmChat_SearchUserMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchUserMemoriesReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).SearchUserMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_SearchUserMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).SearchUserMemories(ctx, req.(*SearchUserMemoriesReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LlmChat_ServiceDesc is the grpc.ServiceDesc for LlmChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +386,38 @@ var LlmChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordLlmChatTurn",
 			Handler:    _LlmChat_RecordLlmChatTurn_Handler,
+		},
+		{
+			MethodName: "UpsertUserMemory",
+			Handler:    _LlmChat_UpsertUserMemory_Handler,
+		},
+		{
+			MethodName: "GetUserMemories",
+			Handler:    _LlmChat_GetUserMemories_Handler,
+		},
+		{
+			MethodName: "DeleteUserMemory",
+			Handler:    _LlmChat_DeleteUserMemory_Handler,
+		},
+		{
+			MethodName: "GetUserMemoriesDisplay",
+			Handler:    _LlmChat_GetUserMemoriesDisplay_Handler,
+		},
+		{
+			MethodName: "SubmitUserMemoryFeedback",
+			Handler:    _LlmChat_SubmitUserMemoryFeedback_Handler,
+		},
+		{
+			MethodName: "GetUserMemoryProfiles",
+			Handler:    _LlmChat_GetUserMemoryProfiles_Handler,
+		},
+		{
+			MethodName: "RebuildUserMemoryEmbeddings",
+			Handler:    _LlmChat_RebuildUserMemoryEmbeddings_Handler,
+		},
+		{
+			MethodName: "SearchUserMemories",
+			Handler:    _LlmChat_SearchUserMemories_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -13,7 +13,7 @@ import (
 )
 
 // PilotNativeBehaviorCompatRoutes 行为埋点域 Kratos HTTP。
-const PilotNativeBehaviorCompatRoutes = 1
+const PilotNativeBehaviorCompatRoutes = 0
 
 // RegisterBehaviorCompat D2：已迁入 RegisterBehaviorAppHTTPServer。
 func RegisterBehaviorCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {

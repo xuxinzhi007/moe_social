@@ -111,7 +111,7 @@ class _PostImageViewerState extends State<PostImageViewer> {
         onVerticalDragEnd: _onVerticalDragEnd,
         child: AnimatedContainer(
           duration: _isDragging ? Duration.zero : const Duration(milliseconds: 180),
-          color: Colors.black.withOpacity(_bgOpacity),
+          color: Colors.black.withValues(alpha: _bgOpacity),
           child: Stack(
             children: [
               // ── 图片画廊 ──
@@ -182,7 +182,7 @@ class _PostImageViewerState extends State<PostImageViewer> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 7),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
+                        color: Colors.black.withValues(alpha: 0.45),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text('松开退出',
@@ -212,7 +212,7 @@ class _CircleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.38),
+          color: Colors.black.withValues(alpha: 0.38),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: Colors.white, size: 22),
@@ -233,7 +233,7 @@ class _PageIndicator extends StatelessWidget {
       padding:
           const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.38),
+        color: Colors.black.withValues(alpha: 0.38),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(

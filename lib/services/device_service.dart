@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'api_response.dart';
 import 'api_service.dart';
 
 /// 用户设备登记（与对话记忆 [MemoryService] 分离）。
@@ -19,9 +20,10 @@ class DeviceService {
     final result = await ApiService.get(
       '/api/user/$userId/devices?limit=$limit&offset=$offset',
     );
-    final List<dynamic> list = result['data'] ?? [];
+    final list = ApiResponse.listOf(result, keys: const ['devices', 'data']);
     return list
-        .map((e) => Map<String, dynamic>.from(e as Map))
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
         .toList();
   }
 

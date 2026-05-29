@@ -389,7 +389,7 @@ class MiniTopicSelector extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: tag.color.withOpacity(0.1),
+                  color: tag.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

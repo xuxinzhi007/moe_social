@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 enum MoeErrorScene {
   generic,
   contacts,
+  messages,
   feed,
   community,
   profile,
@@ -146,6 +147,7 @@ abstract final class MoeErrorCopy {
 
     return switch (scene) {
       MoeErrorScene.contacts => '暂时没能加载同好',
+      MoeErrorScene.messages => '暂时没能加载会话',
       MoeErrorScene.feed => '暂时没能加载动态',
       MoeErrorScene.community => '暂时没能加载圈子',
       MoeErrorScene.profile => '暂时没能加载资料',
@@ -198,6 +200,7 @@ abstract final class MoeErrorCopy {
     return switch (scene) {
       MoeErrorScene.profile => '暂时没能加载资料，请检查网络',
       MoeErrorScene.contacts => '暂时没能加载同好，请检查网络',
+      MoeErrorScene.messages => '暂时没能加载会话，请检查网络',
       MoeErrorScene.feed => '暂时没能加载动态，请检查网络',
       MoeErrorScene.community => '暂时没能加载圈子，请检查网络',
       _ => _subtitleFor(kind, error),

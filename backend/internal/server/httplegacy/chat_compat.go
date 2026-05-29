@@ -16,7 +16,7 @@ import (
 )
 
 // PilotNativeChatCompatRoutes 私信 + 在线 + WS（tier-A；WS 直挂 chatbiz）。
-const PilotNativeChatCompatRoutes = 9
+const PilotNativeChatCompatRoutes = 6
 
 func RegisterChatCompat(srv *khttp.Server, svcCtx *svc.ServiceContext) {
 	if srv == nil || svcCtx == nil {

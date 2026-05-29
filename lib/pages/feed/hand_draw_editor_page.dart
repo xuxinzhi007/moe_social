@@ -270,7 +270,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
-                    color: primary.withOpacity(0.08),
+                    color: primary.withValues(alpha: 0.08),
                     blurRadius: 24,
                     offset: const Offset(0, -4),
                   ),
@@ -313,7 +313,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                                     boxShadow: [
                                       if (c == 0xFFFFFFFF)
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.06),
+                                          color: Colors.black.withValues(alpha: 0.06),
                                           blurRadius: 4,
                                         ),
                                     ],

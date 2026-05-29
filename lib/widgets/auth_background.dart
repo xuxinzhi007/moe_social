@@ -30,9 +30,9 @@ class _AuthBackgroundState extends State<AuthBackground> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     // Moe 配色 - 更柔和的梦幻渐变
-    final color1 = const Color(0xFFE0C3FC).withOpacity(0.4); // 浅紫
-    final color2 = const Color(0xFF8EC5FC).withOpacity(0.4); // 浅蓝
-    final color3 = const Color(0xFF91EAE4).withOpacity(0.4); // 薄荷
+    final color1 = const Color(0xFFE0C3FC).withValues(alpha: 0.4); // 浅紫
+    final color2 = const Color(0xFF8EC5FC).withValues(alpha: 0.4); // 浅蓝
+    final color3 = const Color(0xFF91EAE4).withValues(alpha: 0.4); // 薄荷
 
     return Scaffold(
       backgroundColor: Colors.white,

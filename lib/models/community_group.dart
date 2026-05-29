@@ -1,4 +1,5 @@
 import 'post.dart';
+import '../utils/api_json.dart';
 
 /// 兴趣社区群组（与后端 `Group` 契约一致）。
 class CommunityGroup {
@@ -29,22 +30,21 @@ class CommunityGroup {
   final List<String> tags;
 
   factory CommunityGroup.fromApi(Map<String, dynamic> m) {
-    final cover = (m['cover'] ?? '').toString();
-    final avatar = (m['avatar'] ?? '').toString();
+    final cover = apiString(m, 'cover', 'cover');
+    final avatar = apiString(m, 'avatar', 'avatar');
+    final isPublic = apiBool(m, 'is_public', 'isPublic', fallback: true);
     return CommunityGroup(
       id: (m['id'] ?? '').toString(),
-      name: (m['name'] ?? '').toString(),
-      description: (m['description'] ?? '').toString(),
+      name: apiString(m, 'name', 'name'),
+      description: apiString(m, 'description', 'description'),
       coverImage: cover.isNotEmpty ? cover : avatar,
       avatar: avatar,
-      memberCount: (m['member_count'] is int)
-          ? m['member_count'] as int
-          : int.tryParse('${m['member_count'] ?? 0}') ?? 0,
-      isJoined: m['is_joined'] == true,
-      isPublic: m['is_public'] != false,
-      creatorId: (m['creator_id'] ?? '').toString(),
-      creatorName: (m['creator_name'] ?? '').toString(),
-      tags: <String>[m['is_public'] == false ? '私密' : '公开'],
+      memberCount: apiInt(apiField(m, 'member_count', 'memberCount')),
+      isJoined: apiBool(m, 'is_joined', 'isJoined'),
+      isPublic: isPublic,
+      creatorId: apiString(m, 'creator_id', 'creatorId'),
+      creatorName: apiString(m, 'creator_name', 'creatorName'),
+      tags: <String>[isPublic ? '公开' : '私密'],
     );
   }
 }
@@ -67,10 +67,10 @@ class GroupMember {
   factory GroupMember.fromApi(Map<String, dynamic> m) {
     return GroupMember(
       id: (m['id'] ?? '').toString(),
-      userId: (m['user_id'] ?? '').toString(),
-      userName: (m['user_name'] ?? '').toString(),
-      userAvatar: (m['user_avatar'] ?? '').toString(),
-      role: (m['role'] ?? 'member').toString(),
+      userId: apiString(m, 'user_id', 'userId'),
+      userName: apiString(m, 'user_name', 'userName'),
+      userAvatar: apiString(m, 'user_avatar', 'userAvatar'),
+      role: apiString(m, 'role', 'role', fallback: 'member'),
     );
   }
 }
@@ -100,8 +100,10 @@ class GroupPostEntry {
     }
     return GroupPostEntry(
       id: (m['id'] ?? '').toString(),
-      groupId: (m['group_id'] ?? '').toString(),
-      postId: (m['post_id'] ?? post.id).toString(),
+      groupId: apiString(m, 'group_id', 'groupId'),
+      postId: apiString(m, 'post_id', 'postId').isNotEmpty
+          ? apiString(m, 'post_id', 'postId')
+          : post.id,
       post: post,
     );
   }

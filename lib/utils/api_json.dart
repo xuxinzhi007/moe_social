@@ -1,0 +1,51 @@
+/// 读取 API JSON 字段：兼容 legacy snake_case 与 Kratos protojson camelCase。
+dynamic apiField(Map<String, dynamic> json, String snake, String camel) {
+  if (json.containsKey(snake)) return json[snake];
+  return json[camel];
+}
+
+/// 将列表项规范为 `Map<String, dynamic>`（Web/JSON 解码后可能是 `Map<dynamic, dynamic>`）。
+Map<String, dynamic> apiMap(dynamic raw) {
+  if (raw is Map<String, dynamic>) return raw;
+  return Map<String, dynamic>.from(raw as Map);
+}
+
+/// 字符串字段；[fallback] 在缺失或空字符串时生效。
+String apiString(
+  Map<String, dynamic> json,
+  String snake,
+  String camel, {
+  String fallback = '',
+}) {
+  final v = apiField(json, snake, camel);
+  if (v == null) return fallback;
+  final s = v.toString();
+  if (s.isEmpty) return fallback;
+  return s;
+}
+
+/// 整数字段（proto 缺省或 JSON 数字/字符串均可）。
+int apiInt(dynamic raw, {int fallback = 0}) {
+  if (raw == null) return fallback;
+  if (raw is int) return raw;
+  if (raw is num) return raw.toInt();
+  if (raw is String) return int.tryParse(raw.trim()) ?? fallback;
+  return fallback;
+}
+
+/// 布尔字段。
+bool apiBool(
+  Map<String, dynamic> json,
+  String snake,
+  String camel, {
+  bool fallback = false,
+}) {
+  final v = apiField(json, snake, camel);
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  if (v is String) {
+    final s = v.toLowerCase();
+    return s == 'true' || s == '1';
+  }
+  return fallback;
+}

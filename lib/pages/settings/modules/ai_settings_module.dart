@@ -35,7 +35,7 @@ class AiSettingsModule extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color:
-                      (enabled ? Colors.green : Colors.grey).withOpacity(0.12),
+                      (enabled ? Colors.green : Colors.grey).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(

@@ -813,6 +813,7 @@ func (x *GetBrainPipelineReply) GetHostMetrics() *MoeHostMetrics {
 type RunAgentOnceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Async         bool                   `protobuf:"varint,2,opt,name=async,proto3" json:"async,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -854,14 +855,23 @@ func (x *RunAgentOnceRequest) GetAgentKey() string {
 	return ""
 }
 
+func (x *RunAgentOnceRequest) GetAsync() bool {
+	if x != nil {
+		return x.Async
+	}
+	return false
+}
+
 type RunAgentOnceReply struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
-	Ok            bool                   `protobuf:"varint,2,opt,name=ok,proto3" json:"ok,omitempty"`
-	Detail        string                 `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
-	PostId        string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey       string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Ok             bool                   `protobuf:"varint,2,opt,name=ok,proto3" json:"ok,omitempty"`
+	Detail         string                 `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
+	PostId         string                 `protobuf:"bytes,4,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	Accepted       bool                   `protobuf:"varint,5,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	AlreadyRunning bool                   `protobuf:"varint,6,opt,name=already_running,json=alreadyRunning,proto3" json:"already_running,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RunAgentOnceReply) Reset() {
@@ -920,6 +930,20 @@ func (x *RunAgentOnceReply) GetPostId() string {
 		return x.PostId
 	}
 	return ""
+}
+
+func (x *RunAgentOnceReply) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *RunAgentOnceReply) GetAlreadyRunning() bool {
+	if x != nil {
+		return x.AlreadyRunning
+	}
+	return false
 }
 
 type BrainTagStat struct {
@@ -1327,18 +1351,21 @@ func (x *GetBrainSnapshotRequest) GetAgentKey() string {
 }
 
 type GetBrainSnapshotReply struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	AgentKey       string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
-	DisplayName    string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	BotUserId      string                 `protobuf:"bytes,3,opt,name=bot_user_id,json=botUserId,proto3" json:"bot_user_id,omitempty"`
-	ForbiddenTags  []string               `protobuf:"bytes,4,rep,name=forbidden_tags,json=forbiddenTags,proto3" json:"forbidden_tags,omitempty"`
-	PreferredTags  []string               `protobuf:"bytes,5,rep,name=preferred_tags,json=preferredTags,proto3" json:"preferred_tags,omitempty"`
-	TagStats       []*BrainTagStat        `protobuf:"bytes,6,rep,name=tag_stats,json=tagStats,proto3" json:"tag_stats,omitempty"`
-	Episodes       []*BrainEpisode        `protobuf:"bytes,7,rep,name=episodes,proto3" json:"episodes,omitempty"`
-	Memories       []*BrainMemory         `protobuf:"bytes,8,rep,name=memories,proto3" json:"memories,omitempty"`
-	GenerationMeta *BrainGenerationMeta   `protobuf:"bytes,9,opt,name=generation_meta,json=generationMeta,proto3" json:"generation_meta,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey          string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	DisplayName       string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	BotUserId         string                 `protobuf:"bytes,3,opt,name=bot_user_id,json=botUserId,proto3" json:"bot_user_id,omitempty"`
+	ForbiddenTags     []string               `protobuf:"bytes,4,rep,name=forbidden_tags,json=forbiddenTags,proto3" json:"forbidden_tags,omitempty"`
+	PreferredTags     []string               `protobuf:"bytes,5,rep,name=preferred_tags,json=preferredTags,proto3" json:"preferred_tags,omitempty"`
+	TagStats          []*BrainTagStat        `protobuf:"bytes,6,rep,name=tag_stats,json=tagStats,proto3" json:"tag_stats,omitempty"`
+	Episodes          []*BrainEpisode        `protobuf:"bytes,7,rep,name=episodes,proto3" json:"episodes,omitempty"`
+	Memories          []*BrainMemory         `protobuf:"bytes,8,rep,name=memories,proto3" json:"memories,omitempty"`
+	GenerationMeta    *BrainGenerationMeta   `protobuf:"bytes,9,opt,name=generation_meta,json=generationMeta,proto3" json:"generation_meta,omitempty"`
+	StabilityScore    int32                  `protobuf:"varint,10,opt,name=stability_score,json=stabilityScore,proto3" json:"stability_score,omitempty"`
+	StabilityDelta    int32                  `protobuf:"varint,11,opt,name=stability_delta,json=stabilityDelta,proto3" json:"stability_delta,omitempty"`
+	AvgEpisodeQuality int32                  `protobuf:"varint,12,opt,name=avg_episode_quality,json=avgEpisodeQuality,proto3" json:"avg_episode_quality,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetBrainSnapshotReply) Reset() {
@@ -1432,6 +1459,27 @@ func (x *GetBrainSnapshotReply) GetGenerationMeta() *BrainGenerationMeta {
 		return x.GenerationMeta
 	}
 	return nil
+}
+
+func (x *GetBrainSnapshotReply) GetStabilityScore() int32 {
+	if x != nil {
+		return x.StabilityScore
+	}
+	return 0
+}
+
+func (x *GetBrainSnapshotReply) GetStabilityDelta() int32 {
+	if x != nil {
+		return x.StabilityDelta
+	}
+	return 0
+}
+
+func (x *GetBrainSnapshotReply) GetAvgEpisodeQuality() int32 {
+	if x != nil {
+		return x.AvgEpisodeQuality
+	}
+	return 0
 }
 
 type UpdateBrainPolicyRequest struct {
@@ -2426,6 +2474,842 @@ func (x *ListToolCallsReply) GetItems() []*ToolCallRow {
 	return nil
 }
 
+type MoeFlowNode struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Label         string                 `protobuf:"bytes,4,opt,name=label,proto3" json:"label,omitempty"`
+	Subtitle      string                 `protobuf:"bytes,5,opt,name=subtitle,proto3" json:"subtitle,omitempty"`
+	StepKey       string                 `protobuf:"bytes,6,opt,name=step_key,json=stepKey,proto3" json:"step_key,omitempty"`
+	ToolName      string                 `protobuf:"bytes,7,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
+	PositionX     float64                `protobuf:"fixed64,8,opt,name=position_x,json=positionX,proto3" json:"position_x,omitempty"`
+	PositionY     float64                `protobuf:"fixed64,9,opt,name=position_y,json=positionY,proto3" json:"position_y,omitempty"`
+	Enabled       bool                   `protobuf:"varint,10,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	OnFail        string                 `protobuf:"bytes,11,opt,name=on_fail,json=onFail,proto3" json:"on_fail,omitempty"`
+	RetryMax      int32                  `protobuf:"varint,12,opt,name=retry_max,json=retryMax,proto3" json:"retry_max,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoeFlowNode) Reset() {
+	*x = MoeFlowNode{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoeFlowNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoeFlowNode) ProtoMessage() {}
+
+func (x *MoeFlowNode) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoeFlowNode.ProtoReflect.Descriptor instead.
+func (*MoeFlowNode) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *MoeFlowNode) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetSubtitle() string {
+	if x != nil {
+		return x.Subtitle
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetStepKey() string {
+	if x != nil {
+		return x.StepKey
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetToolName() string {
+	if x != nil {
+		return x.ToolName
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetPositionX() float64 {
+	if x != nil {
+		return x.PositionX
+	}
+	return 0
+}
+
+func (x *MoeFlowNode) GetPositionY() float64 {
+	if x != nil {
+		return x.PositionY
+	}
+	return 0
+}
+
+func (x *MoeFlowNode) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *MoeFlowNode) GetOnFail() string {
+	if x != nil {
+		return x.OnFail
+	}
+	return ""
+}
+
+func (x *MoeFlowNode) GetRetryMax() int32 {
+	if x != nil {
+		return x.RetryMax
+	}
+	return 0
+}
+
+type MoeFlowEdge struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Target        string                 `protobuf:"bytes,3,opt,name=target,proto3" json:"target,omitempty"`
+	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
+	Label         string                 `protobuf:"bytes,5,opt,name=label,proto3" json:"label,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoeFlowEdge) Reset() {
+	*x = MoeFlowEdge{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoeFlowEdge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoeFlowEdge) ProtoMessage() {}
+
+func (x *MoeFlowEdge) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoeFlowEdge.ProtoReflect.Descriptor instead.
+func (*MoeFlowEdge) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *MoeFlowEdge) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MoeFlowEdge) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *MoeFlowEdge) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *MoeFlowEdge) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *MoeFlowEdge) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+type BotFlowReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Version       int32                  `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	EntryNodeId   string                 `protobuf:"bytes,3,opt,name=entry_node_id,json=entryNodeId,proto3" json:"entry_node_id,omitempty"`
+	Nodes         []*MoeFlowNode         `protobuf:"bytes,4,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Edges         []*MoeFlowEdge         `protobuf:"bytes,5,rep,name=edges,proto3" json:"edges,omitempty"`
+	ViewportZoom  float64                `protobuf:"fixed64,6,opt,name=viewport_zoom,json=viewportZoom,proto3" json:"viewport_zoom,omitempty"`
+	ViewportX     float64                `protobuf:"fixed64,7,opt,name=viewport_x,json=viewportX,proto3" json:"viewport_x,omitempty"`
+	ViewportY     float64                `protobuf:"fixed64,8,opt,name=viewport_y,json=viewportY,proto3" json:"viewport_y,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	IsDefault     bool                   `protobuf:"varint,10,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	Warnings      []string               `protobuf:"bytes,11,rep,name=warnings,proto3" json:"warnings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BotFlowReply) Reset() {
+	*x = BotFlowReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BotFlowReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BotFlowReply) ProtoMessage() {}
+
+func (x *BotFlowReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BotFlowReply.ProtoReflect.Descriptor instead.
+func (*BotFlowReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *BotFlowReply) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *BotFlowReply) GetVersion() int32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *BotFlowReply) GetEntryNodeId() string {
+	if x != nil {
+		return x.EntryNodeId
+	}
+	return ""
+}
+
+func (x *BotFlowReply) GetNodes() []*MoeFlowNode {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *BotFlowReply) GetEdges() []*MoeFlowEdge {
+	if x != nil {
+		return x.Edges
+	}
+	return nil
+}
+
+func (x *BotFlowReply) GetViewportZoom() float64 {
+	if x != nil {
+		return x.ViewportZoom
+	}
+	return 0
+}
+
+func (x *BotFlowReply) GetViewportX() float64 {
+	if x != nil {
+		return x.ViewportX
+	}
+	return 0
+}
+
+func (x *BotFlowReply) GetViewportY() float64 {
+	if x != nil {
+		return x.ViewportY
+	}
+	return 0
+}
+
+func (x *BotFlowReply) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *BotFlowReply) GetIsDefault() bool {
+	if x != nil {
+		return x.IsDefault
+	}
+	return false
+}
+
+func (x *BotFlowReply) GetWarnings() []string {
+	if x != nil {
+		return x.Warnings
+	}
+	return nil
+}
+
+type GetBotFlowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetBotFlowRequest) Reset() {
+	*x = GetBotFlowRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetBotFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetBotFlowRequest) ProtoMessage() {}
+
+func (x *GetBotFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetBotFlowRequest.ProtoReflect.Descriptor instead.
+func (*GetBotFlowRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *GetBotFlowRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type UpsertBotFlowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	Nodes         []*MoeFlowNode         `protobuf:"bytes,2,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Edges         []*MoeFlowEdge         `protobuf:"bytes,3,rep,name=edges,proto3" json:"edges,omitempty"`
+	ViewportZoom  float64                `protobuf:"fixed64,4,opt,name=viewport_zoom,json=viewportZoom,proto3" json:"viewport_zoom,omitempty"`
+	ViewportX     float64                `protobuf:"fixed64,5,opt,name=viewport_x,json=viewportX,proto3" json:"viewport_x,omitempty"`
+	ViewportY     float64                `protobuf:"fixed64,6,opt,name=viewport_y,json=viewportY,proto3" json:"viewport_y,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertBotFlowRequest) Reset() {
+	*x = UpsertBotFlowRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertBotFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertBotFlowRequest) ProtoMessage() {}
+
+func (x *UpsertBotFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertBotFlowRequest.ProtoReflect.Descriptor instead.
+func (*UpsertBotFlowRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *UpsertBotFlowRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+func (x *UpsertBotFlowRequest) GetNodes() []*MoeFlowNode {
+	if x != nil {
+		return x.Nodes
+	}
+	return nil
+}
+
+func (x *UpsertBotFlowRequest) GetEdges() []*MoeFlowEdge {
+	if x != nil {
+		return x.Edges
+	}
+	return nil
+}
+
+func (x *UpsertBotFlowRequest) GetViewportZoom() float64 {
+	if x != nil {
+		return x.ViewportZoom
+	}
+	return 0
+}
+
+func (x *UpsertBotFlowRequest) GetViewportX() float64 {
+	if x != nil {
+		return x.ViewportX
+	}
+	return 0
+}
+
+func (x *UpsertBotFlowRequest) GetViewportY() float64 {
+	if x != nil {
+		return x.ViewportY
+	}
+	return 0
+}
+
+type DeleteBotFlowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteBotFlowRequest) Reset() {
+	*x = DeleteBotFlowRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteBotFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteBotFlowRequest) ProtoMessage() {}
+
+func (x *DeleteBotFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteBotFlowRequest.ProtoReflect.Descriptor instead.
+func (*DeleteBotFlowRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *DeleteBotFlowRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type GetInferenceStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentKey      string                 `protobuf:"bytes,1,opt,name=agent_key,json=agentKey,proto3" json:"agent_key,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetInferenceStatusRequest) Reset() {
+	*x = GetInferenceStatusRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetInferenceStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetInferenceStatusRequest) ProtoMessage() {}
+
+func (x *GetInferenceStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetInferenceStatusRequest.ProtoReflect.Descriptor instead.
+func (*GetInferenceStatusRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *GetInferenceStatusRequest) GetAgentKey() string {
+	if x != nil {
+		return x.AgentKey
+	}
+	return ""
+}
+
+type GetInferenceStatusReply struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Online           bool                   `protobuf:"varint,1,opt,name=online,proto3" json:"online,omitempty"`
+	BaseUrl          string                 `protobuf:"bytes,2,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	Models           []string               `protobuf:"bytes,3,rep,name=models,proto3" json:"models,omitempty"`
+	DefaultPostModel string                 `protobuf:"bytes,4,opt,name=default_post_model,json=defaultPostModel,proto3" json:"default_post_model,omitempty"`
+	PreferredModel   string                 `protobuf:"bytes,5,opt,name=preferred_model,json=preferredModel,proto3" json:"preferred_model,omitempty"`
+	RuntimeModel     string                 `protobuf:"bytes,6,opt,name=runtime_model,json=runtimeModel,proto3" json:"runtime_model,omitempty"`
+	EffectiveModel   string                 `protobuf:"bytes,7,opt,name=effective_model,json=effectiveModel,proto3" json:"effective_model,omitempty"`
+	AutoDiscovered   bool                   `protobuf:"varint,8,opt,name=auto_discovered,json=autoDiscovered,proto3" json:"auto_discovered,omitempty"`
+	ModelLoaded      bool                   `protobuf:"varint,9,opt,name=model_loaded,json=modelLoaded,proto3" json:"model_loaded,omitempty"`
+	ContextLimit     int32                  `protobuf:"varint,10,opt,name=context_limit,json=contextLimit,proto3" json:"context_limit,omitempty"`
+	ContextSource    string                 `protobuf:"bytes,11,opt,name=context_source,json=contextSource,proto3" json:"context_source,omitempty"`
+	Message          string                 `protobuf:"bytes,12,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GetInferenceStatusReply) Reset() {
+	*x = GetInferenceStatusReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetInferenceStatusReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetInferenceStatusReply) ProtoMessage() {}
+
+func (x *GetInferenceStatusReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetInferenceStatusReply.ProtoReflect.Descriptor instead.
+func (*GetInferenceStatusReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetInferenceStatusReply) GetOnline() bool {
+	if x != nil {
+		return x.Online
+	}
+	return false
+}
+
+func (x *GetInferenceStatusReply) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetModels() []string {
+	if x != nil {
+		return x.Models
+	}
+	return nil
+}
+
+func (x *GetInferenceStatusReply) GetDefaultPostModel() string {
+	if x != nil {
+		return x.DefaultPostModel
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetPreferredModel() string {
+	if x != nil {
+		return x.PreferredModel
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetRuntimeModel() string {
+	if x != nil {
+		return x.RuntimeModel
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetEffectiveModel() string {
+	if x != nil {
+		return x.EffectiveModel
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetAutoDiscovered() bool {
+	if x != nil {
+		return x.AutoDiscovered
+	}
+	return false
+}
+
+func (x *GetInferenceStatusReply) GetModelLoaded() bool {
+	if x != nil {
+		return x.ModelLoaded
+	}
+	return false
+}
+
+func (x *GetInferenceStatusReply) GetContextLimit() int32 {
+	if x != nil {
+		return x.ContextLimit
+	}
+	return 0
+}
+
+func (x *GetInferenceStatusReply) GetContextSource() string {
+	if x != nil {
+		return x.ContextSource
+	}
+	return ""
+}
+
+func (x *GetInferenceStatusReply) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type MoeToolSchemaItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	AllowedTiers  []string               `protobuf:"bytes,3,rep,name=allowed_tiers,json=allowedTiers,proto3" json:"allowed_tiers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoeToolSchemaItem) Reset() {
+	*x = MoeToolSchemaItem{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoeToolSchemaItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoeToolSchemaItem) ProtoMessage() {}
+
+func (x *MoeToolSchemaItem) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoeToolSchemaItem.ProtoReflect.Descriptor instead.
+func (*MoeToolSchemaItem) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *MoeToolSchemaItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *MoeToolSchemaItem) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *MoeToolSchemaItem) GetAllowedTiers() []string {
+	if x != nil {
+		return x.AllowedTiers
+	}
+	return nil
+}
+
+type GetToolsSchemaRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetToolsSchemaRequest) Reset() {
+	*x = GetToolsSchemaRequest{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetToolsSchemaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetToolsSchemaRequest) ProtoMessage() {}
+
+func (x *GetToolsSchemaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetToolsSchemaRequest.ProtoReflect.Descriptor instead.
+func (*GetToolsSchemaRequest) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{40}
+}
+
+type GetToolsSchemaReply struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	DefaultTier     string                 `protobuf:"bytes,1,opt,name=default_tier,json=defaultTier,proto3" json:"default_tier,omitempty"`
+	Tools           []*MoeToolSchemaItem   `protobuf:"bytes,2,rep,name=tools,proto3" json:"tools,omitempty"`
+	OpenaiToolsJson string                 `protobuf:"bytes,3,opt,name=openai_tools_json,json=openaiToolsJson,proto3" json:"openai_tools_json,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetToolsSchemaReply) Reset() {
+	*x = GetToolsSchemaReply{}
+	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetToolsSchemaReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetToolsSchemaReply) ProtoMessage() {}
+
+func (x *GetToolsSchemaReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_moe_v1_moe_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetToolsSchemaReply.ProtoReflect.Descriptor instead.
+func (*GetToolsSchemaReply) Descriptor() ([]byte, []int) {
+	return file_api_moe_v1_moe_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *GetToolsSchemaReply) GetDefaultTier() string {
+	if x != nil {
+		return x.DefaultTier
+	}
+	return ""
+}
+
+func (x *GetToolsSchemaReply) GetTools() []*MoeToolSchemaItem {
+	if x != nil {
+		return x.Tools
+	}
+	return nil
+}
+
+func (x *GetToolsSchemaReply) GetOpenaiToolsJson() string {
+	if x != nil {
+		return x.OpenaiToolsJson
+	}
+	return ""
+}
+
 var File_api_moe_v1_moe_proto protoreflect.FileDescriptor
 
 const file_api_moe_v1_moe_proto_rawDesc = "" +
@@ -2506,14 +3390,17 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	"\x06run_at\x18\x05 \x01(\tR\x05runAt\x12*\n" +
 	"\x11total_duration_ms\x18\x06 \x01(\x03R\x0ftotalDurationMs\x12-\n" +
 	"\x05steps\x18\a \x03(\v2\x17.moe.v1.MoePipelineStepR\x05steps\x129\n" +
-	"\fhost_metrics\x18\b \x01(\v2\x16.moe.v1.MoeHostMetricsR\vhostMetrics\"2\n" +
+	"\fhost_metrics\x18\b \x01(\v2\x16.moe.v1.MoeHostMetricsR\vhostMetrics\"H\n" +
 	"\x13RunAgentOnceRequest\x12\x1b\n" +
-	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"q\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x14\n" +
+	"\x05async\x18\x02 \x01(\bR\x05async\"\xb6\x01\n" +
 	"\x11RunAgentOnceReply\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x0e\n" +
 	"\x02ok\x18\x02 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06detail\x18\x03 \x01(\tR\x06detail\x12\x17\n" +
-	"\apost_id\x18\x04 \x01(\tR\x06postId\"6\n" +
+	"\apost_id\x18\x04 \x01(\tR\x06postId\x12\x1a\n" +
+	"\baccepted\x18\x05 \x01(\bR\baccepted\x12'\n" +
+	"\x0falready_running\x18\x06 \x01(\bR\x0ealreadyRunning\"6\n" +
 	"\fBrainTagStat\x12\x10\n" +
 	"\x03tag\x18\x01 \x01(\tR\x03tag\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x05R\x05count\"\xdf\x02\n" +
@@ -2552,7 +3439,7 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	"\rcontext_limit\x18\b \x01(\x05R\fcontextLimit\x12(\n" +
 	"\x10context_used_pct\x18\t \x01(\x01R\x0econtextUsedPct\"6\n" +
 	"\x17GetBrainSnapshotRequest\x12\x1b\n" +
-	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xa1\x03\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xa3\x04\n" +
 	"\x15GetBrainSnapshotReply\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1e\n" +
@@ -2562,7 +3449,11 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	"\ttag_stats\x18\x06 \x03(\v2\x14.moe.v1.BrainTagStatR\btagStats\x120\n" +
 	"\bepisodes\x18\a \x03(\v2\x14.moe.v1.BrainEpisodeR\bepisodes\x12/\n" +
 	"\bmemories\x18\b \x03(\v2\x13.moe.v1.BrainMemoryR\bmemories\x12D\n" +
-	"\x0fgeneration_meta\x18\t \x01(\v2\x1b.moe.v1.BrainGenerationMetaR\x0egenerationMeta\"\x85\x01\n" +
+	"\x0fgeneration_meta\x18\t \x01(\v2\x1b.moe.v1.BrainGenerationMetaR\x0egenerationMeta\x12'\n" +
+	"\x0fstability_score\x18\n" +
+	" \x01(\x05R\x0estabilityScore\x12'\n" +
+	"\x0fstability_delta\x18\v \x01(\x05R\x0estabilityDelta\x12.\n" +
+	"\x13avg_episode_quality\x18\f \x01(\x05R\x11avgEpisodeQuality\"\x85\x01\n" +
 	"\x18UpdateBrainPolicyRequest\x12\x1b\n" +
 	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12%\n" +
 	"\x0eforbidden_tags\x18\x02 \x03(\tR\rforbiddenTags\x12%\n" +
@@ -2647,18 +3538,100 @@ const file_api_moe_v1_moe_proto_rawDesc = "" +
 	" \x01(\x05R\bpageSize\"U\n" +
 	"\x12ListToolCallsReply\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x03R\x05total\x12)\n" +
-	"\x05items\x18\x02 \x03(\v2\x13.moe.v1.ToolCallRowR\x05items2\xaf\n" +
+	"\x05items\x18\x02 \x03(\v2\x13.moe.v1.ToolCallRowR\x05items\"\xbd\x02\n" +
+	"\vMoeFlowNode\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05label\x18\x04 \x01(\tR\x05label\x12\x1a\n" +
+	"\bsubtitle\x18\x05 \x01(\tR\bsubtitle\x12\x19\n" +
+	"\bstep_key\x18\x06 \x01(\tR\astepKey\x12\x1b\n" +
+	"\ttool_name\x18\a \x01(\tR\btoolName\x12\x1d\n" +
 	"\n" +
+	"position_x\x18\b \x01(\x01R\tpositionX\x12\x1d\n" +
+	"\n" +
+	"position_y\x18\t \x01(\x01R\tpositionY\x12\x18\n" +
+	"\aenabled\x18\n" +
+	" \x01(\bR\aenabled\x12\x17\n" +
+	"\aon_fail\x18\v \x01(\tR\x06onFail\x12\x1b\n" +
+	"\tretry_max\x18\f \x01(\x05R\bretryMax\"w\n" +
+	"\vMoeFlowEdge\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12\x16\n" +
+	"\x06target\x18\x03 \x01(\tR\x06target\x12\x12\n" +
+	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x14\n" +
+	"\x05label\x18\x05 \x01(\tR\x05label\"\xfc\x02\n" +
+	"\fBotFlowReply\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\x05R\aversion\x12\"\n" +
+	"\rentry_node_id\x18\x03 \x01(\tR\ventryNodeId\x12)\n" +
+	"\x05nodes\x18\x04 \x03(\v2\x13.moe.v1.MoeFlowNodeR\x05nodes\x12)\n" +
+	"\x05edges\x18\x05 \x03(\v2\x13.moe.v1.MoeFlowEdgeR\x05edges\x12#\n" +
+	"\rviewport_zoom\x18\x06 \x01(\x01R\fviewportZoom\x12\x1d\n" +
+	"\n" +
+	"viewport_x\x18\a \x01(\x01R\tviewportX\x12\x1d\n" +
+	"\n" +
+	"viewport_y\x18\b \x01(\x01R\tviewportY\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"is_default\x18\n" +
+	" \x01(\bR\tisDefault\x12\x1a\n" +
+	"\bwarnings\x18\v \x03(\tR\bwarnings\"0\n" +
+	"\x11GetBotFlowRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xec\x01\n" +
+	"\x14UpsertBotFlowRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\x12)\n" +
+	"\x05nodes\x18\x02 \x03(\v2\x13.moe.v1.MoeFlowNodeR\x05nodes\x12)\n" +
+	"\x05edges\x18\x03 \x03(\v2\x13.moe.v1.MoeFlowEdgeR\x05edges\x12#\n" +
+	"\rviewport_zoom\x18\x04 \x01(\x01R\fviewportZoom\x12\x1d\n" +
+	"\n" +
+	"viewport_x\x18\x05 \x01(\x01R\tviewportX\x12\x1d\n" +
+	"\n" +
+	"viewport_y\x18\x06 \x01(\x01R\tviewportY\"3\n" +
+	"\x14DeleteBotFlowRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"8\n" +
+	"\x19GetInferenceStatusRequest\x12\x1b\n" +
+	"\tagent_key\x18\x01 \x01(\tR\bagentKey\"\xbb\x03\n" +
+	"\x17GetInferenceStatusReply\x12\x16\n" +
+	"\x06online\x18\x01 \x01(\bR\x06online\x12\x19\n" +
+	"\bbase_url\x18\x02 \x01(\tR\abaseUrl\x12\x16\n" +
+	"\x06models\x18\x03 \x03(\tR\x06models\x12,\n" +
+	"\x12default_post_model\x18\x04 \x01(\tR\x10defaultPostModel\x12'\n" +
+	"\x0fpreferred_model\x18\x05 \x01(\tR\x0epreferredModel\x12#\n" +
+	"\rruntime_model\x18\x06 \x01(\tR\fruntimeModel\x12'\n" +
+	"\x0feffective_model\x18\a \x01(\tR\x0eeffectiveModel\x12'\n" +
+	"\x0fauto_discovered\x18\b \x01(\bR\x0eautoDiscovered\x12!\n" +
+	"\fmodel_loaded\x18\t \x01(\bR\vmodelLoaded\x12#\n" +
+	"\rcontext_limit\x18\n" +
+	" \x01(\x05R\fcontextLimit\x12%\n" +
+	"\x0econtext_source\x18\v \x01(\tR\rcontextSource\x12\x18\n" +
+	"\amessage\x18\f \x01(\tR\amessage\"n\n" +
+	"\x11MoeToolSchemaItem\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12#\n" +
+	"\rallowed_tiers\x18\x03 \x03(\tR\fallowedTiers\"\x17\n" +
+	"\x15GetToolsSchemaRequest\"\x95\x01\n" +
+	"\x13GetToolsSchemaReply\x12!\n" +
+	"\fdefault_tier\x18\x01 \x01(\tR\vdefaultTier\x12/\n" +
+	"\x05tools\x18\x02 \x03(\v2\x19.moe.v1.MoeToolSchemaItemR\x05tools\x12*\n" +
+	"\x11openai_tools_json\x18\x03 \x01(\tR\x0fopenaiToolsJson2\xcf\x0f\n" +
 	"\bMoeAdmin\x12g\n" +
 	"\fListRuntimes\x12\x1b.moe.v1.ListRuntimesRequest\x1a\x19.moe.v1.ListRuntimesReply\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/admin/moe/runtimes\x12m\n" +
 	"\rUpsertRuntime\x12\x1c.moe.v1.UpsertRuntimeRequest\x1a\x1a.moe.v1.UpsertRuntimeReply\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/admin/moe/runtimes\x12y\n" +
-	"\x10GetBrainPipeline\x12\x1f.moe.v1.GetBrainPipelineRequest\x1a\x1d.moe.v1.GetBrainPipelineReply\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/admin/moe/brain/pipeline\x12q\n" +
-	"\fRunAgentOnce\x12\x1b.moe.v1.RunAgentOnceRequest\x1a\x19.moe.v1.RunAgentOnceReply\")\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/api/admin/moe/agents/run-once\x12y\n" +
-	"\x10GetBrainSnapshot\x12\x1f.moe.v1.GetBrainSnapshotRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/admin/moe/brain/snapshot\x12|\n" +
-	"\x11UpdateBrainPolicy\x12 .moe.v1.UpdateBrainPolicyRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\"&\x82\xd3\xe4\x93\x02 :\x01*\x1a\x1b/api/admin/moe/brain/policy\x12\x84\x01\n" +
+	"\x10GetBrainPipeline\x12\x1f.moe.v1.GetBrainPipelineRequest\x1a\x1d.moe.v1.GetBrainPipelineReply\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/api/admin/moe/brain/pipeline\x12\x7f\n" +
+	"\fRunAgentOnce\x12\x1b.moe.v1.RunAgentOnceRequest\x1a\x19.moe.v1.RunAgentOnceReply\"7\x82\xd3\xe4\x93\x021:\x01*\",/api/admin/moe/runtimes/{agent_key}/run-once\x12\x85\x01\n" +
+	"\x10GetBrainSnapshot\x12\x1f.moe.v1.GetBrainSnapshotRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\"1\x82\xd3\xe4\x93\x02+\x12)/api/admin/moe/runtimes/{agent_key}/brain\x12\x91\x01\n" +
+	"\x11UpdateBrainPolicy\x12 .moe.v1.UpdateBrainPolicyRequest\x1a\x1d.moe.v1.GetBrainSnapshotReply\";\x82\xd3\xe4\x93\x025:\x01*\x1a0/api/admin/moe/runtimes/{agent_key}/brain/policy\x12\x84\x01\n" +
 	"\x12DeleteBrainEpisode\x12!.moe.v1.DeleteBrainEpisodeRequest\x1a\x1f.moe.v1.DeleteBrainEpisodeReply\"*\x82\xd3\xe4\x93\x02$*\"/api/admin/moe/brain/episodes/{id}\x12\x8e\x01\n" +
-	"\x12RefineBrainEpisode\x12!.moe.v1.RefineBrainEpisodeRequest\x1a\x1f.moe.v1.RefineBrainEpisodeReply\"4\x82\xd3\xe4\x93\x02.:\x01*\")/api/admin/moe/brain/episodes/{id}/refine\x12k\n" +
-	"\vCurateBrain\x12\x1a.moe.v1.CurateBrainRequest\x1a\x18.moe.v1.CurateBrainReply\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/admin/moe/brain/curate\x12p\n" +
+	"\x12RefineBrainEpisode\x12!.moe.v1.RefineBrainEpisodeRequest\x1a\x1f.moe.v1.RefineBrainEpisodeReply\"4\x82\xd3\xe4\x93\x02.:\x01*\")/api/admin/moe/brain/episodes/{id}/refine\x12\x80\x01\n" +
+	"\vCurateBrain\x12\x1a.moe.v1.CurateBrainRequest\x1a\x18.moe.v1.CurateBrainReply\";\x82\xd3\xe4\x93\x025:\x01*\"0/api/admin/moe/runtimes/{agent_key}/brain/curate\x12o\n" +
+	"\n" +
+	"GetBotFlow\x12\x19.moe.v1.GetBotFlowRequest\x1a\x14.moe.v1.BotFlowReply\"0\x82\xd3\xe4\x93\x02*\x12(/api/admin/moe/runtimes/{agent_key}/flow\x12x\n" +
+	"\rUpsertBotFlow\x12\x1c.moe.v1.UpsertBotFlowRequest\x1a\x14.moe.v1.BotFlowReply\"3\x82\xd3\xe4\x93\x02-:\x01*\x1a(/api/admin/moe/runtimes/{agent_key}/flow\x12u\n" +
+	"\rDeleteBotFlow\x12\x1c.moe.v1.DeleteBotFlowRequest\x1a\x14.moe.v1.BotFlowReply\"0\x82\xd3\xe4\x93\x02**(/api/admin/moe/runtimes/{agent_key}/flow\x12\x81\x01\n" +
+	"\x12GetInferenceStatus\x12!.moe.v1.GetInferenceStatusRequest\x1a\x1f.moe.v1.GetInferenceStatusReply\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/admin/moe/inference/status\x12q\n" +
+	"\x0eGetToolsSchema\x12\x1d.moe.v1.GetToolsSchemaRequest\x1a\x1b.moe.v1.GetToolsSchemaReply\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/admin/moe/tools/schema\x12p\n" +
 	"\x0eQueryToolStats\x12\x1d.moe.v1.QueryToolStatsRequest\x1a\x1b.moe.v1.QueryToolStatsReply\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/admin/moe/tools/stats\x12m\n" +
 	"\rListToolCalls\x12\x1c.moe.v1.ListToolCallsRequest\x1a\x1a.moe.v1.ListToolCallsReply\"\"\x82\xd3\xe4\x93\x02\x1c\x12\x1a/api/admin/moe/tools/callsB\x1aZ\x18backend/api/moe/v1;moev1b\x06proto3"
 
@@ -2674,7 +3647,7 @@ func file_api_moe_v1_moe_proto_rawDescGZIP() []byte {
 	return file_api_moe_v1_moe_proto_rawDescData
 }
 
-var file_api_moe_v1_moe_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_api_moe_v1_moe_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_api_moe_v1_moe_proto_goTypes = []any{
 	(*AgentRuntime)(nil),              // 0: moe.v1.AgentRuntime
 	(*ListRuntimesRequest)(nil),       // 1: moe.v1.ListRuntimesRequest
@@ -2707,6 +3680,17 @@ var file_api_moe_v1_moe_proto_goTypes = []any{
 	(*ToolCallRow)(nil),               // 28: moe.v1.ToolCallRow
 	(*ListToolCallsRequest)(nil),      // 29: moe.v1.ListToolCallsRequest
 	(*ListToolCallsReply)(nil),        // 30: moe.v1.ListToolCallsReply
+	(*MoeFlowNode)(nil),               // 31: moe.v1.MoeFlowNode
+	(*MoeFlowEdge)(nil),               // 32: moe.v1.MoeFlowEdge
+	(*BotFlowReply)(nil),              // 33: moe.v1.BotFlowReply
+	(*GetBotFlowRequest)(nil),         // 34: moe.v1.GetBotFlowRequest
+	(*UpsertBotFlowRequest)(nil),      // 35: moe.v1.UpsertBotFlowRequest
+	(*DeleteBotFlowRequest)(nil),      // 36: moe.v1.DeleteBotFlowRequest
+	(*GetInferenceStatusRequest)(nil), // 37: moe.v1.GetInferenceStatusRequest
+	(*GetInferenceStatusReply)(nil),   // 38: moe.v1.GetInferenceStatusReply
+	(*MoeToolSchemaItem)(nil),         // 39: moe.v1.MoeToolSchemaItem
+	(*GetToolsSchemaRequest)(nil),     // 40: moe.v1.GetToolsSchemaRequest
+	(*GetToolsSchemaReply)(nil),       // 41: moe.v1.GetToolsSchemaReply
 }
 var file_api_moe_v1_moe_proto_depIdxs = []int32{
 	0,  // 0: moe.v1.ListRuntimesReply.items:type_name -> moe.v1.AgentRuntime
@@ -2721,33 +3705,48 @@ var file_api_moe_v1_moe_proto_depIdxs = []int32{
 	24, // 9: moe.v1.QueryToolStatsReply.by_tool:type_name -> moe.v1.ToolStatRow
 	25, // 10: moe.v1.QueryToolStatsReply.by_day:type_name -> moe.v1.ToolDayStat
 	28, // 11: moe.v1.ListToolCallsReply.items:type_name -> moe.v1.ToolCallRow
-	1,  // 12: moe.v1.MoeAdmin.ListRuntimes:input_type -> moe.v1.ListRuntimesRequest
-	3,  // 13: moe.v1.MoeAdmin.UpsertRuntime:input_type -> moe.v1.UpsertRuntimeRequest
-	7,  // 14: moe.v1.MoeAdmin.GetBrainPipeline:input_type -> moe.v1.GetBrainPipelineRequest
-	9,  // 15: moe.v1.MoeAdmin.RunAgentOnce:input_type -> moe.v1.RunAgentOnceRequest
-	15, // 16: moe.v1.MoeAdmin.GetBrainSnapshot:input_type -> moe.v1.GetBrainSnapshotRequest
-	17, // 17: moe.v1.MoeAdmin.UpdateBrainPolicy:input_type -> moe.v1.UpdateBrainPolicyRequest
-	18, // 18: moe.v1.MoeAdmin.DeleteBrainEpisode:input_type -> moe.v1.DeleteBrainEpisodeRequest
-	20, // 19: moe.v1.MoeAdmin.RefineBrainEpisode:input_type -> moe.v1.RefineBrainEpisodeRequest
-	22, // 20: moe.v1.MoeAdmin.CurateBrain:input_type -> moe.v1.CurateBrainRequest
-	26, // 21: moe.v1.MoeAdmin.QueryToolStats:input_type -> moe.v1.QueryToolStatsRequest
-	29, // 22: moe.v1.MoeAdmin.ListToolCalls:input_type -> moe.v1.ListToolCallsRequest
-	2,  // 23: moe.v1.MoeAdmin.ListRuntimes:output_type -> moe.v1.ListRuntimesReply
-	4,  // 24: moe.v1.MoeAdmin.UpsertRuntime:output_type -> moe.v1.UpsertRuntimeReply
-	8,  // 25: moe.v1.MoeAdmin.GetBrainPipeline:output_type -> moe.v1.GetBrainPipelineReply
-	10, // 26: moe.v1.MoeAdmin.RunAgentOnce:output_type -> moe.v1.RunAgentOnceReply
-	16, // 27: moe.v1.MoeAdmin.GetBrainSnapshot:output_type -> moe.v1.GetBrainSnapshotReply
-	16, // 28: moe.v1.MoeAdmin.UpdateBrainPolicy:output_type -> moe.v1.GetBrainSnapshotReply
-	19, // 29: moe.v1.MoeAdmin.DeleteBrainEpisode:output_type -> moe.v1.DeleteBrainEpisodeReply
-	21, // 30: moe.v1.MoeAdmin.RefineBrainEpisode:output_type -> moe.v1.RefineBrainEpisodeReply
-	23, // 31: moe.v1.MoeAdmin.CurateBrain:output_type -> moe.v1.CurateBrainReply
-	27, // 32: moe.v1.MoeAdmin.QueryToolStats:output_type -> moe.v1.QueryToolStatsReply
-	30, // 33: moe.v1.MoeAdmin.ListToolCalls:output_type -> moe.v1.ListToolCallsReply
-	23, // [23:34] is the sub-list for method output_type
-	12, // [12:23] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	31, // 12: moe.v1.BotFlowReply.nodes:type_name -> moe.v1.MoeFlowNode
+	32, // 13: moe.v1.BotFlowReply.edges:type_name -> moe.v1.MoeFlowEdge
+	31, // 14: moe.v1.UpsertBotFlowRequest.nodes:type_name -> moe.v1.MoeFlowNode
+	32, // 15: moe.v1.UpsertBotFlowRequest.edges:type_name -> moe.v1.MoeFlowEdge
+	39, // 16: moe.v1.GetToolsSchemaReply.tools:type_name -> moe.v1.MoeToolSchemaItem
+	1,  // 17: moe.v1.MoeAdmin.ListRuntimes:input_type -> moe.v1.ListRuntimesRequest
+	3,  // 18: moe.v1.MoeAdmin.UpsertRuntime:input_type -> moe.v1.UpsertRuntimeRequest
+	7,  // 19: moe.v1.MoeAdmin.GetBrainPipeline:input_type -> moe.v1.GetBrainPipelineRequest
+	9,  // 20: moe.v1.MoeAdmin.RunAgentOnce:input_type -> moe.v1.RunAgentOnceRequest
+	15, // 21: moe.v1.MoeAdmin.GetBrainSnapshot:input_type -> moe.v1.GetBrainSnapshotRequest
+	17, // 22: moe.v1.MoeAdmin.UpdateBrainPolicy:input_type -> moe.v1.UpdateBrainPolicyRequest
+	18, // 23: moe.v1.MoeAdmin.DeleteBrainEpisode:input_type -> moe.v1.DeleteBrainEpisodeRequest
+	20, // 24: moe.v1.MoeAdmin.RefineBrainEpisode:input_type -> moe.v1.RefineBrainEpisodeRequest
+	22, // 25: moe.v1.MoeAdmin.CurateBrain:input_type -> moe.v1.CurateBrainRequest
+	34, // 26: moe.v1.MoeAdmin.GetBotFlow:input_type -> moe.v1.GetBotFlowRequest
+	35, // 27: moe.v1.MoeAdmin.UpsertBotFlow:input_type -> moe.v1.UpsertBotFlowRequest
+	36, // 28: moe.v1.MoeAdmin.DeleteBotFlow:input_type -> moe.v1.DeleteBotFlowRequest
+	37, // 29: moe.v1.MoeAdmin.GetInferenceStatus:input_type -> moe.v1.GetInferenceStatusRequest
+	40, // 30: moe.v1.MoeAdmin.GetToolsSchema:input_type -> moe.v1.GetToolsSchemaRequest
+	26, // 31: moe.v1.MoeAdmin.QueryToolStats:input_type -> moe.v1.QueryToolStatsRequest
+	29, // 32: moe.v1.MoeAdmin.ListToolCalls:input_type -> moe.v1.ListToolCallsRequest
+	2,  // 33: moe.v1.MoeAdmin.ListRuntimes:output_type -> moe.v1.ListRuntimesReply
+	4,  // 34: moe.v1.MoeAdmin.UpsertRuntime:output_type -> moe.v1.UpsertRuntimeReply
+	8,  // 35: moe.v1.MoeAdmin.GetBrainPipeline:output_type -> moe.v1.GetBrainPipelineReply
+	10, // 36: moe.v1.MoeAdmin.RunAgentOnce:output_type -> moe.v1.RunAgentOnceReply
+	16, // 37: moe.v1.MoeAdmin.GetBrainSnapshot:output_type -> moe.v1.GetBrainSnapshotReply
+	16, // 38: moe.v1.MoeAdmin.UpdateBrainPolicy:output_type -> moe.v1.GetBrainSnapshotReply
+	19, // 39: moe.v1.MoeAdmin.DeleteBrainEpisode:output_type -> moe.v1.DeleteBrainEpisodeReply
+	21, // 40: moe.v1.MoeAdmin.RefineBrainEpisode:output_type -> moe.v1.RefineBrainEpisodeReply
+	23, // 41: moe.v1.MoeAdmin.CurateBrain:output_type -> moe.v1.CurateBrainReply
+	33, // 42: moe.v1.MoeAdmin.GetBotFlow:output_type -> moe.v1.BotFlowReply
+	33, // 43: moe.v1.MoeAdmin.UpsertBotFlow:output_type -> moe.v1.BotFlowReply
+	33, // 44: moe.v1.MoeAdmin.DeleteBotFlow:output_type -> moe.v1.BotFlowReply
+	38, // 45: moe.v1.MoeAdmin.GetInferenceStatus:output_type -> moe.v1.GetInferenceStatusReply
+	41, // 46: moe.v1.MoeAdmin.GetToolsSchema:output_type -> moe.v1.GetToolsSchemaReply
+	27, // 47: moe.v1.MoeAdmin.QueryToolStats:output_type -> moe.v1.QueryToolStatsReply
+	30, // 48: moe.v1.MoeAdmin.ListToolCalls:output_type -> moe.v1.ListToolCallsReply
+	33, // [33:49] is the sub-list for method output_type
+	17, // [17:33] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_api_moe_v1_moe_proto_init() }
@@ -2761,7 +3760,7 @@ func file_api_moe_v1_moe_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_moe_v1_moe_proto_rawDesc), len(file_api_moe_v1_moe_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

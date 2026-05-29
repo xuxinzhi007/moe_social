@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/user.dart';
 import 'services/api_service.dart';
+import 'services/api_response.dart';
 import 'services/behavior_analytics_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/presence_service.dart';
@@ -96,9 +97,12 @@ class AuthService {
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         final result = await ApiService.login(account, password);
-        final userData = result['data']['user'] as Map<String, dynamic>;
-        _currentUser = userData['id'] as String;
-        _token = result['data']['token'] as String;
+        final session = ApiResponse.authSession(result);
+        if (session == null) {
+          return AuthResult.failure('登录响应异常');
+        }
+        _currentUser = session.user['id'] as String;
+        _token = session.token;
 
         await _saveAuthData();
 
@@ -150,16 +154,12 @@ class AuthService {
   }) async {
     try {
       final result = await ApiService.wechatLogin(code, flow: flow);
-      final data = result['data'];
-      if (data is! Map<String, dynamic>) {
+      final session = ApiResponse.authSession(result);
+      if (session == null) {
         return AuthResult.failure('微信登录响应异常');
       }
-      final userData = data['user'];
-      if (userData is! Map<String, dynamic>) {
-        return AuthResult.failure('微信登录响应异常');
-      }
-      _currentUser = userData['id'] as String;
-      _token = data['token'] as String;
+      _currentUser = session.user['id'] as String;
+      _token = session.token;
 
       await _saveAuthData();
       final prefs = await SharedPreferences.getInstance();
@@ -180,16 +180,13 @@ class AuthService {
   static Future<AuthResult> loginWithFeishu(String code) async {
     try {
       final result = await ApiService.feishuLogin(code);
-      final data = result['data'];
-      if (data is! Map<String, dynamic>) {
+      final session = ApiResponse.authSession(result);
+      if (session == null) {
         return AuthResult.failure('飞书登录响应异常');
       }
-      final userData = data['user'];
-      if (userData is! Map<String, dynamic>) {
-        return AuthResult.failure('飞书登录响应异常');
-      }
-      _currentUser = userData['id'] as String;
-      _token = data['token'] as String;
+      _currentUser = session.user['id'] as String;
+      _token = session.token;
+      final userData = session.user;
 
       await _saveAuthData();
       final prefs = await SharedPreferences.getInstance();
@@ -220,21 +217,13 @@ class AuthService {
         normalizedEmail,
         password,
       );
-      final data = result['data'];
-      if (data is! Map<String, dynamic>) {
+      final session = ApiResponse.authSession(result);
+      if (session == null) {
         return AuthResult.failure('注册响应异常');
       }
-      final userData = data['user'];
-      if (userData is! Map<String, dynamic>) {
-        return AuthResult.failure('注册响应异常');
-      }
-      final token = data['token'];
-      if (token is! String || token.isEmpty) {
-        return AuthResult.failure('注册响应异常');
-      }
-
-      _currentUser = userData['id'] as String;
-      _token = token;
+      _currentUser = session.user['id'] as String;
+      _token = session.token;
+      final userData = session.user;
 
       await _saveAuthData();
       final prefs = await SharedPreferences.getInstance();

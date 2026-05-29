@@ -1769,12 +1769,20 @@ const file_api_community_v1_community_proto_rawDesc = "" +
 	"\auser_id\x18\x04 \x01(\tR\x06userId\"Y\n" +
 	"\x12GetGroupPostsReply\x12-\n" +
 	"\x05posts\x18\x01 \x03(\v2\x17.community.v1.GroupPostR\x05posts\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total2\xd7\x03\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total2\x80\v\n" +
 	"\tCommunity\x12h\n" +
 	"\tGetGroups\x12\x1e.community.v1.GetGroupsRequest\x1a\x1c.community.v1.GetGroupsReply\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/community/groups\x12p\n" +
 	"\bGetGroup\x12\x1d.community.v1.GetGroupRequest\x1a\x1b.community.v1.GetGroupReply\"(\x82\xd3\xe4\x93\x02\"\x12 /api/community/groups/{group_id}\x12q\n" +
 	"\vCreateGroup\x12 .community.v1.CreateGroupRequest\x1a\x1e.community.v1.CreateGroupReply\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/api/community/groups\x12{\n" +
-	"\tJoinGroup\x12\x1e.community.v1.JoinGroupRequest\x1a\x1c.community.v1.JoinGroupReply\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/api/community/groups/{group_id}/joinB&Z$backend/api/community/v1;communityv1b\x06proto3"
+	"\tJoinGroup\x12\x1e.community.v1.JoinGroupRequest\x1a\x1c.community.v1.JoinGroupReply\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/api/community/groups/{group_id}/join\x12|\n" +
+	"\vUpdateGroup\x12 .community.v1.UpdateGroupRequest\x1a\x1e.community.v1.UpdateGroupReply\"+\x82\xd3\xe4\x93\x02%:\x01*\x1a /api/community/groups/{group_id}\x12y\n" +
+	"\vDeleteGroup\x12 .community.v1.DeleteGroupRequest\x1a\x1e.community.v1.DeleteGroupReply\"(\x82\xd3\xe4\x93\x02\"* /api/community/groups/{group_id}\x12\x7f\n" +
+	"\n" +
+	"LeaveGroup\x12\x1f.community.v1.LeaveGroupRequest\x1a\x1d.community.v1.LeaveGroupReply\"1\x82\xd3\xe4\x93\x02+:\x01*\"&/api/community/groups/{group_id}/leave\x12\x8d\x01\n" +
+	"\x0fGetGroupMembers\x12$.community.v1.GetGroupMembersRequest\x1a\".community.v1.GetGroupMembersReply\"0\x82\xd3\xe4\x93\x02*\x12(/api/community/groups/{group_id}/members\x12\x83\x01\n" +
+	"\rGetUserGroups\x12\".community.v1.GetUserGroupsRequest\x1a .community.v1.GetUserGroupsReply\",\x82\xd3\xe4\x93\x02&\x12$/api/user/{user_id}/community/groups\x12\x8e\x01\n" +
+	"\x0fCreateGroupPost\x12$.community.v1.CreateGroupPostRequest\x1a\".community.v1.CreateGroupPostReply\"1\x82\xd3\xe4\x93\x02+:\x01*\"&/api/community/groups/{group_id}/posts\x12\x85\x01\n" +
+	"\rGetGroupPosts\x12\".community.v1.GetGroupPostsRequest\x1a .community.v1.GetGroupPostsReply\".\x82\xd3\xe4\x93\x02(\x12&/api/community/groups/{group_id}/postsB&Z$backend/api/community/v1;communityv1b\x06proto3"
 
 var (
 	file_api_community_v1_community_proto_rawDescOnce sync.Once
@@ -1831,12 +1839,26 @@ var file_api_community_v1_community_proto_depIdxs = []int32{
 	5,  // 10: community.v1.Community.GetGroup:input_type -> community.v1.GetGroupRequest
 	7,  // 11: community.v1.Community.CreateGroup:input_type -> community.v1.CreateGroupRequest
 	13, // 12: community.v1.Community.JoinGroup:input_type -> community.v1.JoinGroupRequest
-	4,  // 13: community.v1.Community.GetGroups:output_type -> community.v1.GetGroupsReply
-	6,  // 14: community.v1.Community.GetGroup:output_type -> community.v1.GetGroupReply
-	8,  // 15: community.v1.Community.CreateGroup:output_type -> community.v1.CreateGroupReply
-	14, // 16: community.v1.Community.JoinGroup:output_type -> community.v1.JoinGroupReply
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
+	9,  // 13: community.v1.Community.UpdateGroup:input_type -> community.v1.UpdateGroupRequest
+	11, // 14: community.v1.Community.DeleteGroup:input_type -> community.v1.DeleteGroupRequest
+	15, // 15: community.v1.Community.LeaveGroup:input_type -> community.v1.LeaveGroupRequest
+	17, // 16: community.v1.Community.GetGroupMembers:input_type -> community.v1.GetGroupMembersRequest
+	19, // 17: community.v1.Community.GetUserGroups:input_type -> community.v1.GetUserGroupsRequest
+	21, // 18: community.v1.Community.CreateGroupPost:input_type -> community.v1.CreateGroupPostRequest
+	23, // 19: community.v1.Community.GetGroupPosts:input_type -> community.v1.GetGroupPostsRequest
+	4,  // 20: community.v1.Community.GetGroups:output_type -> community.v1.GetGroupsReply
+	6,  // 21: community.v1.Community.GetGroup:output_type -> community.v1.GetGroupReply
+	8,  // 22: community.v1.Community.CreateGroup:output_type -> community.v1.CreateGroupReply
+	14, // 23: community.v1.Community.JoinGroup:output_type -> community.v1.JoinGroupReply
+	10, // 24: community.v1.Community.UpdateGroup:output_type -> community.v1.UpdateGroupReply
+	12, // 25: community.v1.Community.DeleteGroup:output_type -> community.v1.DeleteGroupReply
+	16, // 26: community.v1.Community.LeaveGroup:output_type -> community.v1.LeaveGroupReply
+	18, // 27: community.v1.Community.GetGroupMembers:output_type -> community.v1.GetGroupMembersReply
+	20, // 28: community.v1.Community.GetUserGroups:output_type -> community.v1.GetUserGroupsReply
+	22, // 29: community.v1.Community.CreateGroupPost:output_type -> community.v1.CreateGroupPostReply
+	24, // 30: community.v1.Community.GetGroupPosts:output_type -> community.v1.GetGroupPostsReply
+	20, // [20:31] is the sub-list for method output_type
+	9,  // [9:20] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name

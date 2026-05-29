@@ -1,3 +1,6 @@
+import '../../theme/moe_theme_extension.dart';
+import '../../widgets/moe_loading.dart';
+import '../../theme/moe_tokens.dart';
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
@@ -17,6 +20,8 @@ class VipCenterPage extends StatefulWidget {
 }
 
 class _VipCenterPageState extends State<VipCenterPage> {
+  MoeTheme get _moe => MoeTheme.of(context);
+
   Map<String, dynamic>? _vipStatus;
   VipRecord? _activeRecord;
   bool _isLoading = true;
@@ -108,7 +113,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
     final isLoggedIn = AuthService.currentUser != null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: _moe.pageBackground,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('会员中心', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
@@ -119,15 +124,15 @@ class _VipCenterPageState extends State<VipCenterPage> {
       body: !isLoggedIn
           ? _buildGuestView()
           : _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+          ? Center(child: MoeLoading(color: _moe.primary))
           : Stack(
               children: [
                 // 顶部背景 - 统一 Moe 风格渐变
                 Container(
                   height: 300,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                      colors: [_moe.primary, MoeTokens.secondary],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -140,7 +145,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 
                 RefreshIndicator(
                   onRefresh: _loadVipInfo,
-                  color: const Color(0xFF7F7FD5),
+                  color: _moe.primary,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 60),
@@ -250,9 +255,9 @@ class _VipCenterPageState extends State<VipCenterPage> {
       children: [
         Container(
           height: 300,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+          decoration: BoxDecoration(
+                    gradient: LinearGradient(
+              colors: [_moe.primary, MoeTokens.secondary],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -285,13 +290,11 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                      color: _moe.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.workspace_premium_rounded,
-                      size: 36,
-                      color: Color(0xFF7F7FD5),
+                    child: Icon(Icons.workspace_premium_rounded, size: 36,
+                      color: _moe.primary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -325,7 +328,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7F7FD5),
+                        backgroundColor: _moe.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -364,7 +367,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: (isVip ? const Color(0xFFFFB347) : const Color(0xFF7F7FD5))
+            color: (isVip ? const Color(0xFFFFB347) : _moe.primary)
                 .withValues(alpha: 0.22),
             blurRadius: 24,
             offset: const Offset(0, 10),
@@ -373,7 +376,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
         border: Border.all(
           color: isVip
               ? Colors.white.withValues(alpha: 0.5)
-              : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+              : _moe.primary.withValues(alpha: 0.1),
           width: 1.2,
         ),
       ),
@@ -385,7 +388,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isVip ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                  color: isVip ? Colors.white.withValues(alpha: 0.25) : _moe.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   boxShadow: isVip
                       ? [
@@ -399,7 +402,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 ),
                 child: Icon(
                   isVip ? Icons.workspace_premium_rounded : Icons.star_border_rounded,
-                  color: isVip ? Colors.white : const Color(0xFF7F7FD5),
+                  color: isVip ? Colors.white : _moe.primary,
                   size: 32,
                 ),
               ),
@@ -433,12 +436,12 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 decoration: BoxDecoration(
                   color: isVip
                       ? Colors.white.withValues(alpha: 0.2)
-                      : const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+                      : _moe.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isVip
                         ? Colors.white.withValues(alpha: 0.45)
-                        : const Color(0xFF7F7FD5).withValues(alpha: 0.18),
+                        : _moe.primary.withValues(alpha: 0.18),
                   ),
                 ),
                 child: Row(
@@ -446,7 +449,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   children: [
                     Icon(
                       isVip ? Icons.bolt_rounded : Icons.lock_outline_rounded,
-                      color: isVip ? Colors.white : const Color(0xFF7F7FD5),
+                      color: isVip ? Colors.white : _moe.primary,
                       size: 14,
                     ),
                     const SizedBox(width: 4),
@@ -491,10 +494,10 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5), // 统一使用主色
+                  backgroundColor: _moe.primary, // 统一使用主色
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shadowColor: const Color(0xFF7F7FD5).withValues(alpha: 0.4),
+                  shadowColor: _moe.primary.withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
                 child: const Text(
@@ -521,8 +524,8 @@ class _VipCenterPageState extends State<VipCenterPage> {
   Widget _buildVipPerkChip(bool isVip, IconData icon, String label) {
     final bgColor = isVip
         ? Colors.white.withValues(alpha: 0.2)
-        : const Color(0xFF7F7FD5).withValues(alpha: 0.08);
-    final iconColor = isVip ? Colors.white : const Color(0xFF7F7FD5);
+        : _moe.primary.withValues(alpha: 0.08);
+    final iconColor = isVip ? Colors.white : _moe.primary;
     final textColor = isVip ? Colors.white : const Color(0xFF5E5F86);
 
     return Container(
@@ -557,7 +560,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+            color: _moe.primary.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -570,7 +573,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: Color(0xFF7F7FD5)),
+                Icon(Icons.info_outline_rounded, color: _moe.primary),
                 const SizedBox(width: 8),
                 const Text(
                   '当前套餐详情',
@@ -641,8 +644,8 @@ class _VipCenterPageState extends State<VipCenterPage> {
           onTap: () => _toggleAutoRenew(!_autoRenew),
           trailing: Switch.adaptive(
             value: _autoRenew,
-            activeThumbColor: const Color(0xFF7F7FD5),
-            activeTrackColor: const Color(0xFF7F7FD5).withValues(alpha: 0.5),
+            activeThumbColor: _moe.primary,
+            activeTrackColor: _moe.primary.withValues(alpha: 0.5),
             onChanged: _toggleAutoRenew,
           ),
         ),
