@@ -97,7 +97,7 @@ cd backend && make gen
 ```text
 internal/biz/example/
 internal/service/example/app.go
-internal/server/grpc/example/server.go   # 可选，与 HTTP 共用
+internal/server/protohttp/example/server.go   # 可选，与 HTTP 共用
 ```
 
 ### 3.4 注册 HTTP（官方）
@@ -136,16 +136,12 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 
 ## 5. 参考实现（已迁入 proto HTTP · 2026-05-27）
 
-| 域 | Proto | gRPC 适配 | 说明 |
+| 域 | Proto | HTTP 适配 | 说明 |
 |----|-------|-----------|------|
-| Post / Gift / Notify | `api/post|gift|notify/v1` | `grpc/post` 等 | 社交基础 |
-| User | `api/user/v1/user_messages.proto` | `grpc/user` | 登录/社交/钱包/OAuth（回调 2 条 compat） |
-| Vip | `api/vip/v1/vip_messages.proto` | `grpc/vip` · `vipplans` | 用户 VIP + 管理端套餐 |
-| Admin | `api/admin/v1/admin_messages.proto` | `grpc/adminapp` · `admininsights` | CRUD + 大盘 + legacy 运维 |
-| Llm / 记忆 | `api/llm/v1/llm_messages.proto` | `grpc/llm` | chat turn + 用户记忆 8 路由 |
-| MoeAdmin | `api/moe/v1/moe.proto` | `grpc/server.go` | 工具/大脑/推理状态 |
-| Content | `api/content/v1/content.proto` | `grpc/content` | 内容生成 |
-| Chat | `api/chat/v1/private_message.proto` | `grpc/chat` | 私信 + 推送通知 |
+| Post / Gift / Notify | `api/post|gift|notify/v1` | `protohttp/post` 等 | 社交基础 |
+| User | `api/user/v1/user_messages.proto` | `protohttp/user` | 登录/社交/钱包 |
+| Admin | `api/admin/v1/admin_messages.proto` | `protohttp/adminapp` | 管理台 |
+| MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/server.go` | 工具/大脑 |
 
 **仍走 httplegacy（45 条，P2）**：`platform`（17）· `community`（7）· `chat` 余量（6）· `ai`（4）· 图片静态（4）· OAuth 回调（2）· `llm_read`（2）· `checkin`（2）· SSE（1）。详见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
 

@@ -1,7 +1,7 @@
 package server
 
 import (
-	grpcserver "backend/internal/server/grpc"
+	moeadminhttp "backend/internal/server/protohttp"
 )
 
 // ProtoHTTPDepsFromPilot 从 PilotDeps 提取 proto HTTP 注册依赖。
@@ -37,9 +37,9 @@ func ProtoHTTPDepsFromPilot(d PilotDeps) ProtoHTTPDeps {
 	return out
 }
 
-func moeGRPCOptions(d ProtoHTTPDeps) []grpcserver.Option {
+func moeAdminHTTPOptions(d ProtoHTTPDeps) []moeadminhttp.Option {
 	if d.SvcCtx == nil {
 		return nil
 	}
-	return []grpcserver.Option{grpcserver.WithInferenceConfig(d.SvcCtx.Config.LLMInference)}
+	return []moeadminhttp.Option{moeadminhttp.WithInferenceConfig(d.SvcCtx.Config.LLMInference)}
 }

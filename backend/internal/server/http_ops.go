@@ -6,7 +6,7 @@ import (
 
 	moepb "backend/api/moe/v1"
 	"backend/internal/platform/kratosprogress"
-	grpcserver "backend/internal/server/grpc"
+	moeadminhttp "backend/internal/server/protohttp"
 	moeadmin "backend/internal/service/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -32,7 +32,7 @@ func migrationHandler(ctx khttp.Context) error {
 }
 
 func listRuntimesHandler(admin *moeadmin.AdminService) func(khttp.Context) error {
-	srv := grpcserver.New(admin)
+	srv := moeadminhttp.New(admin)
 	return func(ctx khttp.Context) error {
 		reply, err := srv.ListRuntimes(ctx, &moepb.ListRuntimesRequest{})
 		if err != nil {

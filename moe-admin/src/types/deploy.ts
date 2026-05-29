@@ -46,13 +46,10 @@ export interface RemoteCheck {
   backend_dir_exists?: boolean
   compose_file?: string
   compose_file_exists?: boolean
-  compose_rpc_env_ok?: boolean
-  config_rpc_endpoints_ok?: boolean
-  api_container_rpc_env_ok?: string
-  rpc_config_ok?: boolean
+  binary_exists?: boolean
+  container_running?: string
   suggested_backend_dir?: string
   compose_candidates?: string[]
-  legacy_super_docker_yaml?: boolean
   raw_output?: string
 }
 
