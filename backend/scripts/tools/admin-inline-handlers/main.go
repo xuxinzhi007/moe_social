@@ -1,3 +1,5 @@
+//go:build ignore
+
 // admin-inline-handlers inlines api/internal/logic/admin into handler/admin.
 package main
 

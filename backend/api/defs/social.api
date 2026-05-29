@@ -1,4 +1,7 @@
 // FS-8: social 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · …
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
 syntax = "v1"
 
 import "common.api"
@@ -8,30 +11,39 @@ import "common.api"
 )
 service Super {
 	@handler getPosts
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/posts)
 	get /api/posts (GetPostsReq) returns (GetPostsResp)
 
 	@handler searchPosts
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/posts/search)
 	get /api/posts/search (SearchPostsReq) returns (SearchPostsResp)
 
 	@handler getPost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/posts/:post_id)
 	get /api/posts/:post_id (GetPostReq) returns (GetPostResp)
 
 	@handler createPost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/posts)
 	post /api/posts (CreatePostReq) returns (CreatePostResp)
 
 	@handler updatePost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (PUT /api/posts/:post_id)
 	put /api/posts/:post_id (UpdatePostReq) returns (UpdatePostResp)
 
 	@handler deletePost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (DELETE /api/posts/:post_id)
 	delete /api/posts/:post_id (DeletePostReq) returns (DeletePostResp)
 
 	@handler reportPost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/posts/:post_id/report)
 	post /api/posts/:post_id/report (ReportPostReq) returns (ReportPostResp)
 
 	@handler likePost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/posts/:post_id/like)
 	post /api/posts/:post_id/like (LikePostReq) returns (LikePostResp)
 
 	@handler getPostComments
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/posts/:post_id/comments)
 	get /api/posts/:post_id/comments (GetPostCommentsReq) returns (GetPostCommentsResp)
 }
 
@@ -41,9 +53,11 @@ service Super {
 )
 service Super {
 	@handler createComment
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/comments)
 	post /api/comments (CreateCommentReq) returns (CreateCommentResp)
 
 	@handler likeComment
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/comments/:comment_id/like)
 	post /api/comments/:comment_id/like (LikeCommentReq) returns (LikeCommentResp)
 }
 
@@ -53,10 +67,12 @@ service Super {
 service Super {
 	// 生成内容
 	@handler generateContent
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/content/generate)
 	post /api/content/generate (ContentGenerationReq) returns (ContentGenerationResp)
 
 	// 获取用户生成的内容列表
 	@handler getContentList
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/user/:user_id/content)
 	get /api/user/:user_id/content (ContentListReq) returns (ContentListResp)
 }
 
@@ -67,26 +83,32 @@ service Super {
 service Super {
 	// 获取礼物列表
 	@handler getGifts
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/gifts)
 	get /api/gifts (GetGiftsReq) returns (GetGiftsResp)
 
 	// 获取礼物详情
 	@handler getGift
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/gifts/:gift_id)
 	get /api/gifts/:gift_id (GetGiftReq) returns (GetGiftResp)
 
 	// 发送礼物
 	@handler sendGift
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/user/:user_id/gifts/send)
 	post /api/user/:user_id/gifts/send (SendGiftReq) returns (SendGiftResp)
 
 	// 获取用户礼物记录
 	@handler getGiftRecords
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/user/:user_id/gifts/records)
 	get /api/user/:user_id/gifts/records (GetGiftRecordsReq) returns (GetGiftRecordsResp)
 
 	// 礼物购买订单（余额购买进背包）
 	@handler getGiftPurchaseOrders
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/user/:user_id/gifts/purchase-orders)
 	get /api/user/:user_id/gifts/purchase-orders (GetGiftPurchaseOrdersReq) returns (GetGiftPurchaseOrdersResp)
 
 	// 购买礼物（进入背包）
 	@handler purchaseGift
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/user/:user_id/gifts/purchase)
 	post /api/user/:user_id/gifts/purchase (PurchaseGiftReq) returns (PurchaseGiftResp)
 }
 
@@ -96,45 +118,56 @@ service Super {
 service Super {
 	// 获取群组列表
 	@handler getGroups
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/community/groups)
 	get /api/community/groups (GetGroupsReq) returns (GetGroupsResp)
 
 	// 获取群详情
 	@handler getGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/community/groups/:group_id)
 	get /api/community/groups/:group_id (GetGroupReq) returns (GetGroupResp)
 
 	// 创建群组
 	@handler createGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/community/groups)
 	post /api/community/groups (CreateGroupReq) returns (CreateGroupResp)
 
 	// 更新群组信息
 	@handler updateGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (PUT /api/community/groups/:group_id)
 	put /api/community/groups/:group_id (UpdateGroupReq) returns (UpdateGroupResp)
 
 	// 删除群组
 	@handler deleteGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (DELETE /api/community/groups/:group_id)
 	delete /api/community/groups/:group_id (DeleteGroupReq) returns (BaseResp)
 
 	// 加入群组
 	@handler joinGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/community/groups/:group_id/join)
 	post /api/community/groups/:group_id/join (JoinGroupReq) returns (BaseResp)
 
 	// 退出群组
 	@handler leaveGroup
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/community/groups/:group_id/leave)
 	post /api/community/groups/:group_id/leave (LeaveGroupReq) returns (BaseResp)
 
 	// 获取群组成员列表
 	@handler getGroupMembers
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/community/groups/:group_id/members)
 	get /api/community/groups/:group_id/members (GetGroupMembersReq) returns (GetGroupMembersResp)
 
 	// 获取用户加入的群组
 	@handler getUserGroups
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/user/:user_id/community/groups)
 	get /api/user/:user_id/community/groups (GetUserGroupsReq) returns (GetUserGroupsResp)
 
 	// 发布群组帖子
 	@handler createGroupPost
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (POST /api/community/groups/:group_id/posts)
 	post /api/community/groups/:group_id/posts (CreateGroupPostReq) returns (CreateGroupPostResp)
 
 	// 获取群组帖子列表
 	@handler getGroupPosts
+	// P6 migrated → api/post/v1 · api/comment/v1 · api/gift/v1 · api/community/v1 · … (GET /api/community/groups/:group_id/posts)
 	get /api/community/groups/:group_id/posts (GetGroupPostsReq) returns (GetGroupPostsResp)
 }

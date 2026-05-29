@@ -3,13 +3,13 @@ package vipbiz
 import (
 	"strconv"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/model"
-	"backend/rpc/pb/moe"
 )
 
-// PlanModelToProto 将 VIP 套餐模型转为 super 消息。
-func PlanModelToProto(plan model.VipPlan) *moe.VipPlan {
-	return &moe.VipPlan{
+// PlanModelToAdminProto 将 VIP 套餐模型转为 admin 域消息。
+func PlanModelToAdminProto(plan model.VipPlan) *adminv1.VipPlan {
+	return &adminv1.VipPlan{
 		Id:           strconv.FormatUint(uint64(plan.ID), 10),
 		Name:         plan.Name,
 		Description:  plan.Features,

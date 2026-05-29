@@ -1,4 +1,4 @@
-// 从 api/internal/handler/routes.go 生成 api/moehttp 路由注册。
+// 从 scripts/gen/http-routes/fixtures/routes.go 生成 api/moehttp 路由注册。
 package main
 
 import (
@@ -244,7 +244,7 @@ var skipExactPaths = map[string]struct{}{
 
 func main() {
 	root := backendRoot()
-	routesPath := filepath.Join(root, "api/internal/handler/routes.go")
+	routesPath := filepath.Join(root, "scripts/gen/http-routes/fixtures/routes.go")
 	nativeOut := filepath.Join(root, "api/moehttp/routes_native_gen.go")
 	bridgeOut := filepath.Join(root, "api/moehttp/routes_bridge_gen.go")
 

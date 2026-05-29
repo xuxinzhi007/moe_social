@@ -3,12 +3,12 @@ package vipadmin
 import (
 	"context"
 
+	adminv1 "backend/api/admin/v1"
 	vipbiz "backend/internal/biz/vip"
-	"backend/rpc/pb/moe"
 )
 
 // AdminListVipPlans RPC/管理端列表。
-func (s *AdminService) AdminListVipPlans(ctx context.Context, in *moe.AdminListVipPlansReq) (*moe.AdminListVipPlansResp, error) {
+func (s *AdminService) AdminListVipPlans(ctx context.Context, in *adminv1.AdminListVipPlansReq) (*adminv1.AdminListVipPlansResp, error) {
 	rows, total, err := s.ListPlans(ctx, vipbiz.ListPlansFilter{
 		Page:           int(in.GetPage()),
 		PageSize:       int(in.GetPageSize()),
@@ -18,15 +18,15 @@ func (s *AdminService) AdminListVipPlans(ctx context.Context, in *moe.AdminListV
 	if err != nil {
 		return nil, err
 	}
-	plans := make([]*moe.VipPlan, len(rows))
+	plans := make([]*adminv1.VipPlan, len(rows))
 	for i := range rows {
-		plans[i] = vipbiz.PlanModelToProto(rows[i])
+		plans[i] = vipbiz.PlanModelToAdminProto(rows[i])
 	}
-	return &moe.AdminListVipPlansResp{Plans: plans, Total: int32(total)}, nil
+	return &adminv1.AdminListVipPlansResp{Plans: plans, Total: int32(total)}, nil
 }
 
 // AdminGetVipPlan 单条套餐。
-func (s *AdminService) AdminGetVipPlan(ctx context.Context, in *moe.AdminGetVipPlanReq) (*moe.AdminGetVipPlanResp, error) {
+func (s *AdminService) AdminGetVipPlan(ctx context.Context, in *adminv1.AdminGetVipPlanReq) (*adminv1.AdminGetVipPlanResp, error) {
 	id, err := vipbiz.ParsePlanID(in.GetPlanId())
 	if err != nil {
 		return nil, err
@@ -35,11 +35,11 @@ func (s *AdminService) AdminGetVipPlan(ctx context.Context, in *moe.AdminGetVipP
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminGetVipPlanResp{Plan: vipbiz.PlanModelToProto(plan)}, nil
+	return &adminv1.AdminGetVipPlanResp{Plan: vipbiz.PlanModelToAdminProto(plan)}, nil
 }
 
 // AdminUpdateVipPlan 更新套餐。
-func (s *AdminService) AdminUpdateVipPlan(ctx context.Context, in *moe.AdminUpdateVipPlanReq) (*moe.AdminUpdateVipPlanResp, error) {
+func (s *AdminService) AdminUpdateVipPlan(ctx context.Context, in *adminv1.AdminUpdateVipPlanReq) (*adminv1.AdminUpdateVipPlanResp, error) {
 	planID, err := vipbiz.ParsePlanID(in.GetPlanId())
 	if err != nil {
 		return nil, err
@@ -57,11 +57,11 @@ func (s *AdminService) AdminUpdateVipPlan(ctx context.Context, in *moe.AdminUpda
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminUpdateVipPlanResp{Plan: vipbiz.PlanModelToProto(plan)}, nil
+	return &adminv1.AdminUpdateVipPlanResp{Plan: vipbiz.PlanModelToAdminProto(plan)}, nil
 }
 
 // AdminDeleteVipPlan 删除套餐。
-func (s *AdminService) AdminDeleteVipPlan(ctx context.Context, in *moe.AdminDeleteVipPlanReq) (*moe.AdminDeleteVipPlanResp, error) {
+func (s *AdminService) AdminDeleteVipPlan(ctx context.Context, in *adminv1.AdminDeleteVipPlanReq) (*adminv1.AdminDeleteVipPlanResp, error) {
 	planID, err := vipbiz.ParsePlanID(in.GetPlanId())
 	if err != nil {
 		return nil, err
@@ -69,15 +69,15 @@ func (s *AdminService) AdminDeleteVipPlan(ctx context.Context, in *moe.AdminDele
 	if err := s.DeletePlan(ctx, planID); err != nil {
 		return nil, err
 	}
-	return &moe.AdminDeleteVipPlanResp{}, nil
+	return &adminv1.AdminDeleteVipPlanResp{}, nil
 }
 
 // AdminBootstrapVipPlans 初始化默认套餐。
-func (s *AdminService) AdminBootstrapVipPlans(ctx context.Context, in *moe.AdminBootstrapVipPlansReq) (*moe.AdminBootstrapVipPlansResp, error) {
+func (s *AdminService) AdminBootstrapVipPlans(ctx context.Context, in *adminv1.AdminBootstrapVipPlansReq) (*adminv1.AdminBootstrapVipPlansResp, error) {
 	_ = in
 	created, err := s.BootstrapPlans(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &moe.AdminBootstrapVipPlansResp{Created: int32(created)}, nil
+	return &adminv1.AdminBootstrapVipPlansResp{Created: int32(created)}, nil
 }

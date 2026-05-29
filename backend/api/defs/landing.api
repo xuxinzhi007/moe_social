@@ -1,4 +1,7 @@
 // FS-8: landing 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/landing/v1
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
 syntax = "v1"
 
 import "common.api"
@@ -7,6 +10,7 @@ import "common.api"
 )
 service Super {
 	@handler submitLandingFeedback
+	// P6 migrated → api/landing/v1 (POST /api/landing/feedback)
 	post /api/landing/feedback (SubmitLandingFeedbackReq) returns (SubmitLandingFeedbackResp)
 }
 
@@ -15,5 +19,6 @@ service Super {
 )
 service Super {
 	@handler listLandingFeedback
+	// P6 migrated → api/landing/v1 (GET /api/ops/landing/feedback)
 	get /api/ops/landing/feedback (ListLandingFeedbackReq) returns (ListLandingFeedbackResp)
 }

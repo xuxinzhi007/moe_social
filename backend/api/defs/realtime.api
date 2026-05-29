@@ -1,4 +1,7 @@
 // FS-8: realtime 域路由（goctl group → api/internal/logic/<group>）
+// P6: Production HTTP SSOT → api/chat/v1
+// Hybrid-only: @handler routes below feed make gen-api; runtime uses api/moehttp/*_compat.go.
+// Do not add new routes here — use api/<domain>/v1/*.proto per new-api-kratos.md.
 syntax = "v1"
 
 import "common.api"
@@ -8,18 +11,23 @@ import "common.api"
 )
 service Super {
 	@handler getRtcToken
+	// P6 migrated → api/chat/v1 (GET /api/voice/token)
 	get /api/voice/token (GetRtcTokenReq) returns (GetRtcTokenResp)
 
 	@handler voiceCall
+	// P6 migrated → api/chat/v1 (POST /api/voice/call)
 	post /api/voice/call (VoiceCallReq) returns (VoiceCallResp)
 
 	@handler voiceAnswer
+	// P6 migrated → api/chat/v1 (POST /api/voice/answer)
 	post /api/voice/answer (VoiceAnswerReq) returns (VoiceAnswerResp)
 
 	@handler voiceReject
+	// P6 migrated → api/chat/v1 (POST /api/voice/reject)
 	post /api/voice/reject (VoiceRejectReq) returns (BaseResp)
 
 	@handler voiceCancel
+	// P6 migrated → api/chat/v1 (POST /api/voice/cancel)
 	post /api/voice/cancel (VoiceCancelReq) returns (BaseResp)
 }
 
@@ -29,10 +37,12 @@ service Super {
 service Super {
 	// 查询单个用户在线状态
 	@handler chatOnline
+	// P6 migrated → api/chat/v1 (GET /api/chat/online)
 	get /api/chat/online (ChatOnlineReq) returns (ChatOnlineResp)
 
 	// 批量查询用户在线状态
 	@handler chatOnlineBatch
+	// P6 migrated → api/chat/v1 (GET /api/chat/online/batch)
 	get /api/chat/online/batch (ChatOnlineBatchReq) returns (ChatOnlineBatchResp)
 }
 

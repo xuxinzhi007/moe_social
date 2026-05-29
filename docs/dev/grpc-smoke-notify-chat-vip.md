@@ -1,6 +1,6 @@
 # gRPC 冒烟 — notify / chat / vip
 
-> **最后更新：2026-05-28**  
+> **最后更新：2026-05-29**  
 > **端口 SSOT**：`config/config.yaml` → `runtime.grpc_listen`（默认 `0.0.0.0:8080`）
 
 ---
@@ -12,6 +12,15 @@
 3. 在 **backend 仓库根**（`backend/`）执行下列命令，以便 `-import-path api` 解析 proto。
 
 **反射**：gRPC reflection 仅在 RPC `Mode=dev|test` 时注册（见 `rpc/runserver/kratos.go`）。生产/默认 pro 模式请用 **-proto** 路径（下文脚本默认走 proto）。
+
+---
+
+## Go 测试（推荐 CI / 本地）
+
+```bash
+cd backend && make moe-social   # 另开终端
+GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/... -count=1 -v
+```
 
 ---
 
@@ -27,7 +36,7 @@
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `GRPC_HOST` | `127.0.0.1:8080` | gRPC 地址 |
-| `SMOKE_USER_ID` | `smoke-user-1` | 请求里的 `user_id` |
+| `SMOKE_USER_ID` | `1` | 请求里的 `user_id` / `viewer_id`（须为数字用户 ID） |
 
 ---
 
@@ -59,7 +68,7 @@ grpcurl -plaintext \
 ```bash
 grpcurl -plaintext \
   -import-path api -proto api/chat/v1/private_message.proto \
-  -d '{"user_id":"smoke-user-1","limit":10,"offset":0}' \
+  -d '{"viewer_id":"1","limit":10,"offset":0}' \
   127.0.0.1:8080 chat.v1.PrivateMessageService/ListPrivateConversations
 ```
 

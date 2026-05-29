@@ -1,6 +1,6 @@
 # P5 — 分体部署（api + rpc 容器）
 
-> **最后更新：2026-05-28**  
+> **最后更新：2026-05-29**  
 > **前置**：[kratos-p5-super-retirement.md](./kratos-p5-super-retirement.md)（Super 服务已从 `moe.proto` 移除）
 
 ---
@@ -72,7 +72,7 @@ flowchart LR
 2. **API 镜像/二进制**：`go build ./api`；gateway 无 `SuperClient` import（P5-C）。
 3. **配置**：分体必须 `single_process: false` + `super_grpc_retired: false`。
 4. **连通**：API 容器 `MOE_SUPER_RPC_ENDPOINT` 或 `api.super_rpc_endpoints` 指向 RPC `:8080`。
-5. **冒烟**：域 gRPC 见 [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md)（notify / chat / vip）。
+5. **冒烟**：`make split-deploy-smoke` 或 [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md)
 6. **观测**：`curl -s http://<api>:8888/migration | jq '.breakdown.p5_super_runtime_pct'`（单进程应为 100；分体该项语义见 status 板）。
 
 ---
@@ -91,6 +91,6 @@ flowchart LR
 
 ```bash
 cd backend && make build          # api + rpc + moe-social 二进制
-cd backend && go build ./api ./rpc ./cmd/moe-social
-# 分体本地（两终端）示例：先 rpc 再 api，config 按上表改 single_process/super_grpc_retired
+cd backend && make split-deploy-smoke
+GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/... -count=1
 ```

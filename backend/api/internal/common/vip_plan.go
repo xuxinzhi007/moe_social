@@ -3,6 +3,7 @@ package common
 import (
 	"strconv"
 
+	adminv1 "backend/api/admin/v1"
 	"backend/api/internal/types"
 	"backend/model"
 	"backend/rpc/pb/moe"
@@ -25,13 +26,41 @@ func RpcVipPlanToTypes(p *moe.VipPlan) types.VipPlan {
 	if p == nil {
 		return types.VipPlan{}
 	}
+	return vipPlanFields(
+		p.GetId(),
+		p.GetName(),
+		p.GetDescription(),
+		float64(p.GetPrice()),
+		int(p.GetDurationDays()),
+		p.GetCreatedAt(),
+		p.GetUpdatedAt(),
+	)
+}
+
+// AdminVipPlanToTypes 将 admin 域 VIP 套餐消息转为 API types。
+func AdminVipPlanToTypes(p *adminv1.VipPlan) types.VipPlan {
+	if p == nil {
+		return types.VipPlan{}
+	}
+	return vipPlanFields(
+		p.GetId(),
+		p.GetName(),
+		p.GetDescription(),
+		float64(p.GetPrice()),
+		int(p.GetDurationDays()),
+		p.GetCreatedAt(),
+		p.GetUpdatedAt(),
+	)
+}
+
+func vipPlanFields(id, name, description string, price float64, durationDays int, createdAt, updatedAt string) types.VipPlan {
 	return types.VipPlan{
-		Id:           p.GetId(),
-		Name:         p.GetName(),
-		Description:  p.GetDescription(),
-		Price:        float64(p.GetPrice()),
-		DurationDays: int(p.GetDurationDays()),
-		CreatedAt:    p.GetCreatedAt(),
-		UpdatedAt:    p.GetUpdatedAt(),
+		Id:           id,
+		Name:         name,
+		Description:  description,
+		Price:        price,
+		DurationDays: durationDays,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
 	}
 }
