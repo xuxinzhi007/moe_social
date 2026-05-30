@@ -136,12 +136,12 @@ func brainToProto(s *brain.Snapshot) *moev1pb.GetBrainSnapshotReply {
 
 func graphToProto(v brain.GraphView) *moev1pb.GetBrainGraphReply {
 	out := &moev1pb.GetBrainGraphReply{
-		AgentKey:      v.AgentKey,
-		EpisodeCount:  int32(v.EpisodeCount),
-		MemoryCount:   int32(v.MemoryCount),
-		TagCount:      int32(v.TagCount),
-		Nodes:         make([]*moev1pb.BrainGraphNode, 0, len(v.Nodes)),
-		Edges:         make([]*moev1pb.BrainGraphEdge, 0, len(v.Edges)),
+		AgentKey:     v.AgentKey,
+		EpisodeCount: int32(v.EpisodeCount),
+		MemoryCount:  int32(v.MemoryCount),
+		TagCount:     int32(v.TagCount),
+		Nodes:        make([]*moev1pb.BrainGraphNode, 0, len(v.Nodes)),
+		Edges:        make([]*moev1pb.BrainGraphEdge, 0, len(v.Edges)),
 	}
 	for _, n := range v.Nodes {
 		out.Nodes = append(out.Nodes, &moev1pb.BrainGraphNode{
@@ -167,15 +167,15 @@ func graphToProto(v brain.GraphView) *moev1pb.GetBrainGraphReply {
 
 func rpgToProto(v brain.RpgView) *moev1pb.GetBrainRpgReply {
 	out := &moev1pb.GetBrainRpgReply{
-		AgentKey:       v.AgentKey,
-		Level:          int32(v.Level),
-		Xp:             int32(v.XP),
-		XpToNext:       int32(v.XPToNext),
-		StabilityScore: int32(v.StabilityScore),
-		LastDreamAt:    v.LastDreamAt,
-		DreamEnabled:   v.DreamEnabled,
-		DreamCron:      v.DreamCron,
-		NextDreamAt:    v.NextDreamAt,
+		AgentKey:              v.AgentKey,
+		Level:                 int32(v.Level),
+		Xp:                    int32(v.XP),
+		XpToNext:              int32(v.XPToNext),
+		StabilityScore:        int32(v.StabilityScore),
+		LastDreamAt:           v.LastDreamAt,
+		DreamEnabled:          v.DreamEnabled,
+		DreamCron:             v.DreamCron,
+		NextDreamAt:           v.NextDreamAt,
 		AutonomousMindEnabled: v.AutonomousMindEnabled,
 		PendingDeleteCount:    int32(v.PendingDeleteCount),
 		Stats: &moev1pb.BrainRpgStats{
@@ -236,15 +236,15 @@ func dreamToProto(agentKey string, r brain.DreamResult) *moev1pb.RunBrainDreamRe
 
 func compressToProto(agentKey string, r brain.CompressResult) *moev1pb.CompressBrainMemoriesReply {
 	return &moev1pb.CompressBrainMemoriesReply{
-		AgentKey:          agentKey,
-		MemoryKey:         r.MemoryKey,
-		Summary:           r.Summary,
-		SourceCount:       int32(r.SourceCount),
-		XpGained:          int32(r.XPGained),
-		SweptCount:        int32(r.SweptCount),
-		MergedClusters:    int32(r.MergedClusters),
-		MarkedCount:       int32(r.MarkedCount),
-		PendingRemaining:  int32(r.PendingRemaining),
+		AgentKey:         agentKey,
+		MemoryKey:        r.MemoryKey,
+		Summary:          r.Summary,
+		SourceCount:      int32(r.SourceCount),
+		XpGained:         int32(r.XPGained),
+		SweptCount:       int32(r.SweptCount),
+		MergedClusters:   int32(r.MergedClusters),
+		MarkedCount:      int32(r.MarkedCount),
+		PendingRemaining: int32(r.PendingRemaining),
 	}
 }
 
@@ -259,19 +259,19 @@ func tidyToProto(agentKey string, r brain.TidyResult) *moev1pb.TidyBrainFragment
 
 func presenceToProto(v brain.PresenceView) *moev1pb.GetBrainPresenceReply {
 	return &moev1pb.GetBrainPresenceReply{
-		AgentKey:        v.AgentKey,
-		DisplayName:     v.DisplayName,
-		Activity:        v.Activity,
-		Mood:            v.Mood,
-		Thought:         v.Thought,
-		PipelineStep:    v.PipelineStep,
-		PipelineRunning: v.PipelineRunning,
-		DreamEnabled:    v.DreamEnabled,
-		DreamCron:       v.DreamCron,
-		NextDreamAt:     v.NextDreamAt,
-		Dreaming:        v.Dreaming,
+		AgentKey:              v.AgentKey,
+		DisplayName:           v.DisplayName,
+		Activity:              v.Activity,
+		Mood:                  v.Mood,
+		Thought:               v.Thought,
+		PipelineStep:          v.PipelineStep,
+		PipelineRunning:       v.PipelineRunning,
+		DreamEnabled:          v.DreamEnabled,
+		DreamCron:             v.DreamCron,
+		NextDreamAt:           v.NextDreamAt,
+		Dreaming:              v.Dreaming,
 		AutonomousMindEnabled: v.AutonomousMindEnabled,
-		ThoughtSource:   v.ThoughtSource,
+		ThoughtSource:         v.ThoughtSource,
 	}
 }
 
