@@ -1,6 +1,6 @@
 # 🤖 AutoGLM 智能助手系统
 
-> 文档索引：[docs/autoglm/README.md](./README.md) · 历史优化文档见 [docs/archive/autoglm/](../archive/autoglm/)
+> 文档索引：[docs/autoglm/README.md](./README.md)
 
 ## 📋 系统概述
 

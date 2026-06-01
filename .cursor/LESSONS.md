@@ -34,4 +34,4 @@
 ## 文档
 
 - 长说明进 `docs/dev/` 或 `docs/product/`，不要膨胀 `AGENTS.md` 或 `.cursor/rules/*.mdc`。
-- 过时内容迁入 `docs/archive/`，原路径留短 stub。
+- 过时文档直接删除或合并进 SSOT，不保留 archive 跳转 stub。

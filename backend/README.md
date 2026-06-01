@@ -21,4 +21,4 @@ make check               # 编译 + 单测
 
 契约 SSOT：`api/<domain>/v1/*.proto` + `google.api.http` → `make gen`。
 
-历史 go-zero / api+rpc 双进程说明见 [docs/archive/backend/README.md](../docs/archive/backend/README.md)。
+历史 go-zero / api+rpc 双进程已退役；见 [docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md) 与 [docs/dev/kratos-legacy-api-migration.md](../docs/dev/kratos-legacy-api-migration.md)。

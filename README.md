@@ -132,7 +132,7 @@ moe_social/
 | 记忆系统 SSOT | [docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md) |
 | 部署平台 / Agent | [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md) |
 | Code Review | [code_review.md](code_review.md) |
-| 归档文档 | [docs/archive/](docs/archive/) |
+| Kratos 迁移状态 | [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) |
 
 ## 运维部署台（Deploy Agent）
 

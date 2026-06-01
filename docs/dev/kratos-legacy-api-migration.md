@@ -1,9 +1,8 @@
 # 存量 HTTP 接口迁移评估
 
-> **状态快照更新：2026-05-27**（P3 + P5 + P6 完成；**D2 ~83%**；P0/P1 审计 100%）  
+> **状态快照更新：2026-05-27**  
 > **活跃路由数以** [kratos-migration-status.md §D2](./kratos-migration-status.md) **为准**（proto **227** · compat **45**）。  
 > 下文「263」等为 **P3 历史基线**，勿用于当前进度汇报。  
-> **P6 契约 SSOT**：[kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md)  
 > **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  
 > SSOT 架构：[kratos-migration.md](./kratos-migration.md) · 新接口：[new-api-kratos.md](./new-api-kratos.md) · P5-D：[kratos-p5d-zero-gozero.md](./kratos-p5d-zero-gozero.md)  
 > §0 与状态板数字不一致时，**以 `route_stats.go` + `make check` 为准**，并同步两处文档。
@@ -155,7 +154,7 @@ backend/internal/server/httplegacy/routes_native_gen.go  # nativeDomainRouteCoun
 | **已退役** | **0** | `api/internal/logic` 无业务文件 |
 | **Hybrid 回滚** | 可选 | `api/internal/handler/**` 仅 `//go:build hybrid` |
 
-历史分档 A/B/C（logic 薄转）见 [archive/dev/kratos/](../archive/dev/kratos/) 冲刺文档。
+历史分档 A/B/C（logic 薄转）已退役；当前 compat 余量见 [kratos-architecture-audit.md](./kratos-architecture-audit.md) §2。
 
 ---
 
