@@ -10,7 +10,7 @@
 | [openapi-apifox.md](./openapi-apifox.md) | Apifox 导入 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 
-历史迁移专文 → [../archive/dev/migration-legacy/](../archive/dev/migration-legacy/)
+历史迁移专文见本目录：`kratos-legacy-api-migration.md`、`kratos-server-layout-migration.md`、`goctl-generation-hygiene.md`。
 
 ---
 

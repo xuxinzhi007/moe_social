@@ -9,4 +9,4 @@ P4-D3 起步：`profile_repo.go` 供 `internal/biz/user/profile.go` 使用。
 - `wallet.go` · `vip_*.go` · `oauth_*.go`
 - `memory_*.go` · `users_list.go`
 
-SSOT：[docs/dev/kratos-p4-post-migration.md](../../../docs/dev/kratos-p4-post-migration.md)
+SSOT：[docs/dev/kratos-migration-status.md](../../../docs/dev/kratos-migration-status.md) · [docs/dev/kratos-directory-ssot.md](../../../docs/dev/kratos-directory-ssot.md)

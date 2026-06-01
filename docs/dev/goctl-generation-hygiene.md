@@ -43,4 +43,4 @@ make audit-logic-orphans   # 应为 none
 
 ## 历史：合并 logic 文件（已归档）
 
-P3 前 Admin/User 等使用 `admin_insights_logic.go` 等合并文件 — 已随 logic 层删除。详见 [../archive/dev/kratos/](../archive/dev/kratos/)。
+P3 前 Admin/User 等使用 `admin_insights_logic.go` 等合并文件 — 已随 logic 层删除。

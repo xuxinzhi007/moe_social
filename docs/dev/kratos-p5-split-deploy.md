@@ -1,7 +1,7 @@
 # P5 — 分体部署（api + rpc 容器）
 
 > **最后更新：2026-05-29**  
-> **前置**：[kratos-p5-super-retirement.md](./kratos-p5-super-retirement.md)（Super 服务已从 `moe.proto` 移除）
+> **前置**：P5 Super 退役完成，见 [kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
 
