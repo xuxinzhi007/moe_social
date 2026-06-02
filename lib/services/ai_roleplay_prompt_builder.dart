@@ -4,6 +4,13 @@ import 'ai_lorebook_service.dart';
 import 'ai_prompt_defaults.dart';
 
 class AiRoleplayPromptBuilder {
+  /// 带人设/场景/示例对话的角色卡，账号记忆注入方式与通用助手不同。
+  static bool isRoleplayStyleAgent(AiAgent agent) {
+    return agent.persona.trim().isNotEmpty ||
+        agent.scenario.trim().isNotEmpty ||
+        agent.exampleDialogues.trim().isNotEmpty;
+  }
+
   static String buildSystemPrompt(
     AiAgent agent, {
     String? overrideSystemPrompt,

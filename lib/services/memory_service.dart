@@ -22,7 +22,9 @@ class MemoryService {
   static bool isTechnicalMemory(UserMemory memory) {
     final key = memory.key.toLowerCase();
     final source = (memory.source ?? '').toLowerCase();
-    return key.startsWith('device_info:') || source == 'device_sync';
+    return key.startsWith('device_info:') ||
+        key.startsWith('daily_note:') ||
+        source == 'device_sync';
   }
 
   static List<UserMemory> filterUserFacingMemories(List<UserMemory> memories) {

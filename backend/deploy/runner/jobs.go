@@ -53,6 +53,10 @@ func (p *Platform) ResolveCommand(req JobRequest) (CommandSpec, error) {
 		return CommandSpec{}, fmt.Errorf("remote_inspect 仅能在云平台 (cloud) 执行")
 	case "git_tags":
 		return p.GitTags(), nil
+	case "learning_env_check":
+		return p.LearningEnvCheckCommand(), nil
+	case "learning_train_lora":
+		return p.LearningTrainLoraCommand(params), nil
 	default:
 		return CommandSpec{}, fmt.Errorf("unknown job type: %s", req.Type)
 	}
@@ -88,6 +92,8 @@ var AllowedJobTypes = []string{
 	"git_tags",
 	"github_list_workflows",
 	"github_trigger_apk",
+	"learning_env_check",
+	"learning_train_lora",
 }
 
 func Allowed(typeName string) bool {

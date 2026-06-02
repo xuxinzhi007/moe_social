@@ -92,14 +92,15 @@ class MemoryExtractLlmClient {
     required String extractModel,
     required String relayModel,
   }) {
-    final fromRelay = relayModel.trim();
-    if (fromRelay.isNotEmpty) return fromRelay;
+    // 与 AiChatGatewayService._effectiveModel 一致：当前聊天模型优先。
+    final fromChat = relayModel.trim();
+    if (fromChat.isNotEmpty) return fromChat;
+    final fromConfig = extractModel.trim();
+    if (fromConfig.isNotEmpty) return fromConfig;
     final fromProfile = providerProfile?.defaultModel.trim() ?? '';
     if (fromProfile.isNotEmpty) return fromProfile;
     final manual = providerProfile?.effectiveModelIds ?? const [];
     if (manual.isNotEmpty) return manual.first;
-    final fb = extractModel.trim();
-    if (fb.isNotEmpty) return fb;
     return 'qwen2';
   }
 

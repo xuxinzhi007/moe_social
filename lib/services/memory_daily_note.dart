@@ -76,10 +76,19 @@ abstract final class MemoryDailyNote {
     return out;
   }
 
+  static const int _maxDailyNoteRunes = 2400;
+
   static String _merge(String existing, String line) {
     final base = existing.trim();
-    if (base.isEmpty) return line;
-    if (base.contains(line)) return base;
-    return '$base\n$line';
+    if (base.isEmpty) return _trimTail(line);
+    if (base.contains(line)) return _trimTail(base);
+    return _trimTail('$base\n$line');
+  }
+
+  /// 日记层只保留尾部，避免记忆库被回合流水撑爆。
+  static String _trimTail(String text) {
+    final runes = text.runes.toList();
+    if (runes.length <= _maxDailyNoteRunes) return text;
+    return String.fromCharCodes(runes.sublist(runes.length - _maxDailyNoteRunes));
   }
 }

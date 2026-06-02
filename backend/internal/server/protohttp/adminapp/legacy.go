@@ -179,6 +179,47 @@ func (s *Server) AdminGetMemoryStats(ctx context.Context, in *adminv1.AdminGetMe
 	return app.GetMemoryStats(ctx, in)
 }
 
+func (s *Server) AdminGetMemoryHealth(ctx context.Context, in *adminv1.AdminGetMemoryHealthReq) (*adminv1.AdminGetMemoryHealthResp, error) {
+	if _, err := requireAdminContext(ctx); err != nil {
+		return nil, err
+	}
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetMemoryHealth(ctx, in)
+}
+
+func (s *Server) AdminRebuildMemoryEmbeddings(ctx context.Context, in *adminv1.AdminRebuildMemoryEmbeddingsReq) (*adminv1.AdminRebuildMemoryEmbeddingsResp, error) {
+	actx, err := requireAdminContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := app.RebuildMemoryEmbeddings(actx, in)
+	if err != nil {
+		return nil, err
+	}
+	if s.svcCtx != nil {
+		common.TryRecordAdminAudit(actx, s.svcCtx, "reindex", "user_memory", in.GetUserId(), "管理台重建记忆向量")
+	}
+	return resp, nil
+}
+
+func (s *Server) AdminExportLearningDataset(ctx context.Context, in *adminv1.AdminExportLearningDatasetReq) (*adminv1.AdminExportLearningDatasetResp, error) {
+	if _, err := requireAdminContext(ctx); err != nil {
+		return nil, err
+	}
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.ExportLearningDataset(ctx, in)
+}
+
 func (s *Server) AdminListMenus(ctx context.Context, in *adminv1.AdminListMenusReq) (*adminv1.AdminListMenusResp, error) {
 	if _, err := requireAdminContext(ctx); err != nil {
 		return nil, err

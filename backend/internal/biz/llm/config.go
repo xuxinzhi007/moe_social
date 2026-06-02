@@ -56,6 +56,11 @@ func ConfigAPIPayload(snap ConfigSnapshot) map[string]interface{} {
 			"keep_recent_messages":      budget.KeepRecentMessages,
 			"max_ctx_tokens":            budget.MaxCtxTokens,
 			"ctx_safe_ratio":            budget.CtxSafeRatio,
+			// OpenClaw ComposeBootstrap 预算（与 pkg/memory.DefaultBootstrapBudget 一致）
+			"bootstrap_max_profile_runes": 280,
+			"bootstrap_max_daily_runes":     400,
+			"bootstrap_max_search_items":    8,
+			"bootstrap_max_search_runes":    520,
 		},
 		"local_models": map[string]interface{}{
 			"storage_dir":   snap.LocalModelsStorageDir,

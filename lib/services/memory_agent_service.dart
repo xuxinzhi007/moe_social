@@ -10,6 +10,7 @@ import '../models/ai_provider_profile.dart';
 import 'ai_db_service.dart';
 import 'ai_memory_learn_result.dart';
 import 'llm_memory_config_service.dart';
+import 'ai_roleplay_prompt_builder.dart';
 import 'memory_extract_llm_client.dart';
 import 'memory_daily_note.dart';
 import 'memory_heuristic_extract.dart';
@@ -86,6 +87,7 @@ class MemoryAgentService {
     required String aiResponse,
     required String sessionId,
     required String sourceMsgId,
+    AiAgent? roleplayAgent,
     String? model,
     AiProviderProfile? providerProfile,
     String? chatModel,
@@ -108,16 +110,25 @@ class MemoryAgentService {
     );
 
     var saved = 0;
-    saved += await _upsertHeuristicMemories(
-      userId: userId,
-      userMessage: userMessage,
-      sessionId: sessionId,
-      sourceMsgId: sourceMsgId,
-    );
+    final isRoleplay = roleplayAgent != null &&
+        AiRoleplayPromptBuilder.isRoleplayStyleAgent(roleplayAgent);
+    if (!isRoleplay) {
+      saved += await _upsertHeuristicMemories(
+        userId: userId,
+        userMessage: userMessage,
+        sessionId: sessionId,
+        sourceMsgId: sourceMsgId,
+      );
+    }
 
+    final roleplayNote = isRoleplay
+        ? '当前为角色扮演对话：不要提取 user_nickname/user_name；'
+            '不要把戏中 NPC 名、角色自报名字当成用户真名。只提取用户明确表达的跨场景偏好。\n'
+        : '';
     final prompt = '请分析以下对话，提取关于「用户本人」的新的、永久性信息。\n'
         '应提取：用户昵称/改名、偏好、职业、关系等。使用英文蛇形 key（如 user_nickname、user_preference）。\n'
         '不要提取：AI 角色自报名字、当晚临时扮演设定、纯闲聊。\n'
+        '$roleplayNote'
         '严格仅返回 JSON 数组，每项含 key 与 value。无新信息返回 []。不要 Markdown。\n\n'
         '用户：$userMessage\n助手：$aiResponse';
 
@@ -202,16 +213,27 @@ class MemoryAgentService {
     String? chatModel,
     required String configModel,
   }) {
-    final fromAgent = chatModel?.trim() ?? '';
-    if (fromAgent.isNotEmpty) return fromAgent;
+    final chat = chatModel?.trim() ?? '';
+    final config = configModel.trim();
+    final isLocalLlama = providerProfile != null &&
+        (providerProfile.isLlamaCppServer ||
+            providerProfile.isBackendInference);
+
+    // 本机 GGUF：与聊天同一 model id；无 agent 模型时用服务端 memory_model。
+    if (isLocalLlama) {
+      if (chat.isNotEmpty) return chat;
+      if (config.isNotEmpty) return config;
+    } else if (chat.isNotEmpty) {
+      return chat;
+    }
+
     if (providerProfile != null) {
       final def = providerProfile.defaultModel.trim();
       if (def.isNotEmpty) return def;
       final manual = providerProfile.effectiveModelIds;
       if (manual.isNotEmpty) return manual.first;
     }
-    final fb = configModel.trim();
-    return fb.isNotEmpty ? fb : 'qwen2';
+    return config.isNotEmpty ? config : 'qwen2';
   }
 
   String _resolveRelayExtractModel({

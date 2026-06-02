@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import 'api_response.dart';
 import 'api_service.dart';
+import 'memory_bootstrap_budget.dart';
 
 /// 后端 LLM/记忆相关配置（与聊天 Provider 无关）。
 ///
@@ -19,6 +20,7 @@ class LlmMemoryConfigService {
   static const String _defaultMemoryModel = 'qwen2';
 
   String? _cachedMemoryModel;
+  MemoryBootstrapBudget? _cachedBootstrapBudget;
   DateTime? _cachedAt;
 
   /// 用于记忆提取/整理的模型 ID（来自 `GET /api/llm/config` → `llm_inference.memory_model`）。
@@ -30,8 +32,15 @@ class LlmMemoryConfigService {
     return fb.isNotEmpty ? fb : _defaultMemoryModel;
   }
 
+  /// 与后端 `ComposeBootstrap` 一致的注入预算（来自 `memory_budget` 扩展字段）。
+  Future<MemoryBootstrapBudget> resolveBootstrapBudget() async {
+    await _ensureLoaded();
+    return _cachedBootstrapBudget ?? MemoryBootstrapBudget.defaults;
+  }
+
   Future<void> invalidate() async {
     _cachedMemoryModel = null;
+    _cachedBootstrapBudget = null;
     _cachedAt = null;
   }
 
@@ -39,7 +48,7 @@ class LlmMemoryConfigService {
     final cachedAt = _cachedAt;
     if (cachedAt != null &&
         DateTime.now().difference(cachedAt) < _cacheTtl &&
-        _cachedMemoryModel != null) {
+        (_cachedMemoryModel != null || _cachedBootstrapBudget != null)) {
       return;
     }
     try {
@@ -68,6 +77,11 @@ class LlmMemoryConfigService {
           }
         }
       }
+      final budgetRaw = data['memory_budget'];
+      if (budgetRaw is Map<String, dynamic>) {
+        _cachedBootstrapBudget = MemoryBootstrapBudget.fromApiMap(budgetRaw);
+      }
+      _cachedAt = DateTime.now();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('🧠 [Memory] load config failed: $e');

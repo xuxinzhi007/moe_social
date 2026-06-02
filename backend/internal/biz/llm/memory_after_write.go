@@ -40,7 +40,15 @@ func rebuildUserMemoryProfileCache(db *gorm.DB, userID uint) error {
 		return err
 	}
 	records := recordsFromUserMemoryModels(memories)
-	profiles := memory.BuildProfiles(records)
+	facing := memory.FacingRecords(records)
+	profileRecords := make([]memory.Record, 0, len(facing))
+	for _, r := range facing {
+		if memory.IsDailyNoteKey(r.Key) {
+			continue
+		}
+		profileRecords = append(profileRecords, r)
+	}
+	profiles := memory.BuildProfiles(profileRecords)
 	if len(profiles) > maxProfileTypes {
 		profiles = profiles[:maxProfileTypes]
 	}

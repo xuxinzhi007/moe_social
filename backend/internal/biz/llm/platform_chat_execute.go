@@ -82,9 +82,10 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 		}
 	}
 
-	systemContent := coreConversationGuardrails
+	guardrails := conversationGuardrailsFor(clientSystemPrompt)
+	systemContent := guardrails
 	if clientSystemPrompt != "" {
-		systemContent = strings.TrimSpace(clientSystemPrompt) + "\n\n" + coreConversationGuardrails
+		systemContent = strings.TrimSpace(clientSystemPrompt) + "\n\n" + guardrails
 	}
 	if strings.TrimSpace(memoryBlock) != "" {
 		systemContent = systemContent + "\n\n" + memoryBlock

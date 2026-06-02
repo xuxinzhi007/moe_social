@@ -14,7 +14,7 @@ import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_lorebook_service.dart';
-import '../../services/ai_roleplay_prompt_builder.dart';
+import '../../services/ai_roleplay_prompt_builder.dart' show AiRoleplayPromptBuilder;
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
 import '../../services/ai_chat_session_prefs.dart';
@@ -36,6 +36,7 @@ import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/ai/ai_chat_composer.dart';
 import '../../widgets/ai/ai_chat_settings_sheet.dart';
+import '../../widgets/ai/ai_memory_status_strip.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -282,9 +283,23 @@ class _ChatPageState extends State<ChatPage> {
             : state.activeModeLabel;
         _memories = state.accountMemories;
       });
+      if (!_terminalModeEnabled && state.activeMode != AiMemoryMode.disabled) {
+        await _primeMemoryInjectStatus();
+      }
     } catch (_) {
       // 记忆预览失败不影响主聊天链路
     }
+  }
+
+  Future<void> _primeMemoryInjectStatus() async {
+    try {
+      final meta = await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
+        agent: widget.agent,
+        basePrompt: _systemPrompt,
+      );
+      if (!mounted) return;
+      setState(() => _memoryEnrichResult = meta);
+    } catch (_) {}
   }
 
   Future<void> _loadChatPrefs() async {
@@ -620,16 +635,19 @@ class _ChatPageState extends State<ChatPage> {
             .toList(),
       );
 
-      var enrichedSystemPrompt = _withNoAiSelfDisclosureRule(
-        AiRoleplayPromptBuilder.buildSystemPrompt(
-          widget.agent,
-          overrideSystemPrompt: _systemPrompt.trim().isNotEmpty
-              ? _systemPrompt.trim()
-              : AiPromptDefaults.defaultAgentSystemPrompt,
-          userPersona: _userPersona,
-          lorebookEntries: lorebookEntries,
-        ),
+      var baseSystem = AiRoleplayPromptBuilder.buildSystemPrompt(
+        widget.agent,
+        overrideSystemPrompt: _systemPrompt.trim().isNotEmpty
+            ? _systemPrompt.trim()
+            : AiPromptDefaults.defaultAgentSystemPrompt,
+        userPersona: _userPersona,
+        lorebookEntries: lorebookEntries,
       );
+      var enrichedSystemPrompt = AiRoleplayPromptBuilder.isRoleplayStyleAgent(
+            widget.agent,
+          )
+          ? baseSystem
+          : _withNoAiSelfDisclosureRule(baseSystem);
       final memoryMeta = await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
         agent: widget.agent,
         basePrompt: enrichedSystemPrompt,
@@ -691,6 +709,7 @@ class _ChatPageState extends State<ChatPage> {
           } else if (result.savedCount > 0) {
             MoeToast.success(context, '已记住 ${result.savedCount} 条新信息');
           }
+          setState(() {});
           _scheduleMemoryRefresh();
         },
       );
@@ -2284,6 +2303,14 @@ class _ChatPageState extends State<ChatPage> {
                       ? _buildIdentityHero()
                       : const SizedBox.shrink(),
                 ),
+                if (!_terminalModeEnabled && _memoryMode != AiMemoryMode.disabled)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                    child: AiMemoryStatusStrip(
+                      enrich: _memoryEnrichResult,
+                      onTapSettings: _openChatSettings,
+                    ),
+                  ),
                 if (_terminalModeEnabled) _buildTerminalModeBanner(),
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),

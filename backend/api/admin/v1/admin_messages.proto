@@ -399,6 +399,55 @@ message AdminGetMemoryStatsResp {
   AdminMemoryStats stats = 1;
 }
 
+// AdminGetMemoryHealthReq 记忆子系统健康（混合检索 / embedding / llama.cpp）。
+message AdminGetMemoryHealthReq {}
+
+message AdminEmbeddingProbe {
+  bool ok = 1;
+  string provider_type = 2;
+  string model = 3;
+  string base_url = 4;
+  string message = 5;
+}
+
+message AdminGetMemoryHealthResp {
+  AdminMemoryStats stats = 1;
+  double embedding_index_ratio = 2;
+  bool hybrid_enabled = 3;
+  double vector_weight = 4;
+  double keyword_weight = 5;
+  bool rerank_enabled = 6;
+  bool graph_enabled = 7;
+  AdminEmbeddingProbe embedding_probe = 8;
+  bool llm_inference_online = 9;
+  string llm_inference_base_url = 10;
+  string memory_model = 11;
+  repeated string hints = 12;
+}
+
+message AdminRebuildMemoryEmbeddingsReq {
+  string user_id = 1;
+}
+
+message AdminRebuildMemoryEmbeddingsResp {
+  int32 indexed = 1;
+  string provider = 2;
+  string model = 3;
+  string message = 4;
+}
+
+message AdminExportLearningDatasetReq {
+  string user_id = 1;
+  string agent_id = 2;
+}
+
+message AdminExportLearningDatasetResp {
+  string jsonl = 1;
+  int32 line_count = 2;
+  string agent_name = 3;
+  string hint = 4;
+}
+
 message AdminGetMoeBrainPipelineReq {
   string agent_key = 1;
 }
@@ -1849,6 +1898,15 @@ service AdminApp {
   }
   rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp) {
     option (google.api.http) = { get: "/api/admin/memories/stats" };
+  }
+  rpc AdminGetMemoryHealth(AdminGetMemoryHealthReq) returns (AdminGetMemoryHealthResp) {
+    option (google.api.http) = { get: "/api/admin/memories/health" };
+  }
+  rpc AdminRebuildMemoryEmbeddings(AdminRebuildMemoryEmbeddingsReq) returns (AdminRebuildMemoryEmbeddingsResp) {
+    option (google.api.http) = { post: "/api/admin/memories/reindex" body: "*" };
+  }
+  rpc AdminExportLearningDataset(AdminExportLearningDatasetReq) returns (AdminExportLearningDatasetResp) {
+    option (google.api.http) = { post: "/api/admin/learning/export-dataset" body: "*" };
   }
   rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp) {
     option (google.api.http) = { get: "/api/admin/menus" };
