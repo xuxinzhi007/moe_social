@@ -28,6 +28,7 @@ import { NotifyPage } from './pages/NotifyPage'
 import { AiAgentsPage } from './pages/AiAgentsPage'
 import { MoeBotsPage } from './pages/MoeBotsPage'
 import { MoeBrainPage } from './pages/MoeBrainPage'
+import { LearningWorkbenchPage } from './pages/LearningWorkbenchPage'
 import { MoeBotFlowPage } from './pages/MoeBotFlowPage'
 import { MoeToolsPage } from './pages/MoeToolsPage'
 import { AiChatLogsPage } from './pages/AiChatLogsPage'
@@ -72,6 +73,7 @@ export default function App() {
                     <Route path="app/moe-bots" element={<MoeBotsPage />} />
                     <Route path="app/moe-bots/:agentKey/brain" element={<MoeBrainPage />} />
                     <Route path="app/moe-brain" element={<MoeBrainPage />} />
+                    <Route path="app/learning" element={<LearningWorkbenchPage />} />
                     <Route path="app/moe-flow" element={<MoeBotFlowPage />} />
                     <Route path="app/moe" element={<MoeToolsPage />} />
                     <Route path="app/ai/chat-logs" element={<AiChatLogsPage />} />

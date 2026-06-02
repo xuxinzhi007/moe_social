@@ -17,7 +17,10 @@ import 'api_service.dart';
 import 'api_response.dart';
 import 'llm_endpoint_config.dart';
 import 'memory_agent_service.dart';
+import 'ai_roleplay_prompt_builder.dart';
+import 'memory_bootstrap_budget.dart';
 import 'memory_daily_note.dart';
+import 'llm_memory_config_service.dart';
 import 'memory_service.dart';
 
 /// 记忆子系统路由（参考 OpenClaw：画像为源、检索注入、回合后写入、定期整理）。
@@ -177,15 +180,19 @@ class AiMemoryOrchestrator {
         profile.supportsToolCalls && !profile.isBackendOllama;
 
     if (mode == AiMemoryMode.server) {
-      final injected = await _queryMemoriesForInject(
+      var injected = await _queryMemoriesForInject(
         query: latestUserMessage,
         fallbackMemories: account.memories,
       );
+      if (AiRoleplayPromptBuilder.isRoleplayStyleAgent(agent)) {
+        injected = _filterRoleplayInjectMemories(injected);
+      }
       final hasBootstrap = account.display != null &&
           account.display!.profiles.any((p) => p.summary.trim().isNotEmpty);
 
       final prompt = await _composeMemoryPrompt(
         basePrompt,
+        agent: agent,
         display: account.display,
         selectedMemories: injected,
         memoryToolsAdvanced: memoryToolsAdvanced,
@@ -375,6 +382,7 @@ class AiMemoryOrchestrator {
         aiResponse: aiResponse,
         sessionId: sessionId,
         sourceMsgId: sourceMsgId ?? '',
+        roleplayAgent: agent,
         providerProfile: profile,
         chatModel: agent.modelName,
       );
@@ -426,6 +434,16 @@ class AiMemoryOrchestrator {
   }
 
   /// 默认路径：后端记忆文本库检索（1 次 HTTP，不增加聊天轮次）。
+  /// 角色扮演时不注入账号昵称类记忆，避免把 NPC 名（如「小新」）当成玩家真名。
+  List<UserMemory> _filterRoleplayInjectMemories(List<UserMemory> memories) {
+    return memories.where((m) {
+      final key = m.key.toLowerCase();
+      if (key == 'user_nickname' || key == 'user_name') return false;
+      if ((m.memoryType ?? '').toLowerCase() == 'identity') return false;
+      return true;
+    }).toList();
+  }
+
   Future<List<UserMemory>> _queryMemoriesForInject({
     required String query,
     required List<UserMemory> fallbackMemories,
@@ -453,6 +471,7 @@ class AiMemoryOrchestrator {
 
   Future<String> _composeMemoryPrompt(
     String basePrompt, {
+    required AiAgent agent,
     UserMemoryDisplayData? display,
     required List<UserMemory> selectedMemories,
     bool memoryToolsAdvanced = false,
@@ -462,42 +481,39 @@ class AiMemoryOrchestrator {
       basePrompt.isNotEmpty ? basePrompt : '你是一位友好、智能的 AI 助手。',
     );
 
-    final profiles = display?.profiles ?? const [];
-    final profileLines = profiles
-        .where((p) => p.summary.trim().isNotEmpty)
-        .take(6)
-        .map((p) => '- ${p.title}：${p.summary.trim()}')
-        .toList();
-    if (profileLines.isNotEmpty) {
-      buffer.write('\n\n=== 用户长期画像（精选层 / MEMORY）===\n');
-      buffer.writeAll(profileLines, '\n');
-      buffer.write('\n');
-    }
+    final budget = await LlmMemoryConfigService().resolveBootstrapBudget();
+    final parts = <String>[];
 
-    var hasDaily = false;
+    final profiles = display?.profiles ?? const [];
+    final profileBlock = MemoryBootstrapComposer.profilesBlock(
+      profiles,
+      budget: budget,
+    );
+    if (profileBlock != null) parts.add(profileBlock);
+
     try {
       final user = await AuthService.getUserInfo();
       final daily = await MemoryDailyNote.loadRecent(user.id);
-      if (daily.isNotEmpty) {
-        hasDaily = true;
-        buffer.write('\n=== 近期日记（工作记忆，今日/昨日）===\n');
-        for (final d in daily) {
-          buffer.write('[${d.date}]\n${d.body}\n');
-        }
-      }
+      final dailyBlock = MemoryBootstrapComposer.dailyBlock(daily, budget: budget);
+      if (dailyBlock != null) parts.add(dailyBlock);
     } catch (_) {}
 
-    if (selectedMemories.isNotEmpty) {
-      buffer.write('\n=== 与本句相关的记忆检索 ===\n');
-      for (final memory in selectedMemories) {
-        buffer.write('- ${memory.value}\n');
-      }
-    }
+    final searchBlock = MemoryBootstrapComposer.searchBlock(
+      selectedMemories,
+      budget: budget,
+    );
+    if (searchBlock != null) parts.add(searchBlock);
 
-    if (profileLines.isNotEmpty || hasDaily || selectedMemories.isNotEmpty) {
-      buffer.write(
-        '\n请把这些信息当作你已经了解的用户背景，在合适的时候自然参考，不要机械复述。',
-      );
+    if (parts.isNotEmpty) {
+      buffer.write('\n\n${parts.join('\n\n')}\n\n');
+      buffer.write(MemoryBootstrapComposer.composeTail());
+      if (AiRoleplayPromptBuilder.isRoleplayStyleAgent(agent)) {
+        buffer.write(
+          '\n\n【记忆与扮演】以下为用户账号档案，不是戏中 NPC。'
+          '若与 [角色人设]/[场景设定] 冲突，以角色卡为准；'
+          '用户问「我叫什么」时按场景中的玩家身份回答，勿与设定里的 NPC 名混淆。',
+        );
+      }
     }
     if (memoryToolsAdvanced) {
       buffer.write(

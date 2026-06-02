@@ -931,6 +931,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/landing.v1.ListLandingFeedbackReply'
+    /api/admin/learning/export-dataset:
+        post:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminExportLearningDataset
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/admin.v1.AdminExportLearningDatasetReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminExportLearningDatasetResp'
     /api/admin/login:
         post:
             tags:
@@ -1049,6 +1067,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminListMemoriesResp'
+    /api/admin/memories/health:
+        get:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminGetMemoryHealth
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminGetMemoryHealthResp'
+    /api/admin/memories/reindex:
+        post:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminRebuildMemoryEmbeddings
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/admin.v1.AdminRebuildMemoryEmbeddingsReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminRebuildMemoryEmbeddingsResp'
     /api/admin/memories/stats:
         get:
             tags:
@@ -1291,6 +1339,29 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/moe.v1.CurateBrainReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/graph:
+        get:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_GetBrainGraph
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.GetBrainGraphReply'
     /api/admin/moe/runtimes/{agentKey}/brain/policy:
         put:
             tags:
@@ -1315,6 +1386,234 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/moe.v1.GetBrainSnapshotReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/presence:
+        get:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_GetBrainPresence
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.GetBrainPresenceReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg:
+        get:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_GetBrainRpg
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.GetBrainRpgReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/autonomous-mind:
+        put:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_UpdateBrainAutonomousMind
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.UpdateBrainAutonomousMindRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.UpdateBrainAutonomousMindReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/compress:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_CompressBrainMemories
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.CompressBrainMemoriesRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.CompressBrainMemoriesReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/dream:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_RunBrainDream
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.RunBrainDreamRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.RunBrainDreamReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/dream-schedule:
+        put:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_UpdateBrainDreamSchedule
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.UpdateBrainDreamScheduleRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.UpdateBrainDreamScheduleReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/forget:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_ForgetBrainMemory
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.ForgetBrainMemoryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.ForgetBrainMemoryReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/skills:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_LockBrainSkill
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.LockBrainSkillRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.LockBrainSkillReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/think:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_GenerateBrainThought
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.GenerateBrainThoughtRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.GenerateBrainThoughtReply'
+    /api/admin/moe/runtimes/{agentKey}/brain/rpg/tidy:
+        post:
+            tags:
+                - MoeAdmin
+            operationId: MoeAdmin_TidyBrainFragments
+            parameters:
+                - name: agentKey
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/moe.v1.TidyBrainFragmentsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/moe.v1.TidyBrainFragmentsReply'
     /api/admin/moe/runtimes/{agentKey}/flow:
         get:
             tags:
@@ -2421,6 +2720,47 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ai.v1.DeleteAiResourceResp'
+    /api/announcements:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_ListAnnouncements
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageSize
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.ListAnnouncementsResp'
+    /api/announcements/{announcementId}:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetAnnouncement
+            parameters:
+                - name: announcementId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.GetAnnouncementResp'
     /api/auth/feishu/authorize-url:
         get:
             tags:
@@ -3736,6 +4076,28 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/comment.v1.GetPostCommentsReply'
+    /api/posts/{postId}/hand-draw:
+        get:
+            tags:
+                - PostService
+            operationId: PostService_GetPostHandDraw
+            parameters:
+                - name: postId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: viewerUserId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/post.v1.GetPostHandDrawReply'
     /api/posts/{postId}/like:
         post:
             tags:
@@ -5889,6 +6251,9 @@ components:
                 notificationsCreated:
                     type: integer
                     format: int32
+                wsSent:
+                    type: integer
+                    format: int32
         admin.v1.AdminCheckInRewardItem:
             type: object
             properties:
@@ -6045,6 +6410,19 @@ components:
         admin.v1.AdminDeleteVipPlanResp:
             type: object
             properties: {}
+        admin.v1.AdminEmbeddingProbe:
+            type: object
+            properties:
+                ok:
+                    type: boolean
+                providerType:
+                    type: string
+                model:
+                    type: string
+                baseUrl:
+                    type: string
+                message:
+                    type: string
         admin.v1.AdminExportAiChatMessagesResp:
             type: object
             properties:
@@ -6055,6 +6433,25 @@ components:
                     format: int32
                 truncated:
                     type: boolean
+        admin.v1.AdminExportLearningDatasetReq:
+            type: object
+            properties:
+                userId:
+                    type: string
+                agentId:
+                    type: string
+        admin.v1.AdminExportLearningDatasetResp:
+            type: object
+            properties:
+                jsonl:
+                    type: string
+                lineCount:
+                    type: integer
+                    format: int32
+                agentName:
+                    type: string
+                hint:
+                    type: string
         admin.v1.AdminFollowItem:
             type: object
             properties:
@@ -6102,6 +6499,38 @@ components:
             properties:
                 stats:
                     $ref: '#/components/schemas/admin.v1.AdminGrowthStats'
+        admin.v1.AdminGetMemoryHealthResp:
+            type: object
+            properties:
+                stats:
+                    $ref: '#/components/schemas/admin.v1.AdminMemoryStats'
+                embeddingIndexRatio:
+                    type: number
+                    format: double
+                hybridEnabled:
+                    type: boolean
+                vectorWeight:
+                    type: number
+                    format: double
+                keywordWeight:
+                    type: number
+                    format: double
+                rerankEnabled:
+                    type: boolean
+                graphEnabled:
+                    type: boolean
+                embeddingProbe:
+                    $ref: '#/components/schemas/admin.v1.AdminEmbeddingProbe'
+                llmInferenceOnline:
+                    type: boolean
+                llmInferenceBaseUrl:
+                    type: string
+                memoryModel:
+                    type: string
+                hints:
+                    type: array
+                    items:
+                        type: string
         admin.v1.AdminGetMemoryStatsResp:
             type: object
             properties:
@@ -6603,6 +7032,26 @@ components:
                     type: string
                 postContentPreview:
                     type: string
+                reporterUserName:
+                    type: string
+                reporterUserAvatar:
+                    type: string
+                postAuthorId:
+                    type: string
+                postAuthorName:
+                    type: string
+                postContent:
+                    type: string
+                postImages:
+                    type: array
+                    items:
+                        type: string
+                handDrawThumbUrl:
+                    type: string
+                postAuthorAvatar:
+                    type: string
+                hasHandDraw:
+                    type: boolean
         admin.v1.AdminPublishAnnouncementReq:
             type: object
             properties:
@@ -6613,6 +7062,29 @@ components:
             properties:
                 announcement:
                     $ref: '#/components/schemas/admin.v1.AdminAnnouncementItem'
+                notificationsCreated:
+                    type: integer
+                    format: int32
+                wsSent:
+                    type: integer
+                    format: int32
+        admin.v1.AdminRebuildMemoryEmbeddingsReq:
+            type: object
+            properties:
+                userId:
+                    type: string
+        admin.v1.AdminRebuildMemoryEmbeddingsResp:
+            type: object
+            properties:
+                indexed:
+                    type: integer
+                    format: int32
+                provider:
+                    type: string
+                model:
+                    type: string
+                message:
+                    type: string
         admin.v1.AdminRuntimeProcessInfo:
             type: object
             properties:
@@ -7332,6 +7804,8 @@ components:
                     type: boolean
                 authorBotAgentKey:
                     type: string
+                hasHandDraw:
+                    type: boolean
         admin.v1.TopicTag:
             type: object
             properties:
@@ -8831,6 +9305,36 @@ components:
                 contextUsedPct:
                     type: number
                     format: double
+        moe.v1.BrainGraphEdge:
+            type: object
+            properties:
+                id:
+                    type: string
+                source:
+                    type: string
+                target:
+                    type: string
+                relation:
+                    type: string
+                weight:
+                    type: number
+                    format: double
+        moe.v1.BrainGraphNode:
+            type: object
+            properties:
+                id:
+                    type: string
+                kind:
+                    type: string
+                label:
+                    type: string
+                summary:
+                    type: string
+                weight:
+                    type: integer
+                    format: int32
+                refId:
+                    type: string
         moe.v1.BrainMemory:
             type: object
             properties:
@@ -8842,12 +9346,121 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        moe.v1.BrainRpgDreamLog:
+            type: object
+            properties:
+                id:
+                    type: string
+                ranAt:
+                    type: string
+                summary:
+                    type: string
+                refined:
+                    type: integer
+                    format: int32
+                merged:
+                    type: integer
+                    format: int32
+                archived:
+                    type: integer
+                    format: int32
+                xpGained:
+                    type: integer
+                    format: int32
+        moe.v1.BrainRpgFragment:
+            type: object
+            properties:
+                id:
+                    type: string
+                kind:
+                    type: string
+                title:
+                    type: string
+                status:
+                    type: string
+                qualityScore:
+                    type: integer
+                    format: int32
+                approved:
+                    type: boolean
+                createdAt:
+                    type: string
+                memoryKey:
+                    type: string
+        moe.v1.BrainRpgSkill:
+            type: object
+            properties:
+                tag:
+                    type: string
+                label:
+                    type: string
+                level:
+                    type: integer
+                    format: int32
+                locked:
+                    type: boolean
+                usageCount:
+                    type: integer
+                    format: int32
+        moe.v1.BrainRpgStats:
+            type: object
+            properties:
+                totalFragments:
+                    type: integer
+                    format: int32
+                solidMemories:
+                    type: integer
+                    format: int32
+                pendingTidy:
+                    type: integer
+                    format: int32
+                lockedSkills:
+                    type: integer
+                    format: int32
+                graphNodes:
+                    type: integer
+                    format: int32
         moe.v1.BrainTagStat:
             type: object
             properties:
                 tag:
                     type: string
                 count:
+                    type: integer
+                    format: int32
+        moe.v1.CompressBrainMemoriesReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                memoryKey:
+                    type: string
+                summary:
+                    type: string
+                sourceCount:
+                    type: integer
+                    format: int32
+                xpGained:
+                    type: integer
+                    format: int32
+                sweptCount:
+                    type: integer
+                    format: int32
+                mergedClusters:
+                    type: integer
+                    format: int32
+                markedCount:
+                    type: integer
+                    format: int32
+                pendingRemaining:
+                    type: integer
+                    format: int32
+        moe.v1.CompressBrainMemoriesRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                days:
                     type: integer
                     format: int32
         moe.v1.CurateBrainReply:
@@ -8884,6 +9497,60 @@ components:
         moe.v1.DeleteBrainEpisodeReply:
             type: object
             properties: {}
+        moe.v1.ForgetBrainMemoryReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                memoryKey:
+                    type: string
+                deleted:
+                    type: boolean
+        moe.v1.ForgetBrainMemoryRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                memoryKey:
+                    type: string
+        moe.v1.GenerateBrainThoughtReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                thought:
+                    type: string
+                thoughtSource:
+                    type: string
+                generatedAt:
+                    type: string
+        moe.v1.GenerateBrainThoughtRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+        moe.v1.GetBrainGraphReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                nodes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.BrainGraphNode'
+                edges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.BrainGraphEdge'
+                episodeCount:
+                    type: integer
+                    format: int32
+                memoryCount:
+                    type: integer
+                    format: int32
+                tagCount:
+                    type: integer
+                    format: int32
         moe.v1.GetBrainPipelineReply:
             type: object
             properties:
@@ -8905,6 +9572,79 @@ components:
                         $ref: '#/components/schemas/moe.v1.MoePipelineStep'
                 hostMetrics:
                     $ref: '#/components/schemas/moe.v1.MoeHostMetrics'
+        moe.v1.GetBrainPresenceReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                displayName:
+                    type: string
+                activity:
+                    type: string
+                mood:
+                    type: string
+                thought:
+                    type: string
+                pipelineStep:
+                    type: string
+                pipelineRunning:
+                    type: boolean
+                dreamEnabled:
+                    type: boolean
+                dreamCron:
+                    type: string
+                nextDreamAt:
+                    type: string
+                dreaming:
+                    type: boolean
+                autonomousMindEnabled:
+                    type: boolean
+                thoughtSource:
+                    type: string
+        moe.v1.GetBrainRpgReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                level:
+                    type: integer
+                    format: int32
+                xp:
+                    type: integer
+                    format: int32
+                xpToNext:
+                    type: integer
+                    format: int32
+                stabilityScore:
+                    type: integer
+                    format: int32
+                skills:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.BrainRpgSkill'
+                fragments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.BrainRpgFragment'
+                recentDreams:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/moe.v1.BrainRpgDreamLog'
+                stats:
+                    $ref: '#/components/schemas/moe.v1.BrainRpgStats'
+                lastDreamAt:
+                    type: string
+                dreamEnabled:
+                    type: boolean
+                dreamCron:
+                    type: string
+                nextDreamAt:
+                    type: string
+                autonomousMindEnabled:
+                    type: boolean
+                pendingDeleteCount:
+                    type: integer
+                    format: int32
         moe.v1.GetBrainSnapshotReply:
             type: object
             properties:
@@ -9002,6 +9742,24 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/moe.v1.ToolCallRow'
+        moe.v1.LockBrainSkillReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                lockedSkills:
+                    type: array
+                    items:
+                        type: string
+        moe.v1.LockBrainSkillRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                tag:
+                    type: string
+                lock:
+                    type: boolean
         moe.v1.MoeFlowEdge:
             type: object
             properties:
@@ -9159,6 +9917,60 @@ components:
                     type: string
                 async:
                     type: boolean
+        moe.v1.RunBrainDreamReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                summary:
+                    type: string
+                refined:
+                    type: integer
+                    format: int32
+                merged:
+                    type: integer
+                    format: int32
+                archived:
+                    type: integer
+                    format: int32
+                xpGained:
+                    type: integer
+                    format: int32
+                level:
+                    type: integer
+                    format: int32
+                xp:
+                    type: integer
+                    format: int32
+        moe.v1.RunBrainDreamRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                skipCurate:
+                    type: boolean
+        moe.v1.TidyBrainFragmentsReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                total:
+                    type: integer
+                    format: int32
+                approved:
+                    type: integer
+                    format: int32
+                xpGained:
+                    type: integer
+                    format: int32
+        moe.v1.TidyBrainFragmentsRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                maxEpisodes:
+                    type: integer
+                    format: int32
         moe.v1.ToolCallRow:
             type: object
             properties:
@@ -9202,6 +10014,40 @@ components:
                 successCalls:
                     type: string
                 failedCalls:
+                    type: string
+        moe.v1.UpdateBrainAutonomousMindReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                autonomousMindEnabled:
+                    type: boolean
+        moe.v1.UpdateBrainAutonomousMindRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                autonomousMindEnabled:
+                    type: boolean
+        moe.v1.UpdateBrainDreamScheduleReply:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                dreamEnabled:
+                    type: boolean
+                dreamCron:
+                    type: string
+                nextDreamAt:
+                    type: string
+        moe.v1.UpdateBrainDreamScheduleRequest:
+            type: object
+            properties:
+                agentKey:
+                    type: string
+                dreamEnabled:
+                    type: boolean
+                dreamCron:
                     type: string
         moe.v1.UpdateBrainPolicyRequest:
             type: object
@@ -9335,6 +10181,18 @@ components:
                     type: string
                 userId:
                     type: string
+        platform.v1.AnnouncementItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                title:
+                    type: string
+                content:
+                    type: string
+                publishedAt:
+                    type: string
+            description: 用户侧公告（仅 published）。
         platform.v1.BaseResp:
             type: object
             properties:
@@ -9362,6 +10220,11 @@ components:
                     type: string
                 createdAt:
                     type: string
+        platform.v1.GetAnnouncementResp:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/platform.v1.AnnouncementItem'
         platform.v1.GetLlmConfigResp:
             type: object
             properties:
@@ -9393,6 +10256,16 @@ components:
                     type: string
                 appId:
                     type: string
+        platform.v1.ListAnnouncementsResp:
+            type: object
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/platform.v1.AnnouncementItem'
+                total:
+                    type: integer
+                    format: int32
         platform.v1.ListUserContentResp:
             type: object
             properties:
@@ -9655,6 +10528,13 @@ components:
         post.v1.DeletePostReply:
             type: object
             properties: {}
+        post.v1.GetPostHandDrawReply:
+            type: object
+            properties:
+                handDrawCard:
+                    type: string
+                handDrawThumbUrl:
+                    type: string
         post.v1.GetPostReply:
             type: object
             properties:
@@ -9761,6 +10641,8 @@ components:
                     type: boolean
                 authorBotAgentKey:
                     type: string
+                hasHandDraw:
+                    type: boolean
         post.v1.ReportPostReply:
             type: object
             properties: {}

@@ -7,5 +7,12 @@ import "strings"
 func IsTechnicalUserMemory(key, source string) bool {
 	k := strings.ToLower(strings.TrimSpace(key))
 	s := strings.ToLower(strings.TrimSpace(source))
-	return strings.HasPrefix(k, "device_info:") || s == "device_sync"
+	if strings.HasPrefix(k, "device_info:") || s == "device_sync" {
+		return true
+	}
+	// OpenClaw 日记层：仅用于 prompt 注入，不在「记忆库」列表展示。
+	if strings.HasPrefix(k, "daily_note:") {
+		return true
+	}
+	return false
 }

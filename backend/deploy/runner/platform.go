@@ -340,6 +340,36 @@ func (p *Platform) GitTags() CommandSpec {
 	}
 }
 
+// LearningEnvCheckCommand verifies Python + optional ollama_web finetune checkout.
+func (p *Platform) LearningEnvCheckCommand() CommandSpec {
+	script := filepath.Join(p.workspace, "tools", "character-finetune", "env_check.sh")
+	return CommandSpec{
+		Dir:   p.workspace,
+		Label: "learning env check",
+		Argv:  []string{"bash", script},
+	}
+}
+
+// LearningTrainLoraCommand runs LoRA training via tools/character-finetune (params: dataset_path, output_dir, finetune_dir).
+func (p *Platform) LearningTrainLoraCommand(params map[string]string) CommandSpec {
+	script := filepath.Join(p.workspace, "tools", "character-finetune", "run_train.sh")
+	argv := []string{"bash", script}
+	if v := strings.TrimSpace(params["dataset_path"]); v != "" {
+		argv = append(argv, "--dataset", v)
+	}
+	if v := strings.TrimSpace(params["output_dir"]); v != "" {
+		argv = append(argv, "--output", v)
+	}
+	if v := strings.TrimSpace(params["finetune_dir"]); v != "" {
+		argv = append(argv, "--finetune-dir", v)
+	}
+	return CommandSpec{
+		Dir:   p.workspace,
+		Label: "learning train lora",
+		Argv:  argv,
+	}
+}
+
 // ResolvePath ensures path exists under workspace (safety).
 func (p *Platform) ResolvePath(rel string) (string, error) {
 	if filepath.IsAbs(rel) {

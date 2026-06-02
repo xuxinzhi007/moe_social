@@ -18,7 +18,15 @@ const (
 	maxUserMemoryCacheEntries     = 512
 	backgroundMemoryTaskTimeout   = 60 * time.Second
 	sourcePreCompactFlush         = "pre_compact_flush"
-	coreConversationGuardrails    = "你是一个社交应用中的中文助手。你的目标是真正理解用户需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”“分析一下我们刚才聊的重点”等时，直接基于你看到的全部对话记录给出结构化分析与要点，不要让用户复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n5. 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术；用户问“你是谁/你叫什么”时，直接自然回答，不暴露模型身份。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整聊天记录理解含义并回答。"
+	coreConversationGuardrails = "你是一个社交应用中的中文助手。你的目标是真正理解用户需求，并给出自然、具体、可执行的中文回答。\n\n你需要：\n1. 主动结合当前消息和完整历史对话来理解用户真正想做什么，而不是只按字面意思机械回复。\n2. 当用户表达不清晰或有多种可能理解时，先用一两句简短话语确认或澄清需求，再继续回答。\n3. 当用户说“帮我总结一下聊天”“总结一下刚才的内容”“分析一下我们刚才聊的重点”等时，直接基于你看到的全部对话记录给出结构化分析与要点，不要让用户复制聊天记录。\n4. 当用户询问如何实现某个功能或写代码时，请给出具体步骤和示例，而不是泛泛而谈。\n5. 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术；用户问“你是谁/你叫什么”时，直接自然回答，不暴露模型身份。\n\n当用户提到“刚才”“之前”“上面说的”等表达时，需要基于完整聊天记录理解含义并回答。"
+
+	// roleplayConversationGuardrails 角色卡聊天：勿覆盖人设，勿套用通用助手口吻。
+	roleplayConversationGuardrails = "【对话护栏 · 角色扮演】\n" +
+		"1. 严格保持上文 [角色人设]/[场景设定] 中的身份与世界观；不要说自己是 AI/模型/助手。\n" +
+		"2. 用户问「你是谁/你叫什么」时，用角色卡中的名字与身份回答，不要套用其它示例台词或咖啡店等无关设定。\n" +
+		"3. 用户问「我叫什么/我的名字」时，按场景中的玩家角色回答；若场景未定义，诚实说设定里未写明，不要与 NPC 名字混淆。\n" +
+		"4. 若注入的「用户记忆」与当前场景冲突，以角色卡与场景为准；账号昵称不等于戏中 NPC。\n" +
+		"5. 不要机械重复同一段开场白；每次回复应接得住用户上一句的具体问题。"
 	fallbackPersonaReply          = "我更想先听听你的想法，我们可以按你的偏好来聊。"
 )
 
@@ -41,6 +49,23 @@ type rankedMemory struct {
 	score   int
 	index   int
 	persona bool
+}
+
+func isRoleplaySystemPrompt(prompt string) bool {
+	p := strings.TrimSpace(prompt)
+	if p == "" {
+		return false
+	}
+	return strings.Contains(p, "[扮演约束]") ||
+		strings.Contains(p, "[角色人设]") ||
+		strings.Contains(p, "[场景设定]")
+}
+
+func conversationGuardrailsFor(clientSystemPrompt string) string {
+	if isRoleplaySystemPrompt(clientSystemPrompt) {
+		return roleplayConversationGuardrails
+	}
+	return coreConversationGuardrails
 }
 
 func memoryBudgetOrDefault(b MemoryBudgetConfig) MemoryBudgetConfig {

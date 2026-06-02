@@ -580,6 +580,30 @@ func (s *AppService) GetMemoryStats(ctx context.Context, in *adminv1.AdminGetMem
 	return out, nil
 }
 
+func (s *AppService) GetMemoryHealth(ctx context.Context, in *adminv1.AdminGetMemoryHealthReq) (*adminv1.AdminGetMemoryHealthResp, error) {
+	out, err := adminbiz.GetMemoryHealth(ctx, s.store)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *AppService) RebuildMemoryEmbeddings(ctx context.Context, in *adminv1.AdminRebuildMemoryEmbeddingsReq) (*adminv1.AdminRebuildMemoryEmbeddingsResp, error) {
+	out, err := adminbiz.RebuildMemoryEmbeddings(ctx, s.db, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *AppService) ExportLearningDataset(ctx context.Context, in *adminv1.AdminExportLearningDatasetReq) (*adminv1.AdminExportLearningDatasetResp, error) {
+	out, err := adminbiz.ExportLearningDataset(ctx, s.db, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (s *AppService) ListAccounts(ctx context.Context, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
 	out, err := adminbiz.ListAccounts(ctx, s.db, in)
 	if err != nil {
