@@ -1,6 +1,6 @@
 # Moe Social (萌社交)
 
-使用 **Flutter** 与 **Go (go-zero)** 构建的复合型社交产品：萌系社交主线、AI 智能体 / 酒馆化能力、虚拟形象与 VIP 商业化、以及 AutoGLM 自动化实验能力。支持 Android、iOS、Web、Windows、macOS、Linux。
+使用 **Flutter** 与 **Go / Kratos** 构建的复合型社交产品：萌系社交主线、AI 智能体 / 酒馆化能力、虚拟形象与 VIP 商业化、以及 AutoGLM 自动化实验能力。支持 Android、iOS、Web、Windows、macOS、Linux。
 
 > 产品优先级与路线图见 [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md)。贡献与命令约定见 [AGENTS.md](AGENTS.md)。
 
@@ -42,7 +42,7 @@
 | 层级 | 技术 |
 |------|------|
 | 客户端 | Flutter 3.x、Dart、Provider、Material |
-| 后端 | go-zero、GORM、MySQL、JWT、gRPC |
+| 后端 | Kratos、Protocol Buffers、GORM、MySQL、JWT |
 | 实时 / 媒体 | WebSocket、Agora RTC |
 | 第三方 | 飞书 / 微信 OAuth、fluwx |
 
@@ -53,7 +53,7 @@
 ### 前提条件
 
 - [Flutter SDK](https://flutter.dev/docs/get-started/install)（`flutter doctor` 通过）
-- 后端开发另需 Go 1.25+、MySQL、goctl（见 `backend/README.md`）
+- 后端开发另需 Go 1.25+、MySQL、Protocol Buffers 生成工具（见 `backend/README.md`）
 
 **macOS 安装 Flutter（可选）：**
 
@@ -80,7 +80,7 @@ API 地址在 **`lib/utils/config.dart`** 中配置（`isProduction` / `producti
 cd backend
 # 配置 config/config.yaml 中的数据库等
 go mod download
-make gen          # 修改 super.api / super.proto 后重新生成
+make gen          # 修改 api/<domain>/v1/*.proto 后重新生成
 make build        # 或分别启动 api / rpc
 go test ./...
 ```
@@ -115,7 +115,7 @@ moe_social/
 │   ├── pages/              # 按域划分：auth、feed、chat、ai、commerce…
 │   ├── services/、providers/、widgets/、models/、utils/
 │   └── main.dart
-├── backend/                # Go API + RPC（super.api、super.proto）
+├── backend/                # Go / Kratos HTTP（api/<domain>/v1/*.proto）
 ├── docs/                   # 文档中心 → docs/README.md
 ├── website/official/       # 静态产品官网
 ├── test/                   # Flutter 测试
@@ -179,7 +179,7 @@ Release 签名完整步骤：[docs/dev/android-release-signing.md](docs/dev/andr
 ```bash
 flutter analyze          # 前端静态检查
 flutter test             # 前端测试
-cd backend && make gen   # 重新生成 goctl 代码
+cd backend && make gen   # 重新生成 proto HTTP 代码与 openapi.yaml
 cd backend && make build
 cd backend && go test ./...
 ```
@@ -196,7 +196,7 @@ MIT License
 
 # Moe Social (English)
 
-A **Flutter** client plus **Go (go-zero)** backend for a composite social product: cute-style social feed, AI agents / tavern-style chat, virtual avatars and VIP commerce, and an experimental **AutoGLM** automation stack. Targets Android, iOS, Web, Windows, macOS, and Linux.
+A **Flutter** client plus **Go / Kratos** backend for a composite social product: cute-style social feed, AI agents / tavern-style chat, virtual avatars and VIP commerce, and an experimental **AutoGLM** automation stack. Targets Android, iOS, Web, Windows, macOS, and Linux.
 
 **Roadmap:** [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md) · **Repo guidelines:** [AGENTS.md](AGENTS.md)
 

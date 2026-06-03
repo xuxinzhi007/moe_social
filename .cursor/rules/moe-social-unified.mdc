@@ -1,0 +1,97 @@
+---
+description: Moe Social 仓库统一开发规则（Flutter / Kratos / Moe Admin）
+alwaysApply: true
+---
+
+# Moe Social 统一规则（单一事实来源）
+
+本文件是本仓库 Cursor 规则入口，适用于 `lib/` Flutter App、`backend/` Kratos 后端、`moe-admin/` 管理台与文档改动。更细分规则只补充本文件，不覆盖本文件。
+
+## 1. 修改前必须先做的事
+
+- 每次涉及新增接口、修改接口、修复 BUG、重构超长文件时，先读相关文档与现有实现，再动代码。
+- 按触及目录核对：
+  - Flutter：`lib/pages/<domain>/`、`lib/widgets/`、`lib/services/`、`lib/models/`、`analysis_options.yaml`。
+  - 后端：`backend/api/<domain>/v1/*.proto`、`internal/service`、`internal/biz`、`internal/data`、`backend/LAYOUT.md`。
+  - 管理台：`moe-admin/src/ui`、`moe-admin/src/components`、`moe-admin/src/lib`、`moe-admin/docs`。
+- 先明确问题边界、输入输出、影响范围、验证标准；禁止未读上下文直接改代码。
+
+## 2. 问题处理原则（禁止错觉修复）
+
+- 禁止只改表象分支让现象消失；修复前先分析根因层级：UI / service / biz / data / 外部依赖 / 配置。
+- 若上游或其他模块才是根因，必须在正确位置修复，或说明本轮只做隔离与降级。
+- 禁止提交“看似修复但引入语义偏差”的方案；mock、占位、演示态必须在代码或文档里明确标识。
+
+## 3. 需求澄清与表达
+
+- 模糊需求先对齐：目标、约束、验收、改哪一层、不做什么。
+- 关键假设写一句；不要先做大范围实现再事后补解释。
+- 用户明确排除的范围不得顺手实现，例如当前充值页保持模拟，除非用户另行要求。
+
+## 4. 项目与分层约束
+
+- 项目：Moe Social，Flutter App + Go / Kratos 单进程 HTTP 后端 + React / TypeScript 管理台。
+- Flutter：页面在 `lib/pages/<domain>/`，可复用 UI 在 `lib/widgets/`，状态在 `lib/providers/`，网络与持久化在 `lib/services/`。
+- 后端分层保持单向：`protohttp/transport -> internal/service -> internal/biz -> internal/data`。
+- `internal/service`：参数校验、协议转换、错误映射与流程编排；不写复杂 SQL。
+- `internal/biz`：业务规则、repo interface、跨数据源编排。
+- `internal/data`：DB / Redis / OSS / 外部服务适配。
+- 管理台：页面复用 `moe-admin/src/ui` 骨架，API 统一走 `moe-admin/src/lib` / client 封装，不在页面里散写请求细节。
+
+## 5. API / 生成 / Wire 规范
+
+- Proto 是后端 API 单一事实来源：先改 `backend/api/<domain>/v1/*.proto`，再执行生成。
+- 禁止手改生成文件：`*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go`、`openapi.yaml`、`wire_gen.go`。
+- 后端常用命令：
+  - 改 proto：`cd backend && make gen`
+  - 后端最小检查：`cd backend && make check`
+  - 完整后端测试：`cd backend && go test ./...`
+  - 本地运行：`cd backend && make moe-social`
+- `make gen-api`、`make gen-rpc`、`backend/rpc`、`api/defs` 新增路由均已退役；新接口走分域 proto + Kratos HTTP。
+
+## 6. 开发规范（执行级）
+
+- 先读现有实现，保持改动聚焦，不顺手重构无关代码。
+- 跨边界调用统一透传 `context.Context`；错误保留根因并映射为业务语义。
+- 日志包含关键 ID，避免泄露 token、密码、验证码、个人敏感信息。
+- 命名短而准；禁止新增 `util`、`common`、`helper` 这类兜底包名承载业务。
+- 同一概念只保留一套命名，不引入同义多套模型或字段。
+- 非显而易见逻辑必须写中文注释，说明做什么和为什么；不要重复代码字面意思。
+- Dart 用 `snake_case.dart` 文件名、`PascalCase` 类型、`camelCase` 成员、2 空格缩进；Go 用 `gofmt`。
+
+## 7. 数据、状态与并发
+
+- 查询、筛选、创建、更新的字段语义必须一致，避免同字段多口径。
+- JSON、状态流转、库存、余额、计数等读改写逻辑先评估并发覆盖风险。
+- 事务只包必须原子化的 DB 操作；HTTP / OSS / LLM 等慢操作尽量放在事务外。
+- DDL 或迁移变更需同步模型、查询代码与 `docs/SQL` 或对应开发文档。
+- 前端异步更新 UI 前检查 `mounted`；复杂状态优先下沉 provider / service / controller，不在页面无限堆逻辑。
+
+## 8. 质量门禁
+
+- Flutter 改动：`dart format`、`flutter analyze`，按风险补目标 `flutter test`。
+- 后端改动：`cd backend && make check`；涉及共享逻辑或较大改动补 `go test ./...`。
+- 管理台改动：`cd moe-admin && npm run build`。
+- 契约 / 生成 / 配置改动：执行对应生成命令并确认产物一致。
+- 环境依赖导致测试失败时，必须说明原因与最小已验证范围，不得伪称通过。
+
+## 9. 技能与工具使用要求
+
+- 任务命中技能时，先读对应 `SKILL.md` 再执行。
+- Go 改动优先遵守 implementation guardrails、Go 风格、Kratos 分层规则。
+- 前端改动优先遵守现有页面结构、组件复用与设计 token。
+- 提交前如用户要求 commit，遵循 Conventional Commits；无用户明确要求不主动 commit / push。
+
+## 10. 新需求动手前简析
+
+1. 验收：谁用、哪个 API / 页面、怎样算完成、不做什么。
+2. 链路：Flutter / Admin / proto → service → biz → data；能否复用现有能力。
+3. 可行性：数据从哪来、是否改 proto / 配置、有无外部依赖。
+4. 影响：会影响哪些接口、页面、消费者；列最小回归点。
+5. 扩展：新类型、状态、事件加在哪一层，避免单函数无限堆逻辑。
+6. 拆分：说不清就拆 P0 最小可用、P1 根因与测试、P2 体验与重构。
+
+## 11. 回复约束
+
+- 收尾回复必须写清：改了什么、跑了什么检查、是否通过、剩余风险。
+- 每次回复末尾带：`根据项目规则进行调整 喵～`
