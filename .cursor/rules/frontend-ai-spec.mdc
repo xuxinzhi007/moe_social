@@ -10,6 +10,7 @@ alwaysApply: false
 
 ## 修改前确认
 - 详细规范以 `docs/guidelines/Codex启动指南-前端.md` 为准，开始改动前先读取该文档。
+- 统一规则先看 `.cursor/rules/moe-social-unified.mdc`；本文件只补充 Flutter App 细则。
 - 先确认需求是否只涉及前端；禁止把后端接口实现逻辑混入前端改动。
 - 先读取并遵守本文件，不得跳过。
 - 必须先阅读将被修改的现有前端文件（至少同页面/同组件目录代码），严格沿用当前项目最新代码风格与 UI 结构。
@@ -20,6 +21,7 @@ alwaysApply: false
 - 调用后端必须通过 service 层或现有封装，不在 widget 中直接写网络细节。
 - 异步更新状态前检查 `mounted`，避免生命周期导致崩溃。
 - 错误提示面向用户可读，避免直接暴露原始异常。
+- 超长页面优先拆纯 UI 组件，再拆 provider / service / controller；充值模拟等用户明确保留的演示功能不要顺手改成真实链路。
 - 代码格式必须与现有 Dart 文件保持一致，提交前执行 `dart format`，并遵守 `analysis_options.yaml` 当前 lint 约束。
 
 ## 提交前检查

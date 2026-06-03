@@ -8,6 +8,8 @@ alwaysApply: false
 
 在修改 `moe-admin/` 下代码时，必须先阅读本规范与 `docs/guidelines/Codex启动指南-前端.md` 中的「两套前端」章节。
 
+统一规则先看 `.cursor/rules/moe-social-unified.mdc`；本文件只补充管理台细则。
+
 ## SSOT（必读，按顺序）
 
 1. **视觉与 Token**：[`moe-admin/DESIGN.md`](../moe-admin/DESIGN.md)
@@ -21,7 +23,7 @@ alwaysApply: false
 - 复用 `moe-admin/src/components/` 业务组件（`PageTabs`、`DataEnvBar`、`AdminIcon`、`AdminTag`）。
 - 页面根布局用 `admin-page`；标题用 `PageHead` 或骨架自带 title。
 - **禁止**再引入 `platform-hero` / `content-hero` 大块横幅。
-- API 走 `moe-admin/src/api/adminClient.ts`；新接口先改 `backend/api/super.api` 并 `make gen`。
+- API 走 `moe-admin/src/lib` / client 封装；新接口先改 `backend/api/<domain>/v1/*.proto` 并 `cd backend && make gen`。
 
 ## 样式纪律
 
