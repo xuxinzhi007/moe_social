@@ -13,6 +13,7 @@ class RiveBootstrap {
     if (kIsWeb) return Future<void>.value();
     _initFuture ??= RiveNative.init().catchError((Object e, StackTrace st) {
       debugPrint('RiveNative.init failed: $e');
+      return false;
     });
     return _initFuture!;
   }

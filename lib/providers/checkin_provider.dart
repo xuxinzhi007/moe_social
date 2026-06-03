@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
-import '../models/checkin_data.dart';
 import '../models/achievement_unlock.dart';
 import '../models/exp_log.dart';
 import '../services/api_service.dart';
@@ -24,11 +23,13 @@ class CheckInProvider extends ChangeNotifier {
   // 分页信息
   int _historyPage = 1;
   int _historyTotal = 0;
+  int get historyTotal => _historyTotal;
   bool _hasMoreHistory = true;
   bool get hasMoreHistory => _hasMoreHistory;
 
   int _expLogPage = 1;
   int _expLogTotal = 0;
+  int get expLogTotal => _expLogTotal;
   bool _hasMoreExpLogs = true;
   bool get hasMoreExpLogs => _hasMoreExpLogs;
 
@@ -40,8 +41,7 @@ class CheckInProvider extends ChangeNotifier {
   bool get isCheckingIn => _isCheckingIn;
 
   List<AchievementUnlock> _lastUnlocks = [];
-  List<AchievementUnlock> get lastUnlocks =>
-      List.unmodifiable(_lastUnlocks);
+  List<AchievementUnlock> get lastUnlocks => List.unmodifiable(_lastUnlocks);
 
   bool _isLoadingHistory = false;
   bool get isLoadingHistory => _isLoadingHistory;
@@ -103,7 +103,8 @@ class CheckInProvider extends ChangeNotifier {
 
   /// 执行签到操作
   Future<bool> performCheckIn(String userId) async {
-    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true)) return false;
+    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true))
+      return false;
 
     try {
       _isCheckingIn = true;
@@ -201,8 +202,8 @@ class CheckInProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final result = await ApiService.getExpLogs(userId,
-          page: _expLogPage, pageSize: 20);
+      final result =
+          await ApiService.getExpLogs(userId, page: _expLogPage, pageSize: 20);
 
       final logs = result['logs'] as List<ExpLogRecord>;
       final total = result['total'] as int;

@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/moe_loading.dart';
 import '../../providers/theme_provider.dart';
 import '../../autoglm/autoglm_service.dart';
 
@@ -29,23 +28,24 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     '打开设置页面',
     '返回桌面',
   ];
-  
+
   // 历史消息记录
   List<Map<String, dynamic>> _history = [];
   int _stepCount = 0;
   final int _maxSteps = 20;
 
   // 配置信息
-  final String _baseUrl = "https://api-inference.modelscope.cn/v1/chat/completions"; 
+  final String _baseUrl =
+      "https://api-inference.modelscope.cn/v1/chat/completions";
   final String _apiKey = "ms-fa33637f-6572-4170-82b1-95f458fe9e7b"; // 您的 Key
   final String _model = "ZhipuAI/AutoGLM-Phone-9B";
 
   // 动态生成 System Prompt（包含已安装应用列表）
   String _generateSystemPrompt(List<String> installedApps) {
-    String appList = installedApps.isEmpty 
+    String appList = installedApps.isEmpty
         ? "微信、QQ、抖音、小红书、淘宝、京东、设置等常用应用"
         : installedApps.join("、");
-    
+
     return """
 你是一个智能体分析专家，可以根据操作历史和当前状态图执行一系列操作来完成任务。
 你必须严格按照要求输出以下格式：
@@ -121,12 +121,12 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
   void _addLog(String log) {
     if (!mounted) return;
-    
+
     // 更新本地日志
     setState(() {
       _logs.add(log);
     });
-    
+
     // 自动滚动到底部
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -151,13 +151,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       _isStopping = true;
     });
     _addLog("🛑 正在停止任务...");
-    
+
     // 更新悬浮窗状态
     if (AutoGLMService.enableOverlay) {
       AutoGLMService.updateOverlayStatus("正在停止...", false);
     }
   }
-  
+
   @override
   void initState() {
     super.initState();
@@ -172,7 +172,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     }, onError: (e) {
       print("Log stream error: $e");
     });
-    
+
     // 设置悬浮窗停止回调
     AutoGLMService.setStopCallback(() {
       if (_isProcessing && !_isStopping) {
@@ -188,7 +188,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       _checkStatus();
       return;
     }
-    
+
     String task = _controller.text;
     if (task.isEmpty) return;
 
@@ -203,9 +203,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         await Future.delayed(const Duration(seconds: 2));
         hasOverlayPermission = await AutoGLMService.checkOverlayPermission();
         if (!hasOverlayPermission) {
-           _addLog("❌ 未获得悬浮窗权限，无法显示进度");
-           // 即使没有悬浮窗权限，如果用户想跑任务，理论上也可以跑，只是看不到悬浮窗
-           // 但为了避免混淆，这里我们保持原逻辑，或者您可以选择继续
+          _addLog("❌ 未获得悬浮窗权限，无法显示进度");
+          // 即使没有悬浮窗权限，如果用户想跑任务，理论上也可以跑，只是看不到悬浮窗
+          // 但为了避免混淆，这里我们保持原逻辑，或者您可以选择继续
         }
       }
 
@@ -223,21 +223,19 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       _history = []; // 清空历史
       _stepCount = 0;
     });
-    
+
     // 获取已安装应用列表
     _addLog("📱 正在获取已安装应用列表...");
-    Map<String, String> installedAppsMap = await AutoGLMService.getInstalledApps();
+    Map<String, String> installedAppsMap =
+        await AutoGLMService.getInstalledApps();
     List<String> installedAppNames = installedAppsMap.keys.toList();
     _addLog("✅ 找到 ${installedAppNames.length} 个已安装应用");
-    
+
     // 生成包含已安装应用的系统Prompt
     String systemPrompt = _generateSystemPrompt(installedAppNames);
-    
+
     // 初始化系统Prompt
-    _history.add({
-      "role": "system", 
-      "content": systemPrompt
-    });
+    _history.add({"role": "system", "content": systemPrompt});
 
     _addLog("🤖 开始任务: $task");
 
@@ -269,7 +267,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
         _stepCount++;
         _addLog("🔄 步骤 $_stepCount 执行中...");
-        
+
         // 更新悬浮窗进度
         if (AutoGLMService.enableOverlay) {
           AutoGLMService.updateOverlayProgress(_stepCount, _maxSteps);
@@ -279,7 +277,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         // _addLog("📸 正在截图...");
         await Future.delayed(const Duration(milliseconds: 500)); // 等待界面稳定
         String? screenshot = await AutoGLMService.getScreenshot();
-        
+
         if (screenshot == null) {
           _addLog("❌ 截图失败，任务终止");
           break;
@@ -292,15 +290,17 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         } else {
           textContent = "** Screen Info **\n\nCurrent UI Screenshot";
           // 移除上一轮图片以节省token (简单策略：只保留文本)
-           if (_history.length > 2) { // system, user(img), assistant, user(img)...
-             var lastUserMsg = _history[_history.length - 2];
-             if (lastUserMsg['role'] == 'user' && lastUserMsg['content'] is List) {
-                // 简化上一轮 User 消息，移除图片
-                lastUserMsg['content'] = (lastUserMsg['content'] as List)
-                    .where((item) => item['type'] == 'text')
-                    .toList();
-             }
-           }
+          if (_history.length > 2) {
+            // system, user(img), assistant, user(img)...
+            var lastUserMsg = _history[_history.length - 2];
+            if (lastUserMsg['role'] == 'user' &&
+                lastUserMsg['content'] is List) {
+              // 简化上一轮 User 消息，移除图片
+              lastUserMsg['content'] = (lastUserMsg['content'] as List)
+                  .where((item) => item['type'] == 'text')
+                  .toList();
+            }
+          }
         }
 
         Map<String, dynamic> userMsg = {
@@ -308,14 +308,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           "content": [
             {
               "type": "image_url",
-              "image_url": {
-                "url": "data:image/jpeg;base64,$screenshot"
-              }
+              "image_url": {"url": "data:image/jpeg;base64,$screenshot"}
             },
-            {
-              "type": "text",
-              "text": textContent
-            }
+            {"type": "text", "text": textContent}
           ]
         };
         _history.add(userMsg);
@@ -324,8 +319,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         _addLog("☁️ 请求大模型中...");
         final response = await _callApi();
         if (response == null) {
-           _addLog("❌ API请求失败");
-           break;
+          _addLog("❌ API请求失败");
+          break;
         }
 
         if (_isStopping) {
@@ -335,96 +330,102 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
         // 4. 解析与执行
         final content = response['content'];
-        _history.add({
-          "role": "assistant",
-          "content": content
-        });
+        _history.add({"role": "assistant", "content": content});
 
         // 解析 <think> 和 <answer>
         String think = "";
         String actionStr = "";
-        
+
         if (content.contains("<answer>")) {
-           var parts = content.split("<answer>");
-           think = parts[0].replaceAll("<think>", "").replaceAll("</think>", "").trim();
-           actionStr = parts[1].replaceAll("</answer>", "").trim();
+          var parts = content.split("<answer>");
+          think = parts[0]
+              .replaceAll("<think>", "")
+              .replaceAll("</think>", "")
+              .trim();
+          actionStr = parts[1].replaceAll("</answer>", "").trim();
         } else {
-           // 增强的解析逻辑：尝试从混杂文本中提取 do(...) 或 finish(...)
-           
-           // 1. 优先匹配 finish（支持多种格式）
-           final finishPatterns = [
-             RegExp(r'finish\s*\(\s*message\s*=\s*"([^"]*)"\s*\)'),
-             RegExp(r"finish\s*\(\s*message\s*=\s*'([^']*)'\s*\)"),
-             RegExp(r'finish\s*\([^)]*\)'),
-           ];
-           
-           for (var pattern in finishPatterns) {
-             final match = pattern.firstMatch(content);
-             if (match != null) {
-               actionStr = match.group(0)!;
-               break;
-             }
-           }
-           
-           // 2. 匹配 do(...)
-           if (actionStr.isEmpty) {
-             final doPatterns = [
-               RegExp(r'do\s*\(\s*action\s*=\s*"([^"]*)"[^)]*\)'),
-               RegExp(r'do\s*\([^)]+\)'),
-             ];
-             
-             for (var pattern in doPatterns) {
-               final match = pattern.firstMatch(content);
-               if (match != null) {
-                 actionStr = match.group(0)!;
-                 break;
-               }
-             }
-           }
-           
-           // 3. 兜底：检查是否包含关键动作词
-           if (actionStr.isEmpty) {
-             // 检查是否是任务完成的信号
-             final lowerContent = content.toLowerCase();
-             if (lowerContent.contains("finish") || 
-                 content.contains("完成") || 
-                 content.contains("已完成") ||
-                 content.contains("任务完成") ||
-                 lowerContent.contains("task completed") ||
-                 lowerContent.contains("done")) {
-               // AI 可能用自然语言表达完成
-               actionStr = 'finish(message="任务完成")';
-               _addLog("💡 检测到任务完成信号，自动生成 finish 指令");
-             } else if (content.trim().startsWith("do") || content.trim().startsWith("finish")) {
-               actionStr = content.trim();
-             }
-           }
-           
-           // 4. Wait 命令特殊处理
-           if (actionStr.isEmpty && content.contains('Wait') && content.contains('second')) {
-             final waitMatch = RegExp(r'Wait.*?(\d+)\s*second').firstMatch(content);
-             if (waitMatch != null) {
-               actionStr = 'do(action="Wait", duration="${waitMatch.group(1)} seconds")';
-             }
-           }
-           
-           // 如果提取到了指令，剩下的部分作为 think
-           if (actionStr.isNotEmpty) {
-             think = content.replaceFirst(actionStr, "").trim();
-           } else {
-             think = content;
-           }
+          // 增强的解析逻辑：尝试从混杂文本中提取 do(...) 或 finish(...)
+
+          // 1. 优先匹配 finish（支持多种格式）
+          final finishPatterns = [
+            RegExp(r'finish\s*\(\s*message\s*=\s*"([^"]*)"\s*\)'),
+            RegExp(r"finish\s*\(\s*message\s*=\s*'([^']*)'\s*\)"),
+            RegExp(r'finish\s*\([^)]*\)'),
+          ];
+
+          for (var pattern in finishPatterns) {
+            final match = pattern.firstMatch(content);
+            if (match != null) {
+              actionStr = match.group(0)!;
+              break;
+            }
+          }
+
+          // 2. 匹配 do(...)
+          if (actionStr.isEmpty) {
+            final doPatterns = [
+              RegExp(r'do\s*\(\s*action\s*=\s*"([^"]*)"[^)]*\)'),
+              RegExp(r'do\s*\([^)]+\)'),
+            ];
+
+            for (var pattern in doPatterns) {
+              final match = pattern.firstMatch(content);
+              if (match != null) {
+                actionStr = match.group(0)!;
+                break;
+              }
+            }
+          }
+
+          // 3. 兜底：检查是否包含关键动作词
+          if (actionStr.isEmpty) {
+            // 检查是否是任务完成的信号
+            final lowerContent = content.toLowerCase();
+            if (lowerContent.contains("finish") ||
+                content.contains("完成") ||
+                content.contains("已完成") ||
+                content.contains("任务完成") ||
+                lowerContent.contains("task completed") ||
+                lowerContent.contains("done")) {
+              // AI 可能用自然语言表达完成
+              actionStr = 'finish(message="任务完成")';
+              _addLog("💡 检测到任务完成信号，自动生成 finish 指令");
+            } else if (content.trim().startsWith("do") ||
+                content.trim().startsWith("finish")) {
+              actionStr = content.trim();
+            }
+          }
+
+          // 4. Wait 命令特殊处理
+          if (actionStr.isEmpty &&
+              content.contains('Wait') &&
+              content.contains('second')) {
+            final waitMatch =
+                RegExp(r'Wait.*?(\d+)\s*second').firstMatch(content);
+            if (waitMatch != null) {
+              actionStr =
+                  'do(action="Wait", duration="${waitMatch.group(1)} seconds")';
+            }
+          }
+
+          // 如果提取到了指令，剩下的部分作为 think
+          if (actionStr.isNotEmpty) {
+            think = content.replaceFirst(actionStr, "").trim();
+          } else {
+            think = content;
+          }
         }
-        
+
         if (think.isNotEmpty) {
           _addLog("🤔 思考: $think");
         }
-        
+
         if (actionStr.isEmpty) {
-           _addLog("❌ 无法解析动作");
-           _addLog("📄 原始内容: ${content.length > 200 ? content.substring(0, 200) + '...' : content}");
-           // 跳过本次，继续下一步
-           continue; 
+          _addLog("❌ 无法解析动作");
+          _addLog(
+              "📄 原始内容: ${content.length > 200 ? content.substring(0, 200) + '...' : content}");
+          // 跳过本次，继续下一步
+          continue;
         }
 
         _addLog("🎯 动作: $actionStr");
@@ -439,14 +440,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           }
         }
       }
-      
+
       if (_stepCount >= _maxSteps) {
         _addLog("⚠️ 达到最大步骤数，停止执行");
         if (AutoGLMService.enableOverlay) {
           AutoGLMService.updateOverlayStatus("达到上限", false);
         }
       }
-
     } catch (e) {
       _addLog("❌ 发生异常: $e");
       if (AutoGLMService.enableOverlay) {
@@ -463,7 +463,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           _isStopping = false;
         });
       }
-      
+
       // 更新悬浮窗最终状态
       if (AutoGLMService.enableOverlay) {
         await Future.delayed(const Duration(seconds: 3));
@@ -494,57 +494,57 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
         });
 
         // 设置较长的超时时间
-        final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+        final streamedResponse =
+            await request.send().timeout(const Duration(seconds: 30));
 
         if (streamedResponse.statusCode == 200) {
           String fullContent = "";
           String buffer = "";
 
-          await for (var chunk in streamedResponse.stream.transform(utf8.decoder)) {
+          await for (var chunk
+              in streamedResponse.stream.transform(utf8.decoder)) {
             buffer += chunk;
-            
+
             while (true) {
-               // 处理 SSE 格式: data: {...}
-               int newlineIndex = buffer.indexOf('\n');
-               if (newlineIndex == -1) break;
-               
-               String line = buffer.substring(0, newlineIndex).trim();
-               buffer = buffer.substring(newlineIndex + 1);
-               
-               if (line.startsWith("data: ")) {
-                 String jsonStr = line.substring(6);
-                 if (jsonStr == "[DONE]") break;
-                 
-                 try {
-                   final data = jsonDecode(jsonStr);
-                   final content = data['choices']?[0]['delta']?['content'];
-                   if (content != null) {
-                     fullContent += content;
-                   }
-                 } catch (e) {
-                   // 忽略解析错误
-                 }
-               }
+              // 处理 SSE 格式: data: {...}
+              int newlineIndex = buffer.indexOf('\n');
+              if (newlineIndex == -1) break;
+
+              String line = buffer.substring(0, newlineIndex).trim();
+              buffer = buffer.substring(newlineIndex + 1);
+
+              if (line.startsWith("data: ")) {
+                String jsonStr = line.substring(6);
+                if (jsonStr == "[DONE]") break;
+
+                try {
+                  final data = jsonDecode(jsonStr);
+                  final content = data['choices']?[0]['delta']?['content'];
+                  if (content != null) {
+                    fullContent += content;
+                  }
+                } catch (e) {
+                  // 忽略解析错误
+                }
+              }
             }
           }
-          
-          return {
-            "role": "assistant", 
-            "content": fullContent
-          };
+
+          return {"role": "assistant", "content": fullContent};
         } else {
           final body = await streamedResponse.stream.bytesToString();
           throw Exception("HTTP ${streamedResponse.statusCode}: $body");
         }
       } catch (e) {
         retryCount++;
-        _addLog("⚠️ API请求失败 ($retryCount/$maxRetries): ${e.toString().split('\n').first}"); // 简化日志
-        
+        _addLog(
+            "⚠️ API请求失败 ($retryCount/$maxRetries): ${e.toString().split('\n').first}"); // 简化日志
+
         if (retryCount >= maxRetries) {
           _addLog("❌ API请求最终失败");
           return null;
         }
-        
+
         _addLog("⏳ 等待 2秒后重试...");
         await Future.delayed(const Duration(seconds: 2));
       }
@@ -556,7 +556,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     // 简单解析器
     // do(action="Tap", element=[500, 500])
     // finish(message="done")
-    
+
     try {
       if (actionStr.startsWith("finish")) {
         final msgMatch = RegExp(r'message="(.*?)"').firstMatch(actionStr);
@@ -566,20 +566,21 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       }
 
       if (!actionStr.startsWith("do")) {
-         _addLog("⚠️ 未知指令格式，跳过");
-         return false;
+        _addLog("⚠️ 未知指令格式，跳过");
+        return false;
       }
 
       // 提取 action type
       final actionTypeMatch = RegExp(r'action="(.*?)"').firstMatch(actionStr);
       final actionType = actionTypeMatch?.group(1);
-      
+
       // 辅助函数：相对坐标转绝对坐标
       // 现在的 AutoGLMAccessibilityService 已经能够直接接受 0-1000 的相对坐标
       // 并使用 DisplayMetrics 自动计算物理坐标，所以这里直接传递原始值
-      
+
       if (actionType == "Type") {
-        final textMatch = RegExp(r'text="(.*?)"', dotAll: true).firstMatch(actionStr);
+        final textMatch =
+            RegExp(r'text="(.*?)"', dotAll: true).firstMatch(actionStr);
         if (textMatch != null) {
           final text = textMatch.group(1)!;
           _addLog("⌨️ 输入文本: $text");
@@ -599,15 +600,18 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           }
         }
       } else if (actionType == "Tap") {
-        final elementMatch = RegExp(r'element=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
+        final elementMatch =
+            RegExp(r'element=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
         if (elementMatch != null) {
           final x = double.parse(elementMatch.group(1)!);
           final y = double.parse(elementMatch.group(2)!);
           await AutoGLMService.performClick(x, y);
         }
       } else if (actionType == "Swipe") {
-        final startMatch = RegExp(r'start=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
-        final endMatch = RegExp(r'end=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
+        final startMatch =
+            RegExp(r'start=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
+        final endMatch =
+            RegExp(r'end=\[(\d+),\s*(\d+)\]').firstMatch(actionStr);
         if (startMatch != null && endMatch != null) {
           final x1 = double.parse(startMatch.group(1)!);
           final y1 = double.parse(startMatch.group(2)!);
@@ -622,7 +626,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       } else if (actionType == "Wait") {
         // 解析 duration="2 seconds"
         int seconds = 2;
-        final durationMatch = RegExp(r'duration="(\d+)\s*seconds?"').firstMatch(actionStr);
+        final durationMatch =
+            RegExp(r'duration="(\d+)\s*seconds?"').firstMatch(actionStr);
         if (durationMatch != null) {
           seconds = int.tryParse(durationMatch.group(1)!) ?? 2;
         }
@@ -635,7 +640,6 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       // 动作执行后等待一会
       await Future.delayed(const Duration(seconds: 1));
       return false;
-
     } catch (e) {
       _addLog("❌ 执行指令失败: $e");
       return false;
@@ -646,40 +650,40 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final primaryColor = themeProvider.primaryColor;
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('AutoGLM 助手', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('AutoGLM 助手',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value == 'copy') {
-                final text = _logs.join("\n");
-                await Clipboard.setData(ClipboardData(text: text));
-                if (mounted) {
-                  MoeToast.success(context, "日志已复制到剪贴板");
-                }
-              } else if (value == 'clear') {
-                setState(() { _logs.clear(); });
-                if (mounted) {
-                  MoeToast.show(context, "日志已清空");
-                }
-              } else if (value == 'help') {
-                _showHelpDialog();
+          PopupMenuButton<String>(onSelected: (value) async {
+            if (value == 'copy') {
+              final text = _logs.join("\n");
+              await Clipboard.setData(ClipboardData(text: text));
+              if (mounted) {
+                MoeToast.success(context, "日志已复制到剪贴板");
               }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem(value: 'copy', child: Text("复制日志")),
-                const PopupMenuItem(value: 'clear', child: Text("清空日志")),
-                const PopupMenuItem(value: 'help', child: Text("使用帮助")),
-              ];
+            } else if (value == 'clear') {
+              setState(() {
+                _logs.clear();
+              });
+              if (mounted) {
+                MoeToast.show(context, "日志已清空");
+              }
+            } else if (value == 'help') {
+              _showHelpDialog();
             }
-          )
+          }, itemBuilder: (BuildContext context) {
+            return [
+              const PopupMenuItem(value: 'copy', child: Text("复制日志")),
+              const PopupMenuItem(value: 'clear', child: Text("清空日志")),
+              const PopupMenuItem(value: 'help', child: Text("使用帮助")),
+            ];
+          })
         ],
       ),
       body: Column(
@@ -691,7 +695,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
               onTap: () async {
                 if (!_isServiceEnabled) {
                   await AutoGLMService.openAccessibilitySettings();
-                  await Future.delayed(const Duration(seconds: 1)); 
+                  await Future.delayed(const Duration(seconds: 1));
                   _checkStatus();
                 } else {
                   _checkStatus();
@@ -701,10 +705,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isServiceEnabled ? Colors.green[50] : Colors.orange[50],
+                  color:
+                      _isServiceEnabled ? Colors.green[50] : Colors.orange[50],
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _isServiceEnabled ? Colors.green[200]! : Colors.orange[200]!,
+                    color: _isServiceEnabled
+                        ? Colors.green[200]!
+                        : Colors.orange[200]!,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -719,11 +726,15 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: _isServiceEnabled ? Colors.green[100]! : Colors.orange[100]!,
+                        color: _isServiceEnabled
+                            ? Colors.green[100]!
+                            : Colors.orange[100]!,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        _isServiceEnabled ? Icons.check_circle : Icons.warning_amber_rounded,
+                        _isServiceEnabled
+                            ? Icons.check_circle
+                            : Icons.warning_amber_rounded,
                         color: _isServiceEnabled ? Colors.green : Colors.orange,
                         size: 24,
                       ),
@@ -731,11 +742,13 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        _isServiceEnabled 
-                          ? "无障碍服务已连接"
-                          : "服务未开启，点击去设置开启 'Moe Social 助手'",
+                        _isServiceEnabled
+                            ? "无障碍服务已连接"
+                            : "服务未开启，点击去设置开启 'Moe Social 助手'",
                         style: TextStyle(
-                          color: _isServiceEnabled ? Colors.green[800] : Colors.orange[800],
+                          color: _isServiceEnabled
+                              ? Colors.green[800]
+                              : Colors.orange[800],
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -775,15 +788,19 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Color(0xFF7F7FD5), size: 16),
+                      const Icon(Icons.info_outline,
+                          color: Color(0xFF7F7FD5), size: 16),
                       const SizedBox(width: 8),
-                      const Text('功能介绍', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const Text('功能介绍',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'AutoGLM 助手可以帮助你自动执行各种任务，如打开应用、点击按钮、输入文本等。只需输入你的指令，AI 会自动分析并执行相应的操作。',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700], height: 1.4),
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.grey[700], height: 1.4),
                     softWrap: true,
                   ),
                 ],
@@ -816,7 +833,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                       decoration: BoxDecoration(
                         color: primaryColor.withValues(alpha: 0.05),
                         border: Border(
-                          bottom: BorderSide(color: primaryColor.withValues(alpha: 0.2)),
+                          bottom: BorderSide(
+                              color: primaryColor.withValues(alpha: 0.2)),
                         ),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(16),
@@ -825,9 +843,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.history, color: Color(0xFF7F7FD5), size: 16),
+                          Icon(Icons.history,
+                              color: Color(0xFF7F7FD5), size: 16),
                           SizedBox(width: 8),
-                          Text('执行日志', style: TextStyle(fontWeight: FontWeight.w500)),
+                          Text('执行日志',
+                              style: TextStyle(fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -838,16 +858,19 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.event_note_outlined, color: Colors.grey[300], size: 36),
+                                  Icon(Icons.event_note_outlined,
+                                      color: Colors.grey[300], size: 36),
                                   const SizedBox(height: 12),
                                   const Text(
                                     '暂无执行日志',
-                                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                                    style: TextStyle(
+                                        color: Colors.grey, fontSize: 13),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     '输入指令开始执行任务',
-                                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                                    style: TextStyle(
+                                        color: Colors.grey[400], fontSize: 11),
                                   ),
                                 ],
                               ),
@@ -856,12 +879,15 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                               controller: _scrollController,
                               padding: const EdgeInsets.all(12),
                               itemCount: _logs.length,
-                              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey[100]),
+                              separatorBuilder: (_, __) =>
+                                  Divider(height: 1, color: Colors.grey[100]),
                               itemBuilder: (context, index) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 6),
                                 child: Text(
-                                  _logs[index], 
-                                  style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                                  _logs[index],
+                                  style: const TextStyle(
+                                      fontSize: 13, fontFamily: 'monospace'),
                                 ),
                               ),
                             ),
@@ -908,9 +934,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                     ? null
                                     : () {
                                         HapticFeedback.lightImpact();
-                                        _controller.text = _presetCommands[index];
+                                        _controller.text =
+                                            _presetCommands[index];
                                       },
-                                backgroundColor: primaryColor.withValues(alpha: 0.1),
+                                backgroundColor:
+                                    primaryColor.withValues(alpha: 0.1),
                                 labelStyle: TextStyle(
                                   color: primaryColor,
                                   fontSize: 12,
@@ -944,10 +972,12 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                               decoration: InputDecoration(
                                 hintText: '输入指令 (例如: 给第一条动态点赞)',
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 14),
                                 suffixIcon: _controller.text.isNotEmpty
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                                        icon: const Icon(Icons.clear,
+                                            size: 18, color: Colors.grey),
                                         onPressed: () {
                                           HapticFeedback.lightImpact();
                                           _controller.clear();
@@ -956,7 +986,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                     : null,
                               ),
                               enabled: !_isProcessing,
-                              onSubmitted: _isProcessing ? null : (_) => _startTask(),
+                              onSubmitted:
+                                  _isProcessing ? null : (_) => _startTask(),
                             ),
                           ),
                         ),
@@ -964,16 +995,19 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                         FloatingActionButton(
                           heroTag: "autoglm_task_button",
                           onPressed: _isProcessing
-                              ? (_isStopping ? null : () {
-                                  HapticFeedback.lightImpact();
-                                  _stopTask();
-                                })
+                              ? (_isStopping
+                                  ? null
+                                  : () {
+                                      HapticFeedback.lightImpact();
+                                      _stopTask();
+                                    })
                               : () {
                                   HapticFeedback.lightImpact();
                                   _startTask();
                                 },
                           elevation: 4,
-                          backgroundColor: _isProcessing ? Colors.red : primaryColor,
+                          backgroundColor:
+                              _isProcessing ? Colors.red : primaryColor,
                           shape: const CircleBorder(),
                           child: _isProcessing
                               ? (_isStopping
@@ -985,8 +1019,10 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Icon(Icons.stop_rounded, color: Colors.white))
-                              : const Icon(Icons.send_rounded, color: Colors.white),
+                                  : const Icon(Icons.stop_rounded,
+                                      color: Colors.white))
+                              : const Icon(Icons.send_rounded,
+                                  color: Colors.white),
                         ),
                       ],
                     ),
@@ -1026,7 +1062,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       ),
     );
   }
-  
+
   // 显示帮助对话框
   void _showHelpDialog() {
     showDialog(
@@ -1036,19 +1072,22 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('使用帮助', style: TextStyle(fontWeight: FontWeight.bold)),
+          title:
+              const Text('使用帮助', style: TextStyle(fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('AutoGLM 助手使用说明:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('AutoGLM 助手使用说明:',
+                  style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               const Text('1. 确保已开启无障碍服务', style: TextStyle(fontSize: 14)),
               const Text('2. 输入你想要执行的任务指令', style: TextStyle(fontSize: 14)),
               const Text('3. 点击发送按钮开始执行', style: TextStyle(fontSize: 14)),
               const Text('4. 查看执行日志了解任务进展', style: TextStyle(fontSize: 14)),
               const SizedBox(height: 12),
-              const Text('示例指令:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const Text('示例指令:',
+                  style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 4),
               const Text('- 给第一条动态点赞', style: TextStyle(fontSize: 14)),
               const Text('- 搜索"Flutter"', style: TextStyle(fontSize: 14)),
@@ -1060,7 +1099,8 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('我知道了', style: TextStyle(color: Color(0xFF7F7FD5))),
+              child: const Text('我知道了',
+                  style: TextStyle(color: Color(0xFF7F7FD5))),
             ),
           ],
         );

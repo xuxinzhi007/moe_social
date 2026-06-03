@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/main_nav_controller.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/fade_in_up.dart';
@@ -9,7 +7,7 @@ import '../notifications/notification_center_page.dart';
 import 'discover_match_tab.dart';
 import 'discover_play_tab.dart';
 
-/// 底栏「探索」：同好匹配与玩法入口（AI 酒馆、小游戏）。
+/// 历史探索页：同好匹配与玩法入口（AI 酒馆、小游戏）。
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
 
@@ -21,33 +19,16 @@ class _DiscoverPageState extends State<DiscoverPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  late final MainNavController _mainNav;
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _mainNav = context.read<MainNavController>();
-    _mainNav.addListener(_onMainNavRequested);
-    _applyExploreSubTab(_mainNav.consumeExploreSubTab());
   }
 
   @override
   void dispose() {
-    _mainNav.removeListener(_onMainNavRequested);
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _onMainNavRequested() {
-    _applyExploreSubTab(_mainNav.consumeExploreSubTab());
-  }
-
-  void _applyExploreSubTab(int? subTab) {
-    if (!mounted || subTab == null) return;
-    if (subTab < 0 || subTab >= _tabController.length) return;
-    if (_tabController.index == subTab) return;
-    _tabController.animateTo(subTab);
   }
 
   @override

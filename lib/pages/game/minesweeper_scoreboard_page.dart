@@ -1,7 +1,5 @@
 // 扫雷游戏排行榜页面
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import '../../widgets/fade_in_up.dart';
 import 'minesweeper_config.dart';
 
@@ -9,7 +7,8 @@ class MinesweeperScoreboardPage extends StatefulWidget {
   const MinesweeperScoreboardPage({super.key});
 
   @override
-  State<MinesweeperScoreboardPage> createState() => _MinesweeperScoreboardPageState();
+  State<MinesweeperScoreboardPage> createState() =>
+      _MinesweeperScoreboardPageState();
 }
 
 class _MinesweeperScoreboardPageState extends State<MinesweeperScoreboardPage> {
@@ -68,7 +67,8 @@ class _MinesweeperScoreboardPageState extends State<MinesweeperScoreboardPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('扫雷排行榜', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('扫雷排行榜',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
@@ -107,9 +107,12 @@ class _MinesweeperScoreboardPageState extends State<MinesweeperScoreboardPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _difficultyButton(GameDifficulty.easy, '初级', const [Color(0xFF4CAF50), Color(0xFF81C784)]),
-                _difficultyButton(GameDifficulty.medium, '中级', const [Color(0xFF2196F3), Color(0xFF64B5F6)]),
-                _difficultyButton(GameDifficulty.hard, '高级', const [Color(0xFFFF9800), Color(0xFFFFB74D)]),
+                _difficultyButton(GameDifficulty.easy, '初级',
+                    const [Color(0xFF4CAF50), Color(0xFF81C784)]),
+                _difficultyButton(GameDifficulty.medium, '中级',
+                    const [Color(0xFF2196F3), Color(0xFF64B5F6)]),
+                _difficultyButton(GameDifficulty.hard, '高级',
+                    const [Color(0xFFFF9800), Color(0xFFFFB74D)]),
               ],
             ),
           ),
@@ -190,7 +193,8 @@ class _MinesweeperScoreboardPageState extends State<MinesweeperScoreboardPage> {
     );
   }
 
-  Widget _difficultyButton(GameDifficulty difficulty, String label, List<Color> gradient) {
+  Widget _difficultyButton(
+      GameDifficulty difficulty, String label, List<Color> gradient) {
     final isSelected = _selectedDifficulty == difficulty;
     return GestureDetector(
       onTap: () {

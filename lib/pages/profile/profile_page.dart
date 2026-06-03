@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
 import '../../autoglm/autoglm_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../models/achievement_badge.dart';
 import '../../models/user.dart';
 import '../../providers/user_level_provider.dart';
@@ -398,54 +399,55 @@ class _ProfilePageState extends State<ProfilePage> {
                     FadeInUp(
                       delay: const Duration(milliseconds: 140),
                       child: _menuSection('实验室与系统', [
-                        _MenuItem(
-                          icon: Icons.smart_toy_rounded,
-                          title: 'AutoGLM 助手',
-                          color: _moe.primary,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const AutoGLMPage()));
-                          },
-                          trailing: Transform.scale(
-                            scale: 0.8,
-                            child: Switch(
-                              value: AutoGLMService.enableOverlay,
-                              activeThumbColor: _moe.primary,
-                              onChanged: (v) async {
-                                HapticFeedback.lightImpact();
-                                setState(
-                                    () => AutoGLMService.enableOverlay = v);
-                                if (v) {
-                                  bool ok = await AutoGLMService
-                                      .checkOverlayPermission();
-                                  if (!ok) {
-                                    await AutoGLMService
-                                        .requestOverlayPermission();
-                                    await Future.delayed(
-                                        const Duration(seconds: 1));
-                                    ok = await AutoGLMService
+                        if (FeatureFlags.showAutoGlm)
+                          _MenuItem(
+                            icon: Icons.smart_toy_rounded,
+                            title: 'AutoGLM 助手',
+                            color: _moe.primary,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const AutoGLMPage()));
+                            },
+                            trailing: Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: AutoGLMService.enableOverlay,
+                                activeThumbColor: _moe.primary,
+                                onChanged: (v) async {
+                                  HapticFeedback.lightImpact();
+                                  setState(
+                                      () => AutoGLMService.enableOverlay = v);
+                                  if (v) {
+                                    bool ok = await AutoGLMService
                                         .checkOverlayPermission();
                                     if (!ok) {
-                                      setState(() =>
-                                          AutoGLMService.enableOverlay = false);
-                                      if (!context.mounted) return;
-                                      MoeToast.error(context, '需要悬浮窗权限才能显示');
-                                      return;
+                                      await AutoGLMService
+                                          .requestOverlayPermission();
+                                      await Future.delayed(
+                                          const Duration(seconds: 1));
+                                      ok = await AutoGLMService
+                                          .checkOverlayPermission();
+                                      if (!ok) {
+                                        setState(() => AutoGLMService
+                                            .enableOverlay = false);
+                                        if (!context.mounted) return;
+                                        MoeToast.error(context, '需要悬浮窗权限才能显示');
+                                        return;
+                                      }
                                     }
+                                    await AutoGLMService.showOverlay();
+                                    if (!context.mounted) return;
+                                    MoeToast.success(context, '悬浮窗已开启');
+                                  } else {
+                                    await AutoGLMService.removeOverlay();
                                   }
-                                  await AutoGLMService.showOverlay();
-                                  if (!context.mounted) return;
-                                  MoeToast.success(context, '悬浮窗已开启');
-                                } else {
-                                  await AutoGLMService.removeOverlay();
-                                }
-                              },
+                                },
+                              ),
                             ),
                           ),
-                        ),
                         _MenuItem(
                             icon: Icons.smart_toy_rounded,
                             title: 'AI 助手',
@@ -964,9 +966,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: isCta
-                                ? _moe.primary
-                                : const Color(0xFF76798D),
+                            color:
+                                isCta ? _moe.primary : const Color(0xFF76798D),
                             height: 1.2,
                           ),
                         ),
@@ -1260,8 +1261,7 @@ class _ProfilePageState extends State<ProfilePage> {
             width: 4,
             height: 16,
             decoration: BoxDecoration(
-                color: _moe.primary,
-                borderRadius: BorderRadius.circular(2))),
+                color: _moe.primary, borderRadius: BorderRadius.circular(2))),
         const SizedBox(width: 10),
         Text(t,
             style: const TextStyle(

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../pages/community/community_home_page.dart';
-import '../pages/discover/discover_page.dart';
+import '../pages/ai/agent_list_page.dart';
+import '../pages/chat/conversations_page.dart';
 import '../pages/feed/home_page.dart';
-import '../pages/profile/friends_page.dart';
 import '../pages/profile/profile_page.dart';
 import '../providers/main_nav_controller.dart';
 import '../services/chat_push_service.dart';
@@ -22,9 +21,8 @@ class _MainPageState extends State<MainPage> {
   late final MainNavController _mainNav;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
-    () => const FriendsPage(),
-    () => const CommunityHomePage(),
-    () => const DiscoverPage(),
+    () => const ConversationsPage(),
+    () => const AgentListPage(),
     () => const ProfilePage(),
   ];
   late final List<Widget?> _loadedPages =
@@ -86,19 +84,14 @@ class _MainPageState extends State<MainPage> {
             label: '首页',
           ),
           NavigationDestination(
-            icon: Icon(Icons.contacts_outlined),
-            selectedIcon: Icon(Icons.contacts_rounded),
-            label: '同好与人脉',
+            icon: Icon(Icons.chat_bubble_outline_rounded),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
+            label: '消息',
           ),
           NavigationDestination(
-            icon: Icon(Icons.forum_outlined),
-            selectedIcon: Icon(Icons.forum_rounded),
-            label: '兴趣社区',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore_rounded),
-            label: '探索',
+            icon: Icon(Icons.auto_awesome_outlined),
+            selectedIcon: Icon(Icons.auto_awesome_rounded),
+            label: 'AI',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

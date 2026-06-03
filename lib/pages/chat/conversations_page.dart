@@ -450,7 +450,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         child: MoeEmptyState(
           icon: Icons.chat_bubble_outline_rounded,
           title: '还没有聊天',
-          subtitle: '去同好列表找好友，或在探索里认识新朋友',
+          subtitle: '去同好列表找好友，或先在首页逛逛新内容',
           primaryAction: MoeEmptyStateAction(
             label: '去找同好',
             icon: Icons.people_rounded,
@@ -463,14 +463,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           ),
           secondaryAction: MoeEmptyStateAction(
-            label: '去探索',
-            icon: Icons.explore_rounded,
+            label: '回首页',
+            icon: Icons.home_rounded,
             onPressed: () {
               if (widget.onEmptyExplore != null) {
                 widget.onEmptyExplore!();
                 return;
               }
-              context.read<MainNavController>().requestExplore();
+              context.read<MainNavController>().requestTab(0);
             },
           ),
         ),

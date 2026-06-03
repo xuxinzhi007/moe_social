@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/ai_character_card_service.dart';
@@ -60,12 +59,12 @@ class _AgentListPageState extends State<AgentListPage>
   String _selectedSquareProviderId =
       AiPlatformLocalProvider.defaultBuiltinProviderId;
   Map<String, Color> _agentColors = {};
-  bool _showFab = true;
+  final bool _showFab = true;
 
   // 新增状态变量
   String _searchQuery = '';
   String _sortBy = '创建时间';
-  List<String> _sortOptions = ['创建时间', '名称', '使用频率'];
+  final List<String> _sortOptions = ['创建时间', '名称', '使用频率'];
   Map<String, int> _usageCounts = {};
 
   static const _pageBackground = AiBrandTokens.pageBackground;
@@ -85,6 +84,11 @@ class _AgentListPageState extends State<AgentListPage>
     final counts = await AiAgentUsageService().loadCounts();
     if (!mounted) return;
     setState(() => _usageCounts = counts);
+  }
+
+  void _updateTavernState(VoidCallback update) {
+    if (!mounted) return;
+    setState(update);
   }
 
   void _filterAgents() {
@@ -656,9 +660,8 @@ class _AgentListPageState extends State<AgentListPage>
   ) async {
     await _reloadPageData();
     if (!mounted) return;
-    final noticeText = result.notices.isEmpty
-        ? ''
-        : '；${result.notices.join('；')}';
+    final noticeText =
+        result.notices.isEmpty ? '' : '；${result.notices.join('；')}';
     MoeToast.success(
       context,
       '角色卡已导入：${result.agent.name}$noticeText',
@@ -668,8 +671,7 @@ class _AgentListPageState extends State<AgentListPage>
   Future<void> _showImportCharacterCardDialog() async {
     final controller = TextEditingController();
     var isImporting = false;
-    final exportDirHint =
-        await AiCharacterCardService().exportDirectoryPath();
+    final exportDirHint = await AiCharacterCardService().exportDirectoryPath();
     if (!mounted) return;
 
     await AiSheet.show<void>(
@@ -693,8 +695,9 @@ class _AgentListPageState extends State<AgentListPage>
                         await _finishCharacterCardImport(result);
                       } catch (e) {
                         if (!mounted) return;
-                        final msg =
-                            e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+                        final msg = e
+                            .toString()
+                            .replaceFirst(RegExp(r'^Exception:\s*'), '');
                         if (msg.contains('已取消')) return;
                         MoeToast.error(context, msg);
                       } finally {

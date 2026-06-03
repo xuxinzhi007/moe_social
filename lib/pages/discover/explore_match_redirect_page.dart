@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../providers/main_nav_controller.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 
-/// 兼容旧路由 `/match`：跳转到主界面「探索 · 同好」。
+/// 兼容旧路由 `/match`：跳转到同好与联系人页面。
 class ExploreMatchRedirectPage extends StatefulWidget {
   const ExploreMatchRedirectPage({super.key});
 
@@ -22,8 +20,7 @@ class _ExploreMatchRedirectPageState extends State<ExploreMatchRedirectPage> {
 
   void _redirect() {
     if (!mounted) return;
-    context.read<MainNavController>().requestExplore(subTab: 0);
-    Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    Navigator.of(context).pushReplacementNamed('/friends');
   }
 
   @override

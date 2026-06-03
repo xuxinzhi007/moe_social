@@ -20,7 +20,6 @@ import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
-import '../../providers/main_nav_controller.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
@@ -905,22 +904,17 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  void _requestMainTab(int index) {
-    if (!mounted) return;
-    context.read<MainNavController>().requestTab(index);
-  }
-
   Widget _buildFeedEmptyState() {
     if (_mode == _HomeFeedMode.following) {
       return _buildUnifiedStatePanel(
         icon: Icons.star_border_rounded,
         title: '关注的人还没有发动态',
-        subtitle: '先去兴趣社区逛逛话题，或在探索里认识新的同好 ~(｡•ᴗ•｡)~',
+        subtitle: '先去兴趣社区逛逛话题，或去同好页认识新朋友 ~(｡•ᴗ•｡)~',
         accentColor: const Color(0xFFFFB347),
         action: SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            onPressed: () => _requestMainTab(2),
+            onPressed: () => Navigator.pushNamed(context, '/community'),
             icon: const Icon(Icons.forum_rounded, size: 20),
             label: const Text('去兴趣社区'),
             style: FilledButton.styleFrom(
@@ -936,8 +930,8 @@ class _HomePageState extends State<HomePage>
         secondaryAction: SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () => _requestMainTab(3),
-            icon: const Icon(Icons.explore_rounded, size: 20),
+            onPressed: () => Navigator.pushNamed(context, '/friends'),
+            icon: const Icon(Icons.people_rounded, size: 20),
             label: const Text('去找同好'),
             style: OutlinedButton.styleFrom(
               foregroundColor: _moe.primary,
@@ -957,7 +951,7 @@ class _HomePageState extends State<HomePage>
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
       title: inTopic ? '#$topicName 下暂时还没有动态' : '这里还是空的耶',
-      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去探索页用话题认识同好。',
+      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去同好页认识新朋友。',
       accentColor: _moe.primary,
       action: SizedBox(
         width: double.infinity,
@@ -978,8 +972,8 @@ class _HomePageState extends State<HomePage>
       secondaryAction: SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
-          onPressed: () => _requestMainTab(3),
-          icon: const Icon(Icons.favorite_rounded, size: 20),
+          onPressed: () => Navigator.pushNamed(context, '/friends'),
+          icon: const Icon(Icons.people_rounded, size: 20),
           label: const Text('去找同好'),
           style: OutlinedButton.styleFrom(
             foregroundColor: _moe.primary,
@@ -1141,7 +1135,8 @@ class _HomePageState extends State<HomePage>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_downward_rounded, color: _moe.primary, size: 18),
+                  Icon(Icons.arrow_downward_rounded,
+                      color: _moe.primary, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     '点击加载更多',
