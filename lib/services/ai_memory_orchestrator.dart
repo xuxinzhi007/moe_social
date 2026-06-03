@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
 
 import '../auth_service.dart';
 import '../models/ai_agent.dart';
@@ -14,7 +11,6 @@ import 'ai_db_service.dart';
 import 'ai_memory_learn_result.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
-import 'api_response.dart';
 import 'llm_endpoint_config.dart';
 import 'memory_agent_service.dart';
 import 'ai_roleplay_prompt_builder.dart';
@@ -102,7 +98,6 @@ class AiMemoryOrchestrator {
 
   final MemoryAgentService _agent = MemoryAgentService();
   final AiDbService _db = AiDbService();
-  final Map<String, int> _turnCounters = {};
   AiMemoryTurnStats _turnStats = const AiMemoryTurnStats();
 
   /// 上一回合注入/写入统计（供设置 Sheet 展示）。
@@ -175,7 +170,8 @@ class AiMemoryOrchestrator {
 
     final account = await _loadAccountMemoryState();
     final availableCount = account.memories.length;
-    final profile = await AiProviderService().resolveProfile(agent.providerProfileId);
+    final profile =
+        await AiProviderService().resolveProfile(agent.providerProfileId);
     final memoryToolsAdvanced =
         profile.supportsToolCalls && !profile.isBackendOllama;
 
@@ -405,34 +401,6 @@ class AiMemoryOrchestrator {
     return token != null && token.trim().isNotEmpty;
   }
 
-  Future<List<UserMemory>> _loadUserFacingMemories() async {
-    try {
-      final user = await AuthService.getUserInfo();
-      final display = await MemoryService.getUserMemoriesDisplay(user.id);
-      return display.items
-          .map(
-            (item) => UserMemory(
-              id: item.id,
-              userId: user.id,
-              key: item.key,
-              value: item.content,
-              memoryType: item.category,
-              createdAt: item.updatedAt,
-              updatedAt: item.updatedAt,
-            ),
-          )
-          .toList();
-    } catch (_) {
-      try {
-        final user = await AuthService.getUserInfo();
-        final raw = await MemoryService.getUserMemories(user.id);
-        return MemoryService.filterUserFacingMemories(raw);
-      } catch (_) {
-        return const [];
-      }
-    }
-  }
-
   /// 默认路径：后端记忆文本库检索（1 次 HTTP，不增加聊天轮次）。
   /// 角色扮演时不注入账号昵称类记忆，避免把 NPC 名（如「小新」）当成玩家真名。
   List<UserMemory> _filterRoleplayInjectMemories(List<UserMemory> memories) {
@@ -494,7 +462,8 @@ class AiMemoryOrchestrator {
     try {
       final user = await AuthService.getUserInfo();
       final daily = await MemoryDailyNote.loadRecent(user.id);
-      final dailyBlock = MemoryBootstrapComposer.dailyBlock(daily, budget: budget);
+      final dailyBlock =
+          MemoryBootstrapComposer.dailyBlock(daily, budget: budget);
       if (dailyBlock != null) parts.add(dailyBlock);
     } catch (_) {}
 
@@ -523,27 +492,6 @@ class AiMemoryOrchestrator {
       );
     }
     return buffer.toString();
-  }
-
-  Future<Map<String, dynamic>> _loadLlmConfig() async {
-    try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/config');
-      ApiService.logDirectHttp('GET', uri);
-      final response = await http
-          .get(
-            uri,
-            headers: ApiService.mergeTunnelHeaders(uri, headers: {
-              if (ApiService.token case final t?) 'Authorization': 'Bearer $t',
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) return const {};
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map<String, dynamic>) return const {};
-      return ApiResponse.nestedPayload(decoded);
-    } catch (_) {
-      return const {};
-    }
   }
 
   Future<

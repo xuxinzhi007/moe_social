@@ -67,7 +67,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                           '请到 Provider 填写「默认模型」或「手动模型」（一行一个），'
                           '保存后即可在此创建角色卡；聊天时直接调用该模型 ID。',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[500], fontSize: 14, height: 1.45),
+              style: TextStyle(
+                  color: Colors.grey[500], fontSize: 14, height: 1.45),
             ),
           ),
           const SizedBox(height: 24),
@@ -107,7 +108,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
               style: FilledButton.styleFrom(
                 backgroundColor: _AgentListPageState._brandSecondary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
               ),
               icon: const Icon(Icons.badge_outlined),
               label: const Text('直接输入模型 ID 创建角色卡'),
@@ -122,8 +124,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
               backgroundColor: provider.isBackendOllama
                   ? _AgentListPageState._brandSecondary
                   : null,
-              foregroundColor:
-                  provider.isBackendOllama ? Colors.white : null,
+              foregroundColor: provider.isBackendOllama ? Colors.white : null,
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -144,256 +145,255 @@ extension TavernProvidersTabPart on _AgentListPageState {
           final categoryModels = modelCategories[category]!;
 
           return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: _AgentListPageState._brandSecondary,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        category,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '(${categoryModels.length})',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  children: categoryModels.map((modelName) {
-                    final existing = _findExistingAgentForModel(
-                      modelName,
-                      providerId: provider.id,
-                    );
-                    final alreadyAdded = existing != null;
-                    final cardColor = alreadyAdded
-                        ? const Color(0xFF4CAF50)
-                        : (provider.isBuiltinBackend
-                            ? _AgentListPageState._brandSecondary
-                            : const Color(0xFF00A86B));
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 16,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withValues(alpha: 0.08),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: cardColor.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
+                        color: _AgentListPageState._brandSecondary,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      child: Material(
-                        color: Colors.transparent,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      category,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '(${categoryModels.length})',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: categoryModels.map((modelName) {
+                  final existing = _findExistingAgentForModel(
+                    modelName,
+                    providerId: provider.id,
+                  );
+                  final alreadyAdded = existing != null;
+                  final cardColor = alreadyAdded
+                      ? const Color(0xFF4CAF50)
+                      : (provider.isBuiltinBackend
+                          ? _AgentListPageState._brandSecondary
+                          : const Color(0xFF00A86B));
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withValues(alpha: 0.08),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: cardColor.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _createAgentFromModel(modelName, provider);
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        cardColor,
-                                        cardColor.withValues(alpha: 0.7)
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _createAgentFromModel(modelName, provider);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      cardColor,
+                                      cardColor.withValues(alpha: 0.7)
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: cardColor.withValues(alpha: 0.3),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  alreadyAdded
+                                      ? Icons.check_circle_rounded
+                                      : Icons.badge_outlined,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            modelName,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF333333),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (alreadyAdded)
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF4CAF50)
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              '已有角色卡',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Color(0xFF4CAF50),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: cardColor.withValues(alpha: 0.3),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      tavernGetModelDescription(modelName),
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 11,
                                       ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    alreadyAdded
-                                        ? Icons.check_circle_rounded
-                                        : Icons.badge_outlined,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              modelName,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFF333333),
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: cardColor.withValues(
+                                                alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            sourceLabel,
+                                            style: TextStyle(
+                                              color: cardColor,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                          if (alreadyAdded)
-                                            Container(
-                                              margin: const EdgeInsets.only(
-                                                  left: 8),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF4CAF50)
-                                                    .withValues(alpha: 0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: const Text(
-                                                '已有角色卡',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Color(0xFF4CAF50),
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        tavernGetModelDescription(modelName),
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 11,
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: cardColor.withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              sourceLabel,
-                                              style: TextStyle(
-                                                color: cardColor,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            provider.name,
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[100],
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              provider.name,
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            tavernGetModelSize(modelName),
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey[100],
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              tavernGetModelSize(modelName),
-                                              style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Icon(
-                                  alreadyAdded
-                                      ? Icons.chat_bubble_outline_rounded
-                                      : Icons.add_circle_outline_rounded,
-                                  color: cardColor,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                alreadyAdded
+                                    ? Icons.chat_bubble_outline_rounded
+                                    : Icons.add_circle_outline_rounded,
+                                color: cardColor,
+                                size: 20,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            );
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
         },
       );
     }
@@ -452,7 +452,9 @@ extension TavernProvidersTabPart on _AgentListPageState {
                           .toList(),
                       onChanged: (value) async {
                         if (value == null) return;
-                        setState(() => _selectedSquareProviderId = value);
+                        _updateTavernState(
+                          () => _selectedSquareProviderId = value,
+                        );
                         await AiProviderService()
                             .saveLastSelectedProfileId(value);
                         await _loadSquareModels();
@@ -479,8 +481,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                       _AgentListPageState._brandPrimary,
                     ),
                     tavernSquareMetaChip('来源：$sourceLabel', Colors.blueGrey),
-                    tavernSquareMetaChip(
-                        '模型数：${_squareModels.length}', _AgentListPageState._brandSecondary),
+                    tavernSquareMetaChip('模型数：${_squareModels.length}',
+                        _AgentListPageState._brandSecondary),
                   ],
                 ),
               ),

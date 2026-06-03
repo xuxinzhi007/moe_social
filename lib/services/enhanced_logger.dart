@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -38,30 +37,32 @@ class LogEntry {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'timestamp': timestamp.toIso8601String(),
-    'level': level.name,
-    'category': category.name,
-    'message': message,
-    'metadata': jsonEncode(metadata),
-    'traceId': traceId,
-    'userId': userId,
-    'duration': duration?.inMilliseconds,
-  };
+        'id': id,
+        'timestamp': timestamp.toIso8601String(),
+        'level': level.name,
+        'category': category.name,
+        'message': message,
+        'metadata': jsonEncode(metadata),
+        'traceId': traceId,
+        'userId': userId,
+        'duration': duration?.inMilliseconds,
+      };
 
   factory LogEntry.fromJson(Map<String, dynamic> json) => LogEntry(
-    id: json['id'],
-    timestamp: DateTime.parse(json['timestamp']),
-    level: LogLevel.values.byName(json['level']),
-    category: LogCategory.values.byName(json['category']),
-    message: json['message'],
-    metadata: json['metadata'] != null
-        ? Map<String, dynamic>.from(jsonDecode(json['metadata']))
-        : {},
-    traceId: json['traceId'],
-    userId: json['userId'],
-    duration: json['duration'] != null ? Duration(milliseconds: json['duration']) : null,
-  );
+        id: json['id'],
+        timestamp: DateTime.parse(json['timestamp']),
+        level: LogLevel.values.byName(json['level']),
+        category: LogCategory.values.byName(json['category']),
+        message: json['message'],
+        metadata: json['metadata'] != null
+            ? Map<String, dynamic>.from(jsonDecode(json['metadata']))
+            : {},
+        traceId: json['traceId'],
+        userId: json['userId'],
+        duration: json['duration'] != null
+            ? Duration(milliseconds: json['duration'])
+            : null,
+      );
 
   /// 获取日志等级对应的emoji
   String get levelEmoji {
@@ -102,10 +103,13 @@ class LogEntry {
   /// 格式化显示
   String format({bool includeMetadata = false}) {
     final time = DateFormat('HH:mm:ss.SSS').format(timestamp);
-    final durationStr = duration != null ? ' (${duration!.inMilliseconds}ms)' : '';
-    final traceStr = traceId != null ? ' [Trace:${traceId!.substring(0, 8)}]' : '';
+    final durationStr =
+        duration != null ? ' (${duration!.inMilliseconds}ms)' : '';
+    final traceStr =
+        traceId != null ? ' [Trace:${traceId!.substring(0, 8)}]' : '';
 
-    var result = '$levelEmoji $categoryEmoji [$time] $message$durationStr$traceStr';
+    var result =
+        '$levelEmoji $categoryEmoji [$time] $message$durationStr$traceStr';
 
     if (includeMetadata && metadata.isNotEmpty) {
       result += '\n  Metadata: ${jsonEncode(metadata)}';
@@ -174,8 +178,11 @@ class EnhancedLogger {
   void startTrace(String traceId, {String? userId}) {
     _currentTraceId = traceId;
     _currentUserId = userId;
-    log(LogLevel.info, LogCategory.system, '开始执行任务',
-        metadata: {'action': 'trace_start', 'traceId': traceId, 'userId': userId});
+    log(LogLevel.info, LogCategory.system, '开始执行任务', metadata: {
+      'action': 'trace_start',
+      'traceId': traceId,
+      'userId': userId
+    });
   }
 
   /// 结束追踪
@@ -189,7 +196,10 @@ class EnhancedLogger {
   }
 
   /// 记录日志
-  void log(LogLevel level, LogCategory category, String message, {
+  void log(
+    LogLevel level,
+    LogCategory category,
+    String message, {
     Map<String, dynamic>? metadata,
     String? traceId,
     String? userId,
@@ -222,23 +232,33 @@ class EnhancedLogger {
   }
 
   /// 便捷方法
-  void debug(String message, {Map<String, dynamic>? metadata, LogCategory category = LogCategory.system}) {
+  void debug(String message,
+      {Map<String, dynamic>? metadata,
+      LogCategory category = LogCategory.system}) {
     log(LogLevel.debug, category, message, metadata: metadata);
   }
 
-  void info(String message, {Map<String, dynamic>? metadata, LogCategory category = LogCategory.system}) {
+  void info(String message,
+      {Map<String, dynamic>? metadata,
+      LogCategory category = LogCategory.system}) {
     log(LogLevel.info, category, message, metadata: metadata);
   }
 
-  void warn(String message, {Map<String, dynamic>? metadata, LogCategory category = LogCategory.system}) {
+  void warn(String message,
+      {Map<String, dynamic>? metadata,
+      LogCategory category = LogCategory.system}) {
     log(LogLevel.warn, category, message, metadata: metadata);
   }
 
-  void error(String message, {Map<String, dynamic>? metadata, LogCategory category = LogCategory.system}) {
+  void error(String message,
+      {Map<String, dynamic>? metadata,
+      LogCategory category = LogCategory.system}) {
     log(LogLevel.error, category, message, metadata: metadata);
   }
 
-  void critical(String message, {Map<String, dynamic>? metadata, LogCategory category = LogCategory.system}) {
+  void critical(String message,
+      {Map<String, dynamic>? metadata,
+      LogCategory category = LogCategory.system}) {
     log(LogLevel.critical, category, message, metadata: metadata);
   }
 
@@ -385,7 +405,10 @@ class EnhancedLogger {
       'levelCounts': levelCounts.map((k, v) => MapEntry(k.name, v)),
       'categoryCounts': categoryCounts.map((k, v) => MapEntry(k.name, v)),
       'errorRate': recentLogs.isNotEmpty
-          ? recentLogs.where((l) => l.level.index >= LogLevel.error.index).length / recentLogs.length
+          ? recentLogs
+                  .where((l) => l.level.index >= LogLevel.error.index)
+                  .length /
+              recentLogs.length
           : 0.0,
     };
   }
@@ -393,7 +416,7 @@ class EnhancedLogger {
   /// 生成唯一ID
   String _generateId() {
     return DateTime.now().millisecondsSinceEpoch.toString() +
-           Random().nextInt(1000).toString().padLeft(3, '0');
+        Random().nextInt(1000).toString().padLeft(3, '0');
   }
 
   /// 释放资源
@@ -420,7 +443,8 @@ class LogAnalyzer {
     final totalDuration = endTime.difference(startTime);
 
     final steps = logs.where((l) => l.metadata['action'] != null).length;
-    final errors = logs.where((l) => l.level.index >= LogLevel.error.index).length;
+    final errors =
+        logs.where((l) => l.level.index >= LogLevel.error.index).length;
     final warnings = logs.where((l) => l.level == LogLevel.warn).length;
 
     final bottlenecks = _identifyBottlenecks(logs);
@@ -442,7 +466,8 @@ class LogAnalyzer {
     final bottlenecks = <String>[];
 
     // 分析网络请求延迟
-    final networkLogs = logs.where((l) => l.category == LogCategory.network).toList();
+    final networkLogs =
+        logs.where((l) => l.category == LogCategory.network).toList();
     for (final log in networkLogs) {
       if (log.duration != null && log.duration!.inSeconds > 5) {
         bottlenecks.add('网络请求延迟: ${log.message} (${log.duration!.inSeconds}s)');
@@ -450,7 +475,8 @@ class LogAnalyzer {
     }
 
     // 分析设备操作延迟
-    final deviceLogs = logs.where((l) => l.category == LogCategory.device).toList();
+    final deviceLogs =
+        logs.where((l) => l.category == LogCategory.device).toList();
     for (final log in deviceLogs) {
       if (log.duration != null && log.duration!.inSeconds > 2) {
         bottlenecks.add('设备操作延迟: ${log.message} (${log.duration!.inSeconds}s)');
@@ -463,13 +489,16 @@ class LogAnalyzer {
   List<String> _generateOptimizationSuggestions(List<LogEntry> logs) {
     final suggestions = <String>[];
 
-    final errorLogs = logs.where((l) => l.level.index >= LogLevel.error.index).toList();
+    final errorLogs =
+        logs.where((l) => l.level.index >= LogLevel.error.index).toList();
     if (errorLogs.length > 3) {
       suggestions.add('错误率过高，建议检查任务复杂度或网络环境');
     }
 
-    final networkLogs = logs.where((l) => l.category == LogCategory.network).toList();
-    if (networkLogs.any((l) => l.duration != null && l.duration!.inSeconds > 10)) {
+    final networkLogs =
+        logs.where((l) => l.category == LogCategory.network).toList();
+    if (networkLogs
+        .any((l) => l.duration != null && l.duration!.inSeconds > 10)) {
       suggestions.add('网络请求超时频繁，建议优化网络环境或增加重试机制');
     }
 
@@ -500,13 +529,13 @@ class TaskPerformanceReport {
   });
 
   factory TaskPerformanceReport.empty(String traceId) => TaskPerformanceReport(
-    traceId: traceId,
-    totalDuration: Duration.zero,
-    stepCount: 0,
-    errorCount: 0,
-    warningCount: 0,
-    errorRate: 0.0,
-    bottlenecks: [],
-    suggestions: [],
-  );
+        traceId: traceId,
+        totalDuration: Duration.zero,
+        stepCount: 0,
+        errorCount: 0,
+        warningCount: 0,
+        errorRate: 0.0,
+        bottlenecks: [],
+        suggestions: [],
+      );
 }

@@ -135,10 +135,10 @@ class _FollowingPageState extends State<FollowingPage> {
         placeholderIcon: Icons.person,
       ),
       title: Text(
-        user.username ?? '未知用户',
+        user.username,
         style: const TextStyle(fontWeight: FontWeight.w500),
       ),
-      subtitle: user.email != null ? Text(user.email!) : null,
+      subtitle: user.email.isNotEmpty ? Text(user.email) : null,
       onTap: () {
         // 跳转到用户详情页面
         // Navigator.push(...)

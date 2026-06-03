@@ -32,8 +32,6 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   late Cell? _longPressCell;
   late bool _isTapping;
   late Cell? _tappedCell;
-  late Cell? _explodingCell;
-  late bool _showWinAnimation;
 
   @override
   void initState() {
@@ -62,8 +60,6 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
     _longPressCell = null;
     _isTapping = false;
     _tappedCell = null;
-    _explodingCell = null;
-    _showWinAnimation = false;
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_stopwatch.isRunning && !_gameOver && !_gameWon) {
@@ -214,15 +210,11 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   }
 
   void _playMineExplosionAnimation(int row, int col) {
-    setState(() {
-      _explodingCell = cellAt(row, col);
-    });
+    setState(() {});
   }
 
   void _playWinAnimation() {
-    setState(() {
-      _showWinAnimation = true;
-    });
+    setState(() {});
   }
 
   Cell? cellAt(int row, int col) {
@@ -256,15 +248,24 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
 
   Color _getNumberColor(int num) {
     switch (num) {
-      case 1: return Colors.blue;
-      case 2: return Colors.green;
-      case 3: return Colors.red;
-      case 4: return Colors.purple;
-      case 5: return Colors.brown;
-      case 6: return Colors.teal;
-      case 7: return Colors.black;
-      case 8: return Colors.grey;
-      default: return Colors.black;
+      case 1:
+        return Colors.blue;
+      case 2:
+        return Colors.green;
+      case 3:
+        return Colors.red;
+      case 4:
+        return Colors.purple;
+      case 5:
+        return Colors.brown;
+      case 6:
+        return Colors.teal;
+      case 7:
+        return Colors.black;
+      case 8:
+        return Colors.grey;
+      default:
+        return Colors.black;
     }
   }
 
@@ -273,7 +274,8 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
-        title: Text('扫雷 - ${_settings.name}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text('扫雷 - ${_settings.name}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         flexibleSpace: Container(
@@ -386,7 +388,8 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                 _tappedCell = cell;
                               });
                               // 短暂延迟后执行操作
-                              Future.delayed(const Duration(milliseconds: 100), () {
+                              Future.delayed(const Duration(milliseconds: 100),
+                                  () {
                                 if (mounted) {
                                   setState(() {
                                     _isTapping = false;
@@ -430,13 +433,16 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                           child: Center(
                             child: Container(
                               padding: const EdgeInsets.all(24),
-                              margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 32, vertical: 64),
                               constraints: const BoxConstraints(
                                 maxWidth: 400,
                                 maxHeight: 500,
                               ),
                               decoration: BoxDecoration(
-                                color: _gameWon ? Colors.green.shade100 : Colors.red.shade100,
+                                color: _gameWon
+                                    ? Colors.green.shade100
+                                    : Colors.red.shade100,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: _gameWon ? Colors.green : Colors.red,
@@ -448,9 +454,12 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      _gameWon ? Icons.check_circle_rounded : Icons.error_rounded,
+                                      _gameWon
+                                          ? Icons.check_circle_rounded
+                                          : Icons.error_rounded,
                                       size: 64,
-                                      color: _gameWon ? Colors.green : Colors.red,
+                                      color:
+                                          _gameWon ? Colors.green : Colors.red,
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
@@ -458,15 +467,17 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
-                                        color: _gameWon ? Colors.green : Colors.red,
+                                        color: _gameWon
+                                            ? Colors.green
+                                            : Colors.red,
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      _gameWon 
-                                        ? '用时: ${_formatTime(_elapsedSeconds)}' 
-                                        : '踩到地雷了！',
+                                      _gameWon
+                                          ? '用时: ${_formatTime(_elapsedSeconds)}'
+                                          : '踩到地雷了！',
                                       style: const TextStyle(
                                         fontSize: 16,
                                         color: Color(0xFF2D3748),
@@ -484,19 +495,26 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                     ),
                                     const SizedBox(height: 24),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
                                       children: [
                                         Expanded(
                                           child: ElevatedButton.icon(
                                             onPressed: _restartGame,
-                                            icon: const Icon(Icons.refresh_rounded),
+                                            icon: const Icon(
+                                                Icons.refresh_rounded),
                                             label: const Text('再玩一次'),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.white,
-                                              foregroundColor: const Color(0xFF4CAF50),
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              foregroundColor:
+                                                  const Color(0xFF4CAF50),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 12),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                             ),
                                           ),
@@ -505,14 +523,20 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                         Expanded(
                                           child: ElevatedButton.icon(
                                             onPressed: _showScoreboard,
-                                            icon: const Icon(Icons.leaderboard_rounded),
+                                            icon: const Icon(
+                                                Icons.leaderboard_rounded),
                                             label: const Text('排行榜'),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(0xFF4CAF50),
+                                              backgroundColor:
+                                                  const Color(0xFF4CAF50),
                                               foregroundColor: Colors.white,
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 12),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                             ),
                                           ),
@@ -524,14 +548,18 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
                                       onPressed: () {
                                         Navigator.pop(context);
                                       },
-                                      icon: const Icon(Icons.arrow_back_rounded),
+                                      icon:
+                                          const Icon(Icons.arrow_back_rounded),
                                       label: const Text('返回难度选择'),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.grey.shade200,
-                                        foregroundColor: const Color(0xFF2D3748),
-                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        foregroundColor:
+                                            const Color(0xFF2D3748),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                       ),
                                     ),
@@ -556,9 +584,9 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
   Widget _statusItem(IconData icon, String text, Color color) {
     // 为倒计时添加紧迫感动画
     bool isTimer = icon == Icons.timer_rounded;
-    Color? dynamicColor = color;
+    Color dynamicColor = color;
     double scale = 1.0;
-    
+
     if (isTimer && _elapsedSeconds > 60) {
       // 超过1分钟时开始添加紧迫感动画
       int remainingTime = 300 - _elapsedSeconds; // 5分钟倒计时
@@ -572,7 +600,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
         dynamicColor = Colors.orange;
       }
     }
-    
+
     return Transform.scale(
       scale: isTimer ? scale : 1.0,
       child: Container(
@@ -582,7 +610,7 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: dynamicColor!.withValues(alpha: 0.1),
+              color: dynamicColor.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -617,7 +645,11 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
         child: AnimatedContainer(
           duration: Duration(milliseconds: _getAnimationDuration()),
           decoration: BoxDecoration(
-            color: cell.isMine! ? Colors.red.shade200 : (cell.neighborMines! > 0 ? Colors.grey.shade100 : Colors.grey.shade200),
+            color: cell.isMine!
+                ? Colors.red.shade200
+                : (cell.neighborMines! > 0
+                    ? Colors.grey.shade100
+                    : Colors.grey.shade200),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
               color: Colors.grey.shade400,
@@ -625,22 +657,22 @@ class _MinesweeperGamePageState extends State<MinesweeperGamePage> {
             ),
           ),
           child: Center(
-            child: cell.isMine! ?
-              Icon(
-                Icons.error,
-                color: Colors.red.shade600,
-                size: _getIconSize(),
-              ) :
-              cell.neighborMines! > 0 ?
-                Text(
-                  '${cell.neighborMines}',
-                  style: TextStyle(
-                    color: _getNumberColor(cell.neighborMines!),
-                    fontWeight: FontWeight.bold,
-                    fontSize: _getNumberFontSize(),
-                  ),
-                ) :
-                const SizedBox(),
+            child: cell.isMine!
+                ? Icon(
+                    Icons.error,
+                    color: Colors.red.shade600,
+                    size: _getIconSize(),
+                  )
+                : cell.neighborMines! > 0
+                    ? Text(
+                        '${cell.neighborMines}',
+                        style: TextStyle(
+                          color: _getNumberColor(cell.neighborMines!),
+                          fontWeight: FontWeight.bold,
+                          fontSize: _getNumberFontSize(),
+                        ),
+                      )
+                    : const SizedBox(),
           ),
         ),
       );

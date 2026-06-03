@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'daily_quote_widget.dart';
 
 class EnhancedHomeBanner extends StatefulWidget {
   const EnhancedHomeBanner({super.key});
@@ -20,19 +19,31 @@ class _EnhancedHomeBannerState extends State<EnhancedHomeBanner>
       'icon': Icons.explore_rounded,
       'title': '发现更可爱的世界',
       'subtitle': '分享生活，发现美好',
-      'gradient': [const Color(0xFF7F7FD5), const Color(0xFF86A8E7), const Color(0xFF91EAE4)],
+      'gradient': [
+        const Color(0xFF7F7FD5),
+        const Color(0xFF86A8E7),
+        const Color(0xFF91EAE4)
+      ],
     },
     {
       'icon': Icons.favorite_rounded,
       'title': '关注感兴趣的人',
       'subtitle': '不错过任何精彩瞬间',
-      'gradient': [const Color(0xFFFF6B6B), const Color(0xFFFF8E8E), const Color(0xFFFFB4B4)],
+      'gradient': [
+        const Color(0xFFFF6B6B),
+        const Color(0xFFFF8E8E),
+        const Color(0xFFFFB4B4)
+      ],
     },
     {
       'icon': Icons.chat_bubble_rounded,
       'title': '加入热门话题',
       'subtitle': '与志同道合的朋友交流',
-      'gradient': [const Color(0xFF4ECDC4), const Color(0xFF6EE7DE), const Color(0xFF8FF2EA)],
+      'gradient': [
+        const Color(0xFF4ECDC4),
+        const Color(0xFF6EE7DE),
+        const Color(0xFF8FF2EA)
+      ],
     },
   ];
 

@@ -12,10 +12,8 @@ import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
+import '../../services/ai_chat_context_builder.dart';
 import '../../services/ai_chat_gateway_service.dart';
-import '../../services/ai_lorebook_service.dart';
-import '../../services/ai_roleplay_prompt_builder.dart'
-    show AiRoleplayPromptBuilder;
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_memory_orchestrator.dart';
 import '../../services/ai_chat_session_prefs.dart';
@@ -631,44 +629,25 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final history = _buildChatApiHistory();
 
-      final lorebookEntries = await AiLorebookService().resolveEntriesForAgent(
+      final chatContext = await AiChatContextBuilder().build(
         agent: widget.agent,
+        history: history,
         latestUserMessage: text,
         recentConversation: _messages
             .where((m) => m.role != 'system')
             .map((m) => m.content)
             .toList(),
-      );
-
-      var baseSystem = AiRoleplayPromptBuilder.buildSystemPrompt(
-        widget.agent,
-        overrideSystemPrompt: _systemPrompt.trim().isNotEmpty
-            ? _systemPrompt.trim()
-            : AiPromptDefaults.defaultAgentSystemPrompt,
+        overrideSystemPrompt: _systemPrompt,
         userPersona: _userPersona,
-        lorebookEntries: lorebookEntries,
       );
-      var enrichedSystemPrompt = AiRoleplayPromptBuilder.isRoleplayStyleAgent(
-        widget.agent,
-      )
-          ? baseSystem
-          : _withNoAiSelfDisclosureRule(baseSystem);
-      final memoryMeta =
-          await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
-        agent: widget.agent,
-        basePrompt: enrichedSystemPrompt,
-        latestUserMessage: text,
-      );
-      enrichedSystemPrompt = memoryMeta.prompt;
       if (mounted) {
-        setState(() => _memoryEnrichResult = memoryMeta);
+        setState(() => _memoryEnrichResult = chatContext.memoryMeta);
       }
-      history.insert(0, {'role': 'system', 'content': enrichedSystemPrompt});
 
       if (_wasManuallyStopped) return;
       final content = await AiChatGatewayService().sendChat(
         agent: widget.agent,
-        messages: history,
+        messages: chatContext.messages,
         sessionId: _currentSession?.id,
         sourceMsgId: userMsg.id,
         temperature: _temperature,
@@ -835,16 +814,6 @@ class _ChatPageState extends State<ChatPage> {
     });
     _scrollToBottom(force: true);
     await _fetchAssistantReply(userMsg);
-  }
-
-  String _withNoAiSelfDisclosureRule(String prompt) {
-    const rule = '''
-
-补充硬性规则：
-1) 不要说“作为AI”“我是AI助手”“我只是模型/程序”等自我限制话术。
-2) 用户问“你是谁/你叫什么”时，直接以自然人格化口吻回答，不要暴露模型身份。
-''';
-    return '$prompt$rule';
   }
 
   Future<void> _appendError(String text) async {

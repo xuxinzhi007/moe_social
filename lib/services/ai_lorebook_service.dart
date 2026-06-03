@@ -1,7 +1,6 @@
 import '../models/ai_agent.dart';
 import '../models/ai_lorebook_entry.dart';
 import 'ai_agent_cloud_service.dart';
-import 'ai_db_service.dart';
 
 class AiLorebookService {
   AiLorebookService._();
@@ -56,7 +55,8 @@ class AiLorebookService {
       return false;
     }).toList()
       ..sort((a, b) {
-        final alwaysCompare = (b.alwaysEnabled ? 1 : 0) - (a.alwaysEnabled ? 1 : 0);
+        final alwaysCompare =
+            (b.alwaysEnabled ? 1 : 0) - (a.alwaysEnabled ? 1 : 0);
         if (alwaysCompare != 0) return alwaysCompare;
         final priorityCompare = b.priority.compareTo(a.priority);
         if (priorityCompare != 0) return priorityCompare;
@@ -69,7 +69,8 @@ class AiLorebookService {
       final rendered = _renderEntry(entry);
       if (rendered.isEmpty) continue;
       final nextChars = totalChars + rendered.length;
-      if (out.isNotEmpty && (out.length >= maxEntries || nextChars > maxChars)) {
+      if (out.isNotEmpty &&
+          (out.length >= maxEntries || nextChars > maxChars)) {
         break;
       }
       out.add(entry);

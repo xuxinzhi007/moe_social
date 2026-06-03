@@ -593,8 +593,7 @@ class _FriendsPageState extends State<FriendsPage>
                                                         _acceptIncomingRequest(
                                                             rid),
                                                 style: FilledButton.styleFrom(
-                                                  backgroundColor:
-                                                      _moe.primary,
+                                                  backgroundColor: _moe.primary,
                                                   visualDensity:
                                                       VisualDensity.compact,
                                                 ),
@@ -621,8 +620,7 @@ class _FriendsPageState extends State<FriendsPage>
                                                         _acceptIncomingRequest(
                                                             rid),
                                                 style: FilledButton.styleFrom(
-                                                  backgroundColor:
-                                                      _moe.primary,
+                                                  backgroundColor: _moe.primary,
                                                   visualDensity:
                                                       VisualDensity.compact,
                                                 ),
@@ -692,7 +690,7 @@ class _FriendsPageState extends State<FriendsPage>
                     }
                   },
                   onEmptyExplore: () {
-                    context.read<MainNavController>().requestExplore();
+                    context.read<MainNavController>().requestTab(0);
                   },
                 ),
                 _buildFriendsListTab(),
@@ -807,7 +805,9 @@ class _FriendsPageState extends State<FriendsPage>
                             color: _moe.primary.withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(Icons.people_outline_rounded, size: 36,
+                          child: Icon(
+                            Icons.people_outline_rounded,
+                            size: 36,
                             color: _moe.primary,
                           ),
                         ),
@@ -977,10 +977,10 @@ class _FriendsPageState extends State<FriendsPage>
                           child: OutlinedButton.icon(
                             onPressed: () {
                               if (!mounted) return;
-                              context.read<MainNavController>().requestTab(3);
+                              Navigator.pushNamed(context, '/community');
                             },
-                            icon: const Icon(Icons.favorite_rounded, size: 20),
-                            label: const Text('去认识同好'),
+                            icon: const Icon(Icons.forum_rounded, size: 20),
+                            label: const Text('去兴趣社区'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _moe.primary,
                               side: BorderSide(color: _moe.primary),
@@ -1135,7 +1135,9 @@ class _FriendsPageState extends State<FriendsPage>
                                 color: _moe.primary.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.search_off_rounded, size: 32,
+                              child: Icon(
+                                Icons.search_off_rounded,
+                                size: 32,
                                 color: _moe.primary,
                               ),
                             ),
@@ -1376,7 +1378,8 @@ class _FriendsPageState extends State<FriendsPage>
                             boxShadow: [
                               BoxShadow(
                                 color: isOnline
-                                    ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+                                    ? const Color(0xFF4CAF50)
+                                        .withValues(alpha: 0.3)
                                     : Colors.grey.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -1403,8 +1406,8 @@ class _FriendsPageState extends State<FriendsPage>
                               border: Border.all(color: Colors.white, width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      const Color(0xFF4CAF50).withValues(alpha: 0.5),
+                                  color: const Color(0xFF4CAF50)
+                                      .withValues(alpha: 0.5),
                                   blurRadius: 4,
                                   offset: const Offset(0, 1),
                                 ),
@@ -1441,8 +1444,8 @@ class _FriendsPageState extends State<FriendsPage>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color:
-                                      const Color(0xFF4CAF50).withValues(alpha: 0.1),
+                                  color: const Color(0xFF4CAF50)
+                                      .withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text(
@@ -1536,8 +1539,7 @@ class _FriendsPageState extends State<FriendsPage>
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      _moe.primary.withValues(alpha: 0.3),
+                                  color: _moe.primary.withValues(alpha: 0.3),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
                                 ),
@@ -1601,7 +1603,8 @@ class _FriendsPageState extends State<FriendsPage>
                         children: [
                           Material(
                             color: isFavorite
-                                ? const Color(0xFFFFD700).withValues(alpha: 0.12)
+                                ? const Color(0xFFFFD700)
+                                    .withValues(alpha: 0.12)
                                 : Colors.grey[100],
                             borderRadius: BorderRadius.circular(10),
                             child: InkWell(

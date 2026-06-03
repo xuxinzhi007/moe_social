@@ -18,7 +18,6 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
   List<UserMemory> _memories = [];
   bool _isLoading = true;
   String? _error;
-  bool _hasMore = false;
   int _total = 0;
 
   @override
@@ -52,7 +51,6 @@ class _MemoryTimelinePageState extends State<MemoryTimelinePage> {
       setState(() {
         _display = display;
         _memories = memories;
-        _hasMore = false;
         _total = display.total;
       });
     } catch (e) {
