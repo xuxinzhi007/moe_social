@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../pages/ai/agent_list_page.dart';
-import '../pages/chat/conversations_page.dart';
 import '../pages/feed/home_page.dart';
+import '../pages/profile/friends_page.dart';
 import '../pages/profile/profile_page.dart';
 import '../providers/main_nav_controller.dart';
 import '../services/chat_push_service.dart';
@@ -21,7 +21,7 @@ class _MainPageState extends State<MainPage> {
   late final MainNavController _mainNav;
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
-    () => const ConversationsPage(),
+    () => const FriendsPage(initialHubTabIndex: 0),
     () => const AgentListPage(),
     () => const ProfilePage(),
   ];

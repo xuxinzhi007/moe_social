@@ -11,7 +11,6 @@ import '../../widgets/gift_selector.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/avatar_image.dart';
 import '../../providers/notification_provider.dart';
-import '../../providers/main_nav_controller.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
@@ -20,6 +19,7 @@ import '../../widgets/fade_in_up.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../chat/conversations_page.dart';
+import '../discover/discover_match_tab.dart';
 import 'widgets/add_friend_bottom_sheet.dart';
 import 'widgets/friends_hub_tab_strip.dart';
 import 'widgets/friends_logged_out_body.dart';
@@ -33,7 +33,7 @@ enum _FriendGroup {
 }
 
 class FriendsPage extends StatefulWidget {
-  /// 底部「同好与人脉」内子分区：**0 私信 · 1 同好 · 2 申请**（默认打开同好列表）。
+  /// 「消息」聚合页内子分区：**0 私信 · 1 同好 · 2 匹配 · 3 申请**。
   final int initialHubTabIndex;
 
   const FriendsPage({super.key, this.initialHubTabIndex = 1});
@@ -83,9 +83,9 @@ class _FriendsPageState extends State<FriendsPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final initialTab = widget.initialHubTabIndex.clamp(0, 2);
+    final initialTab = widget.initialHubTabIndex.clamp(0, 3);
     _hubTabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
       initialIndex: initialTab,
     );
@@ -121,7 +121,7 @@ class _FriendsPageState extends State<FriendsPage>
   void _onHubTabChanged() {
     if (!mounted) return;
     if (_hubTabController.indexIsChanging) return;
-    if (_hubTabController.index == 2) {
+    if (_hubTabController.index == 3) {
       unawaited(_loadFriends(silent: true));
     }
     setState(() {});
@@ -142,8 +142,8 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   void _goToRequestsTab() {
-    if (_hubTabController.index != 2) {
-      _hubTabController.animateTo(2);
+    if (_hubTabController.index != 3) {
+      _hubTabController.animateTo(3);
     }
   }
 
@@ -381,7 +381,7 @@ class _FriendsPageState extends State<FriendsPage>
     final moe = MoeTheme.of(context);
     return AppBar(
       title: const Text(
-        '同好与人脉',
+        '消息与同好',
         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
       ),
       backgroundColor: moe.cardBackground,
@@ -690,10 +690,15 @@ class _FriendsPageState extends State<FriendsPage>
                     }
                   },
                   onEmptyExplore: () {
-                    context.read<MainNavController>().requestTab(0);
+                    if (_hubTabController.index != 2) {
+                      _hubTabController.animateTo(2);
+                    }
                   },
+                  emptyExploreLabel: '在线匹配',
+                  emptyExploreIcon: Icons.favorite_rounded,
                 ),
                 _buildFriendsListTab(),
+                const DiscoverMatchTab(),
                 _buildIncomingRequestsTab(),
               ],
             ),
@@ -823,7 +828,7 @@ class _FriendsPageState extends State<FriendsPage>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '用对方的邮箱或 10 位 Moe 号发出申请；也可以先去探索页按话题认识新朋友。',
+                          '用对方的邮箱或 10 位 Moe 号发出申请；也可以去兴趣社区按话题认识新朋友。',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,

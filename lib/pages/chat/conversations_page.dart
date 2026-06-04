@@ -30,11 +30,15 @@ class ConversationsPage extends StatefulWidget {
     this.embedded = false,
     this.onEmptyFindFriends,
     this.onEmptyExplore,
+    this.emptyExploreLabel,
+    this.emptyExploreIcon,
   });
 
   final bool embedded;
   final VoidCallback? onEmptyFindFriends;
   final VoidCallback? onEmptyExplore;
+  final String? emptyExploreLabel;
+  final IconData? emptyExploreIcon;
 
   @override
   State<ConversationsPage> createState() => _ConversationsPageState();
@@ -463,8 +467,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           ),
           secondaryAction: MoeEmptyStateAction(
-            label: '回首页',
-            icon: Icons.home_rounded,
+            label: widget.emptyExploreLabel ?? '回首页',
+            icon: widget.emptyExploreIcon ?? Icons.home_rounded,
             onPressed: () {
               if (widget.onEmptyExplore != null) {
                 widget.onEmptyExplore!();

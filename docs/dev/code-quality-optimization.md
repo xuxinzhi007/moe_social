@@ -11,6 +11,8 @@
 - `flutter test --no-pub` 已恢复通过，测试不再被 sqlite3 本地源码缺失和权限插件平台通道阻塞。
 - `flutter analyze --no-fatal-infos` 已通过，warning 级红灯清零；剩余 251 条 info 作为后续质量基线。
 - 底栏已收束为「首页 / 消息 / AI / 我的」，官网叙事与 App 主线对齐。
+- 底栏移出的同好、社区、小游戏、抽卡等能力改由首页「功能入口」和我的「常用功能」承载。
+- 「消息」底栏承载私信、同好、在线匹配、申请和添加好友入口，避免社交流程被迫回首页。
 - 新增 `FeatureFlags`，AutoGLM、raw 调试、本机 llama-server 默认隐藏。
 - 新增 `AiChatContextBuilder`，聊天上下文构建顺序固定为 Lorebook -> Persona/SystemPrompt -> 防自曝规则 -> Memory -> system message。
 

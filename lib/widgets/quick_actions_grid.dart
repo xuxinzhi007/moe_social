@@ -14,8 +14,7 @@ class QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showComposerOnHome =
-        MediaQuery.sizeOf(context).width >= 360;
+    final showComposerOnHome = MediaQuery.sizeOf(context).width >= 360;
     final actions = <Map<String, Object>>[
       if (!showComposerOnHome)
         {
@@ -40,6 +39,12 @@ class QuickActionsGrid extends StatelessWidget {
         'label': '联系人',
         'color': const Color(0xFFFF6B6B),
         'onTap': () => Navigator.pushNamed(context, '/friends'),
+      },
+      {
+        'icon': Icons.forum_rounded,
+        'label': '社区',
+        'color': const Color(0xFF5B8DEF),
+        'onTap': () => Navigator.pushNamed(context, '/community'),
       },
       {
         'icon': Icons.smart_toy,
@@ -120,7 +125,7 @@ class QuickActionsGrid extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '快捷功能',
+                '功能入口',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
