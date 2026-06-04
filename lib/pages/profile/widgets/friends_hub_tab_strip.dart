@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/moe_theme_extension.dart';
 
-/// 同好页顶部分区 Tab：私信 / 同好 / 申请。
+/// 同好页顶部分区 Tab：私信 / 同好 / 匹配 / 申请。
 class FriendsHubTabStrip extends StatelessWidget {
   const FriendsHubTabStrip({
     super.key,
@@ -48,9 +48,9 @@ class FriendsHubTabStrip extends StatelessWidget {
             labelColor: moe.primary,
             unselectedLabelColor: scheme.onSurfaceVariant,
             labelStyle:
-                const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
             unselectedLabelStyle:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             splashBorderRadius: BorderRadius.circular(14),
             tabs: [
               Tab(
@@ -67,6 +67,7 @@ class FriendsHubTabStrip extends StatelessWidget {
                 ),
               ),
               const Tab(text: '同好'),
+              const Tab(text: '匹配'),
               Tab(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

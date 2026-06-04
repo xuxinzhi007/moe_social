@@ -31,6 +31,7 @@ import '../checkin/checkin_page.dart';
 import '../checkin/user_level_page.dart';
 import '../commerce/wallet_page.dart';
 import '../gallery/cloud_gallery_page.dart';
+import '../game/game_lobby_page.dart';
 import 'followers_page.dart';
 import 'following_page.dart';
 
@@ -358,6 +359,57 @@ class _ProfilePageState extends State<ProfilePage> {
                     FadeInUp(
                         delay: const Duration(milliseconds: 50),
                         child: _buildQuickActions()),
+                    const SizedBox(height: 18),
+                    FadeInUp(
+                      delay: const Duration(milliseconds: 65),
+                      child: _menuSection('常用功能', [
+                        _MenuItem(
+                          icon: Icons.contacts_rounded,
+                          title: '同好与联系人',
+                          subtitle: '好友、会话与添加申请',
+                          color: const Color(0xFFFF6B6B),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pushNamed(context, '/friends');
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.forum_rounded,
+                          title: '兴趣社区',
+                          subtitle: '话题、帖子与同好交流',
+                          color: const Color(0xFF5B8DEF),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pushNamed(context, '/community');
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.sports_esports_rounded,
+                          title: '小游戏',
+                          subtitle: '休闲玩法入口',
+                          color: const Color(0xFF26A69A),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const GameLobbyPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        _MenuItem(
+                          icon: Icons.card_giftcard_rounded,
+                          title: '抽卡',
+                          subtitle: '模拟抽取与收藏展示',
+                          color: const Color(0xFFF38181),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.pushNamed(context, '/gacha');
+                          },
+                        ),
+                      ]),
+                    ),
                     const SizedBox(height: 18),
                     // Achievements preview
                     if (_user != null) ...[
