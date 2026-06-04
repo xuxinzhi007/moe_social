@@ -15,7 +15,9 @@ import '../../widgets/moe_toast.dart';
 
 /// 探索页 · 同好：在线匹配、话题推荐与结果展示。
 class DiscoverMatchTab extends StatefulWidget {
-  const DiscoverMatchTab({super.key});
+  const DiscoverMatchTab({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   State<DiscoverMatchTab> createState() => _DiscoverMatchTabState();
@@ -198,12 +200,89 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
         parent: AlwaysScrollableScrollPhysics(),
       ),
       slivers: [
-        SliverToBoxAdapter(child: _buildOnlineMatchHero()),
+        SliverToBoxAdapter(
+          child: widget.compact
+              ? _buildCompactOnlineMatch()
+              : _buildOnlineMatchHero(),
+        ),
         SliverToBoxAdapter(child: _buildTopicsSection()),
         SliverToBoxAdapter(child: _buildMatchButton()),
         _buildResultsSection(),
         const SliverToBoxAdapter(child: SizedBox(height: 48)),
       ],
+    );
+  }
+
+  Widget _buildCompactOnlineMatch() {
+    final color =
+        _onlineMatching ? const Color(0xFFFC6076) : AiBrandTokens.primary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+      child: Material(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: _toggleOnlineMatch,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _onlineMatching
+                        ? Icons.wifi_rounded
+                        : Icons.favorite_rounded,
+                    color: color,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _onlineMatching ? '匹配中' : '在线实时匹配',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF262636),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _onlineMatchHint ??
+                            (_onlineMatching ? '请保持在此页等待' : '轻点加入，匹配后直接进入私聊'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  _onlineMatching
+                      ? Icons.close_rounded
+                      : Icons.arrow_forward_rounded,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -230,7 +309,9 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: (_onlineMatching ? matchingGradient.first : idleGradient.first)
+              color: (_onlineMatching
+                      ? matchingGradient.first
+                      : idleGradient.first)
                   .withValues(alpha: 0.35),
               blurRadius: 20,
               offset: const Offset(0, 8),
@@ -381,7 +462,12 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
   Widget _buildTopicsSection() {
     final tags = TopicTag.officialTags;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        widget.compact ? 18 : 16,
+        widget.compact ? 8 : 20,
+        widget.compact ? 18 : 16,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -390,7 +476,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
               Text(
                 '按话题找同好',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: widget.compact ? 14 : 16,
                   fontWeight: FontWeight.w800,
                   color: AiBrandTokens.titleColor,
                 ),
@@ -406,31 +492,32 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                   },
                   style: TextButton.styleFrom(
                     minimumSize: Size.zero,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     foregroundColor: Colors.grey,
                   ),
                   child: const Text('清除', style: TextStyle(fontSize: 12)),
                 ),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: widget.compact ? 2 : 4),
           Text(
             _selectedTagIds.isEmpty
                 ? '不选也可以，会从站内随机推荐新面孔'
                 : '已选 ${_selectedTagIds.length} 个话题（已自动刷新推荐）',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: widget.compact ? 9 : 12),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: widget.compact ? 8 : 10,
+            runSpacing: widget.compact ? 8 : 10,
             children: tags.map((tag) {
               final sel = _selectedTagIds.contains(tag.id);
               return ChoiceChip(
                 label: Text(
                   '#${tag.name}',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: widget.compact ? 12 : 13,
                     fontWeight: FontWeight.w700,
                     color: sel ? Colors.white : const Color(0xFF333333),
                   ),
@@ -446,7 +533,10 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: widget.compact ? 9 : 12,
+                  vertical: widget.compact ? 5 : 8,
+                ),
               );
             }).toList(),
           ),
@@ -457,13 +547,19 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
 
   Widget _buildMatchButton() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        widget.compact ? 18 : 16,
+        widget.compact ? 12 : 16,
+        widget.compact ? 18 : 16,
+        0,
+      ),
       child: FilledButton.icon(
         onPressed: _loading ? null : _runOfflineMatch,
         style: FilledButton.styleFrom(
           backgroundColor: AiBrandTokens.primary,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          minimumSize: Size(double.infinity, widget.compact ? 44 : 50),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 0,
         ),
         icon: _loading
@@ -480,7 +576,10 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
           _loading
               ? '推荐中…'
               : (_selectedTagIds.isEmpty ? '随机发现新面孔' : '根据话题推荐同好'),
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontSize: widget.compact ? 14 : 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

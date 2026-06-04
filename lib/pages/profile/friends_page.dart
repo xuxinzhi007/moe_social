@@ -33,10 +33,15 @@ enum _FriendGroup {
 }
 
 class FriendsPage extends StatefulWidget {
-  /// 「消息」聚合页内子分区：**0 私信 · 1 同好 · 2 匹配 · 3 申请**。
+  /// 「消息」聚合页内子分区：**0 私信 · 1 同好**。
   final int initialHubTabIndex;
+  final bool contactsOnly;
 
-  const FriendsPage({super.key, this.initialHubTabIndex = 1});
+  const FriendsPage({
+    super.key,
+    this.initialHubTabIndex = 1,
+    this.contactsOnly = false,
+  });
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -83,9 +88,9 @@ class _FriendsPageState extends State<FriendsPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final initialTab = widget.initialHubTabIndex.clamp(0, 3);
+    final initialTab = widget.initialHubTabIndex.clamp(0, 1);
     _hubTabController = TabController(
-      length: 4,
+      length: 2,
       vsync: this,
       initialIndex: initialTab,
     );
@@ -121,7 +126,7 @@ class _FriendsPageState extends State<FriendsPage>
   void _onHubTabChanged() {
     if (!mounted) return;
     if (_hubTabController.indexIsChanging) return;
-    if (_hubTabController.index == 3) {
+    if (_hubTabController.index == 1) {
       unawaited(_loadFriends(silent: true));
     }
     setState(() {});
@@ -142,9 +147,117 @@ class _FriendsPageState extends State<FriendsPage>
   }
 
   void _goToRequestsTab() {
-    if (_hubTabController.index != 3) {
-      _hubTabController.animateTo(3);
-    }
+    _showRequestsSheet();
+  }
+
+  void _showMatchSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final height = MediaQuery.sizeOf(context).height * 0.84;
+        return SafeArea(
+          top: false,
+          child: Container(
+            height: height,
+            decoration: const BoxDecoration(
+              color: MoeTokens.pageBackground,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                _buildSheetHandle(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '在线匹配',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: MoeTokens.titleText,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const Expanded(child: DiscoverMatchTab(compact: true)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRequestsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final height = MediaQuery.sizeOf(context).height * 0.76;
+        return SafeArea(
+          top: false,
+          child: Container(
+            height: height,
+            decoration: const BoxDecoration(
+              color: MoeTokens.pageBackground,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                _buildSheetHandle(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '好友申请${_incomingRequests.isEmpty ? '' : ' (${_incomingRequests.length})'}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: MoeTokens.titleText,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(child: _buildIncomingRequestsTab()),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetHandle() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 8),
+      child: Container(
+        width: 42,
+        height: 4,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+    );
   }
 
   String _apiErr(Object e) {
@@ -429,7 +542,119 @@ class _FriendsPageState extends State<FriendsPage>
     return FriendsHubTabStrip(
       controller: _hubTabController,
       dmUnreadTotal: _dmUnreadTotal,
-      incomingRequestCount: _incomingRequests.length,
+    );
+  }
+
+  Widget _buildSocialActionPanel() {
+    final hasRequests = _incomingRequests.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _moe.primary.withValues(alpha: 0.10)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '认识同好',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: MoeTokens.titleText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '添加好友、实时匹配和申请处理都在这里。',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _socialActionButton(
+                  icon: Icons.favorite_rounded,
+                  label: '在线匹配',
+                  color: const Color(0xFFFC6076),
+                  onTap: _showMatchSheet,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _socialActionButton(
+                  icon: Icons.person_add_rounded,
+                  label: '添加好友',
+                  color: _moe.primary,
+                  onTap: _showAddFriendDialog,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _socialActionButton(
+                  icon: hasRequests
+                      ? Icons.mark_email_unread_rounded
+                      : Icons.mark_email_read_rounded,
+                  label: hasRequests ? '${_incomingRequests.length} 条申请' : '申请',
+                  color: hasRequests
+                      ? const Color(0xFFFF8F00)
+                      : const Color(0xFF90A4AE),
+                  onTap: _showRequestsSheet,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _socialActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -650,9 +875,11 @@ class _FriendsPageState extends State<FriendsPage>
   Widget build(BuildContext context) {
     final pageBg = MoeTheme.of(context).pageBackground;
     if (AuthService.currentUser == null) {
+      if (widget.contactsOnly) return const FriendsLoggedOutBody();
       return _buildLoggedOutScaffold();
     }
     if (_isLoading) {
+      if (widget.contactsOnly) return const Center(child: MoeLoading());
       return Scaffold(
         backgroundColor: pageBg,
         appBar: _contactsAppBar(),
@@ -660,6 +887,15 @@ class _FriendsPageState extends State<FriendsPage>
       );
     }
     if (_hasError) {
+      if (widget.contactsOnly) {
+        return Center(
+          child: MoeErrorState.fromError(
+            _loadError,
+            scene: MoeErrorScene.contacts,
+            onRetry: _loadFriends,
+          ),
+        );
+      }
       return Scaffold(
         backgroundColor: pageBg,
         appBar: _contactsAppBar(),
@@ -671,6 +907,9 @@ class _FriendsPageState extends State<FriendsPage>
           ),
         ),
       );
+    }
+    if (widget.contactsOnly) {
+      return _buildContactsPanel();
     }
     return Scaffold(
       backgroundColor: pageBg,
@@ -690,16 +929,12 @@ class _FriendsPageState extends State<FriendsPage>
                     }
                   },
                   onEmptyExplore: () {
-                    if (_hubTabController.index != 2) {
-                      _hubTabController.animateTo(2);
-                    }
+                    _showMatchSheet();
                   },
                   emptyExploreLabel: '在线匹配',
                   emptyExploreIcon: Icons.favorite_rounded,
                 ),
                 _buildFriendsListTab(),
-                const DiscoverMatchTab(),
-                _buildIncomingRequestsTab(),
               ],
             ),
           ),
@@ -740,53 +975,8 @@ class _FriendsPageState extends State<FriendsPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (_incomingRequests.isNotEmpty)
-                    Material(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                      child: InkWell(
-                        onTap: _goToRequestsTab,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: _moe.primary.withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.mail_outline_rounded,
-                                color: _moe.primary,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  '${_incomingRequests.length} 条好友申请，点击查看',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                color: Colors.grey[500],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (_incomingRequests.isNotEmpty) const SizedBox(height: 16),
+                  _buildSocialActionPanel(),
+                  const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
@@ -1020,6 +1210,10 @@ class _FriendsPageState extends State<FriendsPage>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: _buildSocialActionPanel(),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -1179,6 +1373,637 @@ class _FriendsPageState extends State<FriendsPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContactsPanel() {
+    if (_friends.isEmpty) {
+      return _buildContactsPanelEmpty();
+    }
+
+    final filteredFriends = _getFilteredFriends();
+    final onlineCount =
+        _friends.where((f) => _onlineStatus[f.id] ?? false).length;
+    final favoriteCount =
+        _friends.where((f) => _favoriteFriends.contains(f.id)).length;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
+          child: _buildContactsPanelSummary(
+            onlineCount: onlineCount,
+            favoriteCount: favoriteCount,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+          child: _buildContactsPanelActions(),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+          child: _buildContactsPanelSearch(),
+        ),
+        _buildCompactGroupTabs(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _loadFriends,
+            color: _moe.primary,
+            child: filteredFriends.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(18, 24, 18, 28),
+                    children: [
+                      _buildContactsPanelBlankState(
+                        icon: Icons.search_off_rounded,
+                        title: '没有匹配联系人',
+                        subtitle: '换个关键词或切换分组看看',
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(18, 2, 18, 28),
+                    itemCount: filteredFriends.length,
+                    itemBuilder: (context, index) {
+                      return _buildCompactFriendRow(
+                        filteredFriends[index],
+                        index,
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactsPanelEmpty() {
+    final myMoe = _selfProfile?.moeNo ?? '';
+    final myEmail = _selfProfile?.email ?? '';
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(18, 4, 18, 28),
+      children: [
+        _buildContactsPanelActions(),
+        const SizedBox(height: 14),
+        _buildContactsPanelBlankState(
+          icon: Icons.people_outline_rounded,
+          title: '还没有同好',
+          subtitle: '添加好友，或用在线匹配认识新朋友',
+        ),
+        if (myMoe.isNotEmpty || myEmail.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _buildMyAccountCard(myMoe: myMoe, myEmail: myEmail),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildContactsPanelSummary({
+    required int onlineCount,
+    required int favoriteCount,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: _summaryPill(
+            icon: Icons.groups_rounded,
+            label: '同好',
+            value: '${_friends.length}',
+            color: _moe.primary,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _summaryPill(
+            icon: Icons.circle_rounded,
+            label: '在线',
+            value: '$onlineCount',
+            color: const Color(0xFF2EBD85),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _summaryPill(
+            icon: Icons.star_rounded,
+            label: '收藏',
+            value: '$favoriteCount',
+            color: const Color(0xFFE8A598),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryPill({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: MoeTokens.titleText,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactsPanelActions() {
+    final hasRequests = _incomingRequests.isNotEmpty;
+    return Row(
+      children: [
+        Expanded(
+          child: _compactActionChip(
+            icon: Icons.favorite_rounded,
+            label: '匹配',
+            color: const Color(0xFFFC6076),
+            onTap: _showMatchSheet,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _compactActionChip(
+            icon: Icons.person_add_rounded,
+            label: '添加',
+            color: _moe.primary,
+            onTap: _showAddFriendDialog,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _compactActionChip(
+            icon: hasRequests
+                ? Icons.mark_email_unread_rounded
+                : Icons.mark_email_read_rounded,
+            label: hasRequests ? '${_incomingRequests.length} 申请' : '申请',
+            color:
+                hasRequests ? const Color(0xFFFF8F00) : const Color(0xFF90A4AE),
+            onTap: _showRequestsSheet,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _compactActionChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.16)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactsPanelSearch() {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: '搜索昵称、邮箱或 Moe 号',
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        ),
+        onChanged: (value) {
+          setState(() {
+            _searchKeyword = value;
+            _showFab = value.isEmpty;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildCompactGroupTabs() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+      child: Row(
+        children: [
+          _compactGroupTab(_FriendGroup.all, '全部'),
+          const SizedBox(width: 8),
+          _compactGroupTab(_FriendGroup.online, '在线'),
+          const SizedBox(width: 8),
+          _compactGroupTab(_FriendGroup.recent, '最近'),
+          const SizedBox(width: 8),
+          _compactGroupTab(_FriendGroup.favorite, '收藏'),
+        ],
+      ),
+    );
+  }
+
+  Widget _compactGroupTab(_FriendGroup group, String label) {
+    final selected = _currentGroup == group;
+    return Expanded(
+      child: Material(
+        color: selected ? _moe.primary : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _currentGroup = group);
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected ? _moe.primary : Colors.grey.shade200,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : Colors.grey[700],
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactFriendRow(User user, int index) {
+    final isOnline = _onlineStatus[user.id] ?? false;
+    final dmUnread =
+        context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
+    final isFavorite = _favoriteFriends.contains(user.id);
+    return FadeInUp(
+      key: ValueKey('contacts_panel_${user.id}'),
+      duration: const Duration(milliseconds: 180),
+      delay: Duration(milliseconds: 35 * (index % 5)),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: () {
+            _updateRecentInteraction(user.id);
+            Navigator.pushNamed(
+              context,
+              '/user-profile',
+              arguments: {
+                'userId': user.id,
+                'userName': user.username,
+                'userAvatar': user.avatar,
+              },
+            );
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isOnline
+                    ? const Color(0xFF2EBD85).withValues(alpha: 0.24)
+                    : Colors.black.withValues(alpha: 0.04),
+              ),
+            ),
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    NetworkAvatarImage(
+                      imageUrl: user.avatar,
+                      radius: 23,
+                      placeholderIcon: Icons.person,
+                    ),
+                    Positioned(
+                      right: -1,
+                      bottom: -1,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: isOnline
+                              ? const Color(0xFF2EBD85)
+                              : Colors.grey.shade300,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              user.username,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: MoeTokens.titleText,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (dmUnread > 0) ...[
+                            const SizedBox(width: 6),
+                            _unreadBadge(dmUnread),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        user.moeNo.isNotEmpty
+                            ? 'Moe ${user.moeNo}'
+                            : (user.email.isNotEmpty ? user.email : '同好'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: isFavorite ? '取消收藏' : '收藏',
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      if (isFavorite) {
+                        _favoriteFriends.remove(user.id);
+                      } else {
+                        _favoriteFriends.add(user.id);
+                      }
+                    });
+                  },
+                  icon: Icon(
+                    isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+                    color:
+                        isFavorite ? const Color(0xFFE8A598) : Colors.grey[400],
+                  ),
+                  iconSize: 21,
+                  constraints:
+                      const BoxConstraints(minWidth: 34, minHeight: 34),
+                  padding: EdgeInsets.zero,
+                ),
+                IconButton(
+                  tooltip: '私聊',
+                  onPressed: () {
+                    _updateRecentInteraction(user.id);
+                    Navigator.pushNamed(
+                      context,
+                      '/direct-chat',
+                      arguments: {
+                        'userId': user.id,
+                        'username': user.username,
+                        'avatar': user.avatar,
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.chat_bubble_rounded),
+                  color: _moe.primary,
+                  iconSize: 20,
+                  constraints:
+                      const BoxConstraints(minWidth: 36, minHeight: 36),
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _unreadBadge(int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF6B6B),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContactsPanelBlankState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 24, 18, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: _moe.primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: _moe.primary, size: 30),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: MoeTokens.titleText,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyAccountCard({
+    required String myMoe,
+    required String myEmail,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '我的账号',
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (myMoe.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _accountCopyRow(
+              label: 'Moe 号',
+              value: myMoe,
+              toast: '已复制我的 Moe 号',
+            ),
+          ],
+          if (myEmail.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _accountCopyRow(
+              label: '邮箱',
+              value: myEmail,
+              toast: '已复制邮箱',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _accountCopyRow({
+    required String label,
+    required String value,
+    required String toast,
+  }) {
+    return Material(
+      color: const Color(0xFFF7F8FC),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _copyToClipboard(context, value, toast),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: MoeTokens.titleText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.copy_rounded, size: 18, color: Colors.grey[600]),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

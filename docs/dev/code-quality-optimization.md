@@ -12,7 +12,9 @@
 - `flutter analyze --no-fatal-infos` 已通过，warning 级红灯清零；剩余 251 条 info 作为后续质量基线。
 - 底栏已收束为「首页 / 消息 / AI / 我的」，官网叙事与 App 主线对齐。
 - 底栏移出的同好、社区、小游戏、抽卡等能力改由首页「功能入口」和我的「常用功能」承载。
-- 「消息」底栏承载私信、同好、在线匹配、申请和添加好友入口，避免社交流程被迫回首页。
+- 「消息」底栏以私信列表为主；同好、在线匹配、添加好友、申请处理通过右上角入口/空状态按钮打开面板，不替换当前私信上下文，也避免未来无限加 tab。
+- 2026-06-04 追加：消息页同好入口改为轻量工作台面板，面板内承载统计、匹配、添加、申请、搜索和联系人列表；不再复用完整同好页的旧卡片栈。
+- 2026-06-04 追加：在线匹配 compact 模式降低顶部卡片、话题 chip 和按钮密度，作为临时任务面板进入，不抢走私信页当前上下文。
 - 新增 `FeatureFlags`，AutoGLM、raw 调试、本机 llama-server 默认隐藏。
 - 新增 `AiChatContextBuilder`，聊天上下文构建顺序固定为 Lorebook -> Persona/SystemPrompt -> 防自曝规则 -> Memory -> system message。
 
@@ -31,7 +33,7 @@
 | P0 | `lib/services/api_service.dart` | 2200+ 行，跨多个业务域 | 按 auth/user/feed/chat/commerce 拆 domain service，保留 facade 过渡 |
 | P1 | `lib/pages/ai/ollama_chat_page.dart` | 2100+ 行，和 AI chat 能力重叠 | 与 Chat Gateway 对齐，能复用则复用组件 |
 | P1 | `lib/services/update_service.dart` | 1700+ 行，更新检测、下载、平台处理耦合 | 拆版本解析、下载器、平台安装适配 |
-| P1 | `lib/pages/profile/friends_page.dart` | 1600+ 行，列表、请求、操作和 UI 混合 | 拆 tab/list item/action service |
+| P1 | `lib/pages/profile/friends_page.dart` | 1600+ 行，列表、请求、操作和 UI 混合；已为消息页拆出 contactsOnly 紧凑面板分支 | 下一步继续拆 list item/action panel/request sheet 组件 |
 
 ## 幻想实现处理策略
 

@@ -28,6 +28,7 @@ class ConversationsPage extends StatefulWidget {
   const ConversationsPage({
     super.key,
     this.embedded = false,
+    this.showEmbeddedToolbar = true,
     this.onEmptyFindFriends,
     this.onEmptyExplore,
     this.emptyExploreLabel,
@@ -35,6 +36,7 @@ class ConversationsPage extends StatefulWidget {
   });
 
   final bool embedded;
+  final bool showEmbeddedToolbar;
   final VoidCallback? onEmptyFindFriends;
   final VoidCallback? onEmptyExplore;
   final String? emptyExploreLabel;
@@ -294,6 +296,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget build(BuildContext context) {
     final body = _buildBody(context);
     if (widget.embedded) {
+      if (!widget.showEmbeddedToolbar) return body;
       return Column(
         children: [
           Padding(
