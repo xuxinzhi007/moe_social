@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../../theme/moe_theme_extension.dart';
 
-/// 同好页顶部分区 Tab：私信 / 同好 / 匹配 / 申请。
+/// 同好页顶部分区 Tab：私信 / 同好。
 class FriendsHubTabStrip extends StatelessWidget {
   const FriendsHubTabStrip({
     super.key,
     required this.controller,
     required this.dmUnreadTotal,
-    required this.incomingRequestCount,
   });
 
   final TabController controller;
   final int dmUnreadTotal;
-  final int incomingRequestCount;
 
   @override
   Widget build(BuildContext context) {
@@ -67,20 +65,6 @@ class FriendsHubTabStrip extends StatelessWidget {
                 ),
               ),
               const Tab(text: '同好'),
-              const Tab(text: '匹配'),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('申请'),
-                    if (incomingRequestCount > 0) ...[
-                      const SizedBox(width: 6),
-                      _badge('$incomingRequestCount'),
-                    ],
-                  ],
-                ),
-              ),
             ],
           ),
         ),

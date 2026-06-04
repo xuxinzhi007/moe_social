@@ -11,8 +11,8 @@ import '../pages/auth/login_page.dart';
 import '../pages/auth/register_page.dart';
 import '../pages/auth/reset_password_page.dart';
 import '../pages/auth/verify_code_page.dart';
-import '../pages/chat/conversations_page.dart';
 import '../pages/chat/direct_chat_page.dart';
+import '../pages/chat/message_center_page.dart';
 import '../pages/checkin/checkin_page.dart';
 import '../pages/commerce/gacha_page.dart' deferred as gacha;
 import '../pages/commerce/order_center_page.dart' deferred as order_center;
@@ -209,7 +209,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return CommunityPostDetailPage(postId: postId, initialPost: initial);
     },
     '/match': (context) => const ExploreMatchRedirectPage(),
-    '/messages': (context) => const ConversationsPage(),
+    '/messages': (context) => const MessageCenterPage(),
     '/direct-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {
