@@ -6,6 +6,12 @@
 
 当前 P0 不是继续扩功能，而是先把产品主线、AI 核心体验和工程验证能力收住。充值页保持模拟，不纳入本轮 P0。
 
+## 2026-06-04 同好页死代码清理
+
+- 删除 `friends_hub_tab_strip.dart` 与 `FriendsPage` 内「私信 / 同好」双 Tab（私信已固定在底栏「消息」）。
+- `/interaction` 路由不再解析 `tab` 参数，统一进入同好页。
+- 移除未再调用的 `_buildFriendsListTab`、`_buildGroupTabs`、`_buildFriendCard`、`_buildSocialActionPanel`（约 900 行），保留 `contactsOnly` 面板 UI（`MessageCenterPage` 同好工作台）。
+
 ## 2026-06-03 本轮完成
 
 - P0-0：`flutter test --no-pub` 已恢复全量通过；SQLite native asset 改为系统库 hook，相机权限测试改为 MethodChannel mock。

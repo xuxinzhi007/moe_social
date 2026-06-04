@@ -227,14 +227,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           message: '正在加载扫码模块…',
         ),
     '/user-qr-code': (context) => const UserQrCodePage(),
-    '/interaction': (context) {
-      final args = ModalRoute.of(context)?.settings.arguments;
-      var hub = 1;
-      if (args is Map && args['tab'] is int) {
-        final t = (args['tab'] as int).clamp(0, 1);
-        hub = t == 0 ? 1 : 2;
-      }
-      return FriendsPage(initialHubTabIndex: hub);
-    },
+    '/interaction': (context) => const FriendsPage(),
   };
 }
