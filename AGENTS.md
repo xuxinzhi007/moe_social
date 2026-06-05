@@ -4,7 +4,7 @@
 Keep this file short. Cursor rules start at `.cursor/rules/moe-social-unified.mdc`; review rules live in `code_review.md`; architecture details belong in `backend/README.md` and `docs/README.md` (doc index last updated 2026-05-27).
 
 ## Project Structure
-Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` with shared code in `models/`, `services/`, `providers/`, `widgets/`, and `utils/`. Flutter tests live in `test/`. Backend code is in `backend/`, with HTTP/proto contracts in `api/<domain>/v1/*.proto`, and Go tests beside packages as `*_test.go`. Run `make moe-social` for single-process Kratos HTTP.
+Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` with shared code in `models/`, `services/`, `providers/`, `widgets/`, and `utils/`. Flutter tests live in `test/`. **Native Android RPA** lives in `moe-auto/` (standalone APK, later splittable). Backend code is in `backend/`, with HTTP/proto contracts in `api/<module>/v1/*.proto`, and Go tests beside packages as `*_test.go`. Run `make moe-social` for single-process Kratos HTTP.
 
 ## Core Commands
 - `flutter pub get`: install Flutter dependencies.
@@ -14,6 +14,7 @@ Frontend code is in `lib/`, organized by feature under `lib/pages/<domain>/` wit
 - OpenAPI / Apifox: [docs/dev/openapi-apifox.md](docs/dev/openapi-apifox.md).
 - `cd backend && make build`: build backend binaries.
 - `cd backend && go test ./...`: run backend tests.
+- `cd moe-auto && ./gradlew :app:assembleDebug`: build Moe Auto automation APK (Android Studio or Gradle wrapper).
 
 ## Coding Rules
 Match existing structure before adding new abstractions. Use `snake_case.dart` filenames, `PascalCase` types, `camelCase` members, and 2-space Dart indentation. Keep UI logic in pages/widgets, shared state in providers, and network or persistence code in services. For Go, keep business logic in `internal/biz` (and `internal/service` for orchestration), format with `gofmt`, and avoid editing generated files by hand. Production entry: `cd backend && make moe-social`; see `docs/dev/kratos-migration-status.md`.

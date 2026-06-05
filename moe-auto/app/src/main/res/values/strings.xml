@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Moe Auto</string>
+    <string name="accessibility_service_description">Moe 自动化：执行点击、滑动、输入与脚本任务。不会收集个人隐私数据。</string>
+</resources>
