@@ -24,6 +24,7 @@ import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_empty_state.dart';
 import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_action_row.dart';
 import 'tavern/tavern_hero_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -353,41 +354,33 @@ class _AgentListPageState extends State<AgentListPage>
             tooltip: '酒馆菜单',
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: _onTavernMenuSelected,
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: _TavernMenuAction.plaza,
-                child: ListTile(
-                  leading: Icon(Icons.storefront_rounded),
-                  title: Text('角色卡广场'),
-                  contentPadding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                child: _buildTavernMenuItem(
+                  icon: Icons.storefront_rounded,
+                  title: '角色卡广场',
                 ),
               ),
               PopupMenuItem(
                 value: _TavernMenuAction.importCard,
-                child: ListTile(
-                  leading: Icon(Icons.input_rounded),
-                  title: Text('导入角色卡'),
-                  contentPadding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                child: _buildTavernMenuItem(
+                  icon: Icons.input_rounded,
+                  title: '导入角色卡',
                 ),
               ),
               PopupMenuItem(
                 value: _TavernMenuAction.lorebooks,
-                child: ListTile(
-                  leading: Icon(Icons.menu_book_rounded),
-                  title: Text('世界书管理'),
-                  contentPadding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                child: _buildTavernMenuItem(
+                  icon: Icons.menu_book_rounded,
+                  title: '世界书管理',
                 ),
               ),
               PopupMenuItem(
                 value: _TavernMenuAction.providers,
-                child: ListTile(
-                  leading: Icon(Icons.hub_rounded),
-                  title: Text('模型来源管理'),
-                  contentPadding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
+                child: _buildTavernMenuItem(
+                  icon: Icons.hub_rounded,
+                  title: '模型来源管理',
                 ),
               ),
             ],
@@ -455,6 +448,26 @@ class _AgentListPageState extends State<AgentListPage>
     );
   }
 
+  Widget _buildTavernMenuItem({
+    required IconData icon,
+    required String title,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: AiBrandTokens.primary),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeroCard() {
     return TavernHeroCard(
       agentCount: _agents.length,
@@ -494,8 +507,8 @@ class _AgentListPageState extends State<AgentListPage>
       foregroundColor: Colors.white,
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: const Icon(Icons.add_rounded, size: 24),
       heroTag: 'agent_list_fab',
+      child: const Icon(Icons.add_rounded, size: 24),
     );
   }
 
@@ -529,20 +542,14 @@ class _AgentListPageState extends State<AgentListPage>
             const SizedBox(height: 16),
             ...AiStarterTemplates.agentTemplates.map(
               (template) => Card(
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  title: Text(
-                    template.name,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                child: MoeActionRow(
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: AiBrandTokens.primary,
+                  title: template.name,
+                  subtitle: Text(
+                    '${template.tagline}\n${template.description}',
+                    style: const TextStyle(height: 1.4),
                   ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '${template.tagline}\n${template.description}',
-                      style: const TextStyle(height: 1.4),
-                    ),
-                  ),
-                  isThreeLine: true,
                   onTap: () => Navigator.pop(ctx, template),
                 ),
               ),

@@ -295,16 +295,6 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '设备与数据',
       },
       {
-        'title': 'raw 调试模式（本地推理）',
-        'description': '仅调试时开启；日常建议走服务端记忆链路',
-        'icon': Icons.terminal_rounded,
-        'color': Colors.deepPurpleAccent,
-        'module': '高级选项',
-        'keywords': ['ai', '模型', 'llama', '终端', '推理', 'raw'],
-        'action': 'scroll',
-        'target': '高级选项',
-      },
-      {
         'title': '模型记忆线',
         'description': '查看模型记录的所有记忆',
         'icon': Icons.psychology_rounded,

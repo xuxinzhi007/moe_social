@@ -28,17 +28,18 @@ import '../../models/ai_provider_profile.dart';
 import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
-import '../../widgets/ai/ai_typing_indicator.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/ai/ai_typing_indicator.dart';
 import '../../widgets/ai/ai_chat_composer.dart';
 import '../../widgets/ai/ai_chat_settings_sheet.dart';
 import '../../widgets/ai/ai_memory_status_strip.dart';
 import '../../widgets/ai/ai_chat_identity_hero.dart';
 import '../../widgets/ai/ai_chat_session_drawer.dart';
 import '../../widgets/ai/ai_chat_status_banners.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -86,7 +87,7 @@ class _ChatPageState extends State<ChatPage> {
 
   // Search
   bool _isSearching = false;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   List<AiChatMessage> _searchResults = [];
 
   // Quick Replies
@@ -98,7 +99,7 @@ class _ChatPageState extends State<ChatPage> {
   static const double _scrollStickThreshold = 96;
 
   // Message Marking
-  Set<String> _markedMessages = {};
+  final Set<String> _markedMessages = {};
 
   // Edit Message
   String? _editingMessageId;
@@ -111,7 +112,7 @@ class _ChatPageState extends State<ChatPage> {
       widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
 
   String get _providerSourceLabel =>
-      _isBackendProviderAgent ? '服务器 Ollama' : '我的 API';
+      _isBackendProviderAgent ? '服务器模型' : '我的 API';
 
   @override
   void initState() {
@@ -877,13 +878,13 @@ class _ChatPageState extends State<ChatPage> {
 
     setState(() => _isSyncingModelPrompt = true);
     try {
-      await _syncPromptToOllamaModel(nextPrompt);
+      await _syncPromptToServerModel(nextPrompt);
       await _createNewSession();
       if (!mounted) return;
-      MoeToast.success(context, '系统提示词已更新并同步到 Ollama 模型（已开启新对话）');
+      MoeToast.success(context, '系统提示词已更新并同步到服务器模型（已开启新对话）');
     } catch (e) {
       if (!mounted) return;
-      MoeToast.error(context, '提示词已保存到角色卡，但同步 Ollama 失败：$e');
+      MoeToast.error(context, '提示词已保存到角色卡，但同步服务器模型失败：$e');
     } finally {
       if (mounted) {
         setState(() => _isSyncingModelPrompt = false);
@@ -912,7 +913,7 @@ class _ChatPageState extends State<ChatPage> {
     } catch (_) {}
   }
 
-  Future<void> _syncPromptToOllamaModel(String prompt) async {
+  Future<void> _syncPromptToServerModel(String prompt) async {
     final baseModel = await _resolveBaseModelFromModel();
     final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
     final token = ApiService.token;
@@ -1151,8 +1152,8 @@ class _ChatPageState extends State<ChatPage> {
             }
           }
         },
-        localeId: 'zh_CN',
         listenOptions: stt.SpeechListenOptions(
+          localeId: 'zh_CN',
           partialResults: true,
           cancelOnError: true,
         ),
@@ -1231,83 +1232,48 @@ class _ChatPageState extends State<ChatPage> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.reply_rounded,
-                        color: Color(0xFF7F7FD5)),
-                  ),
-                  title: const Text('回复消息',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                MoeActionRow(
+                  icon: Icons.reply_rounded,
+                  title: '回复消息',
+                  iconColor: AiBrandTokens.primary,
+                  showDefaultTrailing: false,
                   onTap: () {
                     Navigator.pop(context);
                     _replyToMessage(message);
                   },
                 ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.copy_rounded, color: Colors.blue),
-                  ),
-                  title: const Text('复制内容',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                MoeActionRow(
+                  icon: Icons.copy_rounded,
+                  title: '复制内容',
+                  iconColor: Colors.blue,
+                  showDefaultTrailing: false,
                   onTap: () async {
                     Navigator.pop(context);
                     await Clipboard.setData(
                         ClipboardData(text: message.content));
                     if (!mounted) return;
-                    MoeToast.success(context, '已复制到剪贴板');
+                    MoeToast.success(this.context, '已复制到剪贴板');
                   },
                 ),
                 if (message.role == 'assistant' &&
                     _isLastAssistantMessage(message) &&
                     !AiChatMessageUtils.looksLikeErrorContent(
                         message.content)) ...[
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AiBrandTokens.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.refresh_rounded,
-                        color: AiBrandTokens.primary,
-                      ),
-                    ),
-                    title: const Text(
-                      '重新生成',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                  MoeActionRow(
+                    icon: Icons.refresh_rounded,
+                    title: '重新生成',
+                    iconColor: AiBrandTokens.primary,
+                    showDefaultTrailing: false,
                     onTap: () {
                       Navigator.pop(context);
                       _regenerateAssistantMessage(message);
                     },
                   ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF5B8DEF).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.more_horiz_rounded,
-                        color: Color(0xFF5B8DEF),
-                      ),
-                    ),
-                    title: const Text(
-                      '继续生成',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                  MoeActionRow(
+                    icon: Icons.more_horiz_rounded,
+                    title: '继续生成',
+                    iconColor: AiBrandTokens.secondary,
+                    showDefaultTrailing: false,
                     onTap: () {
                       Navigator.pop(context);
                       _continueAssistantMessage(message);
@@ -1315,79 +1281,48 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ],
                 if (message.role == 'user') ...[
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child:
-                          const Icon(Icons.edit_rounded, color: Colors.orange),
-                    ),
-                    title: const Text('编辑消息',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  MoeActionRow(
+                    icon: Icons.edit_rounded,
+                    title: '编辑消息',
+                    iconColor: Colors.orange,
+                    showDefaultTrailing: false,
                     onTap: () {
                       Navigator.pop(context);
                       _editMessage(message);
                     },
                   ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.format_quote_rounded,
-                          color: Colors.green),
-                    ),
-                    title: const Text('引用消息',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  MoeActionRow(
+                    icon: Icons.format_quote_rounded,
+                    title: '引用消息',
+                    iconColor: Colors.green,
+                    showDefaultTrailing: false,
                     onTap: () {
                       Navigator.pop(context);
                       _quoteMessage(message);
                     },
                   ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _markedMessages.contains(message.id)
-                            ? Colors.yellow.withValues(alpha: 0.1)
-                            : Colors.blue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        _markedMessages.contains(message.id)
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: _markedMessages.contains(message.id)
-                            ? Colors.yellow
-                            : Colors.blue,
-                      ),
-                    ),
-                    title: Text(
-                      _markedMessages.contains(message.id) ? '取消标记' : '标记消息',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                  MoeActionRow(
+                    icon: _markedMessages.contains(message.id)
+                        ? Icons.star_rounded
+                        : Icons.star_border_rounded,
+                    title:
+                        _markedMessages.contains(message.id) ? '取消标记' : '标记消息',
+                    iconColor: _markedMessages.contains(message.id)
+                        ? Colors.yellow
+                        : Colors.blue,
+                    showDefaultTrailing: false,
+                    titleStyle: const TextStyle(fontWeight: FontWeight.bold),
                     onTap: () {
                       Navigator.pop(context);
                       _toggleMessageMark(message);
                     },
                   ),
-                  ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child:
-                          const Icon(Icons.delete_rounded, color: Colors.red),
-                    ),
-                    title: const Text('撤回消息',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  MoeActionRow(
+                    icon: Icons.delete_rounded,
+                    title: '撤回消息',
+                    iconColor: Colors.red,
+                    showDefaultTrailing: false,
+                    titleStyle: const TextStyle(fontWeight: FontWeight.bold),
                     onTap: () {
                       Navigator.pop(context);
                       _recallMessage(message);
@@ -1404,11 +1339,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _replyToMessage(AiChatMessage message) {
+    final preview = message.content.substring(
+        0, message.content.length > 50 ? 50 : message.content.length);
     setState(() {
-      _controller.text = "@AI " +
-          message.content.substring(
-              0, message.content.length > 50 ? 50 : message.content.length) +
-          "...\n";
+      _controller.text = '@AI $preview...\n';
       _focusNode.requestFocus();
     });
   }
@@ -1469,7 +1403,7 @@ class _ChatPageState extends State<ChatPage> {
                 _messages.removeWhere((msg) => msg.id == message.id);
               });
               if (!mounted) return;
-              MoeToast.success(context, '消息已撤回');
+              MoeToast.success(this.context, '消息已撤回');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF7F7FD5),
@@ -1768,6 +1702,7 @@ class _ChatPageState extends State<ChatPage> {
                                 await Clipboard.setData(
                                     ClipboardData(text: _systemPrompt));
                                 if (!mounted) return;
+                                if (!ctx.mounted) return;
                                 Navigator.pop(ctx);
                                 MoeToast.success(context, '提示词已复制');
                               },
@@ -2128,11 +2063,6 @@ class _ChatPageState extends State<ChatPage> {
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),
                 ),
-                if (_isSending)
-                  AiGeneratingBanner(
-                    agentName: widget.agent.name,
-                    onStop: _stopGeneration,
-                  ),
                 Flexible(
                   flex: 0,
                   fit: FlexFit.loose,
@@ -2345,7 +2275,8 @@ class _ChatPageState extends State<ChatPage> {
       onToggleListening: _toggleListening,
       onToggleQuickReplies: _toggleQuickReplies,
       onSend: _sendMessage,
-      stopControlInBanner: true,
+      onStop: _stopGeneration,
+      stopControlInBanner: false,
       quickRepliesPanel: _buildQuickReplies(),
     );
   }

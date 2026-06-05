@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../moe_action_row.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_theme.dart';
 
@@ -110,12 +111,12 @@ abstract final class AiSheet {
       child: Column(
         children: actions
             .map(
-              (action) => ListTile(
-                leading: Icon(action.icon, color: AiBrandTokens.primary),
-                title: Text(action.label),
-                subtitle: action.subtitle != null
-                    ? Text(action.subtitle!, style: AiTheme.caption)
-                    : null,
+              (action) => MoeActionRow(
+                icon: action.icon,
+                title: action.label,
+                subtitle:
+                    action.subtitle == null ? null : Text(action.subtitle!),
+                iconColor: AiBrandTokens.primary,
                 onTap: () => Navigator.pop(context, action.value),
               ),
             )

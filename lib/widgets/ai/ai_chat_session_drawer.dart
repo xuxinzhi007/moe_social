@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../models/ai_chat_session.dart';
+import '../../theme/moe_tokens.dart';
+import '../moe_action_row.dart';
 import 'ai_brand_tokens.dart';
 
 class AiChatSessionDrawer extends StatelessWidget {
@@ -95,29 +97,29 @@ class AiChatSessionDrawer extends StatelessWidget {
               ],
             ),
           ),
-          _DrawerActionTile(
+          MoeActionRow(
             icon: Icons.add_comment_rounded,
-            label: '新对话',
-            color: AiBrandTokens.primary,
+            title: '新对话',
+            iconColor: AiBrandTokens.primary,
             onTap: () {
               Navigator.pop(context);
               onCreateSession();
             },
           ),
-          _DrawerActionTile(
+          MoeActionRow(
             icon: Icons.psychology_rounded,
-            label: '记忆库（$memoryCount 条）',
-            color: const Color(0xFF5B8DEF),
+            title: '记忆库（$memoryCount 条）',
+            iconColor: MoeTokens.secondary,
             onTap: () {
               Navigator.pop(context);
               onOpenMemoryManager();
             },
           ),
-          _DrawerActionTile(
+          MoeActionRow(
             icon: Icons.person_outline_rounded,
-            label: '用户 Persona',
-            subtitle: userPersona.isEmpty ? '未设置' : '已设置',
-            color: const Color(0xFF00A86B),
+            title: '用户 Persona',
+            subtitle: Text(userPersona.isEmpty ? '未设置' : '已设置'),
+            iconColor: MoeTokens.accent,
             onTap: () {
               Navigator.pop(context);
               onEditUserPersona();
@@ -153,34 +155,35 @@ class AiChatSessionDrawer extends StatelessWidget {
                       final isCurrent = session.id == currentSessionId;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(
-                          color: isCurrent
-                              ? AiBrandTokens.primary.withValues(alpha: 0.1)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
+                        child: MoeActionRow(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          title: session.title,
+                          iconColor: isCurrent
+                              ? AiBrandTokens.primary
+                              : Colors.grey.shade600,
+                          iconBackgroundColor: isCurrent
+                              ? AiBrandTokens.primary.withValues(alpha: 0.12)
+                              : Colors.grey.shade200,
+                          selected: isCurrent,
+                          selectedBackgroundColor:
+                              AiBrandTokens.primary.withValues(alpha: 0.1),
+                          selectedBorderColor:
+                              AiBrandTokens.primary.withValues(alpha: 0.3),
+                          selectedTitleColor: AiBrandTokens.primary,
+                          backgroundColor: Colors.white,
+                          borderColor: Colors.transparent,
+                          titleStyle: TextStyle(
+                            fontWeight:
+                                isCurrent ? FontWeight.w700 : FontWeight.w500,
                             color: isCurrent
-                                ? AiBrandTokens.primary.withValues(alpha: 0.3)
-                                : Colors.transparent,
+                                ? AiBrandTokens.primary
+                                : AiBrandTokens.titleColor,
                           ),
-                        ),
-                        child: ListTile(
-                          dense: true,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
                           ),
-                          title: Text(
-                            session.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight:
-                                  isCurrent ? FontWeight.w700 : FontWeight.w500,
-                              color: isCurrent
-                                  ? AiBrandTokens.primary
-                                  : AiBrandTokens.titleColor,
-                            ),
-                          ),
+                          showDefaultTrailing: false,
                           onTap: () {
                             Navigator.pop(context);
                             onLoadSession(session);
@@ -200,45 +203,6 @@ class AiChatSessionDrawer extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DrawerActionTile extends StatelessWidget {
-  const _DrawerActionTile({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final String? subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: color, size: 20),
-      ),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-              subtitle!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-      onTap: onTap,
     );
   }
 }

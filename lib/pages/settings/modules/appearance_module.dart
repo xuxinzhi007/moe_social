@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../theme/moe_tokens.dart';
 import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 
 class AppearanceModule extends StatelessWidget {
-  const AppearanceModule({Key? key}) : super(key: key);
+  const AppearanceModule({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -89,21 +90,37 @@ class AppearanceModule extends StatelessWidget {
   Widget _buildThemeOption(BuildContext context, ThemeProvider themeProvider,
       String title, String value, IconData icon) {
     final isSelected = themeProvider.themeMode == value;
-    final primaryColor = const Color(0xFF7F7FD5);
+    final primaryColor = MoeTokens.primary;
 
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? primaryColor : Colors.grey),
-      title: Text(title,
-          style: TextStyle(
-              color: isSelected ? primaryColor : Colors.black87,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-      trailing: isSelected
-          ? Icon(Icons.check_circle_rounded, color: primaryColor)
-          : null,
-      onTap: () {
-        themeProvider.setThemeMode(value);
-        Navigator.pop(context);
-      },
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          themeProvider.setThemeMode(value);
+          Navigator.pop(context);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? primaryColor : Colors.grey),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected ? primaryColor : Colors.black87,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Icon(Icons.check_circle_rounded, color: primaryColor),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

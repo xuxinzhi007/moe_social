@@ -85,7 +85,7 @@ class TavernHeroCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '支持自定义 API、中转站、服务器 Ollama，以及可套用的角色模板。',
+                  '支持自定义 API、中转站、服务器模型，以及可套用的角色模板。',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.88),
                     fontSize: 13,

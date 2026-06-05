@@ -15,9 +15,11 @@ import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_sync_bus.dart';
 import '../../services/presence_service.dart';
 import '../../services/notification_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../models/notification.dart';
 import '../../utils/media_url.dart';
 import '../../models/private_message_item.dart';
+import '../../widgets/moe_action_row.dart';
 import 'voice_call_launcher.dart';
 
 class DirectChatPage extends StatefulWidget {
@@ -279,8 +281,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
     if (currentUserId == null || currentUserId.isEmpty) return;
     try {
       final callData = await ApiService.voiceCall(widget.userId);
-      final channelName =
-          callData['channel_name']?.toString() ?? callData['call_id']?.toString();
+      final channelName = callData['channel_name']?.toString() ??
+          callData['call_id']?.toString();
       if (channelName == null || channelName.isEmpty) {
         throw Exception('invalid channel');
       }
@@ -1005,46 +1007,61 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              ListTile(
-                leading: Icon(Icons.person_rounded, color: scheme.primary),
-                title: const Text('查看对方主页'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openPeerProfile(context);
-                },
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: MoeActionRow(
+                  icon: Icons.person_rounded,
+                  iconColor: MoeTokens.primary,
+                  title: '查看对方主页',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openPeerProfile(context);
+                  },
+                ),
               ),
-              ListTile(
-                leading:
-                    Icon(Icons.delete_outline_rounded, color: scheme.error),
-                title: const Text('清空聊天记录'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogCtx) => AlertDialog(
-                      title: const Text('清空聊天记录'),
-                      content: const Text('仅清空当前设备上的本地聊天缓存，是否继续？'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: const Text('取消'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(dialogCtx, true),
-                          child: const Text('清空'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    await _clearLocalChatHistory();
-                  }
-                },
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: MoeActionRow(
+                  icon: Icons.delete_outline_rounded,
+                  iconColor: scheme.error,
+                  iconBackgroundColor: scheme.error.withValues(alpha: 0.12),
+                  title: '清空聊天记录',
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialogCtx) => AlertDialog(
+                        title: const Text('清空聊天记录'),
+                        content: const Text('仅清空当前设备上的本地聊天缓存，是否继续？'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dialogCtx, false),
+                            child: const Text('取消'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialogCtx, true),
+                            child: const Text('清空'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true) {
+                      await _clearLocalChatHistory();
+                    }
+                  },
+                ),
               ),
-              ListTile(
-                leading: Icon(Icons.block_rounded, color: scheme.error),
-                title: const Text('屏蔽此人'),
-                onTap: () => Navigator.pop(ctx),
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: MoeActionRow(
+                  icon: Icons.block_rounded,
+                  iconColor: scheme.error,
+                  iconBackgroundColor: scheme.error.withValues(alpha: 0.12),
+                  title: '屏蔽此人',
+                  onTap: () => Navigator.pop(ctx),
+                ),
               ),
               const SizedBox(height: 8),
             ],
@@ -1227,7 +1244,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 120),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
+                    color:
+                        scheme.surfaceContainerHighest.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: scheme.outline.withValues(alpha: 0.15),
