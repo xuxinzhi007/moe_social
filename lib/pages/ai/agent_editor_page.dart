@@ -21,6 +21,7 @@ import '../../widgets/ai/ai_scaffold.dart';
 import '../../widgets/ai/ai_section_header.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_toast.dart';
 import 'ai_provider_profiles_page.dart';
 
@@ -197,20 +198,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               const SizedBox(height: 16),
               ...AiStarterTemplates.agentTemplates.map(
                 (template) => Card(
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: Text(
-                      template.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                  child: MoeActionRow(
+                    icon: Icons.auto_awesome_rounded,
+                    iconColor: AiBrandTokens.primary,
+                    title: template.name,
+                    subtitle: Text(
+                      '${template.tagline}\n${template.description}',
+                      style: const TextStyle(height: 1.4),
                     ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        '${template.tagline}\n${template.description}',
-                        style: const TextStyle(height: 1.4),
-                      ),
-                    ),
-                    isThreeLine: true,
                     onTap: () => Navigator.pop(ctx, template),
                   ),
                 ),
@@ -948,15 +943,19 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   ),
                 _buildModelChips(),
                 const SizedBox(height: 12),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('发布到角色卡广场'),
-                  subtitle: const Text(
-                    '开启后，其他用户可在角色卡广场发现并使用这个角色',
+                MoeActionRow(
+                  icon: Icons.public_rounded,
+                  title: '发布到角色卡广场',
+                  subtitle: const Text('开启后，其他用户可在角色卡广场发现并使用这个角色'),
+                  onTap: () =>
+                      setState(() => _publishToPlaza = !_publishToPlaza),
+                  showDefaultTrailing: false,
+                  iconColor: AiBrandTokens.primary,
+                  trailing: Switch.adaptive(
+                    value: _publishToPlaza,
+                    activeThumbColor: AiBrandTokens.primary,
+                    onChanged: (v) => setState(() => _publishToPlaza = v),
                   ),
-                  value: _publishToPlaza,
-                  activeThumbColor: AiBrandTokens.primary,
-                  onChanged: (v) => setState(() => _publishToPlaza = v),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
@@ -1025,13 +1024,13 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
               child: AiSurfaceCard(
                 child: Column(
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('高级选项',
-                          style: AiTheme.title.copyWith(fontSize: 16)),
+                    MoeActionRow(
+                      icon: Icons.tune_rounded,
+                      title: '高级选项',
+                      titleStyle: AiTheme.title.copyWith(fontSize: 16),
                       subtitle: Text(
                         _selectedProviderIsBackend
-                            ? '系统提示词、示例对话；可选同步到服务器 Ollama'
+                            ? '系统提示词、示例对话；可选同步到服务器模型'
                             : '系统提示词、示例对话等进阶设定',
                         style: AiTheme.caption,
                       ),
@@ -1040,6 +1039,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                             ? Icons.expand_less_rounded
                             : Icons.expand_more_rounded,
                       ),
+                      showDefaultTrailing: false,
                       onTap: () => setState(
                         () => _showAdvancedFields = !_showAdvancedFields,
                       ),
@@ -1050,26 +1050,36 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                       if (widget.agent == null &&
                           !_isEphemeralDraft &&
                           _selectedProviderIsBackend)
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('【可选】在服务器生成 Ollama 模型'),
-                          subtitle: const Text(
-                            '与身份卡无关；默认关闭。仅内置 Ollama 用户需要',
+                        MoeActionRow(
+                          icon: Icons.precision_manufacturing_rounded,
+                          title: '【可选】在服务器生成 Ollama 模型',
+                          subtitle: const Text('与身份卡无关；默认关闭。仅内置 Ollama 用户需要'),
+                          onTap: () => setState(
+                              () => _createRealModel = !_createRealModel),
+                          showDefaultTrailing: false,
+                          iconColor: AiBrandTokens.primary,
+                          trailing: Switch.adaptive(
+                            value: _createRealModel,
+                            activeThumbColor: AiBrandTokens.primary,
+                            onChanged: (v) =>
+                                setState(() => _createRealModel = v),
                           ),
-                          value: _createRealModel,
-                          activeThumbColor: AiBrandTokens.primary,
-                          onChanged: (v) =>
-                              setState(() => _createRealModel = v),
                         ),
                       if (widget.agent != null && _selectedProviderIsBackend)
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('同步更新 Ollama 模型'),
+                        MoeActionRow(
+                          icon: Icons.sync_rounded,
+                          title: '同步更新 Ollama 模型',
                           subtitle: const Text('保存后后台同步，不阻塞界面'),
-                          value: _syncModelOnEdit,
-                          activeThumbColor: AiBrandTokens.primary,
-                          onChanged: (v) =>
-                              setState(() => _syncModelOnEdit = v),
+                          onTap: () => setState(
+                              () => _syncModelOnEdit = !_syncModelOnEdit),
+                          showDefaultTrailing: false,
+                          iconColor: AiBrandTokens.primary,
+                          trailing: Switch.adaptive(
+                            value: _syncModelOnEdit,
+                            activeThumbColor: AiBrandTokens.primary,
+                            onChanged: (v) =>
+                                setState(() => _syncModelOnEdit = v),
+                          ),
                         ),
                       if (widget.agent != null &&
                           _selectedProviderIsBackend) ...[

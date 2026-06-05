@@ -56,7 +56,8 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AchievementsPage()),
+                MaterialPageRoute(
+                    builder: (context) => const AchievementsPage()),
               );
             },
             icon: const Icon(Icons.emoji_events_rounded),
@@ -66,60 +67,95 @@ class _AchievementTestPageState extends State<AchievementTestPage> {
       body: _userId == null
           ? const Center(child: Text('请先登录后查看成就'))
           : _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '测试成就解锁',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _badges.length,
-                      itemBuilder: (context, index) {
-                        final badge = _badges[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: badge.color.withValues(alpha: 0.1),
-                              child: Text(
-                                badge.emoji,
-                                style: const TextStyle(fontSize: 22),
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '测试成就解锁',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _badges.length,
+                          itemBuilder: (context, index) {
+                            final badge = _badges[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor:
+                                          badge.color.withValues(alpha: 0.1),
+                                      child: Text(
+                                        badge.emoji,
+                                        style: const TextStyle(fontSize: 22),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            badge.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            badge.description,
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    badge.isUnlocked
+                                        ? const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                          )
+                                        : Text(
+                                            '${(badge.progress * 100).round()}%',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            title: Text(badge.name),
-                            subtitle: Text(badge.description),
-                            trailing: badge.isUnlocked
-                                ? const Icon(Icons.check_circle, color: Colors.green)
-                                : Text(
-                                    '${(badge.progress * 100).round()}%',
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _resetAchievements,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('重置所有成就'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _resetAchievements,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('重置所有成就'),
-                  ),
-                ],
-              ),
-            ),
+                ),
     );
   }
 }

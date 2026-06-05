@@ -20,6 +20,7 @@ class AiChatComposer extends StatefulWidget {
     this.quickRepliesPanel,
     this.canSend = true,
     this.agentName,
+
     /// 为 true 时生成中不在输入框内显示停止钮（由顶部状态条承担）。
     this.stopControlInBanner = true,
   });
@@ -134,17 +135,15 @@ class _AiChatComposerState extends State<AiChatComposer> {
                           if (event.logicalKey != LogicalKeyboardKey.enter) {
                             return KeyEventResult.ignored;
                           }
-                          final shift = HardwareKeyboard.instance
-                                  .isLogicalKeyPressed(
-                                LogicalKeyboardKey.shiftLeft,
-                              ) ||
+                          final shift =
                               HardwareKeyboard.instance.isLogicalKeyPressed(
-                                LogicalKeyboardKey.shiftRight,
-                              );
+                                    LogicalKeyboardKey.shiftLeft,
+                                  ) ||
+                                  HardwareKeyboard.instance.isLogicalKeyPressed(
+                                    LogicalKeyboardKey.shiftRight,
+                                  );
                           if (shift) return KeyEventResult.ignored;
-                          if (!widget.isSending &&
-                              widget.canSend &&
-                              _hasText) {
+                          if (!widget.isSending && widget.canSend && _hasText) {
                             widget.onSend();
                             return KeyEventResult.handled;
                           }
@@ -188,8 +187,13 @@ class _AiChatComposerState extends State<AiChatComposer> {
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(0, 4, 4, 4),
-                      child: widget.isSending && widget.stopControlInBanner
-                          ? const _SendingSlot()
+                      child: widget.isSending
+                          ? (widget.stopControlInBanner
+                              ? const _SendingSlot()
+                              : _StopButton(
+                                  size: 34,
+                                  onStop: widget.onStop,
+                                ))
                           : _SendButton(
                               size: 34,
                               enabled: widget.canSend && _hasText,
@@ -366,6 +370,53 @@ class _SendButton extends StatelessWidget {
                 Icons.arrow_upward_rounded,
                 color: Colors.white,
                 size: size * 0.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StopButton extends StatelessWidget {
+  const _StopButton({
+    required this.size,
+    required this.onStop,
+  });
+
+  final double size;
+  final VoidCallback? onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = onStop != null;
+    return Tooltip(
+      message: '停止生成',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: active
+              ? () {
+                  HapticFeedback.lightImpact();
+                  onStop?.call();
+                }
+              : null,
+          customBorder: const CircleBorder(),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: active ? 1 : 0.4,
+            child: Ink(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AiTheme.danger.withValues(alpha: 0.92),
+              ),
+              child: Icon(
+                Icons.stop_rounded,
+                color: Colors.white,
+                size: size * 0.48,
               ),
             ),
           ),

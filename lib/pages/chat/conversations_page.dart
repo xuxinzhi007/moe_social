@@ -374,41 +374,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 : formatDmPreviewForUi(previewRaw);
             final pushBadge = pushUnread[peerId] ?? 0;
             final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
-            return ListTile(
-              leading: NetworkAvatarImage(
-                imageUrl: avatar,
-                radius: 22,
-                placeholderIcon: Icons.person,
-              ),
-              title: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(
-                preview,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: badge > 0
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.error,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        badge > 99 ? '99+' : '$badge',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    )
-                  : null,
+            return _buildConversationRow(
+              context,
+              avatar: avatar,
+              title: title,
+              preview: preview,
+              badge: badge,
               onTap: () async {
                 if (!context.mounted) return;
                 await Navigator.pushNamed(
@@ -551,41 +522,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
               previewRaw.isEmpty ? '' : formatDmPreviewForUi(previewRaw);
           final badge = pushUnread[peerId] ?? 0;
 
-          return ListTile(
-            leading: NetworkAvatarImage(
-              imageUrl: avatar,
-              radius: 22,
-              placeholderIcon: Icons.person,
-            ),
-            title: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              preview.isEmpty ? '点击开始聊天' : preview,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: badge > 0
-                ? Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.error,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      badge > 99 ? '99+' : '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                : null,
+          return _buildConversationRow(
+            context,
+            avatar: avatar,
+            title: title,
+            preview: preview.isEmpty ? '点击开始聊天' : preview,
+            badge: badge,
             onTap: () async {
               if (!context.mounted) return;
               await Navigator.pushNamed(
@@ -601,6 +543,73 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildConversationRow(
+    BuildContext context, {
+    required String avatar,
+    required String title,
+    required String preview,
+    required int badge,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              NetworkAvatarImage(
+                imageUrl: avatar,
+                radius: 22,
+                placeholderIcon: Icons.person,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              if (badge > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: scheme.error,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badge > 99 ? '99+' : '$badge',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

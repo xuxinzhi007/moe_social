@@ -11,13 +11,17 @@ import 'package:shimmer/shimmer.dart';
 import '../../services/api_response.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_action_row.dart';
 import 'cloud_image_viewer_page.dart';
 
 class CloudGalleryPage extends StatefulWidget {
-  const CloudGalleryPage({Key? key, this.onImageSelected, this.isSelectMode = false}) : super(key: key);
-  
+  const CloudGalleryPage(
+      {Key? key, this.onImageSelected, this.isSelectMode = false})
+      : super(key: key);
+
   final Function(String)? onImageSelected;
   final bool isSelectMode;
 
@@ -42,7 +46,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   bool _selectMode = false;
   final Set<int> _selected = <int>{};
-  
+
   @override
   void initState() {
     super.initState();
@@ -90,7 +94,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       }
     } catch (_) {}
   }
-  
+
   Future<void> _loadImages({bool force = false}) async {
     if (_isFetching) return;
     if (!_hasMore && !force) return;
@@ -98,15 +102,18 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     setState(() {
       _isFetching = true;
     });
-    
+
     try {
-      final result = await ApiService.get('/api/images?page=$_currentPage&page_size=$_pageSize');
+      final result = await ApiService.get(
+          '/api/images?page=$_currentPage&page_size=$_pageSize');
       if (ApiResponse.isSuccess(result)) {
-        final images = ApiResponse.listOf(result, keys: const ['images', 'data']);
+        final images =
+            ApiResponse.listOf(result, keys: const ['images', 'data']);
         setState(() {
           for (final it in images) {
             if (it is! Map) continue;
-            final key = it['filename']?.toString() ?? it['id']?.toString() ?? '';
+            final key =
+                it['filename']?.toString() ?? it['id']?.toString() ?? '';
             if (key.isEmpty) {
               _images.add(it);
               continue;
@@ -150,7 +157,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       await _loadImages(force: true);
     }
   }
-  
+
   void _enterSelectMode({int? initialIndex}) {
     if (_selectMode) return;
     HapticFeedback.mediumImpact();
@@ -186,7 +193,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('删除确认', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('删除确认', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text('确定要删除选中的 ${_selected.length} 张图片吗？此操作无法恢复。'),
         actions: [
           TextButton(
@@ -308,24 +316,26 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: MoeActionRow(
+                    icon: Icons.photo_library_outlined,
+                    iconColor: MoeTokens.primary,
+                    title: '从相册选择',
+                    titleStyle: const TextStyle(fontWeight: FontWeight.w500),
+                    onTap: () => Navigator.pop(context, ImageSource.gallery),
                   ),
-                  title: const Text('从相册选择', style: TextStyle(fontWeight: FontWeight.w500)),
-                  onTap: () => Navigator.pop(context, ImageSource.gallery),
                 ),
                 const SizedBox(height: 8),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt_outlined, color: Colors.purple),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: MoeActionRow(
+                    icon: Icons.camera_alt_outlined,
+                    iconColor: MoeTokens.secondary,
+                    title: '拍照上传',
+                    titleStyle: const TextStyle(fontWeight: FontWeight.w500),
+                    onTap: () => Navigator.pop(context, ImageSource.camera),
                   ),
-                  title: const Text('拍照上传', style: TextStyle(fontWeight: FontWeight.w500)),
-                  onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
               ],
             ),
@@ -351,7 +361,9 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       final imageInfo = await ApiService.uploadImageInfo(File(picked.path));
 
       if (!mounted) return;
-      final key = imageInfo['filename']?.toString() ?? imageInfo['id']?.toString() ?? '';
+      final key = imageInfo['filename']?.toString() ??
+          imageInfo['id']?.toString() ??
+          '';
       setState(() {
         if (key.isEmpty || _seenKeys.add(key)) {
           _images.insert(0, imageInfo);
@@ -376,7 +388,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     final maxBytes = _maxBytes ?? 0;
     final usedBytes = _usedBytes ?? 0;
     if (widget.isSelectMode || maxBytes <= 0) return const SizedBox.shrink();
-    
+
     final progress = (usedBytes / maxBytes).clamp(0.0, 1.0);
     final isWarning = progress > 0.85;
 
@@ -402,7 +414,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: (isWarning ? Colors.red : Colors.blue).withValues(alpha: 0.1),
+                  color: (isWarning ? Colors.red : Colors.blue)
+                      .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -466,14 +479,16 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         children: [
           Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text('图库空空如也', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+          Text('图库空空如也',
+              style: TextStyle(fontSize: 16, color: Colors.grey[500])),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             icon: const Icon(Icons.cloud_upload_outlined),
             label: const Text('上传第一张图片'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
             ),
             onPressed: _pickAndUpload,
           ),
@@ -481,7 +496,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       ),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -499,7 +514,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         actions: [
           if (!widget.isSelectMode && _selectMode) ...[
             IconButton(
-              icon: const Icon(Icons.download_rounded, color: Colors.blueAccent),
+              icon:
+                  const Icon(Icons.download_rounded, color: Colors.blueAccent),
               onPressed: _busy ? null : _bulkDownloadSelected,
               tooltip: '批量下载',
             ),
@@ -526,7 +542,9 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               heroTag: "cloud_gallery_upload_button",
               onPressed: _busy ? null : _pickAndUpload,
               icon: const Icon(Icons.add_a_photo_rounded, color: Colors.white),
-              label: const Text('上传图片', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: const Text('上传图片',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold)),
               backgroundColor: const Color(0xFF7F7FD5), // Moe 主题色
               elevation: 4,
             ),
@@ -537,7 +555,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
             child: _isFetching && _images.isEmpty
                 ? GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -559,7 +578,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                     : GridView.builder(
                         controller: _scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
@@ -573,8 +593,10 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                             return Center(
                               child: _isFetching
                                   ? const SizedBox(
-                                      width: 24, height: 24,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2),
                                     )
                                   : const SizedBox(),
                             );
@@ -620,7 +642,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                       borderRadius: BorderRadius.circular(12),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.05),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.05),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -631,14 +654,18 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                       imageUrl: displayUrl,
                                       fit: BoxFit.cover,
                                       memCacheWidth: 400,
-                                      placeholder: (context, _) => Shimmer.fromColors(
+                                      placeholder: (context, _) =>
+                                          Shimmer.fromColors(
                                         baseColor: Colors.grey[200]!,
                                         highlightColor: Colors.grey[100]!,
                                         child: Container(color: Colors.white),
                                       ),
-                                      errorWidget: (context, _, __) => Container(
+                                      errorWidget: (context, _, __) =>
+                                          Container(
                                         color: Colors.grey[100],
-                                        child: const Icon(Icons.broken_image_rounded, color: Colors.grey),
+                                        child: const Icon(
+                                            Icons.broken_image_rounded,
+                                            color: Colors.grey),
                                       ),
                                     ),
                                   ),
@@ -647,9 +674,11 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                 if (isSelected)
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.4),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.4),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.blueAccent, width: 3),
+                                      border: Border.all(
+                                          color: Colors.blueAccent, width: 3),
                                     ),
                                   ),
                                 if (!widget.isSelectMode && _selectMode)
@@ -657,8 +686,13 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                     top: 8,
                                     right: 8,
                                     child: Icon(
-                                      isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                                      color: isSelected ? Colors.blueAccent : Colors.white.withValues(alpha: 0.8),
+                                      isSelected
+                                          ? Icons.check_circle_rounded
+                                          : Icons
+                                              .radio_button_unchecked_rounded,
+                                      color: isSelected
+                                          ? Colors.blueAccent
+                                          : Colors.white.withValues(alpha: 0.8),
                                       size: 24,
                                     ),
                                   ),
@@ -672,7 +706,8 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                         color: Colors.black45,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Icon(Icons.check, color: Colors.white, size: 14),
+                                      child: const Icon(Icons.check,
+                                          color: Colors.white, size: 14),
                                     ),
                                   ),
                               ],

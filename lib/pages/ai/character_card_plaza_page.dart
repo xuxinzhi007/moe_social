@@ -321,37 +321,50 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         margin: EdgeInsets.zero,
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: AiBrandTokens.primary.withValues(alpha: 0.15),
-            child: Text(
-              agent.name.isNotEmpty ? agent.name[0] : '?',
-              style: const TextStyle(
-                color: AiBrandTokens.primary,
-                fontWeight: FontWeight.w700,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AiBrandTokens.primary.withValues(alpha: 0.15),
+                child: Text(
+                  agent.name.isNotEmpty ? agent.name[0] : '?',
+                  style: const TextStyle(
+                    color: AiBrandTokens.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
-          ),
-          title: Text(
-            agent.name,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(height: 1.35),
-          ),
-          trailing: FilledButton(
-            onPressed: () => _openChat(agent),
-            style: FilledButton.styleFrom(
-              backgroundColor: AiBrandTokens.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(0, 36),
-            ),
-            child: const Text('使用'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agent.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: () => _openChat(agent),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AiBrandTokens.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(0, 36),
+                ),
+                child: const Text('使用'),
+              ),
+            ],
           ),
         ),
       ),
@@ -417,34 +430,50 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Card(
         margin: EdgeInsets.zero,
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: AiBrandTokens.secondary.withValues(alpha: 0.15),
-            child: Text(
-              agent.name.isNotEmpty ? agent.name[0] : '?',
-              style: const TextStyle(
-                color: AiBrandTokens.secondary,
-                fontWeight: FontWeight.w700,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor:
+                    AiBrandTokens.secondary.withValues(alpha: 0.15),
+                child: Text(
+                  agent.name.isNotEmpty ? agent.name[0] : '?',
+                  style: const TextStyle(
+                    color: AiBrandTokens.secondary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
-          ),
-          title: Text(agent.name,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text(
-            '$author · ${agent.modelName}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: FilledButton(
-            onPressed: () => _usePublicAgent(agent),
-            style: FilledButton.styleFrom(
-              backgroundColor: AiBrandTokens.secondary,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              minimumSize: const Size(0, 36),
-            ),
-            child: const Text('使用'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      agent.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$author · ${agent.modelName}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: () => _usePublicAgent(agent),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AiBrandTokens.secondary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(0, 36),
+                ),
+                child: const Text('使用'),
+              ),
+            ],
           ),
         ),
       ),

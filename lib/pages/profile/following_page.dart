@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/moe_error_state.dart';
@@ -69,6 +70,7 @@ class _FollowingPageState extends State<FollowingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('关注'),
         elevation: 0,
@@ -128,21 +130,56 @@ class _FollowingPageState extends State<FollowingPage> {
   }
 
   Widget _buildUserItem(User user) {
-    return ListTile(
-      leading: NetworkAvatarImage(
-        imageUrl: user.avatar,
-        radius: 24,
-        placeholderIcon: Icons.person,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+          onTap: () {
+            // 跳转到用户详情页面
+            // Navigator.push(...)
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                NetworkAvatarImage(
+                  imageUrl: user.avatar,
+                  radius: 24,
+                  placeholderIcon: Icons.person_rounded,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.username,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (user.email.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          user.email,
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey[400],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      title: Text(
-        user.username,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: user.email.isNotEmpty ? Text(user.email) : null,
-      onTap: () {
-        // 跳转到用户详情页面
-        // Navigator.push(...)
-      },
     );
   }
 }

@@ -10,6 +10,8 @@ import '../auth_service.dart';
 import '../providers/notification_provider.dart';
 import '../providers/virtual_avatar_provider.dart';
 import '../services/rive_bootstrap.dart';
+import '../theme/moe_tokens.dart';
+import 'moe_action_row.dart';
 import 'moe_toast.dart';
 
 class FloatingVirtualAvatarHost extends StatefulWidget {
@@ -156,12 +158,11 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color:
-                              const Color(0xFF7F7FD5).withValues(alpha: 0.14),
+                          color: MoeTokens.primary.withValues(alpha: 0.14),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.auto_awesome_rounded,
-                            color: Color(0xFF7F7FD5), size: 18),
+                            color: MoeTokens.primary, size: 18),
                       ),
                       const SizedBox(width: 8),
                       const Text(
@@ -178,7 +179,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7FA),
+                        color: MoeTokens.pageBackground,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Text(
@@ -288,10 +289,12 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.visibility_off_rounded),
-                  title: const Text('本次会话隐藏'),
+                MoeActionRow(
+                  icon: Icons.visibility_off_rounded,
+                  title: '本次会话隐藏',
                   subtitle: const Text('重新打开 App 后恢复'),
+                  iconColor: MoeTokens.primary,
+                  showDefaultTrailing: false,
                   onTap: () {
                     if (_isApplyingHideAction) {
                       _showBusyHint();
@@ -307,10 +310,12 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                     MoeToast.info(context, '已隐藏（本次会话）');
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.today_rounded),
-                  title: const Text('隐藏到今天结束'),
+                MoeActionRow(
+                  icon: Icons.today_rounded,
+                  title: '隐藏到今天结束',
                   subtitle: const Text('明天会自动恢复显示'),
+                  iconColor: MoeTokens.primary,
+                  showDefaultTrailing: false,
                   onTap: () async {
                     if (_isApplyingHideAction) {
                       _showBusyHint();
@@ -327,9 +332,11 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                     MoeToast.info(context, '已隐藏到今天结束');
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.settings_rounded),
-                  title: const Text('虚拟助手设置'),
+                MoeActionRow(
+                  icon: Icons.settings_rounded,
+                  title: '虚拟助手设置',
+                  iconColor: MoeTokens.primary,
+                  showDefaultTrailing: false,
                   onTap: () async {
                     Navigator.pop(ctx);
                     await _pushNamed(
@@ -355,7 +362,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     required Future<void> Function() onTap,
   }) {
     return Material(
-      color: const Color(0xFFF5F7FA),
+      color: MoeTokens.pageBackground,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () {
@@ -371,7 +378,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: const Color(0xFF7F7FD5)),
+              Icon(icon, size: 18, color: MoeTokens.primary),
               const SizedBox(width: 6),
               Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
             ],
@@ -406,7 +413,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+          colors: [MoeTokens.primary, MoeTokens.secondary],
         ),
       ),
       alignment: Alignment.center,
@@ -420,11 +427,14 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
 
   @override
   Widget build(BuildContext context) {
-    if (kIsWeb) return widget.child;
+    if (kIsWeb) {
+      return widget.child;
+    }
 
     final avatarProvider = context.watch<VirtualAvatarProvider>();
-    if (!AuthService.isLoggedIn || !avatarProvider.isVisible)
+    if (!AuthService.isLoggedIn || !avatarProvider.isVisible) {
       return widget.child;
+    }
 
     _ensureRiveLoader();
 
@@ -470,8 +480,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFF7F7FD5).withValues(alpha: 0.28),
+                            color: MoeTokens.primary.withValues(alpha: 0.28),
                             blurRadius: unreadCount > 0 ? 24 : 14,
                             offset: const Offset(0, 7),
                           ),

@@ -13,10 +13,12 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
+import '../widgets/moe_action_row.dart';
 import '../widgets/moe_toast.dart';
 
 import '../widgets/post_image_viewer.dart';
 import '../widgets/hand_draw/hand_draw_card_view.dart';
+import '../theme/moe_tokens.dart';
 import 'ai_bot_badge.dart';
 import 'moe_loading.dart';
 import '../utils/media_url.dart';
@@ -28,10 +30,13 @@ class PostCard extends StatefulWidget {
   final VoidCallback? onComment;
   final VoidCallback? onShare;
   final VoidCallback? onAvatarTap;
+
   /// 作者编辑回调（非作者时不传，菜单项自动隐藏）。
   final VoidCallback? onEdit;
+
   /// 作者删除回调（非作者时不传，菜单项自动隐藏）。传入后由外层处理 UI 刷新。
   final VoidCallback? onDelete;
+
   /// Hero 标签命名空间前缀。
   /// 在同一 Navigator 栈中若有多个页面都渲染 PostCard（如首页 + 用户主页），
   /// 必须传入不同的前缀，否则 Hero 标签重复会导致头像消失、无法点击。
@@ -54,7 +59,8 @@ class PostCard extends StatefulWidget {
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin {
+class _PostCardState extends State<PostCard>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -156,7 +162,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                         Text(
                           _formatTime(widget.post.createdAt),
                           style: TextStyle(
-                            color: theme.textTheme.bodySmall?.color ?? Colors.grey[400],
+                            color: theme.textTheme.bodySmall?.color ??
+                                Colors.grey[400],
                             fontSize: 12,
                           ),
                         ),
@@ -165,21 +172,24 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                   ),
                   IconButton(
                     onPressed: () {
-                      final isAuthor = widget.post.userId == (AuthService.currentUser ?? '');
+                      final isAuthor =
+                          widget.post.userId == (AuthService.currentUser ?? '');
                       showModalBottomSheet(
                         context: context,
                         backgroundColor: Colors.transparent,
                         builder: (_) => Container(
                           decoration: const BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                            borderRadius:
+                                BorderRadius.vertical(top: Radius.circular(24)),
                           ),
                           child: SafeArea(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                                  margin:
+                                      const EdgeInsets.only(top: 12, bottom: 8),
                                   width: 40,
                                   height: 4,
                                   decoration: BoxDecoration(
@@ -189,44 +199,65 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                                 ),
                                 // 作者专属：编辑与删除
                                 if (isAuthor && widget.onEdit != null)
-                                  ListTile(
-                                    leading: const Icon(Icons.edit_rounded, color: Color(0xFF7F7FD5)),
-                                    title: const Text('编辑动态'),
+                                  MoeActionRow(
+                                    icon: Icons.edit_rounded,
+                                    title: '编辑动态',
+                                    iconColor: MoeTokens.primary,
+                                    showDefaultTrailing: false,
                                     onTap: () {
                                       Navigator.pop(context);
                                       widget.onEdit!();
                                     },
                                   ),
                                 if (isAuthor && widget.onDelete != null)
-                                  ListTile(
-                                    leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                                    title: const Text('删除动态', style: TextStyle(color: Colors.redAccent)),
+                                  MoeActionRow(
+                                    icon: Icons.delete_outline_rounded,
+                                    title: '删除动态',
+                                    iconColor: Colors.redAccent,
+                                    titleStyle: const TextStyle(
+                                      color: Colors.redAccent,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    showDefaultTrailing: false,
                                     onTap: () {
                                       Navigator.pop(context);
-                                      _confirmDelete(context, widget.post, widget.onDelete!);
+                                      _confirmDelete(context, widget.post,
+                                          widget.onDelete!);
                                     },
                                   ),
-                                if (isAuthor && (widget.onEdit != null || widget.onDelete != null))
+                                if (isAuthor &&
+                                    (widget.onEdit != null ||
+                                        widget.onDelete != null))
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                                    child: Divider(height: 1, color: Colors.grey.withValues(alpha: 0.15)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20),
+                                    child: Divider(
+                                        height: 1,
+                                        color: Colors.grey
+                                            .withValues(alpha: 0.15)),
                                   ),
-                                ListTile(
-                                  leading: const Icon(Icons.link_rounded, color: Color(0xFF7F7FD5)),
-                                  title: const Text('复制链接'),
+                                MoeActionRow(
+                                  icon: Icons.link_rounded,
+                                  title: '复制链接',
+                                  iconColor: MoeTokens.primary,
+                                  showDefaultTrailing: false,
                                   onTap: () {
                                     Navigator.pop(context);
                                     _copyPostLink(context, widget.post);
                                   },
                                 ),
-                                ListTile(
-                                  leading: const Icon(Icons.visibility_off_rounded, color: Colors.orange),
-                                  title: const Text('不感兴趣'),
+                                MoeActionRow(
+                                  icon: Icons.visibility_off_rounded,
+                                  title: '不感兴趣',
+                                  iconColor: Colors.orange,
+                                  showDefaultTrailing: false,
                                   onTap: () => Navigator.pop(context),
                                 ),
-                                ListTile(
-                                  leading: const Icon(Icons.report_rounded, color: Colors.red),
-                                  title: const Text('举报'),
+                                MoeActionRow(
+                                  icon: Icons.report_rounded,
+                                  title: '举报',
+                                  iconColor: Colors.red,
+                                  showDefaultTrailing: false,
                                   onTap: () {
                                     Navigator.pop(context);
                                     _showReportDialog(context, widget.post);
@@ -239,7 +270,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                         ),
                       );
                     },
-                    icon: Icon(Icons.more_horiz_rounded, color: theme.iconTheme.color?.withValues(alpha: 0.5)),
+                    icon: Icon(Icons.more_horiz_rounded,
+                        color: theme.iconTheme.color?.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
@@ -265,18 +297,21 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
               if (widget.post.displayCaption.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: _renderContentWithEmojis(context, widget.post.displayCaption),
+                  child: _renderContentWithEmojis(
+                      context, widget.post.displayCaption),
                 ),
 
               if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
-                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+                if (widget.post.displayCaption.isNotEmpty)
+                  const SizedBox(height: 4),
                 _HandDrawThumbnail(
                   post: widget.post,
-                  onOpenReplay: () =>
-                      _openHandDrawViewer(context, widget.post),
+                  onOpenReplay: () => _openHandDrawViewer(context, widget.post),
                 ),
-              ] else if (widget.post.hasHandDraw || widget.post.handDrawCard != null) ...[
-                if (widget.post.displayCaption.isNotEmpty) const SizedBox(height: 4),
+              ] else if (widget.post.hasHandDraw ||
+                  widget.post.handDrawCard != null) ...[
+                if (widget.post.displayCaption.isNotEmpty)
+                  const SizedBox(height: 4),
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -313,7 +348,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                   alignment: Alignment.center,
                   child: TextButton.icon(
                     onPressed: () => _openHandDrawViewer(context, widget.post),
-                    icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+                    icon:
+                        const Icon(Icons.play_circle_outline_rounded, size: 20),
                     label: const Text('回放绘画过程'),
                   ),
                 ),
@@ -353,7 +389,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
 
               const SizedBox(height: 20),
               Divider(
-                height: 1, 
+                height: 1,
                 color: theme.dividerColor.withValues(alpha: 0.1),
               ),
               const SizedBox(height: 12),
@@ -387,21 +423,20 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                       );
                     },
                   ),
-                  _buildActionButton(
-                      context,
+                  _buildActionButton(context,
                       icon: Icons.chat_bubble_outline_rounded,
                       count: widget.post.comments,
                       onTap: widget.onComment ??
                           () {
                             openPostDetail(context, widget.post);
                           }),
-                  _buildActionButton(
-                      context,
+                  _buildActionButton(context,
                       icon: Icons.share_rounded,
                       label: '分享',
-                      onTap: widget.onShare ?? () {
-                        _handleShare(widget.post);
-                      }),
+                      onTap: widget.onShare ??
+                          () {
+                            _handleShare(widget.post);
+                          }),
                 ],
               ),
             ],
@@ -417,12 +452,14 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
     MoeToast.success(context, '链接已复制到剪贴板');
   }
 
-  static void _confirmDelete(BuildContext context, Post post, VoidCallback onConfirmed) {
+  static void _confirmDelete(
+      BuildContext context, Post post, VoidCallback onConfirmed) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('删除动态', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('删除动态', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
         actions: [
           TextButton(
@@ -434,7 +471,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
               Navigator.pop(ctx);
@@ -470,8 +508,16 @@ $link''';
     final reasons = [
       {'icon': Icons.security_rounded, 'title': '垃圾营销', 'color': Colors.orange},
       {'icon': Icons.warning_rounded, 'title': '不实信息', 'color': Colors.red},
-      {'icon': Icons.person_off_rounded, 'title': '人身攻击', 'color': Colors.purple},
-      {'icon': Icons.casino_rounded, 'title': '违法违规', 'color': Colors.deepOrange},
+      {
+        'icon': Icons.person_off_rounded,
+        'title': '人身攻击',
+        'color': Colors.purple
+      },
+      {
+        'icon': Icons.casino_rounded,
+        'title': '违法违规',
+        'color': Colors.deepOrange
+      },
       {'icon': Icons.face_rounded, 'title': '色情低俗', 'color': Colors.pink},
       {'icon': Icons.more_horiz_rounded, 'title': '其他原因', 'color': Colors.grey},
     ];
@@ -484,19 +530,30 @@ $link''';
           children: [
             Icon(Icons.report_rounded, color: Colors.red[400]),
             const SizedBox(width: 8),
-            const Text('举报内容', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const Text('举报内容',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: reasons.map((r) => ListTile(
-            leading: Icon(r['icon'] as IconData, color: r['color'] as Color),
-            title: Text(r['title'] as String),
-            onTap: () {
-              Navigator.pop(context);
-              _submitReport(context, post, r['title'] as String);
-            },
-          )).toList(),
+          children: reasons
+              .map(
+                (r) => MoeActionRow(
+                  icon: r['icon'] as IconData,
+                  title: r['title'] as String,
+                  iconColor: r['color'] as Color,
+                  showDefaultTrailing: false,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _submitReport(context, post, r['title'] as String);
+                  },
+                ),
+              )
+              .toList(),
         ),
       ),
     );
@@ -523,8 +580,7 @@ $link''';
     }
   }
 
-  Widget _buildActionButton(
-      BuildContext context,
+  Widget _buildActionButton(BuildContext context,
       {required IconData icon,
       int? count,
       String? label,
@@ -542,13 +598,15 @@ $link''';
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: theme.iconTheme.color?.withValues(alpha: 0.6), size: 20),
+            Icon(icon,
+                color: theme.iconTheme.color?.withValues(alpha: 0.6), size: 20),
             if (count != null || label != null) ...[
               const SizedBox(width: 6),
               Text(
                 count?.toString() ?? label ?? '',
                 style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                  color:
+                      theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -560,7 +618,8 @@ $link''';
     );
   }
 
-  Widget _buildImageGrid(BuildContext context, List<String> images, String postId) {
+  Widget _buildImageGrid(
+      BuildContext context, List<String> images, String postId) {
     if (images.isEmpty) return const SizedBox.shrink();
 
     // 单张大图
@@ -596,39 +655,37 @@ $link''';
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final totalSpacing = spacing * (crossAxisCount - 1);
-          final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+      child: LayoutBuilder(builder: (context, constraints) {
+        final totalSpacing = spacing * (crossAxisCount - 1);
+        final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
 
-          return Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: List.generate(images.length, (index) {
-              return GestureDetector(
-                onTap: () {
-                  PostImageViewer.show(
-                    context,
-                    imageUrls: images,
-                    postId: postId,
-                    heroTagPrefix: widget.heroTagPrefix,
-                    initialIndex: index,
-                  );
-                },
-                child: Hero(
-                  tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
-                  child: NetworkImageWidget(
-                    imageUrl: images[index],
-                    width: itemSize,
-                    height: itemSize,
-                    fit: BoxFit.cover,
-                  ),
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(images.length, (index) {
+            return GestureDetector(
+              onTap: () {
+                PostImageViewer.show(
+                  context,
+                  imageUrls: images,
+                  postId: postId,
+                  heroTagPrefix: widget.heroTagPrefix,
+                  initialIndex: index,
+                );
+              },
+              child: Hero(
+                tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
+                child: NetworkImageWidget(
+                  imageUrl: images[index],
+                  width: itemSize,
+                  height: itemSize,
+                  fit: BoxFit.cover,
                 ),
-              );
-            }),
-          );
-        }
-      ),
+              ),
+            );
+          }),
+        );
+      }),
     );
   }
 
@@ -748,8 +805,8 @@ class _HandDrawThumbnail extends StatelessWidget {
                       Container(color: Colors.grey.shade100),
                   errorWidget: (_, __, ___) => Container(
                     color: Colors.grey.shade200,
-                    child: const Center(
-                        child: Icon(Icons.broken_image_outlined)),
+                    child:
+                        const Center(child: Icon(Icons.broken_image_outlined)),
                   ),
                 ),
                 Positioned.fill(
@@ -816,7 +873,8 @@ Future<void> _openHandDrawViewerImpl(BuildContext context, Post post) async {
 
   if (card == null && (post.hasHandDraw || thumb.isNotEmpty)) {
     try {
-      final viewerId = AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+      final viewerId =
+          AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
       final loaded = await ApiService.getPostHandDraw(
         post.id,
         viewerUserId: viewerId,

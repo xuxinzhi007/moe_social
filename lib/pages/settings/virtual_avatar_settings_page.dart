@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/virtual_avatar_provider.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/moe_toast.dart';
 
 class VirtualAvatarSettingsPage extends StatelessWidget {
@@ -12,7 +13,7 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
     final avatar = context.watch<VirtualAvatarProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('虚拟助手设置'),
         centerTitle: true,
@@ -23,23 +24,20 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
           _card(
             child: Column(
               children: [
-                SwitchListTile.adaptive(
-                  title: const Text('启用虚拟助手'),
-                  subtitle: const Text('默认关闭，开启后显示可悬浮助手'),
+                _switchActionTile(
+                  title: '启用虚拟助手',
+                  subtitle: '默认关闭，开启后显示可悬浮助手',
                   value: avatar.enabled,
-                  activeThumbColor: const Color(0xFF7F7FD5),
                   onChanged: (v) async {
                     await avatar.setEnabled(v);
                     if (!context.mounted) return;
                     MoeToast.info(context, v ? '虚拟助手已开启' : '虚拟助手已关闭');
                   },
                 ),
-                ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  title: const Text('恢复显示'),
+                _actionTile(
+                  icon: Icons.refresh_rounded,
+                  title: '恢复显示',
                   subtitle: const Text('清除“隐藏本次会话/隐藏到今天结束”状态'),
-                  trailing: const Icon(Icons.refresh_rounded),
                   onTap: () async {
                     await avatar.restoreVisibility();
                     if (!context.mounted) return;
@@ -103,26 +101,24 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
           _card(
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.face_retouching_natural_rounded),
-                  title: const Text('角色形象'),
+                _actionTile(
+                  icon: Icons.face_retouching_natural_rounded,
+                  title: '角色形象',
                   subtitle: Text(
                     avatar.characterId == 'default_moe' ? '默认助手（当前）' : '自定义角色',
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     await avatar.setCharacterId('default_moe');
                     if (!context.mounted) return;
                     MoeToast.info(context, '更多角色即将上线');
                   },
                 ),
-                ListTile(
-                  leading: const Icon(Icons.style_rounded),
-                  title: const Text('皮肤主题'),
+                _actionTile(
+                  icon: Icons.style_rounded,
+                  title: '皮肤主题',
                   subtitle: Text(
                     avatar.skinId == 'classic' ? '经典皮肤（当前）' : '自定义皮肤',
                   ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     await avatar.setSkinId('classic');
                     if (!context.mounted) return;
@@ -144,11 +140,10 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
     required String title,
     required String subtitle,
   }) {
-    return SwitchListTile.adaptive(
-      title: Text(title),
-      subtitle: Text(subtitle),
+    return _switchActionTile(
+      title: title,
+      subtitle: subtitle,
       value: avatar.quickActions.contains(id),
-      activeThumbColor: const Color(0xFF7F7FD5),
       onChanged: (v) async {
         final before = avatar.quickActions.contains(id);
         await avatar.setQuickActionEnabled(id, v);
@@ -167,16 +162,90 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: MoeTokens.primary.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: child,
+    );
+  }
+
+  Widget _actionTile({
+    required IconData icon,
+    required String title,
+    required Widget subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: MoeTokens.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    DefaultTextStyle(
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      child: subtitle,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _switchActionTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch.adaptive(
+            value: value,
+            activeThumbColor: MoeTokens.primary,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 }

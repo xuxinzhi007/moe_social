@@ -37,7 +37,8 @@ class _OrderCenterPageState extends State<OrderCenterPage>
     return Scaffold(
       backgroundColor: moe.pageBackground,
       appBar: AppBar(
-        title: const Text('订单中心', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('订单中心', style: TextStyle(fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tab,
           labelColor: moe.primary,
@@ -266,7 +267,8 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
 
     setState(() => _loading = true);
     try {
-      final r = await ApiService.getVipOrders(uid, page: _page, pageSize: _pageSize);
+      final r =
+          await ApiService.getVipOrders(uid, page: _page, pageSize: _pageSize);
       final list = r['orders'] as List<VipOrder>;
       final total = r['total'] as int;
       if (!mounted) return;
@@ -520,21 +522,51 @@ class _WalletTransactionsTabState extends State<_WalletTransactionsTab> {
                       final t = _rows[i];
                       final type = t['type'] as String? ?? '';
                       final amt = (t['amount'] as num?)?.toDouble() ?? 0.0;
-                      final desc =
-                          t['description'] as String? ?? (type == 'recharge' ? '充值' : '消费');
+                      final desc = t['description'] as String? ??
+                          (type == 'recharge' ? '充值' : '消费');
                       final sign = type == 'recharge' ? '+' : '-';
                       return Card(
-                        child: ListTile(
-                          title: Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis),
-                          subtitle: Text(t['created_at'] as String? ?? ''),
-                          trailing: Text(
-                            '$sign${amt.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: type == 'recharge'
-                                  ? Colors.green[700]
-                                  : Colors.red[700],
-                            ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      desc,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      t['created_at'] as String? ?? '',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '$sign${amt.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: type == 'recharge'
+                                      ? Colors.green[700]
+                                      : Colors.red[700],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );

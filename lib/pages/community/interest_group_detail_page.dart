@@ -371,9 +371,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
               ),
               const SizedBox(height: 8),
               Text(
-                _group?.isJoined == true
-                    ? '做第一个在本群发帖的人吧'
-                    : '加入群组后可查看与发布讨论',
+                _group?.isJoined == true ? '做第一个在本群发帖的人吧' : '加入群组后可查看与发布讨论',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: scheme.onSurfaceVariant),
               ),
@@ -417,25 +415,42 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final m = _members[i];
-        return ListTile(
-          shape: RoundedRectangleBorder(
+        return Container(
+          decoration: BoxDecoration(
+            color: scheme.surface,
             borderRadius: BorderRadius.circular(14),
-            side: BorderSide(
+            border: Border.all(
               color: scheme.outlineVariant.withValues(alpha: 0.4),
             ),
           ),
-          tileColor: scheme.surface,
-          leading: NetworkAvatarImage(
-            imageUrl: m.userAvatar,
-            radius: 22,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                NetworkAvatarImage(
+                  imageUrl: m.userAvatar,
+                  radius: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    m.userName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (m.role.isNotEmpty && m.role != 'member')
+                  Chip(
+                    label: Text(m.role),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
           ),
-          title: Text(m.userName),
-          trailing: m.role.isNotEmpty && m.role != 'member'
-              ? Chip(
-                  label: Text(m.role),
-                  visualDensity: VisualDensity.compact,
-                )
-              : null,
         );
       },
     );
