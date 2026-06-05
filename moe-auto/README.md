@@ -17,29 +17,42 @@
 
 ### 1. SDK 路径
 
-本机完整 SDK 一般在：
+| 系统 | Android Studio 默认 SDK 路径 |
+|------|------------------------------|
+| **macOS** | `~/Library/Android/sdk` |
+| **Windows** | `%LOCALAPPDATA%\Android\Sdk`（例：`C:\Users\你\AppData\Local\Android\Sdk`） |
 
-```text
-~/Library/Android/sdk
-```
-
-**不要**使用只有 `cmdline-tools` 的目录（例如错误的 `ANDROID_HOME=/Users/xxx/sdk/Android`）。
+**不要**使用只有 `cmdline-tools` 的空目录。
 
 首次克隆后：
 
 ```bash
+# macOS / Linux
 cp local.properties.example local.properties
-# 编辑 sdk.dir 为你的 SDK 路径
+
+# Windows（PowerShell）
+copy local.properties.example local.properties
 ```
 
-已为你生成 `local.properties` 时可直接构建。
+编辑 `local.properties` 中的 `sdk.dir`（Windows 路径见 `local.properties.example`）。
 
-### 2. 推荐环境变量（写入 `~/.zshrc`）
+### 2. 推荐环境变量
+
+**macOS**（`~/.zshrc`）：
 
 ```bash
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 export PATH="$ANDROID_HOME/platform-tools:$PATH"
 ```
+
+**Windows**（系统环境变量）：
+
+```text
+ANDROID_HOME = C:\Users\<你>\AppData\Local\Android\Sdk
+Path 追加   = %ANDROID_HOME%\platform-tools
+```
+
+需安装 **JDK 17**（Android Studio 自带即可）。Windows 命令行用 `gradlew.bat`，不要用 `./gradlew`。
 
 ### 3. 网络
 
@@ -88,37 +101,56 @@ APK：`app/build/outputs/apk/debug/app-debug.apk` →  AirDrop/微信传到手�
 连接 USB 调试的真机后：
 
 ```bash
+# macOS / Linux
 cd moe-auto
 ./scripts/run-debug.sh
 ```
 
-会依次：单元测试 → 编译 APK → 安装 → 启动 App。
+```bat
+REM Windows（CMD 或 PowerShell 均可）
+cd moe-auto
+scripts\run-debug.bat
+```
+
+会依次：单元测试 → 编译 APK → 安装 → 启动 App。无 adb / 无手机时仍会生成 APK。
 
 ### 方式 B：分步命令
 
+**macOS / Linux：**
+
 ```bash
 cd moe-auto
-
-# JVM 单元测试（脚本 JSON 解析，无需真机）
 ./gradlew :app:testDebugUnitTest
-
-# 编译 Debug APK
 ./gradlew :app:assembleDebug
-
-# 安装到已连接设备
 ./gradlew :app:installDebug
-
-# 启动
 adb shell am start -n com.moe.auto/.MainActivity
 ```
 
-APK 路径：`app/build/outputs/apk/debug/app-debug.apk`
+**Windows：**
 
-### 方式 C：Android Studio
+```bat
+cd moe-auto
+gradlew.bat :app:testDebugUnitTest
+gradlew.bat :app:assembleDebug
+gradlew.bat :app:installDebug
+adb shell am start -n com.moe.auto/.MainActivity
+```
+
+APK 路径：
+
+- macOS/Linux：`app/build/outputs/apk/debug/app-debug.apk`
+- Windows：`app\build\outputs\apk\debug\app-debug.apk`
+
+**无 adb**：把 APK 用微信/数据线拷到手机安装即可（与 Mac 相同）。
+
+### 方式 C：Android Studio（macOS / Windows 相同）
 
 1. **File → Open** → 选择 `moe-auto/`
 2. 等待 Gradle Sync
-3. 连接真机 → 点 **Run ▶**
+3. 手机开启 **开发者选项 → USB 调试**，用数据线连接
+4. 顶部选你的真机 → 点 **Run ▶**
+
+Windows 首次连接手机可能需安装对应 **USB 驱动**（厂商官网或 [Google USB Driver](https://developer.android.com/studio/run/win-usb)）。
 
 ### 真机功能验收
 

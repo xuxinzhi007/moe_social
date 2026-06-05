@@ -30,8 +30,11 @@
 | `wait` | `ms` | 延时 |
 | `tap` | `x`, `y` | 坐标点击 |
 | `swipe` | `x1`,`y1`,`x2`,`y2`, `duration_ms?` | 滑动 |
-| `click_text` | `text`, `timeout_ms?` | 按可见文字点击 |
-| `wait_for_text` | `text`, `timeout_ms?` | 等待文字出现 |
+| `click_text` | `text`, `timeout_ms?` | 按节点树可见文字点击 |
+| `wait_for_text` | `text`, `timeout_ms?` | 等待节点文字出现 |
+| `ocr_click` | `text`, `timeout_ms?` | 截图 OCR 识屏后点击 |
+| `ocr_wait` | `text`, `timeout_ms?` | OCR 等待文字出现 |
+| `click_image` | `image`, `threshold?`, `timeout_ms?` | 模板图匹配点击（图放 user_scripts/templates/） |
 | `input` | `text` | 向当前焦点输入框写入 |
 | `launch` | `package` | 启动应用 |
 | `back` / `home` / `recents` | — | 系统导航 |

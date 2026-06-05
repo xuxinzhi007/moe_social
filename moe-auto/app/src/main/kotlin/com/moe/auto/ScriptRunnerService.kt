@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.io.File
 
 class ScriptRunnerService : Service() {
 
@@ -24,6 +25,7 @@ class ScriptRunnerService : Service() {
         private const val NOTIFICATION_ID = 1001
         const val ACTION_STOP = "com.moe.auto.action.STOP_SCRIPT"
         const val EXTRA_ASSET_SCRIPT = "asset_script"
+        const val EXTRA_FILE_SCRIPT = "file_script"
 
         @Volatile
         private var runningJob: Job? = null
@@ -31,10 +33,21 @@ class ScriptRunnerService : Service() {
         @Volatile
         private var executor: ScriptExecutor? = null
 
-        fun start(context: Context, assetScriptPath: String) {
+        fun startAsset(context: Context, assetScriptPath: String) {
             val intent = Intent(context, ScriptRunnerService::class.java).apply {
                 putExtra(EXTRA_ASSET_SCRIPT, assetScriptPath)
             }
+            startRunner(context, intent)
+        }
+
+        fun startFile(context: Context, scriptFile: File) {
+            val intent = Intent(context, ScriptRunnerService::class.java).apply {
+                putExtra(EXTRA_FILE_SCRIPT, scriptFile.absolutePath)
+            }
+            startRunner(context, intent)
+        }
+
+        private fun startRunner(context: Context, intent: Intent) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -50,6 +63,7 @@ class ScriptRunnerService : Service() {
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scriptRepo by lazy { ScriptRepository(this) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -59,8 +73,19 @@ class ScriptRunnerService : Service() {
             return START_NOT_STICKY
         }
 
-        val assetPath = intent?.getStringExtra(EXTRA_ASSET_SCRIPT)
-        if (assetPath.isNullOrBlank()) {
+        val jsonLoader: (() -> String)? = when {
+            !intent?.getStringExtra(EXTRA_ASSET_SCRIPT).isNullOrBlank() -> {
+                val path = intent?.getStringExtra(EXTRA_ASSET_SCRIPT) ?: ""
+                { scriptRepo.readJson(ScriptSource.Asset(path)) }
+            }
+            !intent?.getStringExtra(EXTRA_FILE_SCRIPT).isNullOrBlank() -> {
+                val path = intent?.getStringExtra(EXTRA_FILE_SCRIPT) ?: ""
+                { File(path).readText() }
+            }
+            else -> null
+        }
+
+        if (jsonLoader == null) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -73,22 +98,32 @@ class ScriptRunnerService : Service() {
         }
 
         createChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("脚本运行中…"))
+        val nm = getSystemService(NotificationManager::class.java)
+        AutoBridge.onNotificationUpdate = { text ->
+            nm.notify(NOTIFICATION_ID, buildNotification(text))
+        }
+        AutoBridge.onOverlayStatusUpdate = { text ->
+            ExecutionOverlayManager.updateControlStatus(text)
+        }
+        ExecutionOverlayManager.showControlConsole(this)
+        startForeground(NOTIFICATION_ID, buildNotification("脚本运行中"))
 
         runningJob?.cancel()
         AutoBridge.setRunning(true)
 
         runningJob = scope.launch {
             try {
-                val json = assets.open(assetPath).bufferedReader().use { it.readText() }
-                val script = ScriptParser.parse(json)
-                val exec = ScriptExecutor(service)
+                val script = ScriptParser.parse(jsonLoader())
+                val exec = ScriptExecutor(service, scriptRepo)
                 executor = exec
                 exec.run(script)
             } catch (e: Exception) {
                 AutoBridge.appendLog("运行异常: ${e.message}")
             } finally {
                 executor = null
+                AutoBridge.onNotificationUpdate = null
+                AutoBridge.onOverlayStatusUpdate = null
+                ExecutionOverlayManager.hideStatus()
                 AutoBridge.setRunning(false)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -100,6 +135,8 @@ class ScriptRunnerService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        AutoBridge.onOverlayStatusUpdate = null
+        ExecutionOverlayManager.hideStatus()
         AutoBridge.setRunning(false)
         super.onDestroy()
     }
@@ -108,11 +145,10 @@ class ScriptRunnerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Moe Auto 脚本",
+                "Moe Auto",
                 NotificationManager.IMPORTANCE_LOW,
             )
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
     }
 

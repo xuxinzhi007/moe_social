@@ -44,6 +44,7 @@ echo "==> 安装到设备"
 
 echo "==> 启动 App"
 "$ADB" shell am start -n com.moe.auto/.MainActivity
+# 运行脚本请在 App 内选择；导入/新建见「脚本列表」
 
 echo ""
 echo "真机测试：开启「Moe Auto」无障碍服务后，在 App 内运行示例脚本。"
