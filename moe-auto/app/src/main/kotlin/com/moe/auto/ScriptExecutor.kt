@@ -6,6 +6,7 @@ import kotlin.coroutines.coroutineContext
 
 class ScriptExecutor(
     private val service: MoeAutoAccessibilityService,
+    private val scriptRepo: ScriptRepository = ScriptRepository(AutoBridge.context()),
 ) {
     @Volatile
     var stopRequested: Boolean = false
@@ -14,6 +15,8 @@ class ScriptExecutor(
     suspend fun run(script: AutoScript): Result<Unit> {
         stopRequested = false
         AutoBridge.appendLog("开始脚本: ${script.name} (循环 ${script.loop})")
+
+        val stepTotal = script.steps.size
 
         repeat(script.loop) { loopIndex ->
             if (stopRequested || !coroutineContext.isActive) {
@@ -26,6 +29,16 @@ class ScriptExecutor(
                 if (stopRequested || !coroutineContext.isActive) {
                     return Result.failure(IllegalStateException("已停止"))
                 }
+                AutoBridge.setRunProgress(
+                    RunProgress(
+                        scriptName = script.name,
+                        stepIndex = index + 1,
+                        stepTotal = stepTotal,
+                        stepLabel = stepLabel(step),
+                        loopIndex = loopIndex + 1,
+                        loopTotal = script.loop,
+                    ),
+                )
                 val ok = executeStep(step, index + 1)
                 if (!ok) {
                     AutoBridge.appendLog("步骤 ${index + 1} 失败，脚本中止")
@@ -66,6 +79,30 @@ class ScriptExecutor(
             is ScriptStep.WaitForText -> {
                 AutoBridge.appendLog("[$stepNo] 等待文字「${step.text}」")
                 service.waitForText(step.text, step.timeoutMs)
+            }
+            is ScriptStep.OcrClick -> {
+                AutoBridge.appendLog("[$stepNo] OCR 点击「${step.text}」")
+                service.ocrClick(step.text, step.timeoutMs)
+            }
+            is ScriptStep.OcrWait -> {
+                AutoBridge.appendLog("[$stepNo] OCR 等待「${step.text}」")
+                service.ocrWait(step.text, step.timeoutMs)
+            }
+            is ScriptStep.ClickImage -> {
+                AutoBridge.appendLog("[$stepNo] 识图点击 ${step.imagePath}")
+                val file = scriptRepo.resolveImagePath(step.imagePath)
+                if (file == null) {
+                    AutoBridge.appendLog("找不到图片: ${step.imagePath}")
+                    false
+                } else {
+                    service.clickImage(
+                        file,
+                        step.threshold,
+                        step.timeoutMs,
+                        step.scaleMin,
+                        step.scaleMax,
+                    )
+                }
             }
             is ScriptStep.Input -> {
                 AutoBridge.appendLog("[$stepNo] 输入文本")

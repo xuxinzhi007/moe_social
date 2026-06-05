@@ -24,6 +24,15 @@ sealed class ScriptStep {
 
     data class ClickText(val text: String, val timeoutMs: Long) : ScriptStep()
     data class WaitForText(val text: String, val timeoutMs: Long) : ScriptStep()
+    data class OcrClick(val text: String, val timeoutMs: Long) : ScriptStep()
+    data class OcrWait(val text: String, val timeoutMs: Long) : ScriptStep()
+    data class ClickImage(
+        val imagePath: String,
+        val threshold: Float,
+        val timeoutMs: Long,
+        val scaleMin: Float,
+        val scaleMax: Float,
+    ) : ScriptStep()
     data class Input(val text: String) : ScriptStep()
     data class Launch(val packageName: String) : ScriptStep()
     data object Back : ScriptStep()
@@ -72,6 +81,21 @@ object ScriptParser {
             "wait_for_text" -> ScriptStep.WaitForText(
                 obj.getString("text"),
                 obj.optLong("timeout_ms", 8000),
+            )
+            "ocr_click", "click_text_ocr" -> ScriptStep.OcrClick(
+                obj.getString("text"),
+                obj.optLong("timeout_ms", 8000),
+            )
+            "ocr_wait", "wait_for_text_ocr" -> ScriptStep.OcrWait(
+                obj.getString("text"),
+                obj.optLong("timeout_ms", 10000),
+            )
+            "click_image" -> ScriptStep.ClickImage(
+                obj.getString("image"),
+                obj.optDouble("threshold", 0.82).toFloat(),
+                obj.optLong("timeout_ms", 10000),
+                obj.optDouble("scale_min", 0.85).toFloat(),
+                obj.optDouble("scale_max", 1.15).toFloat(),
             )
             "input" -> ScriptStep.Input(obj.getString("text"))
             "launch" -> ScriptStep.Launch(obj.getString("package"))

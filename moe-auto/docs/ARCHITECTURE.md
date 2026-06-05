@@ -1,38 +1,40 @@
 # Moe Auto 架构
 
-## 对标产品
+## 产品定位
 
-| 产品 | 可借鉴点 |
-|------|----------|
-| [自动化编辑器](http://www.autoeditor.cn/) | 零代码/低代码、手机端 RPA、免 Root |
-| 自动精灵 / 按键精灵 | 录制回放、条件等待、循环任务 |
+- **免登录、本机优先**：脚本、模板、日志均在设备本地，无账号体系。
+- **JSON 脚本**：用户自由编写 / 导入 / 编辑。
+- **多 Tab**：脚本 · 运行 · 我的（可扩展录制、云同步等）。
 
 ## 分层
 
 ```text
 ┌─────────────────────────────────────┐
-│  Compose UI（MainActivity）          │  权限、脚本列表、日志
+│  Compose UI（Tab + 识图工具 + 编辑器） │
 ├─────────────────────────────────────┤
-│  ScriptRunnerService（前台）         │  调度、通知、停止
+│  ScriptRunnerService（前台）         │
 ├─────────────────────────────────────┤
-│  ScriptExecutor + ScriptModels       │  JSON DSL 解释
+│  ScriptExecutor + ScriptModels       │
 ├─────────────────────────────────────┤
-│  MoeAutoAccessibilityService         │  手势、节点、输入、截图(后续)
+│  MoeAutoAccessibilityService         │  手势、节点、截图、OCR、识图
 ├─────────────────────────────────────┤
-│  UiFinder / GestureActions           │  找字、坐标、滑动
+│  UiFinder / OcrHelper / ImageMatcher │
 └─────────────────────────────────────┘
 ```
+
+## 定位能力
+
+详见 [识屏与识图说明](design/vision-matching.md)。
 
 ## 路线图
 
 | 阶段 | 内容 |
 |------|------|
-| **M1（当前）** | 无障碍点击/滑/输入/启动 App；JSON 脚本；示例任务 |
-| **M2** | ML Kit OCR 识屏找字；模板图匹配；MediaProjection 截图 |
-| **M2** | 可视化录制（记录坐标与节点） |
-| **M3** | 云端脚本同步；与 moe-admin 任务下发 |
-| **M4** | 与 AutoGLM/云端 Agent 对接（决策在云端，执行在端上） |
+| **M1** | 无障碍 + JSON 脚本 + Tab UI + 识图工具 |
+| **M2** | 步骤录制、可视化编辑器 |
+| **M3** | 可选云同步（仍可不登录使用本地） |
+| **M4** | 与 Agent 对接（决策云端，执行端上） |
 
 ## 包名
 
-`com.moe.auto` — 与 `com.example.moe_social` 独立，可同时安装。
+`com.moe.auto` — 独立安装。
