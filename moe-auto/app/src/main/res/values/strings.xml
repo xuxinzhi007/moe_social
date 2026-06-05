@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Moe Auto</string>
-    <string name="accessibility_service_description">用于执行自动化脚本：点击、滑动、文字与图像识别。仅在您主动运行任务时工作。</string>
-</resources>
