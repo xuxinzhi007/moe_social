@@ -142,5 +142,5 @@ flowchart TD
 
 ## 9. 文档维护
 
-- 视觉细则仍以 [UI 设计规范](UI设计规范.md) 与仓库 `.cursorrules` 为准。
+- 视觉细则仍以 [UI 设计规范](UI设计规范.md) 与 `frontend-ai-spec.mdc` 为准。
 - 后续若调整底栏数量或合并 Tab，请同步更新本页「§3 信息架构」与「§5 空状态矩阵」。
