@@ -15,10 +15,9 @@
 | **OpenAPI / Apifox 同步** | [dev/openapi-apifox.md](./dev/openapi-apifox.md) |
 | 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md) |
 | 产品优先级与 AI 酒馆 | [product/项目开发总览与当前优先级-2026-05-18.md](./product/项目开发总览与当前优先级-2026-05-18.md) · [product/AI酒馆化改造方案.md](./product/AI酒馆化改造方案.md) |
-| 开发规范 | [guidelines/Codex启动指南-后端.md](./guidelines/Codex启动指南-后端.md) · [guidelines/Codex启动指南-前端.md](./guidelines/Codex启动指南-前端.md) · [../code_review.md](../code_review.md) |
+| 开发规范 | [../AGENTS.md](../AGENTS.md) · [.cursor/rules/moe-social-unified.mdc](../.cursor/rules/moe-social-unified.mdc) · [../code_review.md](../code_review.md) |
 | **Kratos 后端** | [dev/kratos-migration-status.md](./dev/kratos-migration-status.md) · [dev/kratos-architecture-audit.md](./dev/kratos-architecture-audit.md) · [dev/kratos-migration.md](./dev/kratos-migration.md) · [dev/new-api-kratos.md](./dev/new-api-kratos.md) |
-| **大任务多 Agent** | [guidelines/parallel-agent-workflow.md](./guidelines/parallel-agent-workflow.md) |
-| Agent 长期记忆 / Session 复盘 | [guidelines/agent-long-term-memory.md](./guidelines/agent-long-term-memory.md) · [.cursor/LESSONS.md](../.cursor/LESSONS.md) |
+| Agent 踩坑 / Session | [.cursor/LESSONS.md](../.cursor/LESSONS.md) · [guidelines/sessions/](./guidelines/sessions/) |
 
 ---
 
@@ -32,7 +31,7 @@ docs/
 ├── product/           ← 产品方案与 UI
 ├── planning/          ← 待实施规划
 ├── features/          ← 功能说明
-├── guidelines/        ← 规范与 Codex 指南
+├── guidelines/        ← Session 归档（规则见 .cursor/rules/）
 ├── autoglm/           ← AutoGLM 子系统
 ├── testing/           ← 测试清单
 ├── specs/             ← 专项需求规格

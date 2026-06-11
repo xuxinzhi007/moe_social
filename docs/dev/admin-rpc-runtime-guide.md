@@ -221,7 +221,7 @@ Authorization: Bearer <admin_token>
 
 ### 7.3 `make gen` 后 API 编译 duplicate logic
 
-goctl 可能生成与 `admin_insights_logic.go` 重复的空壳。处理：删空壳、保留 `admin_insights_logic.go` 与 `adminruntimeoverviewlogic.go`。见 [Codex启动指南-后端.md](../guidelines/Codex启动指南-后端.md)。
+goctl 可能生成与 `admin_insights_logic.go` 重复的空壳。处理：删空壳、保留 `admin_insights_logic.go` 与 `adminruntimeoverviewlogic.go`。见 [backend-ai-spec.mdc](../../.cursor/rules/backend-ai-spec.mdc) 与 [kratos-migration.md](./kratos-migration.md)。
 
 ### 7.4 仍想用旧 HTML 监控页
 

@@ -4,45 +4,24 @@ globs: moe-admin/**/*
 alwaysApply: false
 ---
 
-# 管理台 AI 生成规范（moe-admin）
+# 管理台规范（moe-admin）
 
-在修改 `moe-admin/` 下代码时，必须先阅读本规范与 `docs/guidelines/Codex启动指南-前端.md` 中的「两套前端」章节。
+React + Vite + TS。**不是** Flutter；勿套用 `lib/widgets` 约定。统一规则见 `moe-social-unified.mdc`。
 
-统一规则先看 `.cursor/rules/moe-social-unified.mdc`；本文件只补充管理台细则。
+## SSOT
 
-## SSOT（必读，按顺序）
+1. `moe-admin/DESIGN.md`
+2. `moe-admin/docs/ui-skeleton-v3.md`
+3. `moe-admin/docs/css-architecture-v3.md`
+4. `moe-admin/src/styles/index.css`
 
-1. **视觉与 Token**：[`moe-admin/DESIGN.md`](../moe-admin/DESIGN.md)
-2. **UI 骨架（禁止手写 layout）**：[`moe-admin/docs/ui-skeleton-v3.md`](../moe-admin/docs/ui-skeleton-v3.md)
-3. **CSS 架构**：[`moe-admin/docs/css-architecture-v3.md`](../moe-admin/docs/css-architecture-v3.md)
-4. **样式入口**：`moe-admin/src/styles/index.css` → `tokens/` + `layout/chrome-v3.css`
+## 纪律
 
-## 修改前确认
+- 骨架：`moe-admin/src/ui/`（`ListPageLayout` / `TabbedPageLayout` / `MonitorPageLayout` / `PageHead`）
+- 组件：`PageTabs`、`DataEnvBar`、`AdminIcon`、`AdminTag`
+- API：`moe-admin/src/lib`；新接口先改 proto 并 `make gen`
+- 禁止手写 hero 横幅；禁止往 `moe-admin-theme.css` 追加；颜色用 `tokens/colors.css`
 
-- 复用 `moe-admin/src/ui/` 骨架（`ListPageLayout` / `TabbedPageLayout` / `MonitorPageLayout` / `PageHead`）。
-- 复用 `moe-admin/src/components/` 业务组件（`PageTabs`、`DataEnvBar`、`AdminIcon`、`AdminTag`）。
-- 页面根布局用 `admin-page`；标题用 `PageHead` 或骨架自带 title。
-- **禁止**再引入 `platform-hero` / `content-hero` 大块横幅。
-- API 走 `moe-admin/src/lib` / client 封装；新接口先改 `backend/api/<domain>/v1/*.proto` 并 `cd backend && make gen`。
+## 提交前
 
-## 样式纪律
-
-- **禁止**在页面 TSX 手写 `page-head` + `DataEnvBar` + `panel` 组合；用 `src/ui/` 对应原型（A/B/C/D）。
-- **禁止**往 `moe-admin-theme.css` 追加新样式；新 class 写入 `styles/components/` 或 `styles/layout/` 并在 `index.css` import。
-- 颜色只用 `tokens/colors.css` 变量（`--brand-violet`、`--canvas`、`--hairline` 等）。
-- 标签只用 `AdminTag` + `lib/adminLabels` preset。
-- **侧栏**：浅色 Chrome（与 canvas 同系），滚动条必须细轨、低对比（见 `layout/chrome-v3.css` `.sidebar-nav`），禁止系统默认粗白滚动条。
-
-## 页面原型（四选一）
-
-| 原型 | 组件 | 场景 |
-|------|------|------|
-| A ListCrud | `ListPageLayout` + `AdminTable` | 用户/礼物/动态等列表 |
-| B Tabbed | `TabbedPageLayout` | 平台治理、Moe 工具 |
-| C Monitor | `MonitorPageLayout` | 分析、RPC、工作台 |
-| D Ops | `PageHead` | Build/Docker/Release |
-
-## 提交前检查
-
-- `cd moe-admin && npm run build`
-- 仅改 `moe-admin/` 与必要后端契约，不混入 `lib/` Flutter 文件
+`cd moe-admin && npm run build`
