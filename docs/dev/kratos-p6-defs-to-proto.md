@@ -85,12 +85,12 @@
 
 仅用于 `*v1.XFromMoe(&moe.X{...})` 或 biz 返回值包装，**不是**未迁域：
 
-| 文件 | 用途 |
+| 文件（历史名 → 现行） | 用途 |
 |------|------|
-| `admin/app.go` | 部分响应 `Admin*RespFromMoe(&moe.*)` |
-| `user/app.go` · `app_tail.go` | 边界包装 |
-| `post/app.go` | achievement unlock 等 |
-| `notify/app.go` | gRPC 边界 |
+| `admin/admin_*.go`（原 `admin/app.go`） | 部分响应 `Admin*RespFromMoe(&moe.*)` |
+| `user/user_*.go`（原 `user/app.go` · `app_tail.go`） | 边界包装 |
+| `post/post_*.go`（原 `post/app.go`） | achievement unlock 等 |
+| `notify/notify_*.go`（原 `notify/app.go`） | gRPC 边界 |
 
 ### 3.4 compat 关键文件（P6 已桥接）
 
