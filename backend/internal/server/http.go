@@ -17,6 +17,7 @@ func NewHTTPServer(addr string, deps PilotDeps) (*khttp.Server, error) {
 	srv := khttp.NewServer(
 		khttp.Address(addr),
 		khttp.Filter(corsFilter),
+		khttp.Filter(jwtAuthFilter),
 		khttp.ResponseEncoder(EnvelopeResponseEncoder),
 		khttp.ErrorEncoder(EnvelopeErrorEncoder),
 	)
