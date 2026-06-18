@@ -21,7 +21,7 @@ ai/       llm/      moe/（含 pipeline/tools）
 
 1. `internal/biz/<domain>/store.go` — 接口
 2. `internal/data/<domain>/store.go` — GORM
-3. `internal/service/<domain>/app.go` — 注入
+3. `internal/service/<domain>/<domain>.go` — 注入（大域按 `{domain}_{feature}.go` 拆分）
 4. 域 Store：`internal/data/<domain>/`（经 `wire_svc` 注入 App）
 
 ## Store getters（RPC）

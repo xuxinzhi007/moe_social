@@ -183,7 +183,7 @@ backend/internal/server/httplegacy/routes_native_gen.go  # nativeDomainRouteCoun
 
 1. 新增/补全 `api/checkin/v1/checkin.proto`（路径与 `api/defs` 一致）
 2. `make gen-moe-proto`（或 `make gen`）
-3. 在 `internal/service/checkin/app.go` 暴露方法（调 `internal/biz/checkin`）
+3. 在 `internal/service/checkin/checkin.go`（及 `checkin_<feature>.go`）暴露方法（调 `internal/biz/checkin`）
 4. 新建 `api/moehttp/checkin_compat.go`，`RegisterCheckinCompat`
 5. 在 `register_all.go` 调用；路径加入 `scripts/gen/http-routes` 的 `skipExactPaths`
 6. `make gen-http-routes`（确认 `native=0`）

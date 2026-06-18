@@ -96,9 +96,13 @@ cd backend && make gen
 
 ```text
 internal/biz/example/
-internal/service/example/app.go
-internal/server/protohttp/example/server.go   # 可选，与 HTTP 共用
+internal/service/example/example.go              # AppService + New
+internal/service/example/example_<feature>.go    # 按功能拆分（可选）
+internal/server/protohttp/example/example.go     # Server + New + handler
+internal/server/protohttp/example/example_<feature>.go
 ```
+
+**文件命名**：`{domain}.go` 放结构体与构造函数；`{domain}_{feature}.go` 按职责拆分（如 `user_login.go`、`post_write.go`）。禁止新增 `app.go` / `service.go` / 域级 `server.go`。
 
 ### 3.4 注册 HTTP（官方）
 
@@ -141,7 +145,7 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 | Post / Gift / Notify | `api/post|gift|notify/v1` | `protohttp/post` 等 | 社交基础 |
 | User | `api/user/v1/user_messages.proto` | `protohttp/user` | 登录/社交/钱包 |
 | Admin | `api/admin/v1/admin_messages.proto` | `protohttp/adminapp` | 管理台 |
-| MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/server.go` | 工具/大脑 |
+| MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/moe_extended.go` · `platform/platform_moe.go` | 工具/大脑 |
 
 **仍走 httplegacy（45 条，P2）**：`platform`（17）· `community`（7）· `chat` 余量（6）· `ai`（4）· 图片静态（4）· OAuth 回调（2）· `llm_read`（2）· `checkin`（2）· SSE（1）。详见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
 
