@@ -6,14 +6,14 @@
 
 - **Flutter** `lib/pages/<domain>/` + `widgets/` `services/` `providers/`
 - **后端** `backend/api/<module>/v1/*.proto` · Kratos `service → biz → data`
-- **管理台** `moe-admin/` · **RPA** `moe-auto/`
+- **管理台** `moe-admin/`
 
 ## Commands
 
 | 范围 | 命令 |
 |------|------|
-| Flutter | `flutter analyze` · `flutter test` |
-| 后端 | `cd backend && make gen` · `make check` · `make moe-social` |
+| Flutter | `flutter pub get` · `flutter analyze` · `flutter test` |
+| 后端 | `cd backend && make gen` · `make check` · `make moe-social` · `go test ./...` |
 | 管理台 | `cd moe-admin && npm run build` |
 
 Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-apifox.md`
