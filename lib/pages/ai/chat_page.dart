@@ -1152,8 +1152,8 @@ class _ChatPageState extends State<ChatPage> {
             }
           }
         },
+        localeId: 'zh_CN',
         listenOptions: stt.SpeechListenOptions(
-          localeId: 'zh_CN',
           partialResults: true,
           cancelOnError: true,
         ),
