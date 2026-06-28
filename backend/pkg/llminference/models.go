@@ -83,7 +83,7 @@ func ListModelIDs(ctx context.Context, cfg Config) ([]string, error) {
 		return nil, fmt.Errorf("llm inference base url is empty")
 	}
 	client := &http.Client{Timeout: cfg.Timeout}
-	return listOpenAIModelIDs(ctx, client, cfg.BaseURL)
+	return listOpenAIModelIDs(ctx, client, cfg)
 }
 
 // ListModelNames 与 ListModelIDs 同义，供 HTTP biz 层调用。
@@ -91,8 +91,8 @@ func ListModelNames(ctx context.Context, cfg Config) ([]string, error) {
 	return ListModelIDs(ctx, cfg)
 }
 
-func listOpenAIModelIDs(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
-	root := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+func listOpenAIModelIDs(ctx context.Context, client *http.Client, cfg Config) ([]string, error) {
+	root := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	apiRoot := root
 	if !strings.HasSuffix(apiRoot, "/v1") {
 		apiRoot += "/v1"
@@ -100,6 +100,9 @@ func listOpenAIModelIDs(ctx context.Context, client *http.Client, baseURL string
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiRoot+"/models", nil)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
 	}
 	resp, err := client.Do(req)
 	if err != nil {

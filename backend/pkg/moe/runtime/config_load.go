@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"os"
+	"strings"
 	"time"
 
 	"backend/pkg/llminference"
@@ -35,7 +37,14 @@ func LoadInferenceFromViper() llminference.Config {
 	if model == "" {
 		model = v.GetString("ollama.memory_model")
 	}
-	return llminference.ConfigFrom(base, style, ts, model)
+	apiKey := strings.TrimSpace(os.Getenv("MOE_LLM_API_KEY"))
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(v.GetString("llm_inference.api_key"))
+	}
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(v.GetString("ollama.api_key"))
+	}
+	return llminference.ConfigFrom(base, style, ts, model, apiKey)
 }
 
 // LoadSmartOptsFromViper 读取智能发送调度参数。

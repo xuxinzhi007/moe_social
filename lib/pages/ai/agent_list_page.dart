@@ -342,70 +342,421 @@ class _AgentListPageState extends State<AgentListPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _pageBackground,
-      appBar: AppBar(
-        title: const Text(
-          'AI 酒馆',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(child: _buildHeroHeader()),
+          SliverToBoxAdapter(child: _buildQuickActions()),
+          SliverToBoxAdapter(child: _buildCustomTabBar()),
+        ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildMyAgentsList(),
+            _buildAgentSquare(),
+          ],
         ),
-        backgroundColor: _pageBackground,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<_TavernMenuAction>(
-            tooltip: '酒馆菜单',
-            icon: const Icon(Icons.more_vert_rounded),
-            onSelected: _onTavernMenuSelected,
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: _TavernMenuAction.plaza,
-                child: _buildTavernMenuItem(
-                  icon: Icons.storefront_rounded,
-                  title: '角色卡广场',
-                ),
+      ),
+      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildHeroHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            _brandPrimary,
+            _brandSecondary,
+            const Color(0xFF7DD3FC),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AI 酒馆',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white.withValues(alpha: 0.95),
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '创造你的专属角色，开启奇妙对话',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  PopupMenuButton<_TavernMenuAction>(
+                    tooltip: '酒馆菜单',
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    onSelected: _onTavernMenuSelected,
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: _TavernMenuAction.plaza,
+                        child: _buildTavernMenuItem(
+                          icon: Icons.storefront_rounded,
+                          title: '角色卡广场',
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _TavernMenuAction.importCard,
+                        child: _buildTavernMenuItem(
+                          icon: Icons.input_rounded,
+                          title: '导入角色卡',
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _TavernMenuAction.lorebooks,
+                        child: _buildTavernMenuItem(
+                          icon: Icons.menu_book_rounded,
+                          title: '世界书管理',
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _TavernMenuAction.providers,
+                        child: _buildTavernMenuItem(
+                          icon: Icons.hub_rounded,
+                          title: '模型来源管理',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              PopupMenuItem(
-                value: _TavernMenuAction.importCard,
-                child: _buildTavernMenuItem(
-                  icon: Icons.input_rounded,
-                  title: '导入角色卡',
-                ),
+              const SizedBox(height: 20),
+              _buildHeroSearchBar(),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _buildHeroStat(
+                    icon: Icons.people_alt_rounded,
+                    value: '${_agents.length}',
+                    label: '角色',
+                  ),
+                  const SizedBox(width: 16),
+                  _buildHeroStat(
+                    icon: Icons.hub_rounded,
+                    value: '${_providerProfiles.length}',
+                    label: '模型源',
+                  ),
+                  const SizedBox(width: 16),
+                  _buildHeroStat(
+                    icon: Icons.auto_awesome_rounded,
+                    value: '${_usageCounts.length}',
+                    label: '对话过',
+                  ),
+                ],
               ),
-              PopupMenuItem(
-                value: _TavernMenuAction.lorebooks,
-                child: _buildTavernMenuItem(
-                  icon: Icons.menu_book_rounded,
-                  title: '世界书管理',
-                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroSearchBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextField(
+        onChanged: (value) {
+          _updateTavernState(() => _searchQuery = value);
+          _filterAgents();
+        },
+        style: const TextStyle(fontSize: 14, height: 1.4),
+        decoration: InputDecoration(
+          hintText: '搜索角色、描述或模型...',
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear_rounded, color: Colors.grey.shade400, size: 20),
+                  onPressed: () {
+                    _updateTavernState(() => _searchQuery = '');
+                    _filterAgents();
+                  },
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroStat({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.1,
               ),
-              PopupMenuItem(
-                value: _TavernMenuAction.providers,
-                child: _buildTavernMenuItem(
-                  icon: Icons.hub_rounded,
-                  title: '模型来源管理',
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildQuickActionCard(
+              icon: Icons.add_circle_rounded,
+              title: '新建角色',
+              subtitle: '创建你的专属AI',
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [_brandPrimary, _brandSecondary],
+              ),
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AgentEditorPage()),
+                );
+                if (result == true && mounted) {
+                  await _loadAgents();
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildQuickActionCard(
+              icon: Icons.storefront_rounded,
+              title: '角色广场',
+              subtitle: '发现更多角色',
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [const Color(0xFFF472B6), const Color(0xFFC084FC)],
+              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CharacterCardPlazaPage()),
+                );
+                if (mounted) await _loadAgents();
+              },
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildQuickActionCard(
+              icon: Icons.menu_book_rounded,
+              title: '世界书',
+              subtitle: '世界观设定',
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [const Color(0xFF34D3C8), const Color(0xFF60A5FA)],
+              ),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AiLorebooksPage()),
+                );
+                if (mounted) await _loadAgents();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomTabBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            _buildTabItem(0, '角色剧场', Icons.theater_comedy_rounded),
+            _buildTabItem(1, '模型来源', Icons.hub_rounded),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabItem(int index, String label, IconData icon) {
+    final isSelected = _tabController.index == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _tabController.animateTo(index);
+          if (mounted) setState(() {});
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? _brandPrimary : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.grey.shade500,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? Colors.white : Colors.grey.shade500,
                 ),
               ),
             ],
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: '角色剧场'),
-            Tab(text: '模型来源'),
-          ],
-          indicatorColor: _brandPrimary,
-          labelColor: _brandPrimary,
-          unselectedLabelColor: Colors.grey[600],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildMyAgentsList(),
-          _buildAgentSquare(),
-        ],
-      ),
-      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

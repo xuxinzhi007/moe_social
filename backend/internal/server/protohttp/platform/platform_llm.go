@@ -159,7 +159,7 @@ func platformInferenceCfgFromSvc(svcCtx *svc.ServiceContext) llminference.Config
 		return llminference.Config{}
 	}
 	c := svcCtx.Config.LLMInference
-	return llminference.ConfigFrom(c.BaseUrl, c.ApiStyle, c.TimeoutSeconds, c.MemoryModel)
+	return llminference.ConfigFrom(c.BaseUrl, c.ApiStyle, c.TimeoutSeconds, c.MemoryModel, c.ApiKey)
 }
 
 func platformConfigSnapshotFromSvc(svcCtx *svc.ServiceContext) llmbiz.ConfigSnapshot {

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兴趣社区</title>
+    <style id="theme-vars">
+/* ============================================
+   Moe Social Design System - Brand CSS
+   Extracted from Flutter MoeTokens & MoeTheme
+   ============================================ */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #7F7FD5;
+  --color-primary-hover: #6E6EC4;
+  --color-secondary: #86A8E7;
+  --color-accent: #91EAE4;
+  --color-pastel-orange: #FFB347;
+  --color-like-red: #FF4757;
+
+  /* VIP Gold */
+  --color-vip-gold: #FFD66B;
+  --color-vip-gold-dark: #FFA94D;
+
+  /* Gacha Pink */
+  --color-gacha-pink: #FFB7C5;
+  --color-gacha-pink-dark: #FFA5B5;
+
+  /* === Surface Colors === */
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-fill: #F9F9F9;
+  --color-search-bg: #F5F5F5;
+
+  /* === Text Colors === */
+  --color-title: #333333;
+  --color-body: #212121;
+  --color-body-secondary: rgba(0,0,0,0.6);
+  --color-hint: #9E9E9E;
+  --color-placeholder: #BDBDBD;
+
+  /* === Status Colors === */
+  --color-online: #34C759;
+  --color-error: #FF4757;
+  --color-success: #34C759;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-personalized: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-vip: linear-gradient(135deg, #FFD66B 0%, #FFA94D 100%);
+  --gradient-gacha: linear-gradient(135deg, #FFB7C5 0%, #FFA5B5 100%);
+
+  /* === Typography === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif: 'Georgia', 'Noto Serif SC', serif;
+
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 26px;
+  --text-5xl: 28px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* === Shadows === */
+  --shadow-card: 0 8px 24px rgba(127,127,213,0.08);
+  --shadow-card-hover: 0 12px 32px rgba(127,127,213,0.12);
+  --shadow-button: 0 4px 16px rgba(127,127,213,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 20px rgba(127,127,213,0.25);
+
+  /* === Motion === */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* === Avatar Ring Colors === */
+  --ring-purple: linear-gradient(135deg, #7F7FD5, #f093fb);
+  --ring-red-orange: linear-gradient(135deg, #FF6B6B, #FFB347);
+  --ring-teal: linear-gradient(135deg, #4ECDC4, #44A08D);
+  --ring-blue-purple: linear-gradient(135deg, #86A8E7, #7F7FD5);
+  --ring-yellow: linear-gradient(135deg, #FFCA28, #FF8F00);
+  --ring-deep-purple: linear-gradient(135deg, #AB47BC, #7B1FA2);
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-page-bg: #121212;
+  --color-card-bg: #1E1E1E;
+  --color-input-bg: #2C2C2C;
+  --color-input-fill: #252525;
+  --color-search-bg: #2C2C2C;
+  --color-title: #E0E0E0;
+  --color-body: #EEEEEE;
+  --color-body-secondary: rgba(255,255,255,0.7);
+  --color-hint: #757575;
+  --color-placeholder: #616161;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.32);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.2);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-accent: var(--color-accent);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="relative min-h-screen" style="background-color: var(--color-page-bg);">
+      <!-- Status bar spacer -->
+      <div class="h-11"></div>
+
+      <!-- AppBar -->
+      <header class="sticky top-0 z-30 flex items-center px-4 pb-3 pt-2" style="background-color: var(--color-page-bg);">
+        <button data-dom-id="btn-back" class="flex h-9 w-9 items-center justify-center" aria-label="返回">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="ml-3 min-w-0 flex-1">
+          <h1 class="truncate" style="font-size: var(--text-4xl); font-weight: var(--weight-black); color: var(--color-title); line-height: var(--leading-tight);">兴趣社区</h1>
+          <p class="truncate" style="font-size: var(--text-sm); color: var(--color-hint); margin-top: 2px;">发现志同道合的伙伴</p>
+        </div>
+      </header>
+
+      <!-- Tab Selector -->
+      <div class="mx-4 mb-4">
+        <div class="flex relative" style="height: 44px; background-color: rgba(127,127,213,0.06); border-radius: 14px;">
+          <!-- Tab Indicator -->
+          <div class="absolute top-[3px] left-[3px] h-[38px] w-[calc(50%-3px)]" style="background-color: rgba(127,127,213,0.12); border-radius: 10px;"></div>
+          <button class="relative z-10 flex-1 flex items-center justify-center" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: var(--color-primary);">圈子</button>
+          <button class="relative z-10 flex-1 flex items-center justify-center" style="font-size: var(--text-md); font-weight: var(--weight-medium); color: var(--color-hint);">讨论</button>
+        </div>
+      </div>
+
+      <!-- Interest Groups Section -->
+      <section class="px-4 mb-5">
+        <h2 class="mb-3" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: var(--color-title);">我的圈子</h2>
+        <div class="flex gap-3 overflow-x-auto pb-2" style="-webkit-overflow-scrolling: touch; scrollbar-width: none;">
+
+          <!-- Group Card 1 -->
+          <div class="shrink-0" style="width: 150px; background-color: var(--color-card-bg); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden;">
+            <div style="width: 150px; height: 80px; background: var(--gradient-primary); border-radius: 20px 20px 0 0;"></div>
+            <div class="p-3">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">原画创作</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint); margin-top: 2px;">1.2k 成员</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-body-secondary); margin-top: 4px; line-height: var(--leading-snug);">分享你的原创画作</p>
+            </div>
+          </div>
+
+          <!-- Group Card 2 -->
+          <div class="shrink-0" style="width: 150px; background-color: var(--color-card-bg); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden;">
+            <div style="width: 150px; height: 80px; background: var(--gradient-hero); border-radius: 20px 20px 0 0;"></div>
+            <div class="p-3">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">动漫番剧</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint); margin-top: 2px;">3.8k 成员</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-body-secondary); margin-top: 4px; line-height: var(--leading-snug);">追番讨论与推荐</p>
+            </div>
+          </div>
+
+          <!-- Group Card 3 -->
+          <div class="shrink-0" style="width: 150px; background-color: var(--color-card-bg); border-radius: 20px; box-shadow: var(--shadow-card); overflow: hidden;">
+            <div style="width: 150px; height: 80px; background: var(--gradient-vip); border-radius: 20px 20px 0 0;"></div>
+            <div class="p-3">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">手游攻略</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint); margin-top: 2px;">956 成员</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-body-secondary); margin-top: 4px; line-height: var(--leading-snug);">手游通关心得分享</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Hot Discussion Posts -->
+      <section class="px-4 pb-28">
+        <h2 class="mb-3" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: var(--color-title);">热门讨论</h2>
+
+        <!-- Post 1 -->
+        <div class="mb-3" style="background-color: var(--color-card-bg); border-radius: 24px; padding: 16px; box-shadow: var(--shadow-card);">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-purple);"></div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">画师小鹿</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint);">2 小时前</p>
+            </div>
+          </div>
+          <p class="mb-2" style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-normal);">最近尝试了新的上色风格，感觉渐变光效特别适合梦幻题材的作品~</p>
+          <div class="flex gap-2 mb-2" style="width: 100%; height: 160px; border-radius: 16px; overflow: hidden;">
+            <div class="flex-1" style="background: var(--gradient-primary); opacity: 0.6;"></div>
+            <div class="flex-1" style="background: var(--gradient-hero); opacity: 0.6;"></div>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#10084; 128</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128172; 32</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128257; 分享</span>
+          </div>
+        </div>
+
+        <!-- Post 2 -->
+        <div class="mb-3" style="background-color: var(--color-card-bg); border-radius: 24px; padding: 16px; box-shadow: var(--shadow-card);">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-teal);"></div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">动漫迷小光</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint);">5 小时前</p>
+            </div>
+          </div>
+          <p class="mb-2" style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-normal);">这个季度的新番大家看了吗？第三集的反转太绝了！</p>
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#10084; 256</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128172; 89</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128257; 分享</span>
+          </div>
+        </div>
+
+        <!-- Post 3 -->
+        <div class="mb-3" style="background-color: var(--color-card-bg); border-radius: 24px; padding: 16px; box-shadow: var(--shadow-card);">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-yellow);"></div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate" style="font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--color-title);">攻略达人</p>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-hint);">昨天</p>
+            </div>
+          </div>
+          <p class="mb-2" style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-normal);">新活动Boss机制整理完毕，附上队伍配置推荐~</p>
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#10084; 95</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128172; 47</span>
+            <span class="flex items-center gap-1" style="font-size: var(--text-xs); color: var(--color-hint);">&#128257; 分享</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAB -->
+      <div class="fixed bottom-6 right-4 z-20 flex items-center gap-2" style="background: var(--gradient-primary); border-radius: 30px; padding: 10px 20px; box-shadow: var(--shadow-button);">
+        <span style="font-size: 18px;">&#43;</span>
+        <span style="font-size: var(--text-base); font-weight: var(--weight-bold); color: white;">新建群组</span>
+      </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

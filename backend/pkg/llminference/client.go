@@ -26,6 +26,7 @@ type Config struct {
 	APIStyle     APIStyle
 	Timeout      time.Duration
 	DefaultModel string
+	APIKey       string
 }
 
 // Message 对话消息。
@@ -42,7 +43,7 @@ type ChatOptions struct {
 }
 
 // ConfigFrom 从统一配置字段构建客户端配置。
-func ConfigFrom(baseURL, apiStyle string, timeoutSec int, defaultModel string) Config {
+func ConfigFrom(baseURL, apiStyle string, timeoutSec int, defaultModel string, apiKey string) Config {
 	style := ResolveAPIStyle(apiStyle, baseURL)
 	timeout := time.Duration(timeoutSec) * time.Second
 	if timeout <= 0 {
@@ -53,6 +54,7 @@ func ConfigFrom(baseURL, apiStyle string, timeoutSec int, defaultModel string) C
 		APIStyle:     style,
 		Timeout:      timeout,
 		DefaultModel: strings.TrimSpace(defaultModel),
+		APIKey:       strings.TrimSpace(apiKey),
 	}
 }
 
@@ -97,17 +99,18 @@ func Chat(
 	if cfg.APIStyle == APIOllama {
 		return postOllamaChat(ctx, client, cfg.BaseURL, model, messages, opts)
 	}
-	return postOpenAIChat(ctx, client, cfg.BaseURL, model, messages, opts)
+	return postOpenAIChat(ctx, client, cfg, model, messages, opts)
 }
 
 func postOpenAIChat(
 	ctx context.Context,
 	client *http.Client,
-	baseURL, model string,
+	cfg Config,
+	model string,
 	messages []Message,
 	opts ChatOptions,
 ) (string, error) {
-	apiRoot := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	if !strings.HasSuffix(apiRoot, "/v1") {
 		apiRoot += "/v1"
 	}
@@ -135,6 +138,9 @@ func postOpenAIChat(
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
