@@ -2,148 +2,418 @@ part of '../agent_list_page.dart';
 
 extension TavernProvidersTabPart on _AgentListPageState {
   Widget tavernBuildAgentSquare() {
-    final provider = _selectedSquareProvider;
-    final sourceLabel = _providerSourceLabel(provider);
+    final selectedProvider = _selectedSquareProvider;
 
-    Widget body;
-    if (_isLoadingSquareModels) {
-      body = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: _buildProvidersSectionHeader(),
+        ),
+        SliverToBoxAdapter(
+          child: _buildProviderHorizontalList(),
+        ),
+        SliverToBoxAdapter(
+          child: _buildSelectedProviderDetail(selectedProvider),
+        ),
+        SliverToBoxAdapter(
+          child: _buildModelsSection(selectedProvider),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+          sliver: _buildModelsList(selectedProvider),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProvidersSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
         children: [
-          const MoeLoading(),
-          const SizedBox(height: 12),
-          Text(
-            '正在加载 ${provider.name} 模型列表...',
-            style: TextStyle(color: Colors.grey[600], fontSize: 13),
-          ),
-        ],
-      );
-    } else if (_squareModels.isEmpty) {
-      body = Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF86A8E7), Color(0xFF91EAE4)],
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF86A8E7).withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '模型来源',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '选择 API 后绑定模型 ID 创建角色卡',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.cloud_off_outlined,
-              size: 80,
-              color: Colors.white,
-            ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            provider.isBackendOllama
-                ? '未找到可用模型'
-                : provider.isLlamaCppServer
-                    ? '未连接本机 llama.cpp'
-                    : '接口已连通，但暂无模型列表',
-            style: TextStyle(color: Colors.grey[600], fontSize: 16),
+          TextButton.icon(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiProviderProfilesPage()),
+              );
+              if (mounted) await _reloadPageData();
+            },
+            icon: const Icon(Icons.tune_rounded, size: 16),
+            label: const Text('管理', style: TextStyle(fontSize: 12)),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              provider.isBackendOllama
-                  ? '请检查本机 llama-server 是否已启动（默认 6633）'
-                  : provider.isLlamaCppServer
-                      ? '请先启动 llama-server（默认端口 6633），并在「模型来源 → 本机 llama.cpp → 设置」检查地址。\n'
-                          '模型 ID 通常与 gguf 文件名一致，例如 qwen2。'
-                      : '很多中转站不返回 /models，这很正常。\n'
-                          '请到 Provider 填写「默认模型」或「手动模型」（一行一个），'
-                          '保存后即可在此创建角色卡；聊天时直接调用该模型 ID。',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: Colors.grey[500], fontSize: 14, height: 1.45),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (!provider.isBackendOllama) ...[
-            if (provider.isLlamaCppServer) ...[
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LlamaCppSettingsPage(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProviderHorizontalList() {
+    return SizedBox(
+      height: 110,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: _providerProfiles.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final provider = _providerProfiles[index];
+          final isSelected = provider.id == _selectedSquareProviderId;
+          final isConnected = provider.isBuiltinBackend || provider.baseUrl.isNotEmpty;
+          final providerColor = _getProviderColor(provider);
+
+          return GestureDetector(
+            onTap: () async {
+              _updateTavernState(() => _selectedSquareProviderId = provider.id);
+              await AiProviderService().saveLastSelectedProfileId(provider.id);
+              await _loadSquareModels();
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 130,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: isSelected ? providerColor : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: isSelected
+                      ? providerColor
+                      : Colors.grey.shade200,
+                  width: 1.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: providerColor.withValues(alpha: 0.25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.25)
+                          : providerColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  );
-                  if (mounted) await _reloadPageData();
-                },
-                icon: const Icon(Icons.settings_rounded),
-                label: const Text('llama.cpp 连接设置'),
-              ),
-              const SizedBox(height: 10),
-            ],
-            OutlinedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AiProviderProfilesPage(),
+                    child: Icon(
+                      _getProviderIcon(provider),
+                      size: 20,
+                      color: isSelected ? Colors.white : providerColor,
+                    ),
                   ),
-                );
-                if (mounted) await _reloadPageData();
-              },
-              icon: const Icon(Icons.tune_rounded),
-              label: const Text('去配置 Provider'),
-            ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: () => _createAgentWithManualModelId(provider),
-              style: FilledButton.styleFrom(
-                backgroundColor: _AgentListPageState._brandSecondary,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  const Spacer(),
+                  Text(
+                    provider.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : Colors.grey.shade800,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isConnected
+                              ? (isSelected ? Colors.white : const Color(0xFF00A86B))
+                              : (isSelected ? Colors.white.withValues(alpha: 0.5) : Colors.grey.shade400),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isConnected ? '已连接' : '未配置',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.badge_outlined),
-              label: const Text('直接输入模型 ID 创建角色卡'),
             ),
-            const SizedBox(height: 10),
+          );
+        },
+      ),
+    );
+  }
+
+  Color _getProviderColor(AiProviderProfile provider) {
+    if (provider.isBuiltinBackend) {
+      return const Color(0xFF5B8DEF);
+    }
+    if (provider.isOpenAiCompatible) {
+      return const Color(0xFF10A37F);
+    }
+    if (provider.isLlamaCppServer) {
+      return const Color(0xFF7C3AED);
+    }
+    return _AgentListPageState._brandPrimary;
+  }
+
+  IconData _getProviderIcon(AiProviderProfile provider) {
+    if (provider.isBuiltinBackend) {
+      return Icons.cloud_done_rounded;
+    }
+    if (provider.isLlamaCppServer) {
+      return Icons.computer_rounded;
+    }
+    if (provider.isOpenAiCompatible) {
+      return Icons.cloud_outlined;
+    }
+    return Icons.language_rounded;
+  }
+
+  Widget _buildSelectedProviderDetail(AiProviderProfile provider) {
+    final sourceLabel = _providerSourceLabel(provider);
+    final providerColor = _getProviderColor(provider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
           ],
-          ElevatedButton.icon(
-            onPressed: _loadSquareModels,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('重新加载'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: provider.isBackendOllama
-                  ? _AgentListPageState._brandSecondary
-                  : null,
-              foregroundColor: provider.isBackendOllama ? Colors.white : null,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: providerColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _getProviderIcon(provider),
+                    size: 24,
+                    color: providerColor,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        provider.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        sourceLabel,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton.filledTonal(
+                  tooltip: '刷新模型',
+                  onPressed: _loadSquareModels,
+                  style: IconButton.styleFrom(
+                    backgroundColor: providerColor.withValues(alpha: 0.1),
+                    foregroundColor: providerColor,
+                  ),
+                  icon: _isLoadingSquareModels
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: providerColor,
+                          ),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 20),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildDetailChip(
+                  icon: Icons.layers_rounded,
+                  label: '模型数 ${_squareModels.length}',
+                  color: providerColor,
+                ),
+                _buildDetailChip(
+                  icon: Icons.link_rounded,
+                  label: provider.baseUrl.isEmpty ? '未配置地址' : (provider.baseUrl.length > 25 ? '${provider.baseUrl.substring(0, 25)}...' : provider.baseUrl),
+                  color: Colors.blueGrey,
+                ),
+                if (provider.defaultModel.isNotEmpty)
+                  _buildDetailChip(
+                    icon: Icons.star_rounded,
+                    label: '默认: ${provider.defaultModel}',
+                    color: const Color(0xFFE6A700),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
-      );
-    } else {
-      final modelCategories = tavernCategorizeModels(_squareModels);
-      body = ListView.builder(
-        itemCount: modelCategories.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        itemBuilder: (context, categoryIndex) {
-          final category = modelCategories.keys.elementAt(categoryIndex);
-          final categoryModels = modelCategories[category]!;
+      ),
+    );
+  }
 
+  Widget _buildModelsSection(AiProviderProfile provider) {
+    if (_isLoadingSquareModels) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Row(
+          children: [
+            const MoeLoading(size: 16),
+            const SizedBox(width: 10),
+            Text(
+              '正在加载 ${provider.name} 模型列表...',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '可用模型 (${_squareModels.length})',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey.shade800,
+            ),
+          ),
+          if (!provider.isBuiltinBackend || provider.isLlamaCppServer)
+            TextButton(
+              onPressed: () => _createAgentWithManualModelId(provider),
+              child: const Text('手动输入模型ID', style: TextStyle(fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  SliverList _buildModelsList(AiProviderProfile provider) {
+    if (_isLoadingSquareModels) {
+      return SliverList(
+        delegate: SliverChildListDelegate([
+          const Padding(
+            padding: EdgeInsets.all(40),
+            child: Center(
+              child: MoeLoading(),
+            ),
+          ),
+        ]),
+      );
+    }
+
+    if (_squareModels.isEmpty) {
+      return SliverList(
+        delegate: SliverChildListDelegate([
+          _buildEmptyModelsState(provider),
+        ]),
+      );
+    }
+
+    final categories = tavernCategorizeModels(_squareModels);
+    final categoryKeys = categories.keys.toList();
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, catIndex) {
+          final category = categoryKeys[catIndex];
+          final models = categories[category]!;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -163,356 +433,229 @@ extension TavernProvidersTabPart on _AgentListPageState {
                     Text(
                       category,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF333333),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '(${categoryModels.length})',
+                      '(${models.length})',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
                       ),
                     ),
                   ],
                 ),
               ),
-              Column(
-                children: categoryModels.map((modelName) {
-                  final existing = _findExistingAgentForModel(
-                    modelName,
-                    providerId: provider.id,
-                  );
-                  final alreadyAdded = existing != null;
-                  final cardColor = alreadyAdded
-                      ? const Color(0xFF4CAF50)
-                      : (provider.isBuiltinBackend
-                          ? _AgentListPageState._brandSecondary
-                          : const Color(0xFF00A86B));
+              ...models.map((modelName) {
+                final existing = _findExistingAgentForModel(
+                  modelName,
+                  providerId: provider.id,
+                );
+                final alreadyAdded = existing != null;
+                final cardColor = alreadyAdded
+                    ? const Color(0xFF4CAF50)
+                    : (provider.isBuiltinBackend
+                        ? _AgentListPageState._brandSecondary
+                        : const Color(0xFF00A86B));
 
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withValues(alpha: 0.08),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                      border: Border.all(
-                        color: cardColor.withValues(alpha: 0.2),
-                        width: 1,
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
+                    ],
+                    border: Border.all(
+                      color: alreadyAdded
+                          ? const Color(0xFF4CAF50).withValues(alpha: 0.2)
+                          : Colors.grey.shade100,
                     ),
-                    child: Material(
-                      color: Colors.transparent,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          _createAgentFromModel(modelName, provider);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 48,
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [
-                                      cardColor,
-                                      cardColor.withValues(alpha: 0.7)
-                                    ],
-                                  ),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: cardColor.withValues(alpha: 0.3),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(
-                                  alreadyAdded
-                                      ? Icons.check_circle_rounded
-                                      : Icons.badge_outlined,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _createAgentFromModel(modelName, provider);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: cardColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            modelName,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF333333),
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        if (alreadyAdded)
-                                          Container(
-                                            margin:
-                                                const EdgeInsets.only(left: 8),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF4CAF50)
-                                                  .withValues(alpha: 0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: const Text(
-                                              '已有角色卡',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: Color(0xFF4CAF50),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      tavernGetModelDescription(modelName),
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 11,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: cardColor.withValues(
-                                                alpha: 0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            sourceLabel,
-                                            style: TextStyle(
-                                              color: cardColor,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            provider.name,
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[100],
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            tavernGetModelSize(modelName),
-                                            style: const TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
+                              child: Icon(
                                 alreadyAdded
-                                    ? Icons.chat_bubble_outline_rounded
-                                    : Icons.add_circle_outline_rounded,
+                                    ? Icons.check_circle_rounded
+                                    : Icons.smart_toy_rounded,
                                 color: cardColor,
-                                size: 20,
+                                size: 22,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    modelName,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF333333),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    tavernGetModelDescription(modelName),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              alreadyAdded
+                                  ? Icons.chat_bubble_outline_rounded
+                                  : Icons.add_circle_outline_rounded,
+                              color: cardColor,
+                              size: 20,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                );
+              }),
+              if (catIndex == categoryKeys.length - 1)
+                const SizedBox(height: 8),
             ],
           );
         },
-      );
-    }
+        childCount: categories.length,
+      ),
+    );
+  }
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 120),
-      children: [
-        _buildSectionHeader(
-          title: '模型来源',
-          subtitle: '选择 API 后绑定模型 ID 创建角色卡；/models 为空时请先在 Provider 填默认或手动模型。',
-        ),
-        Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _providerProfiles.any(
-                        (item) => item.id == _selectedSquareProviderId,
-                      )
-                          ? _selectedSquareProviderId
-                          : AiProviderProfile.builtinBackendId,
-                      decoration: InputDecoration(
-                        labelText: '当前模型来源',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF8F9FD),
-                      ),
-                      isExpanded: true,
-                      items: _providerProfiles
-                          .map(
-                            (item) => DropdownMenuItem<String>(
-                              value: item.id,
-                              child: Text(
-                                item.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) async {
-                        if (value == null) return;
-                        _updateTavernState(
-                          () => _selectedSquareProviderId = value,
-                        );
-                        await AiProviderService()
-                            .saveLastSelectedProfileId(value);
-                        await _loadSquareModels();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  IconButton.filledTonal(
-                    tooltip: '刷新模型',
-                    onPressed: _loadSquareModels,
-                    icon: const Icon(Icons.refresh_rounded),
-                  ),
+  Widget _buildEmptyModelsState(AiProviderProfile provider) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _AgentListPageState._brandPrimary.withValues(alpha: 0.8),
+                  _AgentListPageState._brandSecondary,
                 ],
               ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    tavernSquareMetaChip(
-                      'Provider：${provider.name}',
-                      _AgentListPageState._brandPrimary,
-                    ),
-                    tavernSquareMetaChip('来源：$sourceLabel', Colors.blueGrey),
-                    tavernSquareMetaChip('模型数：${_squareModels.length}',
-                        _AgentListPageState._brandSecondary),
-                  ],
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            provider.isBackendOllama
+                ? '未找到可用模型'
+                : provider.isLlamaCppServer
+                    ? '未连接本机 llama.cpp'
+                    : '暂无模型列表',
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              provider.isBackendOllama
+                  ? '请检查 llama-server 是否已启动'
+                  : provider.isLlamaCppServer
+                      ? '请先启动 llama-server（默认端口 6633）'
+                      : '很多中转站不返回 /models，可手动输入模型 ID 创建角色卡',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 12,
+                height: 1.4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              if (provider.isLlamaCppServer)
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LlamaCppSettingsPage(),
+                      ),
+                    );
+                    if (mounted) await _reloadPageData();
+                  },
+                  icon: const Icon(Icons.settings_rounded, size: 16),
+                  label: const Text('连接设置', style: TextStyle(fontSize: 12)),
                 ),
+              FilledButton.icon(
+                onPressed: () => _createAgentWithManualModelId(provider),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _AgentListPageState._brandSecondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                icon: const Icon(Icons.badge_outlined, size: 16),
+                label: const Text('手动输入模型ID', style: TextStyle(fontSize: 12)),
               ),
             ],
           ),
-        ),
-        body,
-      ],
-    );
-  }
-
-  Widget tavernSquareMetaChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
+        ],
       ),
     );
   }
 
-  // 模型分类
   Map<String, List<String>> tavernCategorizeModels(List<String> models) {
     final categories = <String, List<String>>{
       '通用模型': [],
@@ -539,13 +682,11 @@ extension TavernProvidersTabPart on _AgentListPageState {
       }
     }
 
-    // 移除空分类
     categories.removeWhere((key, value) => value.isEmpty);
 
     return categories;
   }
 
-  // 获取模型描述
   String tavernGetModelDescription(String model) {
     if (model.contains('llama')) {
       return 'Meta的大型语言模型，适用于多种任务';
@@ -562,7 +703,6 @@ extension TavernProvidersTabPart on _AgentListPageState {
     }
   }
 
-  // 获取模型大小
   String tavernGetModelSize(String model) {
     if (model.contains('7b') || model.contains('8b')) {
       return '小模型';

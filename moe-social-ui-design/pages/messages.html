@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息 - Moe Social</title>
+    <style id="theme-vars">
+/* ============================================
+   Moe Social Design System - Brand CSS
+   Extracted from Flutter MoeTokens & MoeTheme
+   ============================================ */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #7F7FD5;
+  --color-primary-hover: #6E6EC4;
+  --color-secondary: #86A8E7;
+  --color-accent: #91EAE4;
+  --color-pastel-orange: #FFB347;
+  --color-like-red: #FF4757;
+
+  /* VIP Gold */
+  --color-vip-gold: #FFD66B;
+  --color-vip-gold-dark: #FFA94D;
+
+  /* Gacha Pink */
+  --color-gacha-pink: #FFB7C5;
+  --color-gacha-pink-dark: #FFA5B5;
+
+  /* === Surface Colors === */
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-fill: #F9F9F9;
+  --color-search-bg: #F5F5F5;
+
+  /* === Text Colors === */
+  --color-title: #333333;
+  --color-body: #212121;
+  --color-body-secondary: rgba(0,0,0,0.6);
+  --color-hint: #9E9E9E;
+  --color-placeholder: #BDBDBD;
+
+  /* === Status Colors === */
+  --color-online: #34C759;
+  --color-error: #FF4757;
+  --color-success: #34C759;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-personalized: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-vip: linear-gradient(135deg, #FFD66B 0%, #FFA94D 100%);
+  --gradient-gacha: linear-gradient(135deg, #FFB7C5 0%, #FFA5B5 100%);
+
+  /* === Typography === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif: 'Georgia', 'Noto Serif SC', serif;
+
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 26px;
+  --text-5xl: 28px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* === Shadows === */
+  --shadow-card: 0 8px 24px rgba(127,127,213,0.08);
+  --shadow-card-hover: 0 12px 32px rgba(127,127,213,0.12);
+  --shadow-button: 0 4px 16px rgba(127,127,213,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 20px rgba(127,127,213,0.25);
+
+  /* === Motion === */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* === Avatar Ring Colors === */
+  --ring-purple: linear-gradient(135deg, #7F7FD5, #f093fb);
+  --ring-red-orange: linear-gradient(135deg, #FF6B6B, #FFB347);
+  --ring-teal: linear-gradient(135deg, #4ECDC4, #44A08D);
+  --ring-blue-purple: linear-gradient(135deg, #86A8E7, #7F7FD5);
+  --ring-yellow: linear-gradient(135deg, #FFCA28, #FF8F00);
+  --ring-deep-purple: linear-gradient(135deg, #AB47BC, #7B1FA2);
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-page-bg: #121212;
+  --color-card-bg: #1E1E1E;
+  --color-input-bg: #2C2C2C;
+  --color-input-fill: #252525;
+  --color-search-bg: #2C2C2C;
+  --color-title: #E0E0E0;
+  --color-body: #EEEEEE;
+  --color-body-secondary: rgba(255,255,255,0.7);
+  --color-hint: #757575;
+  --color-placeholder: #616161;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.32);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.2);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-accent: var(--color-accent);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="font-family: var(--font-family); background: var(--color-page-bg);">
+    <main class="pb-24">
+      <!-- AppBar -->
+      <header class="sticky top-0 z-20 flex items-center justify-between px-5 py-3" style="background: var(--color-card-bg);">
+        <div class="w-10"></div>
+        <span class="font-extrabold" style="font-size: var(--text-lg); color: var(--color-title);">消息</span>
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center" aria-label="在线匹配">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-like-red)" stroke="var(--color-like-red)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <button class="w-8 h-8 flex items-center justify-center" aria-label="群组">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Quick Actions: Find friends / Online matching -->
+      <div class="px-5 py-4 flex gap-3">
+        <button class="flex-1 flex items-center justify-center gap-2 py-3 rounded-[20px]" style="background: rgba(127,127,213,0.10);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <span class="font-semibold" style="font-size: var(--text-md); color: var(--color-primary);">找同好</span>
+        </button>
+        <button class="flex-1 flex items-center justify-center gap-2 py-3 rounded-[20px]" style="background: rgba(145,234,228,0.10);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#91EAE4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          <span class="font-semibold" style="font-size: var(--text-md); color: #4ECDC4;">在线匹配</span>
+        </button>
+      </div>
+
+      <!-- Conversations List -->
+      <div class="px-5 flex flex-col gap-1">
+        <!-- Conversation 1 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-purple);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #E8D5F5;"><span class="font-bold" style="font-size: var(--text-sm);">萌</span></div>
+            </div>
+            <span class="absolute bottom-0 right-0 w-[7px] h-[7px] rounded-full border-2" style="border-color: var(--color-page-bg); background: var(--color-online);"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">小萌酱</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">刚刚</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="truncate" style="font-size: var(--text-sm); color: var(--color-hint);">今天的夕阳好美呀，给你拍了照片！</span>
+              <span class="shrink-0 ml-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-white" style="font-size: 10px; background: var(--color-primary);">3</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversation 2 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-teal);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #C5EDE8;"><span class="font-bold" style="font-size: var(--text-sm);">星</span></div>
+            </div>
+            <span class="absolute bottom-0 right-0 w-[7px] h-[7px] rounded-full border-2" style="border-color: var(--color-page-bg); background: var(--color-online);"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">星辰大海</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">15分钟前</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="truncate" style="font-size: var(--text-sm); color: var(--color-hint);">周末一起去猫咖吧~</span>
+              <span class="shrink-0 ml-2 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-white" style="font-size: 10px; background: var(--color-primary);">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversation 3 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-red-orange);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #FFD5C7;"><span class="font-bold" style="font-size: var(--text-sm);">甜</span></div>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">甜甜圈</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">1小时前</span>
+            </div>
+            <span class="truncate block" style="font-size: var(--text-sm); color: var(--color-hint);">收到啦，谢谢你！</span>
+          </div>
+        </div>
+
+        <!-- Conversation 4 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-blue-purple);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #C5D5F5;"><span class="font-bold" style="font-size: var(--text-sm);">月</span></div>
+            </div>
+            <span class="absolute bottom-0 right-0 w-[7px] h-[7px] rounded-full border-2" style="border-color: var(--color-page-bg); background: var(--color-online);"></span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">月光猫咪</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">3小时前</span>
+            </div>
+            <span class="truncate block" style="font-size: var(--text-sm); color: var(--color-hint);">那个动画你看了吗？超好看的！</span>
+          </div>
+        </div>
+
+        <!-- Conversation 5 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-yellow);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #FFF3C4;"><span class="font-bold" style="font-size: var(--text-sm);">阳</span></div>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">阳光少年</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">昨天</span>
+            </div>
+            <span class="truncate block" style="font-size: var(--text-sm); color: var(--color-hint);">好的，下次一起打球！</span>
+          </div>
+        </div>
+
+        <!-- Conversation 6 -->
+        <div class="flex items-center gap-3 py-3">
+          <div class="shrink-0 relative">
+            <div class="w-[44px] h-[44px] rounded-full p-[2px]" style="background: var(--ring-deep-purple);">
+              <div class="w-full h-full rounded-full flex items-center justify-center" style="background: #E1BEE7;"><span class="font-bold" style="font-size: var(--text-sm);">紫</span></div>
+            </div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="font-bold truncate" style="font-size: var(--text-md); color: var(--color-title);">紫色的梦</span>
+              <span class="shrink-0" style="font-size: var(--text-sm); color: var(--color-hint);">昨天</span>
+            </div>
+            <span class="truncate block" style="font-size: var(--text-sm); color: var(--color-hint);">[图片] 看看我新做的手工</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-4 left-4 right-4 z-30">
+      <div class="flex items-center justify-around py-2 px-4 rounded-[32px]" style="background: var(--color-card-bg); box-shadow: var(--shadow-nav), 0 4px 20px rgba(127,127,213,0.12);">
+        <a href="home.html" data-dom-id="tab-home" class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-[20px]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-hint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span style="font-size: var(--text-xs); color: var(--color-hint);">首页</span>
+        </a>
+        <a href="messages.html" data-dom-id="tab-messages" class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-[20px]" style="background: rgba(127,127,213,0.15);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform: scale(1.12);"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          <span class="font-semibold" style="font-size: var(--text-xs); color: var(--color-primary);">消息</span>
+        </a>
+        <a href="ai-tavern.html" data-dom-id="tab-ai" class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-[20px]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-hint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/></svg>
+          <span style="font-size: var(--text-xs); color: var(--color-hint);">AI</span>
+        </a>
+        <a href="profile.html" data-dom-id="tab-profile" class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-[20px]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-hint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span style="font-size: var(--text-xs); color: var(--color-hint);">我的</span>
+        </a>
+      </div>
+    </nav>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

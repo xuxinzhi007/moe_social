@@ -42,6 +42,13 @@ func ApplyUnifiedConfigOverrides(c *config.Config) {
 	} else if m := strings.TrimSpace(v.GetString("ollama.memory_model")); m != "" {
 		c.LLMInference.MemoryModel = m
 	}
+	if apiKey := strings.TrimSpace(os.Getenv("MOE_LLM_API_KEY")); apiKey != "" {
+		c.LLMInference.ApiKey = apiKey
+	} else if apiKey := strings.TrimSpace(v.GetString("llm_inference.api_key")); apiKey != "" {
+		c.LLMInference.ApiKey = apiKey
+	} else if apiKey := strings.TrimSpace(v.GetString("ollama.api_key")); apiKey != "" {
+		c.LLMInference.ApiKey = apiKey
+	}
 	if dir := v.GetString("local_models.storage_dir"); dir != "" {
 		c.LocalModels.StorageDir = dir
 	}

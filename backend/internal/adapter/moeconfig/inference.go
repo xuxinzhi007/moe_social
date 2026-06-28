@@ -1,6 +1,9 @@
 package moeconfig
 
 import (
+	"os"
+	"strings"
+
 	"backend/pkg/llminference"
 
 	"github.com/spf13/viper"
@@ -31,5 +34,12 @@ func InferenceFromViper() llminference.Config {
 	if model == "" {
 		model = v.GetString("ollama.memory_model")
 	}
-	return llminference.ConfigFrom(base, style, ts, model)
+	apiKey := strings.TrimSpace(os.Getenv("MOE_LLM_API_KEY"))
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(v.GetString("llm_inference.api_key"))
+	}
+	if apiKey == "" {
+		apiKey = strings.TrimSpace(v.GetString("ollama.api_key"))
+	}
+	return llminference.ConfigFrom(base, style, ts, model, apiKey)
 }

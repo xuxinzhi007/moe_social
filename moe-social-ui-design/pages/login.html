@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Moe Social</title>
+    <style id="theme-vars">
+/* ============================================
+   Moe Social Design System - Brand CSS
+   Extracted from Flutter MoeTokens & MoeTheme
+   ============================================ */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #7F7FD5;
+  --color-primary-hover: #6E6EC4;
+  --color-secondary: #86A8E7;
+  --color-accent: #91EAE4;
+  --color-pastel-orange: #FFB347;
+  --color-like-red: #FF4757;
+
+  /* VIP Gold */
+  --color-vip-gold: #FFD66B;
+  --color-vip-gold-dark: #FFA94D;
+
+  /* Gacha Pink */
+  --color-gacha-pink: #FFB7C5;
+  --color-gacha-pink-dark: #FFA5B5;
+
+  /* === Surface Colors === */
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-fill: #F9F9F9;
+  --color-search-bg: #F5F5F5;
+
+  /* === Text Colors === */
+  --color-title: #333333;
+  --color-body: #212121;
+  --color-body-secondary: rgba(0,0,0,0.6);
+  --color-hint: #9E9E9E;
+  --color-placeholder: #BDBDBD;
+
+  /* === Status Colors === */
+  --color-online: #34C759;
+  --color-error: #FF4757;
+  --color-success: #34C759;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-personalized: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-vip: linear-gradient(135deg, #FFD66B 0%, #FFA94D 100%);
+  --gradient-gacha: linear-gradient(135deg, #FFB7C5 0%, #FFA5B5 100%);
+
+  /* === Typography === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif: 'Georgia', 'Noto Serif SC', serif;
+
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 26px;
+  --text-5xl: 28px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* === Shadows === */
+  --shadow-card: 0 8px 24px rgba(127,127,213,0.08);
+  --shadow-card-hover: 0 12px 32px rgba(127,127,213,0.12);
+  --shadow-button: 0 4px 16px rgba(127,127,213,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 20px rgba(127,127,213,0.25);
+
+  /* === Motion === */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* === Avatar Ring Colors === */
+  --ring-purple: linear-gradient(135deg, #7F7FD5, #f093fb);
+  --ring-red-orange: linear-gradient(135deg, #FF6B6B, #FFB347);
+  --ring-teal: linear-gradient(135deg, #4ECDC4, #44A08D);
+  --ring-blue-purple: linear-gradient(135deg, #86A8E7, #7F7FD5);
+  --ring-yellow: linear-gradient(135deg, #FFCA28, #FF8F00);
+  --ring-deep-purple: linear-gradient(135deg, #AB47BC, #7B1FA2);
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-page-bg: #121212;
+  --color-card-bg: #1E1E1E;
+  --color-input-bg: #2C2C2C;
+  --color-input-fill: #252525;
+  --color-search-bg: #2C2C2C;
+  --color-title: #E0E0E0;
+  --color-body: #EEEEEE;
+  --color-body-secondary: rgba(255,255,255,0.7);
+  --color-hint: #757575;
+  --color-placeholder: #616161;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.32);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.2);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-accent: var(--color-accent);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="font-family: var(--font-family); background: #FFFFFF;">
+    <style>
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(24px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes auroraFloat1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(20px, -30px) scale(1.1); }
+        50% { transform: translate(-10px, 20px) scale(0.95); }
+        75% { transform: translate(15px, 10px) scale(1.05); }
+      }
+      @keyframes auroraFloat2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(-25px, 15px) scale(1.05); }
+        50% { transform: translate(15px, -20px) scale(1.1); }
+        75% { transform: translate(-10px, -10px) scale(0.95); }
+      }
+      @keyframes auroraFloat3 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        25% { transform: translate(10px, 25px) scale(0.95); }
+        50% { transform: translate(-20px, -15px) scale(1.08); }
+        75% { transform: translate(25px, -5px) scale(1.02); }
+      }
+      .aurora-1 { animation: auroraFloat1 8s ease-in-out infinite; }
+      .aurora-2 { animation: auroraFloat2 10s ease-in-out infinite; }
+      .aurora-3 { animation: auroraFloat3 12s ease-in-out infinite; }
+      .fade-in-1 { animation: fadeInUp 0.6s var(--ease-out-back) 0ms both; }
+      .fade-in-2 { animation: fadeInUp 0.6s var(--ease-out-back) 200ms both; }
+      .fade-in-3 { animation: fadeInUp 0.6s var(--ease-out-back) 400ms both; }
+    </style>
+    <main class="relative min-h-screen flex flex-col items-center justify-center px-8 overflow-hidden" style="background: linear-gradient(180deg, #FDFBFD 0%, #F4F7F9 100%);">
+      <!-- Aurora background blobs -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div class="aurora-1 absolute rounded-full" style="width: 280px; height: 280px; top: 8%; left: -15%; background: radial-gradient(circle, rgba(127,127,213,0.40) 0%, transparent 70%);"></div>
+        <div class="aurora-2 absolute rounded-full" style="width: 240px; height: 240px; top: 35%; right: -10%; background: radial-gradient(circle, rgba(134,168,231,0.40) 0%, transparent 70%);"></div>
+        <div class="aurora-3 absolute rounded-full" style="width: 200px; height: 200px; bottom: 10%; left: 20%; background: radial-gradient(circle, rgba(145,234,228,0.40) 0%, transparent 70%);"></div>
+      </div>
+
+      <!-- Logo area -->
+      <div class="fade-in-1 relative z-10 flex flex-col items-center mb-10">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4" style="background: var(--color-card-bg); box-shadow: var(--shadow-card);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" style="color: var(--color-primary);">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="currentColor"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-black tracking-tight" style="font-size: var(--text-5xl); color: var(--color-title); letter-spacing: -0.02em;">Moe Social</h1>
+        <p class="mt-2" style="font-size: var(--text-base); color: var(--color-hint);">发现更可爱的世界</p>
+      </div>
+
+      <!-- Form area -->
+      <div class="fade-in-2 relative z-10 w-full max-w-sm flex flex-col gap-4">
+        <!-- Email input -->
+        <div class="relative rounded-3xl flex items-center px-4 h-14" style="background: var(--color-card-bg); box-shadow: var(--shadow-card);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 shrink-0" style="color: var(--color-primary);">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+          <input type="email" placeholder="邮箱地址" class="flex-1 bg-transparent outline-none h-full" style="font-size: var(--text-md); color: var(--color-body); font-family: var(--font-family);" />
+        </div>
+
+        <!-- Password input -->
+        <div class="relative rounded-3xl flex items-center px-4 h-14" style="background: var(--color-card-bg); box-shadow: var(--shadow-card);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 shrink-0" style="color: var(--color-primary);">
+            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" placeholder="密码" class="flex-1 bg-transparent outline-none h-full" style="font-size: var(--text-md); color: var(--color-body); font-family: var(--font-family);" />
+        </div>
+
+        <!-- Login button -->
+        <button data-dom-id="btn-login" class="w-full h-14 rounded-full text-white font-bold mt-2 active:scale-[0.98] transition-transform" style="font-size: var(--text-xl); background: var(--gradient-primary); box-shadow: 0 8px 24px rgba(127,127,213,0.40);">
+          登录
+        </button>
+      </div>
+
+      <!-- Third-party login -->
+      <div class="fade-in-3 relative z-10 w-full max-w-sm mt-8 flex flex-col items-center">
+        <div class="flex items-center gap-4 w-full mb-6">
+          <div class="flex-1 h-px" style="background: var(--color-placeholder); opacity: 0.3;"></div>
+          <span style="font-size: var(--text-sm); color: var(--color-hint);">其他登录方式</span>
+          <div class="flex-1 h-px" style="background: var(--color-placeholder); opacity: 0.3;"></div>
+        </div>
+        <div class="flex items-center gap-6">
+          <!-- WeChat -->
+          <button class="w-12 h-12 rounded-full flex items-center justify-center border-2" style="border-color: #07C160;" aria-label="微信登录">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#07C160">
+              <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05a6.127 6.127 0 0 1-.235-1.676c0-3.665 3.373-6.642 7.535-6.642.258 0 .513.013.766.035C17.278 4.632 13.376 2.188 8.691 2.188zm-2.37 4.053a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953zm4.742 0a.977.977 0 1 1 0 1.953.977.977 0 0 1 0-1.953zM16.852 9.28c-3.67 0-6.646 2.576-6.646 5.753 0 3.177 2.976 5.752 6.646 5.752.73 0 1.43-.1 2.084-.281a.686.686 0 0 1 .57.078l1.514.888a.263.263 0 0 0 .133.043.234.234 0 0 0 .232-.235c0-.058-.023-.114-.038-.17l-.31-1.179a.474.474 0 0 1 .17-.531C22.896 18.618 24 16.9 24 15.033c0-3.177-2.975-5.753-6.148-5.753zm-2.928 3.287a.815.815 0 1 1 0 1.63.815.815 0 0 1 0-1.63zm5.856 0a.815.815 0 1 1 0 1.63.815.815 0 0 1 0-1.63z"/>
+            </svg>
+          </button>
+          <!-- Feishu / Lark -->
+          <button class="w-12 h-12 rounded-full flex items-center justify-center border-2" style="border-color: #3370FF;" aria-label="飞书登录">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#3370FF">
+              <path d="M15.486 2.003l-4.97 6.03-4.97-6.03h-4.31L2.003 7.523v4.972l4.234 5.52 4.97-6.031 4.97 6.031 4.234-5.52v-4.972l-1.25-5.52h-3.675zM7.17 15.17l-2.414-3.143V9.848l2.414-3.143L10.31 9.848v2.179L7.17 15.17zm9.66 0l-3.14-2.143V9.848l3.14-2.143 2.414 3.143v2.179L16.83 15.17z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Register link -->
+        <p class="mt-6" style="font-size: var(--text-md); color: var(--color-hint);">
+          还没有账号？
+          <a href="register.html" data-dom-id="btn-register" class="font-semibold" style="color: var(--color-primary);">立即注册</a>
+        </p>
+      </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -87,16 +87,16 @@ wechat:
     app_secret: ""
   oauth_scope: "snsapi_userinfo"
 
-#local
-
-# 后端 /api/llm/* 转发的本地推理（默认 llama-server OpenAI 兼容，端口 6633）
+# 云端 LLM 推理（默认 DeepSeek，OpenAI 兼容格式）
+# API Key 推荐通过环境变量 MOE_LLM_API_KEY 设置，勿直接提交到 Git
 llm_inference:
-  base_url: "http://127.0.0.1:6633"
+  base_url: "https://api.deepseek.com"
   api_style: openai
-  timeout_seconds: 300
-  memory_model: "qwen2"
-  # 当 llama-server 未开启 /props 时的上下文 token 兜底（可与 --ctx-size 一致）
-  context_tokens: 8192
+  timeout_seconds: 120
+  memory_model: "deepseek-chat"
+  api_key: ""
+  # 上下文长度（DeepSeek-chat 支持 32K）
+  context_tokens: 32768
 
 # 手机 App 可下载的离线 GGUF（文件放 storage_dir，勿提交大文件进 Git）
 local_models:
@@ -200,38 +200,23 @@ moe:
     unified_entry: moe-social
     external_http_port: "8888"
 
-# 用户记忆 Phase 2：混合检索 + 多路 embedding（不偏向单一厂商，按链式回退）
+# 用户记忆：简化版，仅使用关键词检索（云端模型质量高，无需复杂向量/图谱）
 memory:
   search:
-    hybrid_enabled: true
-    vector_weight: 0.7
-    keyword_weight: 0.3
-    # Phase 3：Mem0 风格 rerank + 图谱扩展
-    rerank_enabled: true
-    rerank_top_k: 24
+    hybrid_enabled: false
+    vector_weight: 0.0
+    keyword_weight: 1.0
+    rerank_enabled: false
+    rerank_top_k: 8
     rerank_mmr_lambda: 0.7
-    graph_enabled: true
+    graph_enabled: false
     graph_hops: 1
-    graph_boost: 0.35
-    graph_max_expand: 6
+    graph_boost: 0.0
+    graph_max_expand: 0
   embedding:
-    # 默认链：先本机 llama.cpp（/v1/embeddings），再 OpenAI 兼容中转
-    openai_base_url: "http://127.0.0.1:6633"
-    openai_api_key: "local"
+    openai_base_url: ""
+    openai_api_key: ""
     openai_model: ""
-    # 遗留 Ollama embedding（已废弃）
-    # ollama_model: nomic-embed-text
-    # providers:
-    #   - type: openai_compatible
-    #     base_url: "http://127.0.0.1:6633"
-    #     api_key: "local"
-    #     model: ""
-    #     priority: 1
-    #   - type: openai_compatible
-    #     base_url: "https://your-relay/v1"
-    #     api_key_env: MOE_MEMORY_EMBED_API_KEY
-    #     model: text-embedding-3-small
-    #     priority: 2
 
 #线上ip ：
 

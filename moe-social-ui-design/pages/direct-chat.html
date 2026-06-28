@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私信聊天</title>
+    <style id="theme-vars">
+/* ============================================
+   Moe Social Design System - Brand CSS
+   Extracted from Flutter MoeTokens & MoeTheme
+   ============================================ */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #7F7FD5;
+  --color-primary-hover: #6E6EC4;
+  --color-secondary: #86A8E7;
+  --color-accent: #91EAE4;
+  --color-pastel-orange: #FFB347;
+  --color-like-red: #FF4757;
+
+  /* VIP Gold */
+  --color-vip-gold: #FFD66B;
+  --color-vip-gold-dark: #FFA94D;
+
+  /* Gacha Pink */
+  --color-gacha-pink: #FFB7C5;
+  --color-gacha-pink-dark: #FFA5B5;
+
+  /* === Surface Colors === */
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-fill: #F9F9F9;
+  --color-search-bg: #F5F5F5;
+
+  /* === Text Colors === */
+  --color-title: #333333;
+  --color-body: #212121;
+  --color-body-secondary: rgba(0,0,0,0.6);
+  --color-hint: #9E9E9E;
+  --color-placeholder: #BDBDBD;
+
+  /* === Status Colors === */
+  --color-online: #34C759;
+  --color-error: #FF4757;
+  --color-success: #34C759;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-personalized: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-vip: linear-gradient(135deg, #FFD66B 0%, #FFA94D 100%);
+  --gradient-gacha: linear-gradient(135deg, #FFB7C5 0%, #FFA5B5 100%);
+
+  /* === Typography === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif: 'Georgia', 'Noto Serif SC', serif;
+
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 26px;
+  --text-5xl: 28px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* === Shadows === */
+  --shadow-card: 0 8px 24px rgba(127,127,213,0.08);
+  --shadow-card-hover: 0 12px 32px rgba(127,127,213,0.12);
+  --shadow-button: 0 4px 16px rgba(127,127,213,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 20px rgba(127,127,213,0.25);
+
+  /* === Motion === */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* === Avatar Ring Colors === */
+  --ring-purple: linear-gradient(135deg, #7F7FD5, #f093fb);
+  --ring-red-orange: linear-gradient(135deg, #FF6B6B, #FFB347);
+  --ring-teal: linear-gradient(135deg, #4ECDC4, #44A08D);
+  --ring-blue-purple: linear-gradient(135deg, #86A8E7, #7F7FD5);
+  --ring-yellow: linear-gradient(135deg, #FFCA28, #FF8F00);
+  --ring-deep-purple: linear-gradient(135deg, #AB47BC, #7B1FA2);
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-page-bg: #121212;
+  --color-card-bg: #1E1E1E;
+  --color-input-bg: #2C2C2C;
+  --color-input-fill: #252525;
+  --color-search-bg: #2C2C2C;
+  --color-title: #E0E0E0;
+  --color-body: #EEEEEE;
+  --color-body-secondary: rgba(255,255,255,0.7);
+  --color-hint: #757575;
+  --color-placeholder: #616161;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.32);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.2);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-accent: var(--color-accent);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="relative min-h-screen flex flex-col" style="background-color: rgba(127,127,213,0.04); background-blend-mode: overlay;">
+
+      <!-- Status bar spacer -->
+      <div class="h-11" style="background-color: var(--color-card-bg);"></div>
+
+      <!-- AppBar -->
+      <header class="flex items-center px-4" style="height: 52px; background-color: var(--color-card-bg); box-shadow: 0 1px 2px rgba(0,0,0,0.06);">
+        <button data-dom-id="btn-back" class="flex h-9 w-9 items-center justify-center" aria-label="返回">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="ml-3 min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-teal);"></div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="truncate" style="font-size: 16px; font-weight: var(--weight-bold); color: var(--color-title);">小光同学</p>
+                <div class="shrink-0" style="width: 8px; height: 8px; border-radius: 50%; background-color: #34C759;"></div>
+              </div>
+              <p class="truncate" style="font-size: var(--text-xs); color: var(--color-online);">在线</p>
+            </div>
+          </div>
+        </div>
+        <!-- Right actions -->
+        <div class="flex items-center gap-2">
+          <button class="flex h-9 w-9 items-center justify-center" style="border-radius: 12px;" aria-label="语音通话">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          </button>
+          <button class="flex h-9 w-9 items-center justify-center" style="border-radius: 12px;" aria-label="更多">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-body-secondary);"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Area -->
+      <div class="flex-1 overflow-y-auto px-4 pt-3 pb-16">
+
+        <!-- Time label -->
+        <div class="flex justify-center mb-4">
+          <div class="flex items-center justify-center px-3" style="height: 22px; border-radius: 20px; background-color: var(--color-card-bg); box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+            <span style="font-size: 11px; color: var(--color-hint);">今天 14:30</span>
+          </div>
+        </div>
+
+        <!-- Incoming message (other) -->
+        <div class="flex gap-2 mb-2.5 items-end" style="max-width: 100%;">
+          <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-teal);"></div>
+          <div style="max-width: 74%; background-color: rgba(0,0,0,0.06); border-radius: 6px 18px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-relaxed);">在吗？想问问你那幅画用的是什么笔刷</p>
+          </div>
+        </div>
+
+        <!-- Outgoing message (self) -->
+        <div class="flex gap-2 mb-2.5 items-end justify-end" style="max-width: 100%;">
+          <div style="max-width: 74%; background-color: var(--color-primary); border-radius: 18px 6px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: #FFFFFF; line-height: var(--leading-relaxed);">在的~用的是Procreate的星尘笔刷</p>
+          </div>
+        </div>
+
+        <!-- Incoming message -->
+        <div class="flex gap-2 mb-2.5 items-end" style="max-width: 100%;">
+          <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-teal);"></div>
+          <div style="max-width: 74%; background-color: rgba(0,0,0,0.06); border-radius: 6px 18px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-relaxed);">原来如此！效果真棒 &#128079;</p>
+          </div>
+        </div>
+
+        <!-- Time label -->
+        <div class="flex justify-center mb-4 mt-2">
+          <div class="flex items-center justify-center px-3" style="height: 22px; border-radius: 20px; background-color: var(--color-card-bg); box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+            <span style="font-size: 11px; color: var(--color-hint);">14:35</span>
+          </div>
+        </div>
+
+        <!-- Outgoing image message -->
+        <div class="flex gap-2 mb-2.5 items-end justify-end" style="max-width: 100%;">
+          <div style="width: 200px; height: 200px; border-radius: 12px; overflow: hidden; background: var(--gradient-hero);">
+            <!-- Gradient placeholder for image -->
+          </div>
+        </div>
+
+        <!-- Outgoing text (continuation, no avatar, tighter spacing) -->
+        <div class="flex gap-2 mb-1 items-end justify-end" style="max-width: 100%;">
+          <div style="max-width: 74%; background-color: var(--color-primary); border-radius: 18px 6px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: #FFFFFF; line-height: var(--leading-relaxed);">这是笔刷效果预览，你可以看看</p>
+          </div>
+        </div>
+
+        <!-- Incoming message -->
+        <div class="flex gap-2 mb-2.5 items-end" style="max-width: 100%;">
+          <div class="shrink-0" style="width: 36px; height: 36px; border-radius: 50%; background: var(--ring-teal);"></div>
+          <div style="max-width: 74%; background-color: rgba(0,0,0,0.06); border-radius: 6px 18px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-relaxed);">好好看！可以分享笔刷包给我吗？</p>
+          </div>
+        </div>
+
+        <!-- Outgoing message -->
+        <div class="flex gap-2 mb-2.5 items-end justify-end" style="max-width: 100%;">
+          <div style="max-width: 74%; background-color: var(--color-primary); border-radius: 18px 6px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: #FFFFFF; line-height: var(--leading-relaxed);">当然可以！等下发你文件~</p>
+          </div>
+        </div>
+
+        <!-- Incoming message (continuation, tighter spacing) -->
+        <div class="flex gap-2 mb-1 items-end" style="max-width: 100%; padding-left: 44px;">
+          <div style="max-width: 74%; background-color: rgba(0,0,0,0.06); border-radius: 6px 18px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-relaxed);">太感谢了！&#127881;</p>
+          </div>
+        </div>
+
+        <!-- Incoming message (continuation) -->
+        <div class="flex gap-2 mb-2.5 items-end" style="max-width: 100%; padding-left: 44px;">
+          <div style="max-width: 74%; background-color: rgba(0,0,0,0.06); border-radius: 6px 18px 18px 18px; padding: 10px 14px;">
+            <p style="font-size: var(--text-base); color: var(--color-body); line-height: var(--leading-relaxed);">期待下次合作画画~</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input Area -->
+      <div class="fixed bottom-0 left-0 right-0 z-30" style="background-color: var(--color-card-bg); box-shadow: 0 -4px 16px rgba(0,0,0,0.08);">
+        <div class="flex items-center gap-3 px-4" style="padding-top: 10px; padding-bottom: 10px;">
+          <!-- Image button -->
+          <button class="shrink-0 flex items-center justify-center" style="width: 40px; height: 40px; border-radius: 50%;" aria-label="发送图片">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          </button>
+          <!-- Text input -->
+          <div class="flex-1 flex items-center" style="height: 44px; border-radius: 22px; padding: 0 16px; background-color: rgba(0,0,0,0.05);">
+            <span style="font-size: var(--text-base); color: var(--color-placeholder);">输入消息...</span>
+          </div>
+          <!-- Send button -->
+          <button class="shrink-0 flex items-center justify-center" style="width: 48px; height: 48px; border-radius: 50%; background-color: var(--color-primary);" aria-label="发送">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

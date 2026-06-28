@@ -44,6 +44,7 @@ type LLMInferenceConf struct {
 	MemoryModel           string `json:"MemoryModel" yaml:"MemoryModel"`
 	MemorySummaryPrompt   string `json:"MemorySummaryPrompt" yaml:"MemorySummaryPrompt"`
 	MemoryExtractPrompt   string `json:"MemoryExtractPrompt" yaml:"MemoryExtractPrompt"`
+	ApiKey                string `json:"ApiKey" yaml:"ApiKey"`
 }
 
 type AgoraConf struct {

@@ -1,0 +1,441 @@
+{
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588925000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": [
+          {
+            "domId": "btn-register",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "注册"
+          },
+          {
+            "domId": "btn-login",
+            "targetPageId": "page-home",
+            "transitionLabel": "登录成功"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-home",
+      "title": "首页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588926000,
+      "canvasData": {
+        "x": 420,
+        "y": 0,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/home.html",
+        "interactions": [
+          {
+            "domId": "tab-home",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "首页"
+          },
+          {
+            "domId": "tab-messages",
+            "targetPageId": "page-messages",
+            "transitionLabel": "消息"
+          },
+          {
+            "domId": "tab-ai",
+            "targetPageId": "page-ai-tavern",
+            "transitionLabel": "AI"
+          },
+          {
+            "domId": "tab-profile",
+            "targetPageId": "page-profile",
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-messages",
+      "title": "消息中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588927000,
+      "canvasData": {
+        "x": 840,
+        "y": 0,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/messages.html",
+        "interactions": [
+          {
+            "domId": "tab-home",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "首页"
+          },
+          {
+            "domId": "tab-messages",
+            "targetPageId": "page-messages",
+            "hideEdge": true,
+            "transitionLabel": "消息"
+          },
+          {
+            "domId": "tab-ai",
+            "targetPageId": "page-ai-tavern",
+            "transitionLabel": "AI"
+          },
+          {
+            "domId": "tab-profile",
+            "targetPageId": "page-profile",
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ai-tavern",
+      "title": "AI 酒馆",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588928000,
+      "canvasData": {
+        "x": 840,
+        "y": 590,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ai-tavern.html",
+        "interactions": [
+          {
+            "domId": "tab-home",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "首页"
+          },
+          {
+            "domId": "tab-messages",
+            "targetPageId": "page-messages",
+            "transitionLabel": "消息"
+          },
+          {
+            "domId": "tab-ai",
+            "targetPageId": "page-ai-tavern",
+            "hideEdge": true,
+            "transitionLabel": "AI"
+          },
+          {
+            "domId": "tab-profile",
+            "targetPageId": "page-profile",
+            "transitionLabel": "我的"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-profile",
+      "title": "个人主页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588929000,
+      "canvasData": {
+        "x": 840,
+        "y": 1217,
+        "group": 1
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile.html",
+        "interactions": [
+          {
+            "domId": "tab-home",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "首页"
+          },
+          {
+            "domId": "tab-messages",
+            "targetPageId": "page-messages",
+            "transitionLabel": "消息"
+          },
+          {
+            "domId": "tab-ai",
+            "targetPageId": "page-ai-tavern",
+            "transitionLabel": "AI"
+          },
+          {
+            "domId": "tab-profile",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "我的"
+          },
+          {
+            "domId": "nav-edit-profile",
+            "targetPageId": "page-edit-profile",
+            "hideEdge": true,
+            "transitionLabel": "编辑资料"
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true,
+            "transitionLabel": "设置"
+          },
+          {
+            "domId": "nav-vip",
+            "targetPageId": "page-vip-center",
+            "hideEdge": true,
+            "transitionLabel": "VIP"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-create-post",
+      "title": "发布动态",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588930000,
+      "canvasData": {
+        "x": 0,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/create-post.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ai-chat",
+      "title": "AI 聊天",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588931000,
+      "canvasData": {
+        "x": 420,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ai-chat.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-ai-tavern",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-discover",
+      "title": "探索页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588932000,
+      "canvasData": {
+        "x": 840,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/discover.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-vip-center",
+      "title": "VIP 会员中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588933000,
+      "canvasData": {
+        "x": 1260,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/vip-center.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-gacha",
+      "title": "心情扭蛋机",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588934000,
+      "canvasData": {
+        "x": 1680,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/gacha.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-community",
+      "title": "兴趣社区",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588935000,
+      "canvasData": {
+        "x": 2100,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/community.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "设置页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588936000,
+      "canvasData": {
+        "x": 2520,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-edit-profile",
+      "title": "编辑资料",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588937000,
+      "canvasData": {
+        "x": 2940,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/edit-profile.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-comments",
+      "title": "评论区",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588938000,
+      "canvasData": {
+        "x": 3360,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/comments.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-home",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-direct-chat",
+      "title": "私信聊天",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588939000,
+      "canvasData": {
+        "x": 3780,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/direct-chat.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-messages",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "萌社交 Moe Social - UI 设计复刻",
+    "showEdge": false
+  }
+}

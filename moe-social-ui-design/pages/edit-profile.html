@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑资料</title>
+    <style id="theme-vars">
+/* ============================================
+   Moe Social Design System - Brand CSS
+   Extracted from Flutter MoeTokens & MoeTheme
+   ============================================ */
+
+:root {
+  /* === Brand Colors === */
+  --color-primary: #7F7FD5;
+  --color-primary-hover: #6E6EC4;
+  --color-secondary: #86A8E7;
+  --color-accent: #91EAE4;
+  --color-pastel-orange: #FFB347;
+  --color-like-red: #FF4757;
+
+  /* VIP Gold */
+  --color-vip-gold: #FFD66B;
+  --color-vip-gold-dark: #FFA94D;
+
+  /* Gacha Pink */
+  --color-gacha-pink: #FFB7C5;
+  --color-gacha-pink-dark: #FFA5B5;
+
+  /* === Surface Colors === */
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FFFFFF;
+  --color-input-fill: #F9F9F9;
+  --color-search-bg: #F5F5F5;
+
+  /* === Text Colors === */
+  --color-title: #333333;
+  --color-body: #212121;
+  --color-body-secondary: rgba(0,0,0,0.6);
+  --color-hint: #9E9E9E;
+  --color-placeholder: #BDBDBD;
+
+  /* === Status Colors === */
+  --color-online: #34C759;
+  --color-error: #FF4757;
+  --color-success: #34C759;
+
+  /* === Gradients === */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-personalized: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-vip: linear-gradient(135deg, #FFD66B 0%, #FFA94D 100%);
+  --gradient-gacha: linear-gradient(135deg, #FFB7C5 0%, #FFA5B5 100%);
+
+  /* === Typography === */
+  --font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-serif: 'Georgia', 'Noto Serif SC', serif;
+
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+  --text-2xl: 20px;
+  --text-3xl: 24px;
+  --text-4xl: 26px;
+  --text-5xl: 28px;
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-pill: 9999px;
+
+  /* === Shadows === */
+  --shadow-card: 0 8px 24px rgba(127,127,213,0.08);
+  --shadow-card-hover: 0 12px 32px rgba(127,127,213,0.12);
+  --shadow-button: 0 4px 16px rgba(127,127,213,0.3);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.05);
+  --shadow-glow-primary: 0 0 20px rgba(127,127,213,0.25);
+
+  /* === Motion === */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* === Avatar Ring Colors === */
+  --ring-purple: linear-gradient(135deg, #7F7FD5, #f093fb);
+  --ring-red-orange: linear-gradient(135deg, #FF6B6B, #FFB347);
+  --ring-teal: linear-gradient(135deg, #4ECDC4, #44A08D);
+  --ring-blue-purple: linear-gradient(135deg, #86A8E7, #7F7FD5);
+  --ring-yellow: linear-gradient(135deg, #FFCA28, #FF8F00);
+  --ring-deep-purple: linear-gradient(135deg, #AB47BC, #7B1FA2);
+}
+
+/* Dark mode overrides */
+html.dark {
+  --color-page-bg: #121212;
+  --color-card-bg: #1E1E1E;
+  --color-input-bg: #2C2C2C;
+  --color-input-fill: #252525;
+  --color-search-bg: #2C2C2C;
+  --color-title: #E0E0E0;
+  --color-body: #EEEEEE;
+  --color-body-secondary: rgba(255,255,255,0.7);
+  --color-hint: #757575;
+  --color-placeholder: #616161;
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.24);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.32);
+  --shadow-nav: 0 -2px 16px rgba(0,0,0,0.2);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+    --color-accent: var(--color-accent);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main class="relative min-h-screen" style="background-color: #F5F7FA;">
+
+      <!-- Top Gradient Area -->
+      <div class="relative" style="height: 200px; background: var(--gradient-hero);">
+        <!-- Status bar spacer -->
+        <div class="h-11"></div>
+        <!-- AppBar overlay -->
+        <header class="flex items-center px-4" style="height: 44px;">
+          <button data-dom-id="btn-back" class="flex h-9 w-9 items-center justify-center" style="background: rgba(255,255,255,0.15); border-radius: 12px;" aria-label="返回">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h1 class="flex-1 text-center truncate" style="font-size: var(--text-lg); font-weight: var(--weight-bold); color: #FFFFFF;">编辑资料</h1>
+          <div class="w-9"></div>
+        </header>
+
+        <!-- Avatar Edit -->
+        <div class="flex justify-center" style="margin-top: 30px;">
+          <div class="relative">
+            <div style="width: 130px; height: 130px; border-radius: 50%; padding: 4px; background: var(--gradient-primary);">
+              <div class="flex items-center justify-center" style="width: 122px; height: 122px; border-radius: 50%; background: var(--color-card-bg);">
+                <span style="font-size: 48px;">&#128100;</span>
+              </div>
+            </div>
+            <!-- Camera button -->
+            <div class="absolute flex items-center justify-center" style="width: 32px; height: 32px; border-radius: 50%; background: #FFFFFF; border: 2px solid var(--color-primary); bottom: 4px; right: 4px;">
+              <span style="font-size: 14px;">&#128247;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Cards -->
+      <div class="px-4" style="margin-top: -20px; padding-bottom: 100px;">
+
+        <!-- Basic Info Section -->
+        <div class="mb-4" style="background-color: var(--color-card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center justify-center" style="width: 24px; height: 24px; border-radius: 6px; background: rgba(127,127,213,0.12);">
+              <span style="font-size: 12px; color: var(--color-primary);">&#9997;</span>
+            </div>
+            <h2 class="truncate" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: #333333;">基本信息</h2>
+          </div>
+          <!-- Nickname -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">昵称</label>
+            <div class="flex items-center" style="height: 44px; border: 1.5px solid rgba(127,127,213,0.3); border-radius: 12px; padding: 0 12px; background-color: var(--color-input-fill);">
+              <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#128100;</span>
+              <span style="font-size: var(--text-base); color: var(--color-title);">萌萌酱</span>
+            </div>
+          </div>
+          <!-- Signature -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">个性签名</label>
+            <div class="flex items-start" style="min-height: 44px; border: 1.5px solid rgba(127,127,213,0.3); border-radius: 12px; padding: 10px 12px; background-color: var(--color-input-fill);">
+              <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#128172;</span>
+              <span style="font-size: var(--text-base); color: var(--color-title); line-height: var(--leading-normal);">元气满满的每一天~</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Info Section -->
+        <div class="mb-4" style="background-color: var(--color-card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center justify-center" style="width: 24px; height: 24px; border-radius: 6px; background: rgba(134,168,231,0.12);">
+              <span style="font-size: 12px; color: var(--color-secondary);">&#128119;</span>
+            </div>
+            <h2 class="truncate" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: #333333;">个人资料</h2>
+          </div>
+          <!-- Gender -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">性别</label>
+            <div class="flex items-center justify-between" style="height: 44px; border: 1.5px solid rgba(127,127,213,0.3); border-radius: 12px; padding: 0 12px; background-color: var(--color-input-fill);">
+              <div class="flex items-center">
+                <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#9895;</span>
+                <span style="font-size: var(--text-base); color: var(--color-title);">女</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-placeholder);"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+          <!-- Birthday -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">生日</label>
+            <div class="flex items-center justify-between" style="height: 44px; border: 1.5px solid rgba(127,127,213,0.3); border-radius: 12px; padding: 0 12px; background-color: var(--color-input-fill);">
+              <div class="flex items-center">
+                <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#127874;</span>
+                <span style="font-size: var(--text-base); color: var(--color-title);">2000-06-15</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-placeholder);"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Info Section -->
+        <div class="mb-4" style="background-color: var(--color-card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="flex items-center justify-center" style="width: 24px; height: 24px; border-radius: 6px; background: rgba(145,234,228,0.12);">
+              <span style="font-size: 12px; color: var(--color-accent);">&#128274;</span>
+            </div>
+            <h2 class="truncate" style="font-size: var(--text-md); font-weight: var(--weight-bold); color: #333333;">账户信息</h2>
+          </div>
+          <!-- Account ID (readonly) -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">账户ID</label>
+            <div class="flex items-center" style="height: 44px; border: 1.5px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 0 12px; background-color: rgba(0,0,0,0.02);">
+              <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#64;</span>
+              <span style="font-size: var(--text-base); color: var(--color-hint);">moe_20240001</span>
+            </div>
+          </div>
+          <!-- Phone -->
+          <div class="mb-3">
+            <label class="block mb-1" style="font-size: var(--text-xs); color: var(--color-hint);">绑定手机</label>
+            <div class="flex items-center" style="height: 44px; border: 1.5px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 0 12px; background-color: rgba(0,0,0,0.02);">
+              <span style="font-size: 16px; color: var(--color-primary); margin-right: 8px;">&#128241;</span>
+              <span style="font-size: var(--text-base); color: var(--color-hint);">138****8888</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <button class="flex items-center justify-center w-full" style="height: 48px; border-radius: 12px; background: var(--gradient-primary); box-shadow: var(--shadow-button); border: none;">
+          <span style="font-size: var(--text-md); font-weight: var(--weight-bold); color: #FFFFFF;">保存修改</span>
+        </button>
+
+      </div>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
