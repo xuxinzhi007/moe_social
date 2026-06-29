@@ -417,21 +417,60 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 6) return '夜深了';
+    if (hour < 12) return '早上好';
+    if (hour < 14) return '中午好';
+    if (hour < 18) return '下午好';
+    return '晚上好';
+  }
+
+  String get _weatherEmoji => '☀️';
+  String get _weatherText => '晴朗';
+
+  static const Map<String, Color> _moodColors = {
+    'happy': Color(0xFFFFB347),
+    'calm': Color(0xFF4ECDC4),
+    'sad': Color(0xFF74b9ff),
+    'excited': Color(0xFFFD79A8),
+  };
+
+  static const Map<String, String> _moodEmojis = {
+    'happy': '😊',
+    'calm': '😌',
+    'sad': '😢',
+    'excited': '🤩',
+  };
+
+  static const Map<String, String> _moodLabels = {
+    'happy': '开心',
+    'calm': '平静',
+    'sad': '低落',
+    'excited': '兴奋',
+  };
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primaryColor = theme.primaryColor;
+    final scheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFFAF8FF),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
           _isEditMode
               ? '编辑动态'
               : (_isGroupPost ? '发到本群' : '记录心情'),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 17,
+            color: Color(0xFF2D3436),
+          ),
         ),
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: Container(
@@ -441,24 +480,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.black54, size: 20),
+            icon: const Icon(Icons.close_rounded, color: Color(0xFF636E72), size: 20),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
           ),
         ),
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
             alignment: Alignment.center,
             child: SizedBox(
-              height: 32,
-              width: 70,
+              height: 36,
+              width: 76,
               child: LoadingButton(
                 operationKey: LoadingKeys.createPost,
                 onPressed:
@@ -466,16 +506,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  elevation: 2,
+                  elevation: 0,
                   shadowColor: primaryColor.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   padding: EdgeInsets.zero,
                 ),
                 child: Text(
                   _isEditMode ? '保存' : '发布',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ),
@@ -487,231 +531,85 @@ class _CreatePostPageState extends State<CreatePostPage> {
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(24, 10, 24, 100), // 底部留出工具栏空间
+              padding: const EdgeInsets.fromLTRB(20, 90, 20, 110),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_isGroupPost && _canPostToGroup == false)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Material(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Icon(Icons.info_outline_rounded,
-                                  color: Colors.orange.shade800, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '你还未加入该群组，请先返回群详情页点击「加入」后再发帖。',
-                                  style: TextStyle(
-                                    color: Colors.orange.shade900,
-                                    fontSize: 13,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  // 日期和天气（装饰性）
-                  Row(
-                    children: [
-                      Text(
-                        '${DateTime.now().month}月${DateTime.now().day}日',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.grey[800],
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.wb_sunny_rounded, size: 14, color: Colors.orange),
-                            SizedBox(width: 4),
-                            Text('晴朗', style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 20),
-
-                  // 输入区域 - 无边框设计
-                  TextField(
-                    controller: _contentController,
-                    maxLines: null,
-                    minLines: 5,
-                    decoration: InputDecoration(
-                      hintText: '写下此刻的想法...\n无论是开心的事，还是小小的烦恼，\n这里都是你的秘密花园 (｡･ω･｡)',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 15,
-                        height: 1.6,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 16, 
-                      height: 1.6,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  if (_handDrawCard != null) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '手绘卡片',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: primaryColor,
-                            ),
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.orange.withValues(alpha: 0.2),
                           ),
-                        ),
-                        TextButton.icon(
-                          onPressed: _openHandDrawEditor,
-                          icon: const Icon(Icons.edit_rounded, size: 18),
-                          label: const Text('改画'),
-                        ),
-                        IconButton(
-                          onPressed: _removeHandDraw,
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          color: Colors.red[300],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: AspectRatio(
-                        aspectRatio: 3 / 4,
-                        child: HandDrawCardStatic(data: _handDrawCard!),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // 图片预览区域 - 拍立得风格
-                  if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty)
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        ...List.generate(_selectedImages.length, (index) {
-                          return _buildPolaroidImage(
-                            imageProvider: FileImage(_selectedImages[index]),
-                            onRemove: () => _removeImage(index),
-                          );
-                        }),
-                        ...List.generate(_selectedImageUrls.length, (index) {
-                          final urlIndex = index + _selectedImages.length;
-                          return _buildPolaroidImage(
-                            imageProvider: NetworkImage(
-                              resolveMediaUrl(_selectedImageUrls[index]),
-                            ),
-                            onRemove: () => _removeImage(urlIndex),
-                          );
-                        }),
-                      ],
-                    ),
-                  
-                  const SizedBox(height: 24),
-
-                  if (!_isEditMode) ...[
-                    const Text(
-                      '心情（可选）',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        _moodChip('happy', '😊 开心'),
-                        _moodChip('calm', '😌 平静'),
-                        _moodChip('sad', '😢 低落'),
-                        _moodChip('excited', '🤩 兴奋'),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // 话题标签
-                  if (_selectedTopicTags.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _selectedTopicTags.map((tag) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: tag.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: tag.color.withValues(alpha: 0.3)),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '#${tag.name}', 
-                              style: TextStyle(
-                                color: tag.color, 
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold
+                            Icon(Icons.info_outline_rounded,
+                                color: Colors.orange.shade700, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '你还未加入该群组，请先返回群详情页点击「加入」后再发帖。',
+                                style: TextStyle(
+                                  color: Colors.orange.shade900,
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedTopicTags.remove(tag);
-                                });
-                              },
-                              child: Icon(Icons.close, size: 14, color: tag.color),
-                            )
                           ],
                         ),
-                      )).toList(),
+                      ),
                     ),
+
+                  _buildGreetingCard(scheme),
+
+                  const SizedBox(height: 16),
+
+                  _buildInputCard(scheme),
+
+                  const SizedBox(height: 20),
+
+                  if (!_isEditMode) ...[
+                    _buildSectionTitle('💭 今天的心情'),
+                    const SizedBox(height: 10),
+                    _buildMoodChips(),
+                    const SizedBox(height: 20),
+                  ],
+
+                  if (_selectedTopicTags.isNotEmpty) ...[
+                    _buildSectionTitle('🏷️ 话题标签'),
+                    const SizedBox(height: 10),
+                    _buildTopicTags(scheme),
+                    const SizedBox(height: 20),
+                  ],
                 ],
               ),
             ),
           ),
-          
+
           // 底部悬浮工具栏
           SafeArea(
             top: false,
             child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: scheme.outline.withValues(alpha: 0.12),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withValues(alpha: 0.15),
-                    blurRadius: 20,
+                    color: const Color(0xFF7F7FD5).withValues(alpha: 0.18),
+                    blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
                 ],
@@ -720,19 +618,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildToolIcon(Icons.brush_rounded, const Color(0xFF7F7FD5), _openHandDrawEditor),
-                  _buildToolIcon(Icons.image_rounded, Colors.green, _addImage),
-                  _buildToolIcon(Icons.cloud_upload_rounded, Colors.blue, _openCloudGallery),
+                  _buildToolIcon(Icons.image_rounded, const Color(0xFF4ECDC4), _addImage),
+                  _buildToolIcon(Icons.cloud_upload_rounded, const Color(0xFF74b9ff), _openCloudGallery),
                   _buildToolIcon(
                     Icons.tag_rounded,
-                    Colors.purple,
+                    const Color(0xFFFD79A8),
                     _openTopicTagSelector,
                   ),
                   Container(
                     width: 1,
                     height: 24,
-                    color: Colors.grey[200],
+                    color: scheme.outline.withValues(alpha: 0.15),
                   ),
-                  _buildToolIcon(Icons.keyboard_hide_rounded, Colors.grey, () {
+                  _buildToolIcon(Icons.keyboard_hide_rounded, const Color(0xFFB2BEC3), () {
                     FocusScope.of(context).unfocus();
                   }),
                 ],
@@ -744,65 +642,421 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 
-  Widget _buildPolaroidImage({required ImageProvider imageProvider, required VoidCallback onRemove}) {
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 120,
-          padding: const EdgeInsets.fromLTRB(6, 6, 6, 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 4,
-                offset: const Offset(2, 2),
+  Widget _buildGreetingCard(ColorScheme scheme) {
+    final now = DateTime.now();
+    final month = now.month;
+    final day = now.day;
+    final weekday = ['一', '二', '三', '四', '五', '六', '日'][now.weekday - 1];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFA8EDEA), Color(0xFFFED6E3)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFA8EDEA).withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '$_weatherEmoji  $_greeting，${_userName ?? '萌友'}',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D3436),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_weatherEmoji, style: const TextStyle(fontSize: 13)),
+                    const SizedBox(width: 4),
+                    Text(
+                      _weatherText,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF636E72),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              image: DecorationImage(
-                image: imageProvider,
-                fit: BoxFit.cover,
+          const SizedBox(height: 8),
+          Text(
+            '$month月$day日 星期$weekday',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF636E72),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputCard(ColorScheme scheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _contentController,
+            maxLines: null,
+            minLines: 4,
+            decoration: InputDecoration(
+              hintText: '写下此刻的想法...\n无论是开心的事，还是小小的烦恼，\n这里都是你的秘密花园 (｡･ω･｡)',
+              hintStyle: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 15,
+                height: 1.6,
               ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+            style: const TextStyle(
+              fontSize: 15.5,
+              height: 1.6,
+              color: Color(0xFF2D3436),
+            ),
+          ),
+
+          if (_handDrawCard != null) ...[
+            const SizedBox(height: 14),
+            _buildDivider(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7F7FD5).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '🎨 手绘卡片',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: _openHandDrawEditor,
+                  child: const Text(
+                    '改画',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF7F7FD5),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: _removeHandDraw,
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: Colors.red[300],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: AspectRatio(
+                aspectRatio: 3 / 4,
+                child: HandDrawCardStatic(data: _handDrawCard!),
+              ),
+            ),
+          ],
+
+          if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _buildDivider(),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4ECDC4).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '🖼️ 图片',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF4ECDC4),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${_selectedImages.length + _selectedImageUrls.length} 张',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFB2BEC3),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                ...List.generate(_selectedImages.length, (index) {
+                  return _buildImageThumb(
+                    imageProvider: FileImage(_selectedImages[index]),
+                    onRemove: () => _removeImage(index),
+                  );
+                }),
+                ...List.generate(_selectedImageUrls.length, (index) {
+                  final urlIndex = index + _selectedImages.length;
+                  return _buildImageThumb(
+                    imageProvider: NetworkImage(
+                      resolveMediaUrl(_selectedImageUrls[index]),
+                    ),
+                    onRemove: () => _removeImage(urlIndex),
+                  );
+                }),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            const Color(0xFFDFE6E9),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF2D3436),
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+
+  Widget _buildMoodChips() {
+    return Row(
+      children: [
+        Expanded(
+          child: _moodCard('happy'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _moodCard('calm'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _moodCard('sad'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _moodCard('excited'),
+        ),
+      ],
+    );
+  }
+
+  Widget _moodCard(String mood) {
+    final selected = _selectedMoodTag == mood;
+    final color = _moodColors[mood]!;
+    final emoji = _moodEmojis[mood]!;
+    final label = _moodLabels[mood]!;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          setState(() {
+            _selectedMoodTag = selected ? null : mood;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? color.withValues(alpha: 0.18)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? color.withValues(alpha: 0.5)
+                  : const Color(0xFFDFE6E9),
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? color : const Color(0xFF636E72),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopicTags(ColorScheme scheme) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _selectedTopicTags.map((tag) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: tag.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: tag.color.withValues(alpha: 0.25)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '#${tag.name}',
+                style: TextStyle(
+                  color: tag.color,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedTopicTags.remove(tag);
+                  });
+                },
+                child: Icon(Icons.close_rounded, size: 14, color: tag.color),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildImageThumb({
+    required ImageProvider imageProvider,
+    required VoidCallback onRemove,
+  }) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(
+              image: imageProvider,
+              fit: BoxFit.cover,
             ),
           ),
         ),
         Positioned(
           top: -6,
           right: -6,
-          child: IconButton(
-            onPressed: onRemove,
-            icon: Container(
-              padding: const EdgeInsets.all(2),
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(
-                color: Colors.redAccent,
+                color: Color(0xFFFF6B6B),
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x40FF6B6B),
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.close, size: 14, color: Colors.white),
+              child: const Icon(Icons.close_rounded, size: 12, color: Colors.white),
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _moodChip(String value, String label) {
-    final selected = _selectedMoodTag == value;
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (on) {
-        setState(() {
-          _selectedMoodTag = on ? value : null;
-        });
-      },
-      selectedColor: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
-      checkmarkColor: const Color(0xFF7F7FD5),
     );
   }
 
@@ -811,12 +1065,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: color, size: 22),
         ),

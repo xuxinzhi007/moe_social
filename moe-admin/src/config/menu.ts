@@ -95,10 +95,10 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
   },
   {
     kind: 'group',
-    id: 'app-content',
-    label: '内容与社区',
+    id: 'content-ops',
+    label: '内容运营',
     icon: '📝',
-    caption: '动态 · 社区 · 审核',
+    caption: '动态 · 社区 · 公告',
     defaultOpen: false,
     children: [
       {
@@ -129,16 +129,6 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         status: 'ready',
         appDomain: 'feed / report',
       },
-    ],
-  },
-  {
-    kind: 'group',
-    id: 'app-ops',
-    label: '运营触达',
-    icon: '📢',
-    caption: '官网 · 公告 · 推送',
-    defaultOpen: true,
-    children: [
       {
         kind: 'item',
         to: '/feedback',
@@ -193,13 +183,6 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
       },
       {
         kind: 'item',
-        to: '/app/learning',
-        label: '学习工作台',
-        status: 'ready',
-        appDomain: 'memory / finetune',
-      },
-      {
-        kind: 'item',
         to: '/app/moe-flow?agent=moe_guide',
         label: 'Bot 编排画布',
         status: 'ready',
@@ -244,10 +227,10 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
   },
   {
     kind: 'group',
-    id: 'system',
-    label: '系统管理',
+    id: 'system-ops',
+    label: '系统运维',
     icon: '⚙️',
-    caption: '账号 · 菜单 · 审计',
+    caption: '账号 · 图库 · 发布',
     defaultOpen: false,
     children: [
       {
@@ -285,16 +268,6 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
         status: 'ready',
         appDomain: 'admin_audit_log',
       },
-    ],
-  },
-  {
-    kind: 'group',
-    id: 'devops',
-    label: '运维与监控',
-    icon: '🚀',
-    caption: '构建 · 发布 · Agent',
-    defaultOpen: false,
-    children: [
       {
         kind: 'item',
         to: '/deploy',
@@ -306,26 +279,11 @@ export const ADMIN_MENU_TREE: MenuEntry[] = [
       { kind: 'item', to: '/build', label: '构建流水线', status: 'ready' },
       { kind: 'item', to: '/release', label: '应用发布', status: 'ready' },
       { kind: 'item', to: '/jobs', label: '任务审计', status: 'ready' },
-      {
-        kind: 'item',
-        to: '/rpc',
-        label: 'RPC 监控',
-        status: 'ready',
-        appDomain: '—',
-      },
     ],
   },
 ]
 
-export const SIDEBAR_EXTERNAL_LINKS: MenuExternalLink[] = [
-  { kind: 'link', label: '经典 HTML 运维', href: '__LEGACY__', external: true },
-  {
-    kind: 'link',
-    label: '记忆系统监控',
-    href: '__DEVTOOLS__',
-    external: true,
-  },
-]
+export const SIDEBAR_EXTERNAL_LINKS: MenuExternalLink[] = []
 
 /** 扁平列表（兼容旧逻辑：判断是否业务首页隐藏 banner） */
 export function flattenMenuItems(

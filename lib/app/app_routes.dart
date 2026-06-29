@@ -28,6 +28,7 @@ import '../pages/community/interest_group_detail_page.dart';
 import '../pages/discover/explore_match_redirect_page.dart';
 import '../pages/feed/comments_page.dart';
 import '../pages/feed/create_post_page.dart';
+import '../pages/feed/home_redesign_demo.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
@@ -62,6 +63,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/login': (context) => const LoginPage(),
     '/register': (context) => const RegisterPage(),
     '/home': (context) => const MainPage(),
+    '/home-redesign-demo': (context) => const HomeRedesignDemo(),
     '/profile': (context) => const ProfilePage(),
     '/achievements': (context) => _deferred(
           achievements.loadLibrary,
