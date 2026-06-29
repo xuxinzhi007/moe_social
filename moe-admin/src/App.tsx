@@ -13,7 +13,6 @@ import { JobsPage } from './pages/JobsPage'
 import { LoginPage } from './pages/LoginPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ReleasePage } from './pages/ReleasePage'
-import { RpcPage } from './pages/RpcPage'
 import { UsersPage } from './pages/UsersPage'
 import { VipPlansPage } from './pages/VipPlansPage'
 import { GiftsPage } from './pages/GiftsPage'
@@ -28,7 +27,6 @@ import { NotifyPage } from './pages/NotifyPage'
 import { AiAgentsPage } from './pages/AiAgentsPage'
 import { MoeBotsPage } from './pages/MoeBotsPage'
 import { MoeBrainPage } from './pages/MoeBrainPage'
-import { LearningWorkbenchPage } from './pages/LearningWorkbenchPage'
 import { MoeBotFlowPage } from './pages/MoeBotFlowPage'
 import { MoeToolsPage } from './pages/MoeToolsPage'
 import { AiChatLogsPage } from './pages/AiChatLogsPage'
@@ -73,7 +71,6 @@ export default function App() {
                     <Route path="app/moe-bots" element={<MoeBotsPage />} />
                     <Route path="app/moe-bots/:agentKey/brain" element={<MoeBrainPage />} />
                     <Route path="app/moe-brain" element={<MoeBrainPage />} />
-                    <Route path="app/learning" element={<LearningWorkbenchPage />} />
                     <Route path="app/moe-flow" element={<MoeBotFlowPage />} />
                     <Route path="app/moe" element={<MoeToolsPage />} />
                     <Route path="app/ai/chat-logs" element={<AiChatLogsPage />} />
@@ -89,7 +86,6 @@ export default function App() {
                     <Route path="system/media" element={<Navigate to="/system/media-gallery" replace />} />
                     <Route path="system/audit" element={<AuditLogsPage />} />
                     <Route path="deploy" element={<OverviewPage />} />
-                    <Route path="rpc" element={<RpcPage />} />
                     <Route path="docker" element={<DockerPage />} />
                     <Route path="build" element={<BuildPage />} />
                     <Route path="release" element={<ReleasePage />} />

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   ADMIN_MENU_TREE,
-  SIDEBAR_EXTERNAL_LINKS,
   type MenuEntry,
   type MenuGroup,
   type MenuItem,
@@ -42,12 +41,7 @@ function groupHasActive(group: MenuGroup, pathname: string) {
   return group.children.some((c) => itemActive(pathname, c.to, c.end))
 }
 
-type SidebarNavProps = {
-  legacyHref: string
-  devtoolsHref: string
-}
-
-export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
+export function SidebarNav() {
   const location = useLocation()
   const pathname = location.pathname
 
@@ -159,28 +153,6 @@ export function SidebarNav({ legacyHref, devtoolsHref }: SidebarNavProps) {
   return (
     <nav className="sidebar-nav">
       {ADMIN_MENU_TREE.map(renderEntry)}
-      <div className="nav-external">
-        <div className="nav-section">外链工具</div>
-        {SIDEBAR_EXTERNAL_LINKS.map((link) => {
-          const href =
-            link.href === '__LEGACY__'
-              ? legacyHref
-              : link.href === '__DEVTOOLS__'
-                ? devtoolsHref
-                : link.href
-          return (
-            <a
-              key={link.label}
-              className="tool-link"
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {link.label} ↗
-            </a>
-          )
-        })}
-      </div>
     </nav>
   )
 }
