@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../services/ai_character_card_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
-import '../../services/ai_platform_local_provider.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_starter_templates.dart';
 import '../../models/ai_agent.dart';
@@ -13,10 +12,8 @@ import '../../models/ai_provider_profile.dart';
 import 'agent_editor_page.dart';
 import 'ai_lorebooks_page.dart';
 import 'ai_provider_profiles_page.dart';
-import 'llama_cpp_settings_page.dart';
 import 'character_card_plaza_page.dart';
 import 'chat_page.dart';
-import 'memory_manager_page.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_agent_usage_service.dart';
 import '../../services/ai_models_cache_service.dart';
@@ -35,7 +32,7 @@ part 'tavern/providers_tab.part.dart';
 
 enum _TavernMenuAction { plaza, importCard, lorebooks, providers }
 
-enum _AgentCardAction { edit, memory, export, delete }
+enum _AgentCardAction { edit, export, delete }
 
 enum _CharacterCardExportMode { file, clipboard }
 
@@ -55,10 +52,10 @@ class _AgentListPageState extends State<AgentListPage>
   List<String> _squareModels = [];
   bool _isLoadingSquareModels = false;
   List<AiProviderProfile> _providerProfiles = [
-    AiPlatformLocalProvider.defaultBuiltinProfileSync(),
+    AiProviderProfile.builtinLlamaCpp(),
   ];
   String _selectedSquareProviderId =
-      AiPlatformLocalProvider.defaultBuiltinProviderId;
+      AiProviderProfile.builtinLlamaCppId;
   Map<String, Color> _agentColors = {};
   final bool _showFab = true;
 
@@ -137,7 +134,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   String _normalizeProviderId(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
-      return AiPlatformLocalProvider.defaultBuiltinProviderId;
+      return AiProviderProfile.builtinLlamaCppId;
     }
     return providerId.trim();
   }
@@ -151,14 +148,14 @@ class _AgentListPageState extends State<AgentListPage>
     if (providerId == null || providerId.trim().isEmpty) {
       return _providerProfiles.firstWhere(
         (p) => p.isLlamaCppServer,
-        orElse: () => AiPlatformLocalProvider.defaultBuiltinProfileSync(),
+        orElse: () => AiProviderProfile.builtinLlamaCpp(),
       );
     }
     final normalized = providerId.trim();
     for (final profile in _providerProfiles) {
       if (profile.id == normalized) return profile;
     }
-    return AiPlatformLocalProvider.defaultBuiltinProfileSync();
+    return AiProviderProfile.builtinLlamaCpp();
   }
 
   AiProviderProfile get _selectedSquareProvider =>
@@ -180,7 +177,7 @@ class _AgentListPageState extends State<AgentListPage>
       final exists = profiles.any((item) => item.id == preferredId);
       if (!exists) {
         _selectedSquareProviderId =
-            AiPlatformLocalProvider.defaultBuiltinProviderId;
+            AiProviderProfile.builtinLlamaCppId;
       } else {
         _selectedSquareProviderId = preferredId;
       }
@@ -871,11 +868,6 @@ class _AgentListPageState extends State<AgentListPage>
           value: _AgentCardAction.edit,
         ),
         AiSheetAction(
-          icon: Icons.psychology_rounded,
-          label: '记忆库',
-          value: _AgentCardAction.memory,
-        ),
-        AiSheetAction(
           icon: Icons.ios_share_rounded,
           label: '导出角色卡',
           value: _AgentCardAction.export,
@@ -901,13 +893,6 @@ class _AgentListPageState extends State<AgentListPage>
         if (result == true && mounted) {
           await _loadAgents();
         }
-      case _AgentCardAction.memory:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MemoryManagerPage(agent: agent),
-          ),
-        );
       case _AgentCardAction.export:
         await _exportCharacterCard(agent);
       case _AgentCardAction.delete:

@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ai_provider_profile.dart';
 import 'ai_cloud_config_service.dart';
 import 'ai_db_service.dart';
-import 'llama_cpp_endpoint_config.dart';
 
 class AiProviderService {
   AiProviderService._();
@@ -35,9 +34,7 @@ class AiProviderService {
   }
 
   Future<List<AiProviderProfile>> _listLocalProfiles() async {
-    final out = <AiProviderProfile>[
-      await _resolveLlamaCppProfile(),
-    ];
+    final out = <AiProviderProfile>[];
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_webProfilesKey);
@@ -95,31 +92,17 @@ class AiProviderService {
   }
 
   Future<AiProviderProfile> resolveProfile(String? id) async {
-    if (id == null ||
-        id.trim().isEmpty ||
-        id == AiProviderProfile.legacyLocalGgufId) {
-      return _resolveLlamaCppProfile();
-    }
-    if (id == AiProviderProfile.builtinLlamaCppId) {
-      return _resolveLlamaCppProfile();
+    if (id == null || id.trim().isEmpty) {
+      return AiProviderProfile.builtinBackend();
     }
     if (id == AiProviderProfile.builtinBackendId) {
-      return _resolveLlamaCppProfile();
+      return AiProviderProfile.builtinBackend();
     }
     final profiles = await listProfiles();
     for (final item in profiles) {
       if (item.id == id) return item;
     }
-    return _resolveLlamaCppProfile();
-  }
-
-  Future<AiProviderProfile> _resolveLlamaCppProfile() async {
-    final baseUrl = await _llamaCppBaseUrl();
-    return AiProviderProfile.builtinLlamaCpp().copyWith(baseUrl: baseUrl);
-  }
-
-  Future<String> _llamaCppBaseUrl() async {
-    return LlamaCppEndpointConfig.resolveRootUrl();
+    return AiProviderProfile.builtinBackend();
   }
 
   Future<void> saveProfile(
@@ -229,12 +212,9 @@ class AiProviderService {
 
   Future<void> saveLastSelectedProfileId(String profileId) async {
     final prefs = await SharedPreferences.getInstance();
-    final normalized = profileId == AiProviderProfile.legacyLocalGgufId
-        ? AiProviderProfile.builtinLlamaCppId
-        : profileId;
-    await prefs.setString(_lastSelectedProfileKey, normalized);
+    await prefs.setString(_lastSelectedProfileKey, profileId);
     await AiCloudConfigService().savePreferences({
-      'last_selected_provider_id': normalized,
+      'last_selected_provider_id': profileId,
     });
   }
 
@@ -242,9 +222,6 @@ class AiProviderService {
     final prefs = await SharedPreferences.getInstance();
     final localValue = prefs.getString(_lastSelectedProfileKey)?.trim();
     if (localValue != null && localValue.isNotEmpty) {
-      if (localValue == AiProviderProfile.legacyLocalGgufId) {
-        return AiProviderProfile.builtinLlamaCppId;
-      }
       return localValue;
     }
 
@@ -252,11 +229,8 @@ class AiProviderService {
     final cloudValue =
         cloud?.preferences['last_selected_provider_id']?.toString().trim();
     if (cloudValue != null && cloudValue.isNotEmpty) {
-      final normalized = cloudValue == AiProviderProfile.legacyLocalGgufId
-          ? AiProviderProfile.builtinLlamaCppId
-          : cloudValue;
-      await prefs.setString(_lastSelectedProfileKey, normalized);
-      return normalized;
+      await prefs.setString(_lastSelectedProfileKey, cloudValue);
+      return cloudValue;
     }
     return null;
   }

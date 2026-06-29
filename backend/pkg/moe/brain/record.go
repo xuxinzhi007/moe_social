@@ -4,14 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"backend/model"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
-
-	llmv1 "backend/api/llm/v1"
 
 	"gorm.io/gorm"
 )
@@ -76,21 +73,10 @@ func RecordEpisode(ctx context.Context, deps Deps, in RecordInput) error {
 		return err
 	}
 
-	if deps.RPC != nil && in.BotUserID > 0 {
-		val := fmt.Sprintf("%s\n标签: %s\n质量: %d", truncate(in.Content, 200), strings.Join(tags, ", "), quality)
-		_, _ = deps.RPC.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
-			UserId:     strconv.FormatUint(uint64(in.BotUserID), 10),
-			Key:        memKey,
-			Value:      val,
-			MemoryType: "bot_episode",
-			Source:     "moe_bot_brain",
-			Confidence: float64(quality) / 100.0,
-		})
-	}
 	return nil
 }
 
-// DeleteEpisode 删除自传记录并尝试删对应记忆 key。
+// DeleteEpisode 删除自传记录。
 func DeleteEpisode(ctx context.Context, deps Deps, episodeID uint) error {
 	if deps.DB == nil {
 		return fmt.Errorf("brain: db nil")
@@ -101,12 +87,6 @@ func DeleteEpisode(ctx context.Context, deps Deps, episodeID uint) error {
 	}
 	if err := deps.DB.Delete(&ep).Error; err != nil {
 		return err
-	}
-	if deps.RPC != nil && ep.MemoryKey != "" && ep.BotUserID > 0 {
-		_, _ = deps.RPC.DeleteUserMemory(ctx, &llmv1.DeleteUserMemoryReq{
-			UserId: strconv.FormatUint(uint64(ep.BotUserID), 10),
-			Key:    ep.MemoryKey,
-		})
 	}
 	return nil
 }

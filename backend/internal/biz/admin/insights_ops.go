@@ -204,15 +204,6 @@ func AdminAnalyticsOverview(ctx context.Context, store AdminStore, _ *adminv1.Ad
 	out.UsersNew_7D = int32(usersNew7d)
 	out.UsersByDay = countByDay(db, &model.User{}, "created_at", 14)
 
-	var memTotal int64
-	_ = db.Model(&model.UserMemory{}).Count(&memTotal).Error
-	out.MemoryTotal = int32(memTotal)
-	var memUsers int64
-	_ = db.Model(&model.UserMemory{}).Distinct("user_id").Count(&memUsers).Error
-	out.MemoryUsers = int32(memUsers)
-	out.MemoriesByDay = countByDay(db, &model.UserMemory{}, "created_at", 14)
-	out.MemoryByType = memoryTypeStats(db)
-
 	{
 		stats, err := toolaudit.QueryStats(db, toolaudit.StatsFilter{
 			From: &since7d,
@@ -601,31 +592,6 @@ func countByDay(db *gorm.DB, modelPtr any, column string, days int) []*adminv1.A
 	for i := 0; i < days; i++ {
 		d := start.AddDate(0, 0, i).Format(time.DateOnly)
 		out = append(out, &adminv1.AdminDayStat{Date: d, Count: int32(byDay[d])})
-	}
-	return out
-}
-
-func memoryTypeStats(db *gorm.DB) []*adminv1.AdminMemoryTypeStat {
-	if db == nil {
-		return nil
-	}
-	type row struct {
-		MemoryType string
-		Count      int64
-	}
-	var rows []row
-	_ = db.Model(&model.UserMemory{}).
-		Select("memory_type, COUNT(*) as count").
-		Group("memory_type").
-		Order("count DESC").
-		Scan(&rows).Error
-	out := make([]*adminv1.AdminMemoryTypeStat, len(rows))
-	for i, r := range rows {
-		mt := r.MemoryType
-		if mt == "" {
-			mt = "unknown"
-		}
-		out[i] = &adminv1.AdminMemoryTypeStat{MemoryType: mt, Count: int32(r.Count)}
 	}
 	return out
 }

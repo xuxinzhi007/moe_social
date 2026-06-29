@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/ai_provider_profile.dart';
@@ -7,7 +6,6 @@ import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
-import 'llama_cpp_settings_page.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/ai/ai_loading_skeleton.dart';
 import '../../widgets/ai/ai_scaffold.dart';
@@ -30,7 +28,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   bool _syncingCloud = false;
   final Map<String, ProviderConnectivityState?> _connectivity = {};
 
-  static const _ggufAccent = Color(0xFF26A69A);
   static const _apiAccent = Color(0xFF42A5F5);
 
   @override
@@ -48,7 +45,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     final profiles = await AiProviderService().listProfiles();
     final conn = <String, ProviderConnectivityState?>{};
     for (final p in profiles) {
-      if (!p.isBuiltin || p.isLlamaCppServer) {
+      if (!p.isBuiltin) {
         conn[p.id] = await AiProviderConnectivityCache.read(p.id);
       }
     }
@@ -63,34 +60,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     });
   }
 
-  Future<void> _openLlamaServerSettings() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const LlamaCppSettingsPage()),
-    );
-    if (!mounted) return;
-    await _load();
-  }
-
   AiSyncStatus _statusFor(AiProviderProfile profile) {
-    if (profile.isLlamaCppServer) {
-      final state = _connectivity[profile.id];
-      if (state == null) return AiSyncStatus.warning;
-      return state.isSuccess ? AiSyncStatus.success : AiSyncStatus.error;
-    }
     final state = _connectivity[profile.id];
     if (state == null) return AiSyncStatus.idle;
     return state.isSuccess ? AiSyncStatus.success : AiSyncStatus.error;
   }
 
   String? _statusLabelFor(AiProviderProfile profile) {
-    if (profile.isLlamaCppServer) {
-      final state = _connectivity[profile.id];
-      if (state == null) {
-        return kIsWeb ? '请启动 llama-server' : null;
-      }
-      return state.isSuccess ? '已连通' : '连接失败';
-    }
     final state = _connectivity[profile.id];
     if (state == null) return null;
     return state.isSuccess ? '已连通' : '连接失败';
@@ -207,27 +183,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     final status = _statusFor(profile);
     final statusLabel = _statusLabelFor(profile);
 
-    if (profile.isLlamaCppServer) {
-      return _buildProviderCard(
-        profile: profile,
-        icon: Icons.dns_rounded,
-        accent: _ggufAccent,
-        description: kIsWeb
-            ? '连接本机 llama-server（OpenAI 兼容），网页版推荐'
-            : '连接本机 llama-server（OpenAI 兼容 /v1）',
-        status: status,
-        statusLabel: statusLabel,
-        onTap: _openLlamaServerSettings,
-        metaRows: [
-          _metaRow('地址', _shortUrl(profile.baseUrl)),
-          _metaRow(
-            '默认模型',
-            profile.defaultModel.isEmpty ? '未设置' : profile.defaultModel,
-          ),
-        ],
-      );
-    }
-
     final modelLine =
         profile.defaultModel.isEmpty ? '未设置默认模型' : profile.defaultModel;
     final manualLine = profile.manualModels.isEmpty
@@ -264,16 +219,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   List<Widget> _buildGroupedCards() {
-    final llama = _profiles.where((p) => p.isLlamaCppServer);
     final custom = _profiles.where((p) => !p.isBuiltin);
     return [
-      _sectionHeader(
-        '本机 llama-server',
-        kIsWeb
-            ? '在电脑上启动 llama-server，浏览器通过 127.0.0.1:6633 连接'
-            : '连接本机 llama-server，需先启动 llama-server.exe',
-      ),
-      ...llama.map(_buildCard),
       _sectionHeader('云端 API', 'OpenAI 兼容中转站（如 Xbai / OpenRouter）'),
       ...custom.map(_buildCard),
     ];
@@ -764,9 +711,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   children: [
                     AiSurfaceCard(
                       child: Text(
-                        '本机对话推荐「本机 llama-server」：先在电脑上启动 llama-server，'
-                        '再在下方配置连接地址（默认 127.0.0.1:6633）。\n\n'
-                        '也可新增 OpenAI 兼容中转站（OpenRouter / Xbai 等）。',
+                        '新增 OpenAI 兼容中转站（OpenRouter / Xbai 等）。',
                         style: AiTheme.body,
                       ),
                     ),

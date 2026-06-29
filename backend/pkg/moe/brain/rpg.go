@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"backend/model"
 	"backend/pkg/moe/port"
-
-	llmv1 "backend/api/llm/v1"
 
 	"gorm.io/gorm"
 )
@@ -548,19 +545,6 @@ func CompressMemories(ctx context.Context, deps RpgDeps, agentKey string, days i
 	if summary != "" {
 		out.Summary = summary
 		out.SourceCount = marked
-		if deps.RPC != nil && rt.BotUserID > 0 {
-			uid := strconv.FormatUint(uint64(rt.BotUserID), 10)
-			_, uerr := deps.RPC.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
-				UserId:     uid,
-				Key:        compressedKey,
-				Value:      summary,
-				MemoryType: "bot_episode",
-				Source:     "brain_rpg_compress",
-			})
-			if uerr != nil {
-				return out, uerr
-			}
-		}
 		xp := 15 + merged*8 + swept*3
 		if _, xerr := addXP(deps.DB, agentKey, xp); xerr != nil {
 			return out, xerr
@@ -641,26 +625,7 @@ func LockSkill(db *gorm.DB, agentKey, tag string, lock bool) ([]string, error) {
 	return locked, nil
 }
 
-// ForgetMemory 删除 bot 记忆 key。
+// ForgetMemory 删除 bot 记忆 key（已废弃）。
 func ForgetMemory(ctx context.Context, deps RpgDeps, agentKey, memoryKey string) (bool, error) {
-	memoryKey = strings.TrimSpace(memoryKey)
-	if memoryKey == "" {
-		return false, fmt.Errorf("memory_key 不能为空")
-	}
-	var rt model.MoeAgentRuntime
-	if err := deps.DB.Where("agent_key = ?", strings.TrimSpace(agentKey)).First(&rt).Error; err != nil {
-		return false, err
-	}
-	if deps.RPC == nil || rt.BotUserID == 0 {
-		return false, fmt.Errorf("Bot 未绑定用户或 RPC 不可用")
-	}
-	uid := strconv.FormatUint(uint64(rt.BotUserID), 10)
-	_, err := deps.RPC.DeleteUserMemory(ctx, &llmv1.DeleteUserMemoryReq{
-		UserId: uid,
-		Key:    memoryKey,
-	})
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return false, fmt.Errorf("记忆功能已移除")
 }

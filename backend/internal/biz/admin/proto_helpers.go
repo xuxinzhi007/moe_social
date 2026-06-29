@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	adminv1 "backend/api/admin/v1"
 	"backend/model"
@@ -168,20 +167,6 @@ func countWhere(db *gorm.DB, model interface{}, column string, uid uint) int32 {
 	var n int64
 	_ = db.Model(model).Where(column+" = ?", uid).Count(&n).Error
 	return int32(n)
-}
-
-func memoryToAdminProto(row model.UserMemory, username string) *adminv1.AdminMemoryItem {
-	return &adminv1.AdminMemoryItem{
-		Id:         strconv.FormatUint(uint64(row.ID), 10),
-		UserId:     strconv.FormatUint(uint64(row.UserID), 10),
-		Username:   username,
-		Key:        row.Key,
-		Value:      row.Value,
-		MemoryType: row.MemoryType,
-		Confidence: row.Confidence,
-		Source:     row.Source,
-		UpdatedAt:  row.UpdatedAt.Format(time.DateTime),
-	}
 }
 
 func previewContent(s string) string {

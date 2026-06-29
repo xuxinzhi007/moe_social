@@ -143,7 +143,6 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 			rep.domainWarn("llm", "db", err.Error())
 		} else if llmApp != nil {
 			ctx.LLMApp = llmApp
-			ctx.LLMApp.SetPlatformChatGateway(ctx.LLMApp.PlatformChatGateway())
 		}
 	}
 

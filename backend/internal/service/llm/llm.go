@@ -1,85 +1,107 @@
-// Package llmapp LLM 域应用服务。
 package llmapp
 
 import (
 	"context"
+	"errors"
+	"net/http"
 
-	llmv1 "backend/api/llm/v1"
+	aibiz "backend/internal/biz/ai"
+	aidata "backend/internal/data/ai"
 	llmbiz "backend/internal/biz/llm"
-	llmdata "backend/internal/data/llm"
+	llmv1 "backend/api/llm/v1"
 	"backend/pkg/llminference"
-	"backend/pkg/localmodels"
 
 	"gorm.io/gorm"
 )
 
-// Deps 进程内 LLM 服务依赖。
 type Deps struct {
-	Inference             llminference.Config
-	MemoryModel           string
-	MemorySummaryPrompt   string
-	MemoryExtractPrompt   string
-	LocalModelsStorageDir string
-	LocalModelsCatalog    []localmodels.CatalogEntry
+	Inference llminference.Config
 }
 
-// AppService LLM 应用层。
 type AppService struct {
-	db                  *gorm.DB
-	memory              llmbiz.MemoryStore
-	deps                Deps
-	platformChatGateway llmbiz.PlatformChatGateway
+	db   *gorm.DB
+	deps Deps
 }
 
-// New 构造 AppService。
 func New(db *gorm.DB, deps Deps) *AppService {
-	return &AppService{db: db, memory: llmdata.NewStore(db), deps: deps}
+	return &AppService{db: db, deps: deps}
 }
 
-func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
-	return llmbiz.ListModelNames(ctx, s.deps.Inference)
+func (s *AppService) GetAiUserConfig(ctx context.Context, in *llmv1.GetAiUserConfigReq) (*llmv1.GetAiUserConfigResp, error) {
+	return aibiz.GetAiUserConfig(ctx, aidata.NewStore(s.db), in)
 }
 
-func (s *AppService) LocalCatalog() ([]llmbiz.CatalogItem, error) {
-	return llmbiz.LoadLocalCatalog(s.deps.LocalModelsStorageDir, s.deps.LocalModelsCatalog)
+func (s *AppService) UpsertAiUserConfig(ctx context.Context, in *llmv1.UpsertAiUserConfigReq) (*llmv1.UpsertAiUserConfigResp, error) {
+	return aibiz.UpsertAiUserConfig(ctx, aidata.NewStore(s.db), in)
+}
+
+func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llmbiz.PlatformChatOutcome, error) {
+	if s == nil {
+		return llmbiz.PlatformChatOutcome{}, nil
+	}
+	deps := llmbiz.PlatformChatDeps{
+		Inference: s.deps.Inference,
+	}
+	return llmbiz.ExecutePlatformChat(ctx, deps, in)
+}
+
+func (s *AppService) ConfigAPIPayload() map[string]interface{} {
+	if s == nil {
+		return llmbiz.ConfigAPIPayload(llmbiz.ConfigSnapshot{})
+	}
+	return llmbiz.ConfigAPIPayload(s.ConfigSnapshot())
 }
 
 func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
+	if s == nil {
+		return llmbiz.ConfigSnapshot{}
+	}
 	return llmbiz.ConfigSnapshot{
-		InferenceBaseURL:       s.deps.Inference.BaseURL,
-		InferenceAPIStyle:      string(s.deps.Inference.APIStyle),
-		InferenceTimeoutSec:    int(s.deps.Inference.Timeout.Seconds()),
-		MemoryModel:            s.deps.MemoryModel,
-		HasSummaryPrompt:       s.deps.MemorySummaryPrompt != "",
-		HasExtractPrompt:       s.deps.MemoryExtractPrompt != "",
-		LocalModelsStorageDir:  s.deps.LocalModelsStorageDir,
-		LocalModelsCatalogSize: len(s.deps.LocalModelsCatalog),
-		MemoryBudget:           llmbiz.DefaultMemoryBudget(),
+		InferenceBaseURL:    s.deps.Inference.BaseURL,
+		InferenceAPIStyle:   string(s.deps.Inference.APIStyle),
+		InferenceTimeoutSec: int(s.deps.Inference.Timeout.Seconds()),
+		MemoryBudget:        llmbiz.DefaultMemoryBudget(),
 	}
 }
 
-func (s *AppService) RecordLlmChatTurn(ctx context.Context, in *llmv1.RecordLlmChatTurnReq) (*llmv1.RecordLlmChatTurnResp, error) {
-	return llmbiz.RecordChatTurn(ctx, s.memory, in)
+func (s *AppService) ForwardChatRaw(w http.ResponseWriter, r *http.Request) error {
+	if s == nil {
+		return errors.New("llm app unavailable")
+	}
+	return llmbiz.ForwardChatRaw(w, r, s.deps.Inference)
 }
 
-// FindLocalModel 按 id 查找本地模型（供 download handler 使用）。
-func (s *AppService) FindLocalModel(id string) (localmodels.Meta, error) {
-	return localmodels.FindByID(s.deps.LocalModelsStorageDir, s.deps.LocalModelsCatalog, id)
+func (s *AppService) ForwardModelsRaw(w http.ResponseWriter, r *http.Request) error {
+	if s == nil {
+		return errors.New("llm app unavailable")
+	}
+	return llmbiz.ForwardModelsRaw(w, r, s.deps.Inference)
 }
 
-// PostChatCompletion 调用推理服务完成对话补全（F103 biz 化）。
-func (s *AppService) PostChatCompletion(
-	ctx context.Context,
-	model string,
-	messages []llmbiz.ChatMessage,
-	opts llmbiz.ChatOptions,
-) (string, error) {
-	return llmbiz.PostChatCompletion(ctx, s.deps.Inference, model, messages, opts)
+func (s *AppService) ForwardShowRaw(w http.ResponseWriter, r *http.Request) error {
+	if s == nil {
+		return errors.New("llm app unavailable")
+	}
+	return llmbiz.ForwardShowRaw(w, r, s.deps.Inference)
 }
 
-// UpsertUserMemory 写入用户记忆（含异步索引）。
-func (s *AppService) UpsertUserMemory(ctx context.Context, in *llmv1.UpsertUserMemoryReq) (*llmv1.UpsertUserMemoryResp, error) {
-	return llmbiz.UpsertUserMemory(ctx, s.memory, in, llmbiz.MemoryWriteOptions{
-		InferenceBaseURL: s.deps.Inference.BaseURL,
-	})
+func (s *AppService) CreateAgent(ctx context.Context, in llmbiz.CreateAgentInput, cache llmbiz.ModelCacheClearer) llmbiz.PlatformWriteResult {
+	if s == nil {
+		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
+	}
+	return llmbiz.CreateOllamaAgent(ctx, s.deps.Inference, in, cache)
+}
+
+func (s *AppService) DeleteModel(ctx context.Context, model string, cache llmbiz.ModelCacheClearer) llmbiz.PlatformWriteResult {
+	if s == nil {
+		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
+	}
+	return llmbiz.DeleteOllamaModel(ctx, s.deps.Inference, model, cache)
+}
+
+func (s *AppService) DownloadModel(ctx context.Context, model string, cache llmbiz.ModelCacheClearer) llmbiz.PlatformWriteResult {
+	if s == nil {
+		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
+	}
+	return llmbiz.DownloadOllamaModel(ctx, s.deps.Inference, model, cache)
 }

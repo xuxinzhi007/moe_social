@@ -10,8 +10,6 @@ import (
 
 	"backend/model"
 	"backend/pkg/llminference"
-
-	llmv1 "backend/api/llm/v1"
 )
 
 // PendingDeleteMark 压缩后标记、下轮清扫删除。
@@ -136,16 +134,6 @@ func sweepPendingDelete(ctx context.Context, deps Deps, rt model.MoeAgentRuntime
 			return false
 		}
 		return DeleteEpisode(ctx, deps, uint(id)) == nil
-	case "memory":
-		key := strings.TrimSpace(mark.Ref)
-		if key == "" || deps.RPC == nil || rt.BotUserID == 0 {
-			return false
-		}
-		_, err := deps.RPC.DeleteUserMemory(ctx, &llmv1.DeleteUserMemoryReq{
-			UserId: strconv.FormatUint(uint64(rt.BotUserID), 10),
-			Key:    key,
-		})
-		return err == nil
 	default:
 		return false
 	}
