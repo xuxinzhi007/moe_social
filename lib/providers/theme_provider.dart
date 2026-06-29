@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -87,6 +88,11 @@ class ThemeProvider with ChangeNotifier {
     final surfaceColor = isDark ? Colors.grey[800]! : Colors.white;
     final scaffoldBg = moeTheme.pageBackground;
 
+    // Material 3 默认 Typography 会注入 Roboto；显式指定 platform 后用系统字体
+    //（macOS/iOS → SF Pro，Windows → Segoe UI，Android → 系统 sans）。
+    final typography = Typography.material2021(platform: defaultTargetPlatform);
+    final textTheme = isDark ? typography.white : typography.black;
+
     return ThemeData(
       brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
@@ -99,7 +105,17 @@ class ThemeProvider with ChangeNotifier {
       ),
       extensions: [moeTheme],
       useMaterial3: true,
-      fontFamily: 'Roboto', // 建议后续引入圆形字体
+      typography: typography,
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
+      fontFamilyFallback: const [
+        'PingFang SC',
+        'Heiti SC',
+        'Microsoft YaHei',
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Noto Color Emoji',
+      ],
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 50),
@@ -126,10 +142,8 @@ class ThemeProvider with ChangeNotifier {
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
+        titleTextStyle: textTheme.titleLarge?.copyWith(
           color: isDark ? Colors.white : Colors.black87,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
         ),
         iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
       ),
