@@ -116,25 +116,3 @@ func DeleteGroup(ctx context.Context, community communitybiz.CommunityStore, in 
 	}
 	return &adminv1.AdminDeleteGroupResp{}, nil
 }
-
-// DeleteMemory Admin 删除记忆。
-func DeleteMemory(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteMemoryReq) (*adminv1.AdminDeleteMemoryResp, error) {
-	if db == nil {
-		return nil, gorm.ErrInvalidDB
-	}
-	id := in.GetMemoryId()
-	if id == 0 {
-		return nil, ErrInvalidMemoryID
-	}
-	result := db.WithContext(ctx).Delete(&model.UserMemory{}, id)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, ErrMemoryNotFound
-		}
-		return nil, fmt.Errorf("%w: %v", ErrDeleteMemory, result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return nil, ErrMemoryNotFound
-	}
-	return &adminv1.AdminDeleteMemoryResp{}, nil
-}

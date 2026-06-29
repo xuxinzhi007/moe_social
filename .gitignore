@@ -145,3 +145,4 @@ backend/rpc/.../
 # Compound Engineering (machine-local preferences)
 .compound-engineering/*.local.yaml
 e2e/node_modules
+--css

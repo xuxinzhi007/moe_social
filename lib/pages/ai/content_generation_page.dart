@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/ai_chat_gateway_service.dart';
-import '../../services/ai_memory_orchestrator.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
@@ -169,12 +168,6 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     try {
       final content =
           await _callContentGenerationAPI(prompt, _selectedContentType);
-      AiMemoryOrchestrator().learnFromTurnInBackground(
-        agent: widget.agent,
-        sessionId: 'content_generation',
-        userMessage: prompt,
-        aiResponse: content,
-      );
       final aiMsg = AiChatMessage(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         sessionId: 'content_generation',
@@ -234,15 +227,10 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
         break;
     }
 
-    final enriched = await AiMemoryOrchestrator().enrichSystemPrompt(
-      agent: widget.agent,
-      basePrompt: systemPrompt,
-      latestUserMessage: prompt,
-    );
     return AiChatGatewayService().sendChat(
       agent: widget.agent,
       messages: [
-        {'role': 'system', 'content': enriched},
+        {'role': 'system', 'content': systemPrompt},
         {'role': 'user', 'content': prompt},
       ],
     );

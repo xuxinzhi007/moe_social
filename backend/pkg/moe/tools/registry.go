@@ -5,42 +5,6 @@ import "backend/pkg/moe/core"
 func allSchemas() []core.ToolSchema {
 	return []core.ToolSchema{
 		{
-			Name:        "memory_search",
-			Description: "检索用户长期记忆库（关键词/混合，与 /memories/search 同口径）。",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"query": map[string]any{"type": "string", "description": "检索词"},
-					"limit": map[string]any{"type": "integer", "description": "最多条数，默认 5"},
-				},
-				"required": []string{"query"},
-			},
-		},
-		{
-			Name:        "memory_get",
-			Description: "按 key 读取一条用户记忆。",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key": map[string]any{"type": "string"},
-				},
-				"required": []string{"key"},
-			},
-		},
-		{
-			Name:        "memory_save",
-			Description: "写入或更新用户长期记忆（用户本人事实）。",
-			Parameters: map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"key":          map[string]any{"type": "string"},
-					"value":        map[string]any{"type": "string"},
-					"memory_type":  map[string]any{"type": "string"},
-				},
-				"required": []string{"key", "value"},
-			},
-		},
-		{
 			Name:        "post_search",
 			Description: "在站内公开动态中检索（关键词 + 可解释排序）。",
 			Parameters: map[string]any{

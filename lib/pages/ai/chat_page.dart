@@ -15,17 +15,14 @@ import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_context_builder.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_user_persona_service.dart';
-import '../../services/ai_memory_orchestrator.dart';
 import '../../services/ai_chat_session_prefs.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../utils/ai_chat_message_utils.dart';
 import '../../utils/ai_chat_quick_replies.dart';
-import 'memory_manager_page.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
-import '../../models/user_memory.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
@@ -35,7 +32,6 @@ import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/ai/ai_typing_indicator.dart';
 import '../../widgets/ai/ai_chat_composer.dart';
 import '../../widgets/ai/ai_chat_settings_sheet.dart';
-import '../../widgets/ai/ai_memory_status_strip.dart';
 import '../../widgets/ai/ai_chat_identity_hero.dart';
 import '../../widgets/ai/ai_chat_session_drawer.dart';
 import '../../widgets/ai/ai_chat_status_banners.dart';
@@ -62,10 +58,6 @@ class _ChatPageState extends State<ChatPage> {
   List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
-  List<UserMemory> _memories = [];
-  AiMemoryMode _memoryMode = AiMemoryMode.disabled;
-  String _memoryHeadline = '关于你的记忆';
-  AiMemoryEnrichResult? _memoryEnrichResult;
   double _temperature = 0.85;
   bool _terminalModeEnabled = false;
   String _systemPrompt = '';
@@ -124,7 +116,6 @@ class _ChatPageState extends State<ChatPage> {
         ? widget.agent.systemPrompt
         : AiPromptDefaults.defaultAgentSystemPrompt;
     _initVoice();
-    _loadMemoryState();
     _loadChatPrefs();
     _loadUserPersona();
     if (_localPersistenceEnabled) {
@@ -267,71 +258,18 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  int get _memoryPreviewCount {
-    if (_memoryMode == AiMemoryMode.disabled) return 0;
-    return _memories.length;
-  }
-
-  Future<void> _loadMemoryState() async {
-    try {
-      final terminal = await LlmEndpointConfig.isTerminalModeEnabled();
-      final orchestrator = AiMemoryOrchestrator();
-      final state = await orchestrator.loadManagerState(widget.agent);
-      if (!mounted) return;
-      setState(() {
-        _terminalModeEnabled = terminal;
-        _memoryMode = state.activeMode;
-        _memoryHeadline = state.display?.headline.isNotEmpty == true
-            ? state.display!.headline
-            : state.activeModeLabel;
-        _memories = state.accountMemories;
-      });
-      if (!_terminalModeEnabled && state.activeMode != AiMemoryMode.disabled) {
-        await _primeMemoryInjectStatus();
-      }
-    } catch (_) {
-      // 记忆预览失败不影响主聊天链路
-    }
-  }
-
-  Future<void> _primeMemoryInjectStatus() async {
-    try {
-      final meta = await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
-        agent: widget.agent,
-        basePrompt: _systemPrompt,
-      );
-      if (!mounted) return;
-      setState(() => _memoryEnrichResult = meta);
-    } catch (_) {}
-  }
-
   Future<void> _loadChatPrefs() async {
     final temp = await AiChatSessionPrefs.temperature(widget.agent.id);
     if (!mounted) return;
     setState(() => _temperature = temp);
   }
 
-  void _scheduleMemoryRefresh() {
-    Future<void>.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      unawaited(_loadMemoryState());
-    });
-  }
-
   Future<void> _openChatSettings() async {
-    final status = _memoryEnrichResult ??
-        await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
-          agent: widget.agent,
-          basePrompt: _systemPrompt,
-        );
     if (!mounted) return;
     await AiChatSettingsSheet.show(
       context: context,
       agent: widget.agent,
       temperature: _temperature,
-      memoryStatus: status,
-      turnStats: AiMemoryOrchestrator().turnStats,
-      onOpenMemoryManager: _openMemoryManager,
       onTemperatureChanged: (v) {
         if (!mounted) return;
         setState(() => _temperature = v);
@@ -641,9 +579,6 @@ class _ChatPageState extends State<ChatPage> {
         overrideSystemPrompt: _systemPrompt,
         userPersona: _userPersona,
       );
-      if (mounted) {
-        setState(() => _memoryEnrichResult = chatContext.memoryMeta);
-      }
 
       if (_wasManuallyStopped) return;
       final content = await AiChatGatewayService().sendChat(
@@ -679,26 +614,6 @@ class _ChatPageState extends State<ChatPage> {
       _streamingMessageId = null;
       if (mounted) setState(() {});
       unawaited(_persistWebCache());
-
-      AiMemoryOrchestrator().learnFromTurnInBackground(
-        agent: widget.agent,
-        sessionId: _currentSession!.id,
-        userMessage: text,
-        aiResponse: content,
-        sourceMsgId: userMsg.id,
-        onComplete: (result) {
-          if (!mounted) return;
-          if (result.errorMessage != null &&
-              result.errorMessage!.trim().isNotEmpty &&
-              result.savedCount == 0) {
-            MoeToast.info(context, result.errorMessage!);
-          } else if (result.savedCount > 0) {
-            MoeToast.success(context, '已记住 ${result.savedCount} 条新信息');
-          }
-          setState(() {});
-          _scheduleMemoryRefresh();
-        },
-      );
 
       final seed = titleSeed ?? text;
       if (_messages.length <= 2 && _currentSession!.title == '新对话') {
@@ -1198,15 +1113,6 @@ class _ChatPageState extends State<ChatPage> {
       });
       _scrollToBottom(force: true);
     }
-  }
-
-  void _openMemoryManager() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => MemoryManagerPage(agent: widget.agent),
-      ),
-    ).then((_) => _loadMemoryState());
   }
 
   void _showMessageActions(AiChatMessage message) {
@@ -1745,88 +1651,6 @@ class _ChatPageState extends State<ChatPage> {
                                     color: Colors.black87),
                               ),
                       ),
-                      const SizedBox(height: 20),
-                      // 记忆预览
-                      Row(
-                        children: [
-                          const Text('🧠', style: TextStyle(fontSize: 14)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              _memoryPreviewCount > 0
-                                  ? '$_memoryHeadline（$_memoryPreviewCount 条）'
-                                  : _memoryHeadline,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap),
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _openMemoryManager();
-                            },
-                            child: const Text('管理',
-                                style: TextStyle(fontSize: 12)),
-                          ),
-                        ],
-                      ),
-                      if (_memoryPreviewCount == 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            _memoryMode == AiMemoryMode.disabled
-                                ? '记忆功能已暂停。'
-                                : '继续聊天后，AI 会自动记住你的偏好与重要信息。',
-                            style: TextStyle(
-                                color: Colors.grey.shade400,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic),
-                          ),
-                        )
-                      else
-                        ...(_memories.take(3).map((m) {
-                          final label = (m.memoryType?.isNotEmpty == true)
-                              ? m.memoryType!
-                              : '了解';
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('•', style: TextStyle(fontSize: 13)),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    '$label · ${m.value}',
-                                    style: const TextStyle(
-                                        fontSize: 13, color: Colors.black87),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        })),
-                      if (_memoryPreviewCount > 3)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _openMemoryManager();
-                            },
-                            child: Text('查看全部 $_memoryPreviewCount 条记忆'),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -1839,15 +1663,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   bool get _showIdentityHero => !_isLoadingHistory && _messages.length <= 1;
-
-  String get _identityMemoryLabel {
-    final memoryCount = _memoryPreviewCount;
-    final injectedCount = _memoryEnrichResult?.injectedCount;
-    if (injectedCount != null && injectedCount > 0) {
-      return '已参考$injectedCount条';
-    }
-    return '$memoryCount 条';
-  }
 
   List<String> get _emptySuggestions {
     final opening = widget.agent.openingMessage.trim();
@@ -1915,27 +1730,6 @@ class _ChatPageState extends State<ChatPage> {
                         },
                       ),
                     ),
-                    if (_memories.isNotEmpty) ...[
-                      const SizedBox(width: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AiBrandTokens.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '🧠$_memoryPreviewCount',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AiBrandTokens.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],
@@ -2022,12 +1816,10 @@ class _ChatPageState extends State<ChatPage> {
               agentName: widget.agent.name,
               modelName: widget.agent.modelName,
               providerSourceLabel: _providerSourceLabel,
-              memoryCount: _memoryPreviewCount,
               userPersona: _userPersona,
               sessions: _sessions,
               currentSessionId: _currentSession?.id,
               onCreateSession: _createNewSession,
-              onOpenMemoryManager: _openMemoryManager,
               onEditUserPersona: _editUserPersona,
               onLoadSession: _loadSession,
               onDeleteSession: _deleteSession,
@@ -2045,20 +1837,10 @@ class _ChatPageState extends State<ChatPage> {
                           modelName: widget.agent.modelName,
                           promptReady: _systemPrompt.trim().isNotEmpty,
                           personaMounted: _userPersona.trim().isNotEmpty,
-                          memoryLabel: _identityMemoryLabel,
                           isSyncingModelPrompt: _isSyncingModelPrompt,
                         )
                       : const SizedBox.shrink(),
                 ),
-                if (!_terminalModeEnabled &&
-                    _memoryMode != AiMemoryMode.disabled)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                    child: AiMemoryStatusStrip(
-                      enrich: _memoryEnrichResult,
-                      onTapSettings: _openChatSettings,
-                    ),
-                  ),
                 if (_terminalModeEnabled) const AiTerminalModeBanner(),
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),

@@ -73,22 +73,6 @@ extension TavernProvidersTabPart on _AgentListPageState {
           ),
           const SizedBox(height: 24),
           if (!provider.isBackendOllama) ...[
-            if (provider.isLlamaCppServer) ...[
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LlamaCppSettingsPage(),
-                    ),
-                  );
-                  if (mounted) await _reloadPageData();
-                },
-                icon: const Icon(Icons.settings_rounded),
-                label: const Text('llama.cpp 连接设置'),
-              ),
-              const SizedBox(height: 10),
-            ],
             OutlinedButton.icon(
               onPressed: () async {
                 await Navigator.push(

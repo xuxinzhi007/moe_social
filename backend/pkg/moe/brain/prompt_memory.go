@@ -3,22 +3,17 @@ package brain
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	"backend/model"
-	"backend/pkg/memory"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/port"
-
-	llmv1 "backend/api/llm/v1"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
-// GenerationMeta 管理端展示：记忆如何进入 Bot 发帖提示词。
 type GenerationMeta struct {
 	PostUsesToolMemory bool    `json:"post_uses_tool_memory"`
 	MemoriesSynced     int     `json:"memories_synced"`
@@ -31,27 +26,14 @@ type GenerationMeta struct {
 	Note               string  `json:"note"`
 }
 
-// BuildPostMemoryBlock 合并用户记忆库与近期自传，注入发帖 LLM 的【Bot 记忆】段。
 func BuildPostMemoryBlock(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, rt model.MoeAgentRuntime) string {
-	var sections []string
-	if rpc != nil && rt.BotUserID > 0 {
-		if block := fetchSyncedMemories(ctx, rpc, rt.BotUserID); block != "" {
-			sections = append(sections, "【用户记忆库】\n"+block)
-		}
-	}
-	if db != nil {
-		eps := ListRecentEpisodes(db, rt.AgentKey, 8)
-		if block := formatEpisodesForPrompt(eps); block != "" {
-			sections = append(sections, "【AI大脑自传·近期】\n"+block)
-		}
-	}
-	if len(sections) == 0 {
+	if db == nil {
 		return ""
 	}
-	return strings.Join(sections, "\n\n")
+	eps := ListRecentEpisodes(db, rt.AgentKey, 8)
+	return formatEpisodesForPrompt(eps)
 }
 
-// BuildGenerationMeta 供管理端说明记忆是否进入发帖链路。
 func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, rt model.MoeAgentRuntime, syncedMemoryCount int) GenerationMeta {
 	block := BuildPostMemoryBlock(ctx, db, rpc, rt)
 	lines := 0
@@ -78,15 +60,14 @@ func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort,
 	}
 	return GenerationMeta{
 		PostUsesToolMemory: false,
-		MemoriesSynced:     syncedMemoryCount,
+		MemoriesSynced:     0,
 		EpisodesInPrompt:   epsInPrompt,
 		PromptMemoryLines:  lines,
 		PromptPreview:      truncateRunes(block, 480),
 		PromptEstTokens:    est,
 		ContextLimit:       limit,
 		ContextUsedPct:     usedPct,
-		Note: "社区 Bot 发帖将记忆写入系统提示词（非 memory_search 工具）。" +
-			"「工具与 Bot」页的 memory_* 调用多来自 App 聊天；二者链路不同。",
+		Note:               "社区 Bot 发帖使用自传记忆注入系统提示词。",
 	}
 }
 
@@ -104,27 +85,6 @@ func defaultContextLimit() int {
 		return n
 	}
 	return 8192
-}
-
-func fetchSyncedMemories(ctx context.Context, rpc port.MoeToolPort, botUserID uint) string {
-	if rpc == nil || botUserID == 0 {
-		return ""
-	}
-	uid := strconv.FormatUint(uint64(botUserID), 10)
-	memResp, err := rpc.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: uid})
-	if err != nil || memResp == nil {
-		return ""
-	}
-	records := memory.RecordsFromLLMV1(memResp.GetMemories())
-	res := memory.SearchFacing(records, "", 6)
-	if len(res.Items) == 0 {
-		return ""
-	}
-	lines := make([]string, 0, len(res.Items))
-	for _, it := range res.Items {
-		lines = append(lines, fmt.Sprintf("- [%s] %s", it.Key, truncateRunes(it.Content, 80)))
-	}
-	return strings.Join(lines, "\n")
 }
 
 func formatEpisodesForPrompt(episodes []model.MoeBotEpisode) string {
