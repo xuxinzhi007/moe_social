@@ -49,9 +49,7 @@ extension TavernProvidersTabPart on _AgentListPageState {
           Text(
             provider.isBackendOllama
                 ? '未找到可用模型'
-                : provider.isLlamaCppServer
-                    ? '未连接本机 llama.cpp'
-                    : '接口已连通，但暂无模型列表',
+                : '接口已连通，但暂无模型列表',
             style: TextStyle(color: Colors.grey[600], fontSize: 16),
           ),
           const SizedBox(height: 8),
@@ -59,13 +57,10 @@ extension TavernProvidersTabPart on _AgentListPageState {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               provider.isBackendOllama
-                  ? '请检查本机 llama-server 是否已启动（默认 6633）'
-                  : provider.isLlamaCppServer
-                      ? '请先启动 llama-server（默认端口 6633），并在「模型来源 → 本机 llama.cpp → 设置」检查地址。\n'
-                          '模型 ID 通常与 gguf 文件名一致，例如 qwen2。'
-                      : '很多中转站不返回 /models，这很正常。\n'
-                          '请到 Provider 填写「默认模型」或「手动模型」（一行一个），'
-                          '保存后即可在此创建角色卡；聊天时直接调用该模型 ID。',
+                  ? '请检查后端推理服务是否已启动'
+                  : '很多中转站不返回 /models，这很正常。\n'
+                      '请到 Provider 填写「默认模型」或「手动模型」（一行一个），'
+                      '保存后即可在此创建角色卡；聊天时直接调用该模型 ID。',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Colors.grey[500], fontSize: 14, height: 1.45),

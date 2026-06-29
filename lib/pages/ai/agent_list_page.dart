@@ -51,11 +51,8 @@ class _AgentListPageState extends State<AgentListPage>
   bool _isLoading = true;
   List<String> _squareModels = [];
   bool _isLoadingSquareModels = false;
-  List<AiProviderProfile> _providerProfiles = [
-    AiProviderProfile.builtinLlamaCpp(),
-  ];
-  String _selectedSquareProviderId =
-      AiProviderProfile.builtinLlamaCppId;
+  List<AiProviderProfile> _providerProfiles = [];
+  String _selectedSquareProviderId = '';
   Map<String, Color> _agentColors = {};
   final bool _showFab = true;
 
@@ -134,7 +131,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   String _normalizeProviderId(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
-      return AiProviderProfile.builtinLlamaCppId;
+      return AiProviderProfile.builtinBackendId;
     }
     return providerId.trim();
   }
@@ -147,23 +144,23 @@ class _AgentListPageState extends State<AgentListPage>
   AiProviderProfile _resolveProviderById(String? providerId) {
     if (providerId == null || providerId.trim().isEmpty) {
       return _providerProfiles.firstWhere(
-        (p) => p.isLlamaCppServer,
-        orElse: () => AiProviderProfile.builtinLlamaCpp(),
+        (p) => p.isBuiltinBackend,
+        orElse: () => AiProviderProfile.builtinBackend(),
       );
     }
     final normalized = providerId.trim();
     for (final profile in _providerProfiles) {
       if (profile.id == normalized) return profile;
     }
-    return AiProviderProfile.builtinLlamaCpp();
+    return AiProviderProfile.builtinBackend();
   }
 
   AiProviderProfile get _selectedSquareProvider =>
       _resolveProviderById(_selectedSquareProviderId);
 
   String _providerSourceLabel(AiProviderProfile profile) {
-    if (profile.isLlamaCppServer) return '本机 llama-server';
-    if (profile.isBuiltinBackend) return '本机 llama.cpp';
+    if (profile.isLlamaCppServer) return '本机 llama.cpp';
+    if (profile.isBuiltinBackend) return '后端推理';
     return '我的 API';
   }
 
@@ -175,10 +172,9 @@ class _AgentListPageState extends State<AgentListPage>
       _providerProfiles = profiles;
       final preferredId = lastSelected ?? _selectedSquareProviderId;
       final exists = profiles.any((item) => item.id == preferredId);
-      if (!exists) {
-        _selectedSquareProviderId =
-            AiProviderProfile.builtinLlamaCppId;
-      } else {
+      if (!exists && profiles.isNotEmpty) {
+        _selectedSquareProviderId = profiles.first.id;
+      } else if (exists) {
         _selectedSquareProviderId = preferredId;
       }
     });

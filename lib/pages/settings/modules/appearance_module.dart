@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../theme/moe_tokens.dart';
-import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 
 class AppearanceModule extends StatelessWidget {
@@ -12,30 +11,27 @@ class AppearanceModule extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return FadeInUp(
-      delay: const Duration(milliseconds: 400),
-      child: MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.color_lens_rounded,
-            title: '主题模式',
-            subtitle: '选择应用明暗模式',
-            color: Colors.purple,
-            onTap: () {
-              _showThemeModeSheet(context, themeProvider);
-            },
-          ),
-          MoeMenuItem(
-            icon: Icons.palette_rounded,
-            title: '主题颜色',
-            subtitle: '自定义应用主色调',
-            color: Colors.pink,
-            onTap: () {
-              _showColorPickerSheet(context, themeProvider);
-            },
-          ),
-        ],
-      ),
+    return MoeMenuCard(
+      items: [
+        MoeMenuItem(
+          icon: Icons.color_lens_rounded,
+          title: '主题模式',
+          subtitle: '选择应用明暗模式',
+          color: Colors.purple,
+          onTap: () {
+            _showThemeModeSheet(context, themeProvider);
+          },
+        ),
+        MoeMenuItem(
+          icon: Icons.palette_rounded,
+          title: '主题颜色',
+          subtitle: '自定义应用主色调',
+          color: Colors.pink,
+          onTap: () {
+            _showColorPickerSheet(context, themeProvider);
+          },
+        ),
+      ],
     );
   }
 
