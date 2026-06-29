@@ -9,7 +9,7 @@ import { usePlatform } from '../context/PlatformContext'
 import type { ApiTarget } from '../lib/apiTarget'
 
 export function AppShell() {
-  const { agentOnline, authOk, toast, baseUrl, agentMeta } = useDeploy()
+  const { agentOnline, authOk, toast, agentMeta } = useDeploy()
   const { user, logout } = useAdminAuth()
   const navigate = useNavigate()
   const { apiTarget, setApiTarget, apiTargetLabel, health } = usePlatform()
@@ -24,10 +24,6 @@ export function AppShell() {
 
   const path = location.pathname.replace(/\/$/, '') || '/'
   const isReadyHome = READY_ROUTES.has(path)
-
-  const assetBase = baseUrl.replace(/\/$/, '')
-  const legacyRoot = `${assetBase}/`
-  const devtoolsHref = `${assetBase}/devtools.html?tab=memory`
 
   const agentChip = agentMeta?.pid
     ? `Agent · PID ${agentMeta.pid}`
@@ -48,7 +44,7 @@ export function AppShell() {
           </div>
         </div>
         <div className="sidebar-nav-wrap">
-          <SidebarNav legacyHref={legacyRoot} devtoolsHref={devtoolsHref} />
+          <SidebarNav />
         </div>
         <div className="sidebar-foot">业务 API · Deploy Agent</div>
       </aside>

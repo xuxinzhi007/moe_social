@@ -1,6 +1,5 @@
 import '../models/ai_agent.dart';
 import 'ai_lorebook_service.dart';
-import 'ai_memory_orchestrator.dart';
 import 'ai_prompt_defaults.dart';
 import 'ai_roleplay_prompt_builder.dart';
 
@@ -8,12 +7,10 @@ class AiChatContext {
   const AiChatContext({
     required this.messages,
     required this.systemPrompt,
-    required this.memoryMeta,
   });
 
   final List<Map<String, String>> messages;
   final String systemPrompt;
-  final AiMemoryEnrichResult memoryMeta;
 }
 
 class AiChatContextBuilder {
@@ -49,19 +46,12 @@ class AiChatContextBuilder {
         ? baseSystem
         : _withNoAiSelfDisclosureRule(baseSystem);
 
-    final memoryMeta = await AiMemoryOrchestrator().enrichSystemPromptWithMeta(
-      agent: agent,
-      basePrompt: guardedSystem,
-      latestUserMessage: latestUserMessage,
-    );
-
     return AiChatContext(
       messages: [
-        {'role': 'system', 'content': memoryMeta.prompt},
+        {'role': 'system', 'content': guardedSystem},
         ...history,
       ],
-      systemPrompt: memoryMeta.prompt,
-      memoryMeta: memoryMeta,
+      systemPrompt: guardedSystem,
     );
   }
 

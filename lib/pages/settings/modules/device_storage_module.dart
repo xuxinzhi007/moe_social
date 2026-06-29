@@ -6,7 +6,6 @@ import '../../../auth_service.dart';
 import '../../../services/app_storage_service.dart';
 import '../../../services/device_service.dart';
 import '../../../providers/device_info_provider.dart';
-import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/dialogs/confirm_dialog.dart';
@@ -94,54 +93,51 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
   Widget build(BuildContext context) {
     final isWeb = kIsWeb;
 
-    return FadeInUp(
-      delay: const Duration(milliseconds: 200),
-      child: MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.system_security_update_rounded,
-            title: '启动时检查更新',
-            subtitle: '发现新版本时提醒；无更新不提示。仅 Android 侧载包有效',
-            color: const Color(0xFF7F7FD5),
-            onTap: () {},
-            trailing: Switch.adaptive(
-              value: widget.autoUpdateOnLaunch,
-              activeColor: const Color(0xFF7F7FD5),
-              onChanged: widget.onAutoUpdateChanged,
-            ),
+    return MoeMenuCard(
+      items: [
+        MoeMenuItem(
+          icon: Icons.system_security_update_rounded,
+          title: '启动时检查更新',
+          subtitle: '发现新版本时提醒；无更新不提示。仅 Android 侧载包有效',
+          color: const Color(0xFF7F7FD5),
+          onTap: () {},
+          trailing: Switch.adaptive(
+            value: widget.autoUpdateOnLaunch,
+            activeColor: const Color(0xFF7F7FD5),
+            onChanged: widget.onAutoUpdateChanged,
           ),
+        ),
+        MoeMenuItem(
+          icon: Icons.phone_iphone_rounded,
+          title: '本机设备信息',
+          subtitle: '查看设备ID、系统版本、网络状态等',
+          color: Colors.blueGrey,
+          onTap: () => _showDeviceInfoSheet(context),
+        ),
+        MoeMenuItem(
+          icon: Icons.devices_other_rounded,
+          title: '已登录设备',
+          subtitle: '查看账号在各设备上的登录记录',
+          color: Colors.cyan,
+          onTap: () => _showRemoteDevicesSheet(context),
+        ),
+        if (!isWeb)
           MoeMenuItem(
-            icon: Icons.phone_iphone_rounded,
-            title: '本机设备信息',
-            subtitle: '查看设备ID、系统版本、网络状态等',
-            color: Colors.blueGrey,
-            onTap: () => _showDeviceInfoSheet(context),
+            icon: Icons.cleaning_services_rounded,
+            title: '清理缓存',
+            subtitle: _cacheSubtitle,
+            color: Colors.amber,
+            onTap:
+                _clearingCache ? () {} : () => _confirmAndClearCache(context),
+            trailing: _clearingCache
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
           ),
-          MoeMenuItem(
-            icon: Icons.devices_other_rounded,
-            title: '已登录设备',
-            subtitle: '查看账号在各设备上的登录记录',
-            color: Colors.cyan,
-            onTap: () => _showRemoteDevicesSheet(context),
-          ),
-          if (!isWeb)
-            MoeMenuItem(
-              icon: Icons.cleaning_services_rounded,
-              title: '清理缓存',
-              subtitle: _cacheSubtitle,
-              color: Colors.amber,
-              onTap:
-                  _clearingCache ? () {} : () => _confirmAndClearCache(context),
-              trailing: _clearingCache
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : null,
-            ),
-        ],
-      ),
+      ],
     );
   }
 

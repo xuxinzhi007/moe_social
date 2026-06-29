@@ -83,40 +83,6 @@ func (s *store) GetLevelConfigByLevel(ctx context.Context, level int) (model.Lev
 	return row, err
 }
 
-func (s *store) CountMemories(ctx context.Context) (int64, error) {
-	var n int64
-	err := s.db.WithContext(ctx).Model(&model.UserMemory{}).Count(&n).Error
-	return n, err
-}
-
-func (s *store) CountDistinctUsersWithMemories(ctx context.Context) (int64, error) {
-	var n int64
-	err := s.db.WithContext(ctx).Model(&model.UserMemory{}).Distinct("user_id").Count(&n).Error
-	return n, err
-}
-
-func (s *store) CountMemoryFeedbacks(ctx context.Context) (int64, error) {
-	var n int64
-	err := s.db.WithContext(ctx).Model(&model.UserMemoryFeedback{}).Count(&n).Error
-	return n, err
-}
-
-func (s *store) CountMemoryEmbeddings(ctx context.Context) (int64, error) {
-	var n int64
-	err := s.db.WithContext(ctx).Model(&model.UserMemoryEmbedding{}).Count(&n).Error
-	return n, err
-}
-
-func (s *store) GroupMemoriesByType(ctx context.Context) ([]adminbiz.MemoryTypeStat, error) {
-	var rows []adminbiz.MemoryTypeStat
-	err := s.db.WithContext(ctx).Model(&model.UserMemory{}).
-		Select("memory_type, COUNT(*) as count").
-		Group("memory_type").
-		Order("count DESC").
-		Scan(&rows).Error
-	return rows, err
-}
-
 func (s *store) ListUsers(ctx context.Context, keyword string, offset, limit int) ([]model.User, int64, error) {
 	q := s.db.WithContext(ctx).Model(&model.User{})
 	if kw := strings.TrimSpace(keyword); kw != "" {

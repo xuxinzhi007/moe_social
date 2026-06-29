@@ -119,51 +119,6 @@ func GetUserProfile(ctx context.Context, store AdminStore, in *adminv1.AdminGetU
 	}, nil
 }
 
-// GetMemoryStats Admin 记忆统计。
-func GetMemoryStats(ctx context.Context, store AdminStore, _ *adminv1.AdminGetMemoryStatsReq) (*adminv1.AdminGetMemoryStatsResp, error) {
-	if store == nil {
-		return nil, gorm.ErrInvalidDB
-	}
-	stats := &adminv1.AdminMemoryStats{}
-
-	totalMemories, err := store.CountMemories(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
-	}
-	stats.TotalMemories = int32(totalMemories)
-
-	usersWith, err := store.CountDistinctUsersWithMemories(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
-	}
-	stats.UsersWithMemories = int32(usersWith)
-
-	totalFeedbacks, err := store.CountMemoryFeedbacks(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
-	}
-	stats.TotalFeedbacks = int32(totalFeedbacks)
-
-	totalEmbeddings, err := store.CountMemoryEmbeddings(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
-	}
-	stats.TotalEmbeddings = int32(totalEmbeddings)
-
-	typeRows, err := store.GroupMemoriesByType(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrMemoryStats, err)
-	}
-	stats.ByType = make([]*adminv1.AdminMemoryTypeStat, len(typeRows))
-	for i, row := range typeRows {
-		stats.ByType[i] = &adminv1.AdminMemoryTypeStat{
-			MemoryType: row.MemoryType,
-			Count:      int32(row.Count),
-		}
-	}
-	return &adminv1.AdminGetMemoryStatsResp{Stats: stats}, nil
-}
-
 func buildUserProfileLinks(userID string) []*adminv1.AdminUserRelationLink {
 	return []*adminv1.AdminUserRelationLink{
 		{Label: "动态", AdminRoute: "/content/posts?user_id=" + userID, Hint: "posts.user_id"},
@@ -176,7 +131,6 @@ func buildUserProfileLinks(userID string) []*adminv1.AdminUserRelationLink {
 		{Label: "礼物收到", AdminRoute: "/commerce/gifts?to_user_id=" + userID, Hint: "gift_records.to_user_id"},
 		{Label: "成就", AdminRoute: "/growth?tab=achievements&user_id=" + userID, Hint: "user_achievement_progress.user_id"},
 		{Label: "AI 分身", AdminRoute: "/ai/agents?user_id=" + userID, Hint: "ai_user_configs.user_id"},
-		{Label: "记忆", AdminRoute: "/system/platform?tab=memory&user_id=" + userID, Hint: "user_memories.user_id"},
 	}
 }
 

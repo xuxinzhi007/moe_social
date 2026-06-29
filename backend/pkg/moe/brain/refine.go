@@ -12,7 +12,6 @@ import (
 	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
 
-	llmv1 "backend/api/llm/v1"
 	postv1 "backend/api/post/v1"
 
 	"github.com/spf13/viper"
@@ -225,17 +224,6 @@ func applyEpisodeRefinement(
 	ep.MoodTag = moodTag
 	ep.RevisionCount++
 
-	if deps.RPC != nil && ep.BotUserID > 0 && ep.MemoryKey != "" {
-		val := fmt.Sprintf("%s\n标签: %s\n质量: %d", truncate(content, 200), strings.Join(tags, ", "), quality)
-		_, _ = deps.RPC.UpsertUserMemory(ctx, &llmv1.UpsertUserMemoryReq{
-			UserId:     strconv.FormatUint(uint64(ep.BotUserID), 10),
-			Key:        ep.MemoryKey,
-			Value:      val,
-			MemoryType: "bot_episode",
-			Source:     "moe_brain_refine",
-			Confidence: float64(quality) / 100.0,
-		})
-	}
 	if deps.RPC != nil && ep.PostID != "" && ep.BotUserID > 0 {
 		_, _ = deps.RPC.UpdatePost(ctx, &postv1.UpdatePostRequest{
 			PostId:  ep.PostID,

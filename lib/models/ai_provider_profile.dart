@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 enum AiProviderType {
-  backendOllama('backend_ollama', '本机推理（llama-server）'),
+  backendOllama('backend_ollama', '后端推理'),
   llamaCppServer('llama_cpp_server', '本机 llama.cpp'),
   openAiCompatible('openai_compatible', 'OpenAI 兼容'),
   ;
@@ -12,23 +12,15 @@ enum AiProviderType {
   final String label;
 
   static AiProviderType fromValue(String raw) {
-    // 旧版 App 内嵌 GGUF 已移除，历史数据映射到 llama-server。
-    if (raw == 'local_gguf') {
-      return AiProviderType.llamaCppServer;
-    }
     for (final item in AiProviderType.values) {
       if (item.value == raw) return item;
     }
-    return AiProviderType.llamaCppServer;
+    return AiProviderType.openAiCompatible;
   }
 }
 
 class AiProviderProfile {
   static const String builtinBackendId = 'builtin_backend_ollama';
-  static const String builtinLlamaCppId = 'builtin_local_llama_cpp';
-
-  /// 旧内置 ID（App 内嵌 GGUF），仅用于迁移到 [builtinLlamaCppId]。
-  static const String legacyLocalGgufId = 'builtin_local_gguf';
 
   final String id;
   final String name;
@@ -36,7 +28,6 @@ class AiProviderProfile {
   final String baseUrl;
   final String defaultModel;
   final List<String> manualModels;
-  final bool useServerMemory;
   final bool supportsSystemMessages;
   final bool supportsStreaming;
   final bool supportsVision;
@@ -51,7 +42,6 @@ class AiProviderProfile {
     required this.baseUrl,
     required this.defaultModel,
     required this.manualModels,
-    required this.useServerMemory,
     this.supportsSystemMessages = true,
     this.supportsStreaming = false,
     this.supportsVision = false,
@@ -61,16 +51,10 @@ class AiProviderProfile {
   });
 
   bool get isBuiltinBackend => id == builtinBackendId;
-  bool get isBuiltinLlamaCpp => id == builtinLlamaCppId;
-  bool get isLegacyLocalGguf => id == legacyLocalGgufId;
-  bool get isBuiltin => isBuiltinBackend || isBuiltinLlamaCpp;
+  bool get isBuiltin => isBuiltinBackend;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
-
-  /// 本机 llama-server / 后端统一推理（历史字段名 backend_ollama）。
-  bool get isBackendInference => isBackendOllama || isBuiltinBackend;
   bool get isLlamaCppServer => providerType == AiProviderType.llamaCppServer;
-  bool get isOpenAiCompatible =>
-      providerType == AiProviderType.openAiCompatible;
+  bool get isOpenAiCompatible => providerType == AiProviderType.openAiCompatible;
 
   /// 当 /models 不可用时，用于下拉与「模型来源」列表的回退模型 ID。
   List<String> get effectiveModelIds {
@@ -94,7 +78,6 @@ class AiProviderProfile {
       'base_url': baseUrl,
       'default_model': defaultModel,
       'manual_models_json': jsonEncode(manualModels),
-      'use_server_memory': useServerMemory ? 1 : 0,
       'supports_system_messages': supportsSystemMessages ? 1 : 0,
       'supports_streaming': supportsStreaming ? 1 : 0,
       'supports_vision': supportsVision ? 1 : 0,
@@ -125,9 +108,6 @@ class AiProviderProfile {
       baseUrl: (map['base_url'] ?? '').toString(),
       defaultModel: (map['default_model'] ?? '').toString(),
       manualModels: manualModels,
-      useServerMemory: (map['use_server_memory'] is num)
-          ? (map['use_server_memory'] as num).toInt() == 1
-          : map['use_server_memory'] == true,
       supportsSystemMessages: (map['supports_system_messages'] is num)
           ? (map['supports_system_messages'] as num).toInt() != 0
           : (map['supports_system_messages'] ?? true) == true,
@@ -153,12 +133,11 @@ class AiProviderProfile {
     final now = DateTime.fromMillisecondsSinceEpoch(0);
     return AiProviderProfile(
       id: builtinBackendId,
-      name: '后端推理（已废弃）',
+      name: '后端推理',
       providerType: AiProviderType.backendOllama,
       baseUrl: '',
       defaultModel: '',
       manualModels: const [],
-      useServerMemory: true,
       supportsSystemMessages: true,
       supportsStreaming: true,
       supportsVision: false,
@@ -186,27 +165,6 @@ class AiProviderProfile {
         h.startsWith('10.');
   }
 
-  factory AiProviderProfile.builtinLlamaCpp() {
-    final now = DateTime.fromMillisecondsSinceEpoch(0);
-    return AiProviderProfile(
-      id: builtinLlamaCppId,
-      name: '本机 llama.cpp',
-      providerType: AiProviderType.llamaCppServer,
-      baseUrl: 'http://127.0.0.1:6633',
-      defaultModel: 'qwen2',
-      manualModels: const ['qwen2'],
-      useServerMemory: false,
-      supportsSystemMessages: true,
-      supportsStreaming: false,
-      supportsVision: false,
-      supportsToolCalls: false,
-      createdAt: now,
-      updatedAt: now,
-    );
-  }
-
-  static const String defaultLocalProviderId = builtinLlamaCppId;
-
   AiProviderProfile copyWith({
     String? id,
     String? name,
@@ -214,7 +172,6 @@ class AiProviderProfile {
     String? baseUrl,
     String? defaultModel,
     List<String>? manualModels,
-    bool? useServerMemory,
     bool? supportsSystemMessages,
     bool? supportsStreaming,
     bool? supportsVision,
@@ -229,7 +186,6 @@ class AiProviderProfile {
       baseUrl: baseUrl ?? this.baseUrl,
       defaultModel: defaultModel ?? this.defaultModel,
       manualModels: manualModels ?? this.manualModels,
-      useServerMemory: useServerMemory ?? this.useServerMemory,
       supportsSystemMessages:
           supportsSystemMessages ?? this.supportsSystemMessages,
       supportsStreaming: supportsStreaming ?? this.supportsStreaming,

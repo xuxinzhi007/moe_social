@@ -8,14 +8,12 @@ class AiChatIdentityHero extends StatelessWidget {
     required this.modelName,
     required this.promptReady,
     required this.personaMounted,
-    required this.memoryLabel,
     required this.isSyncingModelPrompt,
   });
 
   final String modelName;
   final bool promptReady;
   final bool personaMounted;
-  final String memoryLabel;
   final bool isSyncingModelPrompt;
 
   @override
@@ -55,7 +53,6 @@ class AiChatIdentityHero extends StatelessWidget {
                 _IdentityChip('模型', modelName),
                 _IdentityChip('人设', promptReady ? '已启用' : '未设置'),
                 if (personaMounted) const _IdentityChip('Persona', '已挂载'),
-                _IdentityChip('记忆', memoryLabel),
                 if (isSyncingModelPrompt) const _IdentityChip('状态', '同步中'),
               ],
             ),

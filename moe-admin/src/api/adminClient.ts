@@ -105,47 +105,6 @@ export type MoeInferenceStatusData = {
   message?: string
 }
 
-export type AdminMemoryHealthData = {
-  stats?: {
-    total_memories: number
-    users_with_memories: number
-    total_feedbacks: number
-    total_embeddings: number
-    by_type: Array<{ memory_type: string; count: number }>
-  }
-  embedding_index_ratio: number
-  hybrid_enabled: boolean
-  vector_weight: number
-  keyword_weight: number
-  rerank_enabled: boolean
-  graph_enabled: boolean
-  embedding_probe?: {
-    ok: boolean
-    provider_type: string
-    model: string
-    base_url: string
-    message: string
-  }
-  llm_inference_online: boolean
-  llm_inference_base_url: string
-  memory_model: string
-  hints: string[]
-}
-
-export type AdminRebuildMemoryEmbeddingsData = {
-  indexed: number
-  provider: string
-  model: string
-  message: string
-}
-
-export type AdminExportLearningDatasetData = {
-  jsonl: string
-  line_count: number
-  agent_name: string
-  hint: string
-}
-
 export type MoePipelineStepItem = {
   key: string
   label: string
@@ -286,7 +245,7 @@ export function createAdminClient(opts: AdminClientOptions) {
     const headers = new Headers(init?.headers)
     const useAuth = init?.auth !== false
     if (useAuth && opts.token) {
-      headers.set('X-Admin-Token', opts.token)
+      headers.set('Authorization', `Bearer ${opts.token}`)
     }
     const full = resolveAdminRequestUrl(path, opts)
     let res: Response
@@ -1367,75 +1326,6 @@ export function createAdminClient(opts: AdminClientOptions) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }),
-
-    listMemories: (params: {
-      page?: number
-      page_size?: number
-      user_id?: string
-      keyword?: string
-      memory_type?: string
-    } = {}) => {
-      const q = new URLSearchParams()
-      if (params.page) q.set('page', String(params.page))
-      if (params.page_size) q.set('page_size', String(params.page_size))
-      if (params.user_id) q.set('user_id', params.user_id)
-      if (params.keyword) q.set('keyword', params.keyword)
-      if (params.memory_type) q.set('memory_type', params.memory_type)
-      const qs = q.toString()
-      return api<
-        BaseResp<{
-          items: Array<{
-            id: string
-            user_id: string
-            username?: string
-            key: string
-            value: string
-            memory_type: string
-            confidence: number
-            source: string
-            updated_at: string
-          }>
-          total: number
-        }>
-      >(`${adminApiPath('/memories')}${qs ? `?${qs}` : ''}`)
-    },
-
-    getMemoryStats: () =>
-      api<
-        BaseResp<{
-          total_memories: number
-          users_with_memories: number
-          total_feedbacks: number
-          total_embeddings: number
-          by_type: Array<{ memory_type: string; count: number }>
-        }>
-      >(adminApiPath('/memories/stats')),
-
-    getMemoryHealth: () =>
-      api<BaseResp<AdminMemoryHealthData>>(adminApiPath('/memories/health')),
-
-    rebuildMemoryEmbeddings: (body: { user_id: string }) =>
-      api<BaseResp<AdminRebuildMemoryEmbeddingsData>>(
-        adminApiPath('/memories/reindex'),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-      ),
-
-    exportLearningDataset: (body: { user_id: string; agent_id: string }) =>
-      api<BaseResp<AdminExportLearningDatasetData>>(
-        adminApiPath('/learning/export-dataset'),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-      ),
-
-    deleteMemory: (memoryId: string | number) =>
-      api<BaseResp<unknown>>(adminApiPath(`/memories/${memoryId}`), { method: 'DELETE' }),
 
     getMoeToolsSchema: () =>
       api<

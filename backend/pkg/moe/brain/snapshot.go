@@ -4,14 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
-	"strconv"
 	"strings"
 
 	"backend/model"
-	"backend/pkg/memory"
 	"backend/pkg/moe/port"
-
-	llmv1 "backend/api/llm/v1"
 
 	"gorm.io/gorm"
 )
@@ -106,24 +102,6 @@ func LoadSnapshot(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort, agentK
 	}
 
 	memories := []MemoryItem{}
-	if rpc != nil && rt.BotUserID > 0 {
-		uid := strconv.FormatUint(uint64(rt.BotUserID), 10)
-		resp, err := rpc.GetUserMemories(ctx, &llmv1.GetUserMemoriesReq{UserId: uid})
-		if err == nil && resp != nil {
-			records := memory.RecordsFromLLMV1(resp.GetMemories())
-			for _, rec := range records {
-				if !strings.HasPrefix(rec.Key, "bot_post:") && rec.MemoryType != "bot_episode" {
-					continue
-				}
-				memories = append(memories, MemoryItem{
-					Key:        rec.Key,
-					Value:      rec.Value,
-					MemoryType: rec.MemoryType,
-					UpdatedAt:  rec.UpdatedAt.Format("2006-01-02 15:04:05"),
-				})
-			}
-		}
-	}
 
 	stability := EffectiveStabilityScore(rt)
 	stabilityDelta := lastRunStabilityDelta(db, agentKey)

@@ -11,12 +11,10 @@ class AiChatSessionDrawer extends StatelessWidget {
     required this.agentName,
     required this.modelName,
     required this.providerSourceLabel,
-    required this.memoryCount,
     required this.userPersona,
     required this.sessions,
     required this.currentSessionId,
     required this.onCreateSession,
-    required this.onOpenMemoryManager,
     required this.onEditUserPersona,
     required this.onLoadSession,
     required this.onDeleteSession,
@@ -25,12 +23,10 @@ class AiChatSessionDrawer extends StatelessWidget {
   final String agentName;
   final String modelName;
   final String providerSourceLabel;
-  final int memoryCount;
   final String userPersona;
   final List<AiChatSession> sessions;
   final String? currentSessionId;
   final VoidCallback onCreateSession;
-  final VoidCallback onOpenMemoryManager;
   final VoidCallback onEditUserPersona;
   final ValueChanged<AiChatSession> onLoadSession;
   final ValueChanged<String> onDeleteSession;
@@ -104,15 +100,6 @@ class AiChatSessionDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               onCreateSession();
-            },
-          ),
-          MoeActionRow(
-            icon: Icons.psychology_rounded,
-            title: '记忆库（$memoryCount 条）',
-            iconColor: MoeTokens.secondary,
-            onTap: () {
-              Navigator.pop(context);
-              onOpenMemoryManager();
             },
           ),
           MoeActionRow(

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../../../auth_service.dart';
 import '../../../services/api_service.dart';
-import '../../../widgets/fade_in_up.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_error_state.dart';
 import '../../../widgets/moe_toast.dart';
@@ -20,46 +19,43 @@ class AccountSecurityModule extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWeb = kIsWeb;
 
-    return FadeInUp(
-      delay: const Duration(milliseconds: 500),
-      child: MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.lock_rounded,
-            title: '修改密码',
-            color: Colors.blue,
-            onTap: () => _showChangePasswordDialog(context),
-          ),
-          MoeMenuItem(
-            icon: Icons.privacy_tip_rounded,
-            title: '隐私设置',
-            color: Colors.green,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PrivacySettingsPage(),
-                  fullscreenDialog: isWeb, // 在Web端使用全屏对话框
-                ),
-              );
-            },
-          ),
-          MoeMenuItem(
-            icon: Icons.shield_rounded,
-            title: '账号安全',
-            subtitle: '查看登录历史、两步验证',
-            color: Colors.red,
-            onTap: () => _showAccountSecuritySheet(context),
-          ),
-          MoeMenuItem(
-            icon: Icons.person_off_rounded,
-            title: '注销账号',
-            subtitle: '永久删除账号与登录绑定，不可恢复',
-            color: Colors.red,
-            onTap: () => _confirmDeleteAccount(context),
-          ),
-        ],
-      ),
+    return MoeMenuCard(
+      items: [
+        MoeMenuItem(
+          icon: Icons.lock_rounded,
+          title: '修改密码',
+          color: Colors.blue,
+          onTap: () => _showChangePasswordDialog(context),
+        ),
+        MoeMenuItem(
+          icon: Icons.privacy_tip_rounded,
+          title: '隐私设置',
+          color: Colors.green,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PrivacySettingsPage(),
+                fullscreenDialog: isWeb, // 在Web端使用全屏对话框
+              ),
+            );
+          },
+        ),
+        MoeMenuItem(
+          icon: Icons.shield_rounded,
+          title: '账号安全',
+          subtitle: '查看登录历史、两步验证',
+          color: Colors.red,
+          onTap: () => _showAccountSecuritySheet(context),
+        ),
+        MoeMenuItem(
+          icon: Icons.person_off_rounded,
+          title: '注销账号',
+          subtitle: '永久删除账号与登录绑定，不可恢复',
+          color: Colors.red,
+          onTap: () => _confirmDeleteAccount(context),
+        ),
+      ],
     );
   }
 

@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/notification_preferences.dart';
 import '../../services/startup_update_preferences.dart';
 import '../../providers/device_info_provider.dart';
-import '../../widgets/fade_in_up.dart';
+
 import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -433,19 +433,16 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSearchResultItem(Map<String, dynamic> result) {
-    return FadeInUp(
-      delay: const Duration(milliseconds: 100),
-      child: MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: result['icon'] as IconData,
-            title: result['title'] as String,
-            subtitle: result['description'] as String,
-            color: result['color'] as Color,
-            onTap: () => _navigateToSettingItem(result),
-          ),
-        ],
-      ),
+    return MoeMenuCard(
+      items: [
+        MoeMenuItem(
+          icon: result['icon'] as IconData,
+          title: result['title'] as String,
+          subtitle: result['description'] as String,
+          color: result['color'] as Color,
+          onTap: () => _navigateToSettingItem(result),
+        ),
+      ],
     );
   }
 
@@ -511,75 +508,69 @@ class _SettingsPageState extends State<SettingsPage> {
       const SizedBox(height: 24),
       _buildSectionTitle('账号与隐私', key: _moduleKeys['账号与隐私']),
       const AccountSecurityModule(),
-      FadeInUp(
-        delay: const Duration(milliseconds: 95),
-        child: MoeMenuCard(
-          items: [
-            MoeMenuItem(
-              icon: Icons.campaign_outlined,
-              title: '系统公告',
-              subtitle: '查看运营发布的平台公告',
-              color: const Color(0xFF7F7FD5),
-              onTap: () => Navigator.pushNamed(context, '/announcements'),
+      MoeMenuCard(
+        items: [
+          MoeMenuItem(
+            icon: Icons.campaign_outlined,
+            title: '系统公告',
+            subtitle: '查看运营发布的平台公告',
+            color: const Color(0xFF7F7FD5),
+            onTap: () => Navigator.pushNamed(context, '/announcements'),
+          ),
+          MoeMenuItem(
+            icon: Icons.mark_chat_unread_outlined,
+            title: '私信记录保留',
+            subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',
+            color: Colors.teal,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const MessageRetentionSettingsPage(),
+                ),
+              );
+            },
+          ),
+          MoeMenuItem(
+            icon: Icons.notifications_active_rounded,
+            title: '推送通知',
+            subtitle: '接收最新动态和系统通知',
+            color: Colors.orange,
+            trailing: Switch.adaptive(
+              value: _notificationsEnabled,
+              activeThumbColor: MoeTheme.of(context).primary,
+              onChanged: (bool value) => _onNotificationToggle(value),
             ),
-            MoeMenuItem(
-              icon: Icons.mark_chat_unread_outlined,
-              title: '私信记录保留',
-              subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',
-              color: Colors.teal,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const MessageRetentionSettingsPage(),
-                  ),
-                );
-              },
-            ),
-            MoeMenuItem(
-              icon: Icons.notifications_active_rounded,
-              title: '推送通知',
-              subtitle: '接收最新动态和系统通知',
-              color: Colors.orange,
-              trailing: Switch.adaptive(
-                value: _notificationsEnabled,
-                activeThumbColor: MoeTheme.of(context).primary,
-                onChanged: (bool value) => _onNotificationToggle(value),
-              ),
-              onTap: () => _onNotificationToggle(!_notificationsEnabled),
-            ),
-          ],
-        ),
+            onTap: () => _onNotificationToggle(!_notificationsEnabled),
+          ),
+        ],
       ),
       const SizedBox(height: 24),
       _buildSectionTitle('外观与体验', key: _moduleKeys['外观与体验']),
       const AppearanceModule(),
-      FadeInUp(
-        delay: const Duration(milliseconds: 100),
-        child: MoeMenuCard(
-          items: [
-            MoeMenuItem(
-              icon: Icons.smart_toy_rounded,
-              title: '虚拟助手',
-              subtitle: avatarProvider.enabled
-                  ? '已开启，点击右侧开关或进入自定义'
-                  : '默认关闭，开启后可自定义形象',
-              color: MoeTheme.of(context).primary,
-              trailing: Switch.adaptive(
-                value: avatarProvider.enabled,
-                activeThumbColor: MoeTheme.of(context).primary,
-                onChanged: (bool value) async {
-                  await avatarProvider.setEnabled(value);
-                  if (!mounted) return;
-                  MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
-                },
-              ),
-              onTap: () {
-                Navigator.pushNamed(context, '/virtual-avatar-settings');
+      MoeMenuCard(
+        items: [
+          MoeMenuItem(
+            icon: Icons.smart_toy_rounded,
+            title: '虚拟助手',
+            subtitle: avatarProvider.enabled
+                ? '已开启，点击右侧开关或进入自定义'
+                : '默认关闭，开启后可自定义形象',
+            color: MoeTheme.of(context).primary,
+            trailing: Switch.adaptive(
+              value: avatarProvider.enabled,
+              activeThumbColor: MoeTheme.of(context).primary,
+              onChanged: (bool value) async {
+                await avatarProvider.setEnabled(value);
+                if (!mounted) return;
+                MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
               },
             ),
-          ],
-        ),
+            onTap: () {
+              Navigator.pushNamed(context, '/virtual-avatar-settings');
+            },
+          ),
+        ],
       ),
       const SizedBox(height: 24),
       _buildSectionTitle('设备与数据', key: _moduleKeys['设备与数据']),
@@ -619,70 +610,67 @@ class _SettingsPageState extends State<SettingsPage> {
       _autoUpdateOnLaunch ? '启动自动检查更新' : '启动不自动检查更新',
     ].join(' · ');
 
-    return FadeInUp(
-      delay: const Duration(milliseconds: 60),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _scrollToModule('账号与隐私'),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _scrollToModule('账号与隐私'),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7F7FD5).withValues(alpha: 0.22),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.22),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.tune_rounded, color: Colors.white),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '当前体验状态',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
+                child: const Icon(Icons.tune_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '当前体验状态',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        summary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          fontSize: 12,
-                          height: 1.25,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        fontSize: 12,
+                        height: 1.25,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

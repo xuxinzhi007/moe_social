@@ -315,13 +315,6 @@ func (s *userStore) SaveUserDeviceUnscoped(ctx context.Context, dev *model.UserD
 	return s.db.WithContext(ctx).Unscoped().Save(dev).Error
 }
 
-func (s *userStore) DeleteDeviceSyncMemories(ctx context.Context, userID uint) error {
-	return s.db.WithContext(ctx).Where(
-		"user_id = ? AND (`key` LIKE ? OR source = ?)",
-		userID, "device_info:%", "device_sync",
-	).Delete(&model.UserMemory{}).Error
-}
-
 func (s *userStore) CountTransactions(ctx context.Context, userID int) (int64, error) {
 	var total int64
 	err := s.db.WithContext(ctx).Model(&model.Transaction{}).Where("user_id = ?", userID).Count(&total).Error

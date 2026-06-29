@@ -32,12 +32,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "emojis", Model: &model.Emoji{}},
 		{Key: "emoji_packs", Model: &model.EmojiPack{}},
 		{Key: "user_emoji_packs", Model: &model.UserEmojiPack{}},
-		{Key: "user_memories", Model: &model.UserMemory{}},
-		{Key: "user_memory_feedbacks", Model: &model.UserMemoryFeedback{}},
-		{Key: "user_memory_profile_caches", Model: &model.UserMemoryProfileCache{}},
 		{Key: "user_devices", Model: &model.UserDevice{}},
-		{Key: "user_memory_embeddings", Model: &model.UserMemoryEmbedding{}},
-		{Key: "user_memory_relations", Model: &model.UserMemoryRelation{}},
 		{Key: "ai_user_configs", Model: &model.AiUserConfig{}},
 		// 签到等级系统
 		{Key: "user_levels", Model: &model.UserLevel{}},
