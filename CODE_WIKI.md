@@ -1,529 +1,471 @@
-# Moe Social Code Wiki
+# Moe Social (萌社交) Code Wiki
 
-> 项目完整技术文档，包含架构设计、模块职责、核心组件说明、依赖关系及运行指南。
->
-> 最后更新：2026-06-29
+> **项目版本**: 1.0.0+1  
+> **最后更新**: 2026-06-29  
+> **技术栈**: Flutter + Go/Kratos + React
+
+### 近期变更摘要（2026-06-29）
+
+| 类别 | 说明 |
+|------|------|
+| **已移除** | 独立向量/图记忆系统（`pkg/memory/`、Flutter `memory_service`、管理台 LearningWorkbench / RpcPage、Chrome `integration_test` 栈） |
+| **AI 推理** | 统一走 `biz/llm/platform_*` + `pkg/llminference`；`llm_inference.api_key` / `MOE_LLM_API_KEY` |
+| **认证** | App JWT 中间件（`internal/server/auth.go`）+ Flutter 主动 refresh（`jwt_exp.dart`） |
+| **设计资源** | `moe-social-app-design/`（HTML 原型）、`moe-social-ui-design/`（早期 mock） |
+| **演示入口** | `lib/demo_main.dart` → 首页改版对比 `home_redesign_demo.dart` |
 
 ---
 
 ## 目录
 
-- [项目概述](#项目概述)
-- [技术栈](#技术栈)
-- [项目结构](#项目结构)
-- [前端架构 (Flutter)](#前端架构-flutter)
-  - [模块职责](#flutter-模块职责)
-  - [核心服务](#核心服务)
-  - [核心类说明](#flutter-核心类说明)
-  - [路由系统](#路由系统)
-- [后端架构 (Go/Kratos)](#后端架构-gokratos)
-  - [目录结构](#后端目录结构)
-  - [API 契约](#api-契约)
-  - [业务逻辑层 (biz)](#业务逻辑层-biz)
-  - [数据层 (data)](#数据层-data)
-  - [服务层 (service)](#服务层-service)
-  - [核心模型](#核心模型)
-- [管理台 (moe-admin)](#管理台-moe-admin)
-- [依赖关系](#依赖关系)
-- [运行方式](#运行方式)
+1. [项目概述](#1-项目概述)
+2. [整体架构](#2-整体架构)
+3. [前端架构（Flutter）](#3-前端架构flutter)
+4. [后端架构（Go/Kratos）](#4-后端架构gokratos)
+5. [管理台架构（React）](#5-管理台架构react)
+6. [核心功能模块](#6-核心功能模块)
+7. [数据库模型](#7-数据库模型)
+8. [API 接口](#8-api-接口)
+9. [依赖关系](#9-依赖关系)
+10. [项目运行方式](#10-项目运行方式)
+11. [开发规范与约定](#11-开发规范与约定)
+12. [部署与运维](#12-部署与运维)
 
 ---
 
-## 项目概述
+## 1. 项目概述
 
-**Moe Social (萌社交)** 是一款复合型社交产品，核心特性包括：
+### 1.1 项目简介
 
-- **萌系社交主线**：动态流、帖子、评论、点赞、关注
-- **AI 智能体**：AI 聊天机器人、酒馆化能力、角色卡广场
-- **虚拟形象与 VIP 商业化**：Avatar 系统、抽卡、VIP 订阅
-- **AutoGLM 自动化**：任务规划与设备操作自动化
-- **实时通信**：私信、WebSocket、语音通话 (Agora)
+Moe Social（萌社交）是一款**复合型社交产品**，融合传统社交与 AI 智能体能力。客户端为 **Flutter**，后端为 **Go / Kratos 单进程 HTTP**（`:8888`），运营后台为 **React（moe-admin）**。
 
-支持平台：Android、iOS、Web、Windows、macOS、Linux
+### 1.2 核心特性
 
----
-
-## 技术栈
-
-| 层级 | 技术 |
+| 类别 | 特性 |
 |------|------|
+| **社交主线** | 动态流、发帖、评论、点赞、话题、关注/粉丝、好友、私信 |
+| **AI 能力** | 多 Provider 角色卡、酒馆广场、Lorebook/世界书、平台 LLM 代理聊天 |
+| **商业化** | VIP 会员、充值钱包、抽卡、虚拟形象、礼物 |
+| **成长体系** | 签到、用户等级、成就徽章、经验值 |
+| **实时通信** | WebSocket 私信、在线状态、语音通话（Agora RTC） |
+| **自动化** | AutoGLM 实验页、Moe Bot / Brain 运行时（管理台可编排） |
+| **多平台** | Android、iOS、Web、Windows、macOS、Linux |
+
+### 1.3 技术栈总览
+
+| 层级 | 技术选型 |
+|------|----------|
 | **客户端** | Flutter 3.x、Dart、Provider、Material Design |
 | **后端** | Go 1.25+、Kratos v2.8.4、Protocol Buffers、GORM、MySQL |
-| **实时通信** | WebSocket、Agora RTC |
-| **认证** | JWT、飞书 OAuth、微信 OAuth |
-| **数据库** | MySQL (生产)、SQLite (开发/测试) |
-| **管理台** | React 19、TypeScript、Vite、React Router |
+| **管理台** | React 19、TypeScript、Vite、React Router、Recharts、React Flow |
+| **实时/媒体** | WebSocket、Agora RTC |
+| **第三方** | 飞书 OAuth、微信 OAuth（fluwx）、DeepSeek 等 OpenAI 兼容 LLM |
+| **CI/CD** | GitHub Actions、Docker、Deploy Agent |
 
 ---
 
-## 项目结构
+## 2. 整体架构
+
+### 2.1 系统架构图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              客户端层 (Flutter / moe-admin)               │
+│   App · Web · Desktop          管理台 basename=/ops       │
+└────────────────────────┬────────────────────────────────┘
+                         │ HTTP / WebSocket
+┌────────────────────────▼────────────────────────────────┐
+│            Kratos HTTP 单进程 (:8888)                      │
+│   jwtAuthFilter · protohttp · transport (OAuth/WS)       │
+└────────────────────────┬────────────────────────────────┘
+                         │
+    ┌────────────────────┼────────────────────┐
+    │                    │                    │
+┌───▼───┐          ┌────▼─────┐        ┌────▼─────┐
+│ user  │          │ llm/moe  │        │  admin   │
+│ post  │          │ ai/chat  │        │  API     │
+└───┬───┘          └────┬─────┘        └────┬─────┘
+    │                    │                    │
+┌───▼────────────────────▼────────────────────▼──────┐
+│              GORM · MySQL / SQLite                    │
+└──────────────────────────────────────────────────────┘
+```
+
+### 2.2 仓库目录结构
 
 ```
 moe_social/
-├── lib/                    # Flutter 客户端源码
-├── backend/                # Go/Kratos 后端服务
-├── moe-admin/              # React 管理后台
-├── docs/                   # 项目文档
-├── assets/                  # 静态资源 (头像、礼品等)
-├── android/                # Android 平台代码
-├── ios/                    # iOS 平台代码
-├── e2e/                    # 端到端测试
-└── AGENTS.md               # 开发规范与命令
+├── lib/                         # Flutter 客户端
+├── backend/                     # Go/Kratos 后端
+├── moe-admin/                   # React 管理台
+├── docs/                        # 文档 SSOT
+├── moe-social-app-design/       # UI 设计 HTML 原型（2026）
+├── moe-social-ui-design/        # 早期 UI mock HTML
+├── assets/                      # Flutter 静态资源
+├── test/                        # Flutter 单元测试
+├── e2e/                         # Playwright 视觉冒烟（非 Widget 交互）
+├── website/                     # 产品官网静态页
+├── scripts/                     # 仓库级脚本（admin 启动等）
+└── AGENTS.md                    # 贡献指南与命令速查
 ```
+
+**已退役 / 不存在**：`backend/rpc/`、`backend/api/defs/`、Chrome `integration_test/` 测试栈、`pkg/memory/`。
 
 ---
 
-## 前端架构 (Flutter)
+## 3. 前端架构（Flutter）
 
-### Flutter 模块职责
+### 3.1 架构概述
 
-```
-lib/
-├── main.dart                    # 应用入口、初始化流程
-├── app/
-│   ├── app_routes.dart          # 路由配置 (命名路由)
-│   └── main_shell.dart          # 主页面框架
-├── auth_service.dart            # 认证服务 (登录/注册/OAuth)
-├── pages/                       # 页面按域划分
-│   ├── auth/                    # 认证相关 (登录/注册/OAuth)
-│   ├── feed/                    # 动态流 (首页/评论/发帖)
-│   ├── chat/                    # 聊天 (私信/消息中心/语音通话)
-│   ├── ai/                      # AI 功能 (AI 聊天/角色卡/记忆管理)
-│   ├── commerce/                # 商业化 (VIP/钱包/抽卡/订单)
-│   ├── profile/                 # 用户资料
-│   ├── community/               # 社区 (兴趣小组)
-│   ├── game/                    # 游戏 (扫雷/游戏房间)
-│   ├── autoglm/                 # AutoGLM 自动化
-│   ├── checkin/                 # 签到与等级
-│   ├── notifications/           # 通知中心
-│   └── settings/                # 设置
-├── services/                    # 业务服务层
-├── providers/                   # Provider 状态管理
-├── widgets/                     # 可复用组件
-├── models/                      # 数据模型
-├── utils/                       # 工具函数
-├── theme/                       # 主题配置
-└── autoglm/                     # AutoGLM 客户端
-```
+**Provider** 状态管理 + 按领域划分的 `pages/` / `services/` / `models/`。
 
-### Flutter 模块职责
+### 3.2 目录结构
 
-| 模块 | 路径 | 职责 |
+| 目录 | 职责 |
+|------|------|
+| `lib/app/` | 路由 `app_routes.dart`、主 Shell、延迟路由 |
+| `lib/pages/` | 按域页面（18 个域，见 3.3） |
+| `lib/services/` | API 与业务服务（~64 文件） |
+| `lib/providers/` | ChangeNotifier 状态 |
+| `lib/widgets/` | 通用与领域组件 |
+| `lib/models/` | DTO |
+| `lib/utils/` | 工具（含 `config.dart`、`jwt_exp.dart`） |
+| `lib/config/` | `app_config.dart`、`moe_api.json` |
+| `lib/constants/` | `feature_flags.dart` 等 |
+| `lib/theme/` | 设计 Token 与主题扩展 |
+| `lib/main.dart` | 生产入口 |
+| `lib/demo_main.dart` | 演示入口（首页改版对比） |
+
+### 3.3 页面模块（pages/）
+
+| 领域 | 目录 | 主要功能 |
+|------|------|----------|
+| **认证** | `auth/` | 登录、注册、忘记密码、飞书/微信 OAuth |
+| **动态流** | `feed/` | 首页、发帖、评论；`home_redesign_demo.dart` 改版方案对比 |
+| **AI** | `ai/` | 聊天、酒馆（`tavern/`）、Provider 配置、Lorebook |
+| **私信** | `chat/` | 会话、语音通话 |
+| **商业化** | `commerce/` | VIP、钱包、抽卡、背包 |
+| **社区** | `community/` | 兴趣小组 |
+| **个人** | `profile/` | 主页、资料、好友 |
+| **成长** | `checkin/`、`achievements/` | 签到、成就 |
+| **发现/游戏** | `discover/`、`game/` | 匹配、游戏大厅 |
+| **设置** | `settings/` | 账号、外观、AI、隐私（模块化 `modules/`） |
+| **其他** | `notifications/`、`gallery/`、`scan/`、`autoglm/`、`demo/` | 通知、相册、扫码、AutoGLM |
+
+**AI 酒馆子模块**：`pages/ai/tavern/` — `agents_tab.part.dart`、`providers_tab.part.dart`（part 文件，挂载于 `agent_list_page.dart`）。
+
+### 3.4 服务层（services/）要点
+
+| 服务 | 文件 | 职责 |
 |------|------|------|
-| **认证** | `lib/auth_service.dart` | JWT 管理、登录/注册、OAuth (飞书/微信) |
-| **API** | `lib/services/api_service.dart` | HTTP 请求封装、Token 管理、错误处理 |
-| **动态** | `lib/services/post_service.dart` | 帖子 CRUD、点赞、评论 |
-| **用户** | `lib/models/user.dart` | 用户数据模型 |
-| **WebSocket** | `lib/services/ws_channel_connector.dart` | 实时消息推送 |
-| **AI** | `lib/services/ai_*.dart` | AI 聊天、推理、记忆管理 |
-| **VIP** | `lib/services/vip_*.dart` | VIP 订阅、订单、钱包 |
+| HTTP 基座 | `api_service.dart` | 请求封装、JWT 携带与 refresh |
+| 认证 | `auth_service.dart` | 登录态、Secure Storage |
+| AI 网关 | `ai_chat_gateway_service.dart` | 聊天请求调度 |
+| Provider | `ai_provider_service.dart` | 多 API 来源配置与模型列表 |
+| LLM 端点 | `llm_endpoint_config.dart` | Terminal/raw vs `/api/llm/*` 切换 |
+| 推理 | `ai_inference_service.dart` | LLM 调用 |
+| Lorebook | `ai_lorebook_service.dart` | 世界书 |
+| 帖子/社交 | `post_service.dart` | 动态、评论 |
+| 实时 | `ws_channel_connector*.dart`、`presence_service.dart` | WebSocket |
+| 成就 | `achievement_hooks.dart` | 前端成就触发 |
 
-### 核心服务
+**已移除**：`memory_service.dart`、`ai_memory_orchestrator.dart`、`llama_cpp_*` 等本地 llama 插件相关服务。
 
-#### AuthService (`lib/auth_service.dart`)
+### 3.5 Provider 列表
 
-认证服务核心类，负责用户认证全流程：
+`ThemeProvider` · `NotificationProvider` · `LoadingProvider` · `VirtualAvatarProvider` · `CheckInProvider` · `UserLevelProvider` · `GameProvider` · `MainNavController` · `DeviceInfoProvider`
 
-```dart
-class AuthService {
-  static Future<void> init()                    // 初始化，从本地存储加载登录状态
-  static Future<AuthResult> login()             // 邮箱/用户名登录
-  static Future<AuthResult> loginWithWechat()   // 微信 OAuth 登录
-  static Future<AuthResult> loginWithFeishu()   // 飞书 OAuth 登录
-  static Future<AuthResult> register()          // 用户注册
-  static void logout()                           // 登出
-  static Future<User> getUserInfo()             // 获取用户资料
-  static String? get currentUser                 // 当前用户 ID
-  static String? get token                       // JWT Token
-  static bool get isLoggedIn                    // 登录状态
-}
+### 3.6 认证与 JWT（客户端）
+
+```
+登录 / OAuth → access_token + refresh_token
+  ↓
+api_service 请求带 Authorization: Bearer <token>
+  ↓
+jwt_exp 检测临近过期 → POST /api/user/refresh-token
+  ↓
+失败 → 跳转登录
 ```
 
-#### ApiService (`lib/services/api_service.dart`)
+配置 API 基址：`lib/utils/config.dart`（`developmentUrl` / `productionUrl`）。
 
-HTTP API 客户端，处理所有后端通信：
+### 3.7 主要依赖（节选）
 
-```dart
-class ApiService {
-  static Future<void> initRemoteProductionBaseUrl()  // 初始化 API 地址
-  static void setToken(String?)                        // 设置 JWT Token
-  static Future<Map> get/post/put/delete()             // 基础请求方法
-
-  // 用户相关
-  static Future<User> getUserInfo()                   // 获取用户信息
-  static Future<User> updateUserInfo()                // 更新用户资料
-  static Future<Map> login/register()                 // 认证
-
-  // 动态相关
-  static Future<Map> getPosts()                       // 获取帖子列表
-  static Future<Post> createPost()                    // 创建帖子
-  static Future<Post> toggleLike()                    // 点赞/取消点赞
-
-  // 社交相关
-  static Future<void> followUser()                   // 关注用户
-  static Future<List> getFriends()                    // 获取好友列表
-  static Future<void> sendPrivateMessage()            // 发送私信
-
-  // VIP/商业
-  static Future<List<VipPlan>> getVipPlans()          // 获取 VIP 套餐
-  static Future<VipOrder> createVipOrder()            // 创建 VIP 订单
-
-  // 文件上传
-  static Future<String> uploadImage()                 // 上传图片
-}
-```
-
-### Flutter 核心类说明
-
-| 类/文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `SplashScreen` | 启动闪屏，启动初始化 | `_initializeApp()` |
-| `AuthService` | 认证状态管理 | `login()`, `logout()`, `getUserInfo()` |
-| `ApiService` | API 请求封装 | `get()`, `post()`, `setToken()` |
-| `User` (model) | 用户数据模型 | `fromJson()`, `toJson()` |
-| `Post` (model) | 帖子数据模型 | `fromJson()`, `toJson()` |
-| `ws_channel_connector` | WebSocket 客户端 | `connect()`, `disconnect()`, `sendMessage()` |
-| `ai_chat_gateway_service` | AI 聊天网关 | 消息收发、上下文管理 |
-| `memory_service` | 用户记忆管理 | `store()`, `retrieve()`, `search()` |
-
-### 路由系统
-
-路由配置在 `lib/app/app_routes.dart`，使用命名路由 + 延迟加载：
-
-```dart
-Map<String, WidgetBuilder> buildAppRoutes() {
-  return {
-    '/login': (context) => const LoginPage(),
-    '/register': (context) => const RegisterPage(),
-    '/home': (context) => const MainPage(),
-    '/profile': (context) => const ProfilePage(),
-    '/vip-center': (context) => _deferred(() => VipCenterPage()),
-    // ... 更多路由
-  };
-}
-```
-
-延迟加载用于大型页面（VIP、抽卡、扫码等），减少初始包体积。
+`provider` · `http`/`dio` · `shared_preferences` · `flutter_secure_storage` · `web_socket_channel` · `agora_rtc_engine` · `rive` · `fluwx` · `speech_to_text` · `mobile_scanner`
 
 ---
 
-## 后端架构 (Go/Kratos)
+## 4. 后端架构（Go/Kratos）
 
-### 后端目录结构
+### 4.1 分层
 
 ```
-backend/
-├── api/                          # Proto 契约定义 (SSOT)
-│   └── <domain>/v1/*.proto       # 按域拆分：moe, post, user, chat, gift...
-├── cmd/                          # 入口命令
-├── config/                       # 配置文件
-├── internal/
-│   ├── biz/                      # 业务逻辑层
-│   │   ├── user/                 # 用户业务
-│   │   ├── post/                 # 帖子业务
-│   │   ├── chat/                 # 聊天业务
-│   │   ├── ai/                   # AI 业务
-│   │   ├── moe/                  # Moe Agent 业务
-│   │   ├── vip/                  # VIP 业务
-│   │   ├── gift/                 # 礼物业务
-│   │   └── ...
-│   ├── data/                     # 数据访问层
-│   ├── service/                  # 服务层 (HTTP Handler)
-│   ├── server/                   # HTTP Server 装配
-│   └── model/                    # 数据库模型 (GORM)
-├── pkg/                          # 内部工具包
-│   ├── moe/                      # Moe 核心运行时
-│   ├── memory/                   # 记忆系统
-│   └── llminference/             # LLM 推理客户端
-├── utils/                        # 工具函数
-└── Makefile                      # 构建命令
+protohttp / transport  →  service  →  biz  →  data  →  model (GORM)
 ```
 
-### API 契约
+生产入口：`cmd/moe-social/main.go`（**gitignore**，本地 `make moe-social` 生成/编译）。
 
-API 定义使用 **Protocol Buffers**，是唯一的契约 SSOT：
+### 4.2 API 模块（api/）
 
-| Proto 文件 | 域 | 主要服务 |
-|-----------|-----|---------|
-| `api/moe/v1/moe.proto` | Moe Agent | `MoeAdmin` - Agent 运行时、脑状态、Flow |
-| `api/post/v1/post.proto` | 帖子 | 动态 CRUD、点赞、评论 |
-| `api/user/v1/user.proto` | 用户 | 认证、资料、关注 |
-| `api/chat/v1/chat.proto` | 聊天 | 私信、WebSocket |
-| `api/gift/v1/gift.proto` | 礼物 | 礼物商城、赠送 |
-| `api/vip/v1/vip.proto` | VIP | 套餐、订单 |
-| `api/notify/v1/notify.proto` | 通知 | 推送、站内通知 |
-| `api/media/v1/media.proto` | 媒体 | 图片上传 |
+| 模块 | proto | 功能 |
+|------|-------|------|
+| user | `user/v1/user_messages.proto` | 认证、资料、关注、JWT refresh |
+| post / comment | `post/` · `comment/` | 动态、评论 |
+| chat | `chat/v1/` | 私信、WebSocket |
+| ai / llm | `ai/` · `llm/v1/llm_messages.proto` | AI 会话、平台 LLM 代理 |
+| moe | `moe/v1/` | Bot、Brain、工具 |
+| admin | `admin/v1/admin_messages.proto` | 管理台 |
+| gift / vip / checkin / achievement | 各 v1 | 商业化与成长 |
+| media / notify / community / behavior / landing / platform | 各 v1 | 媒体、通知、社区等 |
 
-### 业务逻辑层 (biz)
+契约 SSOT：`backend/api/<domain>/v1/*.proto` → `make gen` → `openapi.yaml`。
 
-`internal/biz/` 是核心业务逻辑所在，按域划分：
+### 4.3 业务层（internal/biz/）
 
-| 域 | 路径 | 职责 |
+| 域 | 目录 | 说明 |
 |----|------|------|
-| **user** | `biz/user/` | 用户注册/登录、OAuth、资料管理、关注/粉丝 |
-| **post** | `biz/post/` | 动态发布、删除、点赞、评论 |
-| **chat** | `biz/chat/` | 私信、WebSocket Hub、在线状态 |
-| **ai** | `biz/ai/` | AI 聊天会话、推理配置 |
-| **moe** | `biz/moe/` | Agent 运行时、脑状态 (Brain)、RPG、Flow 执行 |
-| **llm** | `biz/llm/` | LLM 调用、记忆读写、Prompt 构建 |
-| **vip** | `biz/vip/` | VIP 套餐、订单、续费 |
-| **gift** | `biz/gift/` | 礼物购买、赠送、背包 |
-| **checkin** | `biz/checkin/` | 签到、经验值、等级 |
-| **achievement** | `biz/achievement/` | 成就解锁、徽章 |
+| llm | `biz/llm/` | **`platform_common.go`**（配置快照、memory budget 默认值）、`platform_chat.go`、`platform_chat_execute.go` |
+| moe | `biz/moe/` | Brain 图、Bot 调度 |
+| ai | `biz/ai/` | 用户侧 AI 会话 |
+| user / post / chat / … | 同名目录 | 社交主线 |
+| admin | `biz/admin/` | 审核、看板、运营 |
 
-### 数据层 (data)
+**已移除**：`biz/llm/memory_*.go`、`biz/user/memory_*.go`、`pkg/memory/**`。
 
-`internal/data/` 实现数据持久化：
+### 4.4 核心 pkg/
 
-```go
-// 典型 data 层结构
-type UserRepo interface {
-    FindByID(ctx context.Context, id string) (*model.User, error)
-    FindByEmail(ctx context.Context, email string) (*model.User, error)
-    Create(ctx context.Context, user *model.User) error
-    Update(ctx context.Context, user *model.User) error
-}
+| 包 | 职责 |
+|----|------|
+| `pkg/llminference/` | OpenAI 兼容 HTTP 客户端（支持 `api_key` / Authorization） |
+| `pkg/moe/brain/` | 心智、RPG、压缩、快照 |
+| `pkg/moe/runtime/` | Agent 运行时 |
+| `pkg/moe/tools/` | 工具注册与执行 |
+| `pkg/achievement/` · `pkg/level/` | 成就与等级 |
+| `pkg/handdraw/` | 手绘光栅 |
+
+Brain 内仍有 `prompt_memory.go` 等**提示词级**记忆辅助，非独立向量库产品。
+
+### 4.5 HTTP 与 JWT（服务端）
+
+- 装配：`internal/server/http.go` — CORS、统一 Envelope、`RegisterProtoHTTP`
+- 鉴权：`internal/server/auth.go` — `jwtAuthFilter`、公开路径白名单、写操作需登录
+- Admin JWT 与 App JWT **分离**（`config.yaml` → `auth` / `admin`）
+
+### 4.6 配置要点（config/config.yaml）
+
+| 块 | 说明 |
+|----|------|
+| `auth` | `access_secret`、过期时间；环境变量 `MOE_AUTH_ACCESS_SECRET` |
+| `llm_inference` | 默认 DeepSeek；**`api_key`** + `MOE_LLM_API_KEY`；`memory_model` |
+| `moe` | `single_process: true`、`kratos_pure_enabled: true` |
+| `runtime` | HTTP `:8888`，片段 `api/etc/moe.yaml` |
+| `memory.search` | 配置残留（hybrid/vector 均 disabled），无独立 memory 服务 |
+
+### 4.7 Makefile 常用目标
+
+| 命令 | 作用 |
+|------|------|
+| `make gen` | proto + conf + 路由统计 |
+| `make check` | 编译 + 核心测试 |
+| `make moe-social` | 生产单进程 |
+| `make moe-social-dev` | 后端 + deploy-agent :19010 |
+| `make db-migrate` | 数据库迁移 |
+| `make build-linux` | Linux 二进制 |
+
+**已退役**（执行即报错）：`gen-rpc`、`moe-kratos`、`dev` 等 go-zero 时代目标。
+
+---
+
+## 5. 管理台架构（React）
+
+### 5.1 概览
+
+- **栈**：React 19 + TypeScript + Vite  
+- **路由**：`BrowserRouter` **`basename="/ops"`**  
+- **鉴权**：`AdminAuthContext` + `RequireAdmin`  
+- **菜单 SSOT**：`src/config/menu.ts`（`ADMIN_MENU_TREE`）
+
+### 5.2 主要路由
+
+| 路径 | 页面 |
+|------|------|
+| `/login` | 登录 |
+| `/` | 仪表盘 |
+| `/users` | 用户 |
+| `/content/*` | 帖子、评论、社区、举报 |
+| `/app/ai`、`/app/moe-bots`、`/app/moe-brain`、`/app/moe-flow` | AI / Bot / Brain / 流程图 |
+| `/app/analytics`、`/app/tags`、`/app/social` | 分析、标签、社交配置 |
+| `/system/platform` | 平台配置（合并原 data / app-config Tab） |
+| `/system/admins`、`/system/menus`、`/system/audit` | 管理员、菜单、审计 |
+| `/deploy`、`/docker`、`/build`、`/release`、`/jobs` | 运维流水线 |
+
+**已移除页面**：`LearningWorkbenchPage.tsx`（记忆工作台）、`RpcPage.tsx`（RPC 监控）。
+
+**未挂载文件**：`DataCatalogPage.tsx`（逻辑已并入 PlatformPage Tab）。
+
+### 5.3 依赖（节选）
+
+`react-router-dom` · `@xyflow/react`（Bot 流程图）· `recharts`
+
+---
+
+## 6. 核心功能模块
+
+### 6.1 AI 与 LLM
+
+```
+Flutter (chat_page / agent_list / provider profiles)
+        │  /api/llm/*  /api/ai/*
+        ▼
+biz/llm/platform_chat_execute.go
+        │  pkg/llminference (OpenAI-compatible + api_key)
+        ▼
+DeepSeek / 自建中转 / OpenAI 兼容端点
 ```
 
-使用 GORM 作为 ORM，支持 MySQL 和 SQLite。
+- **Provider 模型**：用户配置 baseUrl、apiKey、默认模型；酒馆 Tab 拉取 `/models` 或手动输入模型 ID  
+- **无独立向量记忆产品**：上下文预算由 `platform_common` 控制；历史消息走会话存储  
+- **Moe Brain**：管理台可观测管线；`pkg/moe/brain` 负责 Bot 心智与 RPG
 
-### 服务层 (service)
+### 6.2 实时通信
 
-`internal/service/` 接收 HTTP 请求，调用 biz 层：
+`biz/chat/` — WebSocket Hub、私信、在线状态、匹配队列；客户端 `ws_channel_connector.dart`。
+
+### 6.3 虚拟形象与成就
+
+Rive 动态形象（`dynamic_avatar.dart`）；成就引擎 `pkg/achievement/` + 前端 `achievement_hooks.dart`。
+
+---
+
+## 7. 数据库模型
+
+### 7.1 核心关系（节选）
 
 ```
-service/<domain>/
-├── user.go           # AppService 结构体 + New()
-├── user_auth.go      # 登录/注册
-├── user_profile.go   # 资料管理
-└── user_follow.go    # 关注关系
+User
+ ├── Post → Comment, Like, PostReport
+ ├── PrivateMessage, Notification
+ ├── AiChatSession
+ ├── UserLevel, Achievement, VipOrder, Transaction
+ └── UserBehavior, UserDevice
 ```
 
-### 核心模型
+**已移除表/model**：`UserMemory`、`UserMemoryEmbedding` 等 memory 系列。
 
-数据库模型定义在 `backend/internal/model/`：
+### 7.2 模型定义位置
 
-| 模型 | 文件 | 描述 |
+`backend/model/*.go` — 与 `utils/migrate_registry.go` 注册迁移。
+
+---
+
+## 8. API 接口
+
+### 8.1 风格
+
+- JSON + Protobuf 契约 SSOT  
+- OpenAPI：`backend/openapi.yaml`（`make gen` 生成）  
+- 文档：`docs/dev/openapi-apifox.md`
+
+### 8.2 分组（前缀示例）
+
+| 分组 | 前缀 | 说明 |
 |------|------|------|
-| User | `user.go` | 用户账号、资料、设置 |
-| Post | `post.go` | 动态内容 |
-| Comment | `comment.go` | 评论 |
-| Like | `like.go` | 点赞记录 |
-| Follow | `follow.go` | 关注关系 |
-| PrivateMessage | `private_message.go` | 私信 |
-| Gift | `gift.go` | 礼物定义 |
-| VipOrder | `vip_order.go` | VIP 订单 |
-| Achievement | `achievement.go` | 成就定义 |
-| UserMemory | `user_memory.go` | 用户记忆 |
-| MoeAgentRuntime | `moe_agent_runtime.go` | AI Agent 运行时配置 |
-| AiChatSession | `ai_chat_session.go` | AI 聊天会话 |
+| 用户/认证 | `/api/user/` | 含 refresh-token |
+| 帖子/评论 | `/api/post/` · `/api/comment/` | 动态 |
+| LLM | `/api/llm/` | 平台推理、配置 |
+| AI | `/api/ai/` | 会话、智能体 |
+| 管理台 | `/api/admin/` | 运营 API |
 
-### Moe Agent 系统 (Brain)
+### 8.3 认证流程
 
-Moe Agent 是核心 AI 能力，定义在 `pkg/moe/` 和 `biz/moe/`：
-
-```go
-// pkg/moe/runtime/agent.go
-type AgentRuntime struct {
-    AgentKey      string
-    DisplayName   string
-    BotUserID     string
-    ModelName     string
-    ToolsEnabled  bool
-    Enabled       bool
-}
-
-// biz/moe/brain.go - 脑状态管理
-type BrainGraph struct {
-    Nodes []BrainGraphNode
-    Edges []BrainGraphEdge
-}
-
-type BrainRPG struct {
-    Level       int
-    XP          int
-    Skills      []BrainRpgSkill
-    Fragments   []BrainRpgFragment
-}
-```
-
-关键能力：
-- **Brain Graph**：记忆知识图谱
-- **Brain RPG**：角色扮演成长系统
-- **Dream**：自动整理记忆的做梦机制
-- **Flow**：可视化流程编排
+见 [3.6 认证与 JWT](#36-认证与-jwt客户端)；管理台使用独立 Admin Token。
 
 ---
 
-## 管理台 (moe-admin)
-
-React 19 + TypeScript + Vite 构建的管理后台：
+## 9. 依赖关系
 
 ```
-moe-admin/
-├── src/
-│   ├── api/                # API 客户端
-│   ├── components/         # React 组件
-│   ├── config/menu.ts      # 菜单配置
-│   ├── layout/             # 布局组件
-│   ├── lib/                # 工具函数
-│   └── App.tsx             # 应用入口
-├── package.json
-└── DESGIN.md
-```
-
-技术栈：
-- React 19.2
-- TypeScript 6.0
-- React Router 7
-- @xyflow/react (流程图)
-- Recharts (图表)
-
----
-
-## 依赖关系
-
-### Flutter 依赖 (pubspec.yaml)
-
-```yaml
-dependencies:
-  flutter: sdk
-  provider: ^6.1.2              # 状态管理
-  dio: ^5.4.0                   # HTTP 客户端
-  shared_preferences: ^2.0.15   # 本地存储
-  cached_network_image: ^3.4.1  # 图片缓存
-  webview_flutter: ^4.10.0      # WebView
-  flutter_svg: ^2.0.9           # SVG 渲染
-  agora_rtc_engine: ^6.5.3      # 语音通话
-  speech_to_text: ^7.0.0        # 语音转文字
-  flutter_tts: ^3.8.5           # 文字转语音
-  rive: ^0.14.6                 # 虚拟形象动画
-  fluwx: ^5.7.5                 # 微信 SDK
-  qr_flutter: ^4.1.0            # 二维码生成
-  mobile_scanner: ^3.2.0        # 二维码扫描
-```
-
-### Go 依赖 (go.mod)
-
-```go
-require (
-    github.com/go-kratos/kratos/v2 v2.8.4    // Web 框架
-    github.com/golang-jwt/jwt/v5 v5.3.0      // JWT
-    github.com/google/uuid v1.6.0             // UUID
-    github.com/gorilla/websocket v1.5.3       // WebSocket
-    gorm.io/driver/mysql v1.6.0               // MySQL 驱动
-    gorm.io/gorm v1.30.5                      // ORM
-    google.golang.org/grpc v1.78.0            // gRPC
-    google.golang.org/protobuf v1.36.11       // Protobuf
-)
+Flutter App ──HTTP/WS──► Kratos :8888 ──► MySQL
+                │              ├── LLM Provider (DeepSeek 等)
+                │              └── OAuth (飞书/微信)
+moe-admin ──► Deploy Agent :19010 ──► Admin API
+e2e (Playwright) ──► Flutter Web 截图冒烟（非 Widget 测试）
 ```
 
 ---
 
-## 运行方式
+## 10. 项目运行方式
 
-### Flutter 前端
+### 10.1 环境
 
-```bash
-# 安装依赖
-flutter pub get
+Flutter 3.x · Go 1.25+ · MySQL 8 · Node 18+（管理台）
 
-# 开发运行
-flutter run
+### 10.2 常用命令
 
-# 分析代码
-flutter analyze
+| 范围 | 命令 |
+|------|------|
+| Flutter | `flutter pub get` · `flutter analyze` · `flutter test` · `flutter run` |
+| 后端 | `cd backend && make gen` · `make check` · `make moe-social` · `go test ./...` |
+| 管理台 | `cd moe-admin && npm run dev` · `npm run build` |
+| E2E 视觉 | `cd e2e && make smoke` |
 
-# 测试
-flutter test
+### 10.3 端口
 
-# 构建发布
-flutter build apk          # Android
-flutter build ios          # iOS
-flutter build web          # Web
-flutter build windows      # Windows
-flutter build macos        # macOS
-```
+| 端口 | 服务 |
+|------|------|
+| 8888 | 后端 HTTP |
+| 19010 | Deploy Agent |
+| 5173 | moe-admin 开发（/ops） |
+| 19012 | 开发文档静态站（`make dev-docs`） |
 
-### 后端服务
+### 10.4 API 地址
 
-```bash
-cd backend
-
-# 安装依赖
-go mod download
-
-# 生成 Proto 代码
-make gen
-
-# 本地运行
-make moe-social            # 单进程 HTTP :8888
-make moe-social-dev        # + deploy-agent :19010
-
-# 测试
-go test ./...
-
-# Docker 部署
-docker compose -f docker-compose.binary.yml up -d
-```
-
-### 管理台
-
-```bash
-cd moe-admin
-
-# 安装依赖
-npm install
-
-# 开发运行
-npm run dev
-
-# 构建
-npm run build
-```
-
-### 环境配置
-
-**Flutter API 地址**：`lib/utils/config.dart`
-
-```dart
-class AppConfig {
-  static const bool isProduction = false;
-  static const String productionUrl = 'https://api.moesocial.com';
-  static const String developmentUrl = 'http://localhost:8888';
-}
-```
-
-**后端配置**：`backend/config/config.yaml`
-
-```yaml
-server:
-  http:
-    addr: :8888
-    timeout: 60s
-
-database:
-  dsn: root:password@tcp(localhost:3306)/moe_social?charset=utf8mb4
-
-jwt:
-  secret: your-secret-key
-```
+修改 `lib/utils/config.dart` 中 `developmentUrl` / `productionUrl`。
 
 ---
 
-## 文档索引
+## 11. 开发规范与约定
+
+- **规范入口**：`.cursor/rules/moe-social-unified.mdc`、`AGENTS.md`  
+- **踩坑**：`.cursor/LESSONS.md`  
+- **Review**：`code_review.md`  
+- **Kratos 迁移 SSOT**：`docs/dev/kratos-migration-status.md`  
+- **Flutter 页面**：`lib/pages/<domain>/`  
+- **后端 biz**：`internal/biz/<domain>/`  
+- **Proto 改动**：`cd backend && make gen` 后 `go build` 验证  
+
+---
+
+## 12. 部署与运维
+
+- **单进程生产**：`cd backend && make moe-social`  
+- **Docker**：`backend/docker-compose.binary.yml`  
+- **Deploy Agent**：构建、Docker、Release、GitHub APK 流水线  
+- **版本发布**：`git tag vX.Y.Z && git push origin vX.Y.Z`  
+
+---
+
+## 附录
+
+### A. 文档索引
 
 | 文档 | 路径 |
 |------|------|
-| 项目总览 | [README.md](README.md) |
-| 开发规范 | [AGENTS.md](AGENTS.md) |
-| Code Review | [code_review.md](code_review.md) |
-| 后端文档 | [backend/README.md](backend/README.md) |
-| 后端架构 | [backend/LAYOUT.md](backend/LAYOUT.md) |
-| 文档索引 | [docs/README.md](docs/README.md) |
-| 记忆系统 | [docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md) |
+| README | [README.md](README.md) |
+| AGENTS | [AGENTS.md](AGENTS.md) |
+| 后端布局 | [backend/LAYOUT.md](backend/LAYOUT.md) |
+| OpenAPI | [backend/openapi.yaml](backend/openapi.yaml) |
+| 文档中心 | [docs/README.md](docs/README.md) |
 | Kratos 迁移 | [docs/dev/kratos-migration-status.md](docs/dev/kratos-migration-status.md) |
+
+### B. 设计原型
+
+| 目录 | 说明 |
+|------|------|
+| [moe-social-app-design/](moe-social-app-design/) | 2026 HTML 页面原型（login、home、tavern、settings 等） |
+| [moe-social-ui-design/](moe-social-ui-design/) | 早期 UI mock |
 
 ---
 
-*此文档由代码自动生成，如有更新请同步修改。*
+**文档版本**: 1.1.0  
+**最后更新**: 2026-06-29
