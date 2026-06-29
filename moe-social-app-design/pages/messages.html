@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>萌社 - 消息</title>
+    <style id="theme-vars">
+/* Moe Social Brand Design System — 萌系梦幻柔和 */
+/* Extracted from Flutter project tokens: moe_tokens.dart, moe_theme_extension.dart, ai_brand_tokens.dart */
+
+:root {
+  /* ===== Primary Palette — 糖果渐变色系 ===== */
+  --color-primary: #7F7FD5;
+  --color-primary-light: #9B9FE3;
+  --color-primary-lighter: #B7BAF0;
+  --color-primary-lightest: #D4D5F6;
+  --color-primary-dark: #5F5FBB;
+  --color-primary-darker: #3F3FA1;
+
+  --color-secondary: #86A8E7;
+  --color-secondary-light: #A0BFEF;
+  --color-secondary-lighter: #BBD5F6;
+  --color-secondary-darker: #5E88C8;
+
+  --color-tertiary: #91EAE4;
+  --color-tertiary-light: #ADF0EC;
+  --color-tertiary-lighter: #C8F5F2;
+  --color-tertiary-darker: #6DD5CF;
+
+  /* ===== Neutrals ===== */
+  --color-bg: #F5F7FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-sunken: #EEEEF2;
+
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-hint: #9E9E9E;
+  --color-text-disabled: #BDBDBD;
+
+  --color-text-inverse: #FFFFFF;
+
+  /* ===== Semantic Colors ===== */
+  --state-success: #00A86B;
+  --state-warning: #E6A700;
+  --state-error: #E94057;
+  --state-info: #2563EB;
+
+  --state-success-bg: #F0FDF4;
+  --state-error-bg: #FEF2F2;
+  --state-info-bg: #EFF6FF;
+  --state-warning-bg: #FFFBEB;
+
+  /* ===== Interaction Colors ===== */
+  --color-like: #FF4757;
+  --color-online: #00C853;
+  --color-offline: #BDBDBD;
+
+  /* ===== Gradients ===== */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-aurora: linear-gradient(135deg, #E0C3FC 0%, #8EC5FC 50%, #91EAE4 100%);
+  --gradient-ai-bubble: linear-gradient(135deg, #8A2387 0%, #E94057 100%);
+
+  /* ===== Radius Scale — 圆润萌系 ===== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 9999px;
+  --radius-button: 25px;
+  --radius-input: 15px;
+
+  /* ===== Shadows — 彩色柔和阴影 ===== */
+  --shadow-card: 0 8px 16px rgba(127, 127, 213, 0.08);
+  --shadow-card-lg: 0 10px 24px rgba(127, 127, 213, 0.08);
+  --shadow-float: 0 20px 40px rgba(127, 127, 213, 0.12);
+  --shadow-button: 0 4px 12px rgba(127, 127, 213, 0.4);
+  --shadow-bottom-bar: 0 -5px 20px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(127, 127, 213, 0.1);
+  --shadow-compact: 0 5px 10px rgba(127, 127, 213, 0.08);
+
+  /* ===== Typography ===== */
+  --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  --text-display: 700 28px/1.2 var(--font-family);
+  --text-title: 700 22px/1.3 var(--font-family);
+  --text-subtitle: 600 18px/1.4 var(--font-family);
+  --text-body: 400 15px/1.6 var(--font-family);
+  --text-body-sm: 400 14px/1.5 var(--font-family);
+  --text-caption: 400 12px/1.35 var(--font-family);
+  --text-overline: 500 11px/1.2 var(--font-family);
+  --text-mono: 500 13px/1.4 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+
+  /* ===== Spacing ===== */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  --space-4xl: 40px;
+
+  /* ===== Motion ===== */
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-breath: 1200ms;
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== Component specifics ===== */
+  --bottom-bar-radius: 32px;
+  --bottom-bar-padding: 8px 20px;
+  --card-padding: 20px;
+  --section-gap: 12px;
+  --page-padding: 16px;
+
+  /* ===== Dark mode ===== */
+  --dark-bg: #121212;
+  --dark-card: #1E1E1E;
+  --dark-surface: #2C2C2C;
+  --dark-text-primary: #E0E0E0;
+  --dark-text-secondary: #AAAAAA;
+  --dark-shadow-card: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Utility Classes ===== */
+.text-gradient-primary {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-primary-gradient {
+  background: var(--gradient-primary);
+}
+
+.bg-hero-gradient {
+  background: var(--gradient-hero);
+}
+
+.bg-aurora-gradient {
+  background: var(--gradient-aurora);
+}
+
+.card-moe {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.btn-moe-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-button);
+  height: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: var(--shadow-button);
+  transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-smooth);
+}
+
+.btn-moe-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(127, 127, 213, 0.5);
+}
+
+.input-moe {
+  background: #F5F5F5;
+  border-radius: var(--radius-input);
+  border: 2px solid transparent;
+  padding: 16px 20px;
+  font-size: 15px;
+  transition: border-color 200ms var(--ease-smooth);
+}
+
+.input-moe:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.bottom-bar-moe {
+  background: var(--color-bg-elevated);
+  border-radius: var(--bottom-bar-radius);
+  box-shadow: var(--shadow-bottom-bar);
+  padding: var(--bottom-bar-padding);
+}
+
+.fade-in-up {
+  animation: fadeInUp var(--duration-normal) var(--ease-smooth) both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.0); opacity: 1.0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(127, 127, 213, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(127, 127, 213, 0.6); }
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+
+<main data-node-id="page-messages">
+
+  <!-- App Bar — matches Flutter AppBar(backgroundColor: white, elevation: 0, centerTitle: true) -->
+  <header class="app-bar">
+    <div class="app-bar__spacer"></div>
+    <span class="app-bar__title">消息</span>
+    <div class="app-bar__actions">
+      <!-- favorite_rounded — tooltip: 在线匹配 -->
+      <button class="app-bar__icon-btn" aria-label="在线匹配">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </button>
+      <!-- group_rounded — tooltip: 同好 -->
+      <button class="app-bar__icon-btn" aria-label="同好">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Conversations List — matches Flutter ConversationsPage ListView.separated with Divider(height:1, indent:72) -->
+  <section class="conversation-list">
+
+    <!-- Conversation 1 — Luna (online, 3 unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: var(--gradient-primary);">
+          <div class="conversation-row__avatar" style="background: var(--gradient-primary);">L</div>
+        </div>
+        <div class="conversation-row__online-dot"></div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">Luna</span>
+          <span class="conversation-row__time">刚刚</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">今天晚上的活动你参加吗？大家都很期待~</span>
+          <span class="conversation-row__badge">3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="conversation-divider"></div>
+
+    <!-- Conversation 2 — 小柯 (online, 1 unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: var(--gradient-ai-bubble);">
+          <div class="conversation-row__avatar" style="background: var(--gradient-ai-bubble);">柯</div>
+        </div>
+        <div class="conversation-row__online-dot"></div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">小柯</span>
+          <span class="conversation-row__time">10:30</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">那个AI绘图工具真的好好用，给你看看我画的</span>
+          <span class="conversation-row__badge">1</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-divider"></div>
+
+    <!-- Conversation 3 — Miya (online, no unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: var(--gradient-aurora);">
+          <div class="conversation-row__avatar" style="background: var(--gradient-aurora);">M</div>
+        </div>
+        <div class="conversation-row__online-dot"></div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">Miya</span>
+          <span class="conversation-row__time">昨天</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">好的，那我们周末一起去咖啡店吧</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-divider"></div>
+
+    <!-- Conversation 4 — 沐风月 (offline, 5 unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: linear-gradient(135deg, #FF9A9E, #FAD0C4);">
+          <div class="conversation-row__avatar" style="background: linear-gradient(135deg, #FF9A9E, #FAD0C4);">沐</div>
+        </div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">沐风月</span>
+          <span class="conversation-row__time">昨天</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">分享了几张照片给你，快看看拍得怎么样</span>
+          <span class="conversation-row__badge">5</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-divider"></div>
+
+    <!-- Conversation 5 — 安安 (online, no unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: linear-gradient(135deg, #A18CD1, #FBC2EB);">
+          <div class="conversation-row__avatar" style="background: linear-gradient(135deg, #A18CD1, #FBC2EB);">安</div>
+        </div>
+        <div class="conversation-row__online-dot"></div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">安安</span>
+          <span class="conversation-row__time">周二</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">收到啦，谢谢你！</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="conversation-divider"></div>
+
+    <!-- Conversation 6 — Star (offline, no unread) -->
+    <div class="conversation-row">
+      <div class="conversation-row__avatar-wrap">
+        <div class="conversation-row__avatar-border" style="background: linear-gradient(135deg, #91EAE4, #86A8E7);">
+          <div class="conversation-row__avatar" style="background: linear-gradient(135deg, #91EAE4, #86A8E7);">S</div>
+        </div>
+      </div>
+      <div class="conversation-row__body">
+        <div class="conversation-row__top-line">
+          <span class="conversation-row__name">Star</span>
+          <span class="conversation-row__time">周一</span>
+        </div>
+        <div class="conversation-row__bottom-line">
+          <span class="conversation-row__preview">那个新出的番剧你看了吗？超好看的</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Bottom safe-area spacer -->
+  <div style="height: 88px;" aria-hidden="true"></div>
+
+  <!-- Floating capsule bottom navigation bar -->
+  <nav class="bottom-bar-moe" style="position: fixed; bottom: 16px; left: 16px; right: 16px; z-index: 1000; display: flex; align-items: center; justify-content: space-around;" data-active-tab="messages" aria-label="Main navigation">
+
+    <!-- 首页 (Home) -->
+    <a href="#home" class="tab-item" data-tab="home" data-dom-id="nav-home" aria-label="首页">
+      <svg class="tab-icon tab-icon--outline" data-tab-icon="home" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 5.69l5 4.5V18h-2v-6H9v6H7v-7.81l5-4.5M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3z" fill="currentColor"/>
+      </svg>
+      <svg class="tab-icon tab-icon--filled" data-tab-icon="home" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/>
+      </svg>
+      <span class="tab-label">首页</span>
+    </a>
+
+    <!-- 消息 (Messages) -->
+    <a href="#messages" class="tab-item" data-tab="messages" data-dom-id="nav-messages" aria-label="消息">
+      <svg class="tab-icon tab-icon--outline" data-tab-icon="messages" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z" fill="currentColor"/>
+      </svg>
+      <svg class="tab-icon tab-icon--filled" data-tab-icon="messages" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/>
+      </svg>
+      <span class="tab-label">消息</span>
+    </a>
+
+    <!-- AI (AI Tavern) -->
+    <a href="#ai" class="tab-item" data-tab="ai" data-dom-id="nav-ai" aria-label="AI 酒馆">
+      <svg class="tab-icon tab-icon--outline" data-tab-icon="ai" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" fill="currentColor"/>
+      </svg>
+      <svg class="tab-icon tab-icon--filled" data-tab-icon="ai" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+        <path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z" fill="currentColor"/>
+      </svg>
+      <span class="tab-label">AI</span>
+    </a>
+
+    <!-- 我的 (Profile) -->
+    <a href="#profile" class="tab-item" data-tab="profile" aria-label="我的">
+      <svg class="tab-icon tab-icon--outline" data-tab-icon="profile" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V16.9c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+      </svg>
+      <svg class="tab-icon tab-icon--filled" data-tab-icon="profile" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+      </svg>
+      <span class="tab-label">我的</span>
+    </a>
+
+  </nav>
+
+</main>
+
+
+    <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font: var(--text-body);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { border: none; background: none; cursor: pointer; font: inherit; color: inherit; }
+    img { display: block; max-width: 100%; }
+    main { padding-bottom: 88px; }
+
+    /* ===== App Bar — matches Flutter AppBar(backgroundColor: Colors.white, elevation: 0) ===== */
+    .app-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px var(--page-padding, 16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #FFFFFF;
+      box-shadow: none;
+    }
+    .app-bar__spacer {
+      width: 44px;
+      flex-shrink: 0;
+    }
+    .app-bar__title {
+      /* Flutter: TextStyle(fontWeight: FontWeight.w800), default ~18px */
+      font: 800 18px/1.2 var(--font-family);
+      color: var(--color-text-primary);
+      text-align: center;
+    }
+    .app-bar__actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .app-bar__icon-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-text-secondary);
+      border-radius: 50%;
+      transition: background var(--duration-fast);
+    }
+    .app-bar__icon-btn:active {
+      background: var(--color-bg, #F5F7FA);
+    }
+
+    /* ===== Conversation List — matches Flutter ListView.separated(Divider(height:1, indent:72)) ===== */
+    .conversation-list {
+      background: var(--color-bg-elevated);
+      padding: 8px 0;
+    }
+
+    .conversation-row {
+      display: flex;
+      align-items: center;
+      padding: 10px 16px;
+      /* Flutter: InkWell with transparent Material color */
+      background: transparent;
+      transition: background var(--duration-fast);
+      cursor: pointer;
+    }
+    .conversation-row:active {
+      background: rgba(127, 127, 213, 0.04);
+    }
+
+    /* Avatar — NetworkAvatarImage(radius: 22) => 44px diameter with gradient border */
+    .conversation-row__avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      margin-right: 12px;
+    }
+    .conversation-row__avatar-border {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .conversation-row__avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--color-text-inverse);
+      background-clip: padding-box;
+    }
+    .conversation-row__online-dot {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--color-online, #00C853);
+      border: 2px solid var(--color-bg-elevated);
+    }
+
+    /* Body — Expanded Column with name + preview */
+    .conversation-row__body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    /* Top line: name + time */
+    .conversation-row__top-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .conversation-row__name {
+      /* Flutter: TextStyle(fontWeight: FontWeight.w600, fontSize: 14) */
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .conversation-row__time {
+      /* Flutter: grey 12px */
+      font-size: 12px;
+      color: var(--color-text-hint);
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    /* Bottom line: preview + badge */
+    .conversation-row__bottom-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .conversation-row__preview {
+      /* Flutter: TextStyle(color: scheme.onSurfaceVariant, fontSize ~13, maxLines: 1, overflow: ellipsis) */
+      font-size: 13px;
+      color: var(--color-text-hint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+    .conversation-row__badge {
+      /* Flutter: Container(color: scheme.error, borderRadius: 12, white text, fontSize 12, fontWeight w600) */
+      flex-shrink: 0;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 12px;
+      background: var(--state-error, #E94057);
+      color: var(--color-text-inverse);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      line-height: 1;
+    }
+
+    /* Divider — Flutter: Divider(height: 1, indent: 72) */
+    .conversation-divider {
+      height: 1px;
+      margin-left: 72px;
+      background: var(--color-bg-sunken, #EEEEF2);
+    }
+
+    /* ===== Tab Shell Styles ===== */
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 48px;
+      text-decoration: none;
+      color: var(--color-text-hint, #9E9E9E);
+      transition: color var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab-label {
+      font-size: 10px;
+      line-height: 1;
+      margin-top: 3px;
+      font-weight: 400;
+      font-family: var(--font-family, 'Roboto', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif);
+      transition: font-weight var(--duration-fast, 200ms) var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1));
+    }
+    .tab-icon {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .tab-item .tab-icon--outline { display: block; }
+    .tab-item .tab-icon--filled { display: none; }
+    .tab-item.is-active { color: var(--color-primary, #7F7FD5); }
+    .tab-item.is-active .tab-label { font-weight: 500; }
+    .tab-item.is-active .tab-icon--outline { display: none; }
+    .tab-item.is-active .tab-icon--filled { display: block; }
+    nav[data-active-tab="home"]    .tab-item[data-tab="home"],
+    nav[data-active-tab="messages"] .tab-item[data-tab="messages"],
+    nav[data-active-tab="ai"]       .tab-item[data-tab="ai"],
+    nav[data-active-tab="profile"] .tab-item[data-tab="profile"] {
+      color: var(--color-primary, #7F7FD5);
+      font-weight: 500;
+    }
+    nav[data-active-tab="home"]    .tab-item[data-tab="home"] .tab-label,
+    nav[data-active-tab="messages"] .tab-item[data-tab="messages"] .tab-label,
+    nav[data-active-tab="ai"]       .tab-item[data-tab="ai"] .tab-label,
+    nav[data-active-tab="profile"] .tab-item[data-tab="profile"] .tab-label {
+      font-weight: 500;
+    }
+    nav[data-active-tab="home"]    .tab-item[data-tab="home"] .tab-icon--outline,
+    nav[data-active-tab="messages"] .tab-item[data-tab="messages"] .tab-icon--outline,
+    nav[data-active-tab="ai"]       .tab-item[data-tab="ai"] .tab-icon--outline,
+    nav[data-active-tab="profile"] .tab-item[data-tab="profile"] .tab-icon--outline {
+      display: none;
+    }
+    nav[data-active-tab="home"]    .tab-item[data-tab="home"] .tab-icon--filled,
+    nav[data-active-tab="messages"] .tab-item[data-tab="messages"] .tab-icon--filled,
+    nav[data-active-tab="ai"]       .tab-item[data-tab="ai"] .tab-icon--filled,
+    nav[data-active-tab="profile"] .tab-item[data-tab="profile"] .tab-icon--filled {
+      display: block;
+    }
+  </style>
+</body>
+</html>

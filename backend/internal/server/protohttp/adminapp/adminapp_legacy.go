@@ -3,7 +3,6 @@ package adminapphttp
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -136,88 +135,6 @@ func (s *Server) AdminDeleteMediaImage(ctx context.Context, in *adminv1.AdminDel
 	}
 	common.TryRecordAdminAudit(actx, s.svcCtx, "delete", "media_image", filename, "删除云图库文件")
 	return &adminv1.AdminDeleteMediaImageResp{}, nil
-}
-
-func (s *Server) AdminListMemories(ctx context.Context, in *adminv1.AdminListMemoriesReq) (*adminv1.AdminListMemoriesResp, error) {
-	if _, err := requireAdminContext(ctx); err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.ListMemories(ctx, in)
-}
-
-func (s *Server) AdminDeleteMemory(ctx context.Context, in *adminv1.AdminDeleteMemoryReq) (*adminv1.AdminDeleteMemoryResp, error) {
-	actx, err := requireAdminContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := app.DeleteMemory(actx, in)
-	if err != nil {
-		return nil, err
-	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "delete", "user_memory", fmt.Sprintf("%d", in.GetMemoryId()), "删除用户记忆")
-	}
-	return resp, nil
-}
-
-func (s *Server) AdminGetMemoryStats(ctx context.Context, in *adminv1.AdminGetMemoryStatsReq) (*adminv1.AdminGetMemoryStatsResp, error) {
-	if _, err := requireAdminContext(ctx); err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.GetMemoryStats(ctx, in)
-}
-
-func (s *Server) AdminGetMemoryHealth(ctx context.Context, in *adminv1.AdminGetMemoryHealthReq) (*adminv1.AdminGetMemoryHealthResp, error) {
-	if _, err := requireAdminContext(ctx); err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.GetMemoryHealth(ctx, in)
-}
-
-func (s *Server) AdminRebuildMemoryEmbeddings(ctx context.Context, in *adminv1.AdminRebuildMemoryEmbeddingsReq) (*adminv1.AdminRebuildMemoryEmbeddingsResp, error) {
-	actx, err := requireAdminContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := app.RebuildMemoryEmbeddings(actx, in)
-	if err != nil {
-		return nil, err
-	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "reindex", "user_memory", in.GetUserId(), "管理台重建记忆向量")
-	}
-	return resp, nil
-}
-
-func (s *Server) AdminExportLearningDataset(ctx context.Context, in *adminv1.AdminExportLearningDatasetReq) (*adminv1.AdminExportLearningDatasetResp, error) {
-	if _, err := requireAdminContext(ctx); err != nil {
-		return nil, err
-	}
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.ExportLearningDataset(ctx, in)
 }
 
 func (s *Server) AdminListMenus(ctx context.Context, in *adminv1.AdminListMenusReq) (*adminv1.AdminListMenusResp, error) {

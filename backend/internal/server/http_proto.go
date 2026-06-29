@@ -19,7 +19,6 @@ import (
 	postv1 "backend/api/post/v1"
 	userv1 "backend/api/user/v1"
 	vipv1 "backend/api/vip/v1"
-	userbiz "backend/internal/biz/user"
 	"backend/internal/platform/svc"
 	moeadminhttp "backend/internal/server/protohttp"
 	achievementhttp "backend/internal/server/protohttp/achievement"
@@ -82,7 +81,6 @@ type ProtoHTTPDeps struct {
 	LLMApp              *llmapp.AppService
 	MediaApp            *mediaapp.AppService
 	LLMInferenceBaseURL string
-	LLMMemoryGateway    userbiz.LLMMemoryGateway
 	VipAdmin            *vipadmin.AdminService
 	MoeAdmin            *moeadmin.AdminService
 	AdminApp            *adminapp.AppService
@@ -137,9 +135,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		aiv1.RegisterAiResourcesHTTPServer(srv, aihttp.New(d.AIApp))
 	}
 	if d.LLMApp != nil {
-		llmv1.RegisterLlmChatHTTPServer(srv, llmhttp.New(d.LLMApp,
-			llmhttp.WithMemorySearch(d.LLMMemoryGateway, d.LLMInferenceBaseURL),
-		))
+		llmv1.RegisterLlmChatHTTPServer(srv, llmhttp.New(d.LLMApp))
 	}
 	if d.MediaApp != nil {
 		mediahttp.RegisterHTTPServer(srv, mediahttp.New(d.MediaApp))

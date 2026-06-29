@@ -133,8 +133,6 @@ func SyncUserDevice(ctx context.Context, store UserStore, in *userv1.SyncUserDev
 		}
 	}
 
-	_ = store.DeleteDeviceSyncMemories(ctx, uint(userID))
-
 	return &userv1.SyncUserDeviceResp{Device: userDeviceToRecord(&dev, in.GetUserId())}, nil
 }
 

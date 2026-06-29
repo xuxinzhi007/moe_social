@@ -66,13 +66,7 @@ func AdminSchemaCatalog() []AdminSchemaEntry {
 		{Key: "emoji_packs", Label: "表情包", Domain: "AI 与形象", Capabilities: nil, Note: "表情资源，后续可接素材管理", Model: &model.EmojiPack{}},
 		{Key: "user_emoji_packs", Label: "用户表情包", Domain: "AI 与形象", Capabilities: nil, Note: "用户已购/解锁包", Model: &model.UserEmojiPack{}},
 
-		// 记忆与设备（偏运维/DevTools）
-		{Key: "user_memories", Label: "用户记忆", Domain: "记忆与设备", Capabilities: []string{"list", "delete", "stats"}, AdminRoute: "/system/platform?tab=memory", Model: &model.UserMemory{}},
-		{Key: "user_memory_feedbacks", Label: "记忆反馈", Domain: "记忆与设备", Capabilities: []string{"stats"}, AdminRoute: "/system/platform?tab=memory", Model: &model.UserMemoryFeedback{}},
-		{Key: "user_memory_profile_caches", Label: "记忆画像缓存", Domain: "记忆与设备", Capabilities: []string{"stats"}, AdminRoute: "/system/platform?tab=memory", Model: &model.UserMemoryProfileCache{}},
 		{Key: "user_devices", Label: "用户设备", Domain: "记忆与设备", Capabilities: nil, Note: "App 同步写入，后续可接只读列表", Model: &model.UserDevice{}},
-		{Key: "user_memory_embeddings", Label: "记忆向量", Domain: "记忆与设备", Capabilities: []string{"stats"}, AdminRoute: "/system/platform?tab=memory", Model: &model.UserMemoryEmbedding{}},
-		{Key: "user_memory_relations", Label: "记忆关系", Domain: "记忆与设备", Capabilities: nil, Note: "向量关系图，后续接入", Model: &model.UserMemoryRelation{}},
 
 		// 触达
 		{Key: "notifications", Label: "App 通知", Domain: "运营触达", Capabilities: []string{"broadcast", "send"}, AdminRoute: "/app/notify", Model: &model.Notification{}},

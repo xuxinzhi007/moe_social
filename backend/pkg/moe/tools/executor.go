@@ -35,12 +35,6 @@ func (e *Executor) Execute(ctx context.Context, req core.ExecuteRequest) core.Ex
 	}
 
 	switch tool {
-	case "memory_search":
-		return e.execMemorySearch(ctx, req)
-	case "memory_get":
-		return e.execMemoryGet(ctx, req)
-	case "memory_save":
-		return e.execMemorySave(ctx, req)
 	case "post_search":
 		return e.execPostSearch(ctx, req)
 	case "post_get":

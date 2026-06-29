@@ -1,0 +1,96 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-splash", "page-login", "page-register", "page-home", "page-messages", "page-ai-tavern", "page-profile", "page-settings", "page-create-post", "page-ai-chat"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["status-bar-area", "mobile-viewport-frame"],
+    "privateRegions": [],
+    "mutableSlots": [],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-splash",
+        "kind": "page-leaf",
+        "pageIds": ["page-splash"],
+        "output": "pages/splash.html",
+        "sharedRegions": [],
+        "privateRegions": ["splash-content"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-login",
+        "kind": "page-leaf",
+        "pageIds": ["page-login"],
+        "output": "pages/login.html",
+        "sharedRegions": [],
+        "privateRegions": ["login-content"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-register",
+        "kind": "page-leaf",
+        "pageIds": ["page-register"],
+        "output": "pages/register.html",
+        "sharedRegions": [],
+        "privateRegions": ["register-content"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-tab-pages",
+        "kind": "shared-branch",
+        "pageIds": ["page-home", "page-messages", "page-ai-tavern", "page-profile"],
+        "output": "partials/tab-shell.html",
+        "sharedRegions": ["floating-bottom-bar", "content-scroll-area"],
+        "privateRegions": [],
+        "mutableSlots": ["activeTab"],
+        "status": "planned",
+        "children": [
+          { "nodeId": "gen-page-home", "kind": "page-leaf", "pageIds": ["page-home"], "output": "pages/home.html", "sharedRegions": [], "privateRegions": ["home-feed"], "mutableSlots": ["activeTab"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-messages", "kind": "page-leaf", "pageIds": ["page-messages"], "output": "pages/messages.html", "sharedRegions": [], "privateRegions": ["message-list"], "mutableSlots": ["activeTab"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-ai-tavern", "kind": "page-leaf", "pageIds": ["page-ai-tavern"], "output": "pages/ai-tavern.html", "sharedRegions": [], "privateRegions": ["ai-list"], "mutableSlots": ["activeTab"], "status": "planned", "children": [] },
+          { "nodeId": "gen-page-profile", "kind": "page-leaf", "pageIds": ["page-profile"], "output": "pages/profile.html", "sharedRegions": [], "privateRegions": ["profile-content"], "mutableSlots": ["activeTab"], "status": "planned", "children": [] }
+        ]
+      },
+      {
+        "nodeId": "gen-page-settings",
+        "kind": "page-leaf",
+        "pageIds": ["page-settings"],
+        "output": "pages/settings.html",
+        "sharedRegions": [],
+        "privateRegions": ["settings-list"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-create-post",
+        "kind": "page-leaf",
+        "pageIds": ["page-create-post"],
+        "output": "pages/create-post.html",
+        "sharedRegions": [],
+        "privateRegions": ["post-form"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-ai-chat",
+        "kind": "page-leaf",
+        "pageIds": ["page-ai-chat"],
+        "output": "pages/ai-chat.html",
+        "sharedRegions": [],
+        "privateRegions": ["chat-interface"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

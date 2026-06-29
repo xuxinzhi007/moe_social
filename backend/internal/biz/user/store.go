@@ -65,7 +65,6 @@ type UserStore interface {
 	FindUserDeviceUnscoped(ctx context.Context, userID uint, deviceID string) (model.UserDevice, bool, error)
 	CreateUserDevice(ctx context.Context, dev *model.UserDevice) error
 	SaveUserDeviceUnscoped(ctx context.Context, dev *model.UserDevice) error
-	DeleteDeviceSyncMemories(ctx context.Context, userID uint) error
 
 	CountTransactions(ctx context.Context, userID int) (int64, error)
 	ListTransactions(ctx context.Context, userID int, offset, limit int) ([]model.Transaction, error)

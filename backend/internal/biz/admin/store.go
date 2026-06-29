@@ -9,12 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// MemoryTypeStat 记忆类型计数（仪表盘）。
-type MemoryTypeStat struct {
-	MemoryType string
-	Count      int64
-}
-
 // AdminStore 管理端持久化（P4-D；默认由 internal/data/admin 实现）。
 type AdminStore interface {
 	Raw() *gorm.DB
@@ -30,12 +24,6 @@ type AdminStore interface {
 	CountAiAgents(ctx context.Context, userID uint) (int64, error)
 	GetUserLevel(ctx context.Context, userID uint) (model.UserLevel, error)
 	GetLevelConfigByLevel(ctx context.Context, level int) (model.LevelConfig, error)
-
-	CountMemories(ctx context.Context) (int64, error)
-	CountDistinctUsersWithMemories(ctx context.Context) (int64, error)
-	CountMemoryFeedbacks(ctx context.Context) (int64, error)
-	CountMemoryEmbeddings(ctx context.Context) (int64, error)
-	GroupMemoriesByType(ctx context.Context) ([]MemoryTypeStat, error)
 
 	ListUsers(ctx context.Context, keyword string, offset, limit int) ([]model.User, int64, error)
 	UpdateUserFields(ctx context.Context, userID uint, updates map[string]interface{}) error

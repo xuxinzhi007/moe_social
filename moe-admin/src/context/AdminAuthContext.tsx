@@ -100,7 +100,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setBootstrapped(true)
         return
       }
-      await refreshMe()
+      try {
+        await refreshMe()
+      } catch {
+        clearAdminSession()
+        setToken('')
+        setUser(null)
+      }
       if (!cancelled) setBootstrapped(true)
     }
     void boot()

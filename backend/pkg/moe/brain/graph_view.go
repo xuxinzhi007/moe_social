@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"backend/pkg/memory"
 )
+
+type Relation struct {
+	FromKey  string
+	ToKey    string
+	Relation string
+	Weight   float64
+}
 
 // GraphNode 知识图谱节点（管理台可视化）。
 type GraphNode struct {
@@ -50,7 +55,7 @@ func clipSummary(s string, max int) string {
 }
 
 // BuildGraphView 将大脑快照与记忆关系合并为可渲染图谱。
-func BuildGraphView(snap *Snapshot, relations []memory.Relation, limit int) GraphView {
+func BuildGraphView(snap *Snapshot, relations []Relation, limit int) GraphView {
 	if limit <= 0 {
 		limit = 80
 	}
