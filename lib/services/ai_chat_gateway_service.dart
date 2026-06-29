@@ -47,13 +47,13 @@ class AiChatGatewayService {
         raw.contains('Failed to fetch') ||
         raw.contains('XMLHttpRequest')) {
       if (raw.contains('6633')) {
-        return '无法连接本机 llama.cpp（端口 6633）。请确认 llama-server 已启动，并在「模型来源 → llama.cpp 设置」检查地址';
+        return '无法连接本机 llama.cpp（端口 6633）。请确认服务已启动并检查地址配置';
       }
       if (kIsWeb &&
           (raw.contains('Failed to fetch') || raw.contains('XMLHttpRequest'))) {
         return '浏览器跨域 (CORS) 拦截了 llama.cpp / ngrok 响应。'
             'ngrok 可能已收到 200，但 Chrome 网页版读不到。'
-            '请改用 Windows 桌面 App，或给 llama-server 开启 CORS。';
+            '请改用 Windows 桌面 App，或给服务开启 CORS。';
       }
       return '无法连接模型服务，请检查网络与 API 地址';
     }

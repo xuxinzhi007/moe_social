@@ -618,6 +618,26 @@ class ApiService {
         method: 'POST', body: {'email': email, 'code': code});
   }
 
+  // 提交意见反馈
+  static Future<Map<String, dynamic>> submitFeedback({
+    required String email,
+    required String category,
+    required String content,
+    String? source,
+    String? clientIp,
+    String? userAgent,
+  }) async {
+    final body = {
+      'email': email,
+      'category': category,
+      'content': content,
+      if (source != null) 'source': source,
+      if (clientIp != null) 'client_ip': clientIp,
+      if (userAgent != null) 'user_agent': userAgent,
+    };
+    return await _request('/api/landing/feedback', method: 'POST', body: body);
+  }
+
   // 检查邮箱是否存在
   static Future<User> checkUserByEmail(String email) async {
     final result = await _request('/api/user/check-email',

@@ -244,7 +244,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
           : await AiProviderService().readApiKey(initial.id),
     );
     var providerType = initial?.providerType ?? AiProviderType.openAiCompatible;
-    var useServerMemory = initial?.useServerMemory ?? false;
     var supportsSystemMessages = initial?.supportsSystemMessages ?? true;
     var supportsStreaming = initial?.supportsStreaming ?? false;
     var supportsVision = initial?.supportsVision ?? false;
@@ -305,7 +304,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                             .map((e) => e.trim())
                             .where((e) => e.isNotEmpty)
                             .toList(),
-                        useServerMemory: useServerMemory,
                         supportsSystemMessages: supportsSystemMessages,
                         supportsStreaming: supportsStreaming,
                         supportsVision: supportsVision,
@@ -354,7 +352,6 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                       .map((e) => e.trim())
                       .where((e) => e.isNotEmpty)
                       .toList(),
-                  useServerMemory: useServerMemory,
                   supportsSystemMessages: supportsSystemMessages,
                   supportsStreaming: supportsStreaming,
                   supportsVision: supportsVision,

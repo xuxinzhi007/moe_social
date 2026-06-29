@@ -286,7 +286,7 @@ export function createAdminClient(opts: AdminClientOptions) {
     const headers = new Headers(init?.headers)
     const useAuth = init?.auth !== false
     if (useAuth && opts.token) {
-      headers.set('X-Admin-Token', opts.token)
+      headers.set('Authorization', `Bearer ${opts.token}`)
     }
     const full = resolveAdminRequestUrl(path, opts)
     let res: Response
