@@ -23,6 +23,7 @@ type CheckInStore interface {
 	ListCheckIns(ctx context.Context, userID uint, page, pageSize int32) ([]model.UserCheckIn, int64, error)
 	CountExpLogs(ctx context.Context, userID uint) (int64, error)
 	ListExpLogs(ctx context.Context, userID uint, page, pageSize int32) ([]model.ExpLog, error)
+	HasExpLogToday(ctx context.Context, userID uint, source string, dayStart, dayEnd time.Time) (bool, error)
 	GetUserLevel(ctx context.Context, userID uint) (model.UserLevel, bool, error)
 	CreateUserLevel(ctx context.Context, row *model.UserLevel) error
 	GetLevelConfig(ctx context.Context, level int) (model.LevelConfig, bool, error)
@@ -37,6 +38,7 @@ type CheckInTx interface {
 	FindLastCheckIn(userID uint) (model.UserCheckIn, bool, error)
 	FindCheckInReward(consecutiveDays int) (model.CheckInReward, bool, error)
 	CreateCheckIn(record *model.UserCheckIn) error
+	HasExpLogToday(userID uint, source string, dayStart, dayEnd time.Time) (bool, error)
 	Commit() error
 	Rollback() error
 	DB() *gorm.DB

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../constants/feature_flags.dart';
 import '../app/deferred_route.dart';
 import '../auth_service.dart';
 import '../models/community_group.dart';
@@ -148,11 +149,18 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           recharge.loadLibrary,
           () => recharge.RechargePage(),
         ),
-    '/gacha': (context) => _deferred(
-          gacha.loadLibrary,
-          () => gacha.GachaPage(),
-          message: '正在加载扭蛋…',
-        ),
+    '/gacha': (context) {
+      if (!FeatureFlags.showGachaFeatures) {
+        return const Scaffold(
+          body: Center(child: Text('该功能已下线')),
+        );
+      }
+      return _deferred(
+        gacha.loadLibrary,
+        () => gacha.GachaPage(),
+        message: '正在加载扭蛋…',
+      );
+    },
     '/user-profile': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {

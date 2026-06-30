@@ -30,6 +30,7 @@ class PostCard extends StatefulWidget {
   final VoidCallback? onComment;
   final VoidCallback? onShare;
   final VoidCallback? onAvatarTap;
+  final VoidCallback? onCardTap;
 
   /// 作者编辑回调（非作者时不传，菜单项自动隐藏）。
   final VoidCallback? onEdit;
@@ -50,6 +51,7 @@ class PostCard extends StatefulWidget {
     this.onComment,
     this.onShare,
     this.onAvatarTap,
+    this.onCardTap,
     this.onEdit,
     this.onDelete,
     this.heroTagPrefix = '',
@@ -88,358 +90,365 @@ class _PostCardState extends State<PostCard>
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 用户信息
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: widget.onAvatarTap,
-                    child: Hero(
-                      tag: '${widget.heroTagPrefix}avatar_${widget.post.id}',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              primaryColor.withValues(alpha: 0.3),
-                              secondaryColor.withValues(alpha: 0.3),
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withValues(alpha: 0.2),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(2),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: widget.onCardTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 用户信息
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: widget.onAvatarTap,
+                      child: Hero(
+                        tag: '${widget.heroTagPrefix}avatar_${widget.post.id}',
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: theme.scaffoldBackgroundColor, // 适配暗黑模式
+                            gradient: LinearGradient(
+                              colors: [
+                                primaryColor.withValues(alpha: 0.3),
+                                secondaryColor.withValues(alpha: 0.3),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
-                          child: NetworkAvatarImage(
-                            imageUrl: widget.post.userAvatar,
-                            radius: 22,
-                            placeholderIcon: Icons.person,
+                          padding: const EdgeInsets.all(2),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.scaffoldBackgroundColor, // 适配暗黑模式
+                            ),
+                            child: NetworkAvatarImage(
+                              imageUrl: widget.post.userAvatar,
+                              radius: 22,
+                              placeholderIcon: Icons.person,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                widget.post.userName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: theme.textTheme.titleLarge?.color,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (widget.post.authorIsBot) ...[
-                              const SizedBox(width: 6),
-                              AiBotBadge(
-                                compact: true,
-                                agentKey: widget.post.authorBotAgentKey,
-                              ),
-                            ],
-                          ],
-                        ),
-                        Text(
-                          _formatTime(widget.post.createdAt),
-                          style: TextStyle(
-                            color: theme.textTheme.bodySmall?.color ??
-                                Colors.grey[400],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      final isAuthor =
-                          widget.post.userId == (AuthService.currentUser ?? '');
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(24)),
-                          ),
-                          child: SafeArea(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  margin:
-                                      const EdgeInsets.only(top: 12, bottom: 8),
-                                  width: 40,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(2),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.post.userName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: theme.textTheme.titleLarge?.color,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                // 作者专属：编辑与删除
-                                if (isAuthor && widget.onEdit != null)
+                              ),
+                              if (widget.post.authorIsBot) ...[
+                                const SizedBox(width: 6),
+                                AiBotBadge(
+                                  compact: true,
+                                  agentKey: widget.post.authorBotAgentKey,
+                                ),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            _formatTime(widget.post.createdAt),
+                            style: TextStyle(
+                              color: theme.textTheme.bodySmall?.color ??
+                                  Colors.grey[400],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        final isAuthor = widget.post.userId ==
+                            (AuthService.currentUser ?? '');
+                        showModalBottomSheet(
+                          context: context,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(24)),
+                            ),
+                            child: SafeArea(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(
+                                        top: 12, bottom: 8),
+                                    width: 40,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  // 作者专属：编辑与删除
+                                  if (isAuthor && widget.onEdit != null)
+                                    MoeActionRow(
+                                      icon: Icons.edit_rounded,
+                                      title: '编辑动态',
+                                      iconColor: MoeTokens.primary,
+                                      showDefaultTrailing: false,
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        widget.onEdit!();
+                                      },
+                                    ),
+                                  if (isAuthor && widget.onDelete != null)
+                                    MoeActionRow(
+                                      icon: Icons.delete_outline_rounded,
+                                      title: '删除动态',
+                                      iconColor: Colors.redAccent,
+                                      titleStyle: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      showDefaultTrailing: false,
+                                      onTap: () {
+                                        Navigator.pop(context);
+                                        _confirmDelete(context, widget.post,
+                                            widget.onDelete!);
+                                      },
+                                    ),
+                                  if (isAuthor &&
+                                      (widget.onEdit != null ||
+                                          widget.onDelete != null))
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20),
+                                      child: Divider(
+                                          height: 1,
+                                          color: Colors.grey
+                                              .withValues(alpha: 0.15)),
+                                    ),
                                   MoeActionRow(
-                                    icon: Icons.edit_rounded,
-                                    title: '编辑动态',
+                                    icon: Icons.link_rounded,
+                                    title: '复制链接',
                                     iconColor: MoeTokens.primary,
                                     showDefaultTrailing: false,
                                     onTap: () {
                                       Navigator.pop(context);
-                                      widget.onEdit!();
+                                      _copyPostLink(context, widget.post);
                                     },
                                   ),
-                                if (isAuthor && widget.onDelete != null)
                                   MoeActionRow(
-                                    icon: Icons.delete_outline_rounded,
-                                    title: '删除动态',
-                                    iconColor: Colors.redAccent,
-                                    titleStyle: const TextStyle(
-                                      color: Colors.redAccent,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    icon: Icons.visibility_off_rounded,
+                                    title: '不感兴趣',
+                                    iconColor: Colors.orange,
+                                    showDefaultTrailing: false,
+                                    onTap: () => Navigator.pop(context),
+                                  ),
+                                  MoeActionRow(
+                                    icon: Icons.report_rounded,
+                                    title: '举报',
+                                    iconColor: Colors.red,
                                     showDefaultTrailing: false,
                                     onTap: () {
                                       Navigator.pop(context);
-                                      _confirmDelete(context, widget.post,
-                                          widget.onDelete!);
+                                      _showReportDialog(context, widget.post);
                                     },
                                   ),
-                                if (isAuthor &&
-                                    (widget.onEdit != null ||
-                                        widget.onDelete != null))
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20),
-                                    child: Divider(
-                                        height: 1,
-                                        color: Colors.grey
-                                            .withValues(alpha: 0.15)),
-                                  ),
-                                MoeActionRow(
-                                  icon: Icons.link_rounded,
-                                  title: '复制链接',
-                                  iconColor: MoeTokens.primary,
-                                  showDefaultTrailing: false,
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    _copyPostLink(context, widget.post);
-                                  },
-                                ),
-                                MoeActionRow(
-                                  icon: Icons.visibility_off_rounded,
-                                  title: '不感兴趣',
-                                  iconColor: Colors.orange,
-                                  showDefaultTrailing: false,
-                                  onTap: () => Navigator.pop(context),
-                                ),
-                                MoeActionRow(
-                                  icon: Icons.report_rounded,
-                                  title: '举报',
-                                  iconColor: Colors.red,
-                                  showDefaultTrailing: false,
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                    _showReportDialog(context, widget.post);
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                              ],
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.more_horiz_rounded,
-                        color: theme.iconTheme.color?.withValues(alpha: 0.5)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                        );
+                      },
+                      icon: Icon(Icons.more_horiz_rounded,
+                          color: theme.iconTheme.color?.withValues(alpha: 0.5)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-              // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
-              if (widget.post.isPendingModeration)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Chip(
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      avatar: Icon(Icons.hourglass_top_rounded,
-                          size: 16, color: Colors.amber[800]),
-                      label: const Text('审核中', style: TextStyle(fontSize: 12)),
-                      backgroundColor: Colors.amber.shade50,
+                // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
+                if (widget.post.isPendingModeration)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Chip(
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        avatar: Icon(Icons.hourglass_top_rounded,
+                            size: 16, color: Colors.amber[800]),
+                        label:
+                            const Text('审核中', style: TextStyle(fontSize: 12)),
+                        backgroundColor: Colors.amber.shade50,
+                      ),
                     ),
                   ),
-                ),
 
-              if (widget.post.displayCaption.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: _renderContentWithEmojis(
-                      context, widget.post.displayCaption),
-                ),
+                if (widget.post.displayCaption.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _renderContentWithEmojis(
+                        context, widget.post.displayCaption),
+                  ),
 
-              if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
-                if (widget.post.displayCaption.isNotEmpty)
-                  const SizedBox(height: 4),
-                _HandDrawThumbnail(
-                  post: widget.post,
-                  onOpenReplay: () => _openHandDrawViewer(context, widget.post),
-                ),
-              ] else if (widget.post.hasHandDraw ||
-                  widget.post.handDrawCard != null) ...[
-                if (widget.post.displayCaption.isNotEmpty)
-                  const SizedBox(height: 4),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _openHandDrawViewer(context, widget.post),
-                    borderRadius: BorderRadius.circular(20),
-                    child: ClipRRect(
+                if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
+                  if (widget.post.displayCaption.isNotEmpty)
+                    const SizedBox(height: 4),
+                  _HandDrawThumbnail(
+                    post: widget.post,
+                    onOpenReplay: () =>
+                        _openHandDrawViewer(context, widget.post),
+                  ),
+                ] else if (widget.post.hasHandDraw ||
+                    widget.post.handDrawCard != null) ...[
+                  if (widget.post.displayCaption.isNotEmpty)
+                    const SizedBox(height: 4),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _openHandDrawViewer(context, widget.post),
                       borderRadius: BorderRadius.circular(20),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 280),
-                        child: AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: widget.post.handDrawCard != null
-                              ? HandDrawCardStatic(
-                                  data: widget.post.handDrawCard!,
-                                )
-                              : ColoredBox(
-                                  color: Colors.grey.shade200,
-                                  child: Center(
-                                    child: Text(
-                                      '手绘动态',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w600,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: AspectRatio(
+                            aspectRatio: 3 / 4,
+                            child: widget.post.handDrawCard != null
+                                ? HandDrawCardStatic(
+                                    data: widget.post.handDrawCard!,
+                                  )
+                                : ColoredBox(
+                                    color: Colors.grey.shade200,
+                                    child: Center(
+                                      child: Text(
+                                        '手绘动态',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                Align(
-                  alignment: Alignment.center,
-                  child: TextButton.icon(
-                    onPressed: () => _openHandDrawViewer(context, widget.post),
-                    icon:
-                        const Icon(Icons.play_circle_outline_rounded, size: 20),
-                    label: const Text('回放绘画过程'),
-                  ),
-                ),
-              ],
-
-              // 话题标签
-              if (widget.post.topicTags.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: widget.post.topicTags
-                      .map((tag) => TopicTagDisplay(
-                            tag: tag,
-                            fontSize: 12,
-                            showUsageCount: false,
-                            onTap: () {
-                              // 跳转到话题动态列表页面
-                              Navigator.pushNamed(
-                                context,
-                                '/topic-posts',
-                                arguments: tag,
-                              );
-                            },
-                          ))
-                      .toList(),
-                ),
-              ],
-
-              const SizedBox(height: 12),
-
-              // 帖子图片
-              if (widget.post.images.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _buildImageGrid(context, widget.post.images, widget.post.id),
-              ],
-
-              const SizedBox(height: 20),
-              Divider(
-                height: 1,
-                color: theme.dividerColor.withValues(alpha: 0.1),
-              ),
-              const SizedBox(height: 12),
-
-              // 帖子互动
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable: LikeStateManager().getStatusNotifier(
-                      widget.post.id,
-                      initialValue: widget.post.isLiked,
+                  Align(
+                    alignment: Alignment.center,
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          _openHandDrawViewer(context, widget.post),
+                      icon: const Icon(Icons.play_circle_outline_rounded,
+                          size: 20),
+                      label: const Text('回放绘画过程'),
                     ),
-                    builder: (context, isLiked, _) {
-                      return ValueListenableBuilder<int>(
-                        valueListenable: LikeStateManager().getCountNotifier(
-                          widget.post.id,
-                          initialValue: widget.post.likes,
-                        ),
-                        builder: (context, likeCount, _) {
-                          return LikeButton(
-                            postId: widget.post.id,
-                            userId: AuthService.currentUser ?? '',
-                            isLiked: isLiked,
-                            likeCount: likeCount,
-                            onLikeChanged: (liked, count) {
-                              widget.onLike?.call();
-                            },
-                          );
-                        },
-                      );
-                    },
                   ),
-                  _buildActionButton(context,
-                      icon: Icons.chat_bubble_outline_rounded,
-                      count: widget.post.comments,
-                      onTap: widget.onComment ??
-                          () {
-                            openPostDetail(context, widget.post);
-                          }),
-                  _buildActionButton(context,
-                      icon: Icons.share_rounded,
-                      label: '分享',
-                      onTap: widget.onShare ??
-                          () {
-                            _handleShare(widget.post);
-                          }),
                 ],
-              ),
-            ],
+
+                // 话题标签
+                if (widget.post.topicTags.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: widget.post.topicTags
+                        .map((tag) => TopicTagDisplay(
+                              tag: tag,
+                              fontSize: 12,
+                              showUsageCount: false,
+                              onTap: () {
+                                // 跳转到话题动态列表页面
+                                Navigator.pushNamed(
+                                  context,
+                                  '/topic-posts',
+                                  arguments: tag,
+                                );
+                              },
+                            ))
+                        .toList(),
+                  ),
+                ],
+
+                const SizedBox(height: 12),
+
+                // 帖子图片
+                if (widget.post.images.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildImageGrid(context, widget.post.images, widget.post.id),
+                ],
+
+                const SizedBox(height: 20),
+                Divider(
+                  height: 1,
+                  color: theme.dividerColor.withValues(alpha: 0.1),
+                ),
+                const SizedBox(height: 12),
+
+                // 帖子互动
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ValueListenableBuilder<bool>(
+                      valueListenable: LikeStateManager().getStatusNotifier(
+                        widget.post.id,
+                        initialValue: widget.post.isLiked,
+                      ),
+                      builder: (context, isLiked, _) {
+                        return ValueListenableBuilder<int>(
+                          valueListenable: LikeStateManager().getCountNotifier(
+                            widget.post.id,
+                            initialValue: widget.post.likes,
+                          ),
+                          builder: (context, likeCount, _) {
+                            return LikeButton(
+                              postId: widget.post.id,
+                              userId: AuthService.currentUser ?? '',
+                              isLiked: isLiked,
+                              likeCount: likeCount,
+                              onLikeChanged: (liked, count) {
+                                widget.onLike?.call();
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    _buildActionButton(context,
+                        icon: Icons.chat_bubble_outline_rounded,
+                        count: widget.post.comments,
+                        onTap: widget.onComment ??
+                            () {
+                              openPostDetail(context, widget.post);
+                            }),
+                    _buildActionButton(context,
+                        icon: Icons.share_rounded,
+                        label: '分享',
+                        onTap: widget.onShare ??
+                            () {
+                              _handleShare(widget.post);
+                            }),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

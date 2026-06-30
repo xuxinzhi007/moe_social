@@ -20,7 +20,7 @@
 |------|------|
 | 推理 + 记忆 | `docs/dev/llm-inference-and-memory-vision.md` |
 | 用户记忆 | `docs/dev/用户记忆系统-OpenClaw式演进设计.md` |
-| 产品优先级 | `docs/product/项目开发总览与当前优先级-2026-05-18.md` |
+| 产品定位 | `docs/product/product-positioning.md` |
 | Code Review | `code_review.md` |
 
 ## 交付

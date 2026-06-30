@@ -6,6 +6,8 @@ import (
 	"backend/pkg/achievement"
 	postv1 "backend/api/post/v1"
 	postbiz "backend/internal/biz/post"
+	checkinbiz "backend/internal/biz/checkin"
+	checkindata "backend/internal/data/checkin"
 )
 
 func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (*postv1.CreatePostReply, error) {
@@ -37,6 +39,8 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		MoodTag: result.Post.MoodTag, HasHandDraw: result.Post.HandDrawCard != "",
 		HandDrawApproved: result.HandDrawApproved,
 	})
+	_, _ = checkinbiz.GrantDailyExpOnce(ctx, checkindata.NewStore(s.store.Raw()),
+		in.GetUserId(), checkinbiz.DailyExpActionPost)
 
 	post := postbiz.BuildPostV1ForDetail(result.Post, result.User, false)
 	post.Images = result.Images

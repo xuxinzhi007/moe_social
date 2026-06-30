@@ -84,14 +84,14 @@ class _MainPageState extends State<MainPage> {
             label: '首页',
           ),
           NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            selectedIcon: Icon(Icons.chat_bubble_rounded),
-            label: '消息',
+            icon: Icon(Icons.people_outline_rounded),
+            selectedIcon: Icon(Icons.people_rounded),
+            label: '好友',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_awesome_outlined),
             selectedIcon: Icon(Icons.auto_awesome_rounded),
-            label: 'AI',
+            label: 'AI互动',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

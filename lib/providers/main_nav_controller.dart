@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// 用于从子页面请求切换 [MainPage] 底栏 Tab（避免仅靠 Navigator 无法切换 IndexedStack）。
 ///
 /// Tab 索引与 [MainPage] 中 `_pageBuilders` 顺序一致：
-/// 0 首页 · 1 消息 · 2 AI · 3 我的
+/// 0 首页 · 1 消息 · 2 AI互动 · 3 我的
 class MainNavController extends ChangeNotifier {
   int? _pendingTabIndex;
 

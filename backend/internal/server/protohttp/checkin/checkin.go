@@ -64,3 +64,11 @@ func (s *Server) GetExpLogs(ctx context.Context, in *checkinv1.GetExpLogsRequest
 	}
 	return app.GetExpLogs(ctx, in)
 }
+
+func (s *Server) ClaimDailyExp(ctx context.Context, in *checkinv1.ClaimDailyExpRequest) (*checkinv1.ClaimDailyExpReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.ClaimDailyExp(ctx, in)
+}

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../constants/feature_flags.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../autoglm/autoglm_page.dart';
 import '../modules/ai_settings_module.dart';
 import 'feishu_bind_sheet.dart';
 
@@ -63,7 +65,7 @@ class _SettingsAdvancedSectionState extends State<SettingsAdvancedSection> {
                           ),
                           SizedBox(height: 2),
                           Text(
-                            'AI 模型、飞书通知等开发者/企业功能',
+                            'AI 模型、飞书通知、AutoGLM 等实验功能',
                             style: TextStyle(
                               color: Colors.grey,
                               fontSize: 12,
@@ -93,6 +95,21 @@ class _SettingsAdvancedSectionState extends State<SettingsAdvancedSection> {
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: MoeMenuCard(
                 items: [
+                  if (FeatureFlags.showAutoGlm)
+                    MoeMenuItem(
+                      icon: Icons.smart_toy_rounded,
+                      title: 'AutoGLM 助手',
+                      subtitle: '自动化实验；开发者自用，默认关闭',
+                      color: MoeTokens.primary,
+                      onTap: () {
+                        Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AutoGLMPage(),
+                          ),
+                        );
+                      },
+                    ),
                   MoeMenuItem(
                     icon: Icons.notifications_active_rounded,
                     title: '飞书通知',

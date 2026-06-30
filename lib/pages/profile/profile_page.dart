@@ -6,8 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
-import '../../autoglm/autoglm_service.dart';
-import '../../constants/feature_flags.dart';
 import '../../models/achievement_badge.dart';
 import '../../models/user.dart';
 import '../../providers/user_level_provider.dart';
@@ -26,12 +24,10 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
 import '../ai/agent_list_page.dart';
-import '../autoglm/autoglm_page.dart';
 import '../checkin/checkin_page.dart';
 import '../checkin/user_level_page.dart';
 import '../commerce/wallet_page.dart';
 import '../gallery/cloud_gallery_page.dart';
-import '../game/game_lobby_page.dart';
 import 'followers_page.dart';
 import 'following_page.dart';
 
@@ -383,31 +379,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             Navigator.pushNamed(context, '/community');
                           },
                         ),
-                        _MenuItem(
-                          icon: Icons.sports_esports_rounded,
-                          title: '小游戏',
-                          subtitle: '休闲玩法入口',
-                          color: const Color(0xFF26A69A),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const GameLobbyPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        _MenuItem(
-                          icon: Icons.card_giftcard_rounded,
-                          title: '抽卡',
-                          subtitle: '模拟抽取与收藏展示',
-                          color: const Color(0xFFF38181),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.pushNamed(context, '/gacha');
-                          },
-                        ),
                       ]),
                     ),
                     const SizedBox(height: 18),
@@ -450,60 +421,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Lab & System
                     FadeInUp(
                       delay: const Duration(milliseconds: 140),
-                      child: _menuSection('实验室与系统', [
-                        if (FeatureFlags.showAutoGlm)
-                          _MenuItem(
-                            icon: Icons.smart_toy_rounded,
-                            title: 'AutoGLM 助手',
-                            color: _moe.primary,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const AutoGLMPage()));
-                            },
-                            trailing: Transform.scale(
-                              scale: 0.8,
-                              child: Switch(
-                                value: AutoGLMService.enableOverlay,
-                                activeThumbColor: _moe.primary,
-                                onChanged: (v) async {
-                                  HapticFeedback.lightImpact();
-                                  setState(
-                                      () => AutoGLMService.enableOverlay = v);
-                                  if (v) {
-                                    bool ok = await AutoGLMService
-                                        .checkOverlayPermission();
-                                    if (!ok) {
-                                      await AutoGLMService
-                                          .requestOverlayPermission();
-                                      await Future.delayed(
-                                          const Duration(seconds: 1));
-                                      ok = await AutoGLMService
-                                          .checkOverlayPermission();
-                                      if (!ok) {
-                                        setState(() => AutoGLMService
-                                            .enableOverlay = false);
-                                        if (!context.mounted) return;
-                                        MoeToast.error(context, '需要悬浮窗权限才能显示');
-                                        return;
-                                      }
-                                    }
-                                    await AutoGLMService.showOverlay();
-                                    if (!context.mounted) return;
-                                    MoeToast.success(context, '悬浮窗已开启');
-                                  } else {
-                                    await AutoGLMService.removeOverlay();
-                                  }
-                                },
-                              ),
-                            ),
-                          ),
+                      child: _menuSection('AI 与设置', [
                         _MenuItem(
                             icon: Icons.smart_toy_rounded,
-                            title: 'AI 助手',
-                            subtitle: '对话、创作与辅助功能',
+                            title: 'AI 互动',
+                            subtitle: '智能体对话，增强社交互动',
                             color: const Color(0xFFFFB347),
                             onTap: () {
                               HapticFeedback.lightImpact();

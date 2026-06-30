@@ -7,7 +7,7 @@ import '../notifications/notification_center_page.dart';
 import 'discover_match_tab.dart';
 import 'discover_play_tab.dart';
 
-/// 历史探索页：同好匹配与玩法入口（AI 酒馆、小游戏）。
+/// 探索页：同好匹配 + AI 互动（游戏入口已按产品定位下线）。
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../providers/user_level_provider.dart';
 import '../../auth_service.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/post.dart';
@@ -348,6 +350,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
             MoeToast.success(rootCtx, msg);
+            if (uid != null) {
+              unawaited(rootCtx.read<UserLevelProvider>().loadUserLevel(uid));
+            }
           }
         });
       },

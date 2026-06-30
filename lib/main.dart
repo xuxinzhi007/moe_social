@@ -21,6 +21,7 @@ import 'services/chat_push_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/rive_bootstrap.dart';
 import 'services/startup_update_service.dart';
+import 'services/daily_growth_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
@@ -260,6 +261,9 @@ class _MyAppState extends State<MyApp> {
       Future<void>.delayed(const Duration(milliseconds: 650), () {
         unawaited(StartupUpdateService.tryLaunchUpdateCheck());
       });
+      if (AuthService.isLoggedIn) {
+        unawaited(DailyGrowthService.instance.runAutoCheckIn(context));
+      }
     });
   }
 
