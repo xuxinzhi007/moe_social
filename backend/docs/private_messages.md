@@ -122,8 +122,9 @@ RPC 进程启动后注册 **每 6 小时** 执行一次：`DELETE FROM private_m
 表结构由 GORM `AutoMigrate` 创建。新增模型后请执行：
 
 ```bash
-cd backend/rpc
-go run super.go -f etc/super.yaml -migrate
+cd backend
+make db-migrate
+# 或：go run ./cmd/moe-social -migrate
 ```
 
 ---

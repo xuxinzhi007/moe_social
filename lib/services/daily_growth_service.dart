@@ -66,4 +66,13 @@ class DailyGrowthService {
     _autoCheckInStarted = false;
     _browseExpPending = false;
   }
+
+  /// 登录成功并进入首页后触发静默签到（使用 navigatorKey，避免登录页 dispose 后 context 失效）。
+  void scheduleAutoCheckInAfterLogin() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = AuthService.navigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      unawaited(runAutoCheckIn(ctx));
+    });
+  }
 }

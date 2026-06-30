@@ -237,6 +237,12 @@ class SplashScreenWrapper extends StatelessWidget {
         '(isProduction=${moe_launch_config.AppConfig.isProduction})');
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
     debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
+    if (kIsWeb && kDebugMode) {
+      debugPrint(
+        '💡 Web 调试：F5=整页重载；看 REST 请用终端 Console 搜「✓ GET」；'
+        'Network 面板选 Fetch/XHR。改 UI 建议 flutter run -d macos/android。',
+      );
+    }
   }
 }
 

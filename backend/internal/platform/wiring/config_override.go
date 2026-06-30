@@ -64,13 +64,13 @@ func ApplyUnifiedConfigOverrides(c *config.Config) {
 	if u := v.GetString("app_client.public_api_base_url"); u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}
-	if d := firstNonEmptyString(v, "image.local_dir", "image.localdir"); d != "" {
+	if d := firstNonEmptyString(v, "image.local_dir", "image.localdir", "Image.LocalDir"); d != "" {
 		c.Image.LocalDir = d
 	}
-	if u := firstNonEmptyString(v, "image.public_base_url", "image.publicbaseurl"); u != "" {
+	if u := firstNonEmptyString(v, "image.public_base_url", "image.publicbaseurl", "Image.PublicBaseUrl"); u != "" {
 		c.Image.PublicBaseUrl = u
 	}
-	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes"); n > 0 {
+	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes", "Image.MaxBytes"); n > 0 {
 		c.Image.MaxBytes = n
 	}
 	if secret := strings.TrimSpace(os.Getenv("MOE_AUTH_ACCESS_SECRET")); secret != "" {

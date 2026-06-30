@@ -56,13 +56,28 @@ class _RegisterPageState extends State<RegisterPage> {
       _syncEmailCompletions();
     } else {
       _emailCompletionDebounce?.cancel();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 280), () {
         if (!mounted || _emailFocus.hasFocus) return;
         if (_emailCompletions.value.isNotEmpty) {
           _emailCompletions.value = const [];
         }
       });
     }
+  }
+
+  void _pickEmailSuffix(String picked) {
+    if (_emailCompletions.value.isEmpty) return;
+    final e = picked.trim();
+    if (e.isEmpty) return;
+    _emailController.value = TextEditingValue(
+      text: e,
+      selection: TextSelection.collapsed(offset: e.length),
+    );
+    _emailCompletions.value = const [];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _formKey.currentState?.validate();
+    });
   }
 
   void _syncEmailCompletions() {
@@ -142,7 +157,8 @@ class _RegisterPageState extends State<RegisterPage> {
             top: 10,
             left: 10,
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black54),
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black54),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -197,10 +213,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                 AutovalidateMode.onUserInteraction,
                           ),
                           const SizedBox(height: 20),
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Column(
+                          ValueListenableBuilder<List<String>>(
+                            valueListenable: _emailCompletions,
+                            builder: (_, completions, __) {
+                              return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   MoeInputField(
@@ -208,56 +224,31 @@ class _RegisterPageState extends State<RegisterPage> {
                                     focusNode: _emailFocus,
                                     hintText: '电子邮箱',
                                     icon: Icons.email_outlined,
-                                    validator: Validators.email,
+                                    validator: completions.isNotEmpty
+                                        ? (_) => null
+                                        : Validators.email,
                                     keyboardType: TextInputType.emailAddress,
                                     autovalidateMode:
                                         AutovalidateMode.onUserInteraction,
                                   ),
-                                  const SizedBox(height: 20),
-                                  MoeInputField(
-                                    controller: _passwordController,
-                                    hintText: '设置密码',
-                                    icon: Icons.lock_outline_rounded,
-                                    isPassword: true,
-                                    validator: Validators.password,
-                                    autovalidateMode: AutovalidateMode.disabled,
+                                  EmailSuffixBar(
+                                    candidates: completions,
+                                    accentColor: _primaryColor,
+                                    onSelected: _pickEmailSuffix,
                                   ),
+                                  SizedBox(
+                                      height: completions.isEmpty ? 20 : 12),
                                 ],
-                              ),
-                              ValueListenableBuilder<List<String>>(
-                                valueListenable: _emailCompletions,
-                                builder: (_, completions, __) {
-                                  if (completions.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Positioned(
-                                    left: 4,
-                                    right: 4,
-                                    top: 56,
-                                    child: EmailCompletionBubble(
-                                      candidates: completions,
-                                      accentColor: _primaryColor,
-                                      onSelected: (picked) {
-                                        final e = picked.trim();
-                                        if (e.isEmpty) return;
-                                        _emailController.value =
-                                            TextEditingValue(
-                                          text: e,
-                                          selection: TextSelection.collapsed(
-                                              offset: e.length),
-                                        );
-                                        _emailCompletions.value = const [];
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                          if (!mounted) return;
-                                          _formKey.currentState?.validate();
-                                        });
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                              );
+                            },
+                          ),
+                          MoeInputField(
+                            controller: _passwordController,
+                            hintText: '设置密码',
+                            icon: Icons.lock_outline_rounded,
+                            isPassword: true,
+                            validator: Validators.password,
+                            autovalidateMode: AutovalidateMode.disabled,
                           ),
                           const SizedBox(height: 20),
                           MoeInputField(
@@ -283,7 +274,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                   borderRadius: BorderRadius.circular(28),
                                 ),
                                 elevation: 8,
-                                shadowColor: _primaryColor.withValues(alpha: 0.4),
+                                shadowColor:
+                                    _primaryColor.withValues(alpha: 0.4),
                               ),
                               child: const Text(
                                 '立即注册',
@@ -344,7 +336,6 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
-
 
   @override
   void dispose() {

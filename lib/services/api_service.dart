@@ -335,6 +335,7 @@ class ApiService {
   // 执行实际的HTTP请求
   static Future<Map<String, dynamic>> _performRequest(
       String path, String method, dynamic body) async {
+    final sw = Stopwatch()..start();
     try {
       final uri = Uri.parse('$baseUrl$path');
 
@@ -386,11 +387,16 @@ class ApiService {
 
       final bodyText = _decodeUtf8Body(response);
       final status = response.statusCode;
-      if (status >= 400) {
-        _log('❌ $method $pathLabel → $status');
-      } else if (_verboseApiLog) {
-        _log('📥 $method $pathLabel → $status');
-        _log('📥 Response Body: ${_safeTextForLog(bodyText)}');
+      final elapsedMs = sw.elapsedMilliseconds;
+      if (_shouldLogRestPath(uri.path)) {
+        if (status >= 400) {
+          _log('❌ $method $pathLabel → $status (${elapsedMs}ms)');
+        } else if (_verboseApiLog) {
+          _log('📥 $method $pathLabel → $status (${elapsedMs}ms)');
+          _log('📥 Response Body: ${_safeTextForLog(bodyText)}');
+        } else {
+          _log('✓ $method $pathLabel → $status (${elapsedMs}ms)');
+        }
       }
 
       // 检查响应体是否为空
@@ -725,6 +731,12 @@ class ApiService {
     final q =
         uri.query.length > 40 ? '${uri.query.substring(0, 40)}…' : uri.query;
     return '$path?$q';
+  }
+
+  static bool _shouldLogRestPath(String path) {
+    final filter = moe_launch_config.AppConfig.apiLogPathFilter.trim();
+    if (filter.isEmpty) return true;
+    return path.contains(filter);
   }
 
   static void _log(String message) {

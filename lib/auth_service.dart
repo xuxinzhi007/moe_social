@@ -8,6 +8,7 @@ import 'services/api_service.dart';
 import 'services/api_response.dart';
 import 'services/behavior_analytics_service.dart';
 import 'services/chat_push_service.dart';
+import 'services/daily_growth_service.dart';
 import 'services/presence_service.dart';
 import 'widgets/moe_toast.dart';
 
@@ -261,6 +262,7 @@ class AuthService {
 
   static void logout() {
     MoeToast.dismiss();
+    DailyGrowthService.instance.resetSession();
     unawaited(BehaviorAnalyticsService.instance.stop());
     final uid = _currentUser;
     _currentUser = null;
@@ -353,7 +355,13 @@ class AuthService {
         try {
           final map = json.decode(cached) as Map<String, dynamic>;
           final u = User.fromJson(map);
-          if (u.id == userId) return u;
+          // 旧版解析 bug 可能把空壳 User 写入缓存，命中则强制拉远端。
+          if (u.id == userId &&
+              u.username.trim().isNotEmpty &&
+              u.email.trim().isNotEmpty) {
+            return u;
+          }
+          await prefs.remove(_userInfoPrefsKey(userId));
         } catch (_) {
           await prefs.remove(_userInfoPrefsKey(userId));
         }

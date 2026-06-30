@@ -41,15 +41,10 @@ func runHTTPOnly(opts Options) error {
 		kratos.Name("moe-social"),
 		kratos.Server(httpSrv),
 	)
-	addr := fmt.Sprintf("0.0.0.0:%d", port)
-	logHTTPOnlyStartup(addr)
+	logHTTPOnlyStartup(port)
 	return app.Run()
 }
 
-func logHTTPOnlyStartup(apiAddr string) {
-	log.Print("════════════════════════════════════════")
-	log.Print("moe-social 已就绪")
-	log.Printf("  HTTP: %s", apiAddr)
-	log.Print("  模式: Kratos HTTP-only（proto + transport）")
-	log.Print("════════════════════════════════════════")
+func logHTTPOnlyStartup(port int) {
+	log.Printf("moe-social 已就绪 · Kratos HTTP-only · 端口 %d（listening 日志见下方）", port)
 }

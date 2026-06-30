@@ -177,7 +177,7 @@ env-status:
 
 
 
-# ===== 后端业务（go run super.go 只跑业务，不含监控）=====
+# ===== 后端业务（make moe-social / go run ./cmd/moe-social）=====
 
 
 

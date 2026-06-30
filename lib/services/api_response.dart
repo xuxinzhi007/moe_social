@@ -63,8 +63,7 @@ class ApiResponse {
     return s;
   }
 
-  static bool isValidUserId(String? raw) =>
-      coerceUserId(raw) != null;
+  static bool isValidUserId(String? raw) => coerceUserId(raw) != null;
 
   /// 业务字段（去掉 code/message/success/reason 信封层）。
   static Map<String, dynamic> payload(Map<String, dynamic> json) {
@@ -165,7 +164,7 @@ class ApiResponse {
     return const [];
   }
 
-  /// 单对象：优先 `data`（compat），否则取 payload / 指定 key。
+  /// 单对象：优先 `data` 内指定 [keys]（如 `data.user`），否则 `data` 本身或 payload。
   static Map<String, dynamic> object(
     Map<String, dynamic> json, {
     List<String> keys = const [
@@ -191,13 +190,18 @@ class ApiResponse {
     ],
   }) {
     final direct = json['data'];
-    if (direct is Map<String, dynamic>) return apiNormalizedMap(direct);
-    if (direct is Map) return apiNormalizedMap(direct);
+    if (direct is Map) {
+      final dm = apiNormalizedMap(direct);
+      for (final key in keys) {
+        final v = dm[key];
+        if (v is Map) return apiNormalizedMap(v);
+      }
+      return dm;
+    }
 
     final flat = payload(json);
     for (final key in keys) {
       final v = flat[key];
-      if (v is Map<String, dynamic>) return apiNormalizedMap(v);
       if (v is Map) return apiNormalizedMap(v);
     }
     return apiNormalizedMap(flat);

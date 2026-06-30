@@ -5,6 +5,7 @@ import '../app/deferred_route.dart';
 import '../auth_service.dart';
 import '../models/community_group.dart';
 import '../models/post.dart';
+import '../models/user.dart';
 import '../models/topic_tag.dart';
 import '../pages/achievements/achievements_page.dart' deferred as achievements;
 import '../pages/auth/forgot_password_page.dart';
@@ -104,9 +105,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/comments': (context) => CommentsPage(
           postId: ModalRoute.of(context)!.settings.arguments as String,
         ),
-    '/edit-profile': (context) => EditProfilePage(
-          user: ModalRoute.of(context)!.settings.arguments as dynamic,
-        ),
+    '/edit-profile': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      return EditProfilePage(user: args is User ? args : null);
+    },
     '/vip-center': (context) => _deferred(
           vip_center.loadLibrary,
           () => vip_center.VipCenterPage(),

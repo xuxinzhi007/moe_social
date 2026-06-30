@@ -130,21 +130,18 @@ app_client:
 
 
 
-# 可选：覆盖 api/etc/moe.yaml 里的 Image（不配置则完全沿用 moe.yaml）。
+# 图片「云图库」：本机 go run 默认落盘 ./data/images，URL 走本机 :8888
+# Docker/云部署时改回 /app/data/images + 公网域名（见下方注释）
+#image:
+#  local_dir: "./data/images"
+#  public_base_url: "http://127.0.0.1:8888"
+#  max_bytes: 1073741824
 
-# 图片「云图库」（文件落在 API 所在机器的 LocalDir；Flutter 连云 API 时即云上磁盘）
-# 上传落盘位置由「请求打到哪台 API」决定，不是 PublicBaseUrl 决定。
-# PublicBaseUrl 只影响列表/管理台拼出来的完整图片 URL。
-Image:
-  LocalDir: "/app/data/images"
-  PublicBaseUrl: "http://47.106.175.49:8888"
-  MaxBytes: 1073741824
-
-# 仅本机 go run 后端、且要用本机磁盘存图时取消注释（与 Docker 云部署无关）：
-# image:
-#   local_dir: "./data/images"
-#   public_base_url: "http://127.0.0.1:8888"
-#   max_bytes: 1073741824
+# 生产 / Docker 示例（部署到 VPS 时取消注释并注释掉上方 image 段）：
+image:
+   local_dir: "/app/data/images"
+   public_base_url: "http://47.106.175.49:8888"
+   max_bytes: 1073741824
 
 # 私信持久化 private_messages 表（保留天数在写入时按发送方 VIP 快照；见 docs/private_messages.md）
 private_message:

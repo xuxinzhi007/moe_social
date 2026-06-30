@@ -27,6 +27,7 @@ import '../../utils/wechat_app_launcher.dart';
 import '../../utils/wechat_oauth_helper.dart';
 import '../../utils/wechat_web_history.dart';
 import '../../utils/wechat_web_redirect.dart';
+import '../../services/daily_growth_service.dart';
 import '../../services/wechat_sdk_service.dart';
 import '../../utils/wechat_config.dart';
 
@@ -133,14 +134,30 @@ class _LoginPageState extends State<LoginPage> {
       _syncEmailCompletions();
     } else {
       _emailCompletionDebounce?.cancel();
-      // 延迟收起：在输入框外点气泡时，须等 chip 的 onTap 跑完再清列表。
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Web 点浮层会先失焦：延迟收起，给 onPointerUp 补全留时间。
+      Future<void>.delayed(const Duration(milliseconds: 280), () {
         if (!mounted || _emailFocus.hasFocus) return;
         if (_emailCompletions.value.isNotEmpty) {
           _emailCompletions.value = const [];
         }
       });
     }
+  }
+
+  void _pickEmailSuffix(String picked) {
+    if (_emailCompletions.value.isEmpty) return;
+    final e = picked.trim();
+    if (e.isEmpty) return;
+    _emailController.value = TextEditingValue(
+      text: e,
+      selection: TextSelection.collapsed(offset: e.length),
+    );
+    _emailCompletions.value = const [];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _formKey.currentState?.validate();
+      FocusScope.of(context).requestFocus(_passwordFocus);
+    });
   }
 
   void _syncEmailCompletions() {
@@ -285,7 +302,8 @@ class _LoginPageState extends State<LoginPage> {
       operation: () async {
         try {
           final code = await WechatSdkService.instance.requestAuthCode();
-          return AuthService.loginWithWechat(code, flow: WechatConfig.oauthFlow);
+          return AuthService.loginWithWechat(code,
+              flow: WechatConfig.oauthFlow);
         } on StateError catch (e) {
           return AuthResult.failure(e.message);
         }
@@ -320,6 +338,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     MoeToast.success(context, '微信登录成功');
     Navigator.pushReplacementNamed(context, '/home');
+    DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
   }
 
   Future<void> _onFeishuLoginSuccess() async {
@@ -333,6 +352,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     MoeToast.success(context, '飞书登录成功');
     Navigator.pushReplacementNamed(context, '/home');
+    DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
   }
 
   Future<void> _login() async {
@@ -364,6 +384,7 @@ class _LoginPageState extends State<LoginPage> {
         }
         MoeToast.success(context, '欢迎回来！(｡♥♥｡)');
         Navigator.pushReplacementNamed(context, '/home');
+        DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
       },
       onError: (_) {
         if (!mounted) return;
@@ -444,11 +465,11 @@ class _LoginPageState extends State<LoginPage> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          // 气泡放在整列之上绘制，避免被下方密码框盖住。
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Column(
+                          // 后缀下拉锚定在邮箱框下方，浮层不顶开密码框。
+                          ValueListenableBuilder<List<String>>(
+                            valueListenable: _emailCompletions,
+                            builder: (_, completions, __) {
+                              return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   MoeInputField(
@@ -457,7 +478,9 @@ class _LoginPageState extends State<LoginPage> {
                                     hintText: '邮箱或 10 位 Moe 号',
                                     icon: Icons.alternate_email_rounded,
                                     keyboardType: TextInputType.emailAddress,
-                                    validator: Validators.loginAccount,
+                                    validator: completions.isNotEmpty
+                                        ? (_) => null
+                                        : Validators.loginAccount,
                                     autovalidateMode:
                                         AutovalidateMode.onUserInteraction,
                                     textInputAction: TextInputAction.next,
@@ -465,58 +488,27 @@ class _LoginPageState extends State<LoginPage> {
                                         FocusScope.of(context)
                                             .requestFocus(_passwordFocus),
                                   ),
-                                  const SizedBox(height: 20),
-                                  MoeInputField(
-                                    controller: _passwordController,
-                                    focusNode: _passwordFocus,
-                                    hintText: '密码',
-                                    icon: Icons.lock_outline,
-                                    isPassword: true,
-                                    validator: Validators.password,
-                                    autovalidateMode: AutovalidateMode.disabled,
-                                    textInputAction: TextInputAction.done,
-                                    onEditingComplete: () =>
-                                        unawaited(_login()),
+                                  EmailSuffixBar(
+                                    candidates: completions,
+                                    accentColor: _primaryColor,
+                                    onSelected: _pickEmailSuffix,
                                   ),
+                                  SizedBox(
+                                      height: completions.isEmpty ? 20 : 12),
                                 ],
-                              ),
-                              ValueListenableBuilder<List<String>>(
-                                valueListenable: _emailCompletions,
-                                builder: (_, completions, __) {
-                                  if (completions.isEmpty) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  return Positioned(
-                                    left: 4,
-                                    right: 4,
-                                    top: 56,
-                                    child: EmailCompletionBubble(
-                                      candidates: completions,
-                                      accentColor: _primaryColor,
-                                      onSelected: (picked) {
-                                        final e = picked.trim();
-                                        if (e.isEmpty) return;
-                                        _emailController.value =
-                                            TextEditingValue(
-                                          text: e,
-                                          selection: TextSelection.collapsed(
-                                              offset: e.length),
-                                        );
-                                        _emailCompletions.value = const [];
-                                        // 下一帧再校验 / 移焦点，避免与失焦、Scroll 手势抢同一帧。
-                                        WidgetsBinding.instance
-                                            .addPostFrameCallback((_) {
-                                          if (!mounted) return;
-                                          _formKey.currentState?.validate();
-                                          FocusScope.of(context)
-                                              .requestFocus(_passwordFocus);
-                                        });
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                              );
+                            },
+                          ),
+                          MoeInputField(
+                            controller: _passwordController,
+                            focusNode: _passwordFocus,
+                            hintText: '密码',
+                            icon: Icons.lock_outline,
+                            isPassword: true,
+                            validator: Validators.password,
+                            autovalidateMode: AutovalidateMode.disabled,
+                            textInputAction: TextInputAction.done,
+                            onEditingComplete: () => unawaited(_login()),
                           ),
                           const SizedBox(height: 12),
                           Align(
