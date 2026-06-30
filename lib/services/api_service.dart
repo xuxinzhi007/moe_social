@@ -19,6 +19,7 @@ import '../models/user_level.dart';
 import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/checkin_data.dart';
+import '../models/daily_exp_claim_result.dart';
 import '../models/exp_log.dart';
 import '../models/achievement_badge.dart';
 import '../models/achievement_unlock.dart';
@@ -143,11 +144,10 @@ class ApiService {
   static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
-  /// - 你提到的 “user_avatar/图片信息刷屏” 就是这里控制的
   static const bool _enableApiLog = true;
 
-  /// 是否输出“超详细”日志（会非常吵；默认关闭）
-  static const bool _verboseApiLog = true;
+  /// 是否输出完整请求/响应体（默认关闭，避免 Console 刷屏）
+  static const bool _verboseApiLog = false;
 
   // 与 [moe_launch_config.AppConfig] 同源；[initRemoteProductionBaseUrl] 内会再做规范化。
   static String _configuredOnlineUrl =
@@ -338,10 +338,12 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl$path');
 
-      // 调试日志
-      _log('📡 API Request: $method $uri');
-      if (body != null) {
-        _log('📤 Request Body: ${_safeJsonForLog(body)}');
+      final pathLabel = _pathLabel(uri);
+      if (_verboseApiLog) {
+        _log('📡 API Request: $method $uri');
+        if (body != null) {
+          _log('📤 Request Body: ${_safeJsonForLog(body)}');
+        }
       }
 
       // 构建请求头
@@ -382,11 +384,12 @@ class ApiService {
         throw ApiException('不支持的HTTP方法: $method', null);
       }
 
-      // 调试日志
-      _log('📥 API Response: ${response.statusCode}');
       final bodyText = _decodeUtf8Body(response);
-      // 不再全量输出 response.body（会把 avatar/user_avatar/images 等字段刷屏）
-      if (_verboseApiLog) {
+      final status = response.statusCode;
+      if (status >= 400) {
+        _log('❌ $method $pathLabel → $status');
+      } else if (_verboseApiLog) {
+        _log('📥 $method $pathLabel → $status');
         _log('📥 Response Body: ${_safeTextForLog(bodyText)}');
       }
 
@@ -458,8 +461,9 @@ class ApiService {
         throw ApiException('服务器响应格式错误，无法解析JSON', response.statusCode);
       }
 
-      // 默认只输出“净化过的摘要”，避免图片信息刷屏
-      _log('📥 Response JSON: ${_safeJsonForLog(result)}');
+      if (_verboseApiLog) {
+        _log('📥 Response JSON: ${_safeJsonForLog(result)}');
+      }
 
       // 检查响应体中的 success 字段（统一信封 / go-zero compat）
       if (result['success'] == false) {
@@ -678,14 +682,11 @@ class ApiService {
       parts.add('author_user_id=${Uri.encodeQueryComponent(authorUserId)}');
     }
     final result = await _request('/api/posts?${parts.join('&')}');
-    // 始终输出total字段的值和postsJson的长度，不依赖于_verboseApiLog
-    _log('📥 getPosts响应数据: ${_safeJsonForLog(result)}');
-    _log('📥 total: ${ApiResponse.intField(result, 'total')}');
-
     final postsJson = ApiResponse.listOf(result, keys: const ['posts']);
-    _log('📥 postsJson长度: ${postsJson.length}');
-    _log(
-        '📥 解析的帖子ID列表: ${postsJson.map((item) => item is Map ? item['id'] : item).toList()}');
+    if (_verboseApiLog) {
+      _log('📥 getPosts: total=${ApiResponse.intField(result, 'total')} '
+          'count=${postsJson.length}');
+    }
 
     try {
       final posts = <Post>[];
@@ -718,6 +719,14 @@ class ApiService {
   }
 
   /// ===== 日志工具：默认不输出图片/头像等大字段，避免刷屏 =====
+  static String _pathLabel(Uri uri) {
+    final path = uri.path;
+    if (uri.query.isEmpty) return path;
+    final q =
+        uri.query.length > 40 ? '${uri.query.substring(0, 40)}…' : uri.query;
+    return '$path?$q';
+  }
+
   static void _log(String message) {
     if (!kDebugMode || !_enableApiLog) return;
     // debugPrint 会自动做分段输出，避免超长日志被截断/卡顿
@@ -893,7 +902,8 @@ class ApiService {
   }
 
   /// 懒加载手绘笔迹 JSON（列表/详情不下发大字段时使用）。
-  static Future<({String handDrawCard, String handDrawThumbUrl})> getPostHandDraw(
+  static Future<({String handDrawCard, String handDrawThumbUrl})>
+      getPostHandDraw(
     String postId, {
     String? viewerUserId,
   }) async {
@@ -903,9 +913,11 @@ class ApiService {
     }
     final result = await _request(path);
     final payload = ApiResponse.payload(result);
-    final card = (payload['hand_draw_card'] ?? payload['handDrawCard'] ?? '').toString();
+    final card =
+        (payload['hand_draw_card'] ?? payload['handDrawCard'] ?? '').toString();
     final thumb =
-        (payload['hand_draw_thumb_url'] ?? payload['handDrawThumbUrl'] ?? '').toString();
+        (payload['hand_draw_thumb_url'] ?? payload['handDrawThumbUrl'] ?? '')
+            .toString();
     return (handDrawCard: card, handDrawThumbUrl: thumb);
   }
 
@@ -1625,8 +1637,7 @@ class ApiService {
     final raw = _list(result, keys: const ['orders', 'data']);
     final list = raw
         .whereType<Map>()
-        .map(
-            (e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
+        .map((e) => GiftPurchaseOrder.fromJson(Map<String, dynamic>.from(e)))
         .toList();
     return {
       'orders': list,
@@ -1961,7 +1972,8 @@ class ApiService {
 
   static Future<List<User>> getFriends(String userId) async {
     final result = await _request('/api/user/$userId/friends');
-    final raw = ApiResponse.listOf(result, keys: const ['friends', 'data', 'users']);
+    final raw =
+        ApiResponse.listOf(result, keys: const ['friends', 'data', 'users']);
     return raw
         .whereType<Map>()
         .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
@@ -2108,6 +2120,20 @@ class ApiService {
     );
   }
 
+  /// 领取每日浏览动态经验（服务端按自然日去重，每天最多一次）。
+  static Future<DailyExpClaimResult> claimDailyBrowseExp(String userId) async {
+    final result = await _request(
+      '/api/user/$userId/daily-exp',
+      method: 'POST',
+      body: {'action': 'browse'},
+    );
+    final payload = ApiResponse.payload(result);
+    if (payload.containsKey('granted')) {
+      return DailyExpClaimResult.fromJson(payload);
+    }
+    return DailyExpClaimResult.fromJson(result);
+  }
+
   // ========== 成就系统 API ==========
 
   static Future<List<AchievementBadge>> getUserAchievements(
@@ -2222,7 +2248,8 @@ class ApiService {
       {int page = 1, int pageSize = 10}) async {
     final result = await _request(
         '/api/user/$userId/login-history?page=$page&page_size=$pageSize');
-    final historyJson = _list(result, keys: const ['history', 'records', 'data']);
+    final historyJson =
+        _list(result, keys: const ['history', 'records', 'data']);
     return historyJson
         .whereType<Map>()
         .map((json) => Map<String, dynamic>.from(json))

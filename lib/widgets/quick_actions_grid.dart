@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../pages/ai/agent_list_page.dart';
-import '../pages/game/game_lobby_page.dart';
 import '../utils/responsive.dart';
 
+/// 首页社交快捷入口（与 [FeatureFlags] / 产品定位对齐：不含游戏、抽卡）。
 class QuickActionsGrid extends StatelessWidget {
   final Future<void> Function(dynamic result)? onCreatePostSuccess;
 
@@ -19,7 +19,7 @@ class QuickActionsGrid extends StatelessWidget {
       if (!showComposerOnHome)
         {
           'icon': Icons.edit_note,
-          'label': '发布动态',
+          'label': '记录心情',
           'color': const Color(0xFF7F7FD5),
           'onTap': () async {
             final result = await Navigator.pushNamed(context, '/create-post');
@@ -29,10 +29,10 @@ class QuickActionsGrid extends StatelessWidget {
           },
         },
       {
-        'icon': Icons.photo_library,
-        'label': '云相册',
-        'color': const Color(0xFF4ECDC4),
-        'onTap': () => Navigator.pushNamed(context, '/cloud-gallery'),
+        'icon': Icons.forum_rounded,
+        'label': '社区',
+        'color': const Color(0xFF5B8DEF),
+        'onTap': () => Navigator.pushNamed(context, '/community'),
       },
       {
         'icon': Icons.contacts_rounded,
@@ -41,14 +41,14 @@ class QuickActionsGrid extends StatelessWidget {
         'onTap': () => Navigator.pushNamed(context, '/friends'),
       },
       {
-        'icon': Icons.forum_rounded,
-        'label': '社区',
-        'color': const Color(0xFF5B8DEF),
-        'onTap': () => Navigator.pushNamed(context, '/community'),
+        'icon': Icons.photo_library,
+        'label': '云相册',
+        'color': const Color(0xFF4ECDC4),
+        'onTap': () => Navigator.pushNamed(context, '/cloud-gallery'),
       },
       {
-        'icon': Icons.smart_toy,
-        'label': 'AI助手',
+        'icon': Icons.auto_awesome_rounded,
+        'label': 'AI 互动',
         'color': const Color(0xFFFFB347),
         'onTap': () {
           Navigator.push<void>(
@@ -58,31 +58,6 @@ class QuickActionsGrid extends StatelessWidget {
             ),
           );
         },
-      },
-      {
-        'icon': Icons.games,
-        'label': '游戏',
-        'color': const Color(0xFF95E1D3),
-        'onTap': () {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const GameLobbyPage(),
-            ),
-          );
-        },
-      },
-      {
-        'icon': Icons.card_giftcard,
-        'label': '抽卡',
-        'color': const Color(0xFFF38181),
-        'onTap': () => Navigator.pushNamed(context, '/gacha'),
-      },
-      {
-        'icon': Icons.wallet,
-        'label': '钱包',
-        'color': const Color(0xFFAA96DA),
-        'onTap': () => Navigator.pushNamed(context, '/wallet'),
       },
       {
         'icon': Icons.settings,
@@ -125,7 +100,7 @@ class QuickActionsGrid extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '功能入口',
+                '社交快捷',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -135,7 +110,6 @@ class QuickActionsGrid extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // 每项约 52+6+文字行高+竖向 padding，90 在部分字体缩放下会溢出
           SizedBox(
             height: listHeight,
             child: ListView.separated(

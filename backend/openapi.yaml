@@ -4759,6 +4759,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.ListUserContentResp'
+    /api/user/{userId}/daily-exp:
+        post:
+            tags:
+                - Checkin
+            operationId: Checkin_ClaimDailyExp
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/checkin.v1.ClaimDailyExpRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/checkin.v1.ClaimDailyExpReply'
     /api/user/{userId}/detail:
         get:
             tags:
@@ -8209,6 +8233,28 @@ components:
                     format: int32
                 canCheckIn:
                     type: boolean
+        checkin.v1.ClaimDailyExpReply:
+            type: object
+            properties:
+                granted:
+                    type: boolean
+                expGained:
+                    type: integer
+                    format: int32
+                levelUp:
+                    type: boolean
+                newLevel:
+                    type: integer
+                    format: int32
+        checkin.v1.ClaimDailyExpRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                action:
+                    type: string
+                    description: browse：浏览动态；post 仅服务端发帖流程调用，客户端请传 browse
+            description: 每日活跃经验（发帖/浏览，各每天最多一次；服务端按 exp_log 去重）
         checkin.v1.ExpLogRecord:
             type: object
             properties:

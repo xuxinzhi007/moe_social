@@ -1194,24 +1194,26 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildPostCard(Post post) {
+    Future<void> openDetail() async {
+      final result = await openPostDetail(context, post);
+      if (!mounted || result == null) return;
+      setState(() {
+        final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
+        if (allIndex != -1) {
+          final updated = _allPosts[allIndex].copyWith(comments: result);
+          _allPosts[allIndex] = updated;
+          final displayIndex = _displayPosts.indexWhere((p) => p.id == post.id);
+          if (displayIndex != -1) _displayPosts[displayIndex] = updated;
+        }
+      });
+    }
+
     return PostCard(
       key: ValueKey('home_post_${post.id}'),
       post: post,
+      onCardTap: () => unawaited(openDetail()),
       onLike: () => _toggleLike(post.id),
-      onComment: () async {
-        final result = await openPostDetail(context, post);
-        if (!mounted || result == null) return;
-        setState(() {
-          final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
-          if (allIndex != -1) {
-            final updated = _allPosts[allIndex].copyWith(comments: result);
-            _allPosts[allIndex] = updated;
-            final displayIndex =
-                _displayPosts.indexWhere((p) => p.id == post.id);
-            if (displayIndex != -1) _displayPosts[displayIndex] = updated;
-          }
-        });
-      },
+      onComment: () => unawaited(openDetail()),
       onAvatarTap: () {
         Navigator.pushNamed(context, '/user-profile', arguments: {
           'userId': post.userId,

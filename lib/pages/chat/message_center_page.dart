@@ -1,164 +1,164 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../auth_service.dart';
+import '../../services/api_service.dart';
+import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
-import '../discover/discover_match_tab.dart';
 import '../profile/friends_page.dart';
+import '../profile/widgets/add_friend_bottom_sheet.dart';
 import 'conversations_page.dart';
 
-class MessageCenterPage extends StatelessWidget {
+/// 底部 Tab「好友」：私信会话 + 同好列表，定位清晰、风格与首页 Tab 对齐。
+class MessageCenterPage extends StatefulWidget {
   const MessageCenterPage({super.key});
 
-  void _openContactsSheet(BuildContext context) {
-    _openPanel(
-      context,
-      title: '同好',
-      icon: Icons.group_rounded,
-      heightRatio: 0.78,
-      child: const FriendsPage(contactsOnly: true),
-    );
+  @override
+  State<MessageCenterPage> createState() => _MessageCenterPageState();
+}
+
+class _MessageCenterPageState extends State<MessageCenterPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  static const _tabs = [
+    (label: '聊天', icon: Icons.chat_bubble_outline_rounded),
+    (label: '同好', icon: Icons.group_outlined),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
   }
 
-  void _openMatchSheet(BuildContext context) {
-    _openPanel(
-      context,
-      title: '在线匹配',
-      icon: Icons.favorite_rounded,
-      heightRatio: 0.76,
-      child: const DiscoverMatchTab(compact: true),
-    );
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
-  void _openPanel(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    required double heightRatio,
-    required Widget child,
-  }) {
+  void _showAddFriendSheet() {
+    final rootContext = context;
+    unawaited(_openAddFriendSheet(rootContext));
+  }
+
+  Future<void> _openAddFriendSheet(BuildContext rootContext) async {
+    final uid = AuthService.currentUser;
+    if (uid == null) return;
+    var myMoe = '';
+    try {
+      final me = await ApiService.getUserInfo(uid);
+      myMoe = me.moeNo;
+    } catch (_) {}
+
+    if (!rootContext.mounted) return;
     showModalBottomSheet<void>(
-      context: context,
+      context: rootContext,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       useSafeArea: true,
-      builder: (context) {
-        final screen = MediaQuery.sizeOf(context);
-        final height = screen.height * heightRatio;
-        final maxWidth = screen.width >= 720 ? 640.0 : double.infinity;
-        return SafeArea(
-          top: false,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Container(
-                height: height,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF7F8FC),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                ),
-                child: Column(
-                  children: [
-                    _sheetHandle(),
-                    _sheetHeader(context, title: title, icon: icon),
-                    Expanded(child: child),
-                  ],
-                ),
-              ),
-            ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: AddFriendBottomSheet(
+            rootContext: rootContext,
+            myMoe: myMoe,
+            onReloadFriends: () {
+              if (mounted) setState(() {});
+            },
           ),
         );
       },
     );
   }
 
-  Widget _sheetHandle() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 8),
-      child: Container(
-        width: 42,
-        height: 4,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
-    );
-  }
-
-  Widget _sheetHeader(
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 10, 12),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: MoeTokens.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: MoeTokens.primary, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: MoeTokens.titleText,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: '关闭',
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
+
     return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text(
-          '消息',
+          '好友',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+        backgroundColor: MoeTokens.pageBackground,
         foregroundColor: MoeTokens.titleText,
         actions: [
           IconButton(
-            tooltip: '在线匹配',
-            onPressed: () => _openMatchSheet(context),
-            icon: const Icon(Icons.favorite_rounded),
-          ),
-          IconButton(
-            tooltip: '同好',
-            onPressed: () => _openContactsSheet(context),
-            icon: const Icon(Icons.group_rounded),
+            tooltip: '添加同好',
+            onPressed: _showAddFriendSheet,
+            icon: const Icon(Icons.person_add_rounded),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(52),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: MoeTokens.cardShadow(tint: moe.primary, blur: 10),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                dividerHeight: 0,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: MoeTokens.primaryGradient,
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: MoeTokens.hintText,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                tabs: [
+                  for (final t in _tabs)
+                    Tab(
+                      height: 36,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(t.icon, size: 16),
+                          const SizedBox(width: 4),
+                          Text(t.label),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      body: ConversationsPage(
-        embedded: true,
-        showEmbeddedToolbar: false,
-        onEmptyFindFriends: () => _openContactsSheet(context),
-        onEmptyExplore: () => _openMatchSheet(context),
-        emptyExploreLabel: '在线匹配',
-        emptyExploreIcon: Icons.favorite_rounded,
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          ConversationsPage(
+            embedded: true,
+            showEmbeddedToolbar: false,
+            onEmptyFindFriends: () => _tabController.animateTo(1),
+          ),
+          const FriendsPage(contactsOnly: true),
+        ],
       ),
     );
   }

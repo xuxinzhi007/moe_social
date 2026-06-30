@@ -103,13 +103,12 @@ moe_social/
 ├── moe-social-ui-design/        # 早期 UI mock HTML
 ├── assets/                      # Flutter 静态资源
 ├── test/                        # Flutter 单元测试
-├── e2e/                         # Playwright 视觉冒烟（非 Widget 交互）
 ├── website/                     # 产品官网静态页
 ├── scripts/                     # 仓库级脚本（admin 启动等）
 └── AGENTS.md                    # 贡献指南与命令速查
 ```
 
-**已退役 / 不存在**：`backend/rpc/`、`backend/api/defs/`、Chrome `integration_test/` 测试栈、`pkg/memory/`。
+**已退役 / 不存在**：`backend/rpc/`、`backend/api/defs/`、Chrome `integration_test/` 测试栈、`e2e/`（Playwright 视觉冒烟）、`pkg/memory/`。
 
 ---
 
@@ -389,7 +388,6 @@ Flutter App ──HTTP/WS──► Kratos :8888 ──► MySQL
                 │              ├── LLM Provider (DeepSeek 等)
                 │              └── OAuth (飞书/微信)
 moe-admin ──► Deploy Agent :19010 ──► Admin API
-e2e (Playwright) ──► Flutter Web 截图冒烟（非 Widget 测试）
 ```
 
 ---
@@ -407,7 +405,6 @@ Flutter 3.x · Go 1.25+ · MySQL 8 · Node 18+（管理台）
 | Flutter | `flutter pub get` · `flutter analyze` · `flutter test` · `flutter run` |
 | 后端 | `cd backend && make gen` · `make check` · `make moe-social` · `go test ./...` |
 | 管理台 | `cd moe-admin && npm run dev` · `npm run build` |
-| E2E 视觉 | `cd e2e && make smoke` |
 
 ### 10.3 端口
 

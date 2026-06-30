@@ -8,7 +8,6 @@ import '../../auth_service.dart';
 import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
-import '../../providers/notification_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_local_reader.dart';
@@ -16,6 +15,7 @@ import '../../services/direct_chat_sync_bus.dart';
 import '../../services/notification_service.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/chat_message_display.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_empty_state.dart';
@@ -80,6 +80,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     if (mounted) setState(() {});
     unawaited(_syncLocalThreadTails());
     unawaited(_refreshServerConversations());
+    if (_serverConversations.isEmpty) {
+      unawaited(_refreshServerThreadTails());
+    }
   }
 
   void _onLocalThreadsTick() {
@@ -194,13 +197,29 @@ class _ConversationsPageState extends State<ConversationsPage> {
       }
 
       final friends = await ApiService.getFriends(uid);
-      final allNotifs = <NotificationModel>[];
-      for (var p = 1; p <= 3; p++) {
-        final batch =
-            await NotificationService.getNotifications(page: p, pageSize: 50);
-        if (batch.isEmpty) break;
-        allNotifs.addAll(batch);
+      List<PrivateConversationItem> serverConvs = [];
+      try {
+        final page =
+            await ApiService.listPrivateConversations(limit: 120, offset: 0);
+        serverConvs = page.items;
+      } catch (_) {}
+
+      if (serverConvs.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _friends = friends;
+          _serverConversations = serverConvs;
+          _notifs = [];
+          _loading = false;
+        });
+        unawaited(_syncLocalThreadTails());
+        return;
       }
+
+      // 兜底：服务端尚无会话索引时，用通知 + 本地缓存拼列表（仅拉一页）
+      final batch =
+          await NotificationService.getNotifications(page: 1, pageSize: 50);
+      final allNotifs = List<NotificationModel>.from(batch);
 
       if (!mounted) return;
       setState(() {
@@ -233,12 +252,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
         }
       }
 
-      unawaited(
-        context.read<NotificationProvider>().fetchNotifications(refresh: true),
-      );
       unawaited(_syncLocalThreadTails());
       unawaited(_refreshServerThreadTails(force: true));
-      unawaited(_refreshServerConversations());
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -338,10 +353,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
       final rows = List<PrivateConversationItem>.from(_serverConversations);
       return RefreshIndicator(
         onRefresh: _load,
+        color: MoeTheme.of(context).primary,
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           itemCount: rows.length,
-          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, i) {
             final c = rows[i];
             final peerId = c.peerUserId.trim();
@@ -428,9 +444,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
         child: MoeEmptyState(
           icon: Icons.chat_bubble_outline_rounded,
           title: '还没有聊天',
-          subtitle: '去同好列表找好友，或先在首页逛逛新内容',
+          subtitle: '和同好打个招呼，或先在「同好」里添加好友',
           primaryAction: MoeEmptyStateAction(
-            label: '去找同好',
+            label: '去看同好',
             icon: Icons.people_rounded,
             onPressed: () {
               if (widget.onEmptyFindFriends != null) {
@@ -478,10 +494,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
     return RefreshIndicator(
       onRefresh: _load,
+      color: MoeTheme.of(context).primary,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         itemCount: rows.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final peerId = rows[i];
           User? friend;
@@ -560,54 +577,69 @@ class _ConversationsPageState extends State<ConversationsPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              NetworkAvatarImage(
-                imageUrl: avatar,
-                radius: 22,
-                placeholderIcon: Icons.person,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
-                  ],
+        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: MoeTokens.cardBackground,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+            boxShadow: MoeTokens.cardShadow(blur: 12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                NetworkAvatarImage(
+                  imageUrl: avatar,
+                  radius: 24,
+                  placeholderIcon: Icons.person_rounded,
                 ),
-              ),
-              if (badge > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: scheme.error,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    badge > 99 ? '99+' : '$badge',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: MoeTokens.hintText,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-            ],
+                if (badge > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: scheme.error,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

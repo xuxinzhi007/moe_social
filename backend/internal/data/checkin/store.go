@@ -100,6 +100,15 @@ func (s *store) CountExpLogs(ctx context.Context, userID uint) (int64, error) {
 	return total, err
 }
 
+func (s *store) HasExpLogToday(ctx context.Context, userID uint, source string, dayStart, dayEnd time.Time) (bool, error) {
+	var total int64
+	err := s.db.WithContext(ctx).Model(&model.ExpLog{}).
+		Where("user_id = ? AND source = ? AND created_at >= ? AND created_at < ?",
+			userID, source, dayStart, dayEnd).
+		Count(&total).Error
+	return total > 0, err
+}
+
 func (s *store) ListExpLogs(ctx context.Context, userID uint, page, pageSize int32) ([]model.ExpLog, error) {
 	if page <= 0 {
 		page = 1
@@ -188,6 +197,15 @@ func (t *txWrapper) FindCheckInReward(consecutiveDays int) (model.CheckInReward,
 
 func (t *txWrapper) CreateCheckIn(record *model.UserCheckIn) error {
 	return t.tx.Create(record).Error
+}
+
+func (t *txWrapper) HasExpLogToday(userID uint, source string, dayStart, dayEnd time.Time) (bool, error) {
+	var total int64
+	err := t.tx.Model(&model.ExpLog{}).
+		Where("user_id = ? AND source = ? AND created_at >= ? AND created_at < ?",
+			userID, source, dayStart, dayEnd).
+		Count(&total).Error
+	return total > 0, err
 }
 
 func (t *txWrapper) Commit() error { return t.tx.Commit().Error }
