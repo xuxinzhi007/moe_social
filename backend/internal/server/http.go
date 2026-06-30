@@ -16,8 +16,8 @@ func NewHTTPServer(addr string, deps PilotDeps) (*khttp.Server, error) {
 	}
 	srv := khttp.NewServer(
 		khttp.Address(addr),
-		khttp.Filter(corsFilter),
-		khttp.Filter(jwtAuthFilter),
+		// 必须单次 Filter 传入多个中间件；多次 khttp.Filter 会覆盖而非追加，导致 CORS 丢失。
+		khttp.Filter(corsFilter, jwtAuthFilter),
 		khttp.ResponseEncoder(EnvelopeResponseEncoder),
 		khttp.ErrorEncoder(EnvelopeErrorEncoder),
 	)

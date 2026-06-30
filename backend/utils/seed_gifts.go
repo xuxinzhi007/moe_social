@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// giftSeed 礼物目录种子（唯一事实来源；改后执行 go run super.go -migrate）
+// giftSeed 礼物目录种子（唯一事实来源；改后执行 make db-migrate）
 type giftSeed struct {
 	Name        string
 	Price       int

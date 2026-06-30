@@ -56,9 +56,6 @@ func MountDevHub(mux *http.ServeMux, workspaceRoot, rpcDebugUpstream string) {
 		}
 		withStaticCORS(fileServer).ServeHTTP(w, r)
 	})
-
-	log.Printf("Moe Ops hub: / -> deploy-ops.html")
-	log.Printf("static docs/dev from %s", devRoot)
 }
 
 func withStaticCORS(next http.Handler) http.Handler {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,9 +17,10 @@ import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final User user;
+  /// 从个人页传入时可预填；为空或字段不全时在 [initState] 拉远端。
+  final User? user;
 
-  const EditProfilePage({super.key, required this.user});
+  const EditProfilePage({super.key, this.user});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -29,6 +31,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _usernameController;
   late TextEditingController _emailController;
   late TextEditingController _avatarController;
+
+  User? _profileUser;
+  bool _loadingProfile = true;
 
   // 新字段状态
   String _signature = '';
@@ -47,19 +52,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.user.username);
-    _emailController = TextEditingController(text: widget.user.email);
-    _avatarController = TextEditingController(text: widget.user.avatar);
-
-    // 初始化新字段
-    _signature = widget.user.signature;
-    _gender = widget.user.gender;
-    _birthday = widget.user.birthdayDateTime;
-
-    // 监听字段变化
+    _usernameController = TextEditingController();
+    _emailController = TextEditingController();
+    _avatarController = TextEditingController();
     _usernameController.addListener(_onFieldChanged);
     _emailController.addListener(_onFieldChanged);
     _avatarController.addListener(_onFieldChanged);
+    unawaited(_loadProfile());
+  }
+
+  Future<void> _loadProfile() async {
+    final userId = AuthService.currentUser;
+    if (userId == null) {
+      if (mounted) setState(() => _loadingProfile = false);
+      return;
+    }
+    try {
+      final seed = widget.user;
+      final needsFetch = seed == null ||
+          seed.username.trim().isEmpty ||
+          seed.email.trim().isEmpty;
+      final user =
+          needsFetch ? await AuthService.getUserInfo(forceRefresh: true) : seed;
+      if (!mounted) return;
+      _applyUser(user);
+      setState(() => _loadingProfile = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingProfile = false);
+        MoeToast.error(context, '加载资料失败，请稍后重试');
+      }
+    }
+  }
+
+  void _applyUser(User user) {
+    _profileUser = user;
+    _usernameController.text = user.username;
+    _emailController.text = user.email;
+    _avatarController.text = user.avatar;
+    _signature = user.signature;
+    _gender = user.gender;
+    _birthday = user.birthdayDateTime;
+    _hasUnsavedChanges = false;
   }
 
   @override
@@ -118,7 +152,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         } catch (uploadError) {
           if (uploadError.toString().contains('413')) {
             MoeToast.error(context, '图片太大，请降低拍照分辨率');
-          } else if (uploadError.toString().contains('Broken pipe') || uploadError.toString().contains('SocketException')) {
+          } else if (uploadError.toString().contains('Broken pipe') ||
+              uploadError.toString().contains('SocketException')) {
             MoeToast.error(context, '网络连接中断，请检查网络后重试');
           } else {
             MoeToast.error(context, '上传失败: $uploadError');
@@ -155,7 +190,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         } catch (uploadError) {
           if (uploadError.toString().contains('413')) {
             MoeToast.error(context, '图片太大，请选择较小的图片');
-          } else if (uploadError.toString().contains('Broken pipe') || uploadError.toString().contains('SocketException')) {
+          } else if (uploadError.toString().contains('Broken pipe') ||
+              uploadError.toString().contains('SocketException')) {
             MoeToast.error(context, '网络连接中断，请检查网络后重试');
           } else {
             MoeToast.error(context, '上传失败: $uploadError');
@@ -296,12 +332,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   bool _checkHasChanges() {
-    return _usernameController.text.trim() != widget.user.username ||
-           _emailController.text.trim() != widget.user.email ||
-           _avatarController.text.trim() != widget.user.avatar ||
-           _signature != widget.user.signature ||
-           _gender != widget.user.gender ||
-           _birthday != widget.user.birthdayDateTime;
+    final base = _profileUser;
+    if (base == null) return false;
+    return _usernameController.text.trim() != base.username ||
+        _emailController.text.trim() != base.email ||
+        _avatarController.text.trim() != base.avatar ||
+        _signature != base.signature ||
+        _gender != base.gender ||
+        _birthday != base.birthdayDateTime;
   }
 
   bool _validateFields() {
@@ -380,7 +418,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         avatar: avatarText.isEmpty ? null : avatarText,
         signature: _signature.trim(),
         gender: _gender,
-        birthday: _birthday != null ? _birthday!.toIso8601String().substring(0, 10) : null,
+        birthday: _birthday != null
+            ? _birthday!.toIso8601String().substring(0, 10)
+            : null,
       );
       await AuthService.replaceUserProfileCache(updated);
 
@@ -416,464 +456,544 @@ class _EditProfilePageState extends State<EditProfilePage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
-          title: const Text('编辑资料', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          title: const Text('编辑资料',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           backgroundColor: Colors.white,
           elevation: 0,
           actions: [
             TextButton(
-              onPressed: _isSaving ? null : () {
-                HapticFeedback.lightImpact();
-                _saveProfile();
-              },
+              onPressed: _isSaving
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      _saveProfile();
+                    },
               child: _isSaving
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5))),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5))),
                     )
                   : Text(
                       '保存',
                       style: TextStyle(
-                        color: _hasUnsavedChanges ? const Color(0xFF7F7FD5) : Colors.grey,
-                        fontWeight: _hasUnsavedChanges ? FontWeight.bold : FontWeight.normal,
+                        color: _hasUnsavedChanges
+                            ? const Color(0xFF7F7FD5)
+                            : Colors.grey,
+                        fontWeight: _hasUnsavedChanges
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         fontSize: 16,
                       ),
                     ),
             ),
           ],
         ),
-        body: Stack(
-          children: [
-            // 背景渐变
-            Container(
-              height: 200,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7), Color(0xFF91EAE4)],
-                ),
-              ),
-            ),
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 头像编辑区域
-                    Center(
-                      child: FadeInUp(
-                        delay: const Duration(milliseconds: 100),
-                        child: Stack(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+        body: _loadingProfile
+            ? const Center(child: MoeLoading())
+            : Stack(
+                children: [
+                  // 背景渐变
+                  Container(
+                    height: 200,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF7F7FD5),
+                          Color(0xFF86A8E7),
+                          Color(0xFF91EAE4)
+                        ],
+                      ),
+                    ),
+                  ),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 头像编辑区域
+                          Center(
+                            child: FadeInUp(
+                              delay: const Duration(milliseconds: 100),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF7F7FD5),
+                                          Color(0xFF86A8E7)
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: NetworkAvatarImage(
+                                      imageUrl:
+                                          _avatarController.text.isNotEmpty
+                                              ? _avatarController.text
+                                              : null,
+                                      radius: 65,
+                                      placeholderIcon: Icons.person,
+                                      placeholderColor: Colors.white,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: _isSaving
+                                          ? null
+                                          : () {
+                                              HapticFeedback.lightImpact();
+                                              _showAvatarOptions();
+                                            },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.15),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                          border: Border.all(
+                                            color: const Color(0xFF7F7FD5),
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_outlined,
+                                          color: Color(0xFF7F7FD5),
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: NetworkAvatarImage(
-                                imageUrl: _avatarController.text.isNotEmpty
-                                    ? _avatarController.text
-                                    : null,
-                                radius: 65,
-                                placeholderIcon: Icons.person,
-                                placeholderColor: Colors.white,
-                              ),
                             ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _isSaving ? null : () {
-                                  HapticFeedback.lightImpact();
-                                  _showAvatarOptions();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.15),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 3),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // 基本信息卡片
+                          FadeInUp(
+                            delay: const Duration(milliseconds: 200),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.grey[100]!,
+                                  width: 1,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.person_outline,
+                                        color: Color(0xFF7F7FD5),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '基本信息',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF333333),
+                                            ),
                                       ),
                                     ],
-                                    border: Border.all(
-                                      color: const Color(0xFF7F7FD5),
-                                      width: 2,
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  // 用户名
+                                  TextFormField(
+                                    controller: _usernameController,
+                                    decoration: InputDecoration(
+                                      labelText: '用户名',
+                                      prefixIcon: const Icon(
+                                          Icons.person_outline,
+                                          color: Color(0xFF7F7FD5)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE0E0E0)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFF7F7FD5), width: 2),
+                                      ),
+                                      hintText: '3-20个字符，支持字母、数字、下划线',
+                                      hintStyle:
+                                          TextStyle(color: Colors.grey[400]),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
                                     ),
+                                    validator: Validators.username,
+                                    onChanged: (_) => _onFieldChanged(),
                                   ),
-                                  child: const Icon(
-                                    Icons.camera_alt_outlined,
-                                    color: Color(0xFF7F7FD5),
-                                    size: 24,
+
+                                  const SizedBox(height: 16),
+
+                                  // 邮箱
+                                  TextFormField(
+                                    controller: _emailController,
+                                    decoration: InputDecoration(
+                                      labelText: '邮箱',
+                                      prefixIcon: const Icon(
+                                          Icons.email_outlined,
+                                          color: Color(0xFF7F7FD5)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE0E0E0)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFF7F7FD5), width: 2),
+                                      ),
+                                      hintText: 'example@email.com',
+                                      hintStyle:
+                                          TextStyle(color: Colors.grey[400]),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                    ),
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: Validators.email,
+                                    onChanged: (_) => _onFieldChanged(),
                                   ),
-                                ),
+
+                                  const SizedBox(height: 16),
+
+                                  // 头像URL
+                                  TextField(
+                                    controller: _avatarController,
+                                    decoration: InputDecoration(
+                                      labelText: '头像URL',
+                                      prefixIcon: const Icon(
+                                          Icons.image_outlined,
+                                          color: Color(0xFF7F7FD5)),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFFE0E0E0)),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: const BorderSide(
+                                            color: Color(0xFF7F7FD5), width: 2),
+                                      ),
+                                      helperText: '输入头像图片的URL地址',
+                                      helperStyle:
+                                          TextStyle(color: Colors.grey[400]),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      suffixIcon: IconButton(
+                                        tooltip: '选择头像',
+                                        onPressed: _isSaving
+                                            ? null
+                                            : () {
+                                                HapticFeedback.lightImpact();
+                                                _showAvatarOptions();
+                                              },
+                                        icon: const Icon(
+                                            Icons.camera_alt_outlined,
+                                            color: Color(0xFF7F7FD5)),
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.url,
+                                    onChanged: (value) {
+                                      setState(() {}); // 更新头像预览
+                                      _onFieldChanged();
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // 基本信息卡片
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 200),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withValues(alpha: 0.1),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Colors.grey[100]!, 
-                            width: 1,
                           ),
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.person_outline,
-                                  color: Color(0xFF7F7FD5),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '基本信息',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF333333),
+
+                          const SizedBox(height: 20),
+
+                          // 个人资料卡片
+                          FadeInUp(
+                            delay: const Duration(milliseconds: 300),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // 用户名
-                            TextFormField(
-                              controller: _usernameController,
-                              decoration: InputDecoration(
-                                labelText: '用户名',
-                                prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF7F7FD5)),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF7F7FD5), width: 2),
-                                ),
-                                hintText: '3-20个字符，支持字母、数字、下划线',
-                                hintStyle: TextStyle(color: Colors.grey[400]),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                              ),
-                              validator: Validators.username,
-                              onChanged: (_) => _onFieldChanged(),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // 邮箱
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                labelText: '邮箱',
-                                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF7F7FD5)),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF7F7FD5), width: 2),
-                                ),
-                                hintText: 'example@email.com',
-                                hintStyle: TextStyle(color: Colors.grey[400]),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                              validator: Validators.email,
-                              onChanged: (_) => _onFieldChanged(),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // 头像URL
-                            TextField(
-                              controller: _avatarController,
-                              decoration: InputDecoration(
-                                labelText: '头像URL',
-                                prefixIcon: const Icon(Icons.image_outlined, color: Color(0xFF7F7FD5)),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFF7F7FD5), width: 2),
-                                ),
-                                helperText: '输入头像图片的URL地址',
-                                helperStyle: TextStyle(color: Colors.grey[400]),
-                                filled: true,
-                                fillColor: Colors.grey[50],
-                                suffixIcon: IconButton(
-                                  tooltip: '选择头像',
-                                  onPressed: _isSaving ? null : () {
-                                    HapticFeedback.lightImpact();
-                                    _showAvatarOptions();
-                                  },
-                                  icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF7F7FD5)),
+                                ],
+                                border: Border.all(
+                                  color: Colors.grey[100]!,
+                                  width: 1,
                                 ),
                               ),
-                              keyboardType: TextInputType.url,
-                              onChanged: (value) {
-                                setState(() {}); // 更新头像预览
-                                _onFieldChanged();
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline,
+                                        color: Color(0xFF7F7FD5),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '个人资料',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF333333),
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 20),
 
-                    const SizedBox(height: 20),
+                                  // 个性签名
+                                  SignatureInput(
+                                    initialValue: _signature,
+                                    onChanged: (value) {
+                                      _signature = value;
+                                      _onFieldChanged();
+                                    },
+                                    errorText: _signatureError,
+                                    enabled: !_isSaving,
+                                  ),
 
-                    // 个人资料卡片
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 300),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withValues(alpha: 0.1),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
+                                  const SizedBox(height: 20),
+
+                                  // 性别选择
+                                  GenderSelector(
+                                    selectedGender: _gender,
+                                    onChanged: (value) {
+                                      _gender = value;
+                                      _onFieldChanged();
+                                    },
+                                    errorText: _genderError,
+                                    enabled: !_isSaving,
+                                  ),
+
+                                  const SizedBox(height: 20),
+
+                                  // 生日选择
+                                  BirthdaySelector(
+                                    selectedDate: _birthday,
+                                    onChanged: (value) {
+                                      _birthday = value;
+                                      _onFieldChanged();
+                                    },
+                                    errorText: _birthdayError,
+                                    enabled: !_isSaving,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                          border: Border.all(
-                            color: Colors.grey[100]!, 
-                            width: 1,
                           ),
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.info_outline,
-                                  color: Color(0xFF7F7FD5),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '个人资料',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF333333),
+
+                          const SizedBox(height: 20),
+
+                          // 账户信息卡片
+                          FadeInUp(
+                            delay: const Duration(milliseconds: 400),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withValues(alpha: 0.1),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
                                   ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.grey[100]!,
+                                  width: 1,
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-
-                            // 个性签名
-                            SignatureInput(
-                              initialValue: _signature,
-                              onChanged: (value) {
-                                _signature = value;
-                                _onFieldChanged();
-                              },
-                              errorText: _signatureError,
-                              enabled: !_isSaving,
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // 性别选择
-                            GenderSelector(
-                              selectedGender: _gender,
-                              onChanged: (value) {
-                                _gender = value;
-                                _onFieldChanged();
-                              },
-                              errorText: _genderError,
-                              enabled: !_isSaving,
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // 生日选择
-                            BirthdaySelector(
-                              selectedDate: _birthday,
-                              onChanged: (value) {
-                                _birthday = value;
-                                _onFieldChanged();
-                              },
-                              errorText: _birthdayError,
-                              enabled: !_isSaving,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // 账户信息卡片
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 400),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withValues(alpha: 0.1),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Colors.grey[100]!, 
-                            width: 1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.account_balance_outlined,
-                                  color: Color(0xFF7F7FD5),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '账户信息',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF333333),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                              'Moe 号',
-                              widget.user.moeNo.isNotEmpty
-                                  ? widget.user.moeNo
-                                  : '—',
-                              widget.user.moeNo.isNotEmpty
-                                  ? const Color(0xFF7F7FD5)
-                                  : null,
-                            ),
-                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
-                            _buildInfoRow(
-                              'VIP状态',
-                              widget.user.isVip ? 'VIP会员' : '普通用户',
-                              widget.user.isVip ? const Color(0xFFFFD700) : null,
-                            ),
-                            if (widget.user.vipExpiresAt != null) ...[
-                              const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
-                              _buildInfoRow(
-                                'VIP到期时间',
-                                widget.user.vipExpiresAt!,
                               ),
-                            ],
-                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
-                            _buildInfoRow(
-                              '钱包余额',
-                              '¥${widget.user.balance.toStringAsFixed(2)}',
-                              const Color(0xFF4CAF50),
-                            ),
-                            const Divider(height: 20, thickness: 1, color: Color(0xFFF0F0F0)),
-                            _buildInfoRow(
-                              '注册时间',
-                              widget.user.createdAt,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // 保存按钮
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 500),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : () {
-                            HapticFeedback.lightImpact();
-                            _saveProfile();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: _hasUnsavedChanges ? const Color(0xFF7F7FD5) : Colors.grey[300],
-                            foregroundColor: _hasUnsavedChanges ? Colors.white : Colors.grey[600],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: _hasUnsavedChanges ? 8 : 0,
-                            shadowColor: _hasUnsavedChanges ? const Color(0xFF7F7FD5).withValues(alpha: 0.6) : Colors.transparent,
-                            animationDuration: const Duration(milliseconds: 300),
-                          ),
-                          child: _isSaving
-                              ? const MoeLoading(size: 24, color: Colors.white)
-                              : const Text(
-                                  '保存更改',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.account_balance_outlined,
+                                        color: Color(0xFF7F7FD5),
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '账户信息',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF333333),
+                                            ),
+                                      ),
+                                    ],
                                   ),
+                                  const SizedBox(height: 16),
+                                  _buildInfoRow(
+                                    'Moe 号',
+                                    (_profileUser?.moeNo.isNotEmpty ?? false)
+                                        ? _profileUser!.moeNo
+                                        : '—',
+                                    (_profileUser?.moeNo.isNotEmpty ?? false)
+                                        ? const Color(0xFF7F7FD5)
+                                        : null,
+                                  ),
+                                  const Divider(
+                                      height: 20,
+                                      thickness: 1,
+                                      color: Color(0xFFF0F0F0)),
+                                  _buildInfoRow(
+                                    'VIP状态',
+                                    (_profileUser?.isVip ?? false)
+                                        ? 'VIP会员'
+                                        : '普通用户',
+                                    (_profileUser?.isVip ?? false)
+                                        ? const Color(0xFFFFD700)
+                                        : null,
+                                  ),
+                                  if (_profileUser?.vipExpiresAt != null) ...[
+                                    const Divider(
+                                        height: 20,
+                                        thickness: 1,
+                                        color: Color(0xFFF0F0F0)),
+                                    _buildInfoRow(
+                                      'VIP到期时间',
+                                      _profileUser!.vipExpiresAt!,
+                                    ),
+                                  ],
+                                  const Divider(
+                                      height: 20,
+                                      thickness: 1,
+                                      color: Color(0xFFF0F0F0)),
+                                  _buildInfoRow(
+                                    '钱包余额',
+                                    '¥${(_profileUser?.balance ?? 0).toStringAsFixed(2)}',
+                                    const Color(0xFF4CAF50),
+                                  ),
+                                  const Divider(
+                                      height: 20,
+                                      thickness: 1,
+                                      color: Color(0xFFF0F0F0)),
+                                  _buildInfoRow(
+                                    '注册时间',
+                                    _profileUser?.createdAt ?? '—',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // 保存按钮
+                          FadeInUp(
+                            delay: const Duration(milliseconds: 500),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _isSaving
+                                    ? null
+                                    : () {
+                                        HapticFeedback.lightImpact();
+                                        _saveProfile();
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  backgroundColor: _hasUnsavedChanges
+                                      ? const Color(0xFF7F7FD5)
+                                      : Colors.grey[300],
+                                  foregroundColor: _hasUnsavedChanges
+                                      ? Colors.white
+                                      : Colors.grey[600],
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: _hasUnsavedChanges ? 8 : 0,
+                                  shadowColor: _hasUnsavedChanges
+                                      ? const Color(0xFF7F7FD5)
+                                          .withValues(alpha: 0.6)
+                                      : Colors.transparent,
+                                  animationDuration:
+                                      const Duration(milliseconds: 300),
                                 ),
-                        ),
+                                child: _isSaving
+                                    ? const MoeLoading(
+                                        size: 24, color: Colors.white)
+                                    : const Text(
+                                        '保存更改',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 48),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: 48),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

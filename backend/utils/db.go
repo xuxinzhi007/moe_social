@@ -131,7 +131,7 @@ func initDBWithMigrateOnce(opts MigrateOptions) error {
 		}
 		log.Println("仅完成表结构迁移；运营数据（VIP/礼物/成就等）请在 Moe Admin 中导入")
 	} else {
-		log.Println("已跳过 AutoMigrate；改表后请执行: go run super.go -migrate")
+		log.Println("已跳过 AutoMigrate；改表后请执行: make db-migrate 或 go run ./cmd/migrate")
 	}
 
 	log.Println("数据库连接成功")

@@ -69,12 +69,10 @@ func main() {
 	log.Printf("Moe Deploy Agent listening on http://%s (pid=%d)", cfg.Listen, os.Getpid())
 	log.Printf("workspace=%s backend=%s", cfg.WorkspaceAbs(), cfg.BackendAbs())
 	if cloud.IsSSH() {
-		log.Printf("cloud SSH %s@%s backend_dir=%s compose=%s",
+		log.Printf("已配置远程部署目标 cloud（启动时不连接）: %s@%s backend_dir=%s compose=%s",
 			cloud.User, cloud.Host, cloud.BackendDir, cloud.ComposeFile)
 	}
 	base := "http://" + cfg.Listen
-	log.Printf("devtools: %s/devtools.html", base)
-	log.Printf("deploy-ops (HTML): %s/tools/deploy-ops.html", base)
 	log.Printf("Moe Admin: http://127.0.0.1:5173/ops/  (cd moe-admin && npm run dev)")
 	if browser.ShouldOpen() {
 		openURL := base + handler.DashboardPath(cfg.WorkspaceAbs())
