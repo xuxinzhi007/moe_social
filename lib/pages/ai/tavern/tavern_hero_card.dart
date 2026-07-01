@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/moe_tokens.dart';
 import '../../../widgets/ai/ai_brand_tokens.dart';
 
 /// 酒馆首页顶部 Hero，与探索页「AI 酒馆」入口视觉一致。
@@ -18,10 +19,10 @@ class TavernHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceSm),
       decoration: BoxDecoration(
         gradient: AiBrandTokens.heroGradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         boxShadow: [
           BoxShadow(
             color: AiBrandTokens.primary.withValues(alpha: 0.22),
@@ -45,17 +46,17 @@ class TavernHeroCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(MoeTokens.spaceXl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(MoeTokens.spaceMd),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                       ),
                       child: const Icon(
                         Icons.auto_awesome_rounded,
@@ -73,29 +74,29 @@ class TavernHeroCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: MoeTokens.spaceLg),
                 const Text(
                   '把角色、世界观、模型来源放进同一个酒馆入口。',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: MoeTokens.textXl,
                     fontWeight: FontWeight.w800,
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: MoeTokens.spaceSm),
                 Text(
                   '支持自定义 API、中转站、服务器模型，以及可套用的角色模板。',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.88),
-                    fontSize: 13,
+                    fontSize: MoeTokens.textBase,
                     height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: MoeTokens.spaceMd),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: MoeTokens.spaceSm,
+                  runSpacing: MoeTokens.spaceSm,
                   children: [
                     _chip('角色 $agentCount', Icons.person_outline_rounded),
                     _chip('Provider $providerCount', Icons.hub_outlined),
@@ -112,22 +113,22 @@ class TavernHeroCard extends StatelessWidget {
 
   Widget _chip(String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
         border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: Colors.white),
-          const SizedBox(width: 5),
+          Icon(icon, size: MoeTokens.textBase, color: Colors.white),
+          const SizedBox(width: MoeTokens.spaceXs),
           Text(
             label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 11,
+              fontSize: MoeTokens.textXs,
               fontWeight: FontWeight.w600,
             ),
           ),

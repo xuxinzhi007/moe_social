@@ -2,6 +2,7 @@ import 'dart:math' show pi;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../theme/moe_tokens.dart';
 import '../../providers/user_level_provider.dart';
 import '../../providers/checkin_provider.dart';
 import '../../services/api_service.dart';
@@ -96,7 +97,7 @@ class _UserLevelPageState extends State<UserLevelPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       body: Consumer<UserLevelProvider>(
         builder: (context, levelProvider, child) {
           if (levelProvider.isLevelingUp) {
@@ -159,7 +160,7 @@ class _UserLevelPageState extends State<UserLevelPage>
   Widget _buildAppBar(BuildContext context, UserLevelProvider levelProvider) {
     final g = levelProvider.userLevel != null
         ? levelProvider.getLevelGradient(levelProvider.currentLevel)
-        : const [Color(0xFF7F7FD5), Color(0xFF86A8E7), Color(0xFF91EAE4)];
+        : const [MoeTokens.primary, MoeTokens.secondary, MoeTokens.accent];
 
     return SliverAppBar(
       expandedHeight: 128,
@@ -227,11 +228,11 @@ class _UserLevelPageState extends State<UserLevelPage>
 
   Widget _levelBadgeFallback() {
     return ColoredBox(
-      color: const Color(0xFFF0F4FF),
+      color: MoeTokens.pageBackground,
       child: const Icon(
         Icons.military_tech_rounded,
         size: 44,
-        color: Color(0xFF7F7FD5),
+        color: MoeTokens.primary,
       ),
     );
   }
@@ -366,7 +367,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF1A1A2E),
+                          color: MoeTokens.titleText,
                           letterSpacing: -0.4,
                           height: 1.2,
                         ),
@@ -564,7 +565,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
-                                color: Color(0xFF1A1A2E),
+                                color: MoeTokens.titleText,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -608,7 +609,7 @@ class _UserLevelPageState extends State<UserLevelPage>
           border: Border.all(color: const Color(0xFFE8ECF4)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+              color: MoeTokens.primary.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -631,7 +632,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1E2E),
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
@@ -766,7 +767,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1E2E),
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
@@ -787,7 +788,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                       label: Text(privilege),
                       labelStyle: const TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF2D3748),
+                        color: MoeTokens.bodyText,
                         fontWeight: FontWeight.w500,
                       ),
                       backgroundColor: levelProvider
@@ -846,7 +847,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1E2E),
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
@@ -863,14 +864,14 @@ class _UserLevelPageState extends State<UserLevelPage>
                       decoration: BoxDecoration(
                         color: task['completed'] as bool
                             ? const Color(0xFF4CAF50).withValues(alpha: 0.1)
-                            : const Color(0xFF86A8E7).withValues(alpha: 0.1),
+                            : MoeTokens.secondary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         task['completed'] as bool ? Icons.check : task['icon'] as IconData,
                         color: task['completed'] as bool
                             ? const Color(0xFF4CAF50)
-                            : const Color(0xFF86A8E7),
+                            : MoeTokens.secondary,
                         size: 20,
                       ),
                     ),
@@ -886,7 +887,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                               fontWeight: FontWeight.w600,
                               color: task['completed'] as bool
                                   ? const Color(0xFF4CAF50)
-                                  : const Color(0xFF2D3748),
+                                  : MoeTokens.bodyText,
                             ),
                           ),
                           Text(
@@ -913,14 +914,14 @@ class _UserLevelPageState extends State<UserLevelPage>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: MoeTokens.pageBackground,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.info_outline,
-                    color: Color(0xFF7F7FD5),
+                    color: MoeTokens.primary,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -978,7 +979,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1E1E2E),
+                      color: MoeTokens.titleText,
                     ),
                   ),
                 ),
@@ -996,7 +997,7 @@ class _UserLevelPageState extends State<UserLevelPage>
             LinearProgressIndicator(
               value: total > 0 ? pct / 100 : 0,
               backgroundColor: Colors.grey.shade200,
-              color: const Color(0xFF7F7FD5),
+              color: MoeTokens.primary,
               minHeight: 8,
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1015,7 +1016,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF7F7FD5),
+                      color: MoeTokens.primary,
                     ),
                   ),
                 ),
@@ -1121,7 +1122,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1E1E2E),
+                        color: MoeTokens.titleText,
                       ),
                     ),
                   ],
@@ -1129,7 +1130,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                    color: MoeTokens.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
@@ -1137,7 +1138,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF7F7FD5),
+                      color: MoeTokens.primary,
                     ),
                   ),
                 ),
@@ -1201,7 +1202,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                                 fontWeight: FontWeight.w600,
                                 color: isCurrentUser
                                     ? levelProvider.getLevelColor(levelProvider.currentLevel)
-                                    : const Color(0xFF2D3748),
+                                    : MoeTokens.bodyText,
                               ),
                             ),
                             Text(
@@ -1239,14 +1240,14 @@ class _UserLevelPageState extends State<UserLevelPage>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: MoeTokens.pageBackground,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.people_alt_outlined,
-                    color: Color(0xFF7F7FD5),
+                    color: MoeTokens.primary,
                     size: 16,
                   ),
                   const SizedBox(width: 8),
@@ -1302,10 +1303,10 @@ class _UserLevelPageState extends State<UserLevelPage>
   /// 构建经验来源卡片
   Widget _buildExpSourcesCard() {
     final expSources = [
-      {'title': '每日签到', 'exp': '10-100经验', 'icon': Icons.calendar_today, 'color': const Color(0xFF7F7FD5)},
-      {'title': '发布帖子', 'exp': '5-20经验', 'icon': Icons.edit, 'color': const Color(0xFF86A8E7)},
+      {'title': '每日签到', 'exp': '10-100经验', 'icon': Icons.calendar_today, 'color': MoeTokens.primary},
+      {'title': '发布帖子', 'exp': '5-20经验', 'icon': Icons.edit, 'color': MoeTokens.secondary},
       {'title': '点赞互动', 'exp': '1-5经验', 'icon': Icons.favorite, 'color': const Color(0xFFFF6B6B)},
-      {'title': '评论互动', 'exp': '2-10经验', 'icon': Icons.comment, 'color': const Color(0xFF91EAE4)},
+      {'title': '评论互动', 'exp': '2-10经验', 'icon': Icons.comment, 'color': MoeTokens.accent},
       {'title': 'VIP奖励', 'exp': '额外50%', 'icon': Icons.star, 'color': const Color(0xFFFFD700)},
     ];
 
@@ -1337,7 +1338,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1E2E),
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
@@ -1381,7 +1382,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                                     style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF2D3748),
+                                      color: MoeTokens.bodyText,
                                     ),
                                   ),
                                   Text(

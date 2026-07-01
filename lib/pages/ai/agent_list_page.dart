@@ -17,6 +17,7 @@ import 'chat_page.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_agent_usage_service.dart';
 import '../../services/ai_models_cache_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_empty_state.dart';
 import '../../widgets/ai/ai_sheet.dart';
@@ -26,6 +27,7 @@ import 'tavern/tavern_hero_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_search_bar.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
 
 part 'tavern/agents_tab.part.dart';
 part 'tavern/providers_tab.part.dart';
@@ -270,9 +272,9 @@ class _AgentListPageState extends State<AgentListPage>
   Map<String, Color> _generateAgentColors(List<AiAgent> agents) {
     final colors = <String, Color>{};
     final colorList = [
-      const Color(0xFF7F7FD5),
-      const Color(0xFF86A8E7),
-      const Color(0xFF91EAE4),
+      MoeTokens.primary,
+      MoeTokens.secondary,
+      MoeTokens.accent,
       const Color(0xFFFF9A9E),
       const Color(0xFFA18CD1),
       const Color(0xFFFAD0C4),
@@ -333,8 +335,11 @@ class _AgentListPageState extends State<AgentListPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AdaptivePageScaffold(
+      template: PageTemplate.fullscreen,
       backgroundColor: _pageBackground,
+      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           SliverToBoxAdapter(child: _buildHeroHeader()),
@@ -349,8 +354,6 @@ class _AgentListPageState extends State<AgentListPage>
           ],
         ),
       ),
-      floatingActionButton: _showFab ? _buildFloatingActionButton() : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -370,7 +373,7 @@ class _AgentListPageState extends State<AgentListPage>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          padding: const EdgeInsets.fromLTRB(MoeTokens.spaceXl, MoeTokens.spaceLg, MoeTokens.spaceXl, MoeTokens.space3xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -383,17 +386,17 @@ class _AgentListPageState extends State<AgentListPage>
                       Text(
                         'AI 酒馆',
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: MoeTokens.text3xl,
                           fontWeight: FontWeight.w800,
                           color: Colors.white.withValues(alpha: 0.95),
                           height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: MoeTokens.spaceSm),
                       Text(
                         '创造你的专属角色，开启奇妙对话',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: MoeTokens.textBase,
                           color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
@@ -402,10 +405,10 @@ class _AgentListPageState extends State<AgentListPage>
                   PopupMenuButton<_TavernMenuAction>(
                     tooltip: '酒馆菜单',
                     icon: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(MoeTokens.spaceSm),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                       ),
                       child: const Icon(
                         Icons.more_vert_rounded,
@@ -447,9 +450,9 @@ class _AgentListPageState extends State<AgentListPage>
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: MoeTokens.spaceXl),
               _buildHeroSearchBar(),
-              const SizedBox(height: 16),
+              const SizedBox(height: MoeTokens.spaceLg),
               Row(
                 children: [
                   _buildHeroStat(
@@ -457,13 +460,13 @@ class _AgentListPageState extends State<AgentListPage>
                     value: '${_agents.length}',
                     label: '角色',
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: MoeTokens.spaceLg),
                   _buildHeroStat(
                     icon: Icons.hub_rounded,
                     value: '${_providerProfiles.length}',
                     label: '模型源',
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: MoeTokens.spaceLg),
                   _buildHeroStat(
                     icon: Icons.auto_awesome_rounded,
                     value: '${_usageCounts.length}',
@@ -482,7 +485,7 @@ class _AgentListPageState extends State<AgentListPage>
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -496,10 +499,10 @@ class _AgentListPageState extends State<AgentListPage>
           _updateTavernState(() => _searchQuery = value);
           _filterAgents();
         },
-        style: const TextStyle(fontSize: 14, height: 1.4),
+        style: TextStyle(fontSize: MoeTokens.textBase, height: 1.4),
         decoration: InputDecoration(
           hintText: '搜索角色、描述或模型...',
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: MoeTokens.textBase),
           prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -511,7 +514,7 @@ class _AgentListPageState extends State<AgentListPage>
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg, vertical: MoeTokens.spaceMd),
         ),
       ),
     );
@@ -526,22 +529,22 @@ class _AgentListPageState extends State<AgentListPage>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(MoeTokens.spaceSm),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           ),
-          child: Icon(icon, color: Colors.white, size: 18),
+          child: Icon(icon, color: Colors.white, size: MoeTokens.textLg),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: MoeTokens.spaceSm),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: MoeTokens.textLg,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
                 height: 1.1,
@@ -550,7 +553,7 @@ class _AgentListPageState extends State<AgentListPage>
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: MoeTokens.textXs,
                 color: Colors.white.withValues(alpha: 0.75),
               ),
             ),
@@ -562,7 +565,7 @@ class _AgentListPageState extends State<AgentListPage>
 
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceXs),
       child: Row(
         children: [
           Expanded(
@@ -587,7 +590,7 @@ class _AgentListPageState extends State<AgentListPage>
               },
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: MoeTokens.spaceMd),
           Expanded(
             child: _buildQuickActionCard(
               icon: Icons.storefront_rounded,
@@ -607,7 +610,7 @@ class _AgentListPageState extends State<AgentListPage>
               },
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: MoeTokens.spaceMd),
           Expanded(
             child: _buildQuickActionCard(
               icon: Icons.menu_book_rounded,
@@ -642,10 +645,10 @@ class _AgentListPageState extends State<AgentListPage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(MoeTokens.spaceMd),
         decoration: BoxDecoration(
           gradient: gradient,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
           boxShadow: [
             BoxShadow(
               color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.25),
@@ -658,27 +661,27 @@ class _AgentListPageState extends State<AgentListPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(MoeTokens.spaceSm),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
               ),
               child: Icon(icon, color: Colors.white, size: 22),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: MoeTokens.spaceMd),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: MoeTokens.textBase,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: MoeTokens.spaceXs),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: MoeTokens.textXs,
                 color: Colors.white.withValues(alpha: 0.8),
               ),
             ),
@@ -690,19 +693,13 @@ class _AgentListPageState extends State<AgentListPage>
 
   Widget _buildCustomTabBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceMd, MoeTokens.spaceLg, MoeTokens.spaceSm),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(MoeTokens.spaceXs),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: MoeTokens.cardBackground,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          boxShadow: MoeTokens.shadowSm(),
         ),
         child: Row(
           children: [
@@ -724,10 +721,10 @@ class _AgentListPageState extends State<AgentListPage>
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceMd),
           decoration: BoxDecoration(
             color: isSelected ? _brandPrimary : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -737,11 +734,11 @@ class _AgentListPageState extends State<AgentListPage>
                 size: 18,
                 color: isSelected ? Colors.white : Colors.grey.shade500,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: MoeTokens.spaceSm),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: MoeTokens.textBase,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected ? Colors.white : Colors.grey.shade500,
                 ),
@@ -759,7 +756,7 @@ class _AgentListPageState extends State<AgentListPage>
     Widget? action,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceMd),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -770,12 +767,12 @@ class _AgentListPageState extends State<AgentListPage>
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: MoeTokens.textXl,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2430),
+                    color: AiBrandTokens.titleColor,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: MoeTokens.spaceXs),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -850,7 +847,7 @@ class _AgentListPageState extends State<AgentListPage>
       backgroundColor: _brandPrimary,
       foregroundColor: Colors.white,
       elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radius2xl)),
       heroTag: 'agent_list_fab',
       child: const Icon(Icons.add_rounded, size: 24),
     );
@@ -872,18 +869,18 @@ class _AgentListPageState extends State<AgentListPage>
       showDragHandle: true,
       builder: (ctx) => SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(MoeTokens.spaceLg),
           children: [
             const Text(
               '默认角色模板',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: MoeTokens.spaceSm),
             Text(
               '先套一个骨架，再继续改成你自己的 Tavern 风格。',
               style: TextStyle(color: Colors.grey.shade600),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: MoeTokens.spaceLg),
             ...AiStarterTemplates.agentTemplates.map(
               (template) => Card(
                 child: MoeActionRow(
@@ -1251,7 +1248,7 @@ class _AgentListPageState extends State<AgentListPage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
         title: const Text('确认删除'),
         content: Text('确定要删除角色卡「${agent.name}」吗？相关聊天记录也将被删除。'),
         actions: [

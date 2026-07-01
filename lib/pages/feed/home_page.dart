@@ -20,6 +20,7 @@ import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
@@ -397,7 +398,8 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AdaptivePageScaffold(
+      template: PageTemplate.fullscreen,
       backgroundColor: MoeTheme.of(context).pageBackground,
       body: RefreshIndicator(
         onRefresh: () => _fetchPosts(resetContent: false),

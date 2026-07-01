@@ -5,6 +5,7 @@ import '../../utils/validators.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
+import '../../theme/moe_tokens.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -98,7 +99,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 child: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF86A8E7), Color(0xFF91EAE4)],
+                      colors: [MoeTokens.secondary, MoeTokens.accent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -137,7 +138,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         child: const Text(
                           '设置新密码',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: MoeTokens.text3xl,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 1.2,
@@ -154,7 +155,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withValues(alpha: 0.1),
@@ -171,19 +172,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                                   controller: _newPasswordController,
                                   decoration: InputDecoration(
                                     labelText: '新密码',
-                                    prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF7F7FD5)),
+                                    prefixIcon: const Icon(Icons.lock_outline, color: MoeTokens.primary),
                                     suffixIcon: IconButton(
                                       icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey),
                                       onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                     ),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusInput)),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
                                       borderSide: BorderSide(color: Colors.grey[200]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
+                                      borderSide: const BorderSide(color: MoeTokens.primary),
                                     ),
                                     filled: true,
                                     fillColor: Colors.grey[50],
@@ -196,15 +197,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                                   controller: _confirmPasswordController,
                                   decoration: InputDecoration(
                                     labelText: '确认密码',
-                                    prefixIcon: const Icon(Icons.lock_reset_outlined, color: Color(0xFF7F7FD5)),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    prefixIcon: const Icon(Icons.lock_reset_outlined, color: MoeTokens.primary),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusInput)),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
                                       borderSide: BorderSide(color: Colors.grey[200]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
+                                      borderSide: const BorderSide(color: MoeTokens.primary),
                                     ),
                                     filled: true,
                                     fillColor: Colors.grey[50],
@@ -219,16 +220,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _resetPassword,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF7F7FD5),
+                                      backgroundColor: MoeTokens.primary,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
+                                        borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                       ),
                                       elevation: 5,
                                     ),
                                     child: _isLoading
                                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                      : const Text('确认重置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      : const Text('确认重置', style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ],

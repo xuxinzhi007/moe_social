@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../theme/moe_tokens.dart';
 import 'package:http/http.dart' as http;
 
 import '../../services/api_response.dart';
@@ -129,7 +130,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         centerTitle: true,
         title: const Text('AI 模型配置'),

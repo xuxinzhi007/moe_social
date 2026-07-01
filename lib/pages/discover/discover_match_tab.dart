@@ -12,6 +12,7 @@ import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 
 /// 探索页 · 同好：在线匹配、话题推荐与结果展示。
 class DiscoverMatchTab extends StatefulWidget {
@@ -220,10 +221,10 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
       child: Material(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         child: InkWell(
           onTap: _toggleOnlineMatch,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -251,9 +252,9 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                       Text(
                         _onlineMatching ? '匹配中' : '在线实时匹配',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: MoeTokens.textLg,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF262636),
+                          color: MoeTokens.titleText,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -263,7 +264,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: MoeTokens.textSm,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey[700],
                         ),
@@ -306,7 +307,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
             end: Alignment.bottomRight,
             colors: _onlineMatching ? matchingGradient : idleGradient,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
           boxShadow: [
             BoxShadow(
               color: (_onlineMatching
@@ -362,7 +363,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                               _onlineMatching ? '匹配中…' : '在线实时匹配',
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: MoeTokens.textLg,
                                 fontWeight: FontWeight.w800,
                               ),
                               maxLines: 1,
@@ -375,7 +376,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                                       : '与另一位用户实时配对，开始私聊'),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.85),
-                                fontSize: 12,
+                                fontSize: MoeTokens.textSm,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -395,7 +396,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.45),
                           ),
@@ -415,7 +416,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                                fontSize: MoeTokens.textBase,
                               ),
                             ),
                           ],
@@ -496,7 +497,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     foregroundColor: Colors.grey,
                   ),
-                  child: const Text('清除', style: TextStyle(fontSize: 12)),
+                  child: const Text('清除', style: TextStyle(fontSize: MoeTokens.textSm)),
                 ),
             ],
           ),
@@ -505,7 +506,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
             _selectedTagIds.isEmpty
                 ? '不选也可以，会从站内随机推荐新面孔'
                 : '已选 ${_selectedTagIds.length} 个话题（已自动刷新推荐）',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: MoeTokens.textSm, color: Colors.grey.shade500),
           ),
           SizedBox(height: widget.compact ? 9 : 12),
           Wrap(
@@ -519,7 +520,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                   style: TextStyle(
                     fontSize: widget.compact ? 12 : 13,
                     fontWeight: FontWeight.w700,
-                    color: sel ? Colors.white : const Color(0xFF333333),
+                    color: sel ? Colors.white : MoeTokens.titleText,
                   ),
                 ),
                 selected: sel,

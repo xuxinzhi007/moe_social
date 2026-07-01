@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../services/api_service.dart';
 import '../../auth_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
@@ -186,7 +187,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
                                   widget.emptyTitle,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 17,
+                                    fontSize: MoeTokens.textLg,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

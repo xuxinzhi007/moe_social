@@ -1,5 +1,4 @@
 import '../../theme/moe_theme_extension.dart';
-import '../../widgets/moe_loading.dart';
 import '../../theme/moe_tokens.dart';
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
@@ -124,7 +123,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
       body: !isLoggedIn
           ? _buildGuestView()
           : _isLoading
-          ? Center(child: MoeLoading(color: _moe.primary))
+          ? _buildLoadingSkeleton()
           : Stack(
               children: [
                 // 顶部背景 - 统一 Moe 风格渐变
@@ -137,8 +136,8 @@ class _VipCenterPageState extends State<VipCenterPage> {
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
+                      bottomLeft: Radius.circular(MoeTokens.space3xl),
+                      bottomRight: Radius.circular(MoeTokens.space3xl),
                     ),
                   ),
                 ),
@@ -153,29 +152,29 @@ class _VipCenterPageState extends State<VipCenterPage> {
                       children: [
                         // VIP状态卡片
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
                           child: FadeInUp(
                             child: _buildVipStatusCard(),
                           ),
                         ),
                         
-                        const SizedBox(height: 24),
-                        
-                        // 活跃VIP记录信息
+                        SizedBox(height: MoeTokens.space2xl),
+                                                
+                        // 活跃 VIP记录信息
                         if (_activeRecord != null)
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
                             child: FadeInUp(
                               delay: const Duration(milliseconds: 100),
                               child: _buildActiveRecordCard(),
                             ),
                           ),
                           
-                        const SizedBox(height: 16),
+                        SizedBox(height: MoeTokens.spaceLg),
                         
                         // 功能菜单 - 使用 MoeMenuCard
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
                           child: FadeInUp(
                             delay: const Duration(milliseconds: 200),
                             child: MoeMenuCard(
@@ -228,19 +227,19 @@ class _VipCenterPageState extends State<VipCenterPage> {
                           ),
                         ),
                         
-                        const SizedBox(height: 16),
+                        SizedBox(height: MoeTokens.spaceLg),
                         
                         // 自动续费设置 - 也可以封装进 MoeMenuCard，或者单独样式
                         if (_vipStatus != null && (_vipStatus!['is_vip'] as bool? ?? false))
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
                             child: FadeInUp(
                               delay: const Duration(milliseconds: 300),
                               child: _buildAutoRenewCard(),
                             ),
                           ),
                           
-                        const SizedBox(height: 40),
+                        SizedBox(height: MoeTokens.space4xl),
                       ],
                     ),
                   ),
@@ -262,82 +261,78 @@ class _VipCenterPageState extends State<VipCenterPage> {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
+              bottomLeft: Radius.circular(MoeTokens.space3xl),
+              bottomRight: Radius.circular(MoeTokens.space3xl),
             ),
           ),
         ),
         Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: _moe.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.workspace_premium_rounded, size: 36,
-                      color: _moe.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '登录后查看 VIP 会员中心',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '登录后可查看会员权益、套餐价格、订单记录和续费状态。',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await Navigator.pushNamed(context, '/login');
-                        if (mounted) {
-                          _loadVipInfo();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _moe.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
+          child: FadeInUp(
+            child: Padding(
+              padding: EdgeInsets.all(MoeTokens.space2xl),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(MoeTokens.space2xl),
+                decoration: BoxDecoration(
+                  color: MoeTokens.cardBackground,
+                  borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+                  boxShadow: MoeTokens.shadowMd(),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(MoeTokens.spaceMd + MoeTokens.spaceXs),
+                      decoration: BoxDecoration(
+                        color: _moe.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                      child: const Text('去登录'),
+                      child: Icon(Icons.workspace_premium_rounded, size: 36,
+                        color: _moe.primary,
+                      ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: MoeTokens.spaceLg),
+                    const Text(
+                      '登录后查看 VIP 会员中心',
+                      style: TextStyle(
+                        fontSize: MoeTokens.textXl,
+                        fontWeight: MoeTokens.fontWeightTitle,
+                        color: MoeTokens.titleText,
+                      ),
+                    ),
+                    SizedBox(height: MoeTokens.spaceSm),
+                    Text(
+                      '登录后可查看会员权益、套餐价格、订单记录和续费状态。',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: MoeTokens.hintText,
+                        fontSize: MoeTokens.textBase,
+                        height: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: MoeTokens.spaceXl),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await Navigator.pushNamed(context, '/login');
+                          if (mounted) {
+                            _loadVipInfo();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _moe.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                          ),
+                        ),
+                        child: const Text('去登录'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -351,7 +346,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
     final expiresAt = _vipStatus?['expires_at'] as String?;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(MoeTokens.space2xl),
       decoration: BoxDecoration(
         gradient: isVip
             ? const LinearGradient(
@@ -364,10 +359,10 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         boxShadow: [
           BoxShadow(
-            color: (isVip ? const Color(0xFFFFB347) : _moe.primary)
+            color: (isVip ? MoeTokens.pastelOrange : _moe.primary)
                 .withValues(alpha: 0.22),
             blurRadius: 24,
             offset: const Offset(0, 10),
@@ -406,7 +401,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   size: 32,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: MoeTokens.spaceLg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -414,17 +409,17 @@ class _VipCenterPageState extends State<VipCenterPage> {
                     Text(
                       isVip ? '尊贵VIP会员' : '普通用户',
                       style: TextStyle(
-                        color: isVip ? Colors.white : const Color(0xFF333333),
-                        fontSize: 22,
+                        color: isVip ? Colors.white : MoeTokens.titleText,
+                        fontSize: MoeTokens.text2xl,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: MoeTokens.spaceXs),
                     Text(
                       isVip ? '有效期至: ${expiresAt ?? "未知"}' : '开通VIP，解锁更多特权',
                       style: TextStyle(
-                        color: isVip ? Colors.white.withValues(alpha: 0.9) : Colors.grey[600],
+                        color: isVip ? Colors.white.withValues(alpha: 0.9) : MoeTokens.hintText,
                         fontSize: 13,
                       ),
                     ),
@@ -437,7 +432,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   color: isVip
                       ? Colors.white.withValues(alpha: 0.2)
                       : _moe.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                   border: Border.all(
                     color: isVip
                         ? Colors.white.withValues(alpha: 0.45)
@@ -458,7 +453,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                       style: TextStyle(
                         color: isVip ? Colors.white : const Color(0xFF5E5F86),
                         fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                        fontSize: MoeTokens.textSm,
                       ),
                     ),
                   ],
@@ -467,10 +462,10 @@ class _VipCenterPageState extends State<VipCenterPage> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: MoeTokens.spaceLg),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: MoeTokens.spaceSm,
+            runSpacing: MoeTokens.spaceSm,
             children: [
               _buildVipPerkChip(isVip, Icons.palette_rounded, '专属主题'),
               _buildVipPerkChip(isVip, Icons.hd_rounded, '高清画质'),
@@ -479,7 +474,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
           ),
 
           if (!isVip) ...[
-            const SizedBox(height: 24),
+            SizedBox(height: MoeTokens.space2xl),
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -498,7 +493,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shadowColor: _moe.primary.withValues(alpha: 0.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusButton)),
                 ),
                 child: const Text(
                   '立即开通',
@@ -506,12 +501,12 @@ class _VipCenterPageState extends State<VipCenterPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: MoeTokens.spaceMd),
             Text(
               '开通后权益才会生效，请以支付结果为准',
               style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
+                color: MoeTokens.hintText,
+                fontSize: MoeTokens.textSm,
                 height: 1.4,
               ),
             ),
@@ -532,7 +527,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -556,39 +551,33 @@ class _VipCenterPageState extends State<VipCenterPage> {
     final record = _activeRecord!;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: _moe.primary.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+        boxShadow: MoeTokens.shadowMd(),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(MoeTokens.spaceXl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(Icons.info_outline_rounded, color: _moe.primary),
-                const SizedBox(width: 8),
+                SizedBox(width: MoeTokens.spaceSm),
                 const Text(
                   '当前套餐详情',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: MoeTokens.textLg,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
+                    color: MoeTokens.titleText,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: MoeTokens.spaceLg),
             _buildInfoRow('套餐名称', record.planName),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: MoeTokens.spaceSm),
               child: Divider(color: Colors.grey.withValues(alpha: 0.1)),
             ),
             _buildInfoRow(
@@ -597,7 +586,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                   ? '${record.startAtDateTime!.year}-${record.startAtDateTime!.month.toString().padLeft(2, '0')}-${record.startAtDateTime!.day.toString().padLeft(2, '0')}'
                   : record.startAt,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: MoeTokens.spaceSm),
             _buildInfoRow(
               '结束时间',
               record.endAtDateTime != null
@@ -616,16 +605,16 @@ class _VipCenterPageState extends State<VipCenterPage> {
         Expanded(
           child: Text(
             label,
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(color: MoeTokens.hintText, fontSize: MoeTokens.textBase),
           ),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: MoeTokens.spaceLg),
         Flexible(
           child: Text(
             value,
             textAlign: TextAlign.right,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF333333)),
+            style: TextStyle(fontWeight: MoeTokens.fontWeightSubtitle, fontSize: MoeTokens.textBase, color: MoeTokens.titleText),
           ),
         ),
       ],
@@ -647,6 +636,60 @@ class _VipCenterPageState extends State<VipCenterPage> {
             activeThumbColor: _moe.primary,
             activeTrackColor: _moe.primary.withValues(alpha: 0.5),
             onChanged: _toggleAutoRenew,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 加载骨架屏
+  Widget _buildLoadingSkeleton() {
+    return Stack(
+      children: [
+        Container(
+          height: 300,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_moe.primary, MoeTokens.secondary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(MoeTokens.space3xl),
+              bottomRight: Radius.circular(MoeTokens.space3xl),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 60),
+          child: Column(
+            children: [
+              // VIP 卡片骨架
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+                child: Container(
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+                  ),
+                ),
+              ),
+              SizedBox(height: MoeTokens.space2xl),
+              // 菜单骨架
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: MoeTokens.cardBackground,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                    boxShadow: MoeTokens.shadowSm(),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

@@ -60,7 +60,7 @@ class _SkeletonCardState extends State<_SkeletonCard>
         height: 88,
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+          borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         ),
       ),
     );

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moe Social - Splash</title>
+    <style id="theme-vars">
+/* Moe Social Brand Design System — 萌系梦幻柔和 */
+/* Extracted from Flutter project tokens: moe_tokens.dart, moe_theme_extension.dart, ai_brand_tokens.dart */
+
+:root {
+  /* ===== Primary Palette — 糖果渐变色系 ===== */
+  --color-primary: #7F7FD5;
+  --color-primary-light: #9B9FE3;
+  --color-primary-lighter: #B7BAF0;
+  --color-primary-lightest: #D4D5F6;
+  --color-primary-dark: #5F5FBB;
+  --color-primary-darker: #3F3FA1;
+
+  --color-secondary: #86A8E7;
+  --color-secondary-light: #A0BFEF;
+  --color-secondary-lighter: #BBD5F6;
+  --color-secondary-darker: #5E88C8;
+
+  --color-tertiary: #91EAE4;
+  --color-tertiary-light: #ADF0EC;
+  --color-tertiary-lighter: #C8F5F2;
+  --color-tertiary-darker: #6DD5CF;
+
+  /* ===== Neutrals ===== */
+  --color-bg: #F5F7FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-sunken: #EEEEF2;
+
+  --color-text-primary: #333333;
+  --color-text-secondary: #666666;
+  --color-text-hint: #9E9E9E;
+  --color-text-disabled: #BDBDBD;
+
+  --color-text-inverse: #FFFFFF;
+
+  /* ===== Semantic Colors ===== */
+  --state-success: #00A86B;
+  --state-warning: #E6A700;
+  --state-error: #E94057;
+  --state-info: #2563EB;
+
+  --state-success-bg: #F0FDF4;
+  --state-error-bg: #FEF2F2;
+  --state-info-bg: #EFF6FF;
+  --state-warning-bg: #FFFBEB;
+
+  /* ===== Interaction Colors ===== */
+  --color-like: #FF4757;
+  --color-online: #00C853;
+  --color-offline: #BDBDBD;
+
+  /* ===== Gradients ===== */
+  --gradient-primary: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 100%);
+  --gradient-hero: linear-gradient(135deg, #7F7FD5 0%, #86A8E7 50%, #91EAE4 100%);
+  --gradient-aurora: linear-gradient(135deg, #E0C3FC 0%, #8EC5FC 50%, #91EAE4 100%);
+  --gradient-ai-bubble: linear-gradient(135deg, #8A2387 0%, #E94057 100%);
+
+  /* ===== Radius Scale — 圆润萌系 ===== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 9999px;
+  --radius-button: 25px;
+  --radius-input: 15px;
+
+  /* ===== Shadows — 彩色柔和阴影 ===== */
+  --shadow-card: 0 8px 16px rgba(127, 127, 213, 0.08);
+  --shadow-card-lg: 0 10px 24px rgba(127, 127, 213, 0.08);
+  --shadow-float: 0 20px 40px rgba(127, 127, 213, 0.12);
+  --shadow-button: 0 4px 12px rgba(127, 127, 213, 0.4);
+  --shadow-bottom-bar: 0 -5px 20px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(127, 127, 213, 0.1);
+  --shadow-compact: 0 5px 10px rgba(127, 127, 213, 0.08);
+
+  /* ===== Typography ===== */
+  --font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  --text-display: 700 28px/1.2 var(--font-family);
+  --text-title: 700 22px/1.3 var(--font-family);
+  --text-subtitle: 600 18px/1.4 var(--font-family);
+  --text-body: 400 15px/1.6 var(--font-family);
+  --text-body-sm: 400 14px/1.5 var(--font-family);
+  --text-caption: 400 12px/1.35 var(--font-family);
+  --text-overline: 500 11px/1.2 var(--font-family);
+  --text-mono: 500 13px/1.4 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+
+  /* ===== Spacing ===== */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  --space-4xl: 40px;
+
+  /* ===== Motion ===== */
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-breath: 1200ms;
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ===== Component specifics ===== */
+  --bottom-bar-radius: 32px;
+  --bottom-bar-padding: 8px 20px;
+  --card-padding: 20px;
+  --section-gap: 12px;
+  --page-padding: 16px;
+
+  /* ===== Dark mode ===== */
+  --dark-bg: #121212;
+  --dark-card: #1E1E1E;
+  --dark-surface: #2C2C2C;
+  --dark-text-primary: #E0E0E0;
+  --dark-text-secondary: #AAAAAA;
+  --dark-shadow-card: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Utility Classes ===== */
+.text-gradient-primary {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-primary-gradient {
+  background: var(--gradient-primary);
+}
+
+.bg-hero-gradient {
+  background: var(--gradient-hero);
+}
+
+.bg-aurora-gradient {
+  background: var(--gradient-aurora);
+}
+
+.card-moe {
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.btn-moe-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-button);
+  height: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: var(--shadow-button);
+  transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-smooth);
+}
+
+.btn-moe-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(127, 127, 213, 0.5);
+}
+
+.input-moe {
+  background: #F5F5F5;
+  border-radius: var(--radius-input);
+  border: 2px solid transparent;
+  padding: 16px 20px;
+  font-size: 15px;
+  transition: border-color 200ms var(--ease-smooth);
+}
+
+.input-moe:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.bottom-bar-moe {
+  background: var(--color-bg-elevated);
+  border-radius: var(--bottom-bar-radius);
+  box-shadow: var(--shadow-bottom-bar);
+  padding: var(--bottom-bar-padding);
+}
+
+.fade-in-up {
+  animation: fadeInUp var(--duration-normal) var(--ease-smooth) both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.0); opacity: 1.0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(127, 127, 213, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(127, 127, 213, 0.6); }
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-secondary: var(--color-secondary);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: #F5F7FA; margin: 0;">
+  <main>
+
+    <!-- SplashScreen: Scaffold backgroundColor #F5F7FA, Center child, Column mainAxisAlignment.center -->
+    <div data-dom-id="splash-enter" style="
+      position: fixed;
+      inset: 0;
+      background-color: #F5F7FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      cursor: pointer;
+    ">
+
+      <div style="
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        animation: splashFadeIn 1200ms ease-out both;
+      ">
+
+        <!-- Logo: Container 120x120, gradient from #7F7FD5 to #91EAE4, borderRadius 32, shadow primary 30% alpha blur 20 offset (0,10), containing splash-logo.jpg -->
+        <div style="
+          width: 120px;
+          height: 120px;
+          background: linear-gradient(135deg, #7F7FD5 0%, #91EAE4 100%);
+          border-radius: 32px;
+          box-shadow: 0 20px rgba(127, 127, 213, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        ">
+          <img
+            src="../assets/splash-logo.jpg"
+            alt="Moe Social"
+            style="
+              width: 80px;
+              height: 80px;
+              object-fit: cover;
+              border-radius: 50%;
+            "
+          />
+        </div>
+
+        <!-- SizedBox(height: 32) -->
+        <div style="height: 32px;"></div>
+
+        <!-- Title: "Moe Social", fontSize 28, fontWeight bold, gradient text #7F7FD5 to #91EAE4 -->
+        <h1 style="
+          font-family: var(--font-family);
+          font-size: 28px;
+          font-weight: bold;
+          margin: 0;
+          padding: 0;
+          background: linear-gradient(135deg, #7F7FD5 0%, #91EAE4 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+        ">Moe Social</h1>
+
+        <!-- SizedBox(height: 48) -->
+        <div style="height: 48px;"></div>
+
+        <!-- Progress indicator: Container 200x4, grey[200] bg, borderRadius 2, containing LinearProgressIndicator primary color -->
+        <div style="
+          width: 200px;
+          height: 4px;
+          background-color: #EEEEEE;
+          border-radius: 2px;
+          overflow: hidden;
+        ">
+          <div style="
+            width: 60%;
+            height: 100%;
+            background-color: #7F7FD5;
+            border-radius: 2px;
+            animation: progressIndeterminate 2s ease-in-out infinite;
+          "></div>
+        </div>
+
+        <!-- SizedBox(height: 16) -->
+        <div style="height: 16px;"></div>
+
+        <!-- Status text: "正在初始化...", grey[600], fontSize 14 -->
+        <p style="
+          font-family: var(--font-family);
+          font-size: 14px;
+          color: #757575;
+          margin: 0;
+          padding: 0;
+        ">正在初始化...</p>
+
+      </div>
+
+    </div>
+
+    <style>
+      @keyframes splashFadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.8) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes progressIndeterminate {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(60%); }
+        100% { transform: translateX(-100%); }
+      }
+    </style>
+
+  </main>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

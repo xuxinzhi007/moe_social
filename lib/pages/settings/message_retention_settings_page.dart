@@ -3,6 +3,7 @@ import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 
 /// 与后端 `PUT /api/user/:id` 的 `message_retention`（`auto` | `7` | `30`）及
 /// `message_retention_choice` 对齐。
@@ -86,7 +87,7 @@ class _MessageRetentionSettingsPageState
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('私信记录保留'),
         backgroundColor: Colors.white,

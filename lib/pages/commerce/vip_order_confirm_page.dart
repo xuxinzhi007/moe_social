@@ -175,7 +175,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       builder: (dialogContext) {
         return AlertDialog(
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
           title: const Row(
             children: [
               Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)),
@@ -189,7 +189,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
           content: Text(
             '已成功使用站内钱包余额支付 ¥${amount.toStringAsFixed(2)}，会员权益已生效。',
             style: TextStyle(
-              color: Colors.grey[700],
+              color: MoeTokens.bodyText,
               height: 1.5,
             ),
           ),
@@ -223,12 +223,12 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       appBar: AppBar(
         title: const Text(
           '确认订单',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(color: MoeTokens.titleText, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: MoeTokens.titleText),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -274,7 +274,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         boxShadow: [
           BoxShadow(
             color: _moe.primary.withValues(alpha: 0.22),
@@ -289,7 +289,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             ),
             child: const Icon(
               Icons.workspace_premium_rounded,
@@ -325,7 +325,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
             '¥${widget.plan.price.toStringAsFixed(2)}',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: MoeTokens.textLg,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -339,8 +339,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
         boxShadow: [
           BoxShadow(
             color: _moe.primary.withValues(alpha: 0.1),
@@ -413,7 +413,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                     icon: const Icon(Icons.add_card_rounded, size: 18),
                     label: const Text('去充值'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFB347),
+                      backgroundColor: MoeTokens.pastelOrange,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -436,8 +436,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         boxShadow: [
           BoxShadow(
             color: _moe.primary.withValues(alpha: 0.08),
@@ -464,7 +464,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
               child: Text(
                 '我已阅读并同意《会员服务协议》并确认使用站内钱包余额支付本次订单',
                 style: TextStyle(
-                  color: Colors.grey[700],
+                  color: MoeTokens.bodyText,
                   fontSize: 13,
                   height: 1.35,
                 ),
@@ -482,7 +482,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFEFF3FF),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         border: Border.all(color: const Color(0xFFD9E3FF)),
       ),
       child: Row(
@@ -496,7 +496,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
             child: Text(
               '本次将使用站内钱包余额扣款，若余额不足请先充值后再完成支付。',
               style: TextStyle(
-                color: Colors.grey[700],
+                color: MoeTokens.bodyText,
                 fontSize: 13,
                 height: 1.45,
               ),
@@ -519,7 +519,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
     }
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MoeTokens.cardBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -546,7 +546,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                   disabledBackgroundColor: const Color(0xFFCACEEB),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                   ),
                 ),
                 child: _isPaying
@@ -563,7 +563,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                             ? '余额不足，请先充值'
                             : '确认支付 ¥${widget.plan.price.toStringAsFixed(2)}',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: MoeTokens.textLg,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -577,7 +577,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                     helperMessage,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: MoeTokens.bodyText,
                       height: 1.3,
                     ),
                   ),
@@ -603,7 +603,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
   }
 
   Widget _buildInfoRow(String label, String value, {bool highlight = false}) {
-    final color = highlight ? _moe.primary : const Color(0xFF333333);
+    final color = highlight ? _moe.primary : MoeTokens.titleText;
     final weight = highlight ? FontWeight.w800 : FontWeight.w600;
     return Row(
       children: [
@@ -611,8 +611,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
           child: Text(
             label,
             style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
+              color: MoeTokens.bodyText,
+              fontSize: MoeTokens.textBase,
             ),
           ),
         ),
@@ -624,7 +624,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 15,
+              fontSize: MoeTokens.textMd,
               fontWeight: weight,
             ),
           ),

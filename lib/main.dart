@@ -28,7 +28,6 @@ import 'providers/device_info_provider.dart';
 import 'providers/loading_provider.dart';
 import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
-import 'providers/game_provider.dart';
 import 'providers/virtual_avatar_provider.dart';
 import 'providers/main_nav_controller.dart';
 import 'utils/startup_manager.dart';
@@ -300,7 +299,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: virtualAvatarProvider),
         ChangeNotifierProvider(create: (_) => CheckInProvider()),
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
-        ChangeNotifierProvider(create: (_) => GameProvider()),
         ChangeNotifierProvider(create: (_) => MainNavController()),
       ],
       child: MaterialApp(

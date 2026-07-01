@@ -5,6 +5,7 @@ import '../../widgets/dynamic_avatar.dart';
 // import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 
 class InventoryPage extends StatefulWidget {
   final User user;
@@ -112,19 +113,19 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('我的背包', style: TextStyle(color: Colors.black87)),
-        backgroundColor: Colors.white,
+        title: const Text('我的背包', style: TextStyle(color: MoeTokens.bodyText)),
+        backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: MoeTokens.bodyText),
       ),
       body: Column(
         children: [
           // 顶部展示当前形象
           Container(
             padding: const EdgeInsets.all(20),
-            color: Colors.white,
+            color: MoeTokens.cardBackground,
             child: Row(
               children: [
                 DynamicAvatar(
@@ -139,7 +140,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     Text(
                       _currentUser.username,
                       style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                          fontSize: MoeTokens.textLg, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     if (_currentUser.equippedFrameId != null)
@@ -149,7 +150,7 @@ class _InventoryPageState extends State<InventoryPage> {
                       )
                     else
                       const Text('暂未佩戴头像框',
-                          style: TextStyle(color: Colors.grey)),
+                          style: TextStyle(color: MoeTokens.hintText)),
                   ],
                 )
               ],
@@ -190,8 +191,8 @@ class _InventoryPageState extends State<InventoryPage> {
                             },
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
+                                color: MoeTokens.cardBackground,
+                                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                                 border: Border.all(
                                   color: isEquipped
                                       ? Colors.orange
@@ -242,7 +243,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                           item.name,
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 12),
+                                              fontSize: MoeTokens.textSm),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -266,7 +267,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                         color: Colors.orange[50],
                                         borderRadius:
                                             const BorderRadius.vertical(
-                                                bottom: Radius.circular(12)),
+                                                bottom: Radius.circular(MoeTokens.radiusMd)),
                                       ),
                                       child: const Center(
                                         child: Text(

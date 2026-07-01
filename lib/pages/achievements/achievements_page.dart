@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
@@ -95,15 +96,15 @@ class _AchievementsPageState extends State<AchievementsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('成就中心', style: TextStyle(fontWeight: FontWeight.w800)),
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: MoeTokens.pageBackground,
         elevation: 0,
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7F7FD5)),
+              child: CircularProgressIndicator(color: MoeTokens.primary),
             )
           : _currentUserId == null
               ? const Center(
@@ -113,7 +114,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
                   ),
                 )
               : RefreshIndicator(
-                  color: const Color(0xFF7F7FD5),
+                  color: MoeTokens.primary,
                   onRefresh: _loadAchievements,
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -153,14 +154,14 @@ class _AchievementsPageState extends State<AchievementsPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+          colors: [MoeTokens.primary, MoeTokens.secondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
+            color: MoeTokens.primary.withValues(alpha: 0.2),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -236,7 +237,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+            color: MoeTokens.primary.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -289,7 +290,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+            color: MoeTokens.primary.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -315,7 +316,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
             decoration: InputDecoration(
               isDense: true,
               filled: true,
-              fillColor: const Color(0xFFF5F7FA),
+              fillColor: MoeTokens.pageBackground,
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -353,8 +354,8 @@ class _AchievementsPageState extends State<AchievementsPage> {
             _filterBadges();
           });
         },
-        selectedColor: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
-        backgroundColor: const Color(0xFFF5F7FA),
+        selectedColor: MoeTokens.primary.withValues(alpha: 0.2),
+        backgroundColor: MoeTokens.pageBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
       ),
     );

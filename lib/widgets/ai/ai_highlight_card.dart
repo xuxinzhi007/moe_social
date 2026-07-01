@@ -23,7 +23,7 @@ class AiHighlightCard extends StatelessWidget {
       padding: const EdgeInsets.all(AiTheme.cardPadding),
       decoration: BoxDecoration(
         gradient: AiBrandTokens.identityGradient,
-        borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+        borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         border: Border.all(color: AiBrandTokens.primary.withValues(alpha: 0.2)),
       ),
       child: Column(

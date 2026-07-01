@@ -500,7 +500,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Moe 风格背景底色
+      backgroundColor: MoeTokens.pageBackground, // Moe 风格背景底色
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -545,7 +545,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
               label: const Text('上传图片',
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold)),
-              backgroundColor: const Color(0xFF7F7FD5), // Moe 主题色
+              backgroundColor: MoeTokens.primary, // Moe 主题色
               elevation: 4,
             ),
       body: Column(

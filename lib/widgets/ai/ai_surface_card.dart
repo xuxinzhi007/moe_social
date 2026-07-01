@@ -27,7 +27,7 @@ class AiSurfaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: gradient == null ? AiTheme.surface : null,
         gradient: gradient,
-        borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+        borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         boxShadow: AiTheme.cardShadow,
       ),
       child: child,
@@ -38,7 +38,7 @@ class AiSurfaceCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+        borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         child: content,
       ),
     );

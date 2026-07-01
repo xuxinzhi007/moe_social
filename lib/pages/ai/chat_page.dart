@@ -25,6 +25,7 @@ import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
@@ -1312,7 +1313,7 @@ class _ChatPageState extends State<ChatPage> {
               MoeToast.success(this.context, '消息已撤回');
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7F7FD5),
+              backgroundColor: MoeTokens.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
@@ -1405,7 +1406,7 @@ class _ChatPageState extends State<ChatPage> {
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: message.role == 'user'
-                          ? const Color(0xFFE94057)
+                          ? AiBrandTokens.gradientCoral
                           : Theme.of(context)
                               .primaryColor
                               .withValues(alpha: 0.1),
@@ -1633,7 +1634,7 @@ class _ChatPageState extends State<ChatPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F7FA),
+                          color: MoeTokens.pageBackground,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200),
                         ),

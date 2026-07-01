@@ -79,7 +79,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                 Text(
                   '探索',
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: MoeTokens.text2xl,
                     fontWeight: FontWeight.w900,
                     color: scheme.onSurface,
                     height: 1.1,
@@ -89,7 +89,7 @@ class _DiscoverPageState extends State<DiscoverPage>
                 Text(
                   '匹配同好，或试试酒馆与小游戏',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: MoeTokens.textBase,
                     color: scheme.onSurfaceVariant,
                     height: 1.35,
                   ),
@@ -123,7 +123,7 @@ class _DiscoverPageState extends State<DiscoverPage>
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: MoeTheme.of(context).cardBackground,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -137,17 +137,17 @@ class _DiscoverPageState extends State<DiscoverPage>
           dividerColor: Colors.transparent,
           indicatorSize: TabBarIndicatorSize.tab,
           indicator: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
             color: scheme.primary.withValues(alpha: 0.12),
           ),
           labelColor: scheme.primary,
           unselectedLabelColor: scheme.onSurfaceVariant,
           labelStyle: const TextStyle(
-            fontSize: 14,
+            fontSize: MoeTokens.textBase,
             fontWeight: FontWeight.w800,
           ),
           unselectedLabelStyle: const TextStyle(
-            fontSize: 14,
+            fontSize: MoeTokens.textBase,
             fontWeight: FontWeight.w600,
           ),
           tabs: const [

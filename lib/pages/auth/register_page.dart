@@ -14,6 +14,7 @@ import '../../widgets/moe_input_field.dart';
 import '../../widgets/auth_background.dart';
 import '../../widgets/email_completion_bubble.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -31,7 +32,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailFocus = FocusNode();
   Timer? _emailCompletionDebounce;
 
-  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _primaryColor = MoeTokens.primary;
   final ValueNotifier<List<String>> _emailCompletions =
       ValueNotifier<List<String>>(const []);
 
@@ -176,9 +177,9 @@ class _RegisterPageState extends State<RegisterPage> {
                         const Text(
                           '创建账号',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: MoeTokens.text3xl,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF333333),
+                            color: MoeTokens.titleText,
                             letterSpacing: 1,
                           ),
                         ),
@@ -186,7 +187,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         Text(
                           '开始你的萌系社交之旅',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: MoeTokens.textMd,
                             color: Colors.grey[500],
                             letterSpacing: 1,
                           ),
@@ -271,7 +272,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                 ),
                                 elevation: 8,
                                 shadowColor:
@@ -280,7 +281,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: const Text(
                                 '立即注册',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: MoeTokens.textLg,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 2,
                                 ),
@@ -307,7 +308,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                             onTap: () => Navigator.pop(context),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(

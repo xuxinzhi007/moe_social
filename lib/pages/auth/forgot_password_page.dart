@@ -8,6 +8,7 @@ import '../../widgets/fade_in_up.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
+import '../../theme/moe_tokens.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -52,7 +53,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radius2xl)),
         contentPadding: EdgeInsets.zero,
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -62,11 +63,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               height: 100,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                  colors: [MoeTokens.primary, MoeTokens.secondary],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(MoeTokens.radius2xl)),
               ),
               child: Center(
                 child: Container(
@@ -90,7 +91,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     child: user.avatar.isEmpty
                         ? Text(
                             user.username.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF7F7FD5)),
+                            style: const TextStyle(fontSize: MoeTokens.text2xl, fontWeight: FontWeight.bold, color: MoeTokens.primary),
                           )
                         : null,
                   ),
@@ -101,22 +102,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  const Text('账号已找到', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('账号已找到', style: TextStyle(fontSize: MoeTokens.textXl, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text(
                     user.username,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: const TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     user.email,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    style: TextStyle(color: Colors.grey[600], fontSize: MoeTokens.textBase),
                   ),
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.orange[50],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                       border: Border.all(color: Colors.orange[100]!),
                     ),
                     child: Row(
@@ -126,7 +127,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         const Expanded(
                           child: Text(
                             '密码已加密存储，无法直接查看。您可以继续操作以重置密码。',
-                            style: TextStyle(fontSize: 12, color: Colors.orange),
+                            style: TextStyle(fontSize: MoeTokens.textSm, color: Colors.orange),
                           ),
                         ),
                       ],
@@ -146,7 +147,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusMd)),
                   ),
                   child: const Text('取消', style: TextStyle(color: Colors.grey)),
                 ),
@@ -167,10 +168,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7F7FD5),
+                    backgroundColor: MoeTokens.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusMd)),
                     elevation: 0,
                   ),
                   child: const Text('去重置'),
@@ -230,7 +231,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 child: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7), Color(0xFF91EAE4)],
+                      colors: [MoeTokens.primary, MoeTokens.secondary, MoeTokens.accent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -281,7 +282,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         child: const Text(
                           '找回账号',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: MoeTokens.text3xl,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 1.2,
@@ -299,7 +300,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withValues(alpha: 0.1),
@@ -315,22 +316,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 Text(
                                   '请输入您的邮箱地址以查找账号',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                  style: TextStyle(color: Colors.grey[600], fontSize: MoeTokens.textBase),
                                 ),
                                 const SizedBox(height: 30),
                                 TextFormField(
                                   controller: _emailController,
                                   decoration: InputDecoration(
                                     labelText: '邮箱地址',
-                                    prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF7F7FD5)),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    prefixIcon: const Icon(Icons.email_outlined, color: MoeTokens.primary),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusInput)),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
                                       borderSide: BorderSide(color: Colors.grey[200]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
+                                      borderSide: const BorderSide(color: MoeTokens.primary),
                                     ),
                                     filled: true,
                                     fillColor: Colors.grey[50],
@@ -345,16 +346,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _checkEmail,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF7F7FD5),
+                                      backgroundColor: MoeTokens.primary,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
+                                        borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                       ),
                                       elevation: 5,
                                     ),
                                     child: _isLoading 
                                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                        : const Text('查找账号', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                        : const Text('查找账号', style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ],
@@ -376,7 +377,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               onPressed: () => Navigator.pop(context),
                               child: const Text(
                                 '返回登录',
-                                style: TextStyle(color: Color(0xFF7F7FD5), fontWeight: FontWeight.bold),
+                                style: TextStyle(color: MoeTokens.primary, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],

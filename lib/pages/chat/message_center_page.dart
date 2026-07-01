@@ -6,6 +6,7 @@ import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
 import 'conversations_page.dart';
@@ -82,9 +83,12 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   Widget build(BuildContext context) {
     final moe = MoeTheme.of(context);
 
-    return Scaffold(
+    return AdaptivePageScaffold(
+      template: PageTemplate.fullscreen,
       backgroundColor: MoeTokens.pageBackground,
-      appBar: AppBar(
+      body: Scaffold(
+        backgroundColor: MoeTokens.pageBackground,
+        appBar: AppBar(
         title: const Text(
           '好友',
           style: TextStyle(fontWeight: FontWeight.w800),
@@ -160,6 +164,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
           const FriendsPage(contactsOnly: true),
         ],
       ),
+    ),
     );
   }
 }

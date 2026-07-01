@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:convert';
+import '../../theme/moe_tokens.dart';
 // import '../../config/app_config.dart'; // AI服务内部已使用
 import '../../services/enhanced_logger.dart';
 import '../../services/task_execution_engine.dart';
@@ -183,7 +184,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -205,7 +206,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
           color: Colors.white,
         ),
       ),
-      backgroundColor: const Color(0xFF7F7FD5),
+      backgroundColor: MoeTokens.primary,
       elevation: 0,
       actions: [
         IconButton(
@@ -244,10 +245,10 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
             gradient: LinearGradient(
               colors: [
                 _isAccessibilityServiceConnected
-                    ? const Color(0xFF91EAE4)
+                    ? MoeTokens.accent
                     : Colors.orange,
                 _isAccessibilityServiceConnected
-                    ? const Color(0xFF7F7FD5)
+                    ? MoeTokens.primary
                     : Colors.deepOrange,
               ],
               begin: Alignment.topLeft,
@@ -378,7 +379,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
           children: [
             Row(
               children: [
-                const Icon(Icons.terminal, color: Color(0xFF7F7FD5)),
+                const Icon(Icons.terminal, color: MoeTokens.primary),
                 const SizedBox(width: 8),
                 const Text(
                   '执行日志',
@@ -604,9 +605,9 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                         onPressed: () {
                           _inputController.text = _presetCommands[index];
                         },
-                        backgroundColor: const Color(0xFFF5F7FA),
+                        backgroundColor: MoeTokens.pageBackground,
                         labelStyle: const TextStyle(
-                          color: Color(0xFF7F7FD5),
+                          color: MoeTokens.primary,
                           fontSize: 12,
                         ),
                       ),
@@ -632,13 +633,13 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF5F7FA),
+                        fillColor: MoeTokens.pageBackground,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 12,
                         ),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.mic, color: Color(0xFF7F7FD5)),
+                          icon: const Icon(Icons.mic, color: MoeTokens.primary),
                           onPressed: _startVoiceInput,
                           tooltip: '语音输入',
                         ),
@@ -658,7 +659,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                       onPressed: _isProcessing ? _stopTask : _executeCurrentTask,
                       backgroundColor: _isProcessing
                           ? Colors.red
-                          : const Color(0xFF7F7FD5),
+                          : MoeTokens.primary,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: _isProcessing
@@ -693,7 +694,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
         FloatingActionButton(
           heroTag: "quick_actions_button",
           onPressed: _showQuickActions,
-          backgroundColor: const Color(0xFF86A8E7),
+          backgroundColor: MoeTokens.secondary,
           child: const Icon(Icons.apps, color: Colors.white),
           tooltip: '快速操作',
         ),
@@ -961,7 +962,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7FA),
+                      color: MoeTokens.pageBackground,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -970,7 +971,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                         Icon(
                           action['icon'] as IconData,
                           size: 32,
-                          color: const Color(0xFF7F7FD5),
+                          color: MoeTokens.primary,
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -1102,7 +1103,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
         content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, size: 64, color: Color(0xFF7F7FD5)),
+            Icon(Icons.auto_awesome, size: 64, color: MoeTokens.primary),
             SizedBox(height: 16),
             Text('AutoGLM 智能助手', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 8),
@@ -1136,7 +1137,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
     return Scaffold(
       appBar: AppBar(
         title: const Text('执行历史'),
-        backgroundColor: const Color(0xFF7F7FD5),
+        backgroundColor: MoeTokens.primary,
       ),
       body: const Center(
         child: Text('历史页面开发中...'),

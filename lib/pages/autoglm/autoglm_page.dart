@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
 import '../../providers/theme_provider.dart';
@@ -652,7 +653,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     final primaryColor = themeProvider.primaryColor;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('AutoGLM 助手',
             style: TextStyle(fontWeight: FontWeight.bold)),
@@ -789,7 +790,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                   Row(
                     children: [
                       const Icon(Icons.info_outline,
-                          color: Color(0xFF7F7FD5), size: 16),
+                          color: MoeTokens.primary, size: 16),
                       const SizedBox(width: 8),
                       const Text('功能介绍',
                           style: TextStyle(
@@ -844,7 +845,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                       child: const Row(
                         children: [
                           Icon(Icons.history,
-                              color: Color(0xFF7F7FD5), size: 16),
+                              color: MoeTokens.primary, size: 16),
                           SizedBox(width: 8),
                           Text('执行日志',
                               style: TextStyle(fontWeight: FontWeight.w500)),
@@ -1037,7 +1038,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                             height: 12,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF7F7FD5),
+                              color: MoeTokens.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1100,7 +1101,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('我知道了',
-                  style: TextStyle(color: Color(0xFF7F7FD5))),
+                  style: TextStyle(color: MoeTokens.primary)),
             ),
           ],
         );

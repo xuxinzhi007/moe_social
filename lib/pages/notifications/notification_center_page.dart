@@ -3,6 +3,11 @@ import '../../models/notification.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/avatar_image.dart';
 import '../../utils/error_handler.dart';
+import '../../theme/moe_tokens.dart';
+import '../../theme/moe_theme_extension.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/skeleton_loading.dart';
+import '../../widgets/fade_in_up.dart';
 import '../announcements/announcement_detail_page.dart';
 
 class NotificationCenterPage extends StatefulWidget {
@@ -69,7 +74,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
           title: const Text('清除所有通知'),
           content: const Text('确定要清除所有通知吗？此操作不可恢复。'),
           actions: [
@@ -162,7 +167,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         break;
       case NotificationModel.announcement:
         icon = Icons.campaign_rounded;
-        color = const Color(0xFF7F7FD5);
+        color = MoeTokens.primary;
         break;
       case NotificationModel.directMessage:
         icon = Icons.mark_chat_unread_rounded;
@@ -174,22 +179,29 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     }
     
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: color, size: 20),
+      child: Icon(icon, color: color, size: MoeTokens.textXl),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final moe = MoeTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('消息中心', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: Colors.white,
+        title: Text(
+          '消息中心',
+          style: TextStyle(
+            fontWeight: MoeTokens.fontWeightTitle,
+            fontSize: MoeTokens.textLg,
+          ),
+        ),
+        backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
         centerTitle: true,
         actions: [
@@ -200,10 +212,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           if (_unreadCount > 0)
             TextButton.icon(
               onPressed: _markAllAsRead,
-              icon: const Icon(Icons.done_all_rounded, size: 16),
+              icon: const Icon(Icons.done_all_rounded, size: MoeTokens.spaceLg),
               label: const Text('已读'),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF7F7FD5),
+                foregroundColor: moe.primary,
               ),
             ),
           IconButton(
@@ -218,52 +230,47 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)));
+      return const MessageSkeleton(itemCount: 8);
     }
     
     if (_notifications.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: Colors.grey.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10)),
-                ],
-              ),
-              child: Icon(Icons.notifications_none_rounded, size: 80, color: Colors.grey[300]),
-            ),
-            const SizedBox(height: 24),
-            const Text('暂无新消息', style: TextStyle(color: Colors.grey, fontSize: 16)),
-          ],
+      return const Center(
+        child: MoeEmptyState(
+          title: '暂无新消息',
+          subtitle: '当有人互动时，你会在这里收到通知',
+          icon: Icons.notifications_none_rounded,
+          compact: false,
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: MoeTokens.spaceLg,
+        vertical: MoeTokens.spaceMd,
+      ),
       itemCount: _notifications.length,
       itemBuilder: (context, index) {
         final notification = _notifications[index];
-        return Dismissible(
+        final delay = Duration(
+          milliseconds: index * MoeTokens.motionStaggerStep.inMilliseconds,
+        );
+        return FadeInUp(
+          delay: delay,
+          child: Dismissible(
             key: ValueKey('notification_${notification.id}'),
             background: Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
+              margin: EdgeInsets.symmetric(vertical: MoeTokens.spaceXs + MoeTokens.spaceXs),
               decoration: BoxDecoration(
                 color: Colors.redAccent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
               ),
               alignment: Alignment.centerRight,
-              padding: const EdgeInsets.only(right: 20),
+              padding: EdgeInsets.only(right: MoeTokens.spaceXl),
               child: const Icon(Icons.delete_outline, color: Colors.white),
             ),
             direction: DismissDirection.endToStart,
             onDismissed: (direction) {
-              // 实际应用中应该调用删除API
               setState(() {
                 _notifications.removeAt(index);
               });
@@ -288,23 +295,17 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 }
               },
               child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: EdgeInsets.only(bottom: MoeTokens.spaceMd),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withValues(alpha: 0.06),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: MoeTokens.cardBackground,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                  boxShadow: MoeTokens.shadowSm(),
                   border: !notification.isRead 
-                      ? Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.3), width: 1.5)
+                      ? Border.all(color: MoeTokens.primary.withValues(alpha: 0.3), width: 1.5)
                       : null,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(MoeTokens.spaceLg),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -312,12 +313,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                       notification.relatedUserAvatar != null
                           ? NetworkAvatarImage(
                               imageUrl: notification.relatedUserAvatar!,
-                              radius: 24,
+                              radius: MoeTokens.space2xl,
                               placeholderIcon: Icons.person,
                             )
                           : _buildNotificationIcon(notification.type),
                       
-                      const SizedBox(width: 16),
+                      SizedBox(width: MoeTokens.spaceLg),
                       
                       // 内容区域
                       Expanded(
@@ -331,9 +332,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                   child: Text(
                                     notification.title,
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      color: Colors.grey[800],
+                                      fontWeight: MoeTokens.fontWeightSubtitle,
+                                      fontSize: MoeTokens.textMd,
+                                      color: MoeTokens.titleText,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -341,27 +342,34 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                 ),
                                 if (!notification.isRead)
                                   Container(
-                                    margin: const EdgeInsets.only(left: 8),
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF7F7FD5),
+                                    margin: EdgeInsets.only(left: MoeTokens.spaceSm),
+                                    width: MoeTokens.spaceSm,
+                                    height: MoeTokens.spaceSm,
+                                    decoration: BoxDecoration(
+                                      color: MoeTokens.primary,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: MoeTokens.spaceXs + MoeTokens.spaceXs),
                             Text(
                               notification.content,
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.4),
+                              style: TextStyle(
+                                color: MoeTokens.hintText,
+                                fontSize: MoeTokens.textBase,
+                                height: 1.4,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: MoeTokens.spaceSm),
                             Text(
                               _formatTime(notification.createdAt),
-                              style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                              style: TextStyle(
+                                fontSize: MoeTokens.textSm,
+                                color: MoeTokens.hintText.withValues(alpha: 0.7),
+                              ),
                             ),
                           ],
                         ),
@@ -371,7 +379,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 ),
               ),
             ),
-          );
+          ),
+        );
       },
     );
   }

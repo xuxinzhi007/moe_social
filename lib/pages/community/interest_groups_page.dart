@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../services/api_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
@@ -146,7 +147,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(MoeTokens.radiusXl)),
       ),
       builder: (ctx) => _CreateInterestGroupSheet(
         userId: uid,
@@ -225,7 +226,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                             '还没有群组',
                                             style: TextStyle(
                                               fontWeight: FontWeight.w800,
-                                              fontSize: 17,
+                                              fontSize: MoeTokens.textMd,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
@@ -259,7 +260,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                         '发现圈子',
                                         style: TextStyle(
                                           fontWeight: FontWeight.w800,
-                                          fontSize: 15,
+                                          fontSize: MoeTokens.textMd,
                                           color: scheme.onSurface,
                                         ),
                                       ),
@@ -314,13 +315,13 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                   padding: const EdgeInsets.only(right: 10),
                   child: InkWell(
                     onTap: () => _openGroupDetail(g),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                     child: Container(
                       width: 120,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: scheme.surface,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                         border: Border.all(
                           color: scheme.outlineVariant.withValues(alpha: 0.45),
                         ),
@@ -329,7 +330,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
                             child: SizedBox(
                               height: 36,
                               width: double.infinity,
@@ -350,7 +351,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                              fontSize: MoeTokens.textSm,
                             ),
                           ),
                         ],
@@ -563,7 +564,7 @@ class _GroupCard extends StatelessWidget {
                             child: Text(
                               group.name,
                               style: const TextStyle(
-                                fontSize: 18,
+                                fontSize: MoeTokens.textLg,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),

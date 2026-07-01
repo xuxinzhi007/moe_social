@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../../../auth_service.dart';
 import '../../../services/api_service.dart';
+import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_error_state.dart';
 import '../../../widgets/moe_toast.dart';
@@ -235,7 +236,7 @@ class AccountSecurityModule extends StatelessWidget {
                       }
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: MoeTokens.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -355,7 +356,7 @@ class AccountSecurityModule extends StatelessWidget {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child:
-                            CircularProgressIndicator(color: Color(0xFF7F7FD5)),
+                            CircularProgressIndicator(color: MoeTokens.primary),
                       );
                     }
 
@@ -409,14 +410,14 @@ class AccountSecurityModule extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF7F7FD5)
+                                        color: MoeTokens.primary
                                             .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: const Text(
                                         '当前设备',
                                         style: TextStyle(
-                                          color: Color(0xFF7F7FD5),
+                                          color: MoeTokens.primary,
                                           fontSize: 10,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -542,7 +543,7 @@ class AccountSecurityModule extends StatelessWidget {
                   if (isLoading)
                     const Center(
                         child:
-                            CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+                            CircularProgressIndicator(color: MoeTokens.primary))
                   else
                     Column(
                       children: [
@@ -670,7 +671,7 @@ class AccountSecurityModule extends StatelessWidget {
                   if (isLoading)
                     const Center(
                         child:
-                            CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+                            CircularProgressIndicator(color: MoeTokens.primary))
                   else if (errorMessage != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
@@ -724,7 +725,7 @@ class AccountSecurityModule extends StatelessWidget {
               ElevatedButton(
                 onPressed: qrCodeUrl != null ? verifyCode : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: MoeTokens.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -808,7 +809,7 @@ class AccountSecurityModule extends StatelessWidget {
               ElevatedButton(
                 onPressed: disableAuth,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
+                  backgroundColor: MoeTokens.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),

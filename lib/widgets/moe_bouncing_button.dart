@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// 弹性缩放按钮 — 点击时缩小、松开时回弹，附带轻触觉反馈。
+///
+/// 动画时长与缩放比例可通过构造参数覆盖。
+/// 推荐默认值参考 [MoeTokens.motionFadeDuration]。
 class MoeBouncingButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
