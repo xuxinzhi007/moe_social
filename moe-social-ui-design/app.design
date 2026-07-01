@@ -1,6 +1,29 @@
 {
   "data": [
     {
+      "id": "page-splash",
+      "title": "启动页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588924000,
+      "canvasData": {
+        "x": -420,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/splash.html",
+        "interactions": [
+          {
+            "domId": "btn-enter",
+            "targetPageId": "page-login",
+            "hideEdge": true,
+            "transitionLabel": "进入"
+          }
+        ]
+      }
+    },
+    {
       "id": "page-login",
       "title": "登录页",
       "type": "page",
@@ -24,6 +47,34 @@
             "domId": "btn-login",
             "targetPageId": "page-home",
             "transitionLabel": "登录成功"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-register",
+      "title": "注册页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588925500,
+      "canvasData": {
+        "x": 0,
+        "y": 590,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/register.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-login",
+            "hideEdge": true,
+            "transitionLabel": "返回登录"
+          },
+          {
+            "domId": "btn-register",
+            "targetPageId": "page-home",
+            "transitionLabel": "注册成功"
           }
         ]
       }
@@ -425,6 +476,52 @@
           {
             "domId": "btn-back",
             "targetPageId": "page-messages",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-profile-compact",
+      "title": "个人中心（紧凑版）",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588940000,
+      "canvasData": {
+        "x": 4200,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile-compact.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-profile",
+            "hideEdge": true,
+            "transitionLabel": "返回"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-profile-v2",
+      "title": "个人中心 V2",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1782588941000,
+      "canvasData": {
+        "x": 4420,
+        "y": 1960,
+        "group": 2
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile-v2.html",
+        "interactions": [
+          {
+            "domId": "btn-back",
+            "targetPageId": "page-profile",
             "hideEdge": true,
             "transitionLabel": "返回"
           }

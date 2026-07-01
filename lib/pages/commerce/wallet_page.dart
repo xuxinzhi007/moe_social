@@ -156,11 +156,11 @@ class _WalletPageState extends State<WalletPage> {
     return Scaffold(
       backgroundColor: _moe.pageBackground,
       appBar: AppBar(
-        title: const Text('我的钱包', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const Text('我的钱包', style: TextStyle(fontWeight: FontWeight.bold, color: MoeTokens.titleText)),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: MoeTokens.titleText),
         actions: [
           TextButton.icon(
             onPressed: () {
@@ -215,7 +215,7 @@ class _WalletPageState extends State<WalletPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF555555),
+                          color: MoeTokens.bodyText,
                         ),
                       ),
                     ],
@@ -234,14 +234,14 @@ class _WalletPageState extends State<WalletPage> {
                       Icon(
                         Icons.receipt_long_rounded,
                         size: 64,
-                        color: Colors.grey[300],
+                        color: MoeTokens.hintText,
                       ),
                       const SizedBox(height: 16),
                       Text(
                         '暂无交易记录',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey[400],
+                          color: MoeTokens.hintText,
                         ),
                       ),
                     ],
@@ -300,7 +300,7 @@ class _WalletPageState extends State<WalletPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         boxShadow: [
           BoxShadow(
             color: _moe.primary.withValues(alpha: 0.4),
@@ -329,7 +329,7 @@ class _WalletPageState extends State<WalletPage> {
                 '账户余额',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: 14,
+                  fontSize: MoeTokens.textBase,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -379,7 +379,7 @@ class _WalletPageState extends State<WalletPage> {
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('立即充值'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: MoeTokens.cardBackground,
                 foregroundColor: _moe.primary,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -402,8 +402,8 @@ class _WalletPageState extends State<WalletPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20), // 保持统一圆角
+        color: MoeTokens.cardBackground,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl), // 保持统一圆角
         boxShadow: [
           BoxShadow(
             color: _moe.primary.withValues(alpha: 0.05), // 使用主色调的淡阴影
@@ -419,7 +419,7 @@ class _WalletPageState extends State<WalletPage> {
             height: 48,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             ),
             child: Icon(
               isRecharge ? Icons.arrow_downward_rounded : Icons.shopping_bag_outlined,
@@ -437,15 +437,15 @@ class _WalletPageState extends State<WalletPage> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: Color(0xFF333333),
+                    color: MoeTokens.titleText,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   transaction['created_at'] as String,
                   style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 12,
+                    color: MoeTokens.hintText,
+                    fontSize: MoeTokens.textSm,
                   ),
                 ),
               ],
@@ -456,7 +456,7 @@ class _WalletPageState extends State<WalletPage> {
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: MoeTokens.textLg,
             ),
           ),
         ],

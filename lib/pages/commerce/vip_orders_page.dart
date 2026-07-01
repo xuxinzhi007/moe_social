@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/vip_order.dart';
@@ -122,11 +123,11 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.receipt_long_outlined,
-                            size: 64, color: Colors.grey[400]),
+                            size: 64, color: MoeTokens.hintText),
                         const SizedBox(height: 16),
                         Text(
                           '暂无订单',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                          style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textSm),
                         ),
                       ],
                     ),
@@ -174,7 +175,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                       Text(
                         order.planName,
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: MoeTokens.textLg,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -184,8 +185,8 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                             ? '订单号: ${order.orderNo}'
                             : '订单编号: ${order.id}',
                         style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
+                          color: MoeTokens.bodyText,
+                          fontSize: MoeTokens.textSm,
                         ),
                       ),
                     ],
@@ -195,7 +196,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _getStatusColor(order.status).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                   ),
                   child: Text(
                     _getStatusText(order.status),
@@ -219,13 +220,13 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                   children: [
                     Text(
                       '订单金额',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      style: TextStyle(color: MoeTokens.bodyText, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '¥${order.amount.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: MoeTokens.textXl,
                         fontWeight: FontWeight.bold,
                         color: Colors.amber[700],
                       ),
@@ -237,20 +238,20 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                   children: [
                     Text(
                       '创建时间',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      style: TextStyle(color: MoeTokens.bodyText, fontSize: 12),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       order.createdAtDateTime != null
                           ? '${order.createdAtDateTime!.year}-${order.createdAtDateTime!.month.toString().padLeft(2, '0')}-${order.createdAtDateTime!.day.toString().padLeft(2, '0')}'
                           : order.createdAt,
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: MoeTokens.textSm),
                     ),
                     if (order.paidAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         '支付时间: ${order.paidAtDateTime != null ? '${order.paidAtDateTime!.year}-${order.paidAtDateTime!.month.toString().padLeft(2, '0')}-${order.paidAtDateTime!.day.toString().padLeft(2, '0')}' : order.paidAt}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                        style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textXs),
                       ),
                     ],
                   ],

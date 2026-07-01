@@ -15,6 +15,7 @@ import '../../services/api_service.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chip.dart';
 import '../../widgets/ai/ai_scaffold.dart';
@@ -184,18 +185,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       builder: (ctx) {
         return SafeArea(
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(MoeTokens.spaceLg),
             children: [
               const Text(
                 '选择角色模板',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: MoeTokens.spaceSm),
               Text(
                 '模板会填充角色结构，便于你继续改成自己的风格。',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: MoeTokens.spaceLg),
               ...AiStarterTemplates.agentTemplates.map(
                 (template) => Card(
                   child: MoeActionRow(
@@ -316,7 +317,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.blue.shade100),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
         color: Colors.blue.shade50.withValues(alpha: 0.4),
       ),
       child: Theme(
@@ -384,10 +385,10 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                         ),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(MoeTokens.spaceMd),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          color: MoeTokens.cardBackground,
+                          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
                         ),
                         child: effectivePrompt.isEmpty
                             ? Text(

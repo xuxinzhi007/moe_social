@@ -5,6 +5,7 @@ import 'package:moe_social/models/vip_order.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 import 'package:moe_social/pages/commerce/wallet_page.dart';
+import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 
 /// 订单中心：礼物购买订单、VIP 订单、钱包流水摘要
@@ -42,7 +43,7 @@ class _OrderCenterPageState extends State<OrderCenterPage>
         bottom: TabBar(
           controller: _tab,
           labelColor: moe.primary,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: MoeTokens.hintText,
           indicatorColor: moe.primary,
           tabs: const [
             Tab(text: '礼物订单'),
@@ -146,7 +147,7 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(height: 120),
-            Icon(Icons.card_giftcard, size: 56, color: Color(0xFFCCCCCC)),
+            Icon(Icons.card_giftcard, size: 56, color: MoeTokens.hintText),
             SizedBox(height: 12),
             Center(child: Text('暂无礼物购买订单')),
           ],
@@ -184,7 +185,7 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
                         child: Text(
                           o.giftName,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: MoeTokens.textLg,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -194,18 +195,18 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.pink[400],
-                          fontSize: 16,
+                          fontSize: MoeTokens.textLg,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Text('订单号 ${o.orderNo}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      style: TextStyle(fontSize: 12, color: MoeTokens.bodyText)),
                   const SizedBox(height: 4),
                   Text(
                     '单价 ¥${o.unitPrice.toStringAsFixed(2)} × ${o.quantity}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -213,11 +214,11 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
                     children: [
                       Text(
                         o.payMethod == 'wallet' ? '心意支付' : o.payMethod,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                       Text(
                         o.createdAt,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                     ],
                   ),
@@ -328,7 +329,7 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
           children: const [
             SizedBox(height: 120),
             Icon(Icons.workspace_premium_outlined,
-                size: 56, color: Color(0xFFCCCCCC)),
+                size: 56, color: MoeTokens.hintText),
             SizedBox(height: 12),
             Center(child: Text('暂无 VIP 订单')),
           ],
@@ -367,7 +368,7 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                         child: Text(
                           o.planName,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: MoeTokens.textLg,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -377,14 +378,14 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.green.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
                         ),
                         child: Text(
                           _statusText(o.status),
                           style: const TextStyle(
                             color: Colors.green,
                             fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontSize: MoeTokens.textSm,
                           ),
                         ),
                       ),
@@ -393,7 +394,7 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                   const SizedBox(height: 6),
                   Text(
                     on.isNotEmpty ? '订单号 $on' : '订单编号 ${o.id}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -409,7 +410,7 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                       ),
                       Text(
                         o.createdAt,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                     ],
                   ),
@@ -549,8 +550,8 @@ class _WalletTransactionsTabState extends State<_WalletTransactionsTab> {
                                     Text(
                                       t['created_at'] as String? ?? '',
                                       style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
+                                        color: MoeTokens.bodyText,
+                                        fontSize: MoeTokens.textSm,
                                       ),
                                     ),
                                   ],

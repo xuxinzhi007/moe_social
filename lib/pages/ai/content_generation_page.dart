@@ -7,6 +7,7 @@ import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
@@ -341,7 +342,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                     decoration: BoxDecoration(
                       gradient:
                           isSelected ? AiBrandTokens.userBubbleGradient : null,
-                      color: isSelected ? null : const Color(0xFFF8F9FD),
+                      color: isSelected ? null : MoeTokens.pageBackground,
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: isSelected

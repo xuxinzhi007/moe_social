@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_tokens.dart';
+
 class FadeInUp extends StatefulWidget {
   final Widget child;
   final Duration duration;
@@ -9,9 +11,9 @@ class FadeInUp extends StatefulWidget {
   const FadeInUp({
     super.key,
     required this.child,
-    this.duration = const Duration(milliseconds: 300),
+    this.duration = MoeTokens.motionFadeDuration,
     this.delay = Duration.zero,
-    this.offset = 30.0,
+    this.offset = MoeTokens.motionFadeOffset,
   });
 
   @override
@@ -83,6 +85,3 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
     );
   }
 }
-
-
-

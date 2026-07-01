@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../theme/moe_tokens.dart';
 import '../../providers/checkin_provider.dart';
 import '../../providers/user_level_provider.dart';
 import '../../widgets/fade_in_up.dart';
@@ -73,7 +74,7 @@ class _CheckInPageState extends State<CheckInPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // 背景色
+      backgroundColor: MoeTokens.pageBackground, // 背景色
       body: Consumer2<CheckInProvider, UserLevelProvider>(
         builder: (context, checkInProvider, levelProvider, child) {
           return CustomScrollView(
@@ -113,7 +114,7 @@ class _CheckInPageState extends State<CheckInPage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+            colors: [MoeTokens.primary, MoeTokens.secondary],
           ),
         ),
         child: const SafeArea(
@@ -154,7 +155,7 @@ class _CheckInPageState extends State<CheckInPage>
             end: Alignment.bottomRight,
             colors: levelProvider.userLevel != null
                 ? levelProvider.getLevelGradient(levelProvider.currentLevel)
-                : [const Color(0xFF91EAE4), const Color(0xFF7F7FD5)],
+                : [MoeTokens.accent, MoeTokens.primary],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -266,7 +267,7 @@ class _CheckInPageState extends State<CheckInPage>
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3748),
+                      color: MoeTokens.bodyText,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -282,7 +283,7 @@ class _CheckInPageState extends State<CheckInPage>
                       color: hasChecked
                           ? Colors.green.shade600
                           : canCheckIn
-                              ? const Color(0xFF7F7FD5)
+                              ? MoeTokens.primary
                               : Colors.grey.shade600,
                     ),
                   ),
@@ -314,7 +315,7 @@ class _CheckInPageState extends State<CheckInPage>
                           colors: hasChecked
                               ? [Colors.grey.shade300, Colors.grey.shade400]
                               : canCheckIn
-                                  ? [const Color(0xFF7F7FD5), const Color(0xFF86A8E7)]
+                                  ? [MoeTokens.primary, MoeTokens.secondary]
                                   : [Colors.grey.shade300, Colors.grey.shade400],
                         ),
                         shape: BoxShape.circle,
@@ -322,7 +323,7 @@ class _CheckInPageState extends State<CheckInPage>
                           BoxShadow(
                             color: (hasChecked || !canCheckIn)
                                 ? Colors.grey.withValues(alpha: 0.3)
-                                : const Color(0xFF7F7FD5).withValues(alpha: 0.4),
+                                : MoeTokens.primary.withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -341,7 +342,7 @@ class _CheckInPageState extends State<CheckInPage>
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: const Color(0xFF7F7FD5).withValues(alpha: 
+                                      color: MoeTokens.primary.withValues(alpha: 
                                         0.5 * (1 - _rippleAnimation.value),
                                       ),
                                       width: 2,
@@ -397,7 +398,7 @@ class _CheckInPageState extends State<CheckInPage>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: MoeTokens.bodyText,
               ),
             ),
             const SizedBox(height: 12),
@@ -408,7 +409,7 @@ class _CheckInPageState extends State<CheckInPage>
                     '今日奖励',
                     '${checkInProvider.todayReward} 经验',
                     Icons.today,
-                    const Color(0xFF7F7FD5),
+                    MoeTokens.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -417,7 +418,7 @@ class _CheckInPageState extends State<CheckInPage>
                     '明日奖励',
                     '${checkInProvider.nextDayReward} 经验',
                     Icons.schedule_rounded,
-                    const Color(0xFF86A8E7),
+                    MoeTokens.secondary,
                   ),
                 ),
               ],
@@ -491,7 +492,7 @@ class _CheckInPageState extends State<CheckInPage>
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: MoeTokens.bodyText,
               ),
             ),
             const SizedBox(height: 12),
@@ -518,7 +519,7 @@ class _CheckInPageState extends State<CheckInPage>
                     '总经验',
                     '${levelProvider.totalExperience}',
                     Icons.psychology_rounded,
-                    const Color(0xFF91EAE4),
+                    MoeTokens.accent,
                   ),
                 ),
               ],

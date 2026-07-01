@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 
+import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../models/post.dart';
@@ -305,7 +306,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
                     Text(
                       g.name,
                       style: const TextStyle(
-                        fontSize: 22,
+                        fontSize: MoeTokens.text2xl,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -367,7 +368,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
               const SizedBox(height: 12),
               const Text(
                 '群内还没有动态',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: MoeTokens.textLg),
               ),
               const SizedBox(height: 8),
               Text(
@@ -418,7 +419,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
         return Container(
           decoration: BoxDecoration(
             color: scheme.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             border: Border.all(
               color: scheme.outlineVariant.withValues(alpha: 0.4),
             ),

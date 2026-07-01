@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
+import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
@@ -83,7 +84,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: MoeTokens.pageBackground,
         appBar: AppBar(
           title: const Text(
             'AutoGLM 配置',
@@ -92,7 +93,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
               color: Colors.white,
             ),
           ),
-          backgroundColor: const Color(0xFF7F7FD5),
+          backgroundColor: MoeTokens.primary,
           elevation: 0,
           actions: [
             IconButton(
@@ -116,7 +117,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5)),
+                valueColor: AlwaysStoppedAnimation<Color>(MoeTokens.primary),
               ))
             : Form(
                 key: _formKey,
@@ -270,7 +271,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       decoration: InputDecoration(
         labelText: 'API 地址 *',
         hintText: '请输入 API 服务地址',
-        prefixIcon: Icon(Icons.cloud, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.cloud, color: MoeTokens.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -308,7 +309,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       decoration: InputDecoration(
         labelText: 'API 密钥',
         hintText: '已有默认密钥，如需使用自己的密钥请替换',
-        prefixIcon: Icon(Icons.key, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.key, color: MoeTokens.primary),
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -347,7 +348,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           : null,
       decoration: InputDecoration(
         labelText: '模型名称',
-        prefixIcon: Icon(Icons.smart_toy, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.smart_toy, color: MoeTokens.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -387,7 +388,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       decoration: InputDecoration(
         labelText: '最大步数',
         hintText: '20',
-        prefixIcon: Icon(Icons.linear_scale, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.linear_scale, color: MoeTokens.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -416,7 +417,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       decoration: InputDecoration(
         labelText: '步骤超时(秒)',
         hintText: '30',
-        prefixIcon: Icon(Icons.timer, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.timer, color: MoeTokens.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -442,7 +443,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       value: _logLevel,
       decoration: InputDecoration(
         labelText: '日志等级',
-        prefixIcon: Icon(Icons.bug_report, color: Color(0xFF7F7FD5)),
+        prefixIcon: Icon(Icons.bug_report, color: MoeTokens.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -510,7 +511,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         subtitle: Text(subtitle),
         value: value,
         onChanged: onChanged,
-        activeColor: const Color(0xFF7F7FD5),
+        activeColor: MoeTokens.primary,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
     );
@@ -543,7 +544,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
                 icon: const Icon(Icons.save, color: Colors.white),
                 label: const Text('保存配置', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasChanges ? const Color(0xFF7F7FD5) : Colors.grey,
+                  backgroundColor: _hasChanges ? MoeTokens.primary : Colors.grey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -891,10 +892,10 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+        color: MoeTokens.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
+          color: MoeTokens.primary.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -902,7 +903,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         children: [
           Icon(
             Icons.lightbulb_outline,
-            color: const Color(0xFF7F7FD5),
+            color: MoeTokens.primary,
             size: 20,
           ),
           const SizedBox(width: 8),
@@ -911,7 +912,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
               '💡 开箱即用：已配置默认密钥，可直接使用。如需使用自己的密钥，请替换即可',
               style: TextStyle(
                 fontSize: 13,
-                color: const Color(0xFF7F7FD5),
+                color: MoeTokens.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),

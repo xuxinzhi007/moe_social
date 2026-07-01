@@ -6,6 +6,7 @@ import 'reset_password_page.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
+import '../../theme/moe_tokens.dart';
 
 class VerifyCodePage extends StatefulWidget {
   final String email;
@@ -143,7 +144,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                 child: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                      colors: [MoeTokens.primary, MoeTokens.secondary],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -182,7 +183,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                         child: const Text(
                           '安全验证',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: MoeTokens.text3xl,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 1.2,
@@ -199,7 +200,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                           padding: const EdgeInsets.all(32),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withValues(alpha: 0.1),
@@ -225,15 +226,15 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                   controller: _codeController,
                                   decoration: InputDecoration(
                                     labelText: '6位验证码',
-                                    prefixIcon: const Icon(Icons.verified_user_outlined, color: Color(0xFF7F7FD5)),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                                    prefixIcon: const Icon(Icons.verified_user_outlined, color: MoeTokens.primary),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusInput)),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
                                       borderSide: BorderSide(color: Colors.grey[200]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(15),
-                                      borderSide: const BorderSide(color: Color(0xFF7F7FD5)),
+                                      borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
+                                      borderSide: const BorderSide(color: MoeTokens.primary),
                                     ),
                                     filled: true,
                                     fillColor: Colors.grey[50],
@@ -244,7 +245,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                         )
                                       : TextButton(
                                           onPressed: _resendCode,
-                                          child: const Text('重发', style: TextStyle(color: Color(0xFF7F7FD5))),
+                                          child: const Text('重发', style: TextStyle(color: MoeTokens.primary)),
                                         ),
                                   ),
                                   keyboardType: TextInputType.number,
@@ -257,16 +258,16 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                   child: ElevatedButton(
                                     onPressed: _isLoading ? null : _verifyCode,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF7F7FD5),
+                                      backgroundColor: MoeTokens.primary,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
+                                        borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                       ),
                                       elevation: 5,
                                     ),
                                     child: _isLoading 
                                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                        : const Text('验证并重置', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                        : const Text('验证并重置', style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                               ],

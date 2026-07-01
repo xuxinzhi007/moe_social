@@ -4,6 +4,7 @@ import '../theme/moe_theme_extension.dart';
 import '../theme/moe_tokens.dart';
 import '../utils/moe_error_copy.dart';
 import 'custom_button.dart';
+import 'fade_in_up.dart';
 
 /// 统一错误态 UI（卡片 / 简洁两种布局）。
 class MoeErrorState extends StatelessWidget {
@@ -13,12 +14,16 @@ class MoeErrorState extends StatelessWidget {
     required this.onRetry,
     this.variant = MoeErrorVariant.card,
     this.padding,
+    this.animate = true,
   });
 
   final MoeErrorPresentation presentation;
   final VoidCallback onRetry;
   final MoeErrorVariant variant;
   final EdgeInsetsGeometry? padding;
+
+  /// 是否包裹入场动画（默认 true）。
+  final bool animate;
 
   /// 从异常直接构建。
   factory MoeErrorState.fromError(
@@ -38,33 +43,39 @@ class MoeErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (variant) {
-      MoeErrorVariant.card => _buildCard(context),
-      MoeErrorVariant.plain => _buildPlain(context),
-    };
+    final content = switch (variant) {
+        MoeErrorVariant.card => _buildCard(context),
+        MoeErrorVariant.plain => _buildPlain(context),
+      };
+    return animate ? FadeInUp(child: content) : content;
   }
 
   Widget _buildCard(BuildContext context) {
     final moe = MoeTheme.of(context);
     return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: MoeTokens.space2xl),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+        padding: const EdgeInsets.fromLTRB(
+          MoeTokens.spaceXl,
+          MoeTokens.space2xl,
+          MoeTokens.spaceXl,
+          MoeTokens.spaceXl,
+        ),
         decoration: BoxDecoration(
           color: MoeTokens.cardBackground,
           borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
-          boxShadow: MoeTokens.cardShadow(tint: moe.primary, blur: 18),
+          boxShadow: MoeTokens.shadowMd(),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _iconBadge(moe, size: 74, iconSize: 38),
-            const SizedBox(height: 16),
+            SizedBox(height: MoeTokens.spaceLg),
             _title(),
-            const SizedBox(height: 8),
+            SizedBox(height: MoeTokens.spaceSm),
             _subtitle(),
-            const SizedBox(height: 18),
+            SizedBox(height: MoeTokens.spaceLg + MoeTokens.spaceXs),
             _primaryButton(moe),
           ],
         ),
@@ -75,16 +86,16 @@ class MoeErrorState extends StatelessWidget {
   Widget _buildPlain(BuildContext context) {
     final moe = MoeTheme.of(context);
     return Padding(
-      padding: padding ?? const EdgeInsets.all(24),
+      padding: padding ?? const EdgeInsets.all(MoeTokens.space2xl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _iconBadge(moe, size: 64, iconSize: 32),
-          const SizedBox(height: 14),
+          SizedBox(height: MoeTokens.spaceMd + MoeTokens.spaceXs),
           _title(),
-          const SizedBox(height: 8),
+          SizedBox(height: MoeTokens.spaceSm),
           _subtitle(),
-          const SizedBox(height: 16),
+          SizedBox(height: MoeTokens.spaceLg),
           _primaryButton(moe),
         ],
       ),
@@ -118,7 +129,7 @@ class MoeErrorState extends StatelessWidget {
       presentation.title,
       textAlign: TextAlign.center,
       style: const TextStyle(
-        fontSize: 18,
+        fontSize: MoeTokens.textLg,
         fontWeight: FontWeight.w800,
         color: MoeTokens.titleText,
         height: 1.35,
@@ -132,7 +143,7 @@ class MoeErrorState extends StatelessWidget {
       textAlign: TextAlign.center,
       style: const TextStyle(
         color: MoeTokens.hintText,
-        fontSize: 14,
+        fontSize: MoeTokens.textBase,
         height: 1.45,
       ),
     );

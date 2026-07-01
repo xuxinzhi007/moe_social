@@ -30,6 +30,7 @@ import '../../utils/wechat_web_redirect.dart';
 import '../../services/daily_growth_service.dart';
 import '../../services/wechat_sdk_service.dart';
 import '../../utils/wechat_config.dart';
+import '../../theme/moe_tokens.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -46,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordFocus = FocusNode();
   Timer? _emailCompletionDebounce;
 
-  final Color _primaryColor = const Color(0xFF7F7FD5);
+  final Color _primaryColor = MoeTokens.primary;
   final ValueNotifier<List<String>> _emailCompletions =
       ValueNotifier<List<String>>(const []);
   StreamSubscription<Uri>? _feishuLinkSub;
@@ -430,9 +431,9 @@ class _LoginPageState extends State<LoginPage> {
                     const Text(
                       'Moe Social',
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: MoeTokens.text3xl,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF333333),
+                        color: MoeTokens.titleText,
                         letterSpacing: 1,
                       ),
                     ),
@@ -440,7 +441,7 @@ class _LoginPageState extends State<LoginPage> {
                     Text(
                       '发现更可爱的世界',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: MoeTokens.textMd,
                         color: Colors.grey[500],
                         letterSpacing: 2,
                       ),
@@ -539,7 +540,7 @@ class _LoginPageState extends State<LoginPage> {
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                 ),
                                 elevation: 8,
                                 shadowColor:
@@ -548,7 +549,7 @@ class _LoginPageState extends State<LoginPage> {
                               child: const Text(
                                 '登 录',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: MoeTokens.textLg,
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: 2,
                                 ),
@@ -566,14 +567,14 @@ class _LoginPageState extends State<LoginPage> {
                                 side:
                                     const BorderSide(color: Color(0xFF07C160)),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                 ),
                               ),
                               icon: const Icon(Icons.wechat, size: 22),
                               label: Text(
                                 kIsWeb ? '微信扫码登录' : '微信登录 / 注册',
                                 style: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: MoeTokens.textMd,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -590,14 +591,14 @@ class _LoginPageState extends State<LoginPage> {
                                 side:
                                     const BorderSide(color: Color(0xFF3370FF)),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                 ),
                               ),
                               icon: const Icon(Icons.hub_outlined, size: 22),
                               label: const Text(
                                 '飞书登录 / 注册',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: MoeTokens.textMd,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -627,7 +628,7 @@ class _LoginPageState extends State<LoginPage> {
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                         onTap: () => Navigator.pushNamed(context, '/register'),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(

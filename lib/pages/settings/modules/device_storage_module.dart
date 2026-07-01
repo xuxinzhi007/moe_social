@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import '../../../theme/moe_tokens.dart';
 import '../../../auth_service.dart';
 import '../../../services/app_storage_service.dart';
 import '../../../services/device_service.dart';
@@ -99,11 +100,11 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
           icon: Icons.system_security_update_rounded,
           title: '启动时检查更新',
           subtitle: '发现新版本时提醒；无更新不提示。仅 Android 侧载包有效',
-          color: const Color(0xFF7F7FD5),
+          color: MoeTokens.primary,
           onTap: () {},
           trailing: Switch.adaptive(
             value: widget.autoUpdateOnLaunch,
-            activeColor: const Color(0xFF7F7FD5),
+            activeColor: MoeTokens.primary,
             onChanged: widget.onAutoUpdateChanged,
           ),
         ),
@@ -230,7 +231,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F7FA),
+                            color: MoeTokens.pageBackground,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -253,7 +254,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                                   e.value,
                                   style: const TextStyle(
                                       fontSize: 14,
-                                      color: Color(0xFF333333),
+                                      color: MoeTokens.titleText,
                                       fontWeight: FontWeight.w500),
                                 ),
                               ),
@@ -386,7 +387,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
                         child:
-                            CircularProgressIndicator(color: Color(0xFF7F7FD5)),
+                            CircularProgressIndicator(color: MoeTokens.primary),
                       );
                     }
 
@@ -446,7 +447,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                             boxShadow: [
                               BoxShadow(
                                 color:
-                                    const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+                                    MoeTokens.primary.withValues(alpha: 0.08),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -458,12 +459,12 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color:
-                                      const Color(0xFF7F7FD5).withValues(alpha: 0.1),
+                                      MoeTokens.primary.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   device.platformIcon,
-                                  color: const Color(0xFF7F7FD5),
+                                  color: MoeTokens.primary,
                                   size: 24,
                                 ),
                               ),
@@ -487,7 +488,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF7F7FD5)
+                                              color: MoeTokens.primary
                                                   .withValues(alpha: 0.1),
                                               borderRadius:
                                                   BorderRadius.circular(8),
@@ -495,7 +496,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                                             child: const Text(
                                               '本机',
                                               style: TextStyle(
-                                                color: Color(0xFF7F7FD5),
+                                                color: MoeTokens.primary,
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
                                               ),

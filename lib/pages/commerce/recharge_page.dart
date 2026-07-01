@@ -114,11 +114,11 @@ class _RechargePageState extends State<RechargePage> {
     return Scaffold(
       backgroundColor: _moe.pageBackground,
       appBar: AppBar(
-        title: const Text('余额充值', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const Text('余额充值', style: TextStyle(fontWeight: FontWeight.bold, color: MoeTokens.titleText)),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: MoeTokens.titleText),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
@@ -137,7 +137,7 @@ class _RechargePageState extends State<RechargePage> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
                   boxShadow: [
                     BoxShadow(
                       color: _primaryColor.withValues(alpha: 0.3),
@@ -151,7 +151,7 @@ class _RechargePageState extends State<RechargePage> {
                     Text(
                       '当前余额',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: MoeTokens.textLg,
                         color: Colors.white.withValues(alpha: 0.9),
                         fontWeight: FontWeight.w500,
                       ),
@@ -186,9 +186,9 @@ class _RechargePageState extends State<RechargePage> {
                   const Text(
                     '选择充值金额',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: MoeTokens.textLg,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF555555),
+                      color: MoeTokens.titleText,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -215,12 +215,12 @@ class _RechargePageState extends State<RechargePage> {
                               _amountController.text = amount.toString();
                             });
                           },
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             decoration: BoxDecoration(
-                              color: isSelected ? _primaryColor : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
+                              color: isSelected ? _primaryColor : MoeTokens.cardBackground,
+                              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                               border: Border.all(
                                 color: isSelected ? Colors.transparent : Colors.grey.withValues(alpha: 0.1),
                                 width: 1,
@@ -244,9 +244,9 @@ class _RechargePageState extends State<RechargePage> {
                             child: Text(
                               '¥$amount',
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black87,
+                                color: isSelected ? Colors.white : MoeTokens.bodyText,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: MoeTokens.textLg,
                               ),
                             ),
                           ),
@@ -269,16 +269,16 @@ class _RechargePageState extends State<RechargePage> {
                   const Text(
                     '其他金额',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: MoeTokens.textLg,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF555555),
+                      color: MoeTokens.titleText,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      color: MoeTokens.cardBackground,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                       boxShadow: [
                         BoxShadow(
                           color: _moe.primary.withValues(alpha: 0.08),
@@ -293,7 +293,7 @@ class _RechargePageState extends State<RechargePage> {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       decoration: InputDecoration(
                         hintText: '请输入具体金额',
-                        hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.normal),
+                        hintStyle: TextStyle(color: MoeTokens.hintText, fontWeight: FontWeight.normal),
                         prefixIcon: Icon(Icons.attach_money_rounded, color: _primaryColor),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -319,8 +319,8 @@ class _RechargePageState extends State<RechargePage> {
               delay: const Duration(milliseconds: 300),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: MoeTokens.cardBackground,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                   boxShadow: [
                     BoxShadow(
                       color: _moe.primary.withValues(alpha: 0.08),
@@ -335,9 +335,9 @@ class _RechargePageState extends State<RechargePage> {
                   style: const TextStyle(fontSize: 16),
                   decoration: InputDecoration(
                     labelText: '备注说明',
-                    labelStyle: TextStyle(color: Colors.grey[600]),
+                    labelStyle: TextStyle(color: MoeTokens.bodyText),
                     hintText: '可选',
-                    prefixIcon: const Icon(Icons.edit_note_rounded, color: Colors.grey),
+                    prefixIcon: const Icon(Icons.edit_note_rounded, color: MoeTokens.hintText),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   ),
@@ -357,7 +357,7 @@ class _RechargePageState extends State<RechargePage> {
                 width: double.infinity,
                 height: 56,
                 fontSize: 18,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                 backgroundColor: _primaryColor, // 使用薰衣草色
                 shadowColor: _primaryColor.withValues(alpha: 0.4),
                 elevation: 8,
@@ -372,7 +372,7 @@ class _RechargePageState extends State<RechargePage> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF9C4).withValues(alpha: 0.3), // 浅黄色背景
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
                   border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
                 ),
                 child: Row(

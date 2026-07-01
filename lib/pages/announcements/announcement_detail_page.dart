@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/announcement.dart';
 import '../../services/announcement_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
 
 class AnnouncementDetailPage extends StatefulWidget {
@@ -61,7 +62,7 @@ class _AnnouncementDetailPageState extends State<AnnouncementDetailPage> {
         elevation: 0,
       ),
       body: _loading && item == null
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+          ? const Center(child: CircularProgressIndicator(color: MoeTokens.primary))
           : item == null
               ? const Center(child: Text('暂无内容'))
               : SingleChildScrollView(

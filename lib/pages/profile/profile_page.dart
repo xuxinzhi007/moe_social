@@ -23,6 +23,7 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
+import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../ai/agent_list_page.dart';
 import '../checkin/checkin_page.dart';
 import '../checkin/user_level_page.dart';
@@ -294,7 +295,8 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _user == null) {
-      return Scaffold(
+      return AdaptivePageScaffold(
+        template: PageTemplate.fullscreen,
         backgroundColor: MoeTokens.pageBackground,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(
@@ -313,7 +315,8 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (_loadError != null && _user == null) {
-      return Scaffold(
+      return AdaptivePageScaffold(
+        template: PageTemplate.fullscreen,
         backgroundColor: MoeTokens.pageBackground,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(
@@ -335,7 +338,8 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
-    return Scaffold(
+    return AdaptivePageScaffold(
+      template: PageTemplate.fullscreen,
       backgroundColor: MoeTokens.pageBackground,
       body: RefreshIndicator(
         onRefresh: () => _loadUserInfo(forceRefresh: true),

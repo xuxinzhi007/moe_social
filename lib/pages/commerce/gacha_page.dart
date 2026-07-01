@@ -9,6 +9,7 @@ import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import 'inventory_page.dart';
 import 'recharge_page.dart';
+import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -266,7 +267,7 @@ class _GachaPageState extends State<GachaPage>
                 width: MediaQuery.of(context).size.width * 0.9,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: MoeTokens.cardBackground,
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
@@ -282,7 +283,7 @@ class _GachaPageState extends State<GachaPage>
                     Text(
                       _gachaResults.length > 1 ? '十连大满足!' : '获得物品',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: MoeTokens.text2xl,
                         fontWeight: FontWeight.bold,
                         color: _currentBallColor,
                       ),
@@ -376,7 +377,7 @@ class _GachaPageState extends State<GachaPage>
                 const SizedBox(height: 12),
                 const Text(
                   '十连第10发保底 SR 及以上。',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: MoeTokens.hintText),
                 ),
               ],
             ),
@@ -400,7 +401,7 @@ class _GachaPageState extends State<GachaPage>
       builder: (context) {
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
           ),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -422,7 +423,7 @@ class _GachaPageState extends State<GachaPage>
                       icon: const Icon(
                         Icons.error_outline,
                         size: 20,
-                        color: Colors.grey,
+                        color: MoeTokens.hintText,
                       ),
                       onPressed: () {
                         Navigator.of(context).pop();
@@ -502,7 +503,7 @@ class _GachaPageState extends State<GachaPage>
         Text(
           item.description,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.grey),
+          style: const TextStyle(color: MoeTokens.hintText),
         ),
       ],
     );
@@ -580,7 +581,7 @@ class _GachaPageState extends State<GachaPage>
   Widget _buildPoolItemCard(VirtualItem item) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MoeTokens.cardBackground,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -645,7 +646,7 @@ class _GachaPageState extends State<GachaPage>
   Widget build(BuildContext context) {
     final moe = MoeTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title:
             const Text('心情扭蛋机', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -657,7 +658,7 @@ class _GachaPageState extends State<GachaPage>
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: MoeTokens.cardBackground,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -694,8 +695,8 @@ class _GachaPageState extends State<GachaPage>
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: MoeTokens.cardBackground,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
               border: Border.all(color: Colors.grey[200]!),
               boxShadow: [
                 BoxShadow(
@@ -714,7 +715,7 @@ class _GachaPageState extends State<GachaPage>
                   _currentUser?.balance.toStringAsFixed(2) ?? '0.00',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: MoeTokens.bodyText,
                   ),
                 ),
               ],
@@ -838,7 +839,7 @@ class _GachaPageState extends State<GachaPage>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: MoeTokens.cardBackground,
                     borderRadius: BorderRadius.circular(22),
                     boxShadow: [
                       BoxShadow(
@@ -859,12 +860,12 @@ class _GachaPageState extends State<GachaPage>
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF333333),
+                          color: MoeTokens.titleText,
                         ),
                       ),
                       SizedBox(width: 4),
                       Icon(Icons.keyboard_arrow_down_rounded,
-                          size: 16, color: Color(0xFF999999)),
+                          size: 16, color: MoeTokens.hintText),
                     ],
                   ),
                 ),
@@ -924,7 +925,7 @@ class _GachaPageState extends State<GachaPage>
           backgroundColor: color,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
           ),
           elevation: 8,
           shadowColor: color.withValues(alpha: 0.5),

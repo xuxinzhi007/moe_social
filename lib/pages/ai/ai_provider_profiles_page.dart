@@ -486,7 +486,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: AiBrandTokens.primary.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                    borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
                   ),
                   child: Text(
                     '连接成功但模型列表为空时：在下方填写「默认模型」或「手动模型」（一行一个），'
@@ -548,7 +548,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: detectColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                      borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
                     ),
                     child: Text(
                       detectResult!,
@@ -645,7 +645,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: resultColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(AiTheme.radiusMd),
+                      borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
                     ),
                     child: Text(
                       testResult!,

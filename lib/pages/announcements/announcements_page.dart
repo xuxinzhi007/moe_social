@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/announcement.dart';
 import '../../services/announcement_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
 import 'announcement_detail_page.dart';
 
@@ -83,7 +84,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       body: RefreshIndicator(
         onRefresh: () => _load(refresh: true),
         child: _loading && _items.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF7F7FD5)))
+            ? const Center(child: CircularProgressIndicator(color: MoeTokens.primary))
             : _items.isEmpty
                 ? ListView(
                     children: const [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 
 class PrivacySettingsPage extends StatefulWidget {
   const PrivacySettingsPage({super.key});
@@ -157,7 +158,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: const Text('隐私与权限',
             style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
@@ -180,12 +181,12 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+                colors: [MoeTokens.primary, MoeTokens.secondary],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.3),
+                  color: MoeTokens.primary.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -255,7 +256,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                 icon: item.icon,
                 title: item.title,
                 subtitle: item.description,
-                color: const Color(0xFF7F7FD5),
+                color: MoeTokens.primary,
                 onTap: () => _onTapItem(item),
                 trailing: _buildStatusChip(item.status),
               );

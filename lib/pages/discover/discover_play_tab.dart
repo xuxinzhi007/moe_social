@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/moe_tokens.dart';
+
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../ai/agent_list_page.dart';
 import 'widgets/explore_feature_card.dart';
@@ -19,7 +21,7 @@ class DiscoverPlayTab extends StatelessWidget {
         Text(
           'AI 互动',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: MoeTokens.textLg,
             fontWeight: FontWeight.w800,
             color: AiBrandTokens.titleColor,
           ),
@@ -28,7 +30,7 @@ class DiscoverPlayTab extends StatelessWidget {
         Text(
           '与智能体对话、获取灵感，用于丰富动态与私信互动。',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: MoeTokens.textBase,
             height: 1.45,
             color: Colors.grey.shade600,
           ),

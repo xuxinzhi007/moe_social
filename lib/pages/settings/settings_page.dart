@@ -97,7 +97,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+                      color: MoeTokens.primary.withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -514,7 +514,7 @@ class _SettingsPageState extends State<SettingsPage> {
             icon: Icons.campaign_outlined,
             title: '系统公告',
             subtitle: '查看运营发布的平台公告',
-            color: const Color(0xFF7F7FD5),
+            color: MoeTokens.primary,
             onTap: () => Navigator.pushNamed(context, '/announcements'),
           ),
           MoeMenuItem(
@@ -619,14 +619,14 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
+              colors: [MoeTokens.primary, MoeTokens.secondary],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF7F7FD5).withValues(alpha: 0.22),
+                color: MoeTokens.primary.withValues(alpha: 0.22),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

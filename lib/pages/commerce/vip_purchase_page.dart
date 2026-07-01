@@ -204,7 +204,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                               const Text(
                                 '开通 VIP 会员',
                                 style: TextStyle(
-                                  fontSize: 28,
+                                  fontSize: MoeTokens.text3xl,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                   letterSpacing: 1,
@@ -284,7 +284,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                         Container(
                           width: double.infinity,
                           decoration: const BoxDecoration(
-                            color: Colors.white,
+                            color: MoeTokens.cardBackground,
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(30),
                               topRight: Radius.circular(30),
@@ -310,7 +310,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF333333),
+                                      color: MoeTokens.titleText,
                                     ),
                                   ),
                                 ],
@@ -332,7 +332,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: MoeTokens.cardBackground,
           boxShadow: [
             BoxShadow(
               color: _moe.primary.withValues(alpha: 0.1),
@@ -362,7 +362,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                           child: Text(
                             '总计 ¥${_getSelectedPlanPrice()}',
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: MoeTokens.textMd,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFFFF8F00),
                             ),
@@ -410,7 +410,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                       '确认页将展示钱包扣款明细，未支付前不会开通会员',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: MoeTokens.bodyText,
                         height: 1.35,
                       ),
                     ),
@@ -507,7 +507,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: isSelected ? const Color(0xFF333333) : Colors.grey[700],
+                color: isSelected ? MoeTokens.titleText : Colors.grey[700],
               ),
               textAlign: TextAlign.center,
             ),
@@ -588,13 +588,13 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                   title,
                   style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF333333)),
+                      fontSize: MoeTokens.textLg,
+                      color: MoeTokens.titleText),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
                 ),
               ],
             ),
@@ -612,7 +612,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.95),
+            color: MoeTokens.cardBackground,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -624,7 +624,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 _loadErrorMessage ?? '加载失败，请稍后重试',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF333333),
+                  color: MoeTokens.titleText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
