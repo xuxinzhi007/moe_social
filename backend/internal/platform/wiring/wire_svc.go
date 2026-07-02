@@ -137,6 +137,15 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 		}
 	}
 
+	if moewiring.GameAPIInProcessEnabled() {
+		gameApp, err := moewiring.NewAPIGameService()
+		if err != nil {
+			rep.domainWarn("game", "db", err.Error())
+		} else if gameApp != nil {
+			ctx.GameApp = gameApp
+		}
+	}
+
 	if moewiring.LLMAPIInProcessEnabled() {
 		llmApp, err := moewiring.NewAPILLMService()
 		if err != nil {
@@ -194,6 +203,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	reportAppDomain(rep, "checkin", ctx.CheckInApp)
 	reportAppDomain(rep, "achievement", ctx.AchievementApp)
 	reportAppDomain(rep, "gift", ctx.GiftApp)
+	reportAppDomain(rep, "game", ctx.GameApp)
 	reportAppDomain(rep, "llm", ctx.LLMApp)
 	reportAppDomain(rep, "media", ctx.MediaApp)
 	reportAppDomain(rep, "moe", ctx.MoeAdmin)

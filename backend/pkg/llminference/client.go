@@ -77,6 +77,131 @@ func (c Config) Ready() bool {
 	return strings.TrimSpace(c.BaseURL) != ""
 }
 
+// Ping 探测推理端点是否可达（短超时，用于 UI 在线状态）。
+func Ping(ctx context.Context, cfg Config) bool {
+	models, err := ListModels(ctx, cfg)
+	return err == nil && len(models) > 0
+}
+
+// ListModels 列出推理端点可用模型 ID。
+func ListModels(ctx context.Context, cfg Config) ([]string, error) {
+	if !cfg.Ready() {
+		return nil, fmt.Errorf("llm inference base url is empty")
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	client := &http.Client{Timeout: 5 * time.Second}
+	if cfg.APIStyle == APIOllama {
+		return listOllamaModels(ctx, client, cfg.BaseURL)
+	}
+	return listOpenAIModels(ctx, client, cfg)
+}
+
+// ResolveModelName 将配置模型名解析为端点实际可用的 model id。
+func ResolveModelName(ctx context.Context, cfg Config, preferred string) string {
+	preferred = strings.TrimSpace(preferred)
+	models, err := ListModels(ctx, cfg)
+	if err != nil || len(models) == 0 {
+		return firstNonEmpty(preferred, cfg.DefaultModel, "qwen2")
+	}
+	if preferred == "" {
+		return models[0]
+	}
+	for _, id := range models {
+		if id == preferred {
+			return id
+		}
+	}
+	lowerPreferred := strings.ToLower(preferred)
+	for _, id := range models {
+		lowerID := strings.ToLower(id)
+		if strings.Contains(lowerID, lowerPreferred) || strings.Contains(lowerPreferred, lowerID) {
+			return id
+		}
+	}
+	return models[0]
+}
+
+func listOpenAIModels(ctx context.Context, client *http.Client, cfg Config) ([]string, error) {
+	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
+	if !strings.HasSuffix(apiRoot, "/v1") {
+		apiRoot += "/v1"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiRoot+"/models", nil)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("list models failed: %d %s", resp.StatusCode, string(body))
+	}
+	var parsed struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(parsed.Data))
+	for _, item := range parsed.Data {
+		id := strings.TrimSpace(item.ID)
+		if id != "" {
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+func listOllamaModels(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/api/tags", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("ollama list models failed: %d %s", resp.StatusCode, string(body))
+	}
+	var parsed struct {
+		Models []struct {
+			Name string `json:"name"`
+		} `json:"models"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(parsed.Models))
+	for _, item := range parsed.Models {
+		name := strings.TrimSpace(item.Name)
+		if name != "" {
+			out = append(out, name)
+		}
+	}
+	return out, nil
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
 // Chat 非流式对话补全。
 func Chat(
 	ctx context.Context,

@@ -16,6 +16,7 @@ func ProtoHTTPDepsFromPilot(d PilotDeps) ProtoHTTPDeps {
 	out.AchievementApp = s.AchievementApp
 	out.PostApp = s.PostApp
 	out.GiftApp = s.GiftApp
+	out.GameApp = s.GameApp
 	out.UserApp = s.UserApp
 	out.CommentApp = s.CommentApp
 	out.CommunityApp = s.CommunityApp

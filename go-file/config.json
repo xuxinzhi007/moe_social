@@ -1,0 +1,13 @@
+{
+  "server": {
+    "port": "8080",
+    "root": ".",
+    "auth_token": ""
+  },
+  "ngrok": {
+    "auto_start": true,
+    "api_url": "",
+    "poll_interval": "3s",
+    "url_file": "tunnel.url"
+  }
+}

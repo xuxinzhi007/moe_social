@@ -23,4 +23,5 @@ type BehaviorTx interface {
 	FindBehaviorDaily(userID uint, activityDate time.Time, screen string) (model.UserBehaviorDaily, error)
 	CreateBehaviorDaily(daily *model.UserBehaviorDaily) error
 	UpdateBehaviorDaily(daily *model.UserBehaviorDaily, durationMs int64) error
+	UpsertBehaviorDaily(userID uint, activityDate time.Time, screen string, durationMs int64) error
 }

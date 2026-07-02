@@ -11,6 +11,7 @@ import (
 	commentapp "backend/internal/service/comment"
 	communityapp "backend/internal/service/community"
 	giftapp "backend/internal/service/gift"
+	gameapp "backend/internal/service/game"
 	landingapp "backend/internal/service/landing"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
@@ -35,6 +36,7 @@ type ServiceContext struct {
 	CheckInApp     *checkinapp.AppService
 	AchievementApp *achievementapp.AppService
 	GiftApp        *giftapp.AppService
+	GameApp        *gameapp.AppService
 	LLMApp         *llmapp.AppService
 	MediaApp       *mediaapp.AppService
 	ChatApp        *chatapp.AppService

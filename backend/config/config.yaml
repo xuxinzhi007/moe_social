@@ -95,6 +95,10 @@ llm_inference:
   timeout_seconds: 120
   memory_model: "deepseek-chat"
   api_key: ""
+  # 文字游戏专用推理（优先于 base_url；本地 llama-server 跑在 6633 时启用）
+  game_base_url: "http://127.0.0.1:6633"
+  # 留空则自动读取 llama-server /v1/models 第一个模型
+  game_model: ""
   # 上下文长度（DeepSeek-chat 支持 32K）
   context_tokens: 32768
 

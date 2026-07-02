@@ -8,6 +8,7 @@ import (
 	"backend/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type store struct {
@@ -58,6 +59,27 @@ func (t *behaviorTx) UpdateBehaviorDaily(daily *model.UserBehaviorDaily, duratio
 		"visit_count":       gorm.Expr("visit_count + ?", 1),
 		"total_duration_ms": gorm.Expr("total_duration_ms + ?", durationMs),
 	}).Error
+}
+
+func (t *behaviorTx) UpsertBehaviorDaily(userID uint, activityDate time.Time, screen string, durationMs int64) error {
+	daily := model.UserBehaviorDaily{
+		UserID:          userID,
+		ActivityDate:    activityDate,
+		Screen:          screen,
+		VisitCount:      1,
+		TotalDurationMs: durationMs,
+	}
+	return t.tx.Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "user_id"},
+			{Name: "activity_date"},
+			{Name: "screen"},
+		},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"visit_count":       gorm.Expr("visit_count + ?", 1),
+			"total_duration_ms": gorm.Expr("total_duration_ms + ?", durationMs),
+		}),
+	}).Create(&daily).Error
 }
 
 var _ behaviorbiz.BehaviorTx = (*behaviorTx)(nil)

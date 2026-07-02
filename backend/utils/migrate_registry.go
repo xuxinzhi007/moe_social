@@ -70,6 +70,12 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "moe_brain_dream_logs", Model: &model.MoeBrainDreamLog{}},
 		{Key: "ai_chat_sessions", Model: &model.AiChatSession{}},
 		{Key: "ai_chat_messages", Model: &model.AiChatMessage{}},
+		{Key: "game_sessions", Model: &model.GameSession{}},
+		{Key: "game_scenes", Model: &model.GameScene{}},
+		{Key: "game_npcs", Model: &model.GameNpc{}},
+		{Key: "game_npc_memories", Model: &model.GameNpcMemory{}},
+		{Key: "game_turn_logs", Model: &model.GameTurnLog{}},
+		{Key: "game_world_items", Model: &model.GameWorldItem{}},
 		{Key: "tag_dictionary_entries", Model: &model.TagDictionaryEntry{}},
 	}
 }
