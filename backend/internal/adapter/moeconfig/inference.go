@@ -43,3 +43,40 @@ func InferenceFromViper() llminference.Config {
 	}
 	return llminference.ConfigFrom(base, style, ts, model, apiKey)
 }
+
+// GameInferenceFromViper 文字游戏专用推理端点（game_base_url 优先，否则复用全局）。
+func GameInferenceFromViper() (llminference.Config, string) {
+	global := InferenceFromViper()
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath("./config")
+	v.AddConfigPath("../config")
+	v.AddConfigPath("../../config")
+	_ = v.ReadInConfig()
+
+	gameBase := strings.TrimSpace(v.GetString("llm_inference.game_base_url"))
+	gameModel := strings.TrimSpace(v.GetString("llm_inference.game_model"))
+	if gameBase == "" {
+		return global, firstNonEmpty(gameModel, global.DefaultModel)
+	}
+	ts := v.GetInt("llm_inference.timeout_seconds")
+	if ts <= 0 {
+		ts = 300
+	}
+	style := v.GetString("llm_inference.api_style")
+	if style == "" {
+		style = "openai"
+	}
+	cfg := llminference.ConfigFrom(gameBase, style, ts, gameModel, "")
+	return cfg, gameModel
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}

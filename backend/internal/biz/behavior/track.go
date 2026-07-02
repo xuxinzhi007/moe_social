@@ -2,7 +2,6 @@ package behaviorbiz
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
@@ -68,25 +67,8 @@ func TrackEvents(ctx context.Context, store BehaviorStore, userID uint, events [
 				continue
 			}
 			activityDate := utils.BehaviorActivityDate(clientTs)
-			daily, err := tx.FindBehaviorDaily(userID, activityDate, screen)
-			switch {
-			case errors.Is(err, gorm.ErrRecordNotFound):
-				daily = model.UserBehaviorDaily{
-					UserID:          userID,
-					ActivityDate:    activityDate,
-					Screen:          screen,
-					VisitCount:      1,
-					TotalDurationMs: ev.DurationMs,
-				}
-				if err := tx.CreateBehaviorDaily(&daily); err != nil {
-					return err
-				}
-			case err != nil:
+			if err := tx.UpsertBehaviorDaily(userID, activityDate, screen, ev.DurationMs); err != nil {
 				return err
-			default:
-				if err := tx.UpdateBehaviorDaily(&daily, ev.DurationMs); err != nil {
-					return err
-				}
 			}
 		}
 		return nil

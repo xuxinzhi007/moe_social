@@ -11,6 +11,7 @@ import (
 	communityv1 "backend/api/community/v1"
 	contentv1 "backend/api/content/v1"
 	giftv1 "backend/api/gift/v1"
+	gamev1 "backend/api/game/v1"
 	landingv1 "backend/api/landing/v1"
 	llmv1 "backend/api/llm/v1"
 	moepb "backend/api/moe/v1"
@@ -32,6 +33,7 @@ import (
 	communityhttp "backend/internal/server/protohttp/community"
 	contenthttp "backend/internal/server/protohttp/content"
 	gifthttp "backend/internal/server/protohttp/gift"
+	gamehttp "backend/internal/server/protohttp/game"
 	landinghttp "backend/internal/server/protohttp/landing"
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
@@ -52,6 +54,7 @@ import (
 	communityapp "backend/internal/service/community"
 	contentapp "backend/internal/service/content"
 	giftapp "backend/internal/service/gift"
+	gameapp "backend/internal/service/game"
 	landingapp "backend/internal/service/landing"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
@@ -71,6 +74,7 @@ type ProtoHTTPDeps struct {
 	AchievementApp      *achievementapp.AppService
 	PostApp             *postapp.AppService
 	GiftApp             *giftapp.AppService
+	GameApp             *gameapp.AppService
 	UserApp             *userapp.AppService
 	CommentApp          *commentapp.AppService
 	CommunityApp        *communityapp.AppService
@@ -106,6 +110,10 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.GiftApp != nil {
 		giftv1.RegisterGiftServiceHTTPServer(srv, gifthttp.New(d.GiftApp))
+	}
+	if d.GameApp != nil {
+		gamev1.RegisterGameHTTPServer(srv, gamehttp.New(d.GameApp))
+		gamehttp.RegisterStreamRoute(srv, d.GameApp)
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

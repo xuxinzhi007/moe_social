@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package game.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/game/v1;gamev1";
+
+message GameNarrativeLine {
+  string type = 1;
+  string content = 2;
+  string name = 3;
+}
+
+message GameNpc {
+  uint64 id = 1;
+  string name = 2;
+  string persona = 3;
+  int32 favorability = 4;
+}
+
+message GameItem {
+  uint64 id = 1;
+  string name = 2;
+  string description = 3;
+  bool in_inventory = 4;
+}
+
+message GameScene {
+  uint64 id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string exits = 4;
+}
+
+message InitGameSessionRequest {
+  string user_id = 1;
+  bool force_new = 2;
+}
+
+message InitGameSessionReply {
+  uint64 session_id = 1;
+  GameScene scene = 2;
+  repeated GameNpc npcs = 3;
+  repeated GameNarrativeLine opening = 4;
+  string game_time = 5;
+  int32 overall_favorability = 6;
+  repeated GameNarrativeLine history = 7;
+  string player_focus = 8;
+  bool llm_online = 9;
+  repeated GameItem inventory = 10;
+  repeated string visited_scenes = 11;
+}
+
+message ActRequest {
+  string user_id = 1;
+  uint64 session_id = 2;
+  string action = 3;
+}
+
+message ActReply {
+  repeated GameNarrativeLine narrative = 1;
+  string location = 2;
+  string game_time = 3;
+  int32 overall_favorability = 4;
+  string player_focus = 5;
+  string narrative_source = 6;
+  bool llm_online = 7;
+  repeated string suggested_actions = 8;
+  repeated GameItem inventory = 9;
+  repeated GameNpc npcs = 10;
+}
+
+message GetGameStateRequest {
+  string user_id = 1;
+  uint64 session_id = 2;
+}
+
+message GetGameStateReply {
+  uint64 session_id = 1;
+  GameScene scene = 2;
+  repeated GameNpc npcs = 3;
+  string game_time = 4;
+  int32 overall_favorability = 5;
+  string flags_json = 6;
+  string player_focus = 7;
+  repeated GameItem inventory = 8;
+  repeated string visited_scenes = 9;
+  repeated string story_arc_titles = 10;
+}
+
+service Game {
+  rpc InitGameSession(InitGameSessionRequest) returns (InitGameSessionReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/game/init" body: "*" };
+  }
+  rpc Act(ActRequest) returns (ActReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/game/act" body: "*" };
+  }
+  rpc GetGameState(GetGameStateRequest) returns (GetGameStateReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/game/state" };
+  }
+}

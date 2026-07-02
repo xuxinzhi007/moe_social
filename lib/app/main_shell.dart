@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../pages/ai/agent_list_page.dart';
+import '../pages/ai/game_hub_page.dart';
 import '../pages/chat/message_center_page.dart';
 import '../pages/feed/home_page.dart';
 import '../pages/profile/profile_page.dart';
@@ -22,7 +22,7 @@ class _MainPageState extends State<MainPage> {
   late final List<Widget Function()> _pageBuilders = [
     () => const HomePage(),
     () => const MessageCenterPage(),
-    () => const AgentListPage(),
+    () => const GameHubPage(),
     () => const ProfilePage(),
   ];
   late final List<Widget?> _loadedPages =
