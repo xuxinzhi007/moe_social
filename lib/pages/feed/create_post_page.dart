@@ -15,6 +15,9 @@ import '../../providers/loading_provider.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/topic_tag_selector.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/fade_in_up.dart';
+import '../../theme/moe_tokens.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
 import 'hand_draw_editor_page.dart';
@@ -37,6 +40,7 @@ class CreatePostPage extends StatefulWidget {
 
 class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   final List<File> _selectedImages = [];
   final List<String> _selectedImageUrls = [];
   final ImagePicker _picker = ImagePicker();
@@ -45,6 +49,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
   String? _selectedMoodTag;
+  bool _hasUnsavedChanges = false;
 
   /// 发到群组时：null=校验中，true=已加入，false=未加入
   bool? _canPostToGroup;
@@ -55,6 +60,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
       !_isEditMode &&
       widget.groupId != null &&
       widget.groupId!.trim().isNotEmpty;
+
+  void _showExitConfirmation() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确定离开？'),
+        content: const Text('内容尚未发布，确定要离开吗？'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('继续编辑')),
+          TextButton(onPressed: () { Navigator.pop(ctx); Navigator.pop(context); }, child: const Text('离开')),
+        ],
+      ),
+    );
+  }
 
   Future<void> _openHandDrawEditor() async {
     final data = await Navigator.push<HandDrawCardData>(
@@ -172,6 +191,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
+    _contentController.addListener(() {
+      if (!_hasUnsavedChanges) {
+        setState(() => _hasUnsavedChanges = true);
+      }
+    });
     _loadUserInfo();
     if (_isGroupPost) {
       _loadGroupPostPermission();
@@ -239,6 +263,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         _handDrawCard == null &&
         !hasLocalImages &&
         !hasCloudImages) {
+      _formKey.currentState?.validate();
       context.read<LoadingProvider>().setError(
             '写点文字、选几张图，或画一张手绘卡片再发布吧',
           );
@@ -336,6 +361,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       },
       onSuccess: (createdPost) {
         if (!mounted) return;
+        _hasUnsavedChanges = false;
         loadingProvider.clearMessages();
         final msg = widget.groupId != null && widget.groupId!.isNotEmpty
             ? '已发布并同步到群组 ~(≧∇≦)/~'
@@ -411,6 +437,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       },
       onSuccess: (updated) {
         if (!mounted) return;
+        _hasUnsavedChanges = false;
         Navigator.pop(context, updated);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final rootCtx = AuthService.navigatorKey.currentContext;
@@ -461,7 +488,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final textTheme = theme.textTheme;
     final primaryColor = theme.primaryColor;
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasUnsavedChanges) {
+          _showExitConfirmation();
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFFAF8FF),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -487,7 +521,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: IconButton(
             icon: const Icon(Icons.close_rounded,
                 color: Color(0xFF636E72), size: 20),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (_hasUnsavedChanges) {
+                _showExitConfirmation();
+              } else {
+                Navigator.pop(context);
+              }
+            },
             padding: EdgeInsets.zero,
           ),
         ),
@@ -531,12 +571,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 _buildGroupWarning(textTheme),
                 const SizedBox(height: 16),
               ],
-              _buildGreetingCard(textTheme),
+              FadeInUp(
+                delay: Duration.zero,
+                child: _buildGreetingCard(textTheme),
+              ),
               const SizedBox(height: 16),
-              _buildInputCard(textTheme),
+              FadeInUp(
+                delay: MoeTokens.motionStaggerStep,
+                child: _buildInputCard(textTheme),
+              ),
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -643,18 +690,24 @@ class _CreatePostPageState extends State<CreatePostPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            controller: _contentController,
-            minLines: 3,
-            maxLines: null,
-            keyboardType: TextInputType.multiline,
-            decoration: InputDecoration(
+          Form(
+            key: _formKey,
+            child: MoeInputField(
+              controller: _contentController,
               hintText: '写下此刻的想法…',
-              hintStyle: textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[400],
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+              maxLines: 10,
+              minLines: 5,
+              filled: true,
+              keyboardType: TextInputType.multiline,
+              validator: (v) {
+                if ((v ?? '').trim().isEmpty &&
+                    _handDrawCard == null &&
+                    _selectedImages.isEmpty &&
+                    _selectedImageUrls.isEmpty) {
+                  return '写点文字、选几张图，或画一张手绘卡片再发布吧';
+                }
+                return null;
+              },
             ),
           ),
           const SizedBox(height: 12),

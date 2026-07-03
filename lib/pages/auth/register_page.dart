@@ -29,7 +29,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _usernameFocus = FocusNode();
   final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
   Timer? _emailCompletionDebounce;
 
   final Color _primaryColor = MoeTokens.primary;
@@ -212,6 +215,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: Validators.username,
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
+                            focusNode: _usernameFocus,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_emailFocus),
                           ),
                           const SizedBox(height: 20),
                           ValueListenableBuilder<List<String>>(
@@ -231,6 +237,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                     keyboardType: TextInputType.emailAddress,
                                     autovalidateMode:
                                         AutovalidateMode.onUserInteraction,
+                                    textInputAction: TextInputAction.next,
+                                    onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
                                   ),
                                   EmailSuffixBar(
                                     candidates: completions,
@@ -250,6 +258,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             isPassword: true,
                             validator: Validators.password,
                             autovalidateMode: AutovalidateMode.disabled,
+                            focusNode: _passwordFocus,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_confirmPasswordFocus),
                           ),
                           const SizedBox(height: 20),
                           MoeInputField(
@@ -260,6 +271,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: (value) => Validators.confirmPassword(
                                 value, _passwordController.text),
                             autovalidateMode: AutovalidateMode.disabled,
+                            focusNode: _confirmPasswordFocus,
+                            textInputAction: TextInputAction.done,
                           ),
                           const SizedBox(height: 40),
                           SizedBox(
@@ -346,7 +359,10 @@ class _RegisterPageState extends State<RegisterPage> {
     _emailCompletions.dispose();
     _usernameController.dispose();
     _emailController.dispose();
+    _usernameFocus.dispose();
     _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();

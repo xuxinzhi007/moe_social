@@ -1,20 +1,36 @@
 import 'package:flutter/material.dart';
 
 import '../../models/game_state.dart';
+import '../../theme/moe_tokens.dart';
+import '../fade_in_up.dart';
 
 /// 小说式叙事块（明亮游戏风）。
 class GameNarrativeBlock extends StatelessWidget {
   final GameNarrativeLine line;
   final VoidCallback? onHintTap;
+  final bool animate;
 
   const GameNarrativeBlock({
     super.key,
     required this.line,
     this.onHintTap,
+    this.animate = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final content = _buildContent(context);
+
+    if (!animate) return content;
+
+    return FadeInUp(
+      duration: MoeTokens.motionFadeDuration,
+      offset: MoeTokens.motionFadeOffset,
+      child: content,
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     if (line.isActionEcho) {
       return Container(
         margin: const EdgeInsets.only(top: 18, bottom: 8),
@@ -22,28 +38,28 @@ class GameNarrativeBlock extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFF7F7FD5).withValues(alpha: 0.12),
-              const Color(0xFF86A8E7).withValues(alpha: 0.08),
+              MoeTokens.primary.withValues(alpha: 0.12),
+              MoeTokens.secondary.withValues(alpha: 0.08),
             ],
           ),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           border: Border.all(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.2),
+            color: MoeTokens.primary.withValues(alpha: 0.2),
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.play_arrow_rounded,
-                size: 16, color: Color(0xFF7F7FD5)),
+            Icon(Icons.play_arrow_rounded,
+                size: 16, color: MoeTokens.primary),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 line.displayContent,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   height: 1.45,
-                  color: Color(0xFF5C5C8A),
+                  color: MoeTokens.bodyText,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -60,11 +76,11 @@ class GameNarrativeBlock extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFFFF6F00).withValues(alpha: 0.15),
+              MoeTokens.warning.withValues(alpha: 0.15),
               const Color(0xFFFFB300).withValues(alpha: 0.1),
             ],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           border: Border.all(color: const Color(0xFFFFB300)),
         ),
         child: Text(
@@ -85,7 +101,7 @@ class GameNarrativeBlock extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF3E0),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
           border: Border.all(color: const Color(0xFFFFCC80)),
         ),
         child: Row(
@@ -112,7 +128,7 @@ class GameNarrativeBlock extends StatelessWidget {
       if (onHintTap == null) return content;
       return InkWell(
         onTap: onHintTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
         child: content,
       );
     }
@@ -133,7 +149,7 @@ class GameNarrativeBlock extends StatelessWidget {
     }
 
     final color =
-        line.isHighlight ? const Color(0xFFD84315) : const Color(0xFF3D3D50);
+        line.isHighlight ? const Color(0xFFD84315) : MoeTokens.caption;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),

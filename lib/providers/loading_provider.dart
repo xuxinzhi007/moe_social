@@ -206,4 +206,5 @@ class LoadingKeys {
   static const String llmChat = 'llmChat';
   static const String syncVipStatus = 'syncVipStatus';
   static const String addComment = 'addComment';
+  static const String saveAgent = 'saveAgent';
 }

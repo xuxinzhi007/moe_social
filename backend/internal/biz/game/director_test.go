@@ -1,6 +1,7 @@
 package gamebiz
 
 import (
+	"context"
 	"testing"
 
 	"backend/model"
@@ -39,7 +40,7 @@ func TestParseCommandNotTravelOnQuestion(t *testing.T) {
 }
 
 func TestDialogueAgeResponse(t *testing.T) {
-	out := dialogueReplyOutput("老人", "你多大了")
+	out := dialogueReplyOutput(context.Background(), nil, "老人", "你多大了")
 	if !contains(out.Prose, "七十三") {
 		t.Fatalf("expected age response, got: %s", out.Prose)
 	}

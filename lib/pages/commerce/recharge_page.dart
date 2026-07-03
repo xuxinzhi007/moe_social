@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_service.dart';
-import 'package:moe_social/widgets/custom_button.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/app_message_widget.dart';
+import '../../providers/loading_provider.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -19,7 +22,6 @@ class _RechargePageState extends State<RechargePage> {
 
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController(text: '余额充值');
-  bool _isLoading = false;
   double _currentBalance = 0.0;
   
   // 预设充值金额
@@ -63,9 +65,8 @@ class _RechargePageState extends State<RechargePage> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    final loadingProvider = context.read<LoadingProvider>();
+    loadingProvider.setOperationLoading(LoadingKeys.recharge, true);
 
     try {
       final userId = AuthService.currentUser;
@@ -94,9 +95,7 @@ class _RechargePageState extends State<RechargePage> {
       _showError('充值失败: ${e.toString()}');
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        context.read<LoadingProvider>().setOperationLoading(LoadingKeys.recharge, false);
       }
     }
   }
@@ -287,17 +286,13 @@ class _RechargePageState extends State<RechargePage> {
                         ),
                       ],
                     ),
-                    child: TextField(
+                    child: MoeInputField(
                       controller: _amountController,
+                      hintText: '请输入具体金额',
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        hintText: '请输入具体金额',
-                        hintStyle: TextStyle(color: MoeTokens.hintText, fontWeight: FontWeight.normal),
-                        prefixIcon: Icon(Icons.attach_money_rounded, color: _primaryColor),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      ),
+                      prefixIcon: Icon(Icons.attach_money_rounded, color: _primaryColor),
+                      filled: false,
                       onTap: () {
                         // 如果用户手动输入，清除预设选择
                         if (_selectedAmount != null) {
@@ -329,18 +324,12 @@ class _RechargePageState extends State<RechargePage> {
                     ),
                   ],
                 ),
-                child: TextField(
+                child: MoeInputField(
                   controller: _descriptionController,
+                  hintText: '备注说明（可选）',
                   maxLines: 1,
-                  style: const TextStyle(fontSize: 16),
-                  decoration: InputDecoration(
-                    labelText: '备注说明',
-                    labelStyle: TextStyle(color: MoeTokens.bodyText),
-                    hintText: '可选',
-                    prefixIcon: const Icon(Icons.edit_note_rounded, color: MoeTokens.hintText),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  ),
+                  prefixIcon: const Icon(Icons.edit_note_rounded, color: MoeTokens.hintText),
+                  filled: false,
                 ),
               ),
             ),
@@ -350,17 +339,23 @@ class _RechargePageState extends State<RechargePage> {
             // 充值按钮
             FadeInUp(
               delay: const Duration(milliseconds: 400),
-              child: CustomButton(
-                onPressed: _isLoading ? null : () => _handleRecharge(),
-                text: _isLoading ? '正在充值...' : '确认支付',
-                isLoading: _isLoading,
-                width: double.infinity,
-                height: 56,
-                fontSize: 18,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
-                backgroundColor: _primaryColor, // 使用薰衣草色
-                shadowColor: _primaryColor.withValues(alpha: 0.4),
-                elevation: 8,
+              child: LoadingButton(
+                operationKey: LoadingKeys.recharge,
+                onPressed: _handleRecharge,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                  ),
+                  minimumSize: const Size(double.infinity, 56),
+                  elevation: 8,
+                  shadowColor: _primaryColor.withValues(alpha: 0.4),
+                ),
+                child: const Text(
+                  '确认支付',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
 

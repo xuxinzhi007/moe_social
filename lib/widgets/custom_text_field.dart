@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+@Deprecated('Use MoeInputField instead')
 class CustomTextField extends StatelessWidget {
   final String labelText;
   final String? hintText;

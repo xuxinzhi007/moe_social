@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../services/api_service.dart';
 import '../../models/user.dart';
@@ -15,6 +16,10 @@ import '../gallery/cloud_gallery_page.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/app_message_widget.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../providers/loading_provider.dart';
+import '../../theme/moe_tokens.dart';
 
 class EditProfilePage extends StatefulWidget {
   /// 从个人页传入时可预填；为空或字段不全时在 [initState] 拉远端。
@@ -41,7 +46,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   DateTime? _birthday;
 
   // UI状态
-  bool _isSaving = false;
   bool _hasUnsavedChanges = false;
 
   // 验证错误信息
@@ -397,6 +401,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _saveProfile() async {
+    final loading = context.read<LoadingProvider>();
+    if (loading.isOperationLoading(LoadingKeys.updateProfile)) return;
+
     final userId = AuthService.currentUser;
     if (userId == null) return;
 
@@ -405,9 +412,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    final loadingProvider = context.read<LoadingProvider>();
+    loadingProvider.setOperationLoading(LoadingKeys.updateProfile, true);
 
     try {
       final avatarText = _avatarController.text.trim();
@@ -435,9 +441,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+        context.read<LoadingProvider>().setOperationLoading(LoadingKeys.updateProfile, false);
       }
     }
   }
@@ -462,33 +466,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
           elevation: 0,
           actions: [
             TextButton(
-              onPressed: _isSaving
-                  ? null
-                  : () {
-                      HapticFeedback.lightImpact();
-                      _saveProfile();
-                    },
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Color(0xFF7F7FD5))),
-                    )
-                  : Text(
-                      '保存',
-                      style: TextStyle(
-                        color: _hasUnsavedChanges
-                            ? const Color(0xFF7F7FD5)
-                            : Colors.grey,
-                        fontWeight: _hasUnsavedChanges
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        fontSize: 16,
-                      ),
-                    ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _saveProfile();
+              },
+              child: const Text(
+                '完成',
+                style: TextStyle(
+                  color: Color(0xFF7F7FD5),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ),
           ],
         ),
@@ -559,9 +548,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     bottom: 0,
                                     right: 0,
                                     child: GestureDetector(
-                                      onTap: _isSaving
-                                          ? null
-                                          : () {
+                                      onTap: () {
                                               HapticFeedback.lightImpact();
                                               _showAvatarOptions();
                                             },
@@ -644,107 +631,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   const SizedBox(height: 20),
 
                                   // 用户名
-                                  TextFormField(
+                                  MoeInputField(
                                     controller: _usernameController,
-                                    decoration: InputDecoration(
-                                      labelText: '用户名',
-                                      prefixIcon: const Icon(
-                                          Icons.person_outline,
-                                          color: Color(0xFF7F7FD5)),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFFE0E0E0)),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFF7F7FD5), width: 2),
-                                      ),
-                                      hintText: '3-20个字符，支持字母、数字、下划线',
-                                      hintStyle:
-                                          TextStyle(color: Colors.grey[400]),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                    ),
+                                    hintText: '用户名',
+                                    prefixIcon: const Icon(
+                                        Icons.person_outline,
+                                        color: Color(0xFF7F7FD5)),
                                     validator: Validators.username,
-                                    onChanged: (_) => _onFieldChanged(),
                                   ),
 
                                   const SizedBox(height: 16),
 
                                   // 邮箱
-                                  TextFormField(
+                                  MoeInputField(
                                     controller: _emailController,
-                                    decoration: InputDecoration(
-                                      labelText: '邮箱',
-                                      prefixIcon: const Icon(
-                                          Icons.email_outlined,
-                                          color: Color(0xFF7F7FD5)),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFFE0E0E0)),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFF7F7FD5), width: 2),
-                                      ),
-                                      hintText: 'example@email.com',
-                                      hintStyle:
-                                          TextStyle(color: Colors.grey[400]),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                    ),
+                                    hintText: '邮箱',
+                                    prefixIcon: const Icon(
+                                        Icons.email_outlined,
+                                        color: Color(0xFF7F7FD5)),
                                     keyboardType: TextInputType.emailAddress,
                                     validator: Validators.email,
-                                    onChanged: (_) => _onFieldChanged(),
                                   ),
 
                                   const SizedBox(height: 16),
 
                                   // 头像URL
-                                  TextField(
+                                  MoeInputField(
                                     controller: _avatarController,
-                                    decoration: InputDecoration(
-                                      labelText: '头像URL',
-                                      prefixIcon: const Icon(
-                                          Icons.image_outlined,
-                                          color: Color(0xFF7F7FD5)),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFFE0E0E0)),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: const BorderSide(
-                                            color: Color(0xFF7F7FD5), width: 2),
-                                      ),
-                                      helperText: '输入头像图片的URL地址',
-                                      helperStyle:
-                                          TextStyle(color: Colors.grey[400]),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      suffixIcon: IconButton(
-                                        tooltip: '选择头像',
-                                        onPressed: _isSaving
-                                            ? null
-                                            : () {
-                                                HapticFeedback.lightImpact();
-                                                _showAvatarOptions();
-                                              },
-                                        icon: const Icon(
-                                            Icons.camera_alt_outlined,
-                                            color: Color(0xFF7F7FD5)),
-                                      ),
-                                    ),
+                                    hintText: '头像URL',
+                                    prefixIcon: const Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF7F7FD5)),
                                     keyboardType: TextInputType.url,
-                                    onChanged: (value) {
-                                      setState(() {}); // 更新头像预览
-                                      _onFieldChanged();
-                                    },
+                                    suffixIcon: IconButton(
+                                      tooltip: '选择头像',
+                                      onPressed: () {
+                                        HapticFeedback.lightImpact();
+                                        _showAvatarOptions();
+                                      },
+                                      icon: const Icon(
+                                          Icons.camera_alt_outlined,
+                                          color: Color(0xFF7F7FD5)),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -806,7 +734,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                       _onFieldChanged();
                                     },
                                     errorText: _signatureError,
-                                    enabled: !_isSaving,
                                   ),
 
                                   const SizedBox(height: 20),
@@ -819,7 +746,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                       _onFieldChanged();
                                     },
                                     errorText: _genderError,
-                                    enabled: !_isSaving,
                                   ),
 
                                   const SizedBox(height: 20),
@@ -832,7 +758,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                       _onFieldChanged();
                                     },
                                     errorText: _birthdayError,
-                                    enabled: !_isSaving,
                                   ),
                                 ],
                               ),
@@ -944,45 +869,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           // 保存按钮
                           FadeInUp(
                             delay: const Duration(milliseconds: 500),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isSaving
-                                    ? null
-                                    : () {
-                                        HapticFeedback.lightImpact();
-                                        _saveProfile();
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
-                                  backgroundColor: _hasUnsavedChanges
-                                      ? const Color(0xFF7F7FD5)
-                                      : Colors.grey[300],
-                                  foregroundColor: _hasUnsavedChanges
-                                      ? Colors.white
-                                      : Colors.grey[600],
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  elevation: _hasUnsavedChanges ? 8 : 0,
-                                  shadowColor: _hasUnsavedChanges
-                                      ? const Color(0xFF7F7FD5)
-                                          .withValues(alpha: 0.6)
-                                      : Colors.transparent,
-                                  animationDuration:
-                                      const Duration(milliseconds: 300),
+                            child: LoadingButton(
+                              operationKey: LoadingKeys.updateProfile,
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                _saveProfile();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                backgroundColor: _hasUnsavedChanges
+                                    ? const Color(0xFF7F7FD5)
+                                    : Colors.grey[300],
+                                foregroundColor: _hasUnsavedChanges
+                                    ? Colors.white
+                                    : Colors.grey[600],
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                                 ),
-                                child: _isSaving
-                                    ? const MoeLoading(
-                                        size: 24, color: Colors.white)
-                                    : const Text(
-                                        '保存更改',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                minimumSize: const Size(double.infinity, 50),
+                                elevation: _hasUnsavedChanges ? 8 : 0,
+                                shadowColor: _hasUnsavedChanges
+                                    ? const Color(0xFF7F7FD5)
+                                        .withValues(alpha: 0.6)
+                                    : Colors.transparent,
+                                animationDuration:
+                                    const Duration(milliseconds: 300),
+                              ),
+                              child: const Text(
+                                '保存更改',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),

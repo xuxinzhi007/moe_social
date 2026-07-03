@@ -41,8 +41,20 @@ func loadSnapshot(
 		return nil, err
 	}
 	flags := decodeWorldFlags(sess.FlagsJSON)
+	// 双写架构：优先从新表读取，若不存在则从 flags_json 反序列化并回填
+	if dbFlags := readWorldFlagsFromDB(ctx, st, sess.ID); dbFlags != nil {
+		// 新表有数据：保留 StoryArcs 和 PendingEvents（这两个字段还未拆分到新表）
+		dbFlags.StoryArcs = flags.StoryArcs
+		dbFlags.PendingEvents = flags.PendingEvents
+		dbFlags.Inventory = flags.Inventory
+		dbFlags.VisitedScenes = flags.VisitedScenes
+		flags = *dbFlags
+	} else {
+		// 新表无数据：回填（首次迁移）
+		backfillWorldStateFromFlags(ctx, st, sess.ID, flags)
+	}
 	flags.TurnCount++
-	ensureStoryArcs(&flags)
+	ensureStoryArcsWithDB(ctx, st, &flags)
 
 	inventory, _ := st.ListInventoryItems(ctx, sess.ID)
 	sceneItems, _ := st.ListSceneItems(ctx, sess.ID, scene.ID)

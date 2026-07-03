@@ -81,7 +81,7 @@ func persistActResult(
 		gameTime = sess.GameTime
 	}
 	flags.mergePatch(output.FlagsPatch)
-	advanceStoryArcs(&flags, output, output.FavorDeltas)
+	advanceStoryArcsWithDB(ctx, st, &flags, output, output.FavorDeltas)
 
 	npcByName := map[string]model.GameNpc{}
 	for _, npc := range npcs {
@@ -114,12 +114,14 @@ func persistActResult(
 		if imp <= 0 {
 			imp = 5
 		}
-		_ = st.CreateNpcMemory(ctx, &model.GameNpcMemory{
+		if err := st.CreateNpcMemory(ctx, &model.GameNpcMemory{
 			PlayerID:   userID,
 			NpcID:      npc.ID,
 			MemoryText: text,
 			Importance: imp,
-		})
+		}); err != nil {
+			moelog.Warnf("game: create npc memory for npc=%d: %v", npc.ID, err)
+		}
 	}
 
 	patch, _ := json.Marshal(map[string]interface{}{
@@ -127,18 +129,25 @@ func persistActResult(
 		"flags_patch":  output.FlagsPatch,
 	})
 	narrativeJSON, _ := json.Marshal(lines)
-	_ = st.CreateTurnLog(ctx, &model.GameTurnLog{
+	if err := st.CreateTurnLog(ctx, &model.GameTurnLog{
 		SessionID:       sess.ID,
 		UserAction:      action,
 		SystemNarrative: string(narrativeJSON),
 		StatePatchJSON:  string(patch),
-	})
-	_ = st.UpdateSession(ctx, sess.ID, map[string]interface{}{
+	}); err != nil {
+		moelog.Warnf("game: create turn log for session=%d: %v", sess.ID, err)
+	}
+	if err := st.UpdateSession(ctx, sess.ID, map[string]interface{}{
 		"scene_id":       sess.SceneID,
 		"game_time":      gameTime,
 		"npc_favor_json": encodeNpcFavor(favor),
 		"flags_json":     encodeWorldFlags(flags),
-	})
+	}); err != nil {
+		return ActResult{}, fmt.Errorf("update session %d: %w", sess.ID, err)
+	}
+	// 双写：同时写入 game_world_states 新表（失败不影响游戏运行）
+	writeWorldStateToDB(ctx, st, sess.ID, flags)
+	writeNpcActivitiesToDB(ctx, st, sess.ID, scene.Name, npcs, flags.NpcActivity)
 
 	updatedViews := npcViewsFromModels(npcs, favor)
 	suggested := output.SuggestedActions
@@ -657,14 +666,39 @@ func advanceGameTime(flags WorldFlags, sceneName string) string {
 }
 
 func buildMemoryBlock(ctx context.Context, st Store, playerID uint, npcs []model.GameNpc) string {
+	if len(npcs) == 0 {
+		return ""
+	}
+	// 收集所有 NPC ID
+	npcIDs := make([]uint, len(npcs))
+	npcNameByID := make(map[uint]string, len(npcs))
+	for i, npc := range npcs {
+		npcIDs[i] = npc.ID
+		npcNameByID[npc.ID] = npc.Name
+	}
+	// 批量查询
+	memories, err := st.BatchListNpcMemories(ctx, playerID, npcIDs, 5)
+	if err != nil || len(memories) == 0 {
+		return ""
+	}
+	// 按 NPC ID 分组
+	grouped := make(map[uint][]model.GameNpcMemory)
+	for _, m := range memories {
+		grouped[m.NpcID] = append(grouped[m.NpcID], m)
+	}
+	// 每组取前 5 条，拼接文本
 	var b strings.Builder
-	for _, npc := range npcs {
-		memories, err := st.ListNpcMemories(ctx, playerID, npc.ID, 5)
-		if err != nil || len(memories) == 0 {
+	for _, npcID := range npcIDs {
+		mems := grouped[npcID]
+		if len(mems) == 0 {
 			continue
 		}
-		b.WriteString(fmt.Sprintf("\n【%s 对玩家的记忆】\n", npc.Name))
-		for _, m := range memories {
+		limit := 5
+		if len(mems) < limit {
+			limit = len(mems)
+		}
+		b.WriteString(fmt.Sprintf("\n【%s 对玩家的记忆】\n", npcNameByID[npcID]))
+		for _, m := range mems[:limit] {
 			b.WriteString("- ")
 			b.WriteString(m.MemoryText)
 			b.WriteString("\n")
