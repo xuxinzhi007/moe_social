@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/services/post_service.dart';
+import 'package:moe_social/widgets/moe_bouncing_button.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 
 class LikeButton extends StatefulWidget {
@@ -148,39 +149,5 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
         ],
       ),
     );
-  }
-}
-
-class MoeBouncingButton extends StatelessWidget {
-  final Widget child;
-  final VoidCallback onTap;
-  final double scaleFactor;
-  final Duration duration;
-
-  const MoeBouncingButton({
-    super.key,
-    required this.child,
-    required this.onTap,
-    this.scaleFactor = 0.9,
-    this.duration = const Duration(milliseconds: 150),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      onTapDown: (_) => _animateTap(context, scaleFactor),
-      onTapUp: (_) => _animateTap(context, 1.0),
-      onTapCancel: () => _animateTap(context, 1.0),
-      child: child,
-    );
-  }
-
-  void _animateTap(BuildContext context, double scale) {
-    final renderObject = context.findRenderObject() as RenderBox?;
-    if (renderObject != null) {
-      renderObject.markNeedsPaint();
-    }
   }
 }

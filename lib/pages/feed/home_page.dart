@@ -24,6 +24,10 @@ import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
+import '../../providers/ai_assistant_mock_provider.dart';
+import '../../widgets/ai/ai_activity_card.dart';
+import '../../widgets/ai/ai_recommendation_card.dart';
+import '../ai/assistant_home_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -455,13 +459,17 @@ class _HomePageState extends State<HomePage>
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final post = _displayPosts[index];
+                    final aiProvider =
+                        context.watch<AiAssistantMockProvider>();
                     return FadeInUp(
                       delay: Duration(milliseconds: index * 60),
-                      child: _buildPostCard(post),
+                      child: _buildListItem(
+                        index,
+                        aiProvider: aiProvider,
+                      ),
                     );
                   },
-                  childCount: _displayPosts.length,
+                  childCount: _computeListItemCount(),
                 ),
               ),
             SliverToBoxAdapter(child: _buildBottomIndicator()),
@@ -534,6 +542,54 @@ class _HomePageState extends State<HomePage>
             MoeToast.info(context, '搜索功能即将上线');
           },
           tooltip: '搜索',
+        ),
+        Consumer<AiAssistantMockProvider>(
+          builder: (context, aiProvider, _) {
+            final unreadCount = aiProvider.unreadCount;
+            return IconButton(
+              tooltip: 'AI 助手',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AssistantHomePage(),
+                  ),
+                );
+              },
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    Icons.smart_toy_rounded,
+                    color: MoeTheme.of(context).primary,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
         IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded),
@@ -1193,6 +1249,86 @@ class _HomePageState extends State<HomePage>
         ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI card interleaving helpers
+  // ---------------------------------------------------------------------------
+
+  /// Position in the merged list where the AI activity card is inserted.
+  static const int _aiActivityInsertPosition = 4;
+
+  /// Position in the merged list where the AI recommendation list is inserted.
+  static const int _aiRecommendationInsertPosition = 12;
+
+  /// Number of regular posts that should appear before the AI recommendation card.
+  static const int _aiRecommendationPostThreshold = 7;
+
+  /// Whether an AI activity card should be shown given the current state.
+  bool _shouldShowAiActivity(AiAssistantMockProvider provider) {
+    return AiAssistantMockProvider.kAiAssistantEnabled &&
+        provider.activities.isNotEmpty;
+  }
+
+  /// Whether an AI recommendation list should be shown given the current state.
+  bool _shouldShowAiRecommendations(AiAssistantMockProvider provider) {
+    return AiAssistantMockProvider.kAiAssistantEnabled &&
+        provider.recommendations.isNotEmpty &&
+        _displayPosts.length >= _aiRecommendationPostThreshold;
+  }
+
+  /// Computes the total number of items in the SliverList, including AI cards.
+  int _computeListItemCount() {
+    int count = _displayPosts.length;
+    // Use context.watch so that AiAssistantMockProvider changes trigger
+    // SliverList rebuild with updated childCount.
+    final provider =
+        context.watch<AiAssistantMockProvider>();
+    if (_shouldShowAiActivity(provider)) count += 1;
+    if (_shouldShowAiRecommendations(provider)) count += 1;
+    return count;
+  }
+
+  /// Builds a single list item — either a regular post card or an AI card.
+  Widget _buildListItem(
+    int index, {
+    required AiAssistantMockProvider aiProvider,
+  }) {
+    final showActivity = _shouldShowAiActivity(aiProvider);
+    final showRecommendations = _shouldShowAiRecommendations(aiProvider);
+
+    // AI activity card position
+    if (showActivity && index == _aiActivityInsertPosition) {
+      return AiActivityCard(
+        key: const ValueKey('ai_activity_card'),
+        activity: aiProvider.activities.first,
+        onTap: () {
+          aiProvider.markAsRead(aiProvider.activities.first.id);
+        },
+      );
+    }
+
+    // AI recommendation list position
+    if (showRecommendations && index == _aiRecommendationInsertPosition) {
+      return AiRecommendationList(
+        key: const ValueKey('ai_recommendation_list'),
+        recommendations: aiProvider.recommendations,
+      );
+    }
+
+    // Regular post — calculate the correct post index by subtracting the
+    // number of AI cards that appear before this position.
+    int postIndex = index;
+    if (showActivity && index > _aiActivityInsertPosition) postIndex -= 1;
+    if (showRecommendations && index > _aiRecommendationInsertPosition) {
+      postIndex -= 1;
+    }
+
+    if (postIndex >= _displayPosts.length) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildPostCard(_displayPosts[postIndex]);
   }
 
   Widget _buildPostCard(Post post) {

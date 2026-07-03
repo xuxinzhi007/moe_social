@@ -2,63 +2,40 @@ package gamebiz
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode/utf8"
-
-	"backend/model"
 )
 
 const maxHistoryTurns = 10
 
-// buildRecentHistoryBlock 将最近回合注入 LLM 提示，保证对话连贯。
+// buildRecentHistoryBlock 将最近回合摘要注入 LLM 提示，保证对话连贯。
 func buildRecentHistoryBlock(ctx context.Context, st Store, sessionID uint) string {
 	if st == nil {
 		return ""
 	}
-	logs, err := st.ListRecentTurnLogs(ctx, sessionID, maxHistoryTurns)
-	if err != nil || len(logs) == 0 {
+	summaries, err := st.ListRecentTurnLogSummaries(ctx, sessionID, maxHistoryTurns)
+	if err != nil || len(summaries) == 0 {
 		return ""
 	}
 	var b strings.Builder
 	b.WriteString("【近期剧情（必须承接，禁止重复场景描述原文）】\n")
-	for _, log := range logs {
-		action := strings.TrimSpace(log.UserAction)
+	for _, s := range summaries {
+		action := strings.TrimSpace(s.UserAction)
 		if action == "" {
 			continue
 		}
 		b.WriteString("玩家：")
 		b.WriteString(truncateRunes(action, 80))
 		b.WriteString("\n")
-		prose := extractProseFromTurnLog(log)
-		if prose != "" {
+		narrative := strings.TrimSpace(s.NarrativePrefix)
+		if narrative != "" {
 			b.WriteString("叙事：")
-			b.WriteString(truncateRunes(prose, 160))
+			b.WriteString(truncateRunes(narrative, 160))
 			b.WriteString("\n")
 		}
 	}
 	return b.String()
-}
-
-func extractProseFromTurnLog(log model.GameTurnLog) string {
-	if strings.TrimSpace(log.SystemNarrative) == "" {
-		return ""
-	}
-	var lines []NarrativeLine
-	if err := json.Unmarshal([]byte(log.SystemNarrative), &lines); err != nil {
-		return ""
-	}
-	var parts []string
-	for _, line := range lines {
-		if line.Type == "prose" || line.Type == "npc" || line.Type == "system" {
-			c := strings.TrimSpace(line.Content)
-			if c != "" {
-				parts = append(parts, c)
-			}
-		}
-	}
-	return strings.Join(parts, " ")
 }
 
 func truncateRunes(s string, max int) string {

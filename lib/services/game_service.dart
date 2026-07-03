@@ -26,6 +26,13 @@ class GameService {
   static final GameService _instance = GameService._();
   factory GameService() => _instance;
 
+  http.Client? _activeStreamClient;
+
+  void cancelStream() {
+    _activeStreamClient?.close();
+    _activeStreamClient = null;
+  }
+
   static String? _requireUserId() {
     final userId = AuthService.currentUser;
     if (!ApiResponse.isValidUserId(userId)) {
@@ -92,6 +99,7 @@ class GameService {
       });
 
     final client = http.Client();
+    _activeStreamClient = client;
     try {
       final response = await client.send(request);
       if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -117,6 +125,7 @@ class GameService {
       }
     } finally {
       client.close();
+      _activeStreamClient = null;
     }
   }
 

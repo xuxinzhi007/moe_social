@@ -13,7 +13,16 @@ abstract final class MoeTokens {
   static const Color cardBackground = Colors.white;
   static const Color titleText = Color(0xFF333333);
   static const Color bodyText = Colors.black87;
+  static const Color caption = Color(0xFF3D3D50);
   static const Color hintText = Color(0xFF9E9E9E);
+
+  // ─── Semantic colors ──────────────────────────────────────────────
+  static const Color success = Color(0xFF2E7D32);
+  static const Color danger = Color(0xFFE53935);
+  static const Color warning = Color(0xFFFF6F00);
+
+  // ─── Game-specific colors ────────────────────────────────────────
+  static const Color gamePageBackground = Color(0xFFFFFBF5);
 
   // ─── Spacing scale (4px grid) ────────────────────────────────────
   /// 4px — 极小间距，图标内边距等

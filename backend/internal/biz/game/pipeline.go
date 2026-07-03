@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"backend/internal/platform/moelog"
 )
 
 // RunTurn 回合引擎唯一入口：Load → Parse → Execute → Narrate → Commit。
@@ -44,11 +46,23 @@ func RunTurn(
 	// 移动 / 拾取后刷新快照中的物品列表
 	if state.Moved {
 		snap.Scene = state.Scene
-		snap.SceneItems, _ = st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID)
+		if items, err := st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID); err != nil {
+			moelog.Warnf("game: list scene items: %v", err)
+		} else {
+			snap.SceneItems = items
+		}
 	}
 	if cmd.Kind == CmdPickup {
-		snap.Inventory, _ = st.ListInventoryItems(ctx, snap.Session.ID)
-		snap.SceneItems, _ = st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID)
+		if inv, err := st.ListInventoryItems(ctx, snap.Session.ID); err != nil {
+			moelog.Warnf("game: list inventory items: %v", err)
+		} else {
+			snap.Inventory = inv
+		}
+		if items, err := st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID); err != nil {
+			moelog.Warnf("game: list scene items after pickup: %v", err)
+		} else {
+			snap.SceneItems = items
+		}
 	}
 	snap.Flags = state.Flags
 

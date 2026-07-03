@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_lorebook.dart';
 import '../../models/ai_provider_profile.dart';
@@ -24,6 +25,10 @@ import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/app_message_widget.dart';
+import '../../providers/loading_provider.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/fade_in_up.dart';
 import 'ai_provider_profiles_page.dart';
 
 class AgentEditorPage extends StatefulWidget {
@@ -53,7 +58,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   String _providerProfileId = AiProviderProfile.builtinBackendId;
   String? _lorebookId;
   bool _isLoadingModels = false;
-  bool _isSaving = false;
   bool _createRealModel = false;
   bool _syncModelOnEdit = false;
   bool _showAdvancedFields = false;
@@ -95,6 +99,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         TextEditingController(text: agent?.openingMessage ?? '');
     _exampleDialoguesController =
         TextEditingController(text: agent?.exampleDialogues ?? '');
+    _modelNameController.addListener(() {
+      if (mounted) setState(() {});
+    });
     if (agent != null) {
       _providerProfileId =
           agent.providerProfileId ?? AiProviderProfile.builtinBackendId;
@@ -458,7 +465,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_pageActive) return;
-    setState(() => _isSaving = true);
+    final loadingProvider = context.read<LoadingProvider>();
+    loadingProvider.setOperationLoading(LoadingKeys.saveAgent, true);
     var didPop = false;
     try {
       final isNewAgent = widget.agent == null || _isEphemeralDraft;
@@ -534,7 +542,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       }
     } finally {
       if (mounted && _pageActive && !didPop) {
-        setState(() => _isSaving = false);
+        context.read<LoadingProvider>().setOperationLoading(LoadingKeys.saveAgent, false);
       }
     }
   }
@@ -730,29 +738,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             AiTheme.pagePadding,
             12,
           ),
-          child: SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: AiTheme.primaryButtonStyle(),
-              onPressed: _isSaving ? null : _save,
-              child: _isSaving
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Text('正在保存…'),
-                      ],
-                    )
-                  : Text(isCreate ? '保存角色卡' : '保存修改'),
+          child: LoadingButton(
+            operationKey: LoadingKeys.saveAgent,
+            onPressed: _save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AiBrandTokens.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+              ),
             ),
+            child: Text(isCreate ? '保存角色卡' : '保存修改'),
           ),
         ),
       ),
@@ -773,7 +770,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(bottom: 16 + bottomInset),
           children: [
-            Padding(
+            FadeInUp(
+              delay: Duration.zero,
+              child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 AiTheme.pagePadding,
                 8,
@@ -810,46 +809,50 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ),
               ),
             ),
-            _buildFieldSection(
+            ),
+            FadeInUp(
+              delay: MoeTokens.motionStaggerStep,
+              child: _buildFieldSection(
               title: '基础信息',
               subtitle: '名称与一句话介绍',
               children: [
-                TextFormField(
+                MoeInputField(
                   controller: _nameController,
+                  hintText: '角色名称',
                   style: AiTheme.title.copyWith(fontSize: 16),
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '角色名称',
-                    hintText: '例如：雾栀、图书管理员',
-                  ),
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? '请输入名称' : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                MoeInputField(
                   controller: _descController,
+                  hintText: '简介',
                   maxLines: 2,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '简介',
-                    hintText: '一句话说明角色气质或用途',
-                  ),
                 ),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: FilledButton.tonalIcon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor:
-                          AiBrandTokens.primary.withValues(alpha: 0.1),
-                      foregroundColor: AiBrandTokens.primary,
+                  child: Consumer<LoadingProvider>(
+                    builder: (context, loading, _) => FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor:
+                            AiBrandTokens.primary.withValues(alpha: 0.1),
+                        foregroundColor: AiBrandTokens.primary,
+                      ),
+                      onPressed: loading.isOperationLoading(LoadingKeys.saveAgent)
+                          ? null
+                          : _applyStarterTemplate,
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                      label: const Text('套用角色模板'),
                     ),
-                    onPressed: _isSaving ? null : _applyStarterTemplate,
-                    icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                    label: const Text('套用角色模板'),
                   ),
                 ),
               ],
             ),
-            _buildFieldSection(
+            ),
+            FadeInUp(
+              delay: MoeTokens.motionStaggerStep * 2,
+              child: _buildFieldSection(
               title: '模型与来源',
               subtitle: '选择 API 并填写要调用的模型 ID',
               children: [
@@ -913,16 +916,12 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                MoeInputField(
                   controller: _modelNameController,
+                  hintText: '绑定模型 ID',
                   style: AiTheme.mono,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '绑定模型 ID',
-                    hintText: 'gpt-4o-mini / deepseek-chat / gpt-5.3-codex',
-                  ),
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
-                  onChanged: (_) => setState(() {}),
                 ),
                 if (_isLoadingModels)
                   Padding(
@@ -984,42 +983,36 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ),
               ],
             ),
-            _buildFieldSection(
+            ),
+            FadeInUp(
+              delay: MoeTokens.motionStaggerStep * 3,
+              child: _buildFieldSection(
               title: '扮演设定',
               subtitle: '人设与场景决定聊天时的身份感',
               children: [
-                TextFormField(
+                MoeInputField(
                   controller: _personaController,
+                  hintText: '角色人设',
                   maxLines: 5,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '角色人设',
-                    hintText: '姓名、性格、说话方式、禁忌…',
-                    alignLabelWithHint: true,
-                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                MoeInputField(
                   controller: _scenarioController,
+                  hintText: '场景设定',
                   maxLines: 3,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '场景设定',
-                    hintText: '例如：深夜咖啡馆，你是店员',
-                    alignLabelWithHint: true,
-                  ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                MoeInputField(
                   controller: _openingMessageController,
+                  hintText: '开场白',
                   maxLines: 3,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '开场白',
-                    hintText: '进入聊天时角色说的第一句话',
-                    alignLabelWithHint: true,
-                  ),
                 ),
               ],
             ),
-            Padding(
+            ),
+            FadeInUp(
+              delay: MoeTokens.motionStaggerStep * 4,
+              child: Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
               child: AiSurfaceCard(
@@ -1090,29 +1083,22 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                         ),
                         const SizedBox(height: 12),
                       ],
-                      TextFormField(
+                      MoeInputField(
                         controller: _promptController,
+                        hintText: '系统提示词',
                         maxLines: 6,
-                        decoration: AiTheme.inputDecoration(
-                          labelText: '系统提示词',
-                          hintText: '留空时由人设+场景自动拼装',
-                          alignLabelWithHint: true,
-                        ),
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
+                      MoeInputField(
                         controller: _exampleDialoguesController,
+                        hintText: '示例对话',
                         maxLines: 5,
-                        decoration: AiTheme.inputDecoration(
-                          labelText: '示例对话',
-                          hintText: '多轮示例，约束语气',
-                          alignLabelWithHint: true,
-                        ),
                       ),
                     ],
                   ],
                 ),
               ),
+            ),
             ),
           ],
         ),

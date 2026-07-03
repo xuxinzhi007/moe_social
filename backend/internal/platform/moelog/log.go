@@ -32,6 +32,11 @@ func Debugf(format string, args ...any) {
 	log.Printf("[DEBUG] "+format, args...)
 }
 
+// Warnf printf 风格的警告日志。
+func Warnf(format string, args ...any) {
+	log.Printf("[WARN] "+format, args...)
+}
+
 type ctxLogger struct{}
 
 // WithContext 兼容 logx.WithContext(ctx) 链式调用（忽略 context）。

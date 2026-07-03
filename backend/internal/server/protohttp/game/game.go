@@ -46,3 +46,35 @@ func (s *Server) GetGameState(ctx context.Context, in *gamev1.GetGameStateReques
 	}
 	return app.GetGameState(ctx, in)
 }
+
+func (s *Server) SaveGame(ctx context.Context, in *gamev1.SaveGameRequest) (*gamev1.SaveGameReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.SaveGame(ctx, in)
+}
+
+func (s *Server) LoadGame(ctx context.Context, in *gamev1.LoadGameRequest) (*gamev1.LoadGameReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.LoadGame(ctx, in)
+}
+
+func (s *Server) ListSaveSlots(ctx context.Context, in *gamev1.ListSaveSlotsRequest) (*gamev1.ListSaveSlotsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.ListSaveSlots(ctx, in)
+}
+
+func (s *Server) DeleteSaveSlot(ctx context.Context, in *gamev1.DeleteSaveSlotRequest) (*gamev1.DeleteSaveSlotReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.DeleteSaveSlot(ctx, in)
+}

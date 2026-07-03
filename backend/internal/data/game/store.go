@@ -8,6 +8,7 @@ import (
 	"backend/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type store struct {
@@ -107,6 +108,22 @@ func (s *store) ListNpcMemories(ctx context.Context, playerID, npcID uint, limit
 	return rows, err
 }
 
+func (s *store) BatchListNpcMemories(ctx context.Context, playerID uint, npcIDs []uint, limitPerNpc int) ([]model.GameNpcMemory, error) {
+	if len(npcIDs) == 0 {
+		return nil, nil
+	}
+	if limitPerNpc <= 0 {
+		limitPerNpc = 5
+	}
+	var rows []model.GameNpcMemory
+	err := s.db.WithContext(ctx).
+		Where("player_id = ? AND npc_id IN ?", playerID, npcIDs).
+		Order("importance DESC, created_at DESC").
+		Limit(len(npcIDs) * limitPerNpc).
+		Find(&rows).Error
+	return rows, err
+}
+
 func (s *store) CreateNpcMemory(ctx context.Context, row *model.GameNpcMemory) error {
 	return s.db.WithContext(ctx).Create(row).Error
 }
@@ -152,6 +169,28 @@ func (s *store) ListRecentTurnLogs(ctx context.Context, sessionID uint, limit in
 	return rows, nil
 }
 
+func (s *store) ListRecentTurnLogSummaries(ctx context.Context, sessionID uint, limit int) ([]gamebiz.TurnLogSummary, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	var results []gamebiz.TurnLogSummary
+	err := s.db.WithContext(ctx).
+		Model(&model.GameTurnLog{}).
+		Select("id, session_id, user_action, SUBSTRING(system_narrative, 1, 500) as narrative_prefix, created_at").
+		Where("session_id = ?", sessionID).
+		Order("id DESC").
+		Limit(limit).
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	// 反转为时间正序
+	for i, j := 0, len(results)-1; i < j; i, j = i+1, j-1 {
+		results[i], results[j] = results[j], results[i]
+	}
+	return results, nil
+}
+
 func (s *store) CreateTurnLog(ctx context.Context, row *model.GameTurnLog) error {
 	return s.db.WithContext(ctx).Create(row).Error
 }
@@ -194,4 +233,186 @@ func (s *store) FindWorldItemByName(ctx context.Context, sessionID, sceneID uint
 func (s *store) MoveItemToInventory(ctx context.Context, itemID uint) error {
 	return s.db.WithContext(ctx).Model(&model.GameWorldItem{}).Where("id = ?", itemID).
 		Updates(map[string]interface{}{"in_inventory": true, "scene_id": 0}).Error
+}
+
+func (s *store) ListNpcTemplates(ctx context.Context, activeOnly bool) ([]model.GameNpcTemplate, error) {
+	var templates []model.GameNpcTemplate
+	q := s.db.WithContext(ctx)
+	if activeOnly {
+		q = q.Where("is_active = ?", true)
+	}
+	err := q.Order("id ASC").Find(&templates).Error
+	return templates, err
+}
+
+func (s *store) FindNpcTemplateByKey(ctx context.Context, npcKey string) (*model.GameNpcTemplate, error) {
+	var tpl model.GameNpcTemplate
+	err := s.db.WithContext(ctx).Where("npc_key = ? AND is_active = ?", npcKey, true).First(&tpl).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tpl, nil
+}
+
+func (s *store) FindNpcTemplateByName(ctx context.Context, displayName string) (*model.GameNpcTemplate, error) {
+	var tpl model.GameNpcTemplate
+	err := s.db.WithContext(ctx).Where("display_name = ? AND is_active = ?", displayName, true).First(&tpl).Error
+	if err != nil {
+		return nil, err
+	}
+	return &tpl, nil
+}
+
+func (s *store) UpsertNpcTemplate(ctx context.Context, tpl *model.GameNpcTemplate) error {
+	var existing model.GameNpcTemplate
+	err := s.db.WithContext(ctx).Where("npc_key = ?", tpl.NpcKey).First(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return s.db.WithContext(ctx).Create(tpl).Error
+	}
+	if err != nil {
+		return err
+	}
+	return s.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
+		"display_name":          tpl.DisplayName,
+		"persona":               tpl.Persona,
+		"base_favorability":     tpl.BaseFavorability,
+		"dialogue_rules_json":   tpl.DialogueRulesJSON,
+		"fallback_responses_json": tpl.FallbackResponsesJSON,
+		"scene_affinity":        tpl.SceneAffinity,
+		"is_active":             tpl.IsActive,
+	}).Error
+}
+
+// --- 存档系统 ---
+
+func (s *store) ListSaveSlots(ctx context.Context, userID uint) ([]model.GameSaveSlot, error) {
+	var rows []model.GameSaveSlot
+	err := s.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("slot_index ASC").
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) SaveGame(ctx context.Context, slot *model.GameSaveSlot) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "user_id"}, {Name: "slot_index"}},
+			DoUpdates: clause.AssignmentColumns([]string{"session_id", "label", "snapshot_json", "turn_count", "scene_name", "updated_at"}),
+		}).
+		Create(slot).Error
+}
+
+func (s *store) DeleteSaveSlot(ctx context.Context, userID uint, slotIndex uint8) error {
+	return s.db.WithContext(ctx).
+		Where("user_id = ? AND slot_index = ?", userID, slotIndex).
+		Delete(&model.GameSaveSlot{}).Error
+}
+
+// --- 条件对话模板 ---
+
+func (s *store) FindMatchingDialogueTemplates(ctx context.Context, npcKey string, limit int) ([]model.GameDialogueTemplate, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	var rows []model.GameDialogueTemplate
+	err := s.db.WithContext(ctx).
+		Where("npc_key = ? AND is_enabled = ?", npcKey, true).
+		Order("priority DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+// --- 故事线配置 ---
+
+func (s *store) ListActiveStoryArcs(ctx context.Context) ([]model.GameStoryArc, error) {
+	var rows []model.GameStoryArc
+	err := s.db.WithContext(ctx).
+		Where("is_active = ?", true).
+		Order("id ASC").
+		Find(&rows).Error
+	return rows, err
+}
+
+// --- WorldState 独立字段表（双写架构） ---
+
+func (s *store) UpsertWorldState(ctx context.Context, row *model.GameWorldState) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "session_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"player_focus", "player_posture", "world_mood",
+				"story_phase", "turn_count", "last_talk_npc", "in_dialogue", "updated_at",
+			}),
+		}).
+		Create(row).Error
+}
+
+func (s *store) GetWorldState(ctx context.Context, sessionID uint) (*model.GameWorldState, error) {
+	var row model.GameWorldState
+	err := s.db.WithContext(ctx).Where("session_id = ?", sessionID).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+func (s *store) UpsertDiscoveredItem(ctx context.Context, row *model.GameDiscoveredItem) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "session_id"}, {Name: "item_name"}},
+			DoNothing: true,
+		}).
+		Create(row).Error
+}
+
+func (s *store) ListDiscoveredItems(ctx context.Context, sessionID uint) ([]model.GameDiscoveredItem, error) {
+	var rows []model.GameDiscoveredItem
+	err := s.db.WithContext(ctx).Where("session_id = ?", sessionID).Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) UpsertVisitedScene(ctx context.Context, row *model.GameVisitedScene) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "session_id"}, {Name: "scene_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"visit_count", "last_visited_at"}),
+		}).
+		Create(row).Error
+}
+
+func (s *store) ListVisitedScenes(ctx context.Context, sessionID uint) ([]model.GameVisitedScene, error) {
+	var rows []model.GameVisitedScene
+	err := s.db.WithContext(ctx).Where("session_id = ?", sessionID).Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) UpsertNpcActivity(ctx context.Context, row *model.GameNpcActivity) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "session_id"}, {Name: "npc_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"activity", "scene_name", "updated_at"}),
+		}).
+		Create(row).Error
+}
+
+func (s *store) ListNpcActivities(ctx context.Context, sessionID uint) ([]model.GameNpcActivity, error) {
+	var rows []model.GameNpcActivity
+	err := s.db.WithContext(ctx).Where("session_id = ?", sessionID).Find(&rows).Error
+	return rows, err
+}
+
+// --- Agent 运行时（NPC-Agent 绑定） ---
+
+func (s *store) FindAgentRuntime(ctx context.Context, agentRuntimeID uint) (*model.MoeAgentRuntime, error) {
+	var row model.MoeAgentRuntime
+	err := s.db.WithContext(ctx).Where("id = ?", agentRuntimeID).First(&row).Error
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
 }

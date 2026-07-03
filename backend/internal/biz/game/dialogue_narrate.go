@@ -12,10 +12,11 @@ import (
 
 // dialoguePromptContext NPC 对话专用 prompt（比开放世界 prompt 更短、更聚焦）。
 type dialoguePromptContext struct {
-	block   string
-	action  string
-	npcName string
-	opening bool
+	block              string
+	action             string
+	npcName            string
+	opening            bool
+	agentSystemPrompt  string // NPC 绑定 Agent 的 system prompt（可选）
 }
 
 func buildDialoguePromptContext(
@@ -25,6 +26,22 @@ func buildDialoguePromptContext(
 	memBlock, historyBlock, loreBlock string,
 	action string,
 	opening bool,
+) dialoguePromptContext {
+	return buildDialoguePromptContextWithAgent(
+		scene, npcName, persona, gameTime, flags,
+		memBlock, historyBlock, loreBlock, action, opening, "",
+	)
+}
+
+// buildDialoguePromptContextWithAgent NPC-Agent 绑定时，将 Agent 的 system prompt 注入上下文。
+func buildDialoguePromptContextWithAgent(
+	scene model.GameScene,
+	npcName, persona, gameTime string,
+	flags WorldFlags,
+	memBlock, historyBlock, loreBlock string,
+	action string,
+	opening bool,
+	agentSystemPrompt string,
 ) dialoguePromptContext {
 	if strings.TrimSpace(persona) == "" {
 		persona = "镇上的居民，性格随场景而定"
@@ -61,7 +78,7 @@ func buildDialoguePromptContext(
 		rule,
 		npcName,
 	)
-	return dialoguePromptContext{block: block, action: action, npcName: npcName, opening: opening}
+	return dialoguePromptContext{block: block, action: action, npcName: npcName, opening: opening, agentSystemPrompt: agentSystemPrompt}
 }
 
 func buildDialoguePromptUser(ctx dialoguePromptContext) string {
@@ -119,6 +136,10 @@ func callDialogueLLM(
 		modelName = strings.TrimSpace(deps.Inference.DefaultModel)
 	}
 	sys := fmt.Sprintf("你是文字冒险游戏中 NPC「%s」的对话写手。只输出一段中文叙事正文，含该 NPC 的台词。", promptCtx.npcName)
+	// NPC-Agent 绑定：将 Agent 的 system prompt 注入到对话上下文
+	if promptCtx.agentSystemPrompt != "" {
+		sys = sys + "\n\n【NPC 背景人设（来自 Agent）】\n" + promptCtx.agentSystemPrompt
+	}
 	user := buildDialoguePromptUser(promptCtx)
 	opts := llminference.ChatOptions{Temperature: 0.92, MaxTokens: 400}
 
@@ -165,4 +186,22 @@ func npcPersona(name string, npcs []model.GameNpc) string {
 		}
 	}
 	return ""
+}
+
+// loadNpcAgentConfig 查找 NPC 模板，若绑定了 Agent 则加载其 system prompt 和 model name。
+// 返回空串表示未绑定或加载失败。
+func loadNpcAgentConfig(ctx context.Context, st Store, npcName string) (systemPrompt string, modelName string) {
+	if st == nil {
+		return "", ""
+	}
+	tpl := lookupNpcTemplate(ctx, st, npcName)
+	if tpl == nil || tpl.AgentRuntimeID == nil || *tpl.AgentRuntimeID == 0 {
+		return "", ""
+	}
+	agent, err := st.FindAgentRuntime(ctx, *tpl.AgentRuntimeID)
+	if err != nil {
+		moelog.Infof("game dialogue: load agent runtime id=%d failed: %v", *tpl.AgentRuntimeID, err)
+		return "", ""
+	}
+	return strings.TrimSpace(agent.SystemPrompt), strings.TrimSpace(agent.ModelName)
 }

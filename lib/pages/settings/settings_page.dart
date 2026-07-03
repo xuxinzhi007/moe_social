@@ -8,6 +8,7 @@ import '../../providers/device_info_provider.dart';
 
 import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/fade_in_up.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
@@ -504,89 +505,132 @@ class _SettingsPageState extends State<SettingsPage> {
     final avatarProvider = Provider.of<VirtualAvatarProvider>(context);
 
     return [
-      _buildExperienceDashboard(avatarProvider),
-      const SizedBox(height: 24),
-      _buildSectionTitle('账号与隐私', key: _moduleKeys['账号与隐私']),
-      const AccountSecurityModule(),
-      MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.campaign_outlined,
-            title: '系统公告',
-            subtitle: '查看运营发布的平台公告',
-            color: MoeTokens.primary,
-            onTap: () => Navigator.pushNamed(context, '/announcements'),
-          ),
-          MoeMenuItem(
-            icon: Icons.mark_chat_unread_outlined,
-            title: '私信记录保留',
-            subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',
-            color: Colors.teal,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => const MessageRetentionSettingsPage(),
-                ),
-              );
-            },
-          ),
-          MoeMenuItem(
-            icon: Icons.notifications_active_rounded,
-            title: '推送通知',
-            subtitle: '接收最新动态和系统通知',
-            color: Colors.orange,
-            trailing: Switch.adaptive(
-              value: _notificationsEnabled,
-              activeThumbColor: MoeTheme.of(context).primary,
-              onChanged: (bool value) => _onNotificationToggle(value),
-            ),
-            onTap: () => _onNotificationToggle(!_notificationsEnabled),
-          ),
-        ],
+      FadeInUp(
+        delay: Duration.zero,
+        child: _buildExperienceDashboard(avatarProvider),
       ),
       const SizedBox(height: 24),
-      _buildSectionTitle('外观与体验', key: _moduleKeys['外观与体验']),
-      const AppearanceModule(),
-      MoeMenuCard(
-        items: [
-          MoeMenuItem(
-            icon: Icons.smart_toy_rounded,
-            title: '虚拟助手',
-            subtitle: avatarProvider.enabled
-                ? '已开启，点击右侧开关或进入自定义'
-                : '默认关闭，开启后可自定义形象',
-            color: MoeTheme.of(context).primary,
-            trailing: Switch.adaptive(
-              value: avatarProvider.enabled,
-              activeThumbColor: MoeTheme.of(context).primary,
-              onChanged: (bool value) async {
-                await avatarProvider.setEnabled(value);
-                if (!mounted) return;
-                MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+      FadeInUp(
+        delay: const Duration(milliseconds: 60),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('账号与隐私', key: _moduleKeys['账号与隐私']),
+            const AccountSecurityModule(),
+            MoeMenuCard(
+              items: [
+                MoeMenuItem(
+                  icon: Icons.campaign_outlined,
+                  title: '系统公告',
+                  subtitle: '查看运营发布的平台公告',
+                  color: MoeTokens.primary,
+                  onTap: () => Navigator.pushNamed(context, '/announcements'),
+                ),
+                MoeMenuItem(
+                  icon: Icons.mark_chat_unread_outlined,
+                  title: '私信记录保留',
+                  subtitle: '发送方在服务端保留策略（与会员/VIP 规则配合）',
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const MessageRetentionSettingsPage(),
+                      ),
+                    );
+                  },
+                ),
+                MoeMenuItem(
+                  icon: Icons.notifications_active_rounded,
+                  title: '推送通知',
+                  subtitle: '接收最新动态和系统通知',
+                  color: Colors.orange,
+                  trailing: Switch.adaptive(
+                    value: _notificationsEnabled,
+                    activeThumbColor: MoeTheme.of(context).primary,
+                    onChanged: (bool value) => _onNotificationToggle(value),
+                  ),
+                  onTap: () => _onNotificationToggle(!_notificationsEnabled),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 24),
+      FadeInUp(
+        delay: const Duration(milliseconds: 120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('外观与体验', key: _moduleKeys['外观与体验']),
+            const AppearanceModule(),
+            MoeMenuCard(
+              items: [
+                MoeMenuItem(
+                  icon: Icons.smart_toy_rounded,
+                  title: '虚拟助手',
+                  subtitle: avatarProvider.enabled
+                      ? '已开启，点击右侧开关或进入自定义'
+                      : '默认关闭，开启后可自定义形象',
+                  color: MoeTheme.of(context).primary,
+                  trailing: Switch.adaptive(
+                    value: avatarProvider.enabled,
+                    activeThumbColor: MoeTheme.of(context).primary,
+                    onChanged: (bool value) async {
+                      await avatarProvider.setEnabled(value);
+                      if (!mounted) return;
+                      MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+                    },
+                  ),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/virtual-avatar-settings');
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 24),
+      FadeInUp(
+        delay: const Duration(milliseconds: 180),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('设备与数据', key: _moduleKeys['设备与数据']),
+            DeviceStorageModule(
+              autoUpdateOnLaunch: _autoUpdateOnLaunch,
+              onAutoUpdateChanged: (bool value) async {
+                setState(() => _autoUpdateOnLaunch = value);
+                await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
               },
             ),
-            onTap: () {
-              Navigator.pushNamed(context, '/virtual-avatar-settings');
-            },
-          ),
-        ],
+          ],
+        ),
       ),
       const SizedBox(height: 24),
-      _buildSectionTitle('设备与数据', key: _moduleKeys['设备与数据']),
-      DeviceStorageModule(
-        autoUpdateOnLaunch: _autoUpdateOnLaunch,
-        onAutoUpdateChanged: (bool value) async {
-          setState(() => _autoUpdateOnLaunch = value);
-          await StartupUpdatePreferences.setAutoCheckOnLaunch(value);
-        },
+      FadeInUp(
+        delay: const Duration(milliseconds: 240),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('高级选项', key: _moduleKeys['高级选项']),
+            const SettingsAdvancedSection(),
+          ],
+        ),
       ),
       const SizedBox(height: 24),
-      _buildSectionTitle('高级选项', key: _moduleKeys['高级选项']),
-      const SettingsAdvancedSection(),
-      const SizedBox(height: 24),
-      _buildSectionTitle('关于与支持', key: _moduleKeys['关于与支持']),
-      const AboutModule(),
+      FadeInUp(
+        delay: const Duration(milliseconds: 300),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionTitle('关于与支持', key: _moduleKeys['关于与支持']),
+            const AboutModule(),
+          ],
+        ),
+      ),
     ];
   }
 

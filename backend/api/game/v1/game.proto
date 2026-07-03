@@ -89,6 +89,57 @@ message GetGameStateReply {
   repeated string story_arc_titles = 10;
 }
 
+// --- 存档系统 ---
+
+message SaveSlotInfo {
+  uint32 slot_index = 1;
+  string label = 2;
+  int32 turn_count = 3;
+  string scene_name = 4;
+  string updated_at = 5;
+}
+
+message SaveGameRequest {
+  string user_id = 1;
+  uint64 session_id = 2;
+  uint32 slot_index = 3;
+  string label = 4;
+}
+
+message SaveGameReply {
+  bool success = 1;
+  SaveSlotInfo slot = 2;
+}
+
+message LoadGameRequest {
+  string user_id = 1;
+  uint32 slot_index = 2;
+}
+
+message LoadGameReply {
+  uint64 session_id = 1;
+  string scene_name = 2;
+  int32 turn_count = 3;
+  string label = 4;
+}
+
+message ListSaveSlotsRequest {
+  string user_id = 1;
+}
+
+message ListSaveSlotsReply {
+  repeated SaveSlotInfo slots = 1;
+}
+
+message DeleteSaveSlotRequest {
+  string user_id = 1;
+  uint32 slot_index = 2;
+}
+
+message DeleteSaveSlotReply {
+  bool success = 1;
+}
+
 service Game {
   rpc InitGameSession(InitGameSessionRequest) returns (InitGameSessionReply) {
     option (google.api.http) = { post: "/api/user/{user_id}/game/init" body: "*" };
@@ -98,5 +149,17 @@ service Game {
   }
   rpc GetGameState(GetGameStateRequest) returns (GetGameStateReply) {
     option (google.api.http) = { get: "/api/user/{user_id}/game/state" };
+  }
+  rpc SaveGame(SaveGameRequest) returns (SaveGameReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/game/save" body: "*" };
+  }
+  rpc LoadGame(LoadGameRequest) returns (LoadGameReply) {
+    option (google.api.http) = { post: "/api/user/{user_id}/game/load" body: "*" };
+  }
+  rpc ListSaveSlots(ListSaveSlotsRequest) returns (ListSaveSlotsReply) {
+    option (google.api.http) = { get: "/api/user/{user_id}/game/slots" };
+  }
+  rpc DeleteSaveSlot(DeleteSaveSlotRequest) returns (DeleteSaveSlotReply) {
+    option (google.api.http) = { delete: "/api/user/{user_id}/game/slots/{slot_index}" };
   }
 }

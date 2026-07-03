@@ -2,7 +2,9 @@ package gamebiz
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"backend/model"
@@ -112,29 +114,96 @@ func narrateDialogue(
 	opening bool,
 	onChunk ProseStreamHandler,
 ) (turnLLMOutput, string, error) {
+	// 对话缓存：检查是否命中
+	cacheKey := dialogueCacheKey(state.Scene.Name, npcName, action, state.Flags)
+	if out, src, ok := globalDialogueCache.get(cacheKey); ok {
+		return out, src, nil
+	}
+	// 优先检查条件对话模板
+	if st != nil {
+		npcID := findNpcIDByName(state.NPCs, npcName)
+		npcFavor := findNpcFavorByName(state.NPCs, snap.Favor, npcName)
+		var memTexts []string
+		if npcID > 0 {
+			memTexts = collectNpcMemoryTexts(ctx, st, snap.UserID, npcID)
+		}
+		if tpl, favorDelta, matched := findMatchingDialogue(ctx, st, npcName, npcFavor, state.Flags, memTexts); matched {
+			prose := strings.NewReplacer(
+				"{npc}", npcName,
+				"{action}", action,
+				"{player}", fmt.Sprintf("%d", snap.UserID),
+			).Replace(tpl)
+			deltas := map[string]int{}
+			if favorDelta != 0 {
+				deltas[npcName] = favorDelta
+			}
+			out := turnLLMOutput{
+				Prose:       prose,
+				FavorDeltas: deltas,
+				SuggestedActions: []string{
+					"继续追问",
+					fmt.Sprintf("向%s打听钟楼", npcName),
+					"结束对话，观察周围",
+				},
+			}
+			// 写入缓存（条件对话可缓存）
+			globalDialogueCache.put(cacheKey, out, "dialogue_condition")
+			return out, "dialogue_condition", nil
+		}
+	}
+
 	if snap.LlmOnline && deps.Inference.Ready() {
 		memBlock := buildMemoryBlock(ctx, st, snap.UserID, state.NPCs)
 		loreBlock := loadLorebookBlock(ctx, st, snap.UserID, state.Scene.Name, action)
-		promptCtx := buildDialoguePromptContext(
+		// NPC-Agent 绑定：加载绑定 Agent 的 system prompt 和 model 配置
+		agentPrompt, agentModel := loadNpcAgentConfig(ctx, st, npcName)
+		if agentModel != "" {
+			deps.Model = agentModel
+		}
+		promptCtx := buildDialoguePromptContextWithAgent(
 			state.Scene, npcName, npcPersona(npcName, state.NPCs),
 			snap.Session.GameTime, state.Flags,
 			memBlock, snap.HistoryBlock, loreBlock, action, opening,
+			agentPrompt,
 		)
 		if out, src, err := resolveDialogueLLM(ctx, deps, promptCtx, state.Flags, state.Scene.Name, onChunk); err == nil {
+			// LLM 开放对话不缓存
 			return out, src, nil
 		}
 	}
 	if opening {
-		out := talkStartOutput(npcName)
-		return normalizeTurnOutput(out, state.Flags, state.Scene.Name), "dialogue_fallback", nil
+		out := talkStartOutput(ctx, st, npcName)
+		out = normalizeTurnOutput(out, state.Flags, state.Scene.Name)
+		globalDialogueCache.put(cacheKey, out, "dialogue_fallback")
+		return out, "dialogue_fallback", nil
 	}
-	out := dialogueReplyOutput(npcName, action)
-	return normalizeTurnOutput(out, state.Flags, state.Scene.Name), "dialogue_fallback", nil
+	out := dialogueReplyOutput(ctx, st, npcName, action)
+	out = normalizeTurnOutput(out, state.Flags, state.Scene.Name)
+	globalDialogueCache.put(cacheKey, out, "dialogue_fallback")
+	return out, "dialogue_fallback", nil
 }
 
 // --- 结构化叙事模板（Execute 已改状态，此处只写 prose） ---
 
-func talkStartOutput(target string) turnLLMOutput {
+func talkStartOutput(ctx context.Context, st Store, target string) turnLLMOutput {
+	// 尝试从 DB 模板获取开场白
+	if tpl := lookupNpcTemplate(ctx, st, target); tpl != nil {
+		var fb FallbackResponses
+		if err := json.Unmarshal([]byte(tpl.FallbackResponsesJSON), &fb); err == nil && fb.Opening != "" {
+			prose := strings.NewReplacer("{target}", target, "{npc}", tpl.DisplayName).
+				Replace(fb.Opening)
+			return turnLLMOutput{
+				Prose:       prose,
+				FavorDeltas: map[string]int{target: 1},
+				SuggestedActions: []string{
+					fmt.Sprintf("问%s这里的情况", target),
+					"继续追问",
+					"观察周围",
+				},
+			}
+		}
+	}
+	// 硬编码兜底
 	prose := fmt.Sprintf(
 		`你走向%s，对方从手头的事里抬起头。空气里有一瞬的停顿，随后%s开口了：「……你找我有事？」`,
 		target, target,
@@ -150,8 +219,8 @@ func talkStartOutput(target string) turnLLMOutput {
 	}
 }
 
-func dialogueReplyOutput(npcName, action string) turnLLMOutput {
-	prose := dialogueTurnProse(npcName, action)
+func dialogueReplyOutput(ctx context.Context, st Store, npcName, action string) turnLLMOutput {
+	prose := dialogueTurnProseFromTemplate(ctx, st, npcName, action)
 	return turnLLMOutput{
 		Prose:       prose,
 		FavorDeltas: map[string]int{npcName: 1},
@@ -163,6 +232,53 @@ func dialogueReplyOutput(npcName, action string) turnLLMOutput {
 	}
 }
 
+// lookupNpcTemplate 按 display_name 查找 NPC 模板，失败时返回 nil 并记录 warn。
+func lookupNpcTemplate(ctx context.Context, st Store, npcName string) *model.GameNpcTemplate {
+	if st == nil {
+		return nil
+	}
+	tpl, err := st.FindNpcTemplateByName(ctx, npcName)
+	if err != nil {
+		slog.Warn("[dialogue] 查询 NPC 模板失败，回退硬编码", "npc", npcName, "err", err)
+		return nil
+	}
+	return tpl
+}
+
+// dialogueTurnProseFromTemplate 优先使用 DB 模板的 DialogueRulesJSON 匹配玩家输入，
+// 未命中则用 FallbackResponsesJSON.Default；任何失败都回退到硬编码 dialogueTurnProse。
+func dialogueTurnProseFromTemplate(ctx context.Context, st Store, npcName, action string) string {
+	tpl := lookupNpcTemplate(ctx, st, npcName)
+	if tpl == nil {
+		return dialogueTurnProse(npcName, action)
+	}
+
+	a := strings.TrimSpace(action)
+
+	// 尝试解析规则并匹配
+	var rules []DialogueRule
+	if err := json.Unmarshal([]byte(tpl.DialogueRulesJSON), &rules); err == nil {
+		for _, rule := range rules {
+			for _, kw := range rule.Keywords {
+				if strings.Contains(a, kw) {
+					return rule.Response
+				}
+			}
+		}
+	}
+
+	// 尝试解析 fallback default
+	var fb FallbackResponses
+	if err := json.Unmarshal([]byte(tpl.FallbackResponsesJSON), &fb); err == nil && fb.Default != "" {
+		return strings.NewReplacer("{action}", a, "{npc}", tpl.DisplayName).
+			Replace(fb.Default)
+	}
+
+	// 所有解析都失败，回退硬编码
+	return dialogueTurnProse(npcName, action)
+}
+
+// dialogueTurnProse 硬编码 NPC 对话兜底（DB 不可用或模板解析失败时使用）。
 func dialogueTurnProse(npcName, action string) string {
 	a := strings.TrimSpace(action)
 	switch npcName {

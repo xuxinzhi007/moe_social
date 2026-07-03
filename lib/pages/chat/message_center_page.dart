@@ -89,82 +89,82 @@ class _MessageCenterPageState extends State<MessageCenterPage>
       body: Scaffold(
         backgroundColor: MoeTokens.pageBackground,
         appBar: AppBar(
-        title: const Text(
-          '好友',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: MoeTokens.pageBackground,
-        foregroundColor: MoeTokens.titleText,
-        actions: [
-          IconButton(
-            tooltip: '添加同好',
-            onPressed: _showAddFriendSheet,
-            icon: const Icon(Icons.person_add_rounded),
+          title: const Text(
+            '好友',
+            style: TextStyle(fontWeight: FontWeight.w800),
           ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: MoeTokens.cardShadow(tint: moe.primary, blur: 10),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                dividerHeight: 0,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: MoeTokens.primaryGradient,
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: MoeTokens.pageBackground,
+          foregroundColor: MoeTokens.titleText,
+          actions: [
+            IconButton(
+              tooltip: '添加同好',
+              onPressed: _showAddFriendSheet,
+              icon: const Icon(Icons.person_add_rounded),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(52),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: MoeTokens.cardShadow(tint: moe.primary, blur: 10),
                 ),
-                labelColor: Colors.white,
-                unselectedLabelColor: MoeTokens.hintText,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-                tabs: [
-                  for (final t in _tabs)
-                    Tab(
-                      height: 36,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(t.icon, size: 16),
-                          const SizedBox(width: 4),
-                          Text(t.label),
-                        ],
+                child: TabBar(
+                  controller: _tabController,
+                  dividerHeight: 0,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: MoeTokens.primaryGradient,
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: MoeTokens.hintText,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  tabs: [
+                    for (final t in _tabs)
+                      Tab(
+                        height: 36,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(t.icon, size: 16),
+                            const SizedBox(width: 4),
+                            Text(t.label),
+                          ],
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            ConversationsPage(
+              embedded: true,
+              showEmbeddedToolbar: false,
+              onEmptyFindFriends: () => _tabController.animateTo(1),
+            ),
+            const FriendsPage(contactsOnly: true),
+          ],
+        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          ConversationsPage(
-            embedded: true,
-            showEmbeddedToolbar: false,
-            onEmptyFindFriends: () => _tabController.animateTo(1),
-          ),
-          const FriendsPage(contactsOnly: true),
-        ],
-      ),
-    ),
     );
   }
 }
