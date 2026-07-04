@@ -2,8 +2,10 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
+	"backend/internal/server/transport"
 	moeadmin "backend/internal/service/moe"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -34,4 +36,21 @@ func RegisterOpsHTTP(srv *khttp.Server, admin *moeadmin.AdminService) {
 	r.GET("/health", healthHandler)
 	r.GET("/migration", migrationHandler)
 	r.GET("/kratos/v1/moe/runtimes", listRuntimesHandler(admin))
+}
+
+func WrapNetHTTPHandler(h http.HandlerFunc) func(khttp.Context) error {
+	if h == nil {
+		return func(khttp.Context) error { return nil }
+	}
+	return func(ctx khttp.Context) error {
+		h(ctx.Response(), ctx.Request())
+		return nil
+	}
+}
+
+func RegisterTransportHTTP(srv *khttp.Server, deps transport.Deps) {
+	if srv == nil || !deps.Valid() {
+		return
+	}
+	transport.RegisterHTTP(srv, deps)
 }

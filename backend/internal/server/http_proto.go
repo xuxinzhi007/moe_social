@@ -20,7 +20,7 @@ import (
 	postv1 "backend/api/post/v1"
 	userv1 "backend/api/user/v1"
 	vipv1 "backend/api/vip/v1"
-	"backend/internal/platform/svc"
+	admincfg "backend/internal/apilegacy/config"
 	moeadminhttp "backend/internal/server/protohttp"
 	achievementhttp "backend/internal/server/protohttp/achievement"
 	adminapphttp "backend/internal/server/protohttp/adminapp"
@@ -67,31 +67,31 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// ProtoHTTPDeps proto HTTP 濞夈劌鍞芥笟婵婄閿涘牅绗?SocialGRPCDeps 閸氬苯鑸伴敍瀛? 鐎规ɑ鏌?Register*HTTPServer閿涘鈧?
+// ProtoHTTPDeps groups proto HTTP registration dependencies.
 type ProtoHTTPDeps struct {
-	LandingApp          *landingapp.AppService
-	CheckinApp          *checkinapp.AppService
-	AchievementApp      *achievementapp.AppService
-	PostApp             *postapp.AppService
-	GiftApp             *giftapp.AppService
-	GameApp             *gameapp.AppService
-	UserApp             *userapp.AppService
-	CommentApp          *commentapp.AppService
-	CommunityApp        *communityapp.AppService
-	ChatApp             *chatapp.AppService
-	NotifyApp           *notifyapp.AppService
-	BehaviorApp         *behaviorapp.AppService
-	AIApp               *aiapp.AppService
-	LLMApp              *llmapp.AppService
-	MediaApp            *mediaapp.AppService
-	LLMInferenceBaseURL string
-	VipAdmin            *vipadmin.AdminService
-	MoeAdmin            *moeadmin.AdminService
-	AdminApp            *adminapp.AppService
-	SvcCtx              *svc.ServiceContext
+	LandingApp         *landingapp.AppService
+	CheckinApp         *checkinapp.AppService
+	AchievementApp     *achievementapp.AppService
+	PostApp            *postapp.AppService
+	GiftApp            *giftapp.AppService
+	GameApp            *gameapp.AppService
+	UserApp            *userapp.AppService
+	CommentApp         *commentapp.AppService
+	CommunityApp       *communityapp.AppService
+	ChatApp            *chatapp.AppService
+	NotifyApp          *notifyapp.AppService
+	BehaviorApp        *behaviorapp.AppService
+	AIApp              *aiapp.AppService
+	LLMApp             *llmapp.AppService
+	MediaApp           *mediaapp.AppService
+	VipAdmin           *vipadmin.AdminService
+	MoeAdmin           *moeadmin.AdminService
+	AdminApp           *adminapp.AppService
+	MoeInferenceConfig admincfg.LLMInferenceConf
+	AdminAppDeps       adminapphttp.Deps
+	PlatformDeps       platformhttp.Deps
 }
 
-// RegisterProtoHTTP 濞夈劌鍞?Kratos 鐎规ɑ鏌?protoc-gen-go-http 鐠侯垳鏁遍敍鍦?閿涘鈧?
 func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	if srv == nil {
 		return
@@ -159,16 +159,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.AdminApp != nil {
 		adminv1.RegisterAdminInsightsHTTPServer(srv, admininsightshttp.New(d.AdminApp))
-		adminOpts := []adminapphttp.Option{}
-		if d.AIApp != nil {
-			adminOpts = append(adminOpts, adminapphttp.WithAIApp(d.AIApp))
-		}
-		if d.SvcCtx != nil {
-			adminOpts = append(adminOpts, adminapphttp.WithDeps(adminapphttp.DepsFromServiceContext(d.SvcCtx)))
-		}
-		adminv1.RegisterAdminAppHTTPServer(srv, adminapphttp.New(d.AdminApp, d.VipAdmin, adminOpts...))
+		adminv1.RegisterAdminAppHTTPServer(srv, adminapphttp.New(d.AdminApp, d.VipAdmin, adminapphttp.WithDeps(d.AdminAppDeps)))
 	}
-	if d.SvcCtx != nil {
-		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(platformhttp.DepsFromServiceContext(d.SvcCtx)))
+	if platformDepsValid(d.PlatformDeps) {
+		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(d.PlatformDeps))
 	}
 }

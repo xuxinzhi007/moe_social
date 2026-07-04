@@ -4,15 +4,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
-	"backend/internal/platform/svc"
 )
 
-func SwaggerDocHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func SwaggerDocHandler() http.HandlerFunc {
 	return serveOpenAPISpec("application/json")
 }
 
-func SwaggerOpenAPIHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func SwaggerOpenAPIHandler() http.HandlerFunc {
 	return serveOpenAPISpec("application/yaml")
 }
 
@@ -24,7 +22,6 @@ func serveOpenAPISpec(contentType string) http.HandlerFunc {
 			return
 		}
 		if strings.HasPrefix(contentType, "application/json") {
-			// Apifox / 旧客户端仍可通过 doc.json 导入；YAML 内容对 JSON 工具同样可读。
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		} else {
 			w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
