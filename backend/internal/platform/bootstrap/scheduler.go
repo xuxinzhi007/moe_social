@@ -16,12 +16,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// StartDreamScheduler 启动 Memory RPG 定时入梦。
+// StartDreamScheduler starts the Memory RPG dream scheduler.
 func StartDreamScheduler(parent context.Context, svc *platformsvc.ServiceContext) {
 	if svc == nil {
 		return
 	}
-	appPort := moewiring.NewAppAdapter(svc.PostApp, svc.LLMApp)
+	appPort := moewiring.NewAppAdapter(svc.Domains.Community.PostApp, svc.Domains.AI.LLMApp)
 	if appPort == nil {
 		return
 	}
@@ -35,12 +35,12 @@ func StartDreamScheduler(parent context.Context, svc *platformsvc.ServiceContext
 	runDreamSchedulerLoop(parent, db, rpgDeps, brain.LoadDreamSchedulerOptsFromViper())
 }
 
-// StartMoeBotScheduler 在 HTTP 进程启动 Bot 定时发帖。
+// StartMoeBotScheduler starts bot post scheduling in the HTTP process.
 func StartMoeBotScheduler(parent context.Context, svc *platformsvc.ServiceContext) {
 	if svc == nil {
 		return
 	}
-	appPort := moewiring.NewAppAdapter(svc.PostApp, svc.LLMApp)
+	appPort := moewiring.NewAppAdapter(svc.Domains.Community.PostApp, svc.Domains.AI.LLMApp)
 	if appPort == nil {
 		return
 	}

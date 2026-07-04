@@ -10,8 +10,8 @@ func TestNarrateInventoryCheck(t *testing.T) {
 	snap := &SessionSnapshot{Inventory: nil, Flags: defaultWorldFlags()}
 	state := TurnState{Scene: model.GameScene{Name: "迷雾小镇"}, Flags: snap.Flags}
 	out, src, err := narrateTurn(t.Context(), nil, TurnDeps{}, snap, Command{Kind: CmdInspectInventory, Raw: "检查背包"}, state, nil)
-	if err != nil || src != "system" {
-		t.Fatalf("narrate inventory: src=%s err=%v", src, err)
+	if err != nil || src != "offline_fallback" {
+		t.Fatalf("narrate inventory offline: src=%s err=%v", src, err)
 	}
 	if out.Prose == "" || contains(out.Prose, "缓慢移动") {
 		t.Fatalf("unexpected prose: %s", out.Prose)

@@ -27,6 +27,9 @@ class GamePlayViewModel extends ChangeNotifier {
   // ===== fillInput 事件 =====
   String? _fillInputText;
 
+  // ===== 世界事件 Toast =====
+  String? _pendingEventToast;
+
   // ===== 滚动请求（由页面设置） =====
   /// 页面在 initState 中赋值，ViewModel 在 flushDelta 时调用（jumpTo）。
   void Function()? scrollToBottom;
@@ -40,6 +43,13 @@ class GamePlayViewModel extends ChangeNotifier {
   int? get streamingLineIndex => _streamingLineIndex;
   String get streamingText => _streamingText;
   bool get llmOnline => _llmOnline;
+
+  /// 待展示的世界事件 Toast（消费后清空）。
+  String? consumeEventToast() {
+    final msg = _pendingEventToast;
+    _pendingEventToast = null;
+    return msg;
+  }
 
   // ===== 初始化 =====
 
@@ -111,10 +121,10 @@ class GamePlayViewModel extends ChangeNotifier {
       _deltaTimer?.cancel();
       _deltaTimer = null;
       if (!_disposed) {
-        if (_pendingText.isNotEmpty) {
+        if (_pendingText.isNotEmpty && _streamingLineIndex == null) {
           _flushDelta();
-          _pendingText = '';
         }
+        _pendingText = '';
         _isSending = false;
         _streamingLineIndex = null;
         _streamingText = '';
@@ -146,8 +156,7 @@ class GamePlayViewModel extends ChangeNotifier {
             finalResult = GameActResult.fromMap(payload);
           }
         case 'error':
-          throw Exception(
-              event.payload?['message']?.toString() ?? '流式叙事失败');
+          throw Exception(event.payload?['message']?.toString() ?? '流式叙事失败');
       }
     }
     if (finalResult != null) {
@@ -158,16 +167,30 @@ class GamePlayViewModel extends ChangeNotifier {
   /// 应用行动结果到状态。
   void _applyActResult(GameActResult result) {
     if (_disposed) return;
-    if (_streamingLineIndex == null) {
-      _lines.addAll(result.narrative.where((l) => !l.isActionEcho));
-    } else {
+
+    if (_streamingLineIndex != null) {
+      final idx = _streamingLineIndex!;
+      String? finalProse;
       for (final line in result.narrative) {
         if (line.isActionEcho) continue;
         if (line.isProse) {
-          _lines[_streamingLineIndex!] = line;
+          finalProse ??= line.displayContent;
         } else {
           _lines.add(line);
         }
+      }
+      if (finalProse != null && finalProse.isNotEmpty) {
+        _lines[idx] = GameNarrativeLine(type: 'prose', content: finalProse);
+      }
+      _pendingText = '';
+    } else {
+      _lines.addAll(result.narrative.where((l) => !l.isActionEcho));
+    }
+
+    for (final line in result.narrative) {
+      if (line.isEvent) {
+        _pendingEventToast = line.displayContent;
+        break;
       }
     }
     _llmOnline = result.llmOnline;
@@ -183,8 +206,9 @@ class GamePlayViewModel extends ChangeNotifier {
       scene: _state.scene.copyWithName(newLocation),
       gameTime: result.gameTime.isNotEmpty ? result.gameTime : _state.gameTime,
       overallFavorability: result.overallFavorability,
-      playerFocus:
-          result.playerFocus.isNotEmpty ? result.playerFocus : _state.playerFocus,
+      playerFocus: result.playerFocus.isNotEmpty
+          ? result.playerFocus
+          : _state.playerFocus,
       npcs: result.npcs.isNotEmpty ? result.npcs : _state.npcs,
       inventory: result.inventory,
       visitedScenes: _visitedScenes,

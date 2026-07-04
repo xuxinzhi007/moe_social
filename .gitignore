@@ -145,3 +145,4 @@ backend/rpc/.../
 # Compound Engineering (machine-local preferences)
 .compound-engineering/*.local.yaml
 --css
+backend/.codex-tmp/

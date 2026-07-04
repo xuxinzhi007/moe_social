@@ -1,7 +1,6 @@
 package gamebiz
 
 import (
-	"context"
 	"testing"
 
 	"backend/model"
@@ -12,7 +11,7 @@ func TestParseCommandDialogueQuestion(t *testing.T) {
 	flags.LastTalkNPC = "老人"
 	flags.InDialogue = true
 	snap := &SessionSnapshot{Flags: flags, Scene: model.GameScene{Name: "迷雾小镇"}}
-	cmd := parseCommand("你多大了", snap)
+	cmd := parseOfflineCommand("你多大了", snap)
 	if cmd.Kind != CmdTalkReply {
 		t.Fatalf("expected CmdTalkReply, got %s", cmd.Kind)
 	}
@@ -23,7 +22,7 @@ func TestParseCommandContinueAsk(t *testing.T) {
 	flags.LastTalkNPC = "老人"
 	flags.InDialogue = true
 	snap := &SessionSnapshot{Flags: flags, Scene: model.GameScene{Name: "迷雾小镇"}}
-	cmd := parseCommand("继续追问", snap)
+	cmd := parseOfflineCommand("继续追问", snap)
 	if cmd.Kind != CmdTalkReply {
 		t.Fatalf("expected CmdTalkReply, got %s", cmd.Kind)
 	}
@@ -40,7 +39,7 @@ func TestParseCommandNotTravelOnQuestion(t *testing.T) {
 }
 
 func TestDialogueAgeResponse(t *testing.T) {
-	out := dialogueReplyOutput(context.Background(), nil, "老人", "你多大了")
+	out := dialogueReplyOutput("老人", "你多大了")
 	if !contains(out.Prose, "七十三") {
 		t.Fatalf("expected age response, got: %s", out.Prose)
 	}

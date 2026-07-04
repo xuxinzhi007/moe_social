@@ -83,4 +83,11 @@ type Store interface {
 
 	// Agent 运行时（NPC-Agent 绑定）
 	FindAgentRuntime(ctx context.Context, agentRuntimeID uint) (*model.MoeAgentRuntime, error)
+
+	// 世界事件（开放世界自主运转）
+	CreateWorldEvent(ctx context.Context, row *model.GameWorldEvent) error
+	ListUndeliveredWorldEvents(ctx context.Context, sessionID uint, limit int) ([]model.GameWorldEvent, error)
+	ListRecentWorldEvents(ctx context.Context, sessionID uint, limit int) ([]model.GameWorldEvent, error)
+	MarkWorldEventsDelivered(ctx context.Context, ids []uint) error
+	ListActiveSessions(ctx context.Context, limit int) ([]model.GameSession, error)
 }

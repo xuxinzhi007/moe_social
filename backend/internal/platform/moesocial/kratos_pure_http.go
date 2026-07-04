@@ -12,7 +12,6 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// kratosPureHTTPServer PK-8/9：纯 Kratos HTTP :8888，无 go-zero rest 监听。
 type kratosPureHTTPServer struct {
 	addr  string
 	khttp *khttp.Server
@@ -30,7 +29,7 @@ func newKratosPureHTTPServer(apiRes *apirun.StartResult, publicHost string, publ
 	}
 	addr := fmt.Sprintf("%s:%d", publicHost, publicPort)
 
-	deps := pilotDepsFromAPI(apiRes)
+	deps := httpServerDepsFromAPI(apiRes)
 	httpSrv, err := server.NewHTTPServer(addr, deps)
 	if err != nil {
 		return nil, err

@@ -66,6 +66,17 @@ class _GamePlayPageState extends State<GamePlayPage> {
     } else if (_fillInputHandled) {
       _fillInputHandled = false;
     }
+    final eventToast = _vm.consumeEventToast();
+    if (eventToast != null && mounted) {
+      MoeToast.show(
+        context,
+        eventToast,
+        duration: const Duration(seconds: 3),
+        icon: Icons.auto_awesome_rounded,
+        backgroundColor: const Color(0xFFFFF3E0),
+        textColor: MoeTokens.bodyText,
+      );
+    }
   }
 
   void _scrollToBottom() {
@@ -125,9 +136,7 @@ class _GamePlayPageState extends State<GamePlayPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    vm.state.scene.name.isEmpty
-                        ? '文字世界'
-                        : vm.state.scene.name,
+                    vm.state.scene.name.isEmpty ? '文字世界' : vm.state.scene.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 17,
@@ -138,9 +147,8 @@ class _GamePlayPageState extends State<GamePlayPage> {
                     vm.llmOnline ? 'AI 在线' : 'AI 离线',
                     style: TextStyle(
                       fontSize: 11,
-                      color: vm.llmOnline
-                          ? MoeTokens.success
-                          : MoeTokens.danger,
+                      color:
+                          vm.llmOnline ? MoeTokens.success : MoeTokens.danger,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -201,13 +209,13 @@ class _GamePlayPageState extends State<GamePlayPage> {
               ),
               Expanded(
                 child: Container(
-                  margin: EdgeInsets.fromLTRB(MoeTokens.spaceMd, MoeTokens.spaceSm, MoeTokens.spaceMd, MoeTokens.spaceSm),
+                  margin: EdgeInsets.fromLTRB(MoeTokens.spaceMd,
+                      MoeTokens.spaceSm, MoeTokens.spaceMd, MoeTokens.spaceSm),
                   decoration: BoxDecoration(
                     color: MoeTokens.gamePageBackground,
                     borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                     border: Border.all(
-                      color:
-                          MoeTokens.primary.withValues(alpha: 0.15),
+                      color: MoeTokens.primary.withValues(alpha: 0.15),
                       width: 1.5,
                     ),
                     boxShadow: [
@@ -235,8 +243,7 @@ class _GamePlayPageState extends State<GamePlayPage> {
                         ),
                         ListView.builder(
                           controller: _scrollController,
-                          padding:
-                              const EdgeInsets.fromLTRB(18, 16, 18, 20),
+                          padding: const EdgeInsets.fromLTRB(18, 16, 18, 20),
                           itemCount: vm.lines.length +
                               (vm.isSending && vm.streamingLineIndex == null
                                   ? 1
@@ -246,14 +253,14 @@ class _GamePlayPageState extends State<GamePlayPage> {
                                 vm.streamingLineIndex == null &&
                                 index == vm.lines.length) {
                               return const Padding(
-                                padding:
-                                    EdgeInsets.symmetric(vertical: 16),
+                                padding: EdgeInsets.symmetric(vertical: 16),
                                 child: AiTypingIndicator(),
                               );
                             }
                             final line = vm.lines[index];
-                            final bool shouldAnimate = index >= _initialLineCount &&
-                                index != vm.streamingLineIndex;
+                            final bool shouldAnimate =
+                                index >= _initialLineCount &&
+                                    index != vm.streamingLineIndex;
                             return GameNarrativeBlock(
                               line: line,
                               animate: shouldAnimate,
@@ -304,7 +311,8 @@ class _GamePlayPageState extends State<GamePlayPage> {
         return Container(
           decoration: BoxDecoration(
             color: MoeTokens.gamePageBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(MoeTokens.radius2xl)),
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(MoeTokens.radius2xl)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: SafeArea(
@@ -313,13 +321,11 @@ class _GamePlayPageState extends State<GamePlayPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('已探索区域',
-                    style: Theme.of(ctx).textTheme.titleMedium),
+                Text('已探索区域', style: Theme.of(ctx).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 Text(
                   '当前：${vm.state.scene.name}',
-                  style:
-                      TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 if (vm.visitedScenes.isEmpty)
@@ -350,8 +356,7 @@ class _GamePlayPageState extends State<GamePlayPage> {
                   ),
                 if (vm.state.scene.exits.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text('已知出口',
-                      style: Theme.of(ctx).textTheme.titleSmall),
+                  Text('已知出口', style: Theme.of(ctx).textTheme.titleSmall),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -384,7 +389,8 @@ class _GamePlayPageState extends State<GamePlayPage> {
         return Container(
           decoration: BoxDecoration(
             color: MoeTokens.gamePageBackground,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(MoeTokens.radius2xl)),
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(MoeTokens.radius2xl)),
           ),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: SafeArea(

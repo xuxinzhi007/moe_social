@@ -10,7 +10,6 @@ import (
 	aiv1 "backend/api/ai/v1"
 	"backend/internal/apilegacy/common"
 	adminbiz "backend/internal/biz/admin"
-	"backend/internal/platform/svc"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -27,13 +26,13 @@ func (s *Server) AdminUpdateAiAgent(ctx context.Context, in *adminv1.AdminUpdate
 	aid := strings.TrimSpace(in.GetAgentId())
 	payload := strings.TrimSpace(in.GetPayloadJson())
 	if uid == "" || aid == "" || payload == "" {
-		return nil, status.Error(codes.InvalidArgument, "user_id、agent_id、payload_json 均不能为空")
+		return nil, status.Error(codes.InvalidArgument, "user_id, agent_id and payload_json are required")
 	}
 	if !json.Valid([]byte(payload)) {
-		return nil, status.Error(codes.InvalidArgument, "payload_json 不是合法 JSON")
+		return nil, status.Error(codes.InvalidArgument, "payload_json must be valid JSON")
 	}
 	if s.ai == nil {
-		return nil, status.Error(codes.FailedPrecondition, "AI 网关未就绪")
+		return nil, status.Error(codes.FailedPrecondition, "AI app unavailable")
 	}
 	_, err = s.ai.UpsertAiAgent(actx, &aiv1.UpsertAiResourceReq{
 		UserId:      uid,
@@ -43,8 +42,8 @@ func (s *Server) AdminUpdateAiAgent(ctx context.Context, in *adminv1.AdminUpdate
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "update", "ai_agent", aid, "管理台更新酒馆角色卡")
+	if s.recordAudit != nil {
+		s.recordAudit(actx, "update", "ai_agent", aid, "update ai agent")
 	}
 	return &adminv1.AdminUpdateAiAgentResp{}, nil
 }
@@ -69,8 +68,8 @@ func (s *Server) AdminListMediaImages(ctx context.Context, in *adminv1.AdminList
 	if _, err := requireAdminContext(ctx); err != nil {
 		return nil, err
 	}
-	if s.svcCtx == nil {
-		return nil, status.Error(codes.FailedPrecondition, "服务未初始化")
+	if s.runtime == nil {
+		return nil, status.Error(codes.FailedPrecondition, "runtime state unavailable")
 	}
 	req, ok := requestFromContext(ctx)
 	if !ok {
@@ -78,11 +77,11 @@ func (s *Server) AdminListMediaImages(ctx context.Context, in *adminv1.AdminList
 	}
 	publicBase := utils.ResolveMediaPublicBase(
 		req,
-		s.svcCtx.Config.Image.PublicBaseUrl,
-		s.svcCtx.Config.ClientPublicApiBaseUrl,
+		s.runtime.ImagePublicBaseURL,
+		s.runtime.ClientPublicAPIBaseURL,
 	)
 	rows, owners, total, err := utils.ListAdminMediaImages(
-		s.svcCtx.Config.Image.LocalDir,
+		s.runtime.ImageLocalDir,
 		publicBase,
 		int(in.GetPage()),
 		int(in.GetPageSize()),
@@ -123,17 +122,17 @@ func (s *Server) AdminDeleteMediaImage(ctx context.Context, in *adminv1.AdminDel
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx == nil {
-		return nil, status.Error(codes.FailedPrecondition, "服务未初始化")
+	if s.runtime == nil {
+		return nil, status.Error(codes.FailedPrecondition, "runtime state unavailable")
 	}
 	filename := strings.TrimSpace(in.GetFilename())
 	if filename == "" {
 		return nil, status.Error(codes.InvalidArgument, "filename is required")
 	}
-	if err := utils.DeleteAdminMediaImage(s.svcCtx.Config.Image.LocalDir, filename); err != nil {
+	if err := utils.DeleteAdminMediaImage(s.runtime.ImageLocalDir, filename); err != nil {
 		return nil, err
 	}
-	common.TryRecordAdminAudit(actx, s.svcCtx, "delete", "media_image", filename, "删除云图库文件")
+	s.recordAudit(actx, "delete", "media_image", filename, "delete media image")
 	return &adminv1.AdminDeleteMediaImageResp{}, nil
 }
 
@@ -161,8 +160,8 @@ func (s *Server) AdminUpsertMenu(ctx context.Context, in *adminv1.AdminUpsertMen
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "upsert", "admin_menu", in.GetKey(), "保存侧栏菜单")
+	if s.recordAudit != nil {
+		s.recordAudit(actx, "upsert", "admin_menu", in.GetKey(), "upsert admin menu")
 	}
 	return resp, nil
 }
@@ -180,8 +179,8 @@ func (s *Server) AdminDeleteMenu(ctx context.Context, in *adminv1.AdminDeleteMen
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "delete", "admin_menu", in.GetMenuKey(), "删除侧栏菜单")
+	if s.recordAudit != nil {
+		s.recordAudit(actx, "delete", "admin_menu", in.GetMenuKey(), "delete admin menu")
 	}
 	return resp, nil
 }
@@ -199,8 +198,8 @@ func (s *Server) AdminBootstrapMenus(ctx context.Context, in *adminv1.AdminBoots
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx != nil {
-		common.TryRecordAdminAudit(actx, s.svcCtx, "bootstrap", "admin_menu", "", "导入默认侧栏菜单")
+	if s.recordAudit != nil {
+		s.recordAudit(actx, "bootstrap", "admin_menu", "", "bootstrap admin menu")
 	}
 	return resp, nil
 }
@@ -217,7 +216,7 @@ func (s *Server) AdminGetRuntimeConfig(ctx context.Context, _ *adminv1.AdminGetR
 	if err != nil {
 		return nil, err
 	}
-	return runtimeConfigToProto(view, s.svcCtx), nil
+	return runtimeConfigToProto(view, s.runtime), nil
 }
 
 func (s *Server) AdminUpdateRuntimeConfig(ctx context.Context, in *adminv1.AdminUpdateRuntimeConfigReq) (*adminv1.AdminUpdateRuntimeConfigResp, error) {
@@ -225,8 +224,8 @@ func (s *Server) AdminUpdateRuntimeConfig(ctx context.Context, in *adminv1.Admin
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx == nil {
-		return nil, status.Error(codes.FailedPrecondition, "服务未初始化")
+	if s.runtime == nil {
+		return nil, status.Error(codes.FailedPrecondition, "runtime state unavailable")
 	}
 	patch := utils.RuntimeConfigPatch{}
 	if in.GetUpdatePublicApiBaseUrl() {
@@ -254,19 +253,19 @@ func (s *Server) AdminUpdateRuntimeConfig(ctx context.Context, in *adminv1.Admin
 		return nil, err
 	}
 	if patch.PublicApiBaseUrl != nil {
-		s.svcCtx.Config.ClientPublicApiBaseUrl = view.PublicApiBaseUrl
+		s.runtime.ClientPublicAPIBaseURL = view.PublicApiBaseUrl
 	}
 	if patch.ImagePublicBaseUrl != nil {
-		s.svcCtx.Config.Image.PublicBaseUrl = view.ImagePublicBaseUrl
+		s.runtime.ImagePublicBaseURL = view.ImagePublicBaseUrl
 	}
 	if patch.ImageLocalDir != nil {
-		s.svcCtx.Config.Image.LocalDir = view.ImageLocalDir
+		s.runtime.ImageLocalDir = view.ImageLocalDir
 	}
 	if patch.ImageMaxBytes != nil {
-		s.svcCtx.Config.Image.MaxBytes = view.ImageMaxBytes
+		s.runtime.ImageMaxBytes = view.ImageMaxBytes
 	}
-	common.TryRecordAdminAudit(actx, s.svcCtx, "update", "runtime_config", "", "更新运行时配置")
-	cfg := runtimeConfigToProto(view, s.svcCtx)
+	s.recordAudit(actx, "update", "runtime_config", "", "update runtime config")
+	cfg := runtimeConfigToProto(view, s.runtime)
 	return &adminv1.AdminUpdateRuntimeConfigResp{
 		PublicApiBaseUrl:   cfg.PublicApiBaseUrl,
 		ApiPublicBaseUrl:   cfg.ApiPublicBaseUrl,
@@ -293,7 +292,7 @@ func (s *Server) AdminRuntimeOverview(ctx context.Context, _ *adminv1.AdminGetRu
 	return runtimeOverviewToProto(data), nil
 }
 
-func runtimeConfigToProto(view utils.RuntimeConfigView, svcCtx *svc.ServiceContext) *adminv1.AdminGetRuntimeConfigResp {
+func runtimeConfigToProto(view utils.RuntimeConfigView, runtime *RuntimeState) *adminv1.AdminGetRuntimeConfigResp {
 	out := &adminv1.AdminGetRuntimeConfigResp{
 		PublicApiBaseUrl:   view.PublicApiBaseUrl,
 		ApiPublicBaseUrl:   view.ApiPublicBaseUrl,
@@ -302,18 +301,18 @@ func runtimeConfigToProto(view utils.RuntimeConfigView, svcCtx *svc.ServiceConte
 		ImageMaxBytes:      view.ImageMaxBytes,
 		ConfigFile:         view.ConfigFile,
 	}
-	if svcCtx != nil {
+	if runtime != nil {
 		if out.PublicApiBaseUrl == "" {
-			out.PublicApiBaseUrl = svcCtx.Config.ClientPublicApiBaseUrl
+			out.PublicApiBaseUrl = runtime.ClientPublicAPIBaseURL
 		}
 		if out.ImagePublicBaseUrl == "" {
-			out.ImagePublicBaseUrl = svcCtx.Config.Image.PublicBaseUrl
+			out.ImagePublicBaseUrl = runtime.ImagePublicBaseURL
 		}
 		if out.ImageLocalDir == "" {
-			out.ImageLocalDir = svcCtx.Config.Image.LocalDir
+			out.ImageLocalDir = runtime.ImageLocalDir
 		}
 		if out.ImageMaxBytes == 0 {
-			out.ImageMaxBytes = svcCtx.Config.Image.MaxBytes
+			out.ImageMaxBytes = runtime.ImageMaxBytes
 		}
 	}
 	return out

@@ -22,6 +22,7 @@ type InferenceConfig struct {
 	BaseURL        string
 	ApiStyle       InferenceAPIStyle
 	TimeoutSeconds int
+	ApiKey         string
 }
 
 // ChatMessage OpenAI 兼容消息体。
@@ -52,6 +53,7 @@ func InferenceFromLLMConf(c config.LLMInferenceConf) (InferenceConfig, error) {
 		BaseURL:        base,
 		ApiStyle:       ResolveInferenceAPIStyle(c.ApiStyle, base),
 		TimeoutSeconds: timeout,
+		ApiKey:         strings.TrimSpace(c.ApiKey),
 	}, nil
 }
 
@@ -84,22 +86,23 @@ func PostChatCompletion(
 	messages []ChatMessage,
 	opts ChatOptions,
 ) (content string, err error) {
-	return postOpenAIChat(ctx, client, cfg.BaseURL, model, messages, opts)
+	return postOpenAIChat(ctx, client, cfg, model, messages, opts)
 }
 
 // ListModelNames 拉取可用模型 ID 列表（OpenAI 兼容 /v1/models）。
 func ListModelNames(ctx context.Context, client *http.Client, cfg InferenceConfig) ([]string, error) {
-	return listOpenAIModels(ctx, client, cfg.BaseURL)
+	return listOpenAIModels(ctx, client, cfg)
 }
 
 func postOpenAIChat(
 	ctx context.Context,
 	client *http.Client,
-	baseURL, model string,
+	cfg InferenceConfig,
+	model string,
 	messages []ChatMessage,
 	opts ChatOptions,
 ) (string, error) {
-	root := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	root := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	apiRoot := root
 	if !strings.HasSuffix(apiRoot, "/v1") {
 		apiRoot += "/v1"
@@ -129,6 +132,9 @@ func postOpenAIChat(
 	}
 	ApplyInferenceForwardHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
+	if cfg.ApiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.ApiKey)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -155,8 +161,8 @@ func postOpenAIChat(
 	return strings.TrimSpace(parsed.Choices[0].Message.Content), nil
 }
 
-func listOpenAIModels(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
-	root := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+func listOpenAIModels(ctx context.Context, client *http.Client, cfg InferenceConfig) ([]string, error) {
+	root := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
 	apiRoot := root
 	if !strings.HasSuffix(apiRoot, "/v1") {
 		apiRoot += "/v1"
@@ -166,6 +172,9 @@ func listOpenAIModels(ctx context.Context, client *http.Client, baseURL string) 
 		return nil, err
 	}
 	ApplyInferenceForwardHeaders(req)
+	if cfg.ApiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.ApiKey)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -190,6 +199,33 @@ func listOpenAIModels(ctx context.Context, client *http.Client, baseURL string) 
 		}
 	}
 	return out, nil
+}
+
+// ProbeInferenceEndpoint reports whether the inference endpoint is reachable.
+// Any non-5xx HTTP response counts as reachable, even if model listing is forbidden.
+func ProbeInferenceEndpoint(ctx context.Context, client *http.Client, cfg InferenceConfig) bool {
+	root := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
+	if root == "" {
+		return false
+	}
+	apiRoot := root
+	if !strings.HasSuffix(apiRoot, "/v1") {
+		apiRoot += "/v1"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiRoot+"/models", nil)
+	if err != nil {
+		return false
+	}
+	ApplyInferenceForwardHeaders(req)
+	if cfg.ApiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.ApiKey)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode > 0 && resp.StatusCode < http.StatusInternalServerError
 }
 
 // InferenceChatPath 返回 raw 转发用的路径（含前导 /）。

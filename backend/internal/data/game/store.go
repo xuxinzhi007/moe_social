@@ -416,3 +416,57 @@ func (s *store) FindAgentRuntime(ctx context.Context, agentRuntimeID uint) (*mod
 	}
 	return &row, nil
 }
+
+// --- 世界事件 ---
+
+func (s *store) CreateWorldEvent(ctx context.Context, row *model.GameWorldEvent) error {
+	return s.db.WithContext(ctx).Create(row).Error
+}
+
+func (s *store) ListUndeliveredWorldEvents(ctx context.Context, sessionID uint, limit int) ([]model.GameWorldEvent, error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	var rows []model.GameWorldEvent
+	err := s.db.WithContext(ctx).
+		Where("session_id = ? AND is_delivered = ?", sessionID, false).
+		Order("created_at ASC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) ListRecentWorldEvents(ctx context.Context, sessionID uint, limit int) ([]model.GameWorldEvent, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	var rows []model.GameWorldEvent
+	err := s.db.WithContext(ctx).
+		Where("session_id = ?", sessionID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) MarkWorldEventsDelivered(ctx context.Context, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).Model(&model.GameWorldEvent{}).
+		Where("id IN ?", ids).
+		Update("is_delivered", true).Error
+}
+
+func (s *store) ListActiveSessions(ctx context.Context, limit int) ([]model.GameSession, error) {
+	if limit <= 0 {
+		limit = 64
+	}
+	var rows []model.GameSession
+	err := s.db.WithContext(ctx).
+		Where("is_active = ?", true).
+		Order("updated_at DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}

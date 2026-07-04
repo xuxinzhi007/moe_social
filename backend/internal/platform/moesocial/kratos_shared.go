@@ -6,21 +6,17 @@ import (
 	"strings"
 	"time"
 
-	"backend/internal/server"
 	apirun "backend/internal/platform/wiring"
+	"backend/internal/server"
 	"backend/utils"
 )
 
-func pilotDepsFromAPI(res *apirun.StartResult) server.PilotDeps {
-	d := server.PilotDeps{
-		MoeAdmin: res.Svc.MoeAdmin,
-		AdminApp: res.Svc.AdminApp,
-		Svc:      res.Svc,
-	}
+func httpServerDepsFromAPI(res *apirun.StartResult) server.HTTPServerDeps {
+	deps := server.HTTPServerDepsFromServiceContext(res.Svc)
 	if db := utils.GetDB(); db != nil {
-		d.DB = db
+		deps.Ops.DB = db
 	}
-	return d
+	return deps
 }
 
 func waitTCPListen(addr string, timeoutSec int) error {

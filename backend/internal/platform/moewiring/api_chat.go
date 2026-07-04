@@ -7,10 +7,7 @@ import (
 
 // ChatAPIInProcessEnabled config.yaml: moe.chat_api_in_process
 func ChatAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.chat_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.chat_api_in_process"}, false)
+	return domainInProcessEnabled("moe.chat_api_in_process")
 }
 
 // NewAPIChatService API 进程内 Chat 应用服务。

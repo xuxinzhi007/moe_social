@@ -99,6 +99,8 @@ llm_inference:
   game_base_url: "http://127.0.0.1:6633"
   # 留空则自动读取 llama-server /v1/models 第一个模型
   game_model: ""
+  # narrator=Go管世界+模型只写叙事(0.5B~3B)；agent=模型调world_*工具(7B+)
+  game_llm_mode: "narrator"
   # 上下文长度（DeepSeek-chat 支持 32K）
   context_tokens: 32768
 

@@ -84,6 +84,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "game_discovered_items", Model: &model.GameDiscoveredItem{}},
 		{Key: "game_visited_scenes", Model: &model.GameVisitedScene{}},
 		{Key: "game_npc_activities", Model: &model.GameNpcActivity{}},
+		{Key: "game_world_events", Model: &model.GameWorldEvent{}},
 		{Key: "tag_dictionary_entries", Model: &model.TagDictionaryEntry{}},
 	}
 }

@@ -26,6 +26,7 @@ type postContextBlock struct {
 	ownPosts     string
 	posts        string
 	memories     string
+	userProfile  string
 	timeHint     string
 	topicHint    string
 	meaningBlock string
@@ -35,11 +36,17 @@ type postContextBlock struct {
 func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime) postContextBlock {
 	_ = ctx
 	out := postContextBlock{
-		ownPosts:  "（暂无）",
-		posts:     "（暂无）",
-		memories:  "（暂无）",
-		timeHint:  buildTimeHint(time.Now()),
-		topicHint: "可写一条轻松的日常或互动提问",
+		ownPosts:    "（暂无）",
+		posts:       "（暂无）",
+		memories:    "（暂无）",
+		userProfile: "（暂无）",
+		timeHint:    buildTimeHint(time.Now()),
+		topicHint:   "可写一条轻松的日常或互动提问",
+	}
+	if deps.DB != nil && rt.BotUserID > 0 {
+		if profile := buildUserProfileBlock(deps.DB, rt); profile != "" {
+			out.userProfile = profile
+		}
 	}
 	if deps.DB != nil && rt.BotUserID > 0 {
 		if own := listBotRecentPosts(deps.DB, rt.BotUserID, botRecentPostLimit); len(own) > 0 {
@@ -52,7 +59,8 @@ func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime)
 	}
 	if deps.DB != nil {
 		hits, err := postpulse.KeywordSearch(ctx, deps.DB, postpulse.SearchOptions{
-			Limit: communityPostLimit,
+			Limit:     communityPostLimit,
+			ViewerUID: rt.BotUserID,
 		})
 		if err == nil && len(hits) > 0 {
 			lines := make([]string, 0, len(hits))
@@ -90,6 +98,168 @@ func listBotRecentPosts(db *gorm.DB, botUserID uint, limit int) []model.Post {
 		Limit(limit).
 		Find(&rows).Error
 	return rows
+}
+
+func buildUserProfileBlock(db *gorm.DB, rt model.MoeAgentRuntime) string {
+	if db == nil || rt.BotUserID == 0 {
+		return ""
+	}
+	var user model.User
+	if err := db.Select("id", "username", "signature", "is_vip", "bot_agent_key").First(&user, rt.BotUserID).Error; err != nil {
+		return ""
+	}
+
+	var lines []string
+	lines = append(lines, fmt.Sprintf("账号：@%s", firstNonEmpty(strings.TrimSpace(user.Username), rt.DisplayName, rt.AgentKey)))
+	if sig := strings.TrimSpace(user.Signature); sig != "" {
+		lines = append(lines, "签名："+truncateRunes(sig, 48))
+	}
+	if prefs := normalizeTagLines(rt.PreferredTags, 4); len(prefs) > 0 {
+		lines = append(lines, "偏好主题："+strings.Join(prefs, "、"))
+	}
+
+	followingNames := listFollowingNames(db, rt.BotUserID, 5)
+	if len(followingNames) > 0 {
+		lines = append(lines, "关注对象："+strings.Join(followingNames, "、"))
+	}
+
+	likedSnippets := listRecentLikedPostSnippets(db, rt.BotUserID, 3)
+	if len(likedSnippets) > 0 {
+		lines = append(lines, "近期点赞倾向：")
+		for _, s := range likedSnippets {
+			lines = append(lines, "- "+s)
+		}
+	}
+
+	followingSnippets := listFollowingRecentPostSnippets(db, rt.BotUserID, 3)
+	if len(followingSnippets) > 0 {
+		lines = append(lines, "关注流最近在聊：")
+		for _, s := range followingSnippets {
+			lines = append(lines, "- "+s)
+		}
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func listFollowingNames(db *gorm.DB, userID uint, limit int) []string {
+	if db == nil || userID == 0 || limit <= 0 {
+		return nil
+	}
+	var rows []struct {
+		Username string
+	}
+	_ = db.Table("follows AS f").
+		Select("u.username").
+		Joins("JOIN users u ON u.id = f.following_id").
+		Where("f.follower_id = ?", userID).
+		Order("f.created_at desc").
+		Limit(limit).
+		Scan(&rows).Error
+	out := make([]string, 0, len(rows))
+	seen := map[string]bool{}
+	for _, row := range rows {
+		name := strings.TrimSpace(row.Username)
+		if name == "" || seen[name] {
+			continue
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	return out
+}
+
+func listRecentLikedPostSnippets(db *gorm.DB, userID uint, limit int) []string {
+	if db == nil || userID == 0 || limit <= 0 {
+		return nil
+	}
+	var rows []struct {
+		Content  string
+		Username string
+	}
+	_ = db.Table("likes AS l").
+		Select("p.content, u.username").
+		Joins("JOIN posts p ON p.id = l.target_id").
+		Joins("JOIN users u ON u.id = p.user_id").
+		Where("l.user_id = ? AND l.target_type = ?", userID, "post").
+		Where("(p.moderation_status IS NULL OR p.moderation_status = '' OR p.moderation_status = 'ok')").
+		Order("l.created_at desc").
+		Limit(limit).
+		Scan(&rows).Error
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		snippet := strings.TrimSpace(row.Content)
+		if snippet == "" {
+			continue
+		}
+		out = append(out, fmt.Sprintf("@%s：%s", strings.TrimSpace(row.Username), truncateRunes(snippet, 42)))
+	}
+	return out
+}
+
+func listFollowingRecentPostSnippets(db *gorm.DB, userID uint, limit int) []string {
+	if db == nil || userID == 0 || limit <= 0 {
+		return nil
+	}
+	var rows []struct {
+		Content  string
+		Username string
+	}
+	sub := db.Table("follows").Select("following_id").Where("follower_id = ?", userID)
+	_ = db.Table("posts AS p").
+		Select("p.content, u.username").
+		Joins("JOIN users u ON u.id = p.user_id").
+		Where("p.user_id IN (?)", sub).
+		Where("(p.moderation_status IS NULL OR p.moderation_status = '' OR p.moderation_status = 'ok')").
+		Order("p.created_at desc").
+		Limit(limit).
+		Scan(&rows).Error
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		snippet := strings.TrimSpace(row.Content)
+		if snippet == "" {
+			continue
+		}
+		out = append(out, fmt.Sprintf("@%s：%s", strings.TrimSpace(row.Username), truncateRunes(snippet, 42)))
+	}
+	return out
+}
+
+func normalizeTagLines(raw string, limit int) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || limit <= 0 {
+		return nil
+	}
+	fields := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == '\n' || r == ',' || r == '，'
+	})
+	out := make([]string, 0, len(fields))
+	for _, field := range fields {
+		field = strings.TrimSpace(field)
+		if field == "" {
+			continue
+		}
+		field = strings.TrimPrefix(field, "topic:")
+		field = strings.TrimPrefix(field, "scene:")
+		field = strings.TrimPrefix(field, "activity:")
+		field = strings.TrimPrefix(field, "opening:")
+		field = strings.TrimPrefix(field, "risk:")
+		out = append(out, field)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func buildTimeHint(now time.Time) string {

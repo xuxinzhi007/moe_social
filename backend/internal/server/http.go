@@ -9,26 +9,23 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// NewHTTPServer 创建并注册全部 HTTP 路由（S2：唯一装配入口）。
-func NewHTTPServer(addr string, deps PilotDeps) (*khttp.Server, error) {
+func NewHTTPServer(addr string, deps HTTPServerDeps) (*khttp.Server, error) {
 	if strings.TrimSpace(addr) == "" {
 		return nil, fmt.Errorf("http address required")
 	}
 	srv := khttp.NewServer(
 		khttp.Address(addr),
-		// 必须单次 Filter 传入多个中间件；多次 khttp.Filter 会覆盖而非追加，导致 CORS 丢失。
-		khttp.Filter(corsFilter, jwtAuthFilter),
+		khttp.Filter(requestLogFilter, corsFilter, jwtAuthFilter),
 		khttp.ResponseEncoder(EnvelopeResponseEncoder),
 		khttp.ErrorEncoder(EnvelopeErrorEncoder),
 	)
-	RegisterOpsHTTP(srv, deps.MoeAdmin)
-	RegisterProtoHTTP(srv, ProtoHTTPDepsFromPilot(deps))
-	RegisterDocsHTTP(srv, deps.Svc)
-	RegisterTransportHTTP(srv, deps)
+	RegisterOpsHTTP(srv, deps.Ops.MoeAdmin)
+	RegisterProtoHTTP(srv, deps.Proto)
+	RegisterDocsHTTP(srv, deps.Docs)
+	RegisterTransportHTTP(srv, deps.Transport)
 	return srv, nil
 }
 
-// RegisterOpsHTTP 注册运维 HTTP（/health、/migration 等）。
 func RegisterOpsHTTP(srv *khttp.Server, admin *moeadmin.AdminService) {
 	if srv == nil {
 		return
@@ -38,4 +35,3 @@ func RegisterOpsHTTP(srv *khttp.Server, admin *moeadmin.AdminService) {
 	r.GET("/migration", migrationHandler)
 	r.GET("/kratos/v1/moe/runtimes", listRuntimesHandler(admin))
 }
-

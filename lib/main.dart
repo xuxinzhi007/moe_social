@@ -30,7 +30,6 @@ import 'providers/checkin_provider.dart';
 import 'providers/user_level_provider.dart';
 import 'providers/virtual_avatar_provider.dart';
 import 'providers/main_nav_controller.dart';
-import 'providers/ai_assistant_mock_provider.dart';
 import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'services/wechat_sdk_service.dart';
@@ -301,7 +300,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => CheckInProvider()),
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ChangeNotifierProvider(create: (_) => MainNavController()),
-        ChangeNotifierProvider(create: (_) => AiAssistantMockProvider()),
       ],
       child: MaterialApp(
         title: 'Moe Social',

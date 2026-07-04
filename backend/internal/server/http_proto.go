@@ -10,8 +10,8 @@ import (
 	commentv1 "backend/api/comment/v1"
 	communityv1 "backend/api/community/v1"
 	contentv1 "backend/api/content/v1"
-	giftv1 "backend/api/gift/v1"
 	gamev1 "backend/api/game/v1"
+	giftv1 "backend/api/gift/v1"
 	landingv1 "backend/api/landing/v1"
 	llmv1 "backend/api/llm/v1"
 	moepb "backend/api/moe/v1"
@@ -32,8 +32,8 @@ import (
 	commenthttp "backend/internal/server/protohttp/comment"
 	communityhttp "backend/internal/server/protohttp/community"
 	contenthttp "backend/internal/server/protohttp/content"
-	gifthttp "backend/internal/server/protohttp/gift"
 	gamehttp "backend/internal/server/protohttp/game"
+	gifthttp "backend/internal/server/protohttp/gift"
 	landinghttp "backend/internal/server/protohttp/landing"
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
@@ -53,8 +53,8 @@ import (
 	commentapp "backend/internal/service/comment"
 	communityapp "backend/internal/service/community"
 	contentapp "backend/internal/service/content"
-	giftapp "backend/internal/service/gift"
 	gameapp "backend/internal/service/game"
+	giftapp "backend/internal/service/gift"
 	landingapp "backend/internal/service/landing"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
@@ -67,7 +67,7 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// ProtoHTTPDeps proto HTTP 注册依赖（与 SocialGRPCDeps 同形，D0 官方 Register*HTTPServer）。
+// ProtoHTTPDeps proto HTTP 濞夈劌鍞芥笟婵婄閿涘牅绗?SocialGRPCDeps 閸氬苯鑸伴敍瀛? 鐎规ɑ鏌?Register*HTTPServer閿涘鈧?
 type ProtoHTTPDeps struct {
 	LandingApp          *landingapp.AppService
 	CheckinApp          *checkinapp.AppService
@@ -91,7 +91,7 @@ type ProtoHTTPDeps struct {
 	SvcCtx              *svc.ServiceContext
 }
 
-// RegisterProtoHTTP 注册 Kratos 官方 protoc-gen-go-http 路由（D0）。
+// RegisterProtoHTTP 濞夈劌鍞?Kratos 鐎规ɑ鏌?protoc-gen-go-http 鐠侯垳鏁遍敍鍦?閿涘鈧?
 func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	if srv == nil {
 		return
@@ -164,11 +164,11 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 			adminOpts = append(adminOpts, adminapphttp.WithAIApp(d.AIApp))
 		}
 		if d.SvcCtx != nil {
-			adminOpts = append(adminOpts, adminapphttp.WithServiceContext(d.SvcCtx))
+			adminOpts = append(adminOpts, adminapphttp.WithDeps(adminapphttp.DepsFromServiceContext(d.SvcCtx)))
 		}
 		adminv1.RegisterAdminAppHTTPServer(srv, adminapphttp.New(d.AdminApp, d.VipAdmin, adminOpts...))
 	}
 	if d.SvcCtx != nil {
-		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(d.SvcCtx))
+		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(platformhttp.DepsFromServiceContext(d.SvcCtx)))
 	}
 }

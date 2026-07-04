@@ -1,36 +1,54 @@
 package server
 
 import (
+	"backend/internal/platform/chatdelivery"
+	"backend/internal/platform/svc"
 	moeadminhttp "backend/internal/server/protohttp"
+	"backend/internal/server/transport"
 )
 
-// ProtoHTTPDepsFromPilot 从 PilotDeps 提取 proto HTTP 注册依赖。
-func ProtoHTTPDepsFromPilot(d PilotDeps) ProtoHTTPDeps {
-	out := ProtoHTTPDeps{MoeAdmin: d.MoeAdmin}
-	if d.Svc == nil {
+func HTTPServerDepsFromServiceContext(s *svc.ServiceContext) HTTPServerDeps {
+	deps := HTTPServerDeps{}
+	if s == nil {
+		return deps
+	}
+	deps.Ops.MoeAdmin = s.Domains.Access.MoeAdmin
+	deps.Ops.AdminApp = s.Domains.Access.AdminApp
+	deps.Proto = ProtoHTTPDepsFromServiceContext(s)
+	deps.Transport = transport.Deps{
+		MoeAdmin: s.Domains.Access.MoeAdmin,
+		ChatWS:   chatdelivery.ChatWSDepsFrom(s),
+	}
+	deps.Docs = DocsHTTPDeps{ServiceContext: s}
+	return deps
+}
+
+func ProtoHTTPDepsFromServiceContext(s *svc.ServiceContext) ProtoHTTPDeps {
+	out := ProtoHTTPDeps{}
+	if s == nil {
 		return out
 	}
-	s := d.Svc
-	out.LandingApp = s.LandingApp
-	out.CheckinApp = s.CheckInApp
-	out.AchievementApp = s.AchievementApp
-	out.PostApp = s.PostApp
-	out.GiftApp = s.GiftApp
-	out.GameApp = s.GameApp
-	out.UserApp = s.UserApp
-	out.CommentApp = s.CommentApp
-	out.CommunityApp = s.CommunityApp
-	out.ChatApp = s.ChatApp
-	out.NotifyApp = s.NotifyApp
-	out.BehaviorApp = s.BehaviorApp
-	out.AIApp = s.AIApp
-	out.LLMApp = s.LLMApp
-	out.MediaApp = s.MediaApp
+	out.LandingApp = s.Domains.Access.LandingApp
+	out.CheckinApp = s.Domains.Community.CheckInApp
+	out.AchievementApp = s.Domains.Community.AchievementApp
+	out.PostApp = s.Domains.Community.PostApp
+	out.GiftApp = s.Domains.Community.GiftApp
+	out.GameApp = s.Domains.Game.GameApp
+	out.UserApp = s.Domains.Access.UserApp
+	out.CommentApp = s.Domains.Community.CommentApp
+	out.CommunityApp = s.Domains.Community.CommunityApp
+	out.ChatApp = s.Domains.Community.ChatApp
+	out.NotifyApp = s.Domains.Community.NotifyApp
+	out.BehaviorApp = s.Domains.Community.BehaviorApp
+	out.AIApp = s.Domains.AI.AIApp
+	out.LLMApp = s.Domains.AI.LLMApp
+	out.MediaApp = s.Domains.Platform.MediaApp
 	if s.Config.LLMInference.BaseUrl != "" {
 		out.LLMInferenceBaseURL = s.Config.LLMInference.BaseUrl
 	}
-	out.VipAdmin = s.VipAdmin
-	out.AdminApp = s.AdminApp
+	out.VipAdmin = s.Domains.Access.VipAdmin
+	out.MoeAdmin = s.Domains.Access.MoeAdmin
+	out.AdminApp = s.Domains.Access.AdminApp
 	out.SvcCtx = s
 	return out
 }

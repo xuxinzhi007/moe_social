@@ -41,6 +41,7 @@ type turnLLMMemory struct {
 type TurnDeps struct {
 	Inference llminference.Config
 	Model     string
+	LlmMode   string // narrator | agent（见 game_mode.go）
 }
 
 // ActResult 玩家行动结果。
@@ -76,12 +77,15 @@ func persistActResult(
 	narrativeSource string,
 	llmOnline bool,
 ) (ActResult, error) {
+	commitCtx, cancelCommit := commitContext(ctx)
+	defer cancelCommit()
+
 	gameTime := strings.TrimSpace(output.GameTime)
 	if gameTime == "" {
 		gameTime = sess.GameTime
 	}
 	flags.mergePatch(output.FlagsPatch)
-	advanceStoryArcsWithDB(ctx, st, &flags, output, output.FavorDeltas)
+	advanceStoryArcsWithDB(commitCtx, st, &flags, output, output.FavorDeltas)
 
 	npcByName := map[string]model.GameNpc{}
 	for _, npc := range npcs {
@@ -114,7 +118,7 @@ func persistActResult(
 		if imp <= 0 {
 			imp = 5
 		}
-		if err := st.CreateNpcMemory(ctx, &model.GameNpcMemory{
+		if err := st.CreateNpcMemory(commitCtx, &model.GameNpcMemory{
 			PlayerID:   userID,
 			NpcID:      npc.ID,
 			MemoryText: text,
@@ -129,7 +133,7 @@ func persistActResult(
 		"flags_patch":  output.FlagsPatch,
 	})
 	narrativeJSON, _ := json.Marshal(lines)
-	if err := st.CreateTurnLog(ctx, &model.GameTurnLog{
+	if err := st.CreateTurnLog(commitCtx, &model.GameTurnLog{
 		SessionID:       sess.ID,
 		UserAction:      action,
 		SystemNarrative: string(narrativeJSON),
@@ -137,7 +141,7 @@ func persistActResult(
 	}); err != nil {
 		moelog.Warnf("game: create turn log for session=%d: %v", sess.ID, err)
 	}
-	if err := st.UpdateSession(ctx, sess.ID, map[string]interface{}{
+	if err := st.UpdateSession(commitCtx, sess.ID, map[string]interface{}{
 		"scene_id":       sess.SceneID,
 		"game_time":      gameTime,
 		"npc_favor_json": encodeNpcFavor(favor),
@@ -146,15 +150,15 @@ func persistActResult(
 		return ActResult{}, fmt.Errorf("update session %d: %w", sess.ID, err)
 	}
 	// 双写：同时写入 game_world_states 新表（失败不影响游戏运行）
-	writeWorldStateToDB(ctx, st, sess.ID, flags)
-	writeNpcActivitiesToDB(ctx, st, sess.ID, scene.Name, npcs, flags.NpcActivity)
+	writeWorldStateToDB(commitCtx, st, sess.ID, flags)
+	writeNpcActivitiesToDB(commitCtx, st, sess.ID, scene.Name, npcs, flags.NpcActivity)
 
 	updatedViews := npcViewsFromModels(npcs, favor)
 	suggested := output.SuggestedActions
 	if len(suggested) == 0 {
 		suggested = defaultSuggestedActions(scene.Name, flags)
 	}
-	invRows, _ := st.ListInventoryItems(ctx, sess.ID)
+	invRows, _ := st.ListInventoryItems(commitCtx, sess.ID)
 	return ActResult{
 		Narrative:           lines,
 		Location:            scene.Name,
@@ -312,13 +316,15 @@ func buildActPromptJSON(ctx actPromptContext) string {
 }
 
 func buildActPromptProse(ctx actPromptContext) string {
-	return fmt.Sprintf(`你是文字冒险游戏的叙事引擎。玩家在一个可自由行动的世界里。
+	return fmt.Sprintf(`你是开放世界文字冒险的叙事引擎。玩家输入任何行动，你都要让世界产生合理、具体、可延续的变化。
 
 【规则】
-1. 先写行动结果与环境变化，再嵌入 NPC 对话
-2. 只输出一段 150-280 字的中文小说正文
-3. 必须承接近期剧情，禁止重复场景描述原文
-4. 禁止输出 JSON、markdown、字段名或任何结构化格式
+1. 用小说笔法写 150-280 字中文正文，可含 NPC 台词（引号内）
+2. 必须承接【近期剧情】与【本回合状态变更】，禁止复制【描述】原文
+3. 禁止列表式报幕、禁止「检查背包如下」式系统文案、禁止套话
+4. 禁止输出 JSON、markdown、字段名
+5. 每次回应必须独特，与【玩家行动】/【玩家原话】强相关
+6. 禁止重复【近期剧情】中已有段落，尤其禁止再次照搬【描述】原文
 
 %s
 【玩家行动】%s
@@ -327,30 +333,15 @@ func buildActPromptProse(ctx actPromptContext) string {
 }
 
 func turnModelCandidates(ctx context.Context, deps TurnDeps) []string {
-	seen := map[string]struct{}{}
-	var out []string
-	add := func(name string) {
-		name = strings.TrimSpace(name)
-		if name == "" {
-			return
-		}
-		if _, ok := seen[name]; ok {
-			return
-		}
-		seen[name] = struct{}{}
-		out = append(out, name)
+	// 游戏叙事只用配置的一个模型，避免多模型重试导致 SSE 重复推送。
+	name := strings.TrimSpace(deps.Model)
+	if name == "" {
+		name = strings.TrimSpace(deps.Inference.DefaultModel)
 	}
-	add(deps.Model)
-	add(deps.Inference.DefaultModel)
-	if models, err := llminference.ListModels(ctx, deps.Inference); err == nil {
-		for _, id := range models {
-			add(id)
-		}
+	if name == "" {
+		name = "qwen2"
 	}
-	if len(out) == 0 {
-		add("qwen2")
-	}
-	return out
+	return []string{name}
 }
 
 func clamp(v, min, max int) int {
@@ -626,15 +617,11 @@ func lastProseFromLines(lines []NarrativeLine) string {
 }
 
 func lastSessionProse(ctx context.Context, st Store, sessionID uint) string {
-	logs, err := st.ListTurnLogs(ctx, sessionID, 1)
-	if err != nil || len(logs) == 0 {
+	summaries, err := st.ListRecentTurnLogSummaries(ctx, sessionID, 1)
+	if err != nil || len(summaries) == 0 {
 		return ""
 	}
-	var lines []NarrativeLine
-	if json.Unmarshal([]byte(logs[0].SystemNarrative), &lines) != nil {
-		return ""
-	}
-	return lastProseFromLines(lines)
+	return strings.TrimSpace(summaries[len(summaries)-1].NarrativePrefix)
 }
 
 func varyRepeatedProse(prose string, intent PlayerIntent, turnCount int) string {
@@ -666,7 +653,7 @@ func advanceGameTime(flags WorldFlags, sceneName string) string {
 }
 
 func buildMemoryBlock(ctx context.Context, st Store, playerID uint, npcs []model.GameNpc) string {
-	if len(npcs) == 0 {
+	if st == nil || len(npcs) == 0 {
 		return ""
 	}
 	// 收集所有 NPC ID

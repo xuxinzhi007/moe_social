@@ -236,22 +236,22 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '账号与隐私',
       },
       {
-        'title': '虚拟助手',
-        'description': '开启或关闭悬浮虚拟助手',
+        'title': 'AI 助手',
+        'description': '管理社区 AI 账号与悬浮助手入口',
         'icon': Icons.smart_toy_rounded,
         'color': Colors.deepPurple,
         'module': '外观与体验',
-        'keywords': ['虚拟', '助手', '角色', '悬浮', '开关'],
+        'keywords': ['ai', '助手', '社区ai', 'bot', '标签', '悬浮'],
         'action': 'scroll',
         'target': '外观与体验',
       },
       {
-        'title': '虚拟助手设置',
-        'description': '自定义快捷功能、皮肤与角色',
+        'title': '社区 AI 设置',
+        'description': '统一管理 AI 账号、悬浮入口与社区互动形态',
         'icon': Icons.tune_rounded,
         'color': Colors.deepPurpleAccent,
         'module': '外观与体验',
-        'keywords': ['虚拟', '助手', '皮肤', '角色', '快捷功能'],
+        'keywords': ['社区ai', 'bot', '动态', '评论', '发帖', '设置'],
         'action': 'route',
         'target': '/virtual-avatar-settings',
       },
@@ -569,10 +569,10 @@ class _SettingsPageState extends State<SettingsPage> {
               items: [
                 MoeMenuItem(
                   icon: Icons.smart_toy_rounded,
-                  title: '虚拟助手',
+                  title: 'AI 助手与社区 AI',
                   subtitle: avatarProvider.enabled
-                      ? '已开启，点击右侧开关或进入自定义'
-                      : '默认关闭，开启后可自定义形象',
+                      ? '已启用悬浮助手入口，可继续配置社区 AI 账号形态'
+                      : '统一管理社区 AI 账号与悬浮助手入口',
                   color: MoeTheme.of(context).primary,
                   trailing: Switch.adaptive(
                     value: avatarProvider.enabled,
@@ -580,7 +580,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     onChanged: (bool value) async {
                       await avatarProvider.setEnabled(value);
                       if (!mounted) return;
-                      MoeToast.info(context, value ? '虚拟助手已开启' : '虚拟助手已关闭');
+                      MoeToast.info(context, value ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
                     },
                   ),
                   onTap: () {

@@ -5,23 +5,22 @@ import (
 	"fmt"
 
 	adminv1 "backend/api/admin/v1"
-	"backend/internal/apilegacy/common"
-	"backend/internal/platform/svc"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
 	vipadmin "backend/internal/service/vip"
 )
 
-// Server 实现 admin.v1.AdminApp HTTP/gRPC 适配（P1 迁移）。
+// Server 闂佽楠稿﹢閬嶅磻閻旇偐宓?admin.v1.AdminApp HTTP/gRPC 闂傚倷绶￠崑鍕磹閸ф鍌ㄩ柕鍫濐槹閺咁剟鏌? 闂佸搫顦弲娆撴嚄閺堢數鏄傞梻浣瑰缁嬫垿藝椤撱垹鐒?
 type Server struct {
 	adminv1.UnimplementedAdminAppServer
-	app    *adminapp.AppService
-	vip    *vipadmin.AdminService
-	ai     *aiapp.AppService
-	svcCtx *svc.ServiceContext
+	app         *adminapp.AppService
+	vip         *vipadmin.AdminService
+	ai          *aiapp.AppService
+	runtime     *RuntimeState
+	recordAudit func(ctx context.Context, action, resource, resourceID, detail string)
 }
 
-// New 构造 AdminApp 服务。
+// New 闂備礁鎼鍛偓姘嵆閸┾偓?AdminApp 闂備礁鎼悧鍡欑矓鐎涙ɑ鍙忛柣鏃傚帶杩?
 func New(app *adminapp.AppService, vip *vipadmin.AdminService, opts ...Option) *Server {
 	s := &Server{app: app, vip: vip}
 	for _, o := range opts {
@@ -326,8 +325,8 @@ func (s *Server) AdminUpdateCheckInReward(ctx context.Context, in *adminv1.Admin
 	if err != nil {
 		return nil, err
 	}
-	if s.svcCtx != nil && in.GetId() != 0 {
-		common.TryRecordAdminAudit(ctx, s.svcCtx, "update", "check_in_reward", fmt.Sprintf("%d", in.GetId()), "更新签到奖励")
+	if s.recordAudit != nil && in.GetId() != 0 {
+		s.recordAudit(ctx, "update", "check_in_reward", fmt.Sprintf("%d", in.GetId()), "update check-in reward")
 	}
 	return resp, nil
 }

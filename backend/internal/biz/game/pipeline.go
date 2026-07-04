@@ -8,7 +8,7 @@ import (
 	"backend/internal/platform/moelog"
 )
 
-// RunTurn 回合引擎唯一入口：Load → Parse → Execute → Narrate → Commit。
+// RunTurn 回合引擎 SSOT：Load → Execute(离线) → Agent/Narrate → 投递事件 → Commit。
 func RunTurn(
 	ctx context.Context,
 	st Store,
@@ -31,73 +31,66 @@ func RunTurn(
 	}
 	st = st.WithContext(ctx)
 
+	turnCtx, cancelTurn := turnContext(ctx)
+	defer cancelTurn()
+	ctx = turnCtx
+
 	snap, err := loadSnapshot(ctx, st, deps, userID, uint(sessionID))
 	if err != nil {
 		return ActResult{}, err
 	}
 
 	cmd := parseCommand(action, snap)
+	execCmd := cmd
+	if !snap.LlmOnline || IsNarratorMode(deps) {
+		execCmd = parseOfflineCommand(action, snap)
+	}
 
-	state, err := executeCommand(ctx, st, deps, snap, cmd)
+	state, err := executeCommand(ctx, st, deps, snap, execCmd)
 	if err != nil {
 		return ActResult{}, err
 	}
 
-	// 移动 / 拾取后刷新快照中的物品列表
-	if state.Moved {
-		snap.Scene = state.Scene
-		if items, err := st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID); err != nil {
-			moelog.Warnf("game: list scene items: %v", err)
-		} else {
-			snap.SceneItems = items
-		}
-	}
-	if cmd.Kind == CmdPickup {
-		if inv, err := st.ListInventoryItems(ctx, snap.Session.ID); err != nil {
-			moelog.Warnf("game: list inventory items: %v", err)
-		} else {
-			snap.Inventory = inv
-		}
-		if items, err := st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID); err != nil {
-			moelog.Warnf("game: list scene items after pickup: %v", err)
-		} else {
-			snap.SceneItems = items
-		}
-	}
-	snap.Flags = state.Flags
+	refreshSnapshotItems(ctx, st, snap, &state, execCmd)
 
 	output, narrativeSource, err := narrateTurn(ctx, st, deps, snap, cmd, state, onChunk)
 	if err != nil {
 		return ActResult{}, err
 	}
 
+	refreshSnapshotItems(ctx, st, snap, &state, execCmd)
+
 	flags := state.Flags
 
-	var extras []NarrativeLine
-	if cmd.Kind == CmdFreeform {
-		extras, err = applyWorldMutations(ctx, st, &state.Session, &state.Scene, &state.NPCs, &flags, output)
+	// 事件唯一投递口：Agent/后台 tick 写入 DB，此处统一读取一次。
+	var eventLines []NarrativeLine
+	if dbEvents, err := loadUndeliveredEventLines(ctx, st, snap.Session.ID); err != nil {
+		moelog.Warnf("game: load undelivered events: %v", err)
+	} else {
+		eventLines = dbEvents
+	}
+
+	lines := assembleTurnLines(eventLines, output, action)
+
+	// 离线开放行动仍走 legacy mutations；在线 narrator/agent 均通过 Execute+工具改世界。
+	if !snap.LlmOnline && (cmd.Kind == CmdFreeform || execCmd.Kind == CmdFreeform) {
+		extras, err := applyWorldMutations(ctx, st, &state.Session, &state.Scene, &state.NPCs, &flags, output)
 		if err != nil {
 			return ActResult{}, err
 		}
+		lines = append(lines, extras...)
+		lines = dedupeNarrativeLines(lines)
 	}
 
-	lines := narrativeFromOutput(output, action)
 	if prose := lastProseFromLines(lines); prose != "" {
 		if prev := lastSessionProse(ctx, st, snap.Session.ID); prev != "" && prose == prev {
 			intent := resolvePlayerIntent(ctx, deps, action, state.Scene.Name, flags)
 			output.Prose = varyRepeatedProse(output.Prose, intent, flags.TurnCount)
-			lines = narrativeFromOutput(output, action)
+			lines = assembleTurnLines(eventLines, output, action)
 		}
 	}
-	if len(extras) > 0 {
-		lines = append(lines, extras...)
-	}
-	if len(state.Highlights) > 0 {
-		lines = append(state.Highlights, lines...)
-	}
 
-	// 模板类叙事：SSE 一次性推送整段 prose（对话/开放行动在 narrate 内流式）
-	if onChunk != nil && isTemplateNarration(cmd.Kind) && strings.TrimSpace(output.Prose) != "" {
+	if onChunk != nil && strings.HasPrefix(narrativeSource, "offline") && strings.TrimSpace(output.Prose) != "" {
 		_ = onChunk(output.Prose)
 	}
 
@@ -107,11 +100,18 @@ func RunTurn(
 	)
 }
 
-func isTemplateNarration(kind CommandKind) bool {
-	switch kind {
-	case CmdInspectInventory, CmdInspectScene, CmdExploreWorld, CmdTravel, CmdPickup:
-		return true
-	default:
-		return false
+func refreshSnapshotItems(ctx context.Context, st Store, snap *SessionSnapshot, state *TurnState, execCmd Command) {
+	snap.Flags = state.Flags
+	if state.Moved {
+		snap.Scene = state.Scene
+	}
+	if !state.Moved && execCmd.Kind != CmdPickup && state.PickedItem.Name == "" {
+		return
+	}
+	if items, err := st.ListSceneItems(ctx, snap.Session.ID, state.Scene.ID); err == nil {
+		snap.SceneItems = items
+	}
+	if inv, err := st.ListInventoryItems(ctx, snap.Session.ID); err == nil {
+		snap.Inventory = inv
 	}
 }

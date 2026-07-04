@@ -67,7 +67,7 @@ func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort,
 		PromptEstTokens:    est,
 		ContextLimit:       limit,
 		ContextUsedPct:     usedPct,
-		Note:               "社区 Bot 发帖使用自传记忆注入系统提示词。",
+		Note:               "社区 Bot 发帖会结合自传记忆与 Bot 用户画像生成内容。",
 	}
 }
 

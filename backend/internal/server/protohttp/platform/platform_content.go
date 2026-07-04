@@ -10,8 +10,8 @@ import (
 )
 
 func (s *Server) ListUserContent(ctx context.Context, in *platformv1.ListUserContentReq) (*platformv1.ListUserContentResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.contentApp == nil {
 		return nil, kerrors.BadRequest("CONTENT_UNAVAILABLE", "content app unavailable")

@@ -6,10 +6,9 @@ import (
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// RegisterTransportHTTP 注册 OAuth / WebSocket / SSE（Kratos transport 层，与 proto HTTP 同进程管理）。
-func RegisterTransportHTTP(srv *khttp.Server, d PilotDeps) {
-	if srv == nil || !d.Valid() || d.Svc == nil {
+func RegisterTransportHTTP(srv *khttp.Server, deps transport.Deps) {
+	if srv == nil || !deps.Valid() {
 		return
 	}
-	transport.RegisterHTTP(srv, d.Svc)
+	transport.RegisterHTTP(srv, deps)
 }

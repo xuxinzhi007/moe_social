@@ -1,9 +1,9 @@
 package moewiring
 
 import (
-	postapp "backend/internal/service/post"
-	commentapp "backend/internal/service/comment"
 	mediabiz "backend/internal/biz/media"
+	commentapp "backend/internal/service/comment"
+	postapp "backend/internal/service/post"
 	"backend/utils"
 )
 
@@ -19,17 +19,11 @@ func imageConfigFromMoe() mediabiz.ImageConfig {
 }
 
 func PostAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.post_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.post_api_in_process"}, false)
+	return domainInProcessEnabled("moe.post_api_in_process")
 }
 
 func CommentAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.comment_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.comment_api_in_process"}, false)
+	return domainInProcessEnabled("moe.comment_api_in_process")
 }
 
 func NewAPIPostService() (*postapp.AppService, error) {

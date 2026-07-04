@@ -68,15 +68,15 @@ func ChatWSDepsFrom(svcCtx *svc.ServiceContext) chatbiz.ChatWSDeps {
 	if svcCtx == nil {
 		return deps
 	}
-	if svcCtx.UserApp != nil {
-		deps.Delivery.UserReader = &UserProfileAdapter{app: svcCtx.UserApp}
-		deps.Delivery.NotifyStore = svcCtx.UserApp.Notify()
+	if svcCtx.Domains.Access.UserApp != nil {
+		deps.Delivery.UserReader = &UserProfileAdapter{app: svcCtx.Domains.Access.UserApp}
+		deps.Delivery.NotifyStore = svcCtx.Domains.Access.UserApp.Notify()
 		if deps.Delivery.NotifyStore != nil {
 			deps.Delivery.NotifyRPC = &NotificationAdapter{store: deps.Delivery.NotifyStore}
 		}
 	}
-	if svcCtx.ChatApp != nil {
-		deps.PM = &ChatPMAdapter{app: svcCtx.ChatApp}
+	if svcCtx.Domains.Community.ChatApp != nil {
+		deps.PM = &ChatPMAdapter{app: svcCtx.Domains.Community.ChatApp}
 	}
 	return deps
 }

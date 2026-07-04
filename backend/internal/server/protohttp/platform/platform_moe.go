@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Server) MoeToolsSchema(ctx context.Context, _ *platformv1.MoeToolSchemaReq) (*platformv1.MoeToolSchemaResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.moePlatform == nil {
 		return nil, kerrors.InternalServer("MOE_UNAVAILABLE", "moe platform unavailable")
@@ -29,8 +29,8 @@ func (s *Server) MoeToolsSchema(ctx context.Context, _ *platformv1.MoeToolSchema
 }
 
 func (s *Server) MoeExecuteTool(ctx context.Context, in *platformv1.MoeToolExecuteReq) (*platformv1.MoeToolExecuteResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.moePlatform == nil {
 		return nil, kerrors.InternalServer("MOE_UNAVAILABLE", "moe platform unavailable")

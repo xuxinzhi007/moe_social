@@ -6,10 +6,7 @@ import (
 )
 
 func CheckInAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.checkin_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.checkin_api_in_process"}, false)
+	return domainInProcessEnabled("moe.checkin_api_in_process")
 }
 
 func NewAPICheckInService() (*checkinapp.AppService, error) {

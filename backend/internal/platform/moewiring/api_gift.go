@@ -6,10 +6,7 @@ import (
 )
 
 func GiftAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.gift_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.gift_api_in_process"}, false)
+	return domainInProcessEnabled("moe.gift_api_in_process")
 }
 
 func NewAPIGiftService() (*giftapp.AppService, error) {

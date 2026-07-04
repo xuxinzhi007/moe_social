@@ -1,26 +1,24 @@
 package transport
 
 import (
-	"backend/internal/platform/svc"
-
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// HTTP route counts（OAuth / WebSocket / SSE；与 routestats 同步）。
 const (
 	OAuthRoutes     = 2
+	AppRoutes       = 1
 	WebSocketRoutes = 5
 	SSERoutes       = 1
-	RouteCount      = OAuthRoutes + WebSocketRoutes + SSERoutes
+	RouteCount      = OAuthRoutes + AppRoutes + WebSocketRoutes + SSERoutes
 )
 
-// RegisterHTTP 注册非 JSON proto 的 Kratos HTTP transport（OAuth 重定向 / WebSocket / SSE）。
-func RegisterHTTP(srv *khttp.Server, svc *svc.ServiceContext) {
-	if srv == nil || svc == nil {
+func RegisterHTTP(srv *khttp.Server, deps Deps) {
+	if srv == nil {
 		return
 	}
 	r := srv.Route("/")
 	registerOAuth(r)
-	registerWebSocket(r, svc)
-	registerSSE(r, svc)
+	registerAppRoutes(r, deps.MoeAdmin)
+	registerWebSocket(r, deps)
+	registerSSE(r, deps.MoeAdmin)
 }

@@ -8,45 +8,44 @@ import (
 	userv1 "backend/api/user/v1"
 	moebiz "backend/internal/biz/moe"
 	voicebiz "backend/internal/biz/voice"
-	"backend/internal/platform/svc"
 	moeadmin "backend/internal/service/moe"
-	voiceapp "backend/internal/service/voice"
+	userapp "backend/internal/service/user"
 )
 
 type platformMoeToolExecutor struct {
-	svcCtx *svc.ServiceContext
+	admin *moeadmin.AdminService
 }
 
-func newPlatformMoeToolExecutor(svcCtx *svc.ServiceContext) moeadmin.ToolExecutor {
-	return &platformMoeToolExecutor{svcCtx: svcCtx}
+func newPlatformMoeToolExecutor(admin *moeadmin.AdminService) moeadmin.ToolExecutor {
+	return &platformMoeToolExecutor{admin: admin}
 }
 
 func (e *platformMoeToolExecutor) ExecuteTool(ctx context.Context, in moebiz.ExecuteToolInput) (moebiz.ExecuteToolResult, error) {
-	if e == nil || e.svcCtx == nil || e.svcCtx.MoeAdmin == nil {
+	if e == nil || e.admin == nil {
 		return moebiz.ExecuteToolResult{}, errors.New("moe backend unavailable")
 	}
-	return e.svcCtx.MoeAdmin.ExecuteTool(ctx, in)
+	return e.admin.ExecuteTool(ctx, in)
 }
 
 type voiceUserResolver struct {
-	svcCtx *svc.ServiceContext
+	app *userapp.AppService
 }
 
-func newVoiceUserResolver(svcCtx *svc.ServiceContext) voicebiz.UserDisplayResolver {
-	return &voiceUserResolver{svcCtx: svcCtx}
+func newVoiceUserResolver(app *userapp.AppService) voicebiz.UserDisplayResolver {
+	return &voiceUserResolver{app: app}
 }
 
 func (r *voiceUserResolver) ResolveVoiceUserDisplay(ctx context.Context, userID string) (displayName, avatar string) {
 	displayName = "用户"
 	avatar = ""
-	if r == nil || r.svcCtx == nil || r.svcCtx.UserApp == nil {
+	if r == nil || r.app == nil {
 		return displayName, avatar
 	}
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
 		return displayName, avatar
 	}
-	resp, err := r.svcCtx.UserApp.GetUser(ctx, &userv1.GetUserReq{UserId: userID})
+	resp, err := r.app.GetUser(ctx, &userv1.GetUserReq{UserId: userID})
 	if err != nil || resp == nil || resp.GetUser() == nil {
 		return displayName, avatar
 	}
@@ -56,14 +55,4 @@ func (r *voiceUserResolver) ResolveVoiceUserDisplay(ctx context.Context, userID 
 	}
 	avatar = strings.TrimSpace(u.GetAvatar())
 	return displayName, avatar
-}
-
-func newVoiceApp(svcCtx *svc.ServiceContext) *voiceapp.AppService {
-	if svcCtx == nil {
-		return nil
-	}
-	return voiceapp.New(newVoiceUserResolver(svcCtx), voicebiz.AgoraConfig{
-		AppID:          svcCtx.Config.Agora.AppId,
-		AppCertificate: svcCtx.Config.Agora.AppCertificate,
-	})
 }

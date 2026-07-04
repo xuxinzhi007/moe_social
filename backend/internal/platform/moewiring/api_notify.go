@@ -7,10 +7,7 @@ import (
 
 // NotifyAPIInProcessEnabled config.yaml: moe.notify_api_in_process
 func NotifyAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.notify_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.notify_api_in_process"}, false)
+	return domainInProcessEnabled("moe.notify_api_in_process")
 }
 
 // NewAPINotifyService API 进程内 Notify 应用服务。

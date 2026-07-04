@@ -96,6 +96,9 @@ func executeCommand(
 
 	case CmdFreeform:
 		// 开放行动：Execute 不改世界，变更由 Commit 阶段 applyWorldMutations 处理
+
+	case CmdAgent:
+		// 在线 Agent 通过 world_* 工具改 DB；Execute 阶段不改状态
 	}
 
 	return state, nil
