@@ -6,6 +6,7 @@ import '../pages/chat/message_center_page.dart';
 import '../pages/feed/home_page.dart';
 import '../pages/profile/profile_page.dart';
 import '../providers/main_nav_controller.dart';
+import '../providers/notification_provider.dart';
 import '../services/chat_push_service.dart';
 import '../widgets/moe_bottom_bar.dart';
 
@@ -61,6 +62,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final notificationProvider = context.watch<NotificationProvider>();
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -77,23 +79,29 @@ class _MainPageState extends State<MainPage> {
             _selectedIndex = index;
           });
         },
-        destinations: const [
-          NavigationDestination(
+        badgeCounts: [
+          0,
+          notificationProvider.directMessageUnreadCount,
+          0,
+          0,
+        ],
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: '首页',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.people_outline_rounded),
             selectedIcon: Icon(Icons.people_rounded),
             label: '好友',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.auto_awesome_outlined),
             selectedIcon: Icon(Icons.auto_awesome_rounded),
             label: 'AI互动',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person_rounded),
             label: '我的',

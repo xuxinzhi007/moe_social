@@ -438,7 +438,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
 
     _ensureRiveLoader();
 
-    final unreadCount = context.watch<NotificationProvider>().unreadCount;
+    final unreadCount = context.watch<NotificationProvider>().activityUnreadCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {

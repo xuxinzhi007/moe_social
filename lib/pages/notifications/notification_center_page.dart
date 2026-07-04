@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/notification.dart';
-import '../../services/notification_service.dart';
+import '../../providers/notification_provider.dart';
 import '../../widgets/avatar_image.dart';
 import '../../utils/error_handler.dart';
 import '../../theme/moe_tokens.dart';
@@ -18,136 +19,63 @@ class NotificationCenterPage extends StatefulWidget {
 }
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
-  List<NotificationModel> _notifications = [];
-  bool _isLoading = false;
-  int _unreadCount = 0;
-
   @override
   void initState() {
     super.initState();
-    _fetchNotifications();
-  }
-
-  Future<void> _fetchNotifications() async {
-    setState(() {
-      _isLoading = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationProvider>().fetchNotifications(refresh: true);
     });
-
-    try {
-      final notifications = await NotificationService.getNotifications();
-      setState(() {
-        _notifications = notifications;
-        _unreadCount = notifications.where((n) => !n.isRead).length;
-      });
-    } catch (e) {
-      ErrorHandler.handleException(context, e as Exception);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _markAllAsRead() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    final provider = context.read<NotificationProvider>();
     try {
-      await NotificationService.markAllAsRead();
-      setState(() {
-        _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList().cast<NotificationModel>();
-        _unreadCount = 0;
-      });
-      ErrorHandler.showSuccess(context, '所有通知已标记为已读');
+      await provider.markAllActivityAsRead();
+      if (!mounted) return;
+      ErrorHandler.showSuccess(context, 'All notifications marked as read');
     } catch (e) {
-      ErrorHandler.handleException(context, e as Exception);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      ErrorHandler.handleException(
+        context,
+        e is Exception ? e : Exception(e.toString()),
+      );
     }
-  }
-
-  Future<void> _clearAllNotifications() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
-          title: const Text('清除所有通知'),
-          content: const Text('确定要清除所有通知吗？此操作不可恢复。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                setState(() {
-                  _isLoading = true;
-                });
-
-                try {
-                  await NotificationService.clearAllNotifications();
-                  setState(() {
-                    _notifications = [];
-                    _unreadCount = 0;
-                  });
-                  ErrorHandler.showSuccess(context, '所有通知已清除');
-                } catch (e) {
-                  ErrorHandler.handleException(context, e as Exception);
-                } finally {
-                  setState(() {
-                    _isLoading = false;
-                  });
-                }
-              },
-              child: const Text('确定', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> _markAsRead(String notificationId) async {
     try {
-      await NotificationService.markAsRead(notificationId);
-      setState(() {
-        _notifications = _notifications.map((n) {
-          if (n.id == notificationId) {
-            return n.copyWith(isRead: true);
-          }
-          return n;
-        }).toList().cast<NotificationModel>();
-        _unreadCount = _notifications.where((n) => !n.isRead).length;
-      });
+      await context.read<NotificationProvider>().markNotificationAsRead(
+            notificationId,
+          );
     } catch (e) {
-      ErrorHandler.handleException(context, e as Exception);
+      if (!mounted) return;
+      ErrorHandler.handleException(
+        context,
+        e is Exception ? e : Exception(e.toString()),
+      );
     }
   }
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
-    
+
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}分钟前';
+      return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}小时前';
+      return '${difference.inHours}h ago';
     } else if (difference.inDays < 30) {
-      return '${difference.inDays}天前';
+      return '${difference.inDays}d ago';
     } else {
-      return '${time.month}月${time.day}日';
+      return '${time.month}/${time.day}';
     }
   }
 
   Widget _buildNotificationIcon(int type) {
     IconData icon;
     Color color;
-    
+
     switch (type) {
       case NotificationModel.like:
         icon = Icons.favorite_rounded;
@@ -169,15 +97,11 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.campaign_rounded;
         color = MoeTokens.primary;
         break;
-      case NotificationModel.directMessage:
-        icon = Icons.mark_chat_unread_rounded;
-        color = Colors.deepPurple;
-        break;
       default:
         icon = Icons.notifications_rounded;
         color = Colors.grey;
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
@@ -191,90 +115,84 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
   @override
   Widget build(BuildContext context) {
     final moe = MoeTheme.of(context);
-    return Scaffold(
-      backgroundColor: MoeTokens.pageBackground,
-      appBar: AppBar(
-        title: Text(
-          '消息中心',
-          style: TextStyle(
-            fontWeight: MoeTokens.fontWeightTitle,
-            fontSize: MoeTokens.textLg,
-          ),
-        ),
-        backgroundColor: MoeTokens.cardBackground,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pushNamed(context, '/announcements'),
-            child: const Text('公告'),
-          ),
-          if (_unreadCount > 0)
-            TextButton.icon(
-              onPressed: _markAllAsRead,
-              icon: const Icon(Icons.done_all_rounded, size: MoeTokens.spaceLg),
-              label: const Text('已读'),
-              style: TextButton.styleFrom(
-                foregroundColor: moe.primary,
+    return Consumer<NotificationProvider>(
+      builder: (context, provider, _) {
+        final notifications = provider.activityNotifications;
+        final unreadCount = provider.activityUnreadCount;
+        final isLoading = provider.isLoading;
+        return Scaffold(
+          backgroundColor: MoeTokens.pageBackground,
+          appBar: AppBar(
+            title: Text(
+              'Notification Center',
+              style: TextStyle(
+                fontWeight: MoeTokens.fontWeightTitle,
+                fontSize: MoeTokens.textLg,
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey),
-            onPressed: _clearAllNotifications,
+            backgroundColor: MoeTokens.cardBackground,
+            elevation: 0,
+            centerTitle: true,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pushNamed(context, '/announcements'),
+                child: const Text('Notices'),
+              ),
+              if (unreadCount > 0)
+                TextButton.icon(
+                  onPressed: _markAllAsRead,
+                  icon: const Icon(
+                    Icons.done_all_rounded,
+                    size: MoeTokens.spaceLg,
+                  ),
+                  label: const Text('Read all'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: moe.primary,
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-      body: _buildBody(),
+          body: _buildBody(provider, notifications, isLoading),
+        );
+      },
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
+  Widget _buildBody(
+    NotificationProvider provider,
+    List<NotificationModel> notifications,
+    bool isLoading,
+  ) {
+    if (isLoading) {
       return const MessageSkeleton(itemCount: 8);
     }
-    
-    if (_notifications.isEmpty) {
+
+    if (notifications.isEmpty) {
       return const Center(
         child: MoeEmptyState(
-          title: '暂无新消息',
-          subtitle: '当有人互动时，你会在这里收到通知',
+          title: 'No notifications yet',
+          subtitle: 'New interactions will appear here',
           icon: Icons.notifications_none_rounded,
           compact: false,
         ),
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceLg,
-        vertical: MoeTokens.spaceMd,
-      ),
-      itemCount: _notifications.length,
-      itemBuilder: (context, index) {
-        final notification = _notifications[index];
-        final delay = Duration(
-          milliseconds: index * MoeTokens.motionStaggerStep.inMilliseconds,
-        );
-        return FadeInUp(
-          delay: delay,
-          child: Dismissible(
-            key: ValueKey('notification_${notification.id}'),
-            background: Container(
-              margin: EdgeInsets.symmetric(vertical: MoeTokens.spaceXs + MoeTokens.spaceXs),
-              decoration: BoxDecoration(
-                color: Colors.redAccent,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-              ),
-              alignment: Alignment.centerRight,
-              padding: EdgeInsets.only(right: MoeTokens.spaceXl),
-              child: const Icon(Icons.delete_outline, color: Colors.white),
-            ),
-            direction: DismissDirection.endToStart,
-            onDismissed: (direction) {
-              setState(() {
-                _notifications.removeAt(index);
-              });
-            },
+    return RefreshIndicator(
+      onRefresh: () => provider.fetchNotifications(refresh: true),
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(
+          horizontal: MoeTokens.spaceLg,
+          vertical: MoeTokens.spaceMd,
+        ),
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          final delay = Duration(
+            milliseconds: index * MoeTokens.motionStaggerStep.inMilliseconds,
+          );
+          return FadeInUp(
+            delay: delay,
             child: GestureDetector(
               onTap: () {
                 if (!notification.isRead) {
@@ -285,7 +203,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute<void>(
-                      builder: (_) => AnnouncementDetailPage(announcementId: annId),
+                      builder: (_) =>
+                          AnnouncementDetailPage(announcementId: annId),
                     ),
                   );
                   return;
@@ -300,8 +219,11 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   color: MoeTokens.cardBackground,
                   borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                   boxShadow: MoeTokens.shadowSm(),
-                  border: !notification.isRead 
-                      ? Border.all(color: MoeTokens.primary.withValues(alpha: 0.3), width: 1.5)
+                  border: !notification.isRead
+                      ? Border.all(
+                          color: MoeTokens.primary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        )
                       : null,
                 ),
                 child: Padding(
@@ -309,7 +231,6 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 左侧图标或头像
                       notification.relatedUserAvatar != null
                           ? NetworkAvatarImage(
                               imageUrl: notification.relatedUserAvatar!,
@@ -317,22 +238,21 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                               placeholderIcon: Icons.person,
                             )
                           : _buildNotificationIcon(notification.type),
-                      
                       SizedBox(width: MoeTokens.spaceLg),
-                      
-                      // 内容区域
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
                                   child: Text(
                                     notification.title,
                                     style: TextStyle(
-                                      fontWeight: MoeTokens.fontWeightSubtitle,
+                                      fontWeight:
+                                          MoeTokens.fontWeightSubtitle,
                                       fontSize: MoeTokens.textMd,
                                       color: MoeTokens.titleText,
                                     ),
@@ -342,7 +262,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                 ),
                                 if (!notification.isRead)
                                   Container(
-                                    margin: EdgeInsets.only(left: MoeTokens.spaceSm),
+                                    margin: EdgeInsets.only(
+                                      left: MoeTokens.spaceSm,
+                                    ),
                                     width: MoeTokens.spaceSm,
                                     height: MoeTokens.spaceSm,
                                     decoration: BoxDecoration(
@@ -352,7 +274,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                   ),
                               ],
                             ),
-                            SizedBox(height: MoeTokens.spaceXs + MoeTokens.spaceXs),
+                            SizedBox(
+                              height: MoeTokens.spaceXs + MoeTokens.spaceXs,
+                            ),
                             Text(
                               notification.content,
                               style: TextStyle(
@@ -368,7 +292,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                               _formatTime(notification.createdAt),
                               style: TextStyle(
                                 fontSize: MoeTokens.textSm,
-                                color: MoeTokens.hintText.withValues(alpha: 0.7),
+                                color: MoeTokens.hintText.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                             ),
                           ],
@@ -379,9 +305,9 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
