@@ -3,16 +3,15 @@ package bootstrap
 import (
 	"context"
 
-	platformsvc "backend/internal/platform/svc"
 	"backend/utils"
 )
 
-// AfterWire HTTP 装配完成后启动进程内后台任务（成就钩子、私信清理、Bot 调度）。
-func AfterWire(parent context.Context, svc *platformsvc.ServiceContext) {
+// AfterWire starts in-process background tasks after HTTP wiring completes.
+func AfterWire(parent context.Context, deps Deps) {
 	RegisterSocialAchievementHooks()
 	if db := utils.GetDB(); db != nil {
 		utils.StartPrivateMessageCleanup(db)
 	}
-	StartMoeBotScheduler(parent, svc)
-	StartDreamScheduler(parent, svc)
+	StartMoeBotScheduler(parent, deps)
+	StartDreamScheduler(parent, deps)
 }

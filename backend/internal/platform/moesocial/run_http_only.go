@@ -12,7 +12,7 @@ import (
 	"github.com/go-kratos/kratos/v2"
 )
 
-// runHTTPOnly 单进程纯 Kratos HTTP（:8888），不监听 gRPC。
+// runHTTPOnly starts the pure Kratos HTTP process on the external port.
 func runHTTPOnly(opts Options) error {
 	opts.NormalizeOptions()
 	if err := utils.InitConfig(); err != nil {
@@ -29,7 +29,7 @@ func runHTTPOnly(opts Options) error {
 	if err != nil {
 		return fmt.Errorf("wire: %w", err)
 	}
-	bootstrap.AfterWire(context.Background(), apiRes.Svc)
+	bootstrap.AfterWire(context.Background(), bootstrap.DepsFromServiceContext(apiRes.Svc))
 
 	port := externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile)
 	httpSrv, err := newKratosPureHTTPServer(apiRes, "0.0.0.0", port)
@@ -46,5 +46,5 @@ func runHTTPOnly(opts Options) error {
 }
 
 func logHTTPOnlyStartup(port int) {
-	log.Printf("moe-social 已就绪 · Kratos HTTP-only · 端口 %d（listening 日志见下方）", port)
+	log.Printf("moe-social ready: Kratos HTTP-only on port %d", port)
 }

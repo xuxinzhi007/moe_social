@@ -7,7 +7,6 @@ import (
 	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
 	"backend/internal/platform/moewiring"
-	platformsvc "backend/internal/platform/svc"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/runtime"
@@ -17,11 +16,8 @@ import (
 )
 
 // StartDreamScheduler starts the Memory RPG dream scheduler.
-func StartDreamScheduler(parent context.Context, svc *platformsvc.ServiceContext) {
-	if svc == nil {
-		return
-	}
-	appPort := moewiring.NewAppAdapter(svc.Domains.Community.PostApp, svc.Domains.AI.LLMApp)
+func StartDreamScheduler(parent context.Context, deps Deps) {
+	appPort := moewiring.NewAppAdapter(deps.PostApp, deps.LLMApp)
 	if appPort == nil {
 		return
 	}
@@ -30,17 +26,14 @@ func StartDreamScheduler(parent context.Context, svc *platformsvc.ServiceContext
 		return
 	}
 	inf := moeconfig.InferenceFromViper()
-	deps := brain.RefineDeps{DB: db, RPC: appPort, Inference: inf}
-	rpgDeps := brain.RpgDeps{DB: db, RPC: appPort, Inference: deps}
+	refineDeps := brain.RefineDeps{DB: db, RPC: appPort, Inference: inf}
+	rpgDeps := brain.RpgDeps{DB: db, RPC: appPort, Inference: refineDeps}
 	runDreamSchedulerLoop(parent, db, rpgDeps, brain.LoadDreamSchedulerOptsFromViper())
 }
 
 // StartMoeBotScheduler starts bot post scheduling in the HTTP process.
-func StartMoeBotScheduler(parent context.Context, svc *platformsvc.ServiceContext) {
-	if svc == nil {
-		return
-	}
-	appPort := moewiring.NewAppAdapter(svc.Domains.Community.PostApp, svc.Domains.AI.LLMApp)
+func StartMoeBotScheduler(parent context.Context, deps Deps) {
+	appPort := moewiring.NewAppAdapter(deps.PostApp, deps.LLMApp)
 	if appPort == nil {
 		return
 	}
@@ -48,16 +41,15 @@ func StartMoeBotScheduler(parent context.Context, svc *platformsvc.ServiceContex
 	if db == nil {
 		return
 	}
-	sp := appPort
 	inf := moeconfig.InferenceFromViper()
-	deps := runtime.Deps{
+	runtimeDeps := runtime.Deps{
 		DB:        db,
-		RPC:       sp,
+		RPC:       appPort,
 		Inference: inf,
 		ResolvePostingPlan: func(ctx context.Context, gdb *gorm.DB, agentKey string) (flowexec.Plan, error) {
 			return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(gdb), agentKey)
 		},
 	}
 	sched := runtime.LoadSchedulerOptsFromViper()
-	runtime.StartScheduler(parent, deps, sched.SchedulerOpts, sched.Smart)
+	runtime.StartScheduler(parent, runtimeDeps, sched.SchedulerOpts, sched.Smart)
 }

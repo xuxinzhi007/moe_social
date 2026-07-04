@@ -7,11 +7,25 @@ import (
 )
 
 func RegisterDocsHTTP(srv *khttp.Server, deps DocsHTTPDeps) {
-	if srv == nil || deps.ServiceContext == nil {
+	if srv == nil {
 		return
 	}
 	r := srv.Route("/")
-	r.GET("/swagger", WrapNetHTTPHandler(hdoc.SwaggerUiHandler(deps.ServiceContext)))
-	r.GET("/swagger/openapi.yaml", WrapNetHTTPHandler(hdoc.SwaggerOpenAPIHandler(deps.ServiceContext)))
-	r.GET("/swagger/doc.json", WrapNetHTTPHandler(hdoc.SwaggerDocHandler(deps.ServiceContext)))
+	if deps.UIHandler != nil {
+		r.GET("/swagger", WrapNetHTTPHandler(deps.UIHandler))
+	}
+	if deps.OpenAPIHandler != nil {
+		r.GET("/swagger/openapi.yaml", WrapNetHTTPHandler(deps.OpenAPIHandler))
+	}
+	if deps.JSONHandler != nil {
+		r.GET("/swagger/doc.json", WrapNetHTTPHandler(deps.JSONHandler))
+	}
+}
+
+func DefaultDocsHTTPDeps() DocsHTTPDeps {
+	return DocsHTTPDeps{
+		UIHandler:      hdoc.SwaggerUiHandler(),
+		OpenAPIHandler: hdoc.SwaggerOpenAPIHandler(),
+		JSONHandler:    hdoc.SwaggerDocHandler(),
+	}
 }

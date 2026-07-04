@@ -1,12 +1,8 @@
 package doc
 
-import (
-	"net/http"
+import "net/http"
 
-	"backend/internal/platform/svc"
-)
-
-func SwaggerUiHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func SwaggerUiHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const html = `<!doctype html>
 <html lang="en">
