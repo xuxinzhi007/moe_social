@@ -75,7 +75,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/virtual-avatar-settings': (context) => _deferred(
           virtual_avatar_settings.loadLibrary,
           () => virtual_avatar_settings.VirtualAvatarSettingsPage(),
-          message: '正在加载虚拟形象…',
+          message: '正在加载 AI 助手设置…',
         ),
     '/message-retention-settings': (context) =>
         const MessageRetentionSettingsPage(),

@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Server) VoiceCall(ctx context.Context, in *platformv1.VoiceCallReq) (*platformv1.VoiceCallResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.voiceApp == nil {
 		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
@@ -25,15 +25,12 @@ func (s *Server) VoiceCall(ctx context.Context, in *platformv1.VoiceCallReq) (*p
 	if err != nil {
 		return nil, kerrors.BadRequest("VOICE_CALL_FAILED", err.Error())
 	}
-	return &platformv1.VoiceCallResp{
-		Code: 0, Message: "success", Success: true,
-		Data: &platformv1.VoiceCallData{CallId: result.CallID, ChannelName: result.ChannelName},
-	}, nil
+	return &platformv1.VoiceCallResp{Code: 0, Message: "success", Success: true, Data: &platformv1.VoiceCallData{CallId: result.CallID, ChannelName: result.ChannelName}}, nil
 }
 
 func (s *Server) VoiceAnswer(ctx context.Context, in *platformv1.VoiceAnswerReq) (*platformv1.VoiceAnswerResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.voiceApp == nil {
 		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
@@ -46,15 +43,12 @@ func (s *Server) VoiceAnswer(ctx context.Context, in *platformv1.VoiceAnswerReq)
 	if err != nil {
 		return nil, kerrors.BadRequest("VOICE_ANSWER_FAILED", err.Error())
 	}
-	return &platformv1.VoiceAnswerResp{
-		Code: 0, Message: "success", Success: true,
-		Data: &platformv1.VoiceAnswerData{ChannelName: result.ChannelName},
-	}, nil
+	return &platformv1.VoiceAnswerResp{Code: 0, Message: "success", Success: true, Data: &platformv1.VoiceAnswerData{ChannelName: result.ChannelName}}, nil
 }
 
 func (s *Server) VoiceCancel(ctx context.Context, in *platformv1.VoiceCancelReq) (*platformv1.VoiceSimpleResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.voiceApp == nil {
 		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
@@ -70,8 +64,8 @@ func (s *Server) VoiceCancel(ctx context.Context, in *platformv1.VoiceCancelReq)
 }
 
 func (s *Server) VoiceReject(ctx context.Context, in *platformv1.VoiceRejectReq) (*platformv1.VoiceSimpleResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.voiceApp == nil {
 		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
@@ -87,8 +81,8 @@ func (s *Server) VoiceReject(ctx context.Context, in *platformv1.VoiceRejectReq)
 }
 
 func (s *Server) GetVoiceToken(ctx context.Context, in *platformv1.GetVoiceTokenReq) (*platformv1.GetVoiceTokenResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.voiceApp == nil {
 		return nil, kerrors.BadRequest("VOICE_UNAVAILABLE", "voice app unavailable")
@@ -105,16 +99,9 @@ func (s *Server) GetVoiceToken(ctx context.Context, in *platformv1.GetVoiceToken
 	if role == 0 {
 		role = 1
 	}
-	result, err := s.voiceApp.GetRtcToken(ctx, voicebiz.TokenInput{
-		ChannelName: in.GetChannelName(),
-		UserAccount: userAccount,
-		Role:        role,
-	})
+	result, err := s.voiceApp.GetRtcToken(ctx, voicebiz.TokenInput{ChannelName: in.GetChannelName(), UserAccount: userAccount, Role: role})
 	if err != nil {
 		return nil, kerrors.BadRequest("VOICE_TOKEN_FAILED", err.Error())
 	}
-	return &platformv1.GetVoiceTokenResp{
-		Code: 0, Message: "success", Success: true,
-		Token: result.Token, AppId: result.AppID,
-	}, nil
+	return &platformv1.GetVoiceTokenResp{Code: 0, Message: "success", Success: true, Token: result.Token, AppId: result.AppID}, nil
 }

@@ -45,7 +45,7 @@ func InferenceFromViper() llminference.Config {
 }
 
 // GameInferenceFromViper 文字游戏专用推理端点（game_base_url 优先，否则复用全局）。
-func GameInferenceFromViper() (llminference.Config, string) {
+func GameInferenceFromViper() (llminference.Config, string, string) {
 	global := InferenceFromViper()
 	v := viper.New()
 	v.SetConfigName("config")
@@ -57,8 +57,9 @@ func GameInferenceFromViper() (llminference.Config, string) {
 
 	gameBase := strings.TrimSpace(v.GetString("llm_inference.game_base_url"))
 	gameModel := strings.TrimSpace(v.GetString("llm_inference.game_model"))
+	gameMode := strings.TrimSpace(v.GetString("llm_inference.game_llm_mode"))
 	if gameBase == "" {
-		return global, firstNonEmpty(gameModel, global.DefaultModel)
+		return global, firstNonEmpty(gameModel, global.DefaultModel), gameMode
 	}
 	ts := v.GetInt("llm_inference.timeout_seconds")
 	if ts <= 0 {
@@ -69,7 +70,7 @@ func GameInferenceFromViper() (llminference.Config, string) {
 		style = "openai"
 	}
 	cfg := llminference.ConfigFrom(gameBase, style, ts, gameModel, "")
-	return cfg, gameModel
+	return cfg, gameModel, gameMode
 }
 
 func firstNonEmpty(values ...string) string {

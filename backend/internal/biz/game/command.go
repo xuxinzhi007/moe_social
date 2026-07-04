@@ -4,10 +4,11 @@ import (
 	"strings"
 )
 
-// CommandKind 玩家指令类型（路由 SSOT，不经过 LLM）。
+// CommandKind 玩家指令类型。
 type CommandKind string
 
 const (
+	CmdAgent            CommandKind = "agent" // 在线：LLM Agent + 世界工具
 	CmdInspectInventory CommandKind = "inspect_inventory"
 	CmdInspectScene     CommandKind = "inspect_scene"
 	CmdExploreWorld     CommandKind = "explore_world"
@@ -15,7 +16,7 @@ const (
 	CmdTravel           CommandKind = "travel"
 	CmdTalkStart        CommandKind = "talk_start"
 	CmdTalkReply        CommandKind = "talk_reply"
-	CmdFreeform         CommandKind = "freeform"
+	CmdFreeform         CommandKind = "freeform" // 兼容旧测试/离线
 )
 
 // Command 结构化玩家指令。
@@ -26,8 +27,13 @@ type Command struct {
 	Travel travelTarget
 }
 
-// parseCommand 规则解析：对话进行中优先续话，移动必须显式。
+// parseCommand 在线主路径：全部交给 World Agent（DB + 工具）。
 func parseCommand(raw string, snap *SessionSnapshot) Command {
+	return Command{Kind: CmdAgent, Raw: strings.TrimSpace(raw)}
+}
+
+// parseOfflineCommand 离线兜底：规则解析（无 LLM 时使用）。
+func parseOfflineCommand(raw string, snap *SessionSnapshot) Command {
 	raw = strings.TrimSpace(raw)
 	lower := strings.ToLower(raw)
 
@@ -40,11 +46,8 @@ func parseCommand(raw string, snap *SessionSnapshot) Command {
 	if isInventoryCheckAction(raw, lower) {
 		return Command{Kind: CmdInspectInventory, Raw: raw}
 	}
-	if isEnvironmentCheckAction(raw, lower, PlayerIntent{Type: "observe"}) {
+	if isEnvironmentCheckAction(raw, lower) {
 		return Command{Kind: CmdInspectScene, Raw: raw}
-	}
-	if isExploreWorldAction(raw, lower, ruleBasedIntent(raw)) {
-		return Command{Kind: CmdExploreWorld, Raw: raw}
 	}
 
 	exits := decodeExits(snap.Scene.ExitsJSON)
@@ -62,7 +65,7 @@ func parseCommand(raw string, snap *SessionSnapshot) Command {
 		}
 	}
 
-	if isTalkInitAction(raw, ruleBasedIntent(raw)) {
+	if isTalkInitAction(raw, ruleBasedIntent(raw)) || isGreetingAction(raw) {
 		target := pickTalkTarget(snap.npcViews(), snap.Scene.Name)
 		if name := extractNpcNameFromAction(raw, snap.npcViews()); name != "" {
 			target = name
@@ -89,6 +92,16 @@ func isTalkInitAction(action string, intent PlayerIntent) bool {
 	a := strings.TrimSpace(action)
 	return strings.Contains(a, "搭话") || strings.Contains(a, "说话") ||
 		strings.Contains(a, "交谈") || strings.Contains(a, "附近的人")
+}
+
+func isGreetingAction(action string) bool {
+	a := strings.TrimSpace(action)
+	for _, k := range []string{"你好", "您好", "嗨", "hello", "hi"} {
+		if strings.Contains(strings.ToLower(a), k) {
+			return true
+		}
+	}
+	return false
 }
 
 func isDialogueInput(action string, flags WorldFlags) bool {
@@ -159,16 +172,17 @@ func isInventoryCheckAction(action, lower string) bool {
 		return strings.Contains(action, "check") || strings.Contains(action, "open")
 	}
 	return strings.Contains(action, "检查") &&
-		(strings.Contains(action, "带") || strings.Contains(action, "装") || strings.Contains(action, "物")) &&
-		!strings.Contains(action, "捡") && !strings.Contains(action, "拾") && !strings.Contains(action, "放")
+		(strings.Contains(action, "包") || strings.Contains(action, "袋") || strings.Contains(action, "栏")) &&
+		!strings.Contains(action, "捡") && !strings.Contains(action, "拾") && !strings.Contains(action, "拿")
 }
 
-func isEnvironmentCheckAction(action, lower string, intent PlayerIntent) bool {
-	if intent.Type == "observe" {
-		return strings.Contains(action, "环境") || strings.Contains(action, "周围") ||
-			strings.Contains(action, "四周") || strings.Contains(action, "状况")
+// isEnvironmentCheckAction 显式「观察/检查环境」类。
+func isEnvironmentCheckAction(action, lower string) bool {
+	envKeys := []string{
+		"检查环境", "查看环境", "环境状况", "周围情况", "周围状况",
+		"看看周围", "观察周围", "环顾周围", "查看周围", "周围有什么", "看看有什么",
+		"观察四周", "看看四周", "打量周围",
 	}
-	envKeys := []string{"检查环境", "查看环境", "环境", "四周", "周围情况", "周围状况"}
 	for _, k := range envKeys {
 		if strings.Contains(action, k) || strings.Contains(lower, k) {
 			return true

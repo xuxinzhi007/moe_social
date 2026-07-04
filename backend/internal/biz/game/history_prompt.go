@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-const maxHistoryTurns = 10
+const maxHistoryTurns = 5
 
 // buildRecentHistoryBlock 将最近回合摘要注入 LLM 提示，保证对话连贯。
 func buildRecentHistoryBlock(ctx context.Context, st Store, sessionID uint) string {

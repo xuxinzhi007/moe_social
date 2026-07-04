@@ -15,29 +15,69 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('虚拟助手设置'),
+        title: const Text('AI 助手设置'),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
           _card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.smart_toy_rounded, color: MoeTokens.primary),
+                      SizedBox(width: 8),
+                      Text(
+                        '社区 AI 账号',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'AI 不再作为独立页面存在，而是以真实社区账号参与发动态、评论、点赞和互动。帖子会直接出现在社区流中，并带有 AI 标签。',
+                    style: TextStyle(color: Colors.grey[700], height: 1.5),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [
+                      _InfoChip(label: '真实账号'),
+                      _InfoChip(label: '动态发帖'),
+                      _InfoChip(label: '评论互动'),
+                      _InfoChip(label: 'AI 标签'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _card(
             child: Column(
               children: [
                 _switchActionTile(
-                  title: '启用虚拟助手',
-                  subtitle: '默认关闭，开启后显示可悬浮助手',
+                  title: '启用悬浮助手入口',
+                  subtitle: '保留设置页和全局悬浮入口，作为社区 AI 的控制入口',
                   value: avatar.enabled,
                   onChanged: (v) async {
                     await avatar.setEnabled(v);
                     if (!context.mounted) return;
-                    MoeToast.info(context, v ? '虚拟助手已开启' : '虚拟助手已关闭');
+                    MoeToast.info(context, v ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
                   },
                 ),
                 _actionTile(
                   icon: Icons.refresh_rounded,
-                  title: '恢复显示',
-                  subtitle: const Text('清除“隐藏本次会话/隐藏到今天结束”状态'),
+                  title: '恢复悬浮入口显示',
+                  subtitle: const Text('清除本次会话中的隐藏状态，恢复助手入口'),
                   onTap: () async {
                     await avatar.restoreVisibility();
                     if (!context.mounted) return;
@@ -55,7 +95,7 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
                   child: Text(
-                    '快捷功能自定义',
+                    '悬浮入口快捷功能',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                   ),
                 ),
@@ -64,7 +104,7 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                   avatar,
                   id: AvatarQuickActions.notifications,
                   title: '通知中心',
-                  subtitle: '快速查看通知',
+                  subtitle: '快速查看互动和通知',
                 ),
                 _quickActionTile(
                   context,
@@ -78,7 +118,7 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                   avatar,
                   id: AvatarQuickActions.greet,
                   title: '打招呼',
-                  subtitle: '助手互动文案反馈',
+                  subtitle: '保留轻量助手反馈入口',
                 ),
                 _quickActionTile(
                   context,
@@ -103,19 +143,19 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
               children: [
                 _actionTile(
                   icon: Icons.face_retouching_natural_rounded,
-                  title: '角色形象',
+                  title: '助手形象',
                   subtitle: Text(
-                    avatar.characterId == 'default_moe' ? '默认助手（当前）' : '自定义角色',
+                    avatar.characterId == 'default_moe' ? '默认形象（当前）' : '自定义形象',
                   ),
                   onTap: () async {
                     await avatar.setCharacterId('default_moe');
                     if (!context.mounted) return;
-                    MoeToast.info(context, '更多角色即将上线');
+                    MoeToast.info(context, '更多形象即将上线');
                   },
                 ),
                 _actionTile(
                   icon: Icons.style_rounded,
-                  title: '皮肤主题',
+                  title: '助手皮肤',
                   subtitle: Text(
                     avatar.skinId == 'classic' ? '经典皮肤（当前）' : '自定义皮肤',
                   ),
@@ -196,8 +236,10 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(height: 2),
                     DefaultTextStyle(
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
@@ -228,8 +270,10 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
@@ -245,6 +289,31 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
             onChanged: onChanged,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: MoeTokens.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: MoeTokens.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

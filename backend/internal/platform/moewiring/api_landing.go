@@ -7,10 +7,7 @@ import (
 
 // LandingAPIInProcessEnabled config.yaml: moe.landing_api_in_process
 func LandingAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.landing_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.landing_api_in_process"}, false)
+	return domainInProcessEnabled("moe.landing_api_in_process")
 }
 
 // NewAPILandingService API 进程内 Landing 应用服务。

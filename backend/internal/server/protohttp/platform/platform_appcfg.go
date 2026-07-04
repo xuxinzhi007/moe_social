@@ -11,8 +11,8 @@ import (
 )
 
 func (s *Server) GetPublicClientConfig(ctx context.Context, _ *platformv1.GetPublicClientConfigReq) (*platformv1.GetPublicClientConfigResp, error) {
-	if _, err := s.requireSvc(); err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
 	if s.appcfg == nil {
 		return nil, kerrors.NotFound("NO_PUBLIC_API_BASE_URL", "not found")

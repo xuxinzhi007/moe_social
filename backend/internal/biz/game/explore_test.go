@@ -31,12 +31,12 @@ func TestDialogueContinuationNo(t *testing.T) {
 		Scene: model.GameScene{Name: "迷雾小镇"},
 		NPCs:  []model.GameNpc{{Name: "老人"}},
 	}
-	cmd := parseCommand("没有啊", snap)
+	cmd := parseOfflineCommand("没有啊", snap)
 	if cmd.Kind != CmdTalkReply {
 		t.Fatalf("expected talk reply, got %s", cmd.Kind)
 	}
 	state := TurnState{Scene: snap.Scene, NPCs: snap.NPCs, Flags: flags}
-	out, _, err := narrateTurn(t.Context(), nil, TurnDeps{}, snap, cmd, state, nil)
+	out, _, err := narrateTurnOffline(t.Context(), nil, TurnDeps{}, snap, cmd, state, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

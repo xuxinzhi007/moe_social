@@ -286,6 +286,7 @@ func callPostLLM(
 
 	userParts := []string{
 		brain.StabilityGenerationHint(stabilityScore),
+		"【账号画像】\n" + ctxBlock.userProfile,
 		"【时段】" + ctxBlock.timeHint,
 		"【创作提示】" + ctxBlock.topicHint,
 		"",

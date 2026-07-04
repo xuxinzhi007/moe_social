@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"backend/model"
 )
@@ -36,7 +37,9 @@ func loadStoryArcsFromDB(ctx context.Context, st Store) []model.GameStoryArc {
 	if st == nil {
 		return nil
 	}
-	arcs, err := st.ListActiveStoryArcs(ctx)
+	dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+	defer cancel()
+	arcs, err := st.ListActiveStoryArcs(dbCtx)
 	if err != nil {
 		slog.Warn("[story_arc] 加载 DB 故事线失败，回退硬编码", "err", err)
 		return nil

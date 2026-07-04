@@ -9,23 +9,21 @@ import (
 )
 
 func (s *Server) ListAnnouncements(ctx context.Context, in *platformv1.ListAnnouncementsReq) (*platformv1.ListAnnouncementsResp, error) {
-	svc, err := s.requireSvc()
-	if err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
-	if svc.AdminApp == nil {
+	if s.deps.AdminApp == nil {
 		return nil, kerrors.ServiceUnavailable("ADMIN_UNAVAILABLE", "admin service unavailable")
 	}
-	return svc.AdminApp.ListPublishedAnnouncements(ctx, in)
+	return s.deps.AdminApp.ListPublishedAnnouncements(ctx, in)
 }
 
 func (s *Server) GetAnnouncement(ctx context.Context, in *platformv1.GetAnnouncementReq) (*platformv1.GetAnnouncementResp, error) {
-	svc, err := s.requireSvc()
-	if err != nil {
-		return nil, err
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
 	}
-	if svc.AdminApp == nil {
+	if s.deps.AdminApp == nil {
 		return nil, kerrors.ServiceUnavailable("ADMIN_UNAVAILABLE", "admin service unavailable")
 	}
-	return svc.AdminApp.GetPublishedAnnouncement(ctx, in)
+	return s.deps.AdminApp.GetPublishedAnnouncement(ctx, in)
 }

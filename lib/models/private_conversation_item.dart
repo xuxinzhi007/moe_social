@@ -29,7 +29,9 @@ class PrivateConversationItem {
             receiverId: '',
           );
     return PrivateConversationItem(
-      peerUserId: json['peer_user_id']?.toString() ?? '',
+      peerUserId: json['peer_user_id']?.toString() ??
+          json['peer_id']?.toString() ??
+          '',
       peerName: json['peer_name']?.toString() ?? '',
       peerAvatar: json['peer_avatar']?.toString() ?? '',
       peerMoeNo: json['peer_moe_no']?.toString() ?? '',

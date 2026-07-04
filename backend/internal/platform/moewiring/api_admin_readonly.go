@@ -7,10 +7,7 @@ import (
 
 // AdminReadonlyAPIInProcessEnabled config.yaml: moe.admin_readonly_api_in_process
 func AdminReadonlyAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.admin_readonly_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.admin_readonly_api_in_process"}, false)
+	return domainInProcessEnabled("moe.admin_readonly_api_in_process")
 }
 
 // NewAPIAdminReadonlyService API 进程内 Admin 只读应用服务。

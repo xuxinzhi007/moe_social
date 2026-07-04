@@ -2,18 +2,16 @@ package transport
 
 import (
 	chatbiz "backend/internal/biz/chat"
-	"backend/internal/platform/chatdelivery"
-	"backend/internal/platform/svc"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-func registerWebSocket(r *khttp.Router, svcCtx *svc.ServiceContext) {
-	r.GET("/ws/chat", chatWSHandler(svcCtx))
+func registerWebSocket(r *khttp.Router, deps Deps) {
+	r.GET("/ws/chat", chatWSHandler(deps.ChatWS))
 	r.GET("/ws/presence", chatPresenceWSHandler())
 	r.GET("/ws/remote", chatRemoteWS())
 	r.GET("/ws/world", chatWorldWSHandler())
-	r.GET("/ws/admin/moe/brain/pipeline", brainPipelineWSHandler(svcCtx.MoeAdmin))
+	r.GET("/ws/admin/moe/brain/pipeline", brainPipelineWSHandler(deps.MoeAdmin))
 }
 
 func chatRemoteWS() func(khttp.Context) error {
@@ -23,8 +21,7 @@ func chatRemoteWS() func(khttp.Context) error {
 	}
 }
 
-func chatWSHandler(svcCtx *svc.ServiceContext) func(khttp.Context) error {
-	deps := chatWSDeps(svcCtx)
+func chatWSHandler(deps chatbiz.ChatWSDeps) func(khttp.Context) error {
 	return func(kctx khttp.Context) error {
 		chatbiz.ServeChatWS(kctx.Response(), kctx.Request(), kctx.Request().Context(), deps)
 		return nil
@@ -43,8 +40,4 @@ func chatWorldWSHandler() func(khttp.Context) error {
 		chatbiz.ServeWorldWS(kctx.Response(), kctx.Request())
 		return nil
 	}
-}
-
-func chatWSDeps(svcCtx *svc.ServiceContext) chatbiz.ChatWSDeps {
-	return chatdelivery.ChatWSDepsFrom(svcCtx)
 }

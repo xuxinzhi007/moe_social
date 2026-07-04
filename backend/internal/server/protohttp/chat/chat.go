@@ -31,6 +31,9 @@ func (s *Server) SendPrivateMessage(ctx context.Context, in *chatv1.SendPrivateM
 	if err != nil {
 		return nil, err
 	}
+	if err := fillSendPrivateMessageRequest(ctx, in); err != nil {
+		return nil, err
+	}
 	return app.SendPrivateMessage(ctx, in)
 }
 
@@ -39,12 +42,18 @@ func (s *Server) ListPrivateMessages(ctx context.Context, in *chatv1.ListPrivate
 	if err != nil {
 		return nil, err
 	}
+	if err := fillPrivateMessageListRequest(ctx, in); err != nil {
+		return nil, err
+	}
 	return app.ListPrivateMessages(ctx, in)
 }
 
 func (s *Server) ListPrivateConversations(ctx context.Context, in *chatv1.ListPrivateConversationsRequest) (*chatv1.ListPrivateConversationsReply, error) {
 	app, err := s.requireApp()
 	if err != nil {
+		return nil, err
+	}
+	if err := fillPrivateConversationsRequest(ctx, in); err != nil {
 		return nil, err
 	}
 	return app.ListPrivateConversations(ctx, in)

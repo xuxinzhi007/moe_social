@@ -7,10 +7,7 @@ import (
 
 // BehaviorAPIInProcessEnabled config.yaml: moe.behavior_api_in_process
 func BehaviorAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.behavior_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.behavior_api_in_process"}, false)
+	return domainInProcessEnabled("moe.behavior_api_in_process")
 }
 
 // NewAPIBehaviorService API 进程内 Behavior 应用服务。

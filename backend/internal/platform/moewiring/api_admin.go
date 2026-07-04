@@ -17,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// NewAPIAdminService 在 API 进程装配 MoeAdmin（需已配置数据库）。
+// NewAPIAdminService 鍦?API 杩涚▼瑁呴厤 MoeAdmin锛堥渶宸查厤缃暟鎹簱锛夈€?
 func NewAPIAdminService(appPort port.MoeToolPort) (*moeadmin.AdminService, error) {
 	if appPort == nil {
 		return nil, nil

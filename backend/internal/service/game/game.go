@@ -1,7 +1,10 @@
-// Package gameapp 文字游戏应用服务。
 package gameapp
 
 import (
+	"context"
+	"strings"
+	"time"
+
 	"gorm.io/gorm"
 
 	gamebiz "backend/internal/biz/game"
@@ -12,6 +15,7 @@ import (
 type Deps struct {
 	Inference llminference.Config
 	Model     string
+	LlmMode   string
 }
 
 type AppService struct {
@@ -20,12 +24,18 @@ type AppService struct {
 }
 
 func New(db *gorm.DB, deps Deps) *AppService {
-	return &AppService{store: gamedata.NewStore(db), deps: deps}
+	s := &AppService{store: gamedata.NewStore(db), deps: deps}
+	if s.store != nil {
+		gamebiz.StartWorldRunner(context.Background(), s.store, 45*time.Second)
+	}
+	return s
 }
 
 func (s *AppService) turnDeps() gamebiz.TurnDeps {
 	if s == nil {
 		return gamebiz.TurnDeps{}
 	}
-	return gamebiz.TurnDeps{Inference: s.deps.Inference, Model: s.deps.Model}
+	model := strings.TrimSpace(s.deps.Model)
+	mode := gamebiz.ResolveGameLlmMode(s.deps.LlmMode, model)
+	return gamebiz.TurnDeps{Inference: s.deps.Inference, Model: model, LlmMode: mode}
 }

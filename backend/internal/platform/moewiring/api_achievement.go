@@ -6,10 +6,7 @@ import (
 )
 
 func AchievementAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.achievement_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.achievement_api_in_process"}, false)
+	return domainInProcessEnabled("moe.achievement_api_in_process")
 }
 
 func NewAPIAchievementService() (*achievementapp.AppService, error) {

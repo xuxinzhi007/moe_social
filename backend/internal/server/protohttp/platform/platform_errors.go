@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	errSvcCtxNil    = status.Error(codes.FailedPrecondition, "ServiceContext 未初始化")
-	errLLMAppNil    = status.Error(codes.FailedPrecondition, "LLMApp 未初始化")
-	errUnauthorized = status.Error(codes.Unauthenticated, "unauthorized")
+	errPlatformUnavailable = status.Error(codes.FailedPrecondition, "platform dependencies not initialized")
+	errLLMAppNil           = status.Error(codes.FailedPrecondition, "LLMApp not initialized")
+	errUnauthorized        = status.Error(codes.Unauthenticated, "unauthorized")
 )

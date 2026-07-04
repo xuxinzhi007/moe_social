@@ -80,7 +80,7 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 		PreferredModel:   preferred,
 	}
 	if err != nil || strings.TrimSpace(cfg.BaseURL) == "" {
-		out.Message = "未配置 llm_inference.base_url"
+		out.Message = "llm_inference.base_url is not configured"
 		return out, nil
 	}
 
@@ -90,10 +90,12 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 	}
 	inferCtx, cancel := context.WithTimeout(req.Context(), time.Duration(cfg.TimeoutSeconds)*time.Second)
 	defer cancel()
+
 	client := utils.NewHTTPClient(cfg.TimeoutSeconds)
 	models, listErr := common.ListModelNames(inferCtx, client, cfg)
 	if listErr != nil {
 		out.Message = listErr.Error()
+		out.Online = common.ProbeInferenceEndpoint(inferCtx, client, cfg)
 	} else {
 		out.Online = true
 		out.Models = models
@@ -113,20 +115,21 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 		}
 	}
 
-	pick := llminference.PickModel(preferred, out.Models)
-	out.EffectiveModel = pick.ModelID
-	out.AutoDiscovered = pick.AutoDiscovered
-	out.ModelLoaded = out.Online && pick.ModelID != "" && inferenceModelInList(pick.ModelID, out.Models)
-
-	if out.Online && !out.ModelLoaded && out.Message == "" {
-		if len(out.Models) == 0 {
-			out.Message = "推理服务在线，但未返回可用模型列表"
-		} else {
-			out.Message = fmt.Sprintf("推理服务在线，但未找到模型「%s」", preferred)
+	if len(out.Models) > 0 {
+		pick := llminference.PickModel(preferred, out.Models)
+		out.EffectiveModel = pick.ModelID
+		out.AutoDiscovered = pick.AutoDiscovered
+		out.ModelLoaded = out.Online && pick.ModelID != "" && inferenceModelInList(pick.ModelID, out.Models)
+		if out.AutoDiscovered && out.ModelLoaded && pick.Preferred != "" && !strings.EqualFold(pick.Preferred, pick.ModelID) {
+			out.Message = fmt.Sprintf("auto selected model %s (preferred %s)", pick.ModelID, pick.Preferred)
 		}
+	} else {
+		out.EffectiveModel = strings.TrimSpace(preferred)
+		out.ModelLoaded = out.Online && out.EffectiveModel != ""
 	}
-	if out.AutoDiscovered && out.ModelLoaded && pick.Preferred != "" && !strings.EqualFold(pick.Preferred, pick.ModelID) {
-		out.Message = fmt.Sprintf("已自动选用「%s」（配置偏好「%s」）", pick.ModelID, pick.Preferred)
+
+	if out.Online && len(out.Models) > 0 && !out.ModelLoaded && out.Message == "" {
+		out.Message = fmt.Sprintf("inference service is online, but model %s was not found", preferred)
 	}
 
 	slot := common.FetchInferenceSlotInfo(inferCtx, client, cfg.BaseURL)

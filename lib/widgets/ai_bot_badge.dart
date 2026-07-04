@@ -54,8 +54,7 @@ class AiBotBadge extends StatelessWidget {
 
   String _label() {
     final key = agentKey?.trim() ?? '';
-    if (key.isEmpty) return 'AI';
     if (key == 'moe_guide') return 'AI向导';
-    return 'AI';
+    return 'AI账号';
   }
 }

@@ -7,10 +7,7 @@ import (
 
 // AIAPIInProcessEnabled config.yaml: moe.ai_api_in_process
 func AIAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.ai_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.ai_api_in_process"}, false)
+	return domainInProcessEnabled("moe.ai_api_in_process")
 }
 
 // NewAPIAIService API 进程内 AI 资源应用服务。

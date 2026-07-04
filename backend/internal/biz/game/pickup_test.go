@@ -8,7 +8,7 @@ import (
 
 func TestPickupNotInventoryCheck(t *testing.T) {
 	snap := &SessionSnapshot{Scene: model.GameScene{Name: "迷雾小镇"}}
-	cmd := parseCommand("捡起石头放进背包", snap)
+	cmd := parseOfflineCommand("捡起石头放进背包", snap)
 	if cmd.Kind != CmdPickup {
 		t.Fatalf("expected CmdPickup, got %s", cmd.Kind)
 	}
@@ -19,7 +19,7 @@ func TestPickupNotInventoryCheck(t *testing.T) {
 
 func TestInventoryCheckStillWorks(t *testing.T) {
 	snap := &SessionSnapshot{Scene: model.GameScene{Name: "迷雾小镇"}}
-	cmd := parseCommand("检查背包", snap)
+	cmd := parseOfflineCommand("检查背包", snap)
 	if cmd.Kind != CmdInspectInventory {
 		t.Fatalf("expected CmdInspectInventory, got %s", cmd.Kind)
 	}

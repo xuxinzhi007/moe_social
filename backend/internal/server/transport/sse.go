@@ -8,19 +8,18 @@ import (
 	"backend/internal/apilegacy/common"
 	"backend/internal/apilegacy/moebridge"
 	"backend/internal/legacy/types"
-	"backend/internal/platform/svc"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/runtime"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
-func registerSSE(r *khttp.Router, svc *svc.ServiceContext) {
-	r.GET("/api/admin/moe/brain/pipeline/stream", streamMoeBrainPipeline(svc.MoeAdmin))
+func registerSSE(r *khttp.Router, admin *moeadmin.AdminService) {
+	r.GET("/api/admin/moe/brain/pipeline/stream", streamMoeBrainPipeline(admin))
 }
 
 func moeAdminUnavailable() types.BaseResp {
-	return types.BaseResp{Code: -1, Message: "MoeAdmin 未配置", Success: false}
+	return types.BaseResp{Code: -1, Message: "MoeAdmin unavailable", Success: false}
 }
 
 func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) error {

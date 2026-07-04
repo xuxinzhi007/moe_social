@@ -6,10 +6,7 @@ import (
 )
 
 func CommunityAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.community_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.community_api_in_process"}, false)
+	return domainInProcessEnabled("moe.community_api_in_process")
 }
 
 func NewAPICommunityService() (*communityapp.AppService, error) {

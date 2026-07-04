@@ -52,6 +52,22 @@ func resolveTurnOutputStream(
 	if !deps.Inference.Ready() {
 		return fallbackTurn(action, intent, scene, npcViews, flags), "fallback", nil
 	}
+	// 小模型 narrator：只走一次流式 prose，不尝试 JSON（0.5B 写 JSON 必崩）。
+	if IsNarratorMode(deps) {
+		out, err := callTurnLLMProseStream(ctx, deps, ctxPrompt, onChunk)
+		if err != nil {
+			moelog.Infof("game narrator stream failed: %v", err)
+			out = fallbackTurn(action, intent, scene, npcViews, flags)
+			return normalizeTurnOutput(out, flags, scene.Name), "fallback", nil
+		}
+		out = normalizeTurnOutput(out, flags, scene.Name)
+		out.Prose = sanitizeNarratorProse(out.Prose)
+		if !isValidProse(out.Prose) {
+			out = fallbackTurn(action, intent, scene, npcViews, flags)
+			return out, "fallback", nil
+		}
+		return out, "llm_prose", nil
+	}
 	candidates := turnModelCandidates(ctx, deps)
 	var lastErr error
 	for _, modelName := range candidates {
@@ -99,11 +115,17 @@ func callTurnLLMProseStream(
 	if modelName == "" {
 		modelName = strings.TrimSpace(deps.Inference.DefaultModel)
 	}
+	narrator := IsNarratorMode(deps)
+	maxTokens := 320
+	if narrator {
+		maxTokens = 200
+	}
 	content, err := llminference.ChatStream(ctx, deps.Inference, modelName, []llminference.Message{
-		{Role: "system", Content: "你是文字冒险叙事引擎。只输出一段中文小说正文，禁止 JSON。"},
-		{Role: "user", Content: buildActPromptProse(ctxPrompt)},
-	}, llminference.ChatOptions{Temperature: 0.9, MaxTokens: 900}, func(chunk string) error {
-		if onChunk == nil {
+		{Role: "system", Content: "只输出一段中文小说正文，不要标题，不要 JSON，不要分节。"},
+		{Role: "user", Content: prosePromptForDeps(deps, ctxPrompt)},
+	}, llminference.ChatOptions{Temperature: 0.75, MaxTokens: maxTokens}, func(chunk string) error {
+		// 小模型流式常复读设定文档；narrator 只推送清洗后终稿，避免客户端刷屏。
+		if narrator || onChunk == nil {
 			return nil
 		}
 		return onChunk(chunk)
@@ -113,7 +135,19 @@ func callTurnLLMProseStream(
 	}
 	out, ok := parseTurnLLMContent(content)
 	if !ok {
-		return turnLLMOutput{Prose: content}, nil
+		out = turnLLMOutput{Prose: sanitizeNarratorProse(content)}
+	} else {
+		out.Prose = sanitizeNarratorProse(out.Prose)
+	}
+	if narrator && onChunk != nil && strings.TrimSpace(out.Prose) != "" {
+		_ = onChunk(out.Prose)
 	}
 	return out, nil
+}
+
+func prosePromptForDeps(deps TurnDeps, ctx actPromptContext) string {
+	if IsNarratorMode(deps) {
+		return buildNarratorPromptProse(ctx)
+	}
+	return buildActPromptProse(ctx)
 }

@@ -47,10 +47,12 @@ func buildDialoguePromptContextWithAgent(
 		persona = "镇上的居民，性格随场景而定"
 	}
 	kind := "续接对话"
-	rule := fmt.Sprintf("2. 玩家刚说：「%s」——你必须针对这句话回应，禁止空泛套话（如「还有什么想问的」）", action)
+	rule := fmt.Sprintf(`2. 玩家刚说：「%s」——必须针对这句话给出全新回应
+3. 禁止重复【近期剧情】里已经出现过的台词（尤其禁止再次说「你找我有事」等开场白）
+4. 若玩家表示「没什么/没事/算了」，NPC 应自然接话或留有余味，不要重新开场`, action)
 	if opening {
 		kind = "发起对话"
-		rule = fmt.Sprintf("2. 玩家行动：「%s」——%s 注意到玩家靠近，主动开口搭话", action, npcName)
+		rule = fmt.Sprintf(`2. 玩家行动：「%s」——%s 注意到玩家靠近，用符合人设的方式主动搭话（不要用陈词滥调套话）`, action, npcName)
 	}
 	block := fmt.Sprintf(`【场景】%s
 %s
@@ -186,6 +188,18 @@ func npcPersona(name string, npcs []model.GameNpc) string {
 		}
 	}
 	return ""
+}
+
+func lookupNpcTemplate(ctx context.Context, st Store, npcName string) *model.GameNpcTemplate {
+	if st == nil {
+		return nil
+	}
+	tpl, err := st.FindNpcTemplateByName(ctx, npcName)
+	if err != nil {
+		moelog.Infof("game dialogue: lookup npc template %q failed: %v", npcName, err)
+		return nil
+	}
+	return tpl
 }
 
 // loadNpcAgentConfig 查找 NPC 模板，若绑定了 Agent 则加载其 system prompt 和 model name。

@@ -1,16 +1,13 @@
 package moewiring
 
 import (
-	llmapp "backend/internal/service/llm"
 	"backend/internal/adapter/moeconfig"
+	llmapp "backend/internal/service/llm"
 	"backend/utils"
 )
 
 func LLMAPIInProcessEnabled() bool {
-	if SingleProcessEnabled() || APIInProcessEnabled() {
-		return boolOr(moeViper(), []string{"moe.llm_api_in_process"}, true)
-	}
-	return boolOr(moeViper(), []string{"moe.llm_api_in_process"}, false)
+	return domainInProcessEnabled("moe.llm_api_in_process")
 }
 
 func NewAPILLMService() (*llmapp.AppService, error) {
