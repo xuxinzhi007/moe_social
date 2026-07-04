@@ -553,7 +553,7 @@ class _HomePageState extends State<HomePage>
             ),
             Consumer<NotificationProvider>(
               builder: (context, provider, _) {
-                if (provider.unreadCount == 0) return const SizedBox.shrink();
+                if (provider.activityUnreadCount == 0) return const SizedBox.shrink();
                 return Positioned(
                   top: 8,
                   right: 8,
@@ -565,7 +565,7 @@ class _HomePageState extends State<HomePage>
                     ),
                     constraints:
                         const BoxConstraints(minWidth: 8, minHeight: 8),
-                    child: provider.unreadCount > 99
+                    child: provider.activityUnreadCount > 99
                         ? const Text(
                             '99+',
                             style: TextStyle(color: Colors.white, fontSize: 8),

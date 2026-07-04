@@ -10,6 +10,7 @@ import '../services/presence_service.dart';
 class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<NotificationItem> _notifications = [];
   int _unreadCount = 0;
+  int _activityUnreadCount = 0;
   Map<String, int> _unreadDmBySender = {};
   bool _isLoading = false;
   Timer? _pollingTimer;
@@ -18,20 +19,22 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   DateTime? _lastResumeSyncAt;
 
   List<NotificationItem> get notifications => _notifications;
+  List<NotificationItem> get activityNotifications => _notifications
+      .where((n) => n.type != NotificationModel.directMessage)
+      .toList(growable: false);
   int get unreadCount => _unreadCount;
+  int get activityUnreadCount => _activityUnreadCount;
   Map<String, int> get unreadDmBySender => _unreadDmBySender;
+  int get directMessageUnreadCount =>
+      _unreadDmBySender.values.fold<int>(0, (sum, value) => sum + value);
   bool get isLoading => _isLoading;
 
-  // 初始化：启动轮询
   void init() {
     if (!AuthService.isLoggedIn) return;
 
-    NotificationService.onRealtimeRefresh = _refreshUnreadState;
+    NotificationService.onRealtimeRefresh = refreshUnreadState;
+    refreshUnreadState();
 
-    // One-time sync at startup
-    _refreshUnreadState();
-
-    // Prefer push-based unread updates via /ws/chat
     if (!_pushListening) {
       _pushListening = true;
       ChatPushService.start();
@@ -39,7 +42,6 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       ChatPushService.unreadBySender.addListener(_onPushUnreadUpdated);
     }
 
-    // Presence websocket keeps our online status when app is open.
     PresenceService.start();
 
     if (!_lifecycleListening) {
@@ -66,8 +68,6 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (state == AppLifecycleState.resumed) {
-      // When resuming, websocket may have been disconnected and messages could have arrived.
-      // Do a lightweight one-time sync to align unread state.
       final now = DateTime.now();
       if (_lastResumeSyncAt != null &&
           now.difference(_lastResumeSyncAt!).inSeconds < 3) {
@@ -76,14 +76,11 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       _lastResumeSyncAt = now;
       ChatPushService.start();
       PresenceService.start();
-      _refreshUnreadState();
+      refreshUnreadState();
       return;
     }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      // Web 端很容易在切换路由/弹窗/页面可见性变化时触发 inactive，
-      // 如果在这里 stop 会导致“切个页面就离线/掉消息”。
-      // 移动端如需省电，可在后续按平台/配置再做更细分策略。
       if (kIsWeb) return;
       ChatPushService.stop();
       PresenceService.stop();
@@ -91,39 +88,27 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _onPushUnreadUpdated() {
-    // Only handle direct messages (comment/like not implemented for now)
-    final next = ChatPushService.unreadBySender.value;
-    _unreadDmBySender = next;
-    _unreadCount = next.values.fold<int>(0, (sum, v) => sum + v);
-    notifyListeners();
-  }
-
-  // 刷新未读数 + 私信分组未读
-  Future<void> _refreshUnreadState() async {
-    try {
-      // Only sync direct-message unread (comment/like not implemented for now)
-      final list =
-          await NotificationService.getNotifications(page: 1, pageSize: 50);
-      final dmUnread = <String, int>{};
-      for (final n in list) {
-        if (n.type != NotificationModel.directMessage || n.isRead) continue;
-        final senderId = n.senderId;
-        if (senderId == null || senderId.isEmpty) continue;
-        dmUnread[senderId] = (dmUnread[senderId] ?? 0) + 1;
-      }
-
-      final changed = !_mapEquals(_unreadDmBySender, dmUnread);
-      _unreadDmBySender = dmUnread;
-      _unreadCount = dmUnread.values.fold<int>(0, (sum, v) => sum + v);
-      if (changed) {
-        notifyListeners();
-      }
-    } catch (e) {
-      print('Failed to fetch unread count: $e');
+    final nextDmBySender = _mergeDmUnreadBySender(_notifications);
+    final nextDmUnread = nextDmBySender.values.fold<int>(0, (sum, v) => sum + v);
+    final nextUnreadTotal = _activityUnreadCount + nextDmUnread;
+    final changed =
+        !_mapEquals(_unreadDmBySender, nextDmBySender) || _unreadCount != nextUnreadTotal;
+    _unreadDmBySender = nextDmBySender;
+    _unreadCount = nextUnreadTotal;
+    if (changed) {
+      notifyListeners();
     }
   }
 
-  // 获取通知列表
+  Future<void> refreshUnreadState() async {
+    try {
+      final list = await NotificationService.getNotifications(page: 1, pageSize: 100);
+      _applyNotifications(list, replaceList: false);
+    } catch (e) {
+      debugPrint('Failed to refresh unread state: $e');
+    }
+  }
+
   Future<void> fetchNotifications({bool refresh = false}) async {
     if (refresh) {
       _isLoading = true;
@@ -131,30 +116,37 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     try {
-      final list = await NotificationService.getNotifications(page: 1);
-      _notifications = list;
-      // 暂时仅实现私信未读，通知列表本身仍可展示
-      _refreshUnreadState();
+      final list = await NotificationService.getNotifications(page: 1, pageSize: 100);
+      _applyNotifications(list, replaceList: true);
     } catch (e) {
-      print('Failed to fetch notifications: $e');
+      debugPrint('Failed to fetch notifications: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (_isLoading) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
-  // 标记与某个发送者相关的私信通知为已读
   Future<void> markDirectMessagesAsRead(String senderId) async {
-    if (senderId.isEmpty) return;
-    if (!AuthService.isLoggedIn) return;
+    if (senderId.isEmpty || !AuthService.isLoggedIn) return;
 
-    // 只扫前几页，避免请求过多；通常未读私信都在最新页
+    if (_unreadDmBySender.containsKey(senderId)) {
+      final nextDm = Map<String, int>.from(_unreadDmBySender)..remove(senderId);
+      _unreadDmBySender = nextDm;
+      _unreadCount =
+          _activityUnreadCount + nextDm.values.fold<int>(0, (sum, v) => sum + v);
+      notifyListeners();
+    }
+
     const pageSize = 50;
     const maxPages = 5;
     try {
       for (var page = 1; page <= maxPages; page++) {
         final list = await NotificationService.getNotifications(
-            page: page, pageSize: pageSize);
+          page: page,
+          pageSize: pageSize,
+        );
         if (list.isEmpty) {
           break;
         }
@@ -169,32 +161,137 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
           await NotificationService.markAsRead(n.id);
         }
         if (!foundAny) {
-          // 如果这一页没有未读私信，基本说明已清完（列表是按时间倒序）
           break;
         }
       }
     } catch (e) {
-      print('Failed to mark direct messages as read: $e');
+      debugPrint('Failed to mark direct messages as read: $e');
     } finally {
-      await _refreshUnreadState();
+      await refreshUnreadState();
     }
   }
 
-  // 标记所有已读
-  Future<void> markAllAsRead() async {
-    try {
-      // 乐观更新 UI
-      _unreadCount = 0;
-      for (var n in _notifications) {
-        n.isRead = true;
-      }
-      notifyListeners();
+  Future<void> markNotificationAsRead(String notificationId) async {
+    if (notificationId.isEmpty) return;
 
-      await NotificationService.markAllAsRead();
-    } catch (e) {
-      // 回滚？通常不需要，只要下次轮询纠正即可
-      print('Failed to mark all as read: $e');
+    final index = _notifications.indexWhere((n) => n.id == notificationId);
+    if (index < 0 || _notifications[index].isRead) return;
+
+    final target = _notifications[index];
+    final next = List<NotificationItem>.from(_notifications);
+    next[index] = target.copyWith(isRead: true);
+    _applyNotifications(next, replaceList: true);
+
+    final ok = await NotificationService.markAsRead(notificationId);
+    if (!ok) {
+      next[index] = target;
+      _applyNotifications(next, replaceList: true);
     }
+  }
+
+  Future<void> markAllActivityAsRead() async {
+    final targets = _notifications
+        .where((n) => !n.isRead && n.type != NotificationModel.directMessage)
+        .toList(growable: false);
+    if (targets.isEmpty) return;
+
+    final next = _notifications
+        .map(
+          (n) => n.type == NotificationModel.directMessage
+              ? n
+              : n.copyWith(isRead: true),
+        )
+        .toList(growable: false);
+    _applyNotifications(next, replaceList: true);
+
+    var shouldRefresh = false;
+    for (final notification in targets) {
+      final ok = await NotificationService.markAsRead(notification.id);
+      if (!ok) {
+        shouldRefresh = true;
+      }
+    }
+
+    if (shouldRefresh) {
+      await fetchNotifications();
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    final next = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    _applyNotifications(next, replaceList: true);
+
+    final ok = await NotificationService.markAllAsRead();
+    if (!ok) {
+      await fetchNotifications();
+    }
+  }
+
+  Future<void> clearAllNotifications() async {
+    final previous = List<NotificationItem>.from(_notifications);
+    _notifications = [];
+    _unreadCount = 0;
+    _activityUnreadCount = 0;
+    _unreadDmBySender = {};
+    notifyListeners();
+
+    final ok = await NotificationService.clearAllNotifications();
+    if (!ok) {
+      _applyNotifications(previous, replaceList: true);
+    }
+  }
+
+  void dismissNotification(String notificationId) {
+    if (notificationId.isEmpty) return;
+    final next = _notifications.where((n) => n.id != notificationId).toList();
+    _applyNotifications(next, replaceList: true);
+  }
+
+  void _applyNotifications(
+    List<NotificationItem> list, {
+    required bool replaceList,
+  }) {
+    final activityUnread = list.where((n) {
+      return !n.isRead && n.type != NotificationModel.directMessage;
+    }).length;
+    final dmUnread = _mergeDmUnreadBySender(list);
+    final unreadTotal =
+        activityUnread + dmUnread.values.fold<int>(0, (sum, value) => sum + value);
+    final changed =
+        (replaceList && !_sameNotificationList(_notifications, list)) ||
+        !_mapEquals(_unreadDmBySender, dmUnread) ||
+        _unreadCount != unreadTotal ||
+        _activityUnreadCount != activityUnread;
+
+    if (!changed) return;
+
+    if (replaceList) {
+      _notifications = list;
+    }
+    _unreadDmBySender = dmUnread;
+    _activityUnreadCount = activityUnread;
+    _unreadCount = unreadTotal;
+    notifyListeners();
+  }
+
+  Map<String, int> _mergeDmUnreadBySender(List<NotificationItem> list) {
+    final notifDmUnread = <String, int>{};
+    for (final n in list) {
+      if (n.isRead || n.type != NotificationModel.directMessage) {
+        continue;
+      }
+      final senderId = (n.senderId ?? '').trim();
+      if (senderId.isEmpty) continue;
+      notifDmUnread[senderId] = (notifDmUnread[senderId] ?? 0) + 1;
+    }
+
+    final merged = Map<String, int>.from(notifDmUnread);
+    final pushUnread = ChatPushService.unreadBySender.value;
+    for (final entry in pushUnread.entries) {
+      if (entry.value <= 0) continue;
+      merged[entry.key] = entry.value;
+    }
+    return merged;
   }
 
   bool _mapEquals(Map<String, int> a, Map<String, int> b) {
@@ -202,6 +299,24 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (a.length != b.length) return false;
     for (final entry in a.entries) {
       if (b[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
+
+  bool _sameNotificationList(List<NotificationItem> a, List<NotificationItem> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.id != y.id ||
+          x.isRead != y.isRead ||
+          x.type != y.type ||
+          x.content != y.content ||
+          x.senderId != y.senderId ||
+          x.postId != y.postId) {
+        return false;
+      }
     }
     return true;
   }

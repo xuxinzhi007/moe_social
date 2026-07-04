@@ -4,12 +4,14 @@ class MoeBottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
   final List<NavigationDestination> destinations;
+  final List<int> badgeCounts;
 
   const MoeBottomBar({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
     required this.destinations,
+    this.badgeCounts = const [],
   });
 
   @override
@@ -65,6 +67,8 @@ class MoeBottomBar extends StatelessWidget {
                       final iconData = _resolveIconData(
                         currentIconWidget,
                       );
+                      final badgeCount =
+                          index < badgeCounts.length ? badgeCounts[index] : 0;
 
                       return Expanded(
                         child: AnimatedContainer(
@@ -100,26 +104,37 @@ class MoeBottomBar extends StatelessWidget {
                                       width: compact ? 26 : 30,
                                       height: compact ? 26 : 30,
                                       child: Center(
-                                        child: TweenAnimationBuilder<double>(
-                                          tween: Tween(
-                                            begin: 1.0,
-                                            end: isSelected ? 1.12 : 1.0,
-                                          ),
-                                          duration:
-                                              const Duration(milliseconds: 300),
-                                          curve: Curves.elasticOut,
-                                          builder: (context, scale, child) {
-                                            return Transform.scale(
-                                              scale: scale,
-                                              child: Icon(
-                                                iconData,
-                                                color: isSelected
-                                                    ? primaryColor
-                                                    : Colors.grey[400],
-                                                size: compact ? 21 : 24,
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            TweenAnimationBuilder<double>(
+                                              tween: Tween(
+                                                begin: 1.0,
+                                                end: isSelected ? 1.12 : 1.0,
                                               ),
-                                            );
-                                          },
+                                              duration:
+                                                  const Duration(milliseconds: 300),
+                                              curve: Curves.elasticOut,
+                                              builder: (context, scale, child) {
+                                                return Transform.scale(
+                                                  scale: scale,
+                                                  child: Icon(
+                                                    iconData,
+                                                    color: isSelected
+                                                        ? primaryColor
+                                                        : Colors.grey[400],
+                                                    size: compact ? 21 : 24,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            if (badgeCount > 0)
+                                              Positioned(
+                                                right: -10,
+                                                top: -6,
+                                                child: _Badge(count: badgeCount),
+                                              ),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -172,5 +187,33 @@ class MoeBottomBar extends StatelessWidget {
       }
     }
     return Icons.circle_rounded;
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFF4D6D),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white, width: 1.2),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
   }
 }

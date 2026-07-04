@@ -14,6 +14,7 @@ import '../../services/direct_chat_local_reader.dart';
 import '../../services/direct_chat_sync_bus.dart';
 import '../../services/notification_service.dart';
 import '../../providers/main_nav_controller.dart';
+import '../../providers/notification_provider.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/chat_message_display.dart';
@@ -347,7 +348,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   Widget _buildList(BuildContext context, Set<String> localPeers) {
     final myId = AuthService.currentUser ?? '';
-    final pushUnread = ChatPushService.unreadBySender.value;
+    final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
 
     if (_serverConversations.isNotEmpty) {
       final rows = List<PrivateConversationItem>.from(_serverConversations);
