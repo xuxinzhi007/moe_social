@@ -93,7 +93,7 @@ export function useOverviewData(metricsTarget: string) {
             },
             {
               key: '编包目录',
-              value: 'backend/api · backend/rpc（Linux 交叉编译产物）',
+              value: 'backend/bin/moe-social（Linux 单二进制产物）',
             },
           ],
           localBadge: {
@@ -197,7 +197,7 @@ export function useOverviewData(metricsTarget: string) {
           { key: 'Agent 云路径', value: backendDir },
           { key: 'compose', value: composePath },
           { key: 'compose 就绪', value: composeOk },
-          { key: '容器', value: 'moe-social-api · moe-social-rpc' },
+          { key: '容器', value: 'moe-social' },
           {
             key: '线上 API',
             value: String(cloud.api_base_url || runtime.api_base_url || '—'),

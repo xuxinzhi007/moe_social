@@ -196,6 +196,13 @@ class LifeWsService {
         onStateUpdate?.call(LifeStateUpdate(
           worldId: map['world_id']?.toString() ?? 'default',
           tick: map['tick'] is int ? map['tick'] as int : 0,
+          summary: map['summary'] is Map<String, dynamic>
+              ? LifeWorldSummary.fromJson(map['summary'] as Map<String, dynamic>)
+              : map['summary'] is Map
+                  ? LifeWorldSummary.fromJson(
+                      Map<String, dynamic>.from(map['summary'] as Map),
+                    )
+                  : LifeWorldSummary.empty,
           entityChanges: entities,
           events: const [],
         ));

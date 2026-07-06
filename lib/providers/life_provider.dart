@@ -16,6 +16,7 @@ class LifeProvider extends ChangeNotifier {
   int _tickCount = 0;
   bool _connected = false;
   String _worldId = 'default';
+  LifeWorldSummary _summary = LifeWorldSummary.empty;
 
   LifeProvider() {
     _wsService.onStateUpdate = _onStateUpdate;
@@ -38,6 +39,7 @@ class LifeProvider extends ChangeNotifier {
   int get tickCount => _tickCount;
   bool get connected => _connected;
   String get worldId => _worldId;
+  LifeWorldSummary get summary => _summary;
 
   /// 连接 WebSocket，开始接收世界状态推送。
   void startListening() {
@@ -79,6 +81,7 @@ class LifeProvider extends ChangeNotifier {
 
     _tickCount = update.tick;
     _worldId = update.worldId;
+    _summary = update.summary;
     notifyListeners();
   }
 

@@ -8,40 +8,78 @@ import (
 	"backend/model"
 )
 
-// RunLifeTick 执行单次 tick
+// RunLifeTick executes one simulation tick.
 func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	snap := engine.cache.Get(engine.config.WorldName)
 	if snap == nil {
-		// 首次运行，从 DB 加载或初始化
 		snap = engine.initWorld(ctx)
 		engine.cache.Set(engine.config.WorldName, snap)
 	}
 
-	// 创建 mutable copy，避免与 sendSnapshot 并发读写（data race）
 	mutableEntities := make(map[uint]*model.LifeEntity, len(snap.Entities))
+	var maxEntityID uint
 	for k, v := range snap.Entities {
 		cp := *v
 		mutableEntities[k] = &cp
+		if k > maxEntityID {
+			maxEntityID = k
+		}
 	}
+
+	if snap.Grid == nil {
+		snap.Grid = newWorldGrid(engine.config)
+	}
+	updateWorldEcology(snap.Grid)
 
 	var entityDiffs []EntityDiff
 	var eventDiffs []EventDiff
+	birthCount := 0
+	deathCount := 0
 
-	for _, entity := range mutableEntities {
-		// 1. 需求衰减
+	for id, entity := range mutableEntities {
+		if entity == nil {
+			continue
+		}
+
 		decayAttributes(entity)
 
-		// 2. 行为决策
-		newAction := decideAction(entity)
-		oldAction := entity.CurrentAction
+		cellX, cellY := worldCellForEntity(snap.Grid, entity)
+		cell := &snap.Grid.Cells[cellY][cellX]
+		applyEnvironmentEffects(entity, cell)
 
-		// 3. 执行行为效果
-		applyAction(entity, newAction)
+		if shouldDie(entity, cell) {
+			entity.CurrentAction = string(ActionDying)
+			evt := &model.LifeEventLog{
+				WorldID:     engine.config.WorldName,
+				EntityID:    entity.ID,
+				EntityType:  entity.Name,
+				EventType:   "death",
+				Description: entity.Name + " 在生态压力中消亡",
+				PositionX:   entity.PositionX,
+				PositionY:   entity.PositionY,
+				CreatedAt:   time.Now(),
+			}
+			engine.persistence.EnqueueEvent(evt)
+			eventDiffs = append(eventDiffs, EventDiff{
+				EntityID:   entity.ID,
+				EntityType: entity.Name,
+				EventType:  "death",
+				Desc:       evt.Description,
+				PositionX:  entity.PositionX,
+				PositionY:  entity.PositionY,
+			})
+			delete(mutableEntities, id)
+			deathCount++
+			continue
+		}
+
+		oldAction := entity.CurrentAction
+		newAction := decideAction(entity)
+		applyAction(entity, newAction, cell)
 		entity.LastActionAt = time.Now()
 		entity.UpdatedAt = time.Now()
 
-		// 4. 构建增量 diff
-		diff := EntityDiff{
+		entityDiffs = append(entityDiffs, EntityDiff{
 			ID:            entity.ID,
 			Name:          entity.Name,
 			Emoji:         entity.Emoji,
@@ -51,10 +89,8 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			CurrentAction: LifeAction(entity.CurrentAction),
 			PositionX:     entity.PositionX,
 			PositionY:     entity.PositionY,
-		}
-		entityDiffs = append(entityDiffs, diff)
+		})
 
-		// 5. 生成事件日志（仅行为变化时）
 		if newAction != LifeAction(oldAction) {
 			evt := &model.LifeEventLog{
 				WorldID:     engine.config.WorldName,
@@ -77,37 +113,73 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			})
 		}
 
-		// 6. 入队持久化
+		maxEntityID++
+		if child := maybeSpawnOffspring(engine.config.WorldName, mutableEntities, entity, maxEntityID); child != nil {
+			now := time.Now()
+			child.LastActionAt = now
+			child.CreatedAt = now
+			child.UpdatedAt = now
+			mutableEntities[child.ID] = child
+			engine.persistence.EnqueueEntity(child)
+			entityDiffs = append(entityDiffs, EntityDiff{
+				ID:            child.ID,
+				Name:          child.Name,
+				Emoji:         child.Emoji,
+				Hunger:        child.Hunger,
+				Energy:        child.Energy,
+				Mood:          child.Mood,
+				CurrentAction: LifeAction(child.CurrentAction),
+				PositionX:     child.PositionX,
+				PositionY:     child.PositionY,
+			})
+			birthEvt := &model.LifeEventLog{
+				WorldID:     engine.config.WorldName,
+				EntityID:    child.ID,
+				EntityType:  child.Name,
+				EventType:   "birth",
+				Description: child.Name + " 在世界中诞生",
+				PositionX:   child.PositionX,
+				PositionY:   child.PositionY,
+				CreatedAt:   now,
+			}
+			engine.persistence.EnqueueEvent(birthEvt)
+			eventDiffs = append(eventDiffs, EventDiff{
+				EntityID:   child.ID,
+				EntityType: child.Name,
+				EventType:  "birth",
+				Desc:       birthEvt.Description,
+				PositionX:  child.PositionX,
+				PositionY:  child.PositionY,
+			})
+			birthCount++
+		}
+
 		entityCopy := *entity
 		engine.persistence.EnqueueEntity(&entityCopy)
 	}
 
-	// 7. tick 结束后，将 mutableEntities 写回 snap（此时 tick 独占 snap）
 	snap.Entities = mutableEntities
-
-	// 8. 更新 tick count
 	snap.TickCount++
 	snap.World.TickCount = snap.TickCount
+	snap.Summary = computeWorldSummary(snap.Grid, snap.Entities, birthCount, deathCount)
 
-	// 9. 广播（通过 RWMutex 安全读取 broadcastFn）
 	engine.broadcastMu.RLock()
 	fn := engine.broadcastFn
 	engine.broadcastMu.RUnlock()
-	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0) {
-		msg := TickBroadcast{
+	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || snap.TickCount == 1) {
+		fn(TickBroadcast{
 			Type:    "life_state",
 			WorldID: engine.config.WorldName,
 			Tick:    snap.TickCount,
+			Summary: snap.Summary,
 			Changes: TickChanges{
 				Entities: entityDiffs,
 				Events:   eventDiffs,
 			},
-		}
-		fn(msg)
+		})
 	}
 }
 
-// generateEventDesc 生成事件描述
 func generateEventDesc(name string, action LifeAction) string {
 	switch action {
 	case ActionSleeping:
@@ -117,29 +189,30 @@ func generateEventDesc(name string, action LifeAction) string {
 	case ActionEating:
 		return name + " 找到了食物，正在进食"
 	case ActionWandering:
-		return name + " 四处闲逛"
+		return name + " 在世界中漫游"
 	case ActionWalking:
-		return name + " 开始散步"
+		return name + " 开始移动"
 	case ActionSeekingRest:
-		return name + " 开始寻找休息处"
+		return name + " 在寻找安全角落"
 	case ActionTalking:
-		return name + " 正在交谈"
+		return name + " 正在互动"
+	case ActionReproducing:
+		return name + " 进入繁衍状态"
+	case ActionDying:
+		return name + " 生命接近终点"
 	case ActionIdle:
-		return name + " 停下了动作"
+		return name + " 暂时停下了行动"
 	default:
-		return name + " 在休息"
+		return name + " 正在活动"
 	}
 }
 
-// initWorld 首次运行时初始化世界
 func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
-	// 尝试从 DB 加载
 	world, err := e.store.GetWorld(ctx, e.config.WorldName)
 	if err != nil || world == nil {
 		if err != nil {
 			moelog.Warnf("life: failed to load world %q from DB: %v, creating new", e.config.WorldName, err)
 		}
-		// 创建新世界
 		world = &model.LifeWorld{
 			Name:      e.config.WorldName,
 			IsRunning: true,
@@ -160,7 +233,6 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 		entityMap[entities[i].ID] = &entities[i]
 	}
 
-	// 如果没有实体，创建种子数据
 	if len(entityMap) == 0 {
 		seeds := createSeedEntities(e.config.WorldName)
 		for _, s := range seeds {
@@ -172,25 +244,28 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 		}
 	}
 
+	grid := newWorldGrid(e.config)
+	summary := computeWorldSummary(grid, entityMap, 0, 0)
 	return &WorldSnapshot{
 		World:     *world,
 		Entities:  entityMap,
+		Grid:      grid,
+		Summary:   summary,
 		TickCount: world.TickCount,
 	}
 }
 
-// createSeedEntities 创建初始种子实体（可爱动物）
 func createSeedEntities(worldID string) []*model.LifeEntity {
 	seeds := []struct {
 		name, emoji string
 		x, y        float64
 	}{
-		{"小花", "🐱", 200, 300},
-		{"旺财", "🐶", 800, 400},
-		{"团子", "🐰", 500, 200},
-		{"啾啾", "🐦", 640, 150},
+		{"小花", "🐰", 200, 300},
+		{"时雨", "🦊", 800, 400},
+		{"团子", "🐹", 500, 200},
+		{"啾啾", "🐥", 640, 150},
 		{"泡泡", "🐠", 300, 500},
-		{"小龟", "🐢", 900, 600},
+		{"小眠", "🦌", 900, 600},
 	}
 	var result []*model.LifeEntity
 	now := time.Now()

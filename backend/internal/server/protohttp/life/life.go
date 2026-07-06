@@ -37,6 +37,7 @@ func getWorldHandler(app *lifeapp.AppService) func(khttp.Context) error {
 			"world":        snap.World,
 			"tick_count":   snap.TickCount,
 			"entity_count": len(snap.Entities),
+			"summary":      snap.Summary,
 		})
 	}
 }

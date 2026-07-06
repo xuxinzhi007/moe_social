@@ -49,7 +49,7 @@ export function OverviewPage() {
         title="运维总览"
         description={
           <>
-            本机编 Linux 二进制 · 云 VPS <code>/root/gowork/backend</code> · APK 走 GitHub tag
+            本机编 Linux 单二进制 <code>bin/moe-social</code> · 云 VPS <code>/root/gowork/backend</code> · APK 走 GitHub tag
           </>
         }
         actions={

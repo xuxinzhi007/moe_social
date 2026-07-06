@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/loading_provider.dart';
-import '../services/remote_api_config_service.dart';
 import 'moe_toast.dart';
 import 'moe_loading.dart';
 
@@ -20,8 +19,6 @@ class AppMessageWidget extends StatefulWidget {
 }
 
 class _AppMessageWidgetState extends State<AppMessageWidget> {
-  bool _apiConfigHintShown = false;
-
   @override
   Widget build(BuildContext context) {
     return Consumer<LoadingProvider>(
@@ -30,21 +27,6 @@ class _AppMessageWidgetState extends State<AppMessageWidget> {
           if (!context.mounted) return;
           final overlay = Overlay.maybeOf(context);
           if (overlay == null) return;
-
-          if (!_apiConfigHintShown) {
-            final hint = RemoteApiConfigService.takeStartupConfigHint();
-            if (hint != null) {
-              _apiConfigHintShown = true;
-              MoeToast.show(
-                context,
-                hint,
-                duration: const Duration(seconds: 6),
-                icon: Icons.info_outline_rounded,
-                backgroundColor: const Color(0xFFFFFBEB),
-                textColor: const Color(0xFFB45309),
-              );
-            }
-          }
 
           if (loadingProvider.successMessage != null) {
             MoeToast.success(context, loadingProvider.successMessage!);

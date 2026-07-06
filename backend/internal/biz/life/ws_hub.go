@@ -151,6 +151,7 @@ func (h *LifeWSHub) sendSnapshot(m *lifeMember, worldID string) {
 			"type":     "state_snapshot",
 			"world_id": worldID,
 			"tick":     0,
+			"summary":  WorldSummary{},
 			"entities": []interface{}{},
 		})
 		return
@@ -179,6 +180,7 @@ func (h *LifeWSHub) sendSnapshot(m *lifeMember, worldID string) {
 		"type":     "state_snapshot",
 		"world_id": worldID,
 		"tick":     snap.TickCount,
+		"summary":  snap.Summary,
 		"entities": entities,
 	})
 }
