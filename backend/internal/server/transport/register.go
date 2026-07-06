@@ -7,7 +7,7 @@ import (
 const (
 	OAuthRoutes     = 2
 	AppRoutes       = 1
-	WebSocketRoutes = 5
+	WebSocketRoutes = 6
 	SSERoutes       = 1
 	RouteCount      = OAuthRoutes + AppRoutes + WebSocketRoutes + SSERoutes
 )

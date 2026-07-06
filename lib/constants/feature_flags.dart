@@ -18,4 +18,7 @@ class FeatureFlags {
   static const bool showAutoGlm = showExperimentalFeatures;
 
   static const bool showLocalModelSettings = showExperimentalFeatures;
+
+  /// 数字生命模拟器（实验性）。
+  static const bool showLifeEngine = true;
 }

@@ -86,5 +86,9 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "game_npc_activities", Model: &model.GameNpcActivity{}},
 		{Key: "game_world_events", Model: &model.GameWorldEvent{}},
 		{Key: "tag_dictionary_entries", Model: &model.TagDictionaryEntry{}},
+		// 数字生命系统
+		{Key: "life_entities", Model: &model.LifeEntity{}},
+		{Key: "life_worlds", Model: &model.LifeWorld{}},
+		{Key: "life_event_logs", Model: &model.LifeEventLog{}},
 	}
 }

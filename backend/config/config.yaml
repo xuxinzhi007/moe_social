@@ -195,6 +195,7 @@ moe:
   community_api_in_process: true
   chat_api_in_process: true
   admin_readonly_api_in_process: true
+  life_engine_enabled: true
   # 单进程 Kratos HTTP（make moe-social）
   single_process: true
   kratos_pure_enabled: true

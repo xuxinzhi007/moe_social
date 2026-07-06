@@ -137,10 +137,15 @@ func requiresAuth(r *http.Request) bool {
 }
 
 // extractBearerToken 从 Authorization header 提取 Bearer token。
+// Fallback: 从 query 参数读取（WebSocket 升级请求可能无法设置自定义 header）。
 func extractBearerToken(r *http.Request) string {
 	auth := strings.TrimSpace(r.Header.Get("Authorization"))
 	if strings.HasPrefix(auth, "Bearer ") {
 		return strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
+	}
+	// Fallback: 从 query 参数读取 token（WebSocket 场景）
+	if token := r.URL.Query().Get("token"); token != "" {
+		return token
 	}
 	return ""
 }

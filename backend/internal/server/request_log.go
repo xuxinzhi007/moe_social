@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bufio"
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
@@ -14,6 +16,15 @@ type loggingResponseWriter struct {
 func (w *loggingResponseWriter) WriteHeader(status int) {
 	w.status = status
 	w.ResponseWriter.WriteHeader(status)
+}
+
+// Hijack 让 loggingResponseWriter 满足 http.Hijacker 接口，
+// 使 gorilla/websocket.Upgrader 能正常升级 WebSocket 连接。
+func (w *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hj, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hj.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
 
 func requestLogFilter(next http.Handler) http.Handler {

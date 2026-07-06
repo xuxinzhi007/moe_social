@@ -4,6 +4,7 @@ import '../constants/feature_flags.dart';
 import '../app/deferred_route.dart';
 import '../auth_service.dart';
 import '../models/community_group.dart';
+import '../models/life_state.dart';
 import '../models/post.dart';
 import '../models/user.dart';
 import '../models/topic_tag.dart';
@@ -34,6 +35,8 @@ import '../pages/feed/home_redesign_demo.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
+import '../pages/life/life_entity_detail.dart';
+import '../pages/life/life_world_page.dart';
 import '../pages/notifications/notification_center_page.dart';
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friends_page.dart';
@@ -240,5 +243,15 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         ),
     '/user-qr-code': (context) => const UserQrCodePage(),
     '/interaction': (context) => const FriendsPage(),
+    '/life/world': (context) => const LifeWorldPage(),
+    '/life/detail': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is! LifeEntity) {
+        return const Scaffold(
+          body: Center(child: Text('缺少实体参数')),
+        );
+      }
+      return LifeEntityDetailPage(entity: args);
+    },
   };
 }
