@@ -14,15 +14,13 @@ import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/post_card.dart';
-import '../../widgets/personalized_card.dart';
-import '../../widgets/quick_actions_grid.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/personalized_card.dart';
 import '../../theme/moe_theme_extension.dart';
-import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -65,22 +63,22 @@ class _HomePageState extends State<HomePage>
   final LikeStateManager _likeManager = LikeStateManager();
 
   static const _tabs = [
-    (label: '热门', icon: Icons.whatshot_rounded, mode: _HomeFeedMode.hot),
-    (label: '最新', icon: Icons.new_releases_rounded, mode: _HomeFeedMode.latest),
-    (label: '关注', icon: Icons.star_rounded, mode: _HomeFeedMode.following),
+    (label: '\u70ed\u95e8', icon: Icons.whatshot_rounded, mode: _HomeFeedMode.hot),
+    (label: '\u6700\u65b0', icon: Icons.new_releases_rounded, mode: _HomeFeedMode.latest),
+    (label: '\u5173\u6ce8', icon: Icons.star_rounded, mode: _HomeFeedMode.following),
   ];
 
   String get _sectionTitle {
     if (_activeTopic != null) return '#${_activeTopic!.name}';
     switch (_mode) {
       case _HomeFeedMode.hot:
-        return '热门动态';
+        return '\u70ed\u95e8\u52a8\u6001';
       case _HomeFeedMode.latest:
-        return '最新动态';
+        return '\u6700\u65b0\u52a8\u6001';
       case _HomeFeedMode.following:
-        return '关注动态';
+        return '\u5173\u6ce8\u52a8\u6001';
       case _HomeFeedMode.topic:
-        return '分区动态';
+        return '\u5206\u7c7b\u52a8\u6001';
     }
   }
 
@@ -148,8 +146,7 @@ class _HomePageState extends State<HomePage>
     if (result is Post) {
       _insertCreatedPost(result);
     }
-    // 统一再拉取一次，确保热门/关注等服务端排序与本地一致。
-    await _fetchPosts(resetContent: false);
+    // 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柣鎴ｅГ閸ゅ嫰鏌涢锝嗙缂佹劖顨堥埀顒€绠嶉崕鍗灻洪妸鈺佺婵鍩栭悡娆戠磽娴ｉ潧鐏╅柡瀣〒缁辨帡鍩€椤掑嫬绀冩い蹇庣娴滅偓顨ラ悙鑼虎闁告梹纰嶆穱濠囶敃閿濆孩鐤佸銈冨灪閹告悂鍩㈡惔銊ョ閻庣數顭堥獮鍫熺節閻㈤潧浠滄俊顐ｇ懇瀹曟繂螖娴ｈ鐝烽悷婊冪箳濡叉劙骞掑Δ鈧猾宥夋煃瑜滈崜娆撯€﹂崶褉鏋庨柟鎯х－閸樻椽鏌熼崗鑲╂殬闁告柨鐭傞幃锟犳晸閻樺磭鍘卞┑鐐村灥瀹曨剟鎮橀敐鍡愪簻闁挎棁顕ч弸銈囩磼鏉堛劌绗х紒杈ㄥ浮婵偓闁绘ɑ褰冮婊堟⒒娴ｅ憡鎲稿┑顕€娼х叅婵犲﹤鐗嗙粻鏌ユ煏韫囨洖顎屾繛灏栨櫊閺屻倝骞栨担瑙勯敪闂侀€炲苯澧扮紒顕呭灦婵＄敻宕熼姘鳖啋闂佸憡顨堥崑鐔哥妤ｅ啯鈷?闂傚倸鍊搁崐鐑芥嚄閸洍鈧箓宕奸姀鈥冲簥濠德板€愰崑鎾绘煃鐠囪尙效鐎殿喗鎸虫慨鈧柣妯虹－閳ь剦鍓熷铏圭磼濡搫顫庨梺杞扮閹诧繝濡靛▎鎾崇鐎瑰壊鍠氶崬鐢告煟閻樼儤銆冮悹鈧敃鍌氱？闁归偊鍠氱壕濂告煟濡櫣锛嶆繛鍙夋尦閺岋紕浠﹂崜褎鍒涢悗娈垮櫘閸ｏ綁鐛鈧畷婊勭瑹婵犲嫬鎯炴繝纰夌磿閸嬫垿宕愰弴鐏荤懓顫濈捄铏诡槶闂佺粯妫侀崑鎰暤娓氣偓閺岀喖鎮滃鍡樼暥缂備胶濮垫繛濠囧蓟閻旇　鍋撻悽娈跨劸閸熺顪冮妶蹇曞埌鐎殿喖澧庨幑銏犫槈閵忕姷顓洪梺缁樺姈濞兼瑧鍠婂澶嬬厽閹兼番鍨婚埢鎾绘煛閸涱喚娲撮柡浣稿暣婵偓闁炽儲鍓氶崵銈夋⒑閸濆嫷妲归柛銊ㄦ硾閻ｉ潧顓奸崱鏇犵畾濡炪倖鍔х€靛矂寮抽幒妤佺厾闁告劘灏欓崺锝嗐亜閵忊剝顥堥柡灞芥椤撳ジ宕卞▎蹇撶闂傚倸鍊风粈渚€鎮樺┑瀣垫晞闁搞儺鍓欏Ч鍙夋叏濡炶浜鹃梺?    await _fetchPosts(resetContent: false);
   }
 
   void _insertCreatedPost(Post post) {
@@ -315,7 +312,7 @@ class _HomePageState extends State<HomePage>
       if (error is Exception) {
         ErrorHandler.handleException(context, error);
       } else {
-        ErrorHandler.showError(context, '发生未知错误');
+        ErrorHandler.showError(context, '\u52a0\u8f7d\u9996\u9875\u52a8\u6001\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5');
       }
     }
   }
@@ -326,7 +323,7 @@ class _HomePageState extends State<HomePage>
     _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
   }
 
-  // 仅同步内存快照，不触发整页 rebuild（LikeButton 已由 ValueListenable 局部刷新）
+  // 婵犵數濮烽弫鎼佸磻濞戙埄鏁嬫い鎾跺枑閸欏繘鏌熺紒銏犳灈缂佺姷濞€楠炴牕菐椤掆偓婵¤偐绱掗悩宕囧⒌闁哄瞼鍠栭幃娆擃敆閳ь剚鏅堕娑氱闂傚倹娼欏畵鍡涙煛鐏炵偓绀冪€垫澘瀚板畷鐓庘攽閸℃娼涢梻鍌欐祰濡椼劎绮堟笟鈧幃銉︾附缁嬭法鐣哄┑掳鍊愰崑鎾绘煃閽樺妲搁柍璇茬Ч椤㈡顦遍梺顓у灡椤ㄣ儵鎮欑€涙ê纾抽梺绯曟櫔缁绘繂鐣烽妸鈺婃晩闂傚倸顕弳妤呮⒑閼姐倕鏋戠紒顔肩Ф閹广垽宕熼瀣剁秮楠炲洭顢栭懞銉︽澑闂備焦鎮堕崕顕€寮笟鈧鎼佸冀椤撶喎鈧灚顨ラ悙鑼虎闁告梹宀搁弻锝夊棘閹稿寒妫﹂悗娈垮枟閹歌櫕鎱ㄩ埀顒勬煟濡吋鏆╅柛姗嗗墴濮婄粯鎷呴悜妯烘畬濡炪倖娲﹂崣鍐ㄧ暦閹达附鍊锋繛鏉戭儐閻忎線鏌ｉ悩鍙夋悙婵☆垰锕ら妴?rebuild闂傚倸鍊搁崐鐑芥倿閿旈敮鍋撶粭娑樻噽閻瑩鏌熺€涙绠伴柤鐗堝閵囧嫰鏁愰崨顖滎槬eButton 闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡纰嶉梺?ValueListenable 闂傚倸鍊峰ù鍥敋瑜忛幑銏ゅ箳濡も偓绾惧鏌熼悧鍫熺凡缁炬儳顭烽弻鐔煎礈瑜忕敮娑㈡煃闁垮鐏﹂柕鍥у瀵剟骞愭惔銏犲壍濠电姷顣介埀顒傚仺閸嬨垽鏌＄仦鍓ф创闁糕晪绻濆畷鎺戭煥閸曨偄鐏￠梺璇插椤旀牠宕抽鈧畷婊冣槈閵忕姵鐎銈嗘磵閸嬫挻銇勯姀锛勬噰鐎规洘绮忛¨浣逛繆?
   void _updateLikeSnapshot({
     required String postId,
     required bool isLiked,
@@ -408,26 +405,20 @@ class _HomePageState extends State<HomePage>
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // SliverAppBar with TabBar in bottom — Flutter-idiomatic, no SliverPersistentHeader needed
+            // SliverAppBar with TabBar in bottom 闂?Flutter-idiomatic, no SliverPersistentHeader needed
             _buildSliverAppBar(context),
-            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            const SliverToBoxAdapter(child: SizedBox(height: 4)),
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 6, 16, 4),
+                child: PersonalizedCard(),
+              ),
+            ),
             SliverToBoxAdapter(
               child:
                   HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 10)),
-            SliverToBoxAdapter(
-              child: FadeInUp(
-                duration: MoeTokens.motionFadeDuration,
-                delay: MoeTokens.motionStaggerStep,
-                child: QuickActionsGrid(
-                    onCreatePostSuccess: _handleCreatePostResult),
-              ),
-            ),
-            const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            // Topic tags row — plain SliverToBoxAdapter, no dynamic-extent issues
-            if (_showTopicBar)
-              SliverToBoxAdapter(child: _buildTopicTagsRow(context)),
+            // Topic tags row 闂?plain SliverToBoxAdapter, no dynamic-extent issues
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
             if (_feedError != null && _displayPosts.isNotEmpty)
               SliverToBoxAdapter(
@@ -469,28 +460,11 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  bool get _showTopicBar =>
-      _mode != _HomeFeedMode.following && _availableTags.isNotEmpty;
-
   SliverAppBar _buildSliverAppBar(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final screenSize = MediaQuery.of(context).size;
-    final screenHeight = screenSize.height;
+    final scheme = Theme.of(context).colorScheme;
     final screenWidth = screenSize.width;
-    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    final baseExpandedHeight = screenHeight < 620
-        ? 286.0
-        : screenHeight < 760
-            ? 298.0
-            : 312.0;
-    final narrowWidthExtra = screenWidth < 340
-        ? 26.0
-        : screenWidth < 360
-            ? 18.0
-            : 0.0;
-    final expandedHeight = baseExpandedHeight +
-        ((textScale - 1.0) * 20).clamp(0.0, 24.0) +
-        narrowWidthExtra;
+    final expandedHeight = screenWidth < 360 ? 66.0 : 70.0;
 
     return SliverAppBar(
       pinned: true,
@@ -528,12 +502,12 @@ class _HomePageState extends State<HomePage>
         IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: () {
-            MoeToast.info(context, '搜索功能即将上线');
+            MoeToast.info(context, '\u641c\u7d22\u529f\u80fd\u5373\u5c06\u4e0a\u7ebf');
           },
-          tooltip: '搜索',
+          tooltip: '\u641c\u7d22',
         ),
         IconButton(
-          tooltip: 'AI 助手设置',
+          tooltip: 'AI \u52a9\u624b\u8bbe\u7f6e',
           onPressed: () => Navigator.pushNamed(context, '/virtual-avatar-settings'),
           icon: Icon(
             Icons.smart_toy_rounded,
@@ -543,7 +517,7 @@ class _HomePageState extends State<HomePage>
         IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded),
           onPressed: () => Navigator.pushNamed(context, '/scan'),
-          tooltip: '扫码添加好友',
+          tooltip: '\u626b\u7801\u6dfb\u52a0\u597d\u53cb',
         ),
         Stack(
           children: [
@@ -579,194 +553,81 @@ class _HomePageState extends State<HomePage>
         ),
         const SizedBox(width: 4),
       ],
-      // TabBar placed here — pinned with the AppBar, avoids SliverPersistentHeader semantics bug
-      bottom: TabBar(
-        controller: _tabController,
-        indicatorColor: scheme.primary,
-        indicatorWeight: 2.5,
-        indicatorSize: TabBarIndicatorSize.label,
-        labelColor: scheme.primary,
-        unselectedLabelColor: scheme.onSurfaceVariant,
-        labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        tabs: _tabs
-            .map(
-              (t) => Tab(
-                height: 40,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(t.icon, size: 15),
-                    const SizedBox(width: 5),
-                    Text(t.label),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        collapseMode: CollapseMode.parallax,
-        background: Padding(
-          // top: appbar toolbar (~56) + status bar (~24) ≈ 80, use 86 for safety
-          // bottom: TabBar pinned at bottom of flexible space (~40px) + gap
-          padding: const EdgeInsets.fromLTRB(16, 86, 16, 44),
-          child: const PersonalizedCard(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopicTagsRow(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(
-          bottom: BorderSide(
-              color: scheme.outline.withValues(alpha: 0.1), width: 0.5),
-        ),
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        itemCount: _availableTags.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            final isAll = _activeTopic == null;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildTopicFilterChip(
-                label: '全部',
-                selected: isAll,
-                selectedColor: scheme.primary,
-                backgroundColor: isAll
-                    ? scheme.primary.withValues(alpha: 0.15)
-                    : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                borderColor: isAll
-                    ? scheme.primary.withValues(alpha: 0.4)
-                    : scheme.outline.withValues(alpha: 0.2),
-                textColor: isAll ? scheme.primary : scheme.onSurfaceVariant,
-                onTap: () => _onTopicSelected(null),
-              ),
-            );
-          }
-          final tag = _availableTags[index - 1];
-          final isSelected = _activeTopic?.id == tag.id;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _buildTopicFilterChip(
-              label: '#${tag.name}',
-              selected: isSelected,
-              selectedColor: tag.color,
-              backgroundColor: isSelected
-                  ? tag.color.withValues(alpha: 0.18)
-                  : scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-              borderColor: isSelected
-                  ? tag.color.withValues(alpha: 0.45)
-                  : scheme.outline.withValues(alpha: 0.2),
-              textColor: isSelected ? tag.color : scheme.onSurfaceVariant,
-              onTap: () => _onTopicSelected(tag),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTopicFilterChip({
-    required String label,
-    required bool selected,
-    required Color selectedColor,
-    required Color backgroundColor,
-    required Color borderColor,
-    required Color textColor,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: selectedColor.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildFeedSectionTitle(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final compact = MediaQuery.sizeOf(context).width < 430;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 4,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _sectionTitle,
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onSurface,
-                    letterSpacing: 0.2,
+          if (compact) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 4,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-              TextButton.icon(
-                onPressed: _isLoading || _isRefreshing
-                    ? null
-                    : () => _fetchPosts(resetContent: false),
-                style: TextButton.styleFrom(
-                  foregroundColor: scheme.primary,
-                  textStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _sectionTitle,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurface,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  visualDensity: VisualDensity.compact,
                 ),
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: Text(_isRefreshing ? '刷新中' : '刷新'),
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _buildFeedModeSwitcher(context)),
+                const SizedBox(width: 8),
+                _buildRefreshButton(scheme),
+              ],
+            ),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 4,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _sectionTitle,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: scheme.onSurface,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _buildFeedModeSwitcher(context),
+                const SizedBox(width: 8),
+                _buildRefreshButton(scheme),
+              ],
+            ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -841,13 +702,93 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  Widget _buildFeedModeSwitcher(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: _tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
+          final isSelected = _mode == tab.mode;
+          return Padding(
+            padding: EdgeInsets.only(right: index == _tabs.length - 1 ? 0 : 4),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () {
+                if (_tabController.index == index) return;
+                _tabController.animateTo(index);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? scheme.primary.withValues(alpha: 0.14)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      tab.icon,
+                      size: 13,
+                      color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      tab.label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color:
+                            isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildRefreshButton(ColorScheme scheme) {
+    return TextButton.icon(
+      onPressed:
+          _isLoading || _isRefreshing ? null : () => _fetchPosts(resetContent: false),
+      style: TextButton.styleFrom(
+        foregroundColor: scheme.primary,
+        textStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+        visualDensity: VisualDensity.compact,
+      ),
+      icon: const Icon(Icons.refresh_rounded, size: 16),
+      label: Text(_isRefreshing ? '\u5237\u65b0\u4e2d' : '\u5237\u65b0'),
+    );
+  }
+
   String _lastUpdatedText() {
-    if (_isRefreshing) return '正在刷新内容...';
+    if (_isRefreshing) return '\u6b63\u5728\u5237\u65b0\u5185\u5bb9...';
     final updatedAt = _lastUpdatedAt;
-    if (updatedAt == null) return '尚未加载最新动态';
+    if (updatedAt == null) return '\u5c1a\u672a\u52a0\u8f7d\u6700\u65b0\u52a8\u6001';
     final hour = updatedAt.hour.toString().padLeft(2, '0');
     final minute = updatedAt.minute.toString().padLeft(2, '0');
-    return '最后更新 $hour:$minute';
+    return '\u6700\u540e\u66f4\u65b0 ' + hour + ':' + minute;
   }
 
   Widget _buildInlineErrorBanner({
@@ -889,7 +830,7 @@ class _HomePageState extends State<HomePage>
             const SizedBox(width: 8),
             TextButton(
               onPressed: _isLoading || _isRefreshing ? null : onRetry,
-              child: const Text('重试'),
+              child: const Text('\u91cd\u8bd5'),
             ),
           ],
         ),
@@ -915,15 +856,15 @@ class _HomePageState extends State<HomePage>
     if (_mode == _HomeFeedMode.following) {
       return _buildUnifiedStatePanel(
         icon: Icons.star_border_rounded,
-        title: '关注的人还没有发动态',
-        subtitle: '先去兴趣社区逛逛话题，或去同好页认识新朋友 ~(｡•ᴗ•｡)~',
+        title: '\u5173\u6ce8\u7684\u4eba\u8fd8\u6ca1\u6709\u53d1\u52a8\u6001',
+        subtitle: '\u5148\u53bb\u793e\u533a\u901b\u901b\u8bdd\u9898\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\uff0c\u8ba9\u9996\u9875\u6162\u6162\u70ed\u95f9\u8d77\u6765\u3002',
         accentColor: const Color(0xFFFFB347),
         action: SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
             onPressed: () => Navigator.pushNamed(context, '/community'),
             icon: const Icon(Icons.forum_rounded, size: 20),
-            label: const Text('去兴趣社区'),
+            label: const Text('\u53bb\u793e\u533a'),
             style: FilledButton.styleFrom(
               backgroundColor: _moe.primary,
               foregroundColor: Colors.white,
@@ -939,7 +880,7 @@ class _HomePageState extends State<HomePage>
           child: OutlinedButton.icon(
             onPressed: () => Navigator.pushNamed(context, '/friends'),
             icon: const Icon(Icons.people_rounded, size: 20),
-            label: const Text('去找同好'),
+            label: const Text('\u627e\u597d\u53cb'),
             style: OutlinedButton.styleFrom(
               foregroundColor: _moe.primary,
               side: BorderSide(color: _moe.primary),
@@ -957,15 +898,15 @@ class _HomePageState extends State<HomePage>
     final inTopic = _activeTopic != null;
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
-      title: inTopic ? '#$topicName 下暂时还没有动态' : '这里还是空的耶',
-      subtitle: inTopic ? '换个小话题看看，或自己发帖带上这个标签吧。' : '发一条动态记录今天，或去同好页认识新朋友。',
+      title: inTopic ? '#' + (topicName ?? '') + ' \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001' : '\u8fd9\u91cc\u8fd8\u662f\u7a7a\u7684',
+      subtitle: inTopic ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002' : '\u53d1\u4e00\u6761\u52a8\u6001\u8bb0\u5f55\u4eca\u5929\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\u3002',
       accentColor: _moe.primary,
       action: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
           onPressed: _openCreatePost,
           icon: const Icon(Icons.edit_rounded, size: 20),
-          label: const Text('发布动态'),
+          label: const Text('\u53d1\u5e03\u52a8\u6001'),
           style: FilledButton.styleFrom(
             backgroundColor: _moe.primary,
             foregroundColor: Colors.white,
@@ -981,7 +922,7 @@ class _HomePageState extends State<HomePage>
         child: OutlinedButton.icon(
           onPressed: () => Navigator.pushNamed(context, '/friends'),
           icon: const Icon(Icons.people_rounded, size: 20),
-          label: const Text('去找同好'),
+          label: const Text('\u627e\u597d\u53cb'),
           style: OutlinedButton.styleFrom(
             foregroundColor: _moe.primary,
             side: BorderSide(color: _moe.primary),
@@ -1070,7 +1011,7 @@ class _HomePageState extends State<HomePage>
         child: Center(
           child: _buildBottomStateCapsule(
             icon: const MoeSmallLoading(),
-            label: '正在加载更多...',
+            label: '濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞瀹曟煡鏌熼柇锕€鏋涚紒韬插€濋弻锕€螣娓氼垱顎嗛梺鑲╁鐎笛囧Φ閸曨喚鐤€闁规崘娉涢。铏圭磽娴ｆ彃浜炬繝銏ｅ煐閸旀牠鎮￠悢闀愮箚妞ゆ牗绮岀敮鍫曟煕閺傛鍎戠紒杈ㄥ笚閹峰懎鐣￠弶璺ㄣ偖闂備礁鎼惌澶屾崲濠靛棛鏆﹂柛顐ｆ礀鎯熼梺鎸庢煥婢т粙鍩㈣箛鏂剧箚?..',
           ),
         ),
       );
@@ -1086,11 +1027,11 @@ class _HomePageState extends State<HomePage>
               color: Color(0xFFFFB347),
               size: 18,
             ),
-            label: '加载更多失败',
+            label: '\u52a0\u8f7d\u66f4\u591a\u5931\u8d25',
             accentColor: const Color(0xFFFFB347),
             trailing: TextButton(
               onPressed: _isLoadingMore ? null : _loadMorePosts,
-              child: const Text('重试'),
+              child: const Text('\u91cd\u8bd5'),
             ),
           ),
         ),
@@ -1105,7 +1046,7 @@ class _HomePageState extends State<HomePage>
               color: Colors.grey[500],
               size: 18,
             ),
-            label: '已经到底啦 ~',
+            label: '闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡櫣浠撮梺鎼炲妽缁诲牓寮婚妸鈺傚亜闁告繂瀚呴姀銏㈢＜闁逞屽墴瀹曞崬鈽夊▎鎴濆箰濠电姰鍨煎▔娑氣偓娑掓櫇濞戠數鎹勯崨闈涢叄瀹曞爼濡搁敂杞拌檸闂?~',
           ),
         ),
       );
@@ -1146,7 +1087,7 @@ class _HomePageState extends State<HomePage>
                       color: _moe.primary, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    '点击加载更多',
+                    '\u70b9\u51fb\u52a0\u8f7d\u66f4\u591a',
                     style: TextStyle(
                       color: _moe.primary,
                       fontSize: 13,
@@ -1270,7 +1211,7 @@ class _HomePageState extends State<HomePage>
                 });
                 _likeManager.evictPost(post.id);
               } catch (e) {
-                if (mounted) ErrorHandler.showError(context, '删除失败：$e');
+                if (mounted) ErrorHandler.showError(context, '闂傚倸鍊搁崐椋庣矆娓氣偓楠炲鏁嶉崟顒佹闂佺粯鍔曢顓犵不妤ｅ啯鐓冪憸婊堝礈濮樿鲸宕叉繛鎴欏灩瀹告繃銇勯幘璺哄壉闁告柨顦甸幃妤呭垂椤愶絿鍑￠柣搴㈠嚬閸樺ジ鈥﹂崶顏嗙杸婵炴垼椴搁弲婵嬫⒑闂堟侗妲归柛鏃€鐗曠叅闁绘梻鍘ч拑?e');
               }
             }
           : null,
@@ -1293,3 +1234,4 @@ class _PostPageResult {
   final int total;
   const _PostPageResult({required this.posts, required this.total});
 }
+

@@ -7,6 +7,7 @@ import '../services/achievement_hooks.dart';
 import '../services/api_service.dart';
 import '../services/gift_catalog_service.dart';
 import '../utils/error_handler.dart';
+import 'motion/moe_sheet.dart';
 import 'moe_loading.dart';
 import 'gift_haptic.dart';
 import 'gift_animation_manager.dart';
@@ -833,11 +834,8 @@ class _GiftButtonState extends State<GiftButton>
   }
 
   void _showGiftSelector() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.3),
+    MoeSheet.show<void>(
+      context,
       builder: (_) => GiftSelector(
         targetId: widget.targetId,
         targetType: widget.targetType,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
 import '../../../models/achievement_badge.dart';
+import '../motion/moe_reveal.dart';
+import '../motion/moe_sheet.dart';
 import 'achievement_badge_medallion.dart';
 
 class AchievementUnlockNotification extends StatefulWidget {
@@ -37,26 +40,27 @@ class _AchievementUnlockNotificationState
     );
     _slideAnimation = Tween<double>(begin: 300, end: 0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.2, curve: Curves.easeOut)),
+        parent: _controller,
+        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+      ),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.2, curve: Curves.easeOut)),
+        parent: _controller,
+        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+      ),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-          parent: _controller,
-          curve: const Interval(0.0, 0.2, curve: Curves.easeOut)),
+        parent: _controller,
+        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+      ),
     );
 
-    // 延迟启动动画
     SchedulerBinding.instance.addPostFrameCallback((_) {
       _controller.forward();
     });
 
-    // 自动关闭
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) {
         _controller.reverse().then((_) {
@@ -76,135 +80,137 @@ class _AchievementUnlockNotificationState
   Widget build(BuildContext context) {
     final badge = widget.badge;
 
-    // Overlay 插入时没有 Scaffold/Material 祖先，InkWell/IconButton 会崩溃。
     return Material(
       type: MaterialType.transparency,
       child: AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform(
-          transform: Matrix4.identity()
-            ..translateByDouble(_slideAnimation.value, 0.0, 0.0, 1.0)
-            ..scaleByDouble(
-                _scaleAnimation.value, _scaleAnimation.value, 1.0, 1.0),
-          child: Opacity(
-            opacity: _fadeAnimation.value,
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    badge.rarity.tierGradient.first,
-                    badge.rarity.tierGradient.last,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        badge.rarity.tierGradient.last.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+        animation: _controller,
+        builder: (context, child) {
+          return Transform(
+            transform: Matrix4.identity()
+              ..translateByDouble(_slideAnimation.value, 0.0, 0.0, 1.0)
+              ..scaleByDouble(
+                _scaleAnimation.value,
+                _scaleAnimation.value,
+                1.0,
+                1.0,
               ),
-              child: Row(
-                children: [
-                  // 徽章图标
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: AchievementBadgeMedallion(
-                      badge: badge,
-                      diameter: 60,
-                      unlocked: true,
-                    ),
+            child: Opacity(
+              opacity: _fadeAnimation.value,
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      badge.rarity.tierGradient.first,
+                      badge.rarity.tierGradient.last,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 16),
-                  // 通知内容
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '成就解锁！',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          badge.rarity.tierGradient.last.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: AchievementBadgeMedallion(
+                        badge: badge,
+                        diameter: 60,
+                        unlocked: true,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '成就解锁',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          badge.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(height: 4),
+                          Text(
+                            badge.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          badge.description,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
+                          const SizedBox(height: 2),
+                          Text(
+                            badge.description,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 14,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (widget.onView != null) ...[
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap: widget.onView,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3)),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
-                              child: const Text(
-                                '查看成就中心',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                          if (widget.onView != null) ...[
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap: widget.onView,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                child: const Text(
+                                  '查看成就中心',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  // 关闭按钮
-                  IconButton(
-                    onPressed: () {
-                      _controller.reverse().then((_) {
-                        widget.onClose?.call();
-                      });
-                    },
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () {
+                        _controller.reverse().then((_) {
+                          widget.onClose?.call();
+                        });
+                      },
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-    ),
+          );
+        },
+      ),
     );
   }
 }
 
-// 全局通知管理
 class AchievementNotificationManager {
   static OverlayEntry? _currentEntry;
 
@@ -213,10 +219,8 @@ class AchievementNotificationManager {
     AchievementBadge badge, {
     VoidCallback? onView,
   }) {
-    // 先移除之前的通知
     _currentEntry?.remove();
 
-    // 创建新的通知
     final theme = Theme.of(context);
     _currentEntry = OverlayEntry(
       builder: (overlayContext) {
@@ -255,68 +259,84 @@ class AchievementNotificationManager {
     if (!context.mounted) return;
     if (ModalRoute.of(context)?.isCurrent != true) return;
     try {
-      await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.16),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
+      await MoeSheet.show<void>(
+        context,
+        builder: (ctx) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FA),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7F7FD5).withValues(alpha: 0.16),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-              ],
+                child: Row(
+                  children: [
+                    const MoeReveal(
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xFF7F7FD5),
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: MoeReveal(
+                        delay: const Duration(milliseconds: 30),
+                        child: Text(
+                          '太棒了，这次解锁了 $unlockedCount 个成就，去成就中心看看完整进度吧',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    MoeReveal(
+                      delay: const Duration(milliseconds: 60),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          onViewAchievements();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          backgroundColor: const Color(0xFF7F7FD5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Text(
+                          '去查看',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    color: Color(0xFF7F7FD5), size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '太棒了！本次解锁 $unlockedCount 个成就，去成就中心看看完整进度吧',
-                    style: const TextStyle(
-                      color: Colors.black87,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onViewAchievements();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    backgroundColor: const Color(0xFF7F7FD5),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: const Text(
-                    '去查看',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+          );
+        },
       );
     } catch (_) {}
   }

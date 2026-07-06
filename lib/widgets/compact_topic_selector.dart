@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+
 import '../models/topic_tag.dart';
+import '../theme/moe_tokens.dart';
+import 'motion/moe_pressable.dart';
+import 'motion/moe_reveal.dart';
+import 'motion/moe_sheet.dart';
 import 'topic_tag_selector.dart';
 
-/// 紧凑版话题标签选择器 - 适用于发布页面等空间有限的场景
 class CompactTopicSelector extends StatefulWidget {
   final List<TopicTag> selectedTags;
-  final Function(List<TopicTag>) onTagsChanged;
+  final ValueChanged<List<TopicTag>> onTagsChanged;
   final String userId;
   final int maxTags;
 
@@ -55,61 +59,43 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
     widget.onTagsChanged(_selectedTags);
   }
 
-  void _showFullSelector() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
+  Future<void> _showFullSelector() {
+    return MoeSheet.show<void>(
+      context,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.8,
         child: Column(
           children: [
-            // 顶部拖拽指示器
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // 标题
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Text(
-                    '选择话题标签',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            MoeReveal(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 16, 8),
+                child: Row(
+                  children: [
+                    const Text(
+                      '选择话题标签',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('完成'),
-                  ),
-                ],
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('完成'),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            // 标签选择器
             Expanded(
-              child: TopicTagSelector(
-                selectedTags: _selectedTags,
-                onTagsChanged: _updateTags,
-                userId: widget.userId,
-                maxTags: widget.maxTags,
+              child: MoeReveal(
+                delay: const Duration(milliseconds: 50),
+                child: TopicTagSelector(
+                  selectedTags: _selectedTags,
+                  onTagsChanged: _updateTags,
+                  userId: widget.userId,
+                  maxTags: widget.maxTags,
+                ),
               ),
             ),
           ],
@@ -124,14 +110,13 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
         border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 标题行
           Row(
             children: [
               const Icon(
@@ -149,8 +134,9 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
               ),
               const Spacer(),
               if (_selectedTags.isEmpty)
-                GestureDetector(
+                MoePressable(
                   onTap: _showFullSelector,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -168,18 +154,20 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
                   ),
                 )
               else
-                GestureDetector(
+                MoePressable(
                   onTap: _showFullSelector,
-                  child: const Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: Colors.grey,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
             ],
           ),
-
-          // 已选择的标签或推荐标签
           if (_selectedTags.isNotEmpty) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -205,13 +193,13 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      GestureDetector(
+                      MoePressable(
                         onTap: () {
-                          final newTags = _selectedTags
-                              .where((t) => t.id != tag.id)
-                              .toList();
+                          final newTags =
+                              _selectedTags.where((t) => t.id != tag.id).toList();
                           _updateTags(newTags);
                         },
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                         child: Icon(
                           Icons.close,
                           size: 12,
@@ -224,19 +212,19 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
               }).toList(),
             ),
           ] else ...[
-            // 显示推荐标签的精简版
             const SizedBox(height: 8),
             SizedBox(
               height: 32,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: _tagService.getPopularTags(limit: 4).map((tag) {
-                  return GestureDetector(
+                  return MoePressable(
                     onTap: () {
                       if (_selectedTags.length >= widget.maxTags) return;
                       if (_selectedTags.any((t) => t.id == tag.id)) return;
                       _updateTags([..._selectedTags, tag]);
                     },
+                    borderRadius: BorderRadius.circular(16),
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -275,10 +263,9 @@ class _CompactTopicSelectorState extends State<CompactTopicSelector> {
   }
 }
 
-/// 超级紧凑版 - 单行显示
 class MiniTopicSelector extends StatelessWidget {
   final List<TopicTag> selectedTags;
-  final Function(List<TopicTag>) onTagsChanged;
+  final ValueChanged<List<TopicTag>> onTagsChanged;
   final String userId;
   final int maxTags;
 
@@ -290,61 +277,43 @@ class MiniTopicSelector extends StatelessWidget {
     this.maxTags = 3,
   });
 
-  void _showFullSelector(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
+  Future<void> _showFullSelector(BuildContext context) {
+    return MoeSheet.show<void>(
+      context,
+      builder: (sheetContext) => SizedBox(
+        height: MediaQuery.of(sheetContext).size.height * 0.8,
         child: Column(
           children: [
-            // 顶部拖拽指示器
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            // 标题
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  const Text(
-                    '选择话题标签',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+            MoeReveal(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 16, 8),
+                child: Row(
+                  children: [
+                    const Text(
+                      '选择话题标签',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('完成'),
-                  ),
-                ],
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('完成'),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            // 标签选择器
             Expanded(
-              child: TopicTagSelector(
-                selectedTags: selectedTags,
-                onTagsChanged: onTagsChanged,
-                userId: userId,
-                maxTags: maxTags,
+              child: MoeReveal(
+                delay: const Duration(milliseconds: 50),
+                child: TopicTagSelector(
+                  selectedTags: selectedTags,
+                  onTagsChanged: onTagsChanged,
+                  userId: userId,
+                  maxTags: maxTags,
+                ),
               ),
             ),
           ],
@@ -355,8 +324,9 @@ class MiniTopicSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return MoePressable(
       onTap: () => _showFullSelector(context),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
@@ -374,9 +344,7 @@ class MiniTopicSelector extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              selectedTags.isNotEmpty
-                ? '${selectedTags.length} 个标签'
-                : '添加话题',
+              selectedTags.isNotEmpty ? '${selectedTags.length} 个标签' : '添加话题',
               style: TextStyle(
                 fontSize: 13,
                 color: selectedTags.isNotEmpty ? Colors.blue : Colors.grey,
@@ -385,21 +353,23 @@ class MiniTopicSelector extends StatelessWidget {
             ),
             if (selectedTags.isNotEmpty) ...[
               const SizedBox(width: 6),
-              ...selectedTags.take(2).map((tag) => Container(
-                margin: const EdgeInsets.only(left: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: tag.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  tag.name,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: tag.color,
+              ...selectedTags.take(2).map(
+                    (tag) => Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: tag.color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        tag.name,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: tag.color,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              )).toList(),
               if (selectedTags.length > 2) ...[
                 const SizedBox(width: 4),
                 Text(

@@ -5,14 +5,17 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../services/api_service.dart';
-import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_search_bar.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/motion/moe_pressable.dart';
+import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_sheet.dart';
 
 class InterestGroupsPage extends StatefulWidget {
   const InterestGroupsPage({super.key});
@@ -142,13 +145,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
       MoeToast.error(context, '请先登录');
       return;
     }
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(MoeTokens.radiusXl)),
-      ),
+    final ok = await MoeSheet.show<bool>(
+      context,
       builder: (ctx) => _CreateInterestGroupSheet(
         userId: uid,
         formatError: _formatError,
@@ -218,9 +216,11 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.group_add_rounded,
-                                              size: 56,
-                                              color: Colors.grey.shade400),
+                                          Icon(
+                                            Icons.group_add_rounded,
+                                            size: 56,
+                                            color: Colors.grey.shade400,
+                                          ),
                                           const SizedBox(height: 12),
                                           const Text(
                                             '还没有群组',
@@ -231,15 +231,17 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            '试试换个关键词，或新建一个兴趣群组',
+                                            '试试换个关键词，或者新建一个兴趣群组。',
                                             style: TextStyle(
-                                                color: Colors.grey[600]),
+                                              color: Colors.grey[600],
+                                            ),
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 16),
                                           FilledButton.icon(
                                             onPressed: _showCreateGroup,
-                                            icon: const Icon(Icons.add_rounded),
+                                            icon:
+                                                const Icon(Icons.add_rounded),
                                             label: const Text('新建群组'),
                                           ),
                                         ],
@@ -255,7 +257,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                 itemBuilder: (context, i) {
                                   if (i == 0) {
                                     return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 8),
                                       child: Text(
                                         '发现圈子',
                                         style: TextStyle(
@@ -313,9 +316,9 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                 final cover = resolveMediaUrl(g.coverImage);
                 return Padding(
                   padding: const EdgeInsets.only(right: 10),
-                  child: InkWell(
-                    onTap: () => _openGroupDetail(g),
+                  child: MoePressable(
                     borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                    onTap: () => _openGroupDetail(g),
                     child: Container(
                       width: 120,
                       padding: const EdgeInsets.all(10),
@@ -330,7 +333,8 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusSm),
                             child: SizedBox(
                               height: 36,
                               width: double.infinity,
@@ -339,8 +343,11 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                   : ColoredBox(
                                       color:
                                           scheme.primary.withValues(alpha: 0.1),
-                                      child: Icon(Icons.groups_2_rounded,
-                                          color: scheme.primary, size: 20),
+                                      child: Icon(
+                                        Icons.groups_2_rounded,
+                                        color: scheme.primary,
+                                        size: 20,
+                                      ),
                                     ),
                             ),
                           ),
@@ -427,65 +434,83 @@ class _CreateInterestGroupSheetState extends State<_CreateInterestGroupSheet> {
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
+      top: false,
       child: AnimatedPadding(
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: bottom),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                '新建兴趣群组',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+              MoeReveal(
+                child: Text(
+                  '新建兴趣群组',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
               ),
               const SizedBox(height: 4),
-              Text(
-                '创建后可邀请同好加入，在群内讨论与发帖。',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+              MoeReveal(
+                delay: const Duration(milliseconds: 30),
+                child: Text(
+                  '创建后可邀请同好加入，在群内讨论和发帖。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
               ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: '群组名称',
-                  border: OutlineInputBorder(),
+              MoeReveal(
+                delay: const Duration(milliseconds: 60),
+                child: TextField(
+                  controller: _nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: '群组名称',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: _descCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: '简介',
-                  border: OutlineInputBorder(),
+              MoeReveal(
+                delay: const Duration(milliseconds: 90),
+                child: TextField(
+                  controller: _descCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: '简介',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('公开群组'),
-                subtitle: const Text('关闭则仅邀请可见（依后端策略）'),
-                value: _isPublic,
-                onChanged:
-                    _submitting ? null : (v) => setState(() => _isPublic = v),
+              MoeReveal(
+                delay: const Duration(milliseconds: 120),
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('公开群组'),
+                  subtitle: const Text('关闭后仅邀请可见，具体以服务端策略为准'),
+                  value: _isPublic,
+                  onChanged:
+                      _submitting ? null : (v) => setState(() => _isPublic = v),
+                ),
               ),
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                child: _submitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('创建'),
+              MoeReveal(
+                delay: const Duration(milliseconds: 150),
+                child: FilledButton(
+                  onPressed: _submitting ? null : _submit,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('创建'),
+                ),
               ),
             ],
           ),
@@ -516,7 +541,8 @@ class _GroupCard extends StatelessWidget {
         color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
+        child: MoePressable(
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -541,15 +567,20 @@ class _GroupCard extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Container(
                               color: scheme.surfaceContainerHighest,
                               alignment: Alignment.center,
-                              child: Icon(Icons.image_not_supported_outlined,
-                                  color: scheme.onSurfaceVariant),
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: scheme.onSurfaceVariant,
+                              ),
                             ),
                           )
                         : Container(
                             color: scheme.primary.withValues(alpha: 0.08),
                             alignment: Alignment.center,
-                            child: Icon(Icons.groups_2_rounded,
-                                size: 48, color: scheme.primary),
+                            child: Icon(
+                              Icons.groups_2_rounded,
+                              size: 48,
+                              color: scheme.primary,
+                            ),
                           ),
                   ),
                 ),
@@ -570,9 +601,7 @@ class _GroupCard extends StatelessWidget {
                             ),
                           ),
                           FilledButton.tonal(
-                            onPressed: () {
-                              onJoin();
-                            },
+                            onPressed: onJoin,
                             style: FilledButton.styleFrom(
                               backgroundColor: group.isJoined
                                   ? scheme.surfaceContainerHighest
@@ -609,7 +638,8 @@ class _GroupCard extends StatelessWidget {
                             ),
                           ),
                           Chip(
-                            avatar: const Icon(Icons.people_outline, size: 18),
+                            avatar:
+                                const Icon(Icons.people_outline, size: 18),
                             label: Text('${group.memberCount} 成员'),
                             visualDensity: VisualDensity.compact,
                             materialTapTargetSize:

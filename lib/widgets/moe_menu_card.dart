@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/moe_tokens.dart';
+import 'motion/moe_pressable.dart';
 
 class MoeMenuItem {
   final IconData icon;
@@ -41,69 +42,63 @@ class MoeMenuCard extends StatelessWidget {
           final isLast = items.last == item;
           return Column(
             children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: item.onTap,
-                  borderRadius: BorderRadius.only(
-                    topLeft: isFirst ? const Radius.circular(24) : Radius.zero,
-                    topRight: isFirst ? const Radius.circular(24) : Radius.zero,
-                    bottomLeft:
-                        isLast ? const Radius.circular(24) : Radius.zero,
-                    bottomRight:
-                        isLast ? const Radius.circular(24) : Radius.zero,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 16),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: item.color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(item.icon, color: item.color, size: 22),
+              MoePressable(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.only(
+                  topLeft: isFirst ? const Radius.circular(24) : Radius.zero,
+                  topRight: isFirst ? const Radius.circular(24) : Radius.zero,
+                  bottomLeft: isLast ? const Radius.circular(24) : Radius.zero,
+                  bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                        child: Icon(item.icon, color: item.color, size: 22),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: item.isDestructive
+                                    ? Colors.redAccent
+                                    : const Color(0xFF333333),
+                              ),
+                            ),
+                            if (item.subtitle != null) ...[
+                              const SizedBox(height: 2),
                               Text(
-                                item.title,
+                                item.subtitle!,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: item.isDestructive
-                                      ? Colors.redAccent
-                                      : const Color(0xFF333333),
+                                  fontSize: 12,
+                                  color: Colors.grey[400],
                                 ),
                               ),
-                              if (item.subtitle != null) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  item.subtitle!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[400],
-                                  ),
-                                ),
-                              ],
                             ],
-                          ),
+                          ],
                         ),
-                        if (item.trailing != null)
-                          item.trailing!
-                        else
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: Colors.grey[300],
-                            size: 16,
-                          ),
-                      ],
-                    ),
+                      ),
+                      if (item.trailing != null)
+                        item.trailing!
+                      else
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.grey[300],
+                          size: 16,
+                        ),
+                    ],
                   ),
                 ),
               ),

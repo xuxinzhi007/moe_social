@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/moe_tokens.dart';
+import 'motion/moe_pressable.dart';
 
 /// 通用操作行：图标 + 标题 + 副标题 + 尾部组件。
 class MoeActionRow extends StatelessWidget {
@@ -76,59 +77,56 @@ class MoeActionRow extends StatelessWidget {
             ? null
             : Border.all(color: resolvedBorderColor),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Padding(
-            padding: padding,
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: resolvedIconBackground,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(icon, color: resolvedIconColor, size: 20),
+      child: MoePressable(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Padding(
+          padding: padding,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: resolvedIconBackground,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: resolvedTitleStyle,
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        DefaultTextStyle(
-                          style: TextStyle(
-                            color: resolvedSubtitleColor,
-                            fontSize: 12,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          child: subtitle!,
+                child: Icon(icon, color: resolvedIconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: resolvedTitleStyle,
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      DefaultTextStyle(
+                        style: TextStyle(
+                          color: resolvedSubtitleColor,
+                          fontSize: 12,
                         ),
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        child: subtitle!,
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-                if (trailing != null)
-                  trailing!
-                else if (showDefaultTrailing && onTap != null)
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: Colors.grey[400],
-                  ),
-              ],
-            ),
+              ),
+              if (trailing != null)
+                trailing!
+              else if (showDefaultTrailing && onTap != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey[400],
+                ),
+            ],
           ),
         ),
       ),
