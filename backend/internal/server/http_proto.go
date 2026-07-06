@@ -35,6 +35,7 @@ import (
 	gamehttp "backend/internal/server/protohttp/game"
 	gifthttp "backend/internal/server/protohttp/gift"
 	landinghttp "backend/internal/server/protohttp/landing"
+	lifehttp "backend/internal/server/protohttp/life"
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
 	notifyhttp "backend/internal/server/protohttp/notify"
@@ -56,6 +57,7 @@ import (
 	gameapp "backend/internal/service/game"
 	giftapp "backend/internal/service/gift"
 	landingapp "backend/internal/service/landing"
+	lifeapp "backend/internal/service/life"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
@@ -75,6 +77,7 @@ type ProtoHTTPDeps struct {
 	PostApp            *postapp.AppService
 	GiftApp            *giftapp.AppService
 	GameApp            *gameapp.AppService
+	LifeApp            *lifeapp.AppService
 	UserApp            *userapp.AppService
 	CommentApp         *commentapp.AppService
 	CommunityApp       *communityapp.AppService
@@ -114,6 +117,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	if d.GameApp != nil {
 		gamev1.RegisterGameHTTPServer(srv, gamehttp.New(d.GameApp))
 		gamehttp.RegisterStreamRoute(srv, d.GameApp)
+	}
+	if d.LifeApp != nil {
+		lifehttp.Register(d.LifeApp, srv)
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

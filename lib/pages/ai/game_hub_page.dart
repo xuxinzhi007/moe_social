@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../models/game_state.dart';
+import '../../pages/life/life_world_page.dart';
 import '../../services/game_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_theme.dart';
@@ -227,6 +229,82 @@ class _GameHubPageState extends State<GameHubPage> {
               const SizedBox(height: 24),
               Text('玩法提示', style: AiTheme.title),
               const SizedBox(height: 12),
+              if (FeatureFlags.showLifeEngine)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const LifeWorldPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.green.shade100,
+                                    Colors.blue.shade100,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Icon(Icons.public,
+                                  color: Colors.green.shade700, size: 24),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '数字生命',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '观察你的数字世界',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right,
+                                color: Colors.grey.shade400),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               _HintCard(
                 title: '自由输入，世界生成',
                 body: '例如「往东走进森林」「遇到一个猎人」「捡起一块石头」——不存在的内容会被 AI 即时创造并保存。',
