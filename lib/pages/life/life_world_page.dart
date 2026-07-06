@@ -19,18 +19,20 @@ class LifeWorldPage extends StatefulWidget {
 class _LifeWorldPageState extends State<LifeWorldPage>
     with TickerProviderStateMixin {
   late final TabController _tabController;
+  late final LifeProvider _lifeProvider;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _lifeProvider = context.read<LifeProvider>();
     // 启动 WebSocket 监听
-    context.read<LifeProvider>().startListening();
+    _lifeProvider.startListening();
   }
 
   @override
   void dispose() {
-    context.read<LifeProvider>().stopListening();
+    _lifeProvider.stopListening();
     _tabController.dispose();
     super.dispose();
   }
