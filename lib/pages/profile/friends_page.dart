@@ -15,6 +15,7 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_sheet.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../discover/discover_match_tab.dart';
@@ -406,25 +407,13 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   void _showAddFriendDialog() {
     final rootContext = context;
-    showModalBottomSheet<void>(
-      context: rootContext,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    MoeSheet.show<void>(
+      rootContext,
+      builder: (_) => AddFriendBottomSheet(
+        rootContext: rootContext,
+        myMoe: _selfProfile?.moeNo ?? '',
+        onReloadFriends: _loadFriends,
       ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: AddFriendBottomSheet(
-            rootContext: rootContext,
-            myMoe: _selfProfile?.moeNo ?? '',
-            onReloadFriends: _loadFriends,
-          ),
-        );
-      },
     );
   }
 

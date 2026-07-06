@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
 import 'conversations_page.dart';
@@ -55,27 +56,15 @@ class _MessageCenterPageState extends State<MessageCenterPage>
     } catch (_) {}
 
     if (!rootContext.mounted) return;
-    showModalBottomSheet<void>(
-      context: rootContext,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    MoeSheet.show<void>(
+      rootContext,
+      builder: (_) => AddFriendBottomSheet(
+        rootContext: rootContext,
+        myMoe: myMoe,
+        onReloadFriends: () {
+          if (mounted) setState(() {});
+        },
       ),
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
-          ),
-          child: AddFriendBottomSheet(
-            rootContext: rootContext,
-            myMoe: myMoe,
-            onReloadFriends: () {
-              if (mounted) setState(() {});
-            },
-          ),
-        );
-      },
     );
   }
 

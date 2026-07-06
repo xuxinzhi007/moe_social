@@ -6,11 +6,13 @@ import 'package:shimmer/shimmer.dart';
 class DailyQuoteWidget extends StatefulWidget {
   final Color textColor;
   final bool embedded;
+  final int maxLines;
 
   const DailyQuoteWidget({
     super.key,
     this.textColor = Colors.white,
     this.embedded = true,
+    this.maxLines = 2,
   });
 
   @override
@@ -145,11 +147,11 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
               final targetWidth = constraints.maxWidth.isFinite
                   ? constraints.maxWidth
                   : MediaQuery.of(context).size.width;
-              final fittedSize = _fitFontSizeForTwoLines(text, targetWidth);
+              final fittedSize = _fitFontSizeForLineLimit(text, targetWidth);
               return Text(
                 text,
                 textAlign: TextAlign.start,
-                maxLines: 2,
+                maxLines: widget.maxLines,
                 overflow: TextOverflow.ellipsis,
                 softWrap: true,
                 style: TextStyle(
@@ -199,7 +201,7 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
     return null;
   }
 
-  double _fitFontSizeForTwoLines(String text, double maxWidth) {
+  double _fitFontSizeForLineLimit(String text, double maxWidth) {
     // 从 13 递减到 10，找到能在 2 行内放下的字号
     for (double size = 13; size >= 10; size -= 0.5) {
       final tp = TextPainter(
@@ -208,7 +210,7 @@ class _DailyQuoteWidgetState extends State<DailyQuoteWidget> {
           style: TextStyle(fontSize: size, height: 1.22, fontFamily: 'serif', letterSpacing: 0.4),
         ),
         textDirection: TextDirection.ltr,
-        maxLines: 2,
+        maxLines: widget.maxLines,
       )..layout(maxWidth: maxWidth);
       if (!tp.didExceedMaxLines) return size;
     }

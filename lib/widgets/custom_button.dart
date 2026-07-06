@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'motion/moe_pressable.dart';
+
 class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -39,36 +41,45 @@ class CustomButton extends StatelessWidget {
     final theme = Theme.of(context);
     final primary = backgroundColor ?? theme.primaryColor;
     final onPrimary = textColor ?? Colors.white;
-    final radius = borderRadius ?? BorderRadius.circular(25); // 默认为圆角胶囊形
+    final radius = borderRadius ?? BorderRadius.circular(25);
+    final enabled = !(isLoading || isDisabled) && onPressed != null;
+
+    final button = isOutline
+        ? OutlinedButton(
+            onPressed: enabled ? onPressed : null,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: primary,
+              side: BorderSide(color: primary, width: 1.5),
+              padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
+              shape: RoundedRectangleBorder(borderRadius: radius),
+              splashFactory: NoSplash.splashFactory,
+            ),
+            child: _buildContent(primary),
+          )
+        : ElevatedButton(
+            onPressed: enabled ? onPressed : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: onPrimary,
+              padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
+              elevation: elevation ?? (isDisabled ? 0 : 4),
+              shadowColor: shadowColor ?? primary.withValues(alpha: 0.4),
+              shape: RoundedRectangleBorder(borderRadius: radius),
+              splashFactory: NoSplash.splashFactory,
+            ),
+            child: _buildContent(onPrimary),
+          );
 
     return SizedBox(
       width: width,
       height: height ?? 48,
-      child: isOutline
-          ? OutlinedButton(
-              onPressed: (isLoading || isDisabled) ? null : onPressed,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: primary,
-                side: BorderSide(color: primary, width: 1.5),
-                padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
-                shape: RoundedRectangleBorder(borderRadius: radius),
-                splashFactory: InkRipple.splashFactory,
-              ),
-              child: _buildContent(primary),
+      child: enabled
+          ? MoePressable(
+              onTap: onPressed,
+              borderRadius: radius,
+              child: IgnorePointer(child: button),
             )
-          : ElevatedButton(
-              onPressed: (isLoading || isDisabled) ? null : onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primary,
-                foregroundColor: onPrimary,
-                padding: padding ?? const EdgeInsets.symmetric(horizontal: 24),
-                elevation: elevation ?? (isDisabled ? 0 : 4),
-                shadowColor: shadowColor ?? primary.withValues(alpha: 0.4),
-                shape: RoundedRectangleBorder(borderRadius: radius),
-                splashFactory: InkRipple.splashFactory,
-              ),
-              child: _buildContent(onPrimary),
-            ),
+          : button,
     );
   }
 
@@ -83,6 +94,7 @@ class CustomButton extends StatelessWidget {
         ),
       );
     }
+
     return Text(
       text,
       style: TextStyle(

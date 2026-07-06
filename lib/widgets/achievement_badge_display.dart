@@ -159,27 +159,43 @@ class BadgeCard extends StatelessWidget {
 
   Widget _buildDense(BuildContext context) {
     final theme = Theme.of(context);
-    final medalSize = size * 0.5;
-    final nameFont = (size * 0.11).clamp(9.0, 11.0);
+    final medalSize = size * 0.58;
+    final nameFont = (size * 0.108).clamp(10.0, 12.0);
+    final subtitleFont = (size * 0.082).clamp(8.0, 9.0);
+    final borderRadius = BorderRadius.circular(18);
+    final surfaceGradient = badge.isUnlocked
+        ? [
+            Colors.white,
+            badge.color.withValues(alpha: 0.08),
+          ]
+        : [
+            const Color(0xFFF8F9FC),
+            const Color(0xFFF1F3F8),
+          ];
+    final statusText = badge.isUnlocked
+        ? (badge.unlockedAt != null ? '已解锁' : '已拥有')
+        : badge.progress > 0
+            ? '${(badge.progress * 100).round()}% 完成'
+            : '未开始';
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: size,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
               color: badge.isUnlocked
                   ? badge.rarity.tierGradient.last.withValues(alpha: 0.18)
                   : Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+              blurRadius: badge.isUnlocked ? 14 : 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: borderRadius,
           child: Stack(
             children: [
               Container(
@@ -187,45 +203,95 @@ class BadgeCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: badge.isUnlocked
-                        ? [Colors.white, badge.color.withValues(alpha: 0.05)]
-                        : [Colors.grey.shade50, Colors.grey.shade100],
+                    colors: surfaceGradient,
                   ),
                   border: Border.all(
                     color: badge.isUnlocked
-                        ? badge.rarity.tierGradient.first.withValues(alpha: 0.35)
+                        ? badge.rarity.tierGradient.first.withValues(alpha: 0.4)
                         : Colors.grey.shade300,
+                    width: badge.isUnlocked ? 1.3 : 1,
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(5, 6, 5, 5),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
                   children: [
-                    AchievementBadgeMedallion(
-                      badge: badge,
-                      diameter: medalSize,
-                      unlocked: badge.isUnlocked,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      badge.name,
-                      style: TextStyle(
-                        fontSize: nameFont,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                        color: badge.isUnlocked
-                            ? theme.textTheme.titleMedium?.color
-                            : Colors.grey.shade500,
+                    Positioned(
+                      top: -28,
+                      right: -20,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: size * 0.62,
+                          height: size * 0.62,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: badge.isUnlocked
+                                  ? [
+                                      badge.color.withValues(alpha: 0.18),
+                                      badge.color.withValues(alpha: 0.0),
+                                    ]
+                                  : [
+                                      Colors.white.withValues(alpha: 0.5),
+                                      Colors.white.withValues(alpha: 0.0),
+                                    ],
+                            ),
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    AchievementRarityChip(
-                      rarity: badge.rarity,
-                      fontSize: 8,
-                      unlocked: badge.isUnlocked,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AchievementBadgeMedallion(
+                                  badge: badge,
+                                  diameter: medalSize,
+                                  unlocked: badge.isUnlocked,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  badge.name,
+                                  style: TextStyle(
+                                    fontSize: nameFont,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.15,
+                                    color: badge.isUnlocked
+                                        ? theme.textTheme.titleMedium?.color
+                                        : Colors.grey.shade600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                AchievementRarityChip(
+                                  rarity: badge.rarity,
+                                  fontSize: 8.5,
+                                  unlocked: badge.isUnlocked,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            statusText,
+                            style: TextStyle(
+                              fontSize: subtitleFont,
+                              fontWeight: FontWeight.w600,
+                              color: badge.isUnlocked
+                                  ? badge.rarity.tierGradient.last.withValues(alpha: 0.92)
+                                  : Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -236,13 +302,20 @@ class BadgeCard extends StatelessWidget {
                   right: 0,
                   bottom: 0,
                   child: Container(
-                    height: 3,
+                    height: 4,
                     color: Colors.grey.shade200,
                     child: FractionallySizedBox(
                       alignment: Alignment.centerLeft,
                       widthFactor: badge.progress.clamp(0.0, 1.0),
                       child: Container(
-                        color: badge.color,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              badge.color,
+                              badge.color.withValues(alpha: 0.7),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -253,7 +326,7 @@ class BadgeCard extends StatelessWidget {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: borderRadius,
                       ),
                     ),
                   ),

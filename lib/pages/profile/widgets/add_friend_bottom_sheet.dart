@@ -5,8 +5,9 @@ import '../../../auth_service.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/moe_theme_extension.dart';
 import '../../../widgets/moe_toast.dart';
+import '../../../widgets/motion/moe_pressable.dart';
+import '../../../widgets/motion/moe_reveal.dart';
 
-/// 同好页「添加好友」底部表单。
 class AddFriendBottomSheet extends StatefulWidget {
   const AddFriendBottomSheet({
     super.key,
@@ -43,7 +44,9 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
   void _copyLine(BuildContext ctx, String text, String toast) {
     if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
-    if (ctx.mounted) MoeToast.success(ctx, toast);
+    if (ctx.mounted) {
+      MoeToast.success(ctx, toast);
+    }
   }
 
   Future<void> _submit() async {
@@ -52,18 +55,23 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
       setState(() => _error = '请输入邮箱或 Moe 号');
       return;
     }
+
     final currentUserId = AuthService.currentUser;
     if (currentUserId == null) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
       if (widget.rootContext.mounted) {
         MoeToast.error(widget.rootContext, '请先登录');
       }
       return;
     }
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
     try {
       if (raw.contains('@')) {
         final targetUser = await ApiService.checkUserByEmail(raw);
@@ -88,19 +96,18 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
         if (relation == 'pending_out') {
           setState(() {
             _isLoading = false;
-            _error = '已发送申请，请等待对方确认';
+            _error = '好友申请已发送，请等待对方确认';
           });
           return;
         }
         if (relation == 'pending_in') {
           setState(() {
             _isLoading = false;
-            _error = '对方已向你发送申请，请在上方「申请」中处理';
+            _error = '对方已经向你发送申请，请在申请列表中处理';
           });
           return;
         }
-        await ApiService.sendFriendRequestByUserId(
-            currentUserId, targetUser.id);
+        await ApiService.sendFriendRequestByUserId(currentUserId, targetUser.id);
       } else if (RegExp(r'^\d{10}$').hasMatch(raw)) {
         await ApiService.sendFriendRequestByMoeNo(currentUserId, raw);
       } else {
@@ -110,66 +117,70 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
         });
         return;
       }
+
       if (!mounted) return;
+      Navigator.of(context).pop();
       if (widget.rootContext.mounted) {
-        Navigator.of(context).pop();
         MoeToast.success(widget.rootContext, '好友申请已发送');
         widget.onReloadFriends();
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _error = e.toString();
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final sheetContext = context;
     final myMoe = widget.myMoe;
     final moe = MoeTheme.of(context);
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 8,
+        bottom: 24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MoeReveal(
+            child: Text(
               '添加好友',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '输入对方的注册邮箱，或 10 位数字 Moe 号，我们会向对方发送好友申请。',
+          ),
+          const SizedBox(height: 8),
+          MoeReveal(
+            delay: const Duration(milliseconds: 40),
+            child: Text(
+              '输入对方注册邮箱或 10 位 Moe 号，我们会向对方发送好友申请。',
               style: TextStyle(
                 fontSize: 14,
-                height: 1.4,
+                height: 1.45,
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 20),
-            TextField(
+          ),
+          const SizedBox(height: 20),
+          MoeReveal(
+            delay: const Duration(milliseconds: 80),
+            child: TextField(
               controller: _controller,
               keyboardType: TextInputType.text,
               textInputAction: TextInputAction.done,
+              onSubmitted: (_) {
+                if (!_isLoading) {
+                  _submit();
+                }
+              },
               decoration: InputDecoration(
                 labelText: '邮箱或 Moe 号',
                 hintText: '例如 name@example.com 或 1234567890',
@@ -180,19 +191,24 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
                 fillColor: Colors.grey[50],
               ),
             ),
-            if (_error != null) ...[
-              const SizedBox(height: 10),
-              Text(
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 10),
+            MoeReveal(
+              child: Text(
                 _error!,
                 style: const TextStyle(
                   color: Colors.red,
                   fontSize: 13,
                 ),
               ),
-            ],
-            const SizedBox(height: 20),
-            if (myMoe.isNotEmpty) ...[
-              Text(
+            ),
+          ],
+          const SizedBox(height: 20),
+          if (myMoe.isNotEmpty) ...[
+            MoeReveal(
+              delay: const Duration(milliseconds: 120),
+              child: Text(
                 '我的 Moe 号（可复制发给对方）',
                 style: TextStyle(
                   fontSize: 12,
@@ -200,54 +216,51 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
                   color: Colors.grey[700],
                 ),
               ),
-              const SizedBox(height: 8),
-              Material(
-                color: moe.primary.withValues(alpha: 0.08),
+            ),
+            const SizedBox(height: 8),
+            MoeReveal(
+              delay: const Duration(milliseconds: 160),
+              child: MoePressable(
+                onTap: () => _copyLine(context, myMoe, '已复制我的 Moe 号'),
                 borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () => _copyLine(
-                    sheetContext,
-                    myMoe,
-                    '已复制我的 Moe 号',
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: moe.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            myMoe,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                              color: moe.primary,
-                            ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          myMoe,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: moe.primary,
                           ),
                         ),
-                        Icon(
-                          Icons.copy_rounded,
-                          size: 20,
-                          color: Colors.grey[700],
-                        ),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        Icons.copy_rounded,
+                        size: 20,
+                        color: Colors.grey[700],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-            Row(
+            ),
+            const SizedBox(height: 20),
+          ],
+          MoeReveal(
+            delay: const Duration(milliseconds: 200),
+            child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : () => Navigator.of(sheetContext).pop(),
+                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -284,8 +297,8 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

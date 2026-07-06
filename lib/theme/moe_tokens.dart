@@ -161,4 +161,10 @@ abstract final class MoeTokens {
   static const Duration motionFadeDuration = Duration(milliseconds: 300);
   static const Duration motionStaggerStep = Duration(milliseconds: 60);
   static const double motionFadeOffset = 30;
+  static const Duration motionFast = Duration(milliseconds: 160);
+  static const Duration motionMedium = Duration(milliseconds: 260);
+  static const Duration motionSlow = Duration(milliseconds: 420);
+  static const double motionPressScale = 0.97;
+  static const double motionPressScaleStrong = 0.94;
+  static const double motionSheetOffset = 24;
 }

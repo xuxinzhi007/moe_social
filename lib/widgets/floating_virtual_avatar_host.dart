@@ -13,6 +13,9 @@ import '../services/rive_bootstrap.dart';
 import '../theme/moe_tokens.dart';
 import 'moe_action_row.dart';
 import 'moe_toast.dart';
+import 'motion/moe_pressable.dart';
+import 'motion/moe_reveal.dart';
+import 'motion/moe_sheet.dart';
 
 class FloatingVirtualAvatarHost extends StatefulWidget {
   const FloatingVirtualAvatarHost({
@@ -105,7 +108,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     }
     final state = AuthService.navigatorKey.currentState;
     if (state == null) {
-      MoeToast.error(context, '当前页面暂不可跳转，请稍后重试');
+      MoeToast.error(context, '当前页面暂时无法跳转，请稍后重试');
       return;
     }
     _isRoutePushing = true;
@@ -121,7 +124,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
 
   bool _ensureLoggedIn(String featureName) {
     if (AuthService.isLoggedIn) return true;
-    MoeToast.info(context, '登录后可使用$featureName，快去登录吧');
+    MoeToast.info(context, '登录后可使用$featureName，先去登录吧');
     return false;
   }
 
@@ -133,128 +136,136 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     HapticFeedback.lightImpact();
     _isAssistantPanelOpen = true;
     try {
-      await showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
+      await MoeSheet.show<void>(
+        context,
         builder: (sheetContext) {
           final avatarProvider =
               Provider.of<VirtualAvatarProvider>(context, listen: false);
           final actions = avatarProvider.quickActions;
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
             child: SafeArea(
               top: false,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: MoeTokens.primary.withValues(alpha: 0.14),
-                          shape: BoxShape.circle,
+                  MoeReveal(
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: MoeTokens.primary.withValues(alpha: 0.14),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: MoeTokens.primary,
+                            size: 18,
+                          ),
                         ),
-                        child: const Icon(Icons.auto_awesome_rounded,
-                            color: MoeTokens.primary, size: 18),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Moe 虚拟助手',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: MoeTokens.titleText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const MoeReveal(
+                    delay: Duration(milliseconds: 30),
+                    child: Text(
+                      '这里保留高频操作入口，让交互更顺手，但不过度打扰。',
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: MoeTokens.hintText,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Moe 虚拟助手（MVP）',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 14),
                   if (actions.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: MoeTokens.pageBackground,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Text(
-                        '当前没有可用快捷动作，去助手设置开启后会展示在这里。',
-                        style: TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    const MoeReveal(
+                      delay: Duration(milliseconds: 60),
+                      child: _AssistantEmptyState(),
                     )
                   else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (actions.contains(AvatarQuickActions.notifications))
+                    MoeReveal(
+                      delay: const Duration(milliseconds: 60),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          if (actions.contains(AvatarQuickActions.notifications))
+                            _actionChip(
+                              icon: Icons.notifications_active_rounded,
+                              label: '通知中心',
+                              onTap: () async {
+                                if (!_ensureLoggedIn('通知中心')) return;
+                                Navigator.pop(sheetContext);
+                                await _pushNamed(
+                                  '/notifications',
+                                  startMessage: '正在打开通知中心',
+                                );
+                              },
+                            ),
+                          if (actions.contains(AvatarQuickActions.createPost))
+                            _actionChip(
+                              icon: Icons.edit_note_rounded,
+                              label: '发布动态',
+                              onTap: () async {
+                                if (!_ensureLoggedIn('发布动态')) return;
+                                Navigator.pop(sheetContext);
+                                await _pushNamed(
+                                  '/create-post',
+                                  startMessage: '正在进入发布页',
+                                );
+                              },
+                            ),
+                          if (actions.contains(AvatarQuickActions.greet))
+                            _actionChip(
+                              icon: Icons.favorite_rounded,
+                              label: '打招呼',
+                              onTap: () async {
+                                Navigator.pop(sheetContext);
+                                MoeToast.info(context, '今天也要元气满满');
+                              },
+                            ),
+                          if (actions.contains(AvatarQuickActions.checkin))
+                            _actionChip(
+                              icon: Icons.event_available_rounded,
+                              label: '去签到',
+                              onTap: () async {
+                                if (!_ensureLoggedIn('签到')) return;
+                                Navigator.pop(sheetContext);
+                                await _pushNamed(
+                                  '/checkin',
+                                  startMessage: '正在前往签到',
+                                );
+                              },
+                            ),
                           _actionChip(
-                            icon: Icons.notifications_active_rounded,
-                            label: '通知中心',
+                            icon: Icons.tune_rounded,
+                            label: '助手设置',
                             onTap: () async {
-                              if (!_ensureLoggedIn('通知中心')) return;
                               Navigator.pop(sheetContext);
                               await _pushNamed(
-                                '/notifications',
-                                startMessage: '正在打开通知中心',
+                                '/virtual-avatar-settings',
+                                startMessage: '正在打开助手设置',
                               );
                             },
                           ),
-                        if (actions.contains(AvatarQuickActions.createPost))
-                          _actionChip(
-                            icon: Icons.edit_note_rounded,
-                            label: '发布动态',
-                            onTap: () async {
-                              if (!_ensureLoggedIn('发布动态')) return;
-                              Navigator.pop(sheetContext);
-                              await _pushNamed(
-                                '/create-post',
-                                startMessage: '正在进入发布页',
-                              );
-                            },
-                          ),
-                        if (actions.contains(AvatarQuickActions.greet))
-                          _actionChip(
-                            icon: Icons.favorite_rounded,
-                            label: '打招呼',
-                            onTap: () async {
-                              Navigator.pop(sheetContext);
-                              MoeToast.info(context, '嗨～今天也要元气满满呀');
-                            },
-                          ),
-                        if (actions.contains(AvatarQuickActions.checkin))
-                          _actionChip(
-                            icon: Icons.event_available_rounded,
-                            label: '去签到',
-                            onTap: () async {
-                              if (!_ensureLoggedIn('签到')) return;
-                              Navigator.pop(sheetContext);
-                              await _pushNamed(
-                                '/checkin',
-                                startMessage: '正在前往签到',
-                              );
-                            },
-                          ),
-                        _actionChip(
-                          icon: Icons.tune_rounded,
-                          label: '助手设置',
-                          onTap: () async {
-                            Navigator.pop(sheetContext);
-                            await _pushNamed(
-                              '/virtual-avatar-settings',
-                              startMessage: '正在打开助手设置',
-                            );
-                          },
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                 ],
               ),
@@ -276,74 +287,95 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     final avatar = Provider.of<VirtualAvatarProvider>(context, listen: false);
     _isActionMenuOpen = true;
     try {
-      await showModalBottomSheet<void>(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (ctx) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+      await MoeSheet.show<void>(
+        context,
+        builder: (ctx) => Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           child: SafeArea(
             top: false,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                MoeActionRow(
-                  icon: Icons.visibility_off_rounded,
-                  title: '本次会话隐藏',
-                  subtitle: const Text('重新打开 App 后恢复'),
-                  iconColor: MoeTokens.primary,
-                  showDefaultTrailing: false,
-                  onTap: () {
-                    if (_isApplyingHideAction) {
-                      _showBusyHint();
-                      return;
-                    }
-                    _isApplyingHideAction = true;
-                    Navigator.pop(ctx);
-                    try {
-                      avatar.hideForSession();
-                    } finally {
-                      _isApplyingHideAction = false;
-                    }
-                    MoeToast.info(context, '已隐藏（本次会话）');
-                  },
+                const MoeReveal(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(8, 0, 8, 6),
+                      child: Text(
+                        '助手显示设置',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                MoeActionRow(
-                  icon: Icons.today_rounded,
-                  title: '隐藏到今天结束',
-                  subtitle: const Text('明天会自动恢复显示'),
-                  iconColor: MoeTokens.primary,
-                  showDefaultTrailing: false,
-                  onTap: () async {
-                    if (_isApplyingHideAction) {
-                      _showBusyHint();
-                      return;
-                    }
-                    _isApplyingHideAction = true;
-                    Navigator.pop(ctx);
-                    try {
-                      await avatar.hideForToday();
-                    } finally {
-                      _isApplyingHideAction = false;
-                    }
-                    if (!mounted) return;
-                    MoeToast.info(context, '已隐藏到今天结束');
-                  },
+                MoeReveal(
+                  delay: const Duration(milliseconds: 30),
+                  child: MoeActionRow(
+                    icon: Icons.visibility_off_rounded,
+                    title: '本次会话隐藏',
+                    subtitle: const Text('重新打开 App 后恢复'),
+                    iconColor: MoeTokens.primary,
+                    showDefaultTrailing: false,
+                    onTap: () {
+                      if (_isApplyingHideAction) {
+                        _showBusyHint();
+                        return;
+                      }
+                      _isApplyingHideAction = true;
+                      Navigator.pop(ctx);
+                      try {
+                        avatar.hideForSession();
+                      } finally {
+                        _isApplyingHideAction = false;
+                      }
+                      MoeToast.info(context, '已隐藏，本次会话生效');
+                    },
+                  ),
                 ),
-                MoeActionRow(
-                  icon: Icons.settings_rounded,
-                  title: '虚拟助手设置',
-                  iconColor: MoeTokens.primary,
-                  showDefaultTrailing: false,
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    await _pushNamed(
-                      '/virtual-avatar-settings',
-                      startMessage: '正在打开助手设置',
-                    );
-                  },
+                MoeReveal(
+                  delay: const Duration(milliseconds: 60),
+                  child: MoeActionRow(
+                    icon: Icons.today_rounded,
+                    title: '隐藏到今天结束',
+                    subtitle: const Text('明天会自动恢复显示'),
+                    iconColor: MoeTokens.primary,
+                    showDefaultTrailing: false,
+                    onTap: () async {
+                      if (_isApplyingHideAction) {
+                        _showBusyHint();
+                        return;
+                      }
+                      _isApplyingHideAction = true;
+                      Navigator.pop(ctx);
+                      try {
+                        await avatar.hideForToday();
+                      } finally {
+                        _isApplyingHideAction = false;
+                      }
+                      if (!mounted) return;
+                      MoeToast.info(context, '已隐藏到今天结束');
+                    },
+                  ),
+                ),
+                MoeReveal(
+                  delay: const Duration(milliseconds: 90),
+                  child: MoeActionRow(
+                    icon: Icons.settings_rounded,
+                    title: '虚拟助手设置',
+                    iconColor: MoeTokens.primary,
+                    showDefaultTrailing: false,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await _pushNamed(
+                        '/virtual-avatar-settings',
+                        startMessage: '正在打开助手设置',
+                      );
+                    },
+                  ),
                 ),
                 const SizedBox(height: 4),
               ],
@@ -361,28 +393,31 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
     required String label,
     required Future<void> Function() onTap,
   }) {
-    return Material(
-      color: MoeTokens.pageBackground,
+    return MoePressable(
       borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: () {
-          if (_isRoutePushing) {
-            _showBusyHint();
-            return;
-          }
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: MoeTokens.primary),
-              const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-            ],
+      onTap: () {
+        if (_isRoutePushing) {
+          _showBusyHint();
+          return;
+        }
+        unawaited(onTap());
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: MoeTokens.pageBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.06),
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: MoeTokens.primary),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
         ),
       ),
     );
@@ -438,7 +473,8 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
 
     _ensureRiveLoader();
 
-    final unreadCount = context.watch<NotificationProvider>().activityUnreadCount;
+    final unreadCount =
+        context.watch<NotificationProvider>().activityUnreadCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -526,6 +562,30 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
           ],
         );
       },
+    );
+  }
+}
+
+class _AssistantEmptyState extends StatelessWidget {
+  const _AssistantEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: MoeTokens.pageBackground,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Text(
+        '当前还没有可用的快捷动作，去助手设置开启后会展示在这里。',
+        style: TextStyle(
+          color: Colors.black87,
+          fontWeight: FontWeight.w600,
+          height: 1.45,
+        ),
+      ),
     );
   }
 }
