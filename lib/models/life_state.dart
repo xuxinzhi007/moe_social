@@ -1,18 +1,16 @@
-// 数字生命模拟器 — 数据模型
-//
-// 与后端 JSON 协议对应，包含实体状态、世界事件和 Tick 广播。
+// 数字生命模拟器 - 数据模型
 
 /// 数字生命实体状态
 class LifeEntity {
   final int id;
   final String name;
   final String emoji;
-  final double hunger; // 0-100
-  final double energy; // 0-100
-  final double mood; // 0-100
-  final String action; // idle/walking/eating/sleeping/...
-  final double x; // 0-1280
-  final double y; // 0-720
+  final double hunger;
+  final double energy;
+  final double mood;
+  final String action;
+  final double x;
+  final double y;
 
   const LifeEntity({
     required this.id,
@@ -30,7 +28,7 @@ class LifeEntity {
     return LifeEntity(
       id: _asInt(json['id']),
       name: json['name']?.toString() ?? '',
-      emoji: json['emoji']?.toString() ?? '🐾',
+      emoji: json['emoji']?.toString() ?? '🐣',
       hunger: _asDouble(json['hunger'], fallback: 80),
       energy: _asDouble(json['energy'], fallback: 80),
       mood: _asDouble(json['mood'], fallback: 70),
@@ -40,25 +38,20 @@ class LifeEntity {
     );
   }
 
-  /// 从增量 diff 合并（只更新变化的字段）
   LifeEntity mergeFromJson(Map<String, dynamic> json) {
     return LifeEntity(
       id: id,
-      name: json.containsKey('name')
-          ? json['name']?.toString() ?? name
-          : name,
-      emoji: json.containsKey('emoji')
-          ? json['emoji']?.toString() ?? emoji
-          : emoji,
+      name: json.containsKey('name') ? json['name']?.toString() ?? name : name,
+      emoji:
+          json.containsKey('emoji') ? json['emoji']?.toString() ?? emoji : emoji,
       hunger: json.containsKey('hunger')
           ? _asDouble(json['hunger'], fallback: hunger)
           : hunger,
       energy: json.containsKey('energy')
           ? _asDouble(json['energy'], fallback: energy)
           : energy,
-      mood: json.containsKey('mood')
-          ? _asDouble(json['mood'], fallback: mood)
-          : mood,
+      mood:
+          json.containsKey('mood') ? _asDouble(json['mood'], fallback: mood) : mood,
       action: json.containsKey('action')
           ? json['action']?.toString() ?? action
           : action,
@@ -67,25 +60,73 @@ class LifeEntity {
     );
   }
 
-  /// 行为描述文本
   String get actionLabel {
     switch (action) {
       case 'sleeping':
         return '休息中';
       case 'seeking_food':
-        return '寻找食物';
+        return '觅食中';
       case 'eating':
         return '进食中';
       case 'wandering':
-        return '闲逛';
+        return '漫游中';
       case 'walking':
-        return '散步';
+        return '移动中';
       case 'talking':
-        return '交谈';
+        return '互动中';
+      case 'reproducing':
+        return '繁衍中';
+      case 'dying':
+        return '衰亡中';
       default:
-        return '休息';
+        return '停留中';
     }
   }
+}
+
+/// 世界生态摘要
+class LifeWorldSummary {
+  final int entityCount;
+  final int aliveCount;
+  final int birthCount;
+  final int deathCount;
+  final double avgHunger;
+  final double avgEnergy;
+  final double avgMood;
+  final double totalFood;
+  final int habitableCells;
+  final int dangerCells;
+
+  const LifeWorldSummary({
+    this.entityCount = 0,
+    this.aliveCount = 0,
+    this.birthCount = 0,
+    this.deathCount = 0,
+    this.avgHunger = 0,
+    this.avgEnergy = 0,
+    this.avgMood = 0,
+    this.totalFood = 0,
+    this.habitableCells = 0,
+    this.dangerCells = 0,
+  });
+
+  factory LifeWorldSummary.fromJson(Map<String, dynamic> json) {
+    return LifeWorldSummary(
+      entityCount: _asInt(json['entity_count'] ?? json['entityCount']),
+      aliveCount: _asInt(json['alive_count'] ?? json['aliveCount']),
+      birthCount: _asInt(json['birth_count'] ?? json['birthCount']),
+      deathCount: _asInt(json['death_count'] ?? json['deathCount']),
+      avgHunger: _asDouble(json['avg_hunger'] ?? json['avgHunger']),
+      avgEnergy: _asDouble(json['avg_energy'] ?? json['avgEnergy']),
+      avgMood: _asDouble(json['avg_mood'] ?? json['avgMood']),
+      totalFood: _asDouble(json['total_food'] ?? json['totalFood']),
+      habitableCells:
+          _asInt(json['habitable_cells'] ?? json['habitableCells']),
+      dangerCells: _asInt(json['danger_cells'] ?? json['dangerCells']),
+    );
+  }
+
+  static const empty = LifeWorldSummary();
 }
 
 /// 世界事件
@@ -127,23 +168,22 @@ class LifeEvent {
 class LifeStateUpdate {
   final String worldId;
   final int tick;
+  final LifeWorldSummary summary;
   final List<Map<String, dynamic>> entityChanges;
   final List<LifeEvent> events;
 
   const LifeStateUpdate({
     required this.worldId,
     required this.tick,
+    required this.summary,
     required this.entityChanges,
     required this.events,
   });
 
   factory LifeStateUpdate.fromJson(Map<String, dynamic> json) {
-    // 后端将 entities/events 嵌套在 changes 下（TickBroadcast.Changes）
-    // 同时兼容无 changes 层的消息（如 state_snapshot）
     final changes = json['changes'];
-    final Map<String, dynamic> source = (changes is Map)
-        ? Map<String, dynamic>.from(changes)
-        : json;
+    final Map<String, dynamic> source =
+        (changes is Map) ? Map<String, dynamic>.from(changes) : json;
 
     final rawEntities = source['entities'] ?? source['entity_changes'];
     final entities = <Map<String, dynamic>>[];
@@ -170,13 +210,18 @@ class LifeStateUpdate {
           json['worldId']?.toString() ??
           'default',
       tick: _asInt(json['tick']),
+      summary: json['summary'] is Map<String, dynamic>
+          ? LifeWorldSummary.fromJson(json['summary'] as Map<String, dynamic>)
+          : json['summary'] is Map
+              ? LifeWorldSummary.fromJson(
+                  Map<String, dynamic>.from(json['summary'] as Map),
+                )
+              : LifeWorldSummary.empty,
       entityChanges: entities,
       events: events,
     );
   }
 }
-
-// ── 内部工具函数 ──────────────────────────────────────────────────────────────
 
 int _asInt(dynamic raw, {int fallback = 0}) {
   if (raw is int) return raw;

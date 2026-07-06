@@ -56,7 +56,7 @@ export function BuildCacheActions({ compact }: Props) {
 
   async function clean(removeBinaries: boolean) {
     const label = removeBinaries
-      ? '将删除编译缓存与 Linux 二进制（api/rpc），确定？'
+      ? '将删除编译缓存与 Linux 二进制（moe-social），确定？'
       : '将删除编译缓存目录（不影响已上传的云端版本），确定？'
     if (!window.confirm(label)) return
     setCleaning(true)
@@ -149,7 +149,7 @@ export function BuildCacheActions({ compact }: Props) {
             className="btn btn-ghost"
             disabled={authOk !== true || cleaning || !hasBin}
             onClick={() => void clean(true)}
-            title="同时删除 api/moe-social-api 与 rpc/moe-social-rpc"
+            title="同时删除 bin/moe-social"
           >
             清缓存 + Linux 二进制
           </button>

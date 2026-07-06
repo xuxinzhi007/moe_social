@@ -2,7 +2,7 @@ package lifebiz
 
 import "time"
 
-// LifeAction 行为枚举
+// LifeAction represents a coarse-grained entity action.
 type LifeAction string
 
 const (
@@ -14,18 +14,22 @@ const (
 	ActionSeekingRest LifeAction = "seeking_rest"
 	ActionWandering   LifeAction = "wandering"
 	ActionTalking     LifeAction = "talking"
+	ActionReproducing LifeAction = "reproducing"
+	ActionDying       LifeAction = "dying"
 )
 
-// LifeConfig 引擎配置
+// LifeConfig controls the in-process life engine.
 type LifeConfig struct {
-	TickInterval   time.Duration // 默认 5s
-	MaxEntities    int           // 每世界最大实体数，默认 50
-	WorldName      string        // 默认 "default"
-	FlushInterval  time.Duration // DB flush 间隔，默认 5s
-	FlushBatchSize int           // 批量 flush 阈值，默认 100
+	TickInterval   time.Duration
+	MaxEntities    int
+	WorldName      string
+	FlushInterval  time.Duration
+	FlushBatchSize int
+	GridWidth      int
+	GridHeight     int
 }
 
-// DefaultConfig 返回默认配置
+// DefaultConfig returns the default engine config.
 func DefaultConfig() LifeConfig {
 	return LifeConfig{
 		TickInterval:   5 * time.Second,
@@ -33,10 +37,42 @@ func DefaultConfig() LifeConfig {
 		WorldName:      "default",
 		FlushInterval:  5 * time.Second,
 		FlushBatchSize: 100,
+		GridWidth:      32,
+		GridHeight:     18,
 	}
 }
 
-// EntityDiff 增量变化（用于广播）
+// WorldCell stores a lightweight environmental simulation cell.
+type WorldCell struct {
+	Terrain   string  `json:"terrain"`
+	Food      float64 `json:"food"`
+	Moisture  float64 `json:"moisture"`
+	Danger    float64 `json:"danger"`
+	Habitable bool    `json:"habitable"`
+}
+
+// WorldGrid is a low-cost ecological world layer.
+type WorldGrid struct {
+	Width  int          `json:"width"`
+	Height int          `json:"height"`
+	Cells  [][]WorldCell `json:"cells,omitempty"`
+}
+
+// WorldSummary provides a compact ecosystem overview for UI and telemetry.
+type WorldSummary struct {
+	EntityCount    int     `json:"entity_count"`
+	AliveCount     int     `json:"alive_count"`
+	BirthCount     int     `json:"birth_count"`
+	DeathCount     int     `json:"death_count"`
+	AvgHunger      float64 `json:"avg_hunger"`
+	AvgEnergy      float64 `json:"avg_energy"`
+	AvgMood        float64 `json:"avg_mood"`
+	TotalFood      float64 `json:"total_food"`
+	HabitableCells int     `json:"habitable_cells"`
+	DangerCells    int     `json:"danger_cells"`
+}
+
+// EntityDiff is the wire format for entity updates.
 type EntityDiff struct {
 	ID            uint       `json:"id"`
 	Name          string     `json:"name"`
@@ -49,7 +85,7 @@ type EntityDiff struct {
 	PositionY     float64    `json:"y"`
 }
 
-// EventDiff 事件变化（用于广播）
+// EventDiff is the wire format for world events.
 type EventDiff struct {
 	EntityID   uint    `json:"entity_id"`
 	EntityType string  `json:"entity_type"`
@@ -59,15 +95,16 @@ type EventDiff struct {
 	PositionY  float64 `json:"y"`
 }
 
-// TickBroadcast tick 广播数据
+// TickBroadcast is sent to REST snapshots and WebSocket subscribers.
 type TickBroadcast struct {
-	Type    string      `json:"type"`     // "life_state"
-	WorldID string      `json:"world_id"`
-	Tick    int64       `json:"tick"`
-	Changes TickChanges `json:"changes"`
+	Type    string       `json:"type"`
+	WorldID string       `json:"world_id"`
+	Tick    int64        `json:"tick"`
+	Summary WorldSummary `json:"summary"`
+	Changes TickChanges  `json:"changes"`
 }
 
-// TickChanges tick 增量变化集合
+// TickChanges contains incremental world updates.
 type TickChanges struct {
 	Entities []EntityDiff `json:"entities,omitempty"`
 	Events   []EventDiff  `json:"events,omitempty"`

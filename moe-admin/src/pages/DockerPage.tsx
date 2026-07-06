@@ -13,7 +13,7 @@ const CONFIG_FILES = [
 export function DockerPage() {
   const { client, token, runJob, confirmRunJob, showToast } = useDeploy()
   const [checkOut, setCheckOut] = useState(
-    '点击检查：backend_dir、compose、MOE_SUPER_RPC_ENDPOINT',
+    '点击检查：backend_dir、compose、bin/moe-social',
   )
   const [dockerOut, setDockerOut] = useState('等待连接…')
   const [configFile, setConfigFile] = useState<string>(CONFIG_FILES[0])
@@ -131,7 +131,7 @@ export function DockerPage() {
             当前文件：{configFile}
             {editor.length > 0 ? ` · ${editor.split(/\r?\n/).length} 行 · ${editor.length} 字符` : ''}
             {configFile.includes('config.yaml')
-              ? ' · 改 feishu/wechat 后请重启 API/RPC 容器'
+              ? ' · 改 feishu/wechat 后请重启 moe-social 容器'
               : ''}
           </p>
         </div>
@@ -150,16 +150,9 @@ export function DockerPage() {
             <button
               type="button"
               className="btn btn-mint"
-              onClick={() => void runJob('docker_restart', { service: 'api' })}
+              onClick={() => void runJob('docker_restart', { service: 'moe-social' })}
             >
-              重启 API
-            </button>
-            <button
-              type="button"
-              className="btn btn-mint"
-              onClick={() => void runJob('docker_restart', { service: 'rpc' })}
-            >
-              重启 RPC
+              重启服务
             </button>
             <button
               type="button"
@@ -180,16 +173,9 @@ export function DockerPage() {
             <button
               type="button"
               className="btn btn-ghost"
-              onClick={() => void runJob('docker_logs', { service: 'api', tail: '120' })}
+              onClick={() => void runJob('docker_logs', { service: 'moe-social', tail: '120' })}
             >
-              API 日志
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => void runJob('docker_logs', { service: 'rpc', tail: '120' })}
-            >
-              RPC 日志
+              服务日志
             </button>
           </div>
           <pre className="log-pre" style={{ maxHeight: 360 }}>
