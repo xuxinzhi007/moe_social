@@ -114,6 +114,42 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  // 成长阶段标签 + 年龄
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: currentEntity.growthStageColor
+                              .withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: currentEntity.growthStageColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          currentEntity.growthStageLabel,
+                          style: TextStyle(
+                            color: currentEntity.growthStageColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '🕐 ${currentEntity.ageInDays}天',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: MoeTokens.hintText,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   // 行为状态标签
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -158,6 +194,60 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
                     color: Colors.pink,
                     icon: Icons.favorite,
                   ),
+                  // 成长进度条（仅非老年阶段显示）
+                  if (currentEntity.experienceThreshold > 0) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: MoeTokens.cardBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: MoeTokens.shadowSm(),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.auto_awesome,
+                                  size: 18,
+                                  color: currentEntity.growthStageColor),
+                              const SizedBox(width: 8),
+                              const Text(
+                                '成长进度',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: MoeTokens.bodyText,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${currentEntity.experience.toInt()} / ${currentEntity.experienceThreshold.toInt()} EXP',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: currentEntity.growthStageColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: currentEntity.growthProgress,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation(
+                                  currentEntity.growthStageColor),
+                              minHeight: 8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   // 位置坐标
                   Container(

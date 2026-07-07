@@ -1,4 +1,5 @@
 // 数字生命模拟器 - 数据模型
+import 'package:flutter/material.dart';
 
 /// 数字生命实体状态
 class LifeEntity {
@@ -11,6 +12,9 @@ class LifeEntity {
   final String action;
   final double x;
   final double y;
+  final String growthStage; // 成长阶段: juvenile/adolescent/adult/elderly
+  final double experience;  // 经验值
+  final int age;            // 年龄（tick 数）
 
   const LifeEntity({
     required this.id,
@@ -22,6 +26,9 @@ class LifeEntity {
     this.action = 'idle',
     this.x = 640,
     this.y = 360,
+    this.growthStage = 'juvenile',
+    this.experience = 0,
+    this.age = 0,
   });
 
   factory LifeEntity.fromJson(Map<String, dynamic> json) {
@@ -35,6 +42,11 @@ class LifeEntity {
       action: json['action']?.toString() ?? 'idle',
       x: _asDouble(json['x'], fallback: 640),
       y: _asDouble(json['y'], fallback: 360),
+      growthStage: json['growth_stage']?.toString() ??
+          json['growthStage']?.toString() ??
+          'juvenile',
+      experience: _asDouble(json['experience']),
+      age: _asInt(json['age']),
     );
   }
 
@@ -57,6 +69,15 @@ class LifeEntity {
           : action,
       x: json.containsKey('x') ? _asDouble(json['x'], fallback: x) : x,
       y: json.containsKey('y') ? _asDouble(json['y'], fallback: y) : y,
+      growthStage: json.containsKey('growth_stage')
+          ? json['growth_stage']?.toString() ?? growthStage
+          : json.containsKey('growthStage')
+              ? json['growthStage']?.toString() ?? growthStage
+              : growthStage,
+      experience: json.containsKey('experience')
+          ? _asDouble(json['experience'], fallback: experience)
+          : experience,
+      age: json.containsKey('age') ? _asInt(json['age'], fallback: age) : age,
     );
   }
 
@@ -84,6 +105,109 @@ class LifeEntity {
         return '停留中';
     }
   }
+
+  /// 成长阶段中文标签
+  String get growthStageLabel {
+    switch (growthStage) {
+      case 'juvenile':
+        return '幼年';
+      case 'adolescent':
+        return '少年';
+      case 'adult':
+        return '成年';
+      case 'elderly':
+        return '老年';
+      default:
+        return '未知';
+    }
+  }
+
+  /// 成长阶段颜色
+  Color get growthStageColor {
+    switch (growthStage) {
+      case 'juvenile':
+        return const Color(0xFF4CAF50); // 绿色
+      case 'adolescent':
+        return const Color(0xFF2196F3); // 蓝色
+      case 'adult':
+        return const Color(0xFFFFC107); // 金色
+      case 'elderly':
+        return const Color(0xFF9E9E9E); // 灰色
+      default:
+        return const Color(0xFF9E9E9E);
+    }
+  }
+
+  /// 当前阶段所需经验阈值
+  double get experienceThreshold {
+    switch (growthStage) {
+      case 'juvenile':
+        return 100;
+      case 'adolescent':
+        return 300;
+      case 'adult':
+        return 800;
+      default:
+        return 0; // 老年无下一阶段
+    }
+  }
+
+  /// 成长进度（0.0 ~ 1.0）
+  double get growthProgress {
+    final threshold = experienceThreshold;
+    if (threshold <= 0) return 1.0;
+    return (experience / threshold).clamp(0.0, 1.0);
+  }
+
+  /// 年龄（天）— 假设 5 秒/tick, 720 tick/小时, 24 小时/天
+  int get ageInDays => (age / (720 * 24)).floor();
+}
+
+/// 实体间社交关系
+class LifeRelationship {
+  final int entityId;
+  final int targetId;
+  final String relationType; // friend/rival/mate
+  final double affinity; // 0-100
+
+  const LifeRelationship({
+    required this.entityId,
+    required this.targetId,
+    required this.relationType,
+    this.affinity = 0,
+  });
+
+  factory LifeRelationship.fromJson(Map<String, dynamic> json) {
+    return LifeRelationship(
+      entityId: _asInt(json['entity_id'] ?? json['entityId']),
+      targetId: _asInt(json['target_id'] ?? json['targetId']),
+      relationType: (json['relation_type'] ?? json['relationType'] ?? 'friend').toString(),
+      affinity: _asDouble(json['affinity']),
+    );
+  }
+
+  /// 关系中文标签
+  String get relationLabel {
+    switch (relationType) {
+      case 'friend': return '朋友';
+      case 'rival': return '对手';
+      case 'mate': return '伴侣';
+      default: return '未知';
+    }
+  }
+
+  /// 关系颜色
+  Color get relationColor {
+    switch (relationType) {
+      case 'friend': return const Color(0xFF4CAF50); // 绿色
+      case 'rival': return const Color(0xFFF44336);  // 红色
+      case 'mate': return const Color(0xFFFFC107);   // 金色
+      default: return Colors.grey;
+    }
+  }
+
+  /// 唯一键（用于匹配更新/删除）
+  String get key => '${entityId}_$targetId';
 }
 
 /// 世界生态摘要
@@ -174,6 +298,8 @@ class LifeStateUpdate {
   final List<Map<String, dynamic>> entityChanges;
   final List<LifeEvent> events;
   final List<int> removedEntityIds;
+  final List<LifeRelationship> relationshipChanges;
+  final List<Map<String, int>> removedRelationships; // [{entity_id, target_id}]
 
   const LifeStateUpdate({
     required this.worldId,
@@ -182,6 +308,8 @@ class LifeStateUpdate {
     required this.entityChanges,
     required this.events,
     this.removedEntityIds = const [],
+    this.relationshipChanges = const [],
+    this.removedRelationships = const [],
   });
 
   factory LifeStateUpdate.fromJson(Map<String, dynamic> json) {
@@ -218,6 +346,31 @@ class LifeStateUpdate {
       }
     }
 
+    // 解析 relationships（双格式兼容）
+    final rawRelationships = source['relationships'];
+    final relChanges = <LifeRelationship>[];
+    if (rawRelationships is List) {
+      for (final r in rawRelationships) {
+        if (r is Map) {
+          relChanges.add(LifeRelationship.fromJson(Map<String, dynamic>.from(r)));
+        }
+      }
+    }
+
+    // 解析 removed_relationships（双格式兼容）
+    final rawRemovedRels = source['removed_relationships'] ?? source['removedRelationships'];
+    final removedRels = <Map<String, int>>[];
+    if (rawRemovedRels is List) {
+      for (final r in rawRemovedRels) {
+        if (r is Map) {
+          removedRels.add({
+            'entity_id': _asInt(r['entity_id'] ?? r['entityId']),
+            'target_id': _asInt(r['target_id'] ?? r['targetId']),
+          });
+        }
+      }
+    }
+
     return LifeStateUpdate(
       worldId: json['world_id']?.toString() ??
           json['worldId']?.toString() ??
@@ -233,6 +386,8 @@ class LifeStateUpdate {
       entityChanges: entities,
       events: events,
       removedEntityIds: removedIds,
+      relationshipChanges: relChanges,
+      removedRelationships: removedRels,
     );
   }
 }

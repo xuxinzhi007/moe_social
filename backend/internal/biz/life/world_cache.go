@@ -8,11 +8,12 @@ import (
 
 // WorldSnapshot is the in-memory simulation state for one world.
 type WorldSnapshot struct {
-	World     model.LifeWorld
-	Entities  map[uint]*model.LifeEntity
-	Grid      *WorldGrid
-	Summary   WorldSummary
-	TickCount int64
+	World         model.LifeWorld
+	Entities      map[uint]*model.LifeEntity
+	Grid          *WorldGrid
+	Summary       WorldSummary
+	TickCount     int64
+	Relationships []*model.LifeRelationship
 }
 
 // WorldCache stores world snapshots safely across goroutines.

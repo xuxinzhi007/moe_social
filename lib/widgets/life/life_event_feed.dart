@@ -74,10 +74,33 @@ class _EventTileState extends State<_EventTile>
     super.dispose();
   }
 
+  /// 判断是否为成长事件。
+  bool get _isGrowthEvent => widget.event.type == 'growth';
+
+  /// 判断是否为社交/关系事件。
+  bool get _isSocialEvent {
+    final t = widget.event.type.toLowerCase();
+    return t.contains('social') || t.contains('relationship') || t.contains('bond');
+  }
+
   @override
   Widget build(BuildContext context) {
     final event = widget.event;
     final timeStr = _formatTime(event.timestamp);
+    final isGrowth = _isGrowthEvent;
+    final isSocial = _isSocialEvent;
+
+    // 成长事件使用金色，社交事件使用绿色
+    final bgColor = isGrowth
+        ? const Color(0xFFFFF8E1)
+        : isSocial
+            ? const Color(0xFFE8F5E9) // 淡绿色背景
+            : Colors.white;
+    final borderColor = isGrowth
+        ? const Color(0xFFFFC107).withValues(alpha: 0.3)
+        : isSocial
+            ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+            : Colors.transparent;
 
     return FadeTransition(
       opacity: _opacity,
@@ -87,11 +110,18 @@ class _EventTileState extends State<_EventTile>
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: bgColor,
             borderRadius: BorderRadius.circular(10),
+            border: (isGrowth || isSocial)
+                ? Border.all(color: borderColor, width: 1)
+                : null,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: isGrowth
+                    ? const Color(0xFFFFC107).withValues(alpha: 0.08)
+                    : isSocial
+                        ? const Color(0xFF4CAF50).withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -100,8 +130,26 @@ class _EventTileState extends State<_EventTile>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 左侧 entityType emoji 图标
-              if (event.entityType.isNotEmpty)
+              // 左侧图标
+              if (isGrowth)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8, top: 2),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: Color(0xFFFFC107),
+                  ),
+                )
+              else if (isSocial)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8, top: 2),
+                  child: Icon(
+                    Icons.hub_outlined,
+                    size: 16,
+                    color: Color(0xFF4CAF50),
+                  ),
+                )
+              else if (event.entityType.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(right: 8, top: 2),
                   child: Text(
@@ -116,7 +164,17 @@ class _EventTileState extends State<_EventTile>
                   children: [
                     Text(
                       event.desc,
-                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isGrowth
+                            ? const Color(0xFF795548)
+                            : isSocial
+                                ? const Color(0xFF2E7D32)
+                                : Colors.black87,
+                        fontWeight: (isGrowth || isSocial)
+                            ? FontWeight.w500
+                            : FontWeight.w400,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(

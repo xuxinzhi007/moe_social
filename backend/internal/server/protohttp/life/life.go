@@ -22,6 +22,7 @@ func Register(app *lifeapp.AppService, srv *khttp.Server) {
 	r.GET("/api/life/world", getWorldHandler(app))
 	r.GET("/api/life/entities", getEntitiesHandler(app))
 	r.GET("/api/life/events", getEventsHandler(app))
+	r.GET("/api/life/relationships", getRelationshipsHandler(app))
 	r.POST("/api/life/action", actionHandler(app))
 }
 
@@ -81,6 +82,35 @@ func getEventsHandler(app *lifeapp.AppService) func(khttp.Context) error {
 			return writeJSON(ctx, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
 		return writeJSON(ctx, http.StatusOK, logs)
+	}
+}
+
+// GET /api/life/relationships?world=default — 社交关系列表
+func getRelationshipsHandler(app *lifeapp.AppService) func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		engine := app.Engine()
+		if engine == nil {
+			return writeJSON(ctx, http.StatusServiceUnavailable, map[string]string{"error": "engine not ready"})
+		}
+		worldName := ctx.Request().URL.Query().Get("world")
+		if worldName == "" {
+			worldName = engine.GetConfig().WorldName
+		}
+		// 优先从内存缓存读取
+		snap := engine.GetWorldCache().Get(worldName)
+		if snap != nil {
+			return writeJSON(ctx, http.StatusOK, snap.Relationships)
+		}
+		// 回退到 DB 读取
+		store := app.Store()
+		if store == nil {
+			return writeJSON(ctx, http.StatusServiceUnavailable, map[string]string{"error": "store not ready"})
+		}
+		rels, err := store.ListRelationshipsByWorld(ctx.Request().Context(), worldName)
+		if err != nil {
+			return writeJSON(ctx, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+		return writeJSON(ctx, http.StatusOK, rels)
 	}
 }
 

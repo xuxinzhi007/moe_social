@@ -15,14 +15,15 @@ type BroadcastFunc func(msg TickBroadcast)
 
 // LifeEngine 数字生命引擎
 type LifeEngine struct {
-	store            Store
-	cache            *WorldCache
-	persistence      *PersistenceWriter
-	config           LifeConfig
-	broadcastMu      sync.RWMutex
-	broadcastFn      BroadcastFunc
-	actionCooldowns  map[uint]time.Time // 实体 ID→冷却到期时间
-	cooldownMu       sync.Mutex
+	store           Store
+	cache           *WorldCache
+	persistence     *PersistenceWriter
+	socialSystem    *SocialSystem
+	config          LifeConfig
+	broadcastMu     sync.RWMutex
+	broadcastFn     BroadcastFunc
+	actionCooldowns map[uint]time.Time // 实体 ID→冷却到期时间
+	cooldownMu      sync.Mutex
 }
 
 // NewLifeEngine 创建数字生命引擎
@@ -31,6 +32,7 @@ func NewLifeEngine(store Store, config LifeConfig, broadcastFn BroadcastFunc) *L
 		store:           store,
 		cache:           NewWorldCache(),
 		persistence:     NewPersistenceWriter(store, config),
+		socialSystem:    NewSocialSystem(),
 		config:          config,
 		broadcastFn:     broadcastFn,
 		actionCooldowns: make(map[uint]time.Time),
@@ -78,10 +80,13 @@ func (e *LifeEngine) GetWorldCache() *WorldCache { return e.cache }
 // GetConfig 获取配置
 func (e *LifeEngine) GetConfig() LifeConfig { return e.config }
 
+// GetStore 暴露 store 供外部读取
+func (e *LifeEngine) GetStore() Store { return e.store }
+
 // ActionResult 用户操作结果
 type ActionResult struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
+	Success bool            `json:"success"`
+	Message string          `json:"message"`
 	Entity  *model.LifeEntity `json:"entity,omitempty"`
 }
 

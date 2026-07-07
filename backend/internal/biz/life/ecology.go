@@ -158,17 +158,27 @@ func computeWorldSummary(grid *WorldGrid, entities map[uint]*model.LifeEntity, b
 	return summary
 }
 
-func maybeSpawnOffspring(worldID string, entities map[uint]*model.LifeEntity, parent *model.LifeEntity, nextID uint) *model.LifeEntity {
+func maybeSpawnOffspring(worldID string, entities map[uint]*model.LifeEntity, parent *model.LifeEntity, nextID uint, rels []*model.LifeRelationship) *model.LifeEntity {
 	if parent == nil {
 		return nil
 	}
 	if len(entities) >= 50 {
 		return nil
 	}
+	// 只有少年和成年阶段可以繁殖
+	if parent.GrowthStage != StageAdolescent && parent.GrowthStage != StageAdult {
+		return nil
+	}
 	if parent.Energy < 72 || parent.Hunger < 68 || parent.Mood < 74 {
 		return nil
 	}
-	if rand.Float64() > 0.025 {
+	// 基础繁殖概率
+	reproChance := 0.025
+	// mate 关系繁殖概率翻倍
+	if HasMateRelationship(parent, rels) {
+		reproChance *= 2.0
+	}
+	if rand.Float64() > reproChance {
 		return nil
 	}
 
@@ -185,6 +195,7 @@ func maybeSpawnOffspring(worldID string, entities map[uint]*model.LifeEntity, pa
 		Hunger:        clamp(parent.Hunger-6, 35, 85),
 		Energy:        clamp(parent.Energy-4, 38, 88),
 		Mood:          clamp(parent.Mood, 40, 90),
+		GrowthStage:   StageJuvenile,
 		CurrentAction: string(ActionIdle),
 		PositionX:     clamp(parent.PositionX+(rand.Float64()-0.5)*60, 0, worldWidth),
 		PositionY:     clamp(parent.PositionY+(rand.Float64()-0.5)*60, 0, worldHeight),

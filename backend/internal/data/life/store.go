@@ -41,6 +41,7 @@ func (s *gormStore) UpsertEntity(ctx context.Context, entity *model.LifeEntity) 
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
 				"target_entity_id", "is_alive", "last_action_at", "updated_at",
+				"age", "growth_stage", "experience",
 			}),
 		}).
 		Create(entity).Error
@@ -58,6 +59,7 @@ func (s *gormStore) BatchUpsertEntities(ctx context.Context, entities []*model.L
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
 				"target_entity_id", "is_alive", "last_action_at", "updated_at",
+				"age", "growth_stage", "experience",
 			}),
 		}).
 		Create(entities).Error
@@ -136,4 +138,56 @@ func (s *gormStore) UpdateWorldGridData(ctx context.Context, worldName string, g
 			"grid_data":  gridData,
 			"updated_at": time.Now(),
 		}).Error
+}
+
+// --- 社交关系 ---
+
+func (s *gormStore) UpsertRelationship(ctx context.Context, rel *model.LifeRelationship) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "entity_id"}, {Name: "target_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"world_id", "relation_type", "affinity", "last_interaction_at", "updated_at",
+			}),
+		}).
+		Create(rel).Error
+}
+
+func (s *gormStore) BatchUpsertRelationships(ctx context.Context, rels []*model.LifeRelationship) error {
+	if len(rels) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "entity_id"}, {Name: "target_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"world_id", "relation_type", "affinity", "last_interaction_at", "updated_at",
+			}),
+		}).
+		Create(rels).Error
+}
+
+func (s *gormStore) ListRelationshipsByWorld(ctx context.Context, worldID string) ([]*model.LifeRelationship, error) {
+	var rels []*model.LifeRelationship
+	err := s.db.WithContext(ctx).Where("world_id = ?", worldID).Find(&rels).Error
+	return rels, err
+}
+
+func (s *gormStore) ListRelationshipsByEntity(ctx context.Context, entityID uint) ([]*model.LifeRelationship, error) {
+	var rels []*model.LifeRelationship
+	err := s.db.WithContext(ctx).
+		Where("entity_id = ? OR target_id = ?", entityID, entityID).
+		Find(&rels).Error
+	return rels, err
+}
+
+func (s *gormStore) DeleteRelationship(ctx context.Context, id uint) error {
+	return s.db.WithContext(ctx).Delete(&model.LifeRelationship{}, id).Error
+}
+
+func (s *gormStore) BatchDeleteRelationships(ctx context.Context, ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).Where("id IN ?", ids).Delete(&model.LifeRelationship{}).Error
 }

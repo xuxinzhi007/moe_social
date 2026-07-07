@@ -15,6 +15,9 @@ type LifeEntity struct {
 	PositionX      float64   `json:"position_x" gorm:"default:640"`   // 0-1280
 	PositionY      float64   `json:"position_y" gorm:"default:360"`   // 0-720
 	TargetEntityID *uint     `json:"target_entity_id,omitempty"`      // 交互目标
+	Age            int       `json:"age" gorm:"default:0"`                                          // 年龄（存活 tick 数）
+	GrowthStage    string    `json:"growth_stage" gorm:"size:32;default:'juvenile'"`                  // 成长阶段: juvenile/adolescent/adult/elderly
+	Experience     float64   `json:"experience" gorm:"default:0"`                                     // 累计经验值
 	IsAlive        bool      `json:"is_alive" gorm:"default:true;index:idx_life_entity_alive"` // 是否存活，死亡后标记为 false
 	LastActionAt   time.Time `json:"last_action_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
