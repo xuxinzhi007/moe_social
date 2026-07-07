@@ -2,22 +2,20 @@ package utils
 
 import "backend/model"
 
-// MigrateEntry 描述一张待 AutoMigrate 的表及其 CLI 筛选 key。
+// MigrateEntry describes one model that should participate in AutoMigrate.
 type MigrateEntry struct {
 	Key   string
 	Model interface{}
 }
 
-// MigrateModelRegistry 与 autoMigrate 列表对齐；Key 与 AdminSchemaCatalog 的 Key 一致（便于 -models 筛选）。
+// MigrateModelRegistry keeps the AutoMigrate list in one place.
 func MigrateModelRegistry() []MigrateEntry {
 	return []MigrateEntry{
-		// 用户和 VIP 相关
 		{Key: "users", Model: &model.User{}},
 		{Key: "vip_plans", Model: &model.VipPlan{}},
 		{Key: "vip_orders", Model: &model.VipOrder{}},
 		{Key: "vip_records", Model: &model.VipRecord{}},
 		{Key: "transactions", Model: &model.Transaction{}},
-		// 社交相关
 		{Key: "posts", Model: &model.Post{}},
 		{Key: "post_reports", Model: &model.PostReport{}},
 		{Key: "likes", Model: &model.Like{}},
@@ -25,7 +23,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "post_topics", Model: &model.PostTopic{}},
 		{Key: "comments", Model: &model.Comment{}},
 		{Key: "follows", Model: &model.Follow{}},
-		// 通知和形象相关
 		{Key: "notifications", Model: &model.Notification{}},
 		{Key: "user_avatars", Model: &model.UserAvatar{}},
 		{Key: "avatar_outfits", Model: &model.AvatarOutfit{}},
@@ -34,7 +31,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "user_emoji_packs", Model: &model.UserEmojiPack{}},
 		{Key: "user_devices", Model: &model.UserDevice{}},
 		{Key: "ai_user_configs", Model: &model.AiUserConfig{}},
-		// 签到等级系统
 		{Key: "user_levels", Model: &model.UserLevel{}},
 		{Key: "level_configs", Model: &model.LevelConfig{}},
 		{Key: "user_check_ins", Model: &model.UserCheckIn{}},
@@ -45,7 +41,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "user_daily_activities", Model: &model.UserDailyActivity{}},
 		{Key: "user_weekly_activities", Model: &model.UserWeeklyActivity{}},
 		{Key: "friend_requests", Model: &model.FriendRequest{}},
-		// 礼物和社区相关
 		{Key: "gifts", Model: &model.Gift{}},
 		{Key: "gift_records", Model: &model.GiftRecord{}},
 		{Key: "user_gift_stocks", Model: &model.UserGiftStock{}},
@@ -86,9 +81,9 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "game_npc_activities", Model: &model.GameNpcActivity{}},
 		{Key: "game_world_events", Model: &model.GameWorldEvent{}},
 		{Key: "tag_dictionary_entries", Model: &model.TagDictionaryEntry{}},
-		// 数字生命系统
 		{Key: "life_entities", Model: &model.LifeEntity{}},
 		{Key: "life_worlds", Model: &model.LifeWorld{}},
 		{Key: "life_event_logs", Model: &model.LifeEventLog{}},
+		{Key: "life_relationships", Model: &model.LifeRelationship{}},
 	}
 }
