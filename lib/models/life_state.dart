@@ -78,6 +78,8 @@ class LifeEntity {
         return '繁衍中';
       case 'dying':
         return '衰亡中';
+      case 'seeking_rest':
+        return '寻找休息处';
       default:
         return '停留中';
     }
@@ -159,7 +161,7 @@ class LifeEvent {
       desc: json['desc']?.toString() ?? json['description']?.toString() ?? '',
       x: _asDouble(json['x']),
       y: _asDouble(json['y']),
-      timestamp: _parseTimestamp(json['timestamp']),
+      timestamp: _parseTimestamp(json['timestamp'] ?? json['created_at'] ?? json['createdAt']),
     );
   }
 }
@@ -171,6 +173,7 @@ class LifeStateUpdate {
   final LifeWorldSummary summary;
   final List<Map<String, dynamic>> entityChanges;
   final List<LifeEvent> events;
+  final List<int> removedEntityIds;
 
   const LifeStateUpdate({
     required this.worldId,
@@ -178,6 +181,7 @@ class LifeStateUpdate {
     required this.summary,
     required this.entityChanges,
     required this.events,
+    this.removedEntityIds = const [],
   });
 
   factory LifeStateUpdate.fromJson(Map<String, dynamic> json) {
@@ -205,6 +209,15 @@ class LifeStateUpdate {
       }
     }
 
+    // 解析 removed_entity_ids（兼容 snake_case + camelCase）
+    final rawRemoved = source['removed_entity_ids'] ?? source['removedEntityIds'];
+    final removedIds = <int>[];
+    if (rawRemoved is List) {
+      for (final v in rawRemoved) {
+        removedIds.add(_asInt(v));
+      }
+    }
+
     return LifeStateUpdate(
       worldId: json['world_id']?.toString() ??
           json['worldId']?.toString() ??
@@ -219,6 +232,7 @@ class LifeStateUpdate {
               : LifeWorldSummary.empty,
       entityChanges: entities,
       events: events,
+      removedEntityIds: removedIds,
     );
   }
 }

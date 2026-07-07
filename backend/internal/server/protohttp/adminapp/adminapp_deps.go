@@ -1,4 +1,4 @@
-﻿package adminapphttp
+package adminapphttp
 
 import (
 	"context"

@@ -28,7 +28,7 @@ func NewStore(db *gorm.DB) lifebiz.Store {
 
 func (s *gormStore) ListEntities(ctx context.Context, worldID string) ([]model.LifeEntity, error) {
 	var entities []model.LifeEntity
-	err := s.db.WithContext(ctx).Where("world_id = ?", worldID).Find(&entities).Error
+	err := s.db.WithContext(ctx).Where("world_id = ? AND is_alive = ?", worldID, true).Find(&entities).Error
 	return entities, err
 }
 
@@ -40,7 +40,7 @@ func (s *gormStore) UpsertEntity(ctx context.Context, entity *model.LifeEntity) 
 				"world_id", "name", "emoji",
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
-				"target_entity_id", "last_action_at", "updated_at",
+				"target_entity_id", "is_alive", "last_action_at", "updated_at",
 			}),
 		}).
 		Create(entity).Error
@@ -57,7 +57,7 @@ func (s *gormStore) BatchUpsertEntities(ctx context.Context, entities []*model.L
 				"world_id", "name", "emoji",
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
-				"target_entity_id", "last_action_at", "updated_at",
+				"target_entity_id", "is_alive", "last_action_at", "updated_at",
 			}),
 		}).
 		Create(entities).Error
@@ -81,7 +81,7 @@ func (s *gormStore) UpsertWorld(ctx context.Context, world *model.LifeWorld) err
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "name"}},
-			DoUpdates: clause.AssignmentColumns([]string{"tick_count", "is_running", "updated_at"}),
+			DoUpdates: clause.AssignmentColumns([]string{"tick_count", "is_running", "grid_data", "updated_at"}),
 		}).
 		Create(world).Error
 }
@@ -117,4 +117,23 @@ func (s *gormStore) CleanupOldEventLogs(ctx context.Context, before time.Time) (
 		Where("created_at < ?", before).
 		Delete(&model.LifeEventLog{})
 	return result.RowsAffected, result.Error
+}
+
+// SoftDeleteEntity 软删除实体，设置 is_alive=false
+func (s *gormStore) SoftDeleteEntity(ctx context.Context, entityID uint) error {
+	return s.db.WithContext(ctx).
+		Model(&model.LifeEntity{}).
+		Where("id = ?", entityID).
+		Update("is_alive", false).Error
+}
+
+// UpdateWorldGridData 更新世界的生态网格序列化数据
+func (s *gormStore) UpdateWorldGridData(ctx context.Context, worldName string, gridData string) error {
+	return s.db.WithContext(ctx).
+		Model(&model.LifeWorld{}).
+		Where("name = ?", worldName).
+		Updates(map[string]interface{}{
+			"grid_data":  gridData,
+			"updated_at": time.Now(),
+		}).Error
 }

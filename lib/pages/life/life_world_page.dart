@@ -21,6 +21,10 @@ class _LifeWorldPageState extends State<LifeWorldPage>
   late final TabController _tabController;
   late final LifeProvider _lifeProvider;
 
+  // 反馈动画队列
+  final List<_FeedbackItem> _feedbacks = [];
+  int _feedbackKeyCounter = 0;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +38,155 @@ class _LifeWorldPageState extends State<LifeWorldPage>
     _lifeProvider.stopListening();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// 长按实体弹出操作菜单。
+  void _showEntityActionSheet(LifeEntity entity) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: MoeTokens.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final provider = ctx.read<LifeProvider>();
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 拖动指示条
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // 实体信息
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(entity.emoji,
+                          style: const TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entity.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: MoeTokens.titleText,
+                            ),
+                          ),
+                          Text(
+                            entity.actionLabel,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: MoeTokens.hintText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 20, indent: 20, endIndent: 20),
+                // 操作选项
+                ListTile(
+                  leading: const Icon(Icons.restaurant_menu,
+                      color: Colors.orange),
+                  title: const Text('喂食'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _performActionWithFeedback(provider, 'feed', entity);
+                  },
+                ),
+                ListTile(
+                  leading:
+                      const Icon(Icons.front_hand, color: Colors.pink),
+                  title: const Text('抚摸'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _performActionWithFeedback(provider, 'pet', entity);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline,
+                      color: MoeTokens.primary),
+                  title: const Text('查看详情'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LifeEntityDetailPage(entity: entity),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 执行操作并显示反馈动画。
+  Future<void> _performActionWithFeedback(
+    LifeProvider provider,
+    String action,
+    LifeEntity entity,
+  ) async {
+    final success = await provider.performAction(action, entity.id);
+    if (!mounted) return;
+    if (success) {
+      _showFeedback(action, entity);
+    } else if (provider.lastActionError != null) {
+      final isCooldown = provider.lastActionIsCooldown;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              if (isCooldown) ...[Icon(Icons.timer_outlined, size: 18, color: Colors.white), const SizedBox(width: 6)],
+              Expanded(child: Text(provider.lastActionError!)),
+            ],
+          ),
+          backgroundColor: isCooldown ? MoeTokens.warning : MoeTokens.danger,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      provider.clearActionError();
+    }
+  }
+
+  /// 在地图上显示反馈 emoji 动画。
+  void _showFeedback(String action, LifeEntity entity) {
+    final emoji = action == 'feed' ? '❤️' : '✨';
+    final key = _feedbackKeyCounter++;
+    setState(() {
+      _feedbacks.add(_FeedbackItem(
+        key: key,
+        emoji: emoji,
+        entityX: entity.x,
+        entityY: entity.y,
+      ));
+    });
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted) {
+        setState(() {
+          _feedbacks.removeWhere((f) => f.key == key);
+        });
+      }
+    });
   }
 
   @override
@@ -103,6 +256,24 @@ class _LifeWorldPageState extends State<LifeWorldPage>
       ),
       body: Column(
         children: [
+          if (!lifeProvider.isInitialized && lifeProvider.connected)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 12),
+                  Text(
+                    '正在连接世界...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: _WorldSummaryCard(
@@ -115,20 +286,38 @@ class _LifeWorldPageState extends State<LifeWorldPage>
             flex: 3,
             child: Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: LifeWorldMap(
-                entities: lifeProvider.entities,
-                onEntityTap: (entityId) {
-                  final entity = lifeProvider.entities
-                      .where((e) => e.id == entityId)
-                      .firstOrNull;
-                  if (entity != null) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => LifeEntityDetailPage(entity: entity),
-                      ),
-                    );
-                  }
-                },
+              child: Stack(
+                children: [
+                  // 地图（占据全部空间）
+                  Positioned.fill(
+                    child: LifeWorldMap(
+                      entities: lifeProvider.entities,
+                      onEntityTap: (entityId) {
+                        final entity = lifeProvider.entities
+                            .where((e) => e.id == entityId)
+                            .firstOrNull;
+                        if (entity != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  LifeEntityDetailPage(entity: entity),
+                            ),
+                          );
+                        }
+                      },
+                      onEntityLongPress: (entityId) {
+                        final entity = lifeProvider.entities
+                            .where((e) => e.id == entityId)
+                            .firstOrNull;
+                        if (entity != null) {
+                          _showEntityActionSheet(entity);
+                        }
+                      },
+                    ),
+                  ),
+                  // 反馈动画层
+                  ..._buildFeedbackOverlays(),
+                ],
               ),
             ),
           ),
@@ -204,6 +393,123 @@ class _LifeWorldPageState extends State<LifeWorldPage>
       ),
     );
   }
+
+  /// 构建反馈动画 overlay 列表。
+  List<Widget> _buildFeedbackOverlays() {
+    if (_feedbacks.isEmpty) return const [];
+
+    return [
+      Positioned.fill(
+        child: IgnorePointer(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // 地图区域水平 margin = 12（与 LifeWorldMap 的 margin 一致）
+              const double mapMarginH = 12;
+              final mapWidth = constraints.maxWidth - mapMarginH * 2;
+              final mapHeight = constraints.maxHeight;
+              const double worldW = 1280;
+              const double worldH = 720;
+              final xFactor = mapWidth / worldW;
+              final yFactor = mapHeight / worldH;
+
+              return Stack(
+                children: [
+                  for (final fb in _feedbacks)
+                    _ActionFeedbackOverlay(
+                      key: ValueKey(fb.key),
+                      emoji: fb.emoji,
+                      pixelX: (fb.entityX * xFactor) + mapMarginH,
+                      pixelY: fb.entityY * yFactor,
+                    ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+}
+
+/// 反馈动画数据项。
+class _FeedbackItem {
+  final int key;
+  final String emoji;
+  final double entityX;
+  final double entityY;
+
+  _FeedbackItem({
+    required this.key,
+    required this.emoji,
+    required this.entityX,
+    required this.entityY,
+  });
+}
+
+/// 操作反馈 emoji 上浮动画组件。
+class _ActionFeedbackOverlay extends StatefulWidget {
+  final String emoji;
+  final double pixelX;
+  final double pixelY;
+
+  const _ActionFeedbackOverlay({
+    super.key,
+    required this.emoji,
+    required this.pixelX,
+    required this.pixelY,
+  });
+
+  @override
+  State<_ActionFeedbackOverlay> createState() => _ActionFeedbackOverlayState();
+}
+
+class _ActionFeedbackOverlayState extends State<_ActionFeedbackOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacityAnim;
+  late final Animation<double> _offsetAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _opacityAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _offsetAnim = Tween<double>(begin: 0.0, end: -40.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Positioned(
+          left: widget.pixelX - 12,
+          top: widget.pixelY - 30 + _offsetAnim.value,
+          child: Opacity(
+            opacity: _opacityAnim.value.clamp(0.0, 1.0),
+            child: Text(
+              widget.emoji,
+              style: const TextStyle(fontSize: 24),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _WorldSummaryCard extends StatelessWidget {
@@ -256,7 +562,8 @@ class _WorldSummaryCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: isConnected
                       ? MoeTokens.success.withValues(alpha: 0.1)
@@ -268,7 +575,8 @@ class _WorldSummaryCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isConnected ? MoeTokens.success : MoeTokens.danger,
+                    color:
+                        isConnected ? MoeTokens.success : MoeTokens.danger,
                   ),
                 ),
               ),

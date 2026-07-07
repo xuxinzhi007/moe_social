@@ -2,6 +2,7 @@ package lifeapp
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -22,6 +23,11 @@ type AppService struct {
 	engine *lifebiz.LifeEngine
 	store  lifebiz.Store
 	hub    *lifebiz.LifeWSHub
+
+	// 生命周期管理
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // New creates a new life AppService.
@@ -32,7 +38,16 @@ func New(db *gorm.DB, config Config) *AppService {
 		cfg.TickInterval = time.Duration(config.TickInterval) * time.Second
 	}
 
-	s := &AppService{db: db, config: config, store: store}
+	// 使用可取消的 context，支持优雅关闭
+	ctx, cancel := context.WithCancel(context.Background())
+
+	s := &AppService{
+		db:     db,
+		config: config,
+		store:  store,
+		ctx:    ctx,
+		cancel: cancel,
+	}
 
 	// 创建 WS hub
 	hub := lifebiz.NewLifeWSHub()
@@ -45,12 +60,18 @@ func New(db *gorm.DB, config Config) *AppService {
 	// 将引擎注入 hub，供 subscribe 时发送世界快照
 	hub.SetEngine(engine)
 
-	// 启动引擎
-	// TODO: 当前使用 context.Background() 与 StartWorldRunner 模式保持一致，
-	// 后续应传入可取消 context（例如从 ServiceContext 生命周期派生），以支持优雅关闭。
-	lifebiz.StartLifeEngine(context.Background(), engine)
+	// 启动引擎（使用可取消 context，支持优雅关闭）
+	lifebiz.StartLifeEngine(ctx, engine)
 
 	return s
+}
+
+// Shutdown 优雅关闭：取消 context 并等待引擎和持久化 writer 完成最终 flush
+func (s *AppService) Shutdown() {
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.wg.Wait()
 }
 
 // Engine 暴露引擎供外部访问

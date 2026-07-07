@@ -11,13 +11,23 @@ import (
 const (
 	entityChanSize = 1000
 	eventChanSize  = 1000
+	deleteChanSize = 200
+	gridChanSize   = 10
 )
+
+// gridPersistRequest 生态网格持久化请求
+type gridPersistRequest struct {
+	worldName string
+	gridData  string
+}
 
 // PersistenceWriter 异步批量写入器
 type PersistenceWriter struct {
 	store    Store
 	entityCh chan *model.LifeEntity
 	eventCh  chan *model.LifeEventLog
+	deleteCh chan uint // 待软删除的实体 ID
+	gridCh   chan gridPersistRequest
 	config   LifeConfig
 }
 
@@ -27,6 +37,8 @@ func NewPersistenceWriter(store Store, config LifeConfig) *PersistenceWriter {
 		store:    store,
 		entityCh: make(chan *model.LifeEntity, entityChanSize),
 		eventCh:  make(chan *model.LifeEventLog, eventChanSize),
+		deleteCh: make(chan uint, deleteChanSize),
+		gridCh:   make(chan gridPersistRequest, gridChanSize),
 		config:   config,
 	}
 }
@@ -81,6 +93,24 @@ func (w *PersistenceWriter) EnqueueEvent(e *model.LifeEventLog) {
 	}
 }
 
+// EnqueueDeleteEntity 入队实体软删除请求（非阻塞）
+func (w *PersistenceWriter) EnqueueDeleteEntity(entityID uint) {
+	select {
+	case w.deleteCh <- entityID:
+	default:
+		moelog.Warnf("life: delete persist queue full, dropping delete for entity %d", entityID)
+	}
+}
+
+// EnqueueGridPersist 入队生态网格持久化请求（非阻塞）
+func (w *PersistenceWriter) EnqueueGridPersist(worldName string, gridData string) {
+	select {
+	case w.gridCh <- gridPersistRequest{worldName: worldName, gridData: gridData}:
+	default:
+		moelog.Warnf("life: grid persist queue full, dropping grid update for world %q", worldName)
+	}
+}
+
 func (w *PersistenceWriter) flush(ctx context.Context) {
 	// drain entityCh → BatchUpsertEntities
 	var entities []*model.LifeEntity
@@ -113,6 +143,36 @@ doneEvents:
 	if len(events) > 0 {
 		if err := w.store.BatchCreateEventLogs(ctx, events); err != nil {
 			moelog.Errorf("life: batch create %d event logs: %v", len(events), err)
+		}
+	}
+
+	// drain deleteCh → SoftDeleteEntity（逐个执行）
+	for {
+		select {
+		case id := <-w.deleteCh:
+			if err := w.store.SoftDeleteEntity(ctx, id); err != nil {
+				moelog.Errorf("life: soft delete entity %d: %v", id, err)
+			}
+		default:
+			goto doneDeletes
+		}
+	}
+doneDeletes:
+
+	// drain gridCh → UpdateWorldGridData（只取最新的一条）
+	var latestGrid *gridPersistRequest
+	for {
+		select {
+		case g := <-w.gridCh:
+			latestGrid = &g
+		default:
+			goto doneGrid
+		}
+	}
+doneGrid:
+	if latestGrid != nil {
+		if err := w.store.UpdateWorldGridData(ctx, latestGrid.worldName, latestGrid.gridData); err != nil {
+			moelog.Errorf("life: update world grid data for %q: %v", latestGrid.worldName, err)
 		}
 	}
 }

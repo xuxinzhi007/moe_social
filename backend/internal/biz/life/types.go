@@ -1,6 +1,9 @@
 package lifebiz
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // LifeAction represents a coarse-grained entity action.
 type LifeAction string
@@ -20,25 +23,27 @@ const (
 
 // LifeConfig controls the in-process life engine.
 type LifeConfig struct {
-	TickInterval   time.Duration
-	MaxEntities    int
-	WorldName      string
-	FlushInterval  time.Duration
-	FlushBatchSize int
-	GridWidth      int
-	GridHeight     int
+	TickInterval          time.Duration
+	MaxEntities           int
+	WorldName             string
+	FlushInterval         time.Duration
+	FlushBatchSize        int
+	GridWidth             int
+	GridHeight            int
+	ActionCooldownSeconds int // 用户操作冷却时间（秒）
 }
 
 // DefaultConfig returns the default engine config.
 func DefaultConfig() LifeConfig {
 	return LifeConfig{
-		TickInterval:   5 * time.Second,
-		MaxEntities:    50,
-		WorldName:      "default",
-		FlushInterval:  5 * time.Second,
-		FlushBatchSize: 100,
-		GridWidth:      32,
-		GridHeight:     18,
+		TickInterval:          5 * time.Second,
+		MaxEntities:           50,
+		WorldName:             "default",
+		FlushInterval:         5 * time.Second,
+		FlushBatchSize:        100,
+		GridWidth:             32,
+		GridHeight:            18,
+		ActionCooldownSeconds: 3,
 	}
 }
 
@@ -106,6 +111,31 @@ type TickBroadcast struct {
 
 // TickChanges contains incremental world updates.
 type TickChanges struct {
-	Entities []EntityDiff `json:"entities,omitempty"`
-	Events   []EventDiff  `json:"events,omitempty"`
+	Entities         []EntityDiff `json:"entities,omitempty"`
+	Events           []EventDiff  `json:"events,omitempty"`
+	RemovedEntityIDs []uint       `json:"removed_entity_ids,omitempty"` // 本轮死亡的实体 ID 列表
+}
+
+// SerializeGrid 将 WorldGrid 序列化为 JSON 字符串
+func SerializeGrid(grid *WorldGrid) (string, error) {
+	if grid == nil {
+		return "", nil
+	}
+	data, err := json.Marshal(grid)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// DeserializeGrid 从 JSON 字符串反序列化 WorldGrid
+func DeserializeGrid(data string) (*WorldGrid, error) {
+	if data == "" {
+		return nil, nil
+	}
+	var grid WorldGrid
+	if err := json.Unmarshal([]byte(data), &grid); err != nil {
+		return nil, err
+	}
+	return &grid, nil
 }

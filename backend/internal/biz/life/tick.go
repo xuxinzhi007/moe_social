@@ -8,17 +8,21 @@ import (
 	"backend/model"
 )
 
+// gridPersistInterval 每 N 个 tick 持久化一次生态网格
+const gridPersistInterval = 10
+
 // RunLifeTick executes one simulation tick.
 func RunLifeTick(ctx context.Context, engine *LifeEngine) {
-	snap := engine.cache.Get(engine.config.WorldName)
-	if snap == nil {
-		snap = engine.initWorld(ctx)
-		engine.cache.Set(engine.config.WorldName, snap)
+	oldSnap := engine.cache.Get(engine.config.WorldName)
+	if oldSnap == nil {
+		oldSnap = engine.initWorld(ctx)
+		engine.cache.Set(engine.config.WorldName, oldSnap)
 	}
 
-	mutableEntities := make(map[uint]*model.LifeEntity, len(snap.Entities))
+	// 构建新的实体副本（避免并发读写竞争）
+	mutableEntities := make(map[uint]*model.LifeEntity, len(oldSnap.Entities))
 	var maxEntityID uint
-	for k, v := range snap.Entities {
+	for k, v := range oldSnap.Entities {
 		cp := *v
 		mutableEntities[k] = &cp
 		if k > maxEntityID {
@@ -26,13 +30,27 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		}
 	}
 
-	if snap.Grid == nil {
-		snap.Grid = newWorldGrid(engine.config)
+	// 复用或创建网格
+	var grid *WorldGrid
+	if oldSnap.Grid != nil {
+		// 深拷贝网格，避免修改旧快照
+		gridCopy := *oldSnap.Grid
+		cellsCopy := make([][]WorldCell, len(oldSnap.Grid.Cells))
+		for y, row := range oldSnap.Grid.Cells {
+			rowCopy := make([]WorldCell, len(row))
+			copy(rowCopy, row)
+			cellsCopy[y] = rowCopy
+		}
+		gridCopy.Cells = cellsCopy
+		grid = &gridCopy
+	} else {
+		grid = newWorldGrid(engine.config)
 	}
-	updateWorldEcology(snap.Grid)
+	updateWorldEcology(grid)
 
 	var entityDiffs []EntityDiff
 	var eventDiffs []EventDiff
+	var removedEntityIDs []uint
 	birthCount := 0
 	deathCount := 0
 
@@ -43,8 +61,8 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 
 		decayAttributes(entity)
 
-		cellX, cellY := worldCellForEntity(snap.Grid, entity)
-		cell := &snap.Grid.Cells[cellY][cellX]
+		cellX, cellY := worldCellForEntity(grid, entity)
+		cell := &grid.Cells[cellY][cellX]
 		applyEnvironmentEffects(entity, cell)
 
 		if shouldDie(entity, cell) {
@@ -68,6 +86,10 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				PositionX:  entity.PositionX,
 				PositionY:  entity.PositionY,
 			})
+			// Bug1: 通过 PersistenceWriter 入队软删除，确保 DB 中标记 is_alive=false
+			engine.persistence.EnqueueDeleteEntity(entity.ID)
+			// Bug2: 收集死亡实体 ID，供前端感知并移除
+			removedEntityIDs = append(removedEntityIDs, entity.ID)
 			delete(mutableEntities, id)
 			deathCount++
 			continue
@@ -119,6 +141,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			child.LastActionAt = now
 			child.CreatedAt = now
 			child.UpdatedAt = now
+			child.IsAlive = true
 			mutableEntities[child.ID] = child
 			engine.persistence.EnqueueEntity(child)
 			entityDiffs = append(entityDiffs, EntityDiff{
@@ -158,23 +181,42 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		engine.persistence.EnqueueEntity(&entityCopy)
 	}
 
-	snap.Entities = mutableEntities
-	snap.TickCount++
-	snap.World.TickCount = snap.TickCount
-	snap.Summary = computeWorldSummary(snap.Grid, snap.Entities, birthCount, deathCount)
+	newTickCount := oldSnap.TickCount + 1
+	summary := computeWorldSummary(grid, mutableEntities, birthCount, deathCount)
+
+	// Bug4: 构建全新的 WorldSnapshot，然后通过 cache.Set() 原子替换，避免并发读写竞争
+	newSnap := &WorldSnapshot{
+		World:     oldSnap.World,
+		Entities:  mutableEntities,
+		Grid:      grid,
+		Summary:   summary,
+		TickCount: newTickCount,
+	}
+	newSnap.World.TickCount = newTickCount
+	engine.cache.Set(engine.config.WorldName, newSnap)
+
+	// Bug3: 每 gridPersistInterval 个 tick 持久化一次生态网格
+	if newTickCount%gridPersistInterval == 0 {
+		if gridJSON, err := SerializeGrid(grid); err == nil && gridJSON != "" {
+			engine.persistence.EnqueueGridPersist(engine.config.WorldName, gridJSON)
+		} else if err != nil {
+			moelog.Errorf("life: failed to serialize grid for persist: %v", err)
+		}
+	}
 
 	engine.broadcastMu.RLock()
 	fn := engine.broadcastFn
 	engine.broadcastMu.RUnlock()
-	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || snap.TickCount == 1) {
+	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || len(removedEntityIDs) > 0 || newTickCount == 1) {
 		fn(TickBroadcast{
 			Type:    "life_state",
 			WorldID: engine.config.WorldName,
-			Tick:    snap.TickCount,
-			Summary: snap.Summary,
+			Tick:    newTickCount,
+			Summary: summary,
 			Changes: TickChanges{
-				Entities: entityDiffs,
-				Events:   eventDiffs,
+				Entities:         entityDiffs,
+				Events:           eventDiffs,
+				RemovedEntityIDs: removedEntityIDs,
 			},
 		})
 	}
@@ -244,7 +286,21 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 		}
 	}
 
-	grid := newWorldGrid(e.config)
+	// Bug3: 尝试从 DB 恢复生态网格，若无则重新生成
+	var grid *WorldGrid
+	if world.GridData != "" {
+		restored, restoreErr := DeserializeGrid(world.GridData)
+		if restoreErr != nil {
+			moelog.Warnf("life: failed to restore grid from DB for world %q: %v, regenerating", e.config.WorldName, restoreErr)
+			grid = newWorldGrid(e.config)
+		} else {
+			grid = restored
+			moelog.Infof("life: restored grid from DB for world %q (%dx%d)", e.config.WorldName, grid.Width, grid.Height)
+		}
+	} else {
+		grid = newWorldGrid(e.config)
+	}
+
 	summary := computeWorldSummary(grid, entityMap, 0, 0)
 	return &WorldSnapshot{
 		World:     *world,
@@ -277,6 +333,7 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 			Hunger:        80,
 			Energy:        80,
 			Mood:          70,
+			IsAlive:       true,
 			CurrentAction: string(ActionIdle),
 			PositionX:     s.x,
 			PositionY:     s.y,
