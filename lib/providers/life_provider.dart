@@ -14,6 +14,7 @@ class LifeProvider extends ChangeNotifier {
   bool _disposed = false;
   final Map<int, LifeEntity> _entities = {};
   List<LifeEvent> _recentEvents = [];
+  final List<LifeRelationship> _relationships = [];
   int _tickCount = 0;
   bool _connected = false;
   bool _isInitialized = false;
@@ -44,6 +45,7 @@ class LifeProvider extends ChangeNotifier {
 
   List<LifeEntity> get entities => _entities.values.toList();
   List<LifeEvent> get recentEvents => List.unmodifiable(_recentEvents);
+  List<LifeRelationship> get relationships => List.unmodifiable(_relationships);
   int get tickCount => _tickCount;
   bool get connected => _connected;
   bool get isInitialized => _isInitialized;
@@ -62,6 +64,18 @@ class LifeProvider extends ChangeNotifier {
     _lastActionIsCooldown = false;
     notifyListeners();
   }
+
+  /// 获取指定实体的所有关系。
+  List<LifeRelationship> getRelationshipsForEntity(int entityId) {
+    return _relationships
+        .where((r) => r.entityId == entityId || r.targetId == entityId)
+        .toList();
+  }
+
+  /// 关系统计
+  int get friendCount => _relationships.where((r) => r.relationType == 'friend').length;
+  int get mateCount => _relationships.where((r) => r.relationType == 'mate').length;
+  int get rivalCount => _relationships.where((r) => r.relationType == 'rival').length;
 
   /// 连接 WebSocket，开始接收世界状态推送。
   void startListening() {
@@ -100,6 +114,24 @@ class LifeProvider extends ChangeNotifier {
       if (_entities.remove(removedId) != null) {
         debugPrint('LifeProvider: 移除已死亡实体 id=$removedId');
       }
+    }
+
+    // 合并 relationship 增量更新
+    for (final rel in update.relationshipChanges) {
+      final idx = _relationships.indexWhere(
+        (r) => r.entityId == rel.entityId && r.targetId == rel.targetId,
+      );
+      if (idx >= 0) {
+        _relationships[idx] = rel;
+      } else {
+        _relationships.add(rel);
+      }
+    }
+    // 移除已解除的关系
+    for (final removed in update.removedRelationships) {
+      _relationships.removeWhere(
+        (r) => r.entityId == removed['entity_id'] && r.targetId == removed['target_id'],
+      );
     }
 
     // 追加事件，保留最近 50 条
@@ -141,6 +173,9 @@ class LifeProvider extends ChangeNotifier {
         action: entity.action,
         x: entity.x,
         y: entity.y,
+        growthStage: entity.growthStage,
+        experience: entity.experience,
+        age: entity.age,
       );
     } else if (action == 'pet') {
       _entities[entityId] = LifeEntity(
@@ -153,6 +188,9 @@ class LifeProvider extends ChangeNotifier {
         action: entity.action,
         x: entity.x,
         y: entity.y,
+        growthStage: entity.growthStage,
+        experience: entity.experience,
+        age: entity.age,
       );
     }
     notifyListeners();

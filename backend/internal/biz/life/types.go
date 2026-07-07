@@ -88,6 +88,9 @@ type EntityDiff struct {
 	CurrentAction LifeAction `json:"action"`
 	PositionX     float64    `json:"x"`
 	PositionY     float64    `json:"y"`
+	Age           int        `json:"age"`
+	GrowthStage   string     `json:"growth_stage"`
+	Experience    float64    `json:"experience"`
 }
 
 // EventDiff is the wire format for world events.
@@ -98,6 +101,20 @@ type EventDiff struct {
 	Desc       string  `json:"desc"`
 	PositionX  float64 `json:"x"`
 	PositionY  float64 `json:"y"`
+}
+
+// RelationshipDiff is the wire format for relationship updates.
+type RelationshipDiff struct {
+	EntityID     uint    `json:"entity_id"`
+	TargetID     uint    `json:"target_id"`
+	RelationType string  `json:"relation_type"`
+	Affinity     float64 `json:"affinity"`
+}
+
+// RemovedRelationship represents a dissolved relationship.
+type RemovedRelationship struct {
+	EntityID uint `json:"entity_id"`
+	TargetID uint `json:"target_id"`
 }
 
 // TickBroadcast is sent to REST snapshots and WebSocket subscribers.
@@ -111,9 +128,11 @@ type TickBroadcast struct {
 
 // TickChanges contains incremental world updates.
 type TickChanges struct {
-	Entities         []EntityDiff `json:"entities,omitempty"`
-	Events           []EventDiff  `json:"events,omitempty"`
-	RemovedEntityIDs []uint       `json:"removed_entity_ids,omitempty"` // 本轮死亡的实体 ID 列表
+	Entities             []EntityDiff          `json:"entities,omitempty"`
+	Events               []EventDiff           `json:"events,omitempty"`
+	RemovedEntityIDs     []uint                `json:"removed_entity_ids,omitempty"`
+	Relationships        []RelationshipDiff    `json:"relationships,omitempty"`
+	RemovedRelationships []RemovedRelationship `json:"removed_relationships,omitempty"`
 }
 
 // SerializeGrid 将 WorldGrid 序列化为 JSON 字符串

@@ -1,6 +1,7 @@
 package lifebiz
 
 import (
+	"math"
 	"math/rand"
 
 	"backend/model"
@@ -16,9 +17,10 @@ const (
 )
 
 func decayAttributes(e *model.LifeEntity) {
-	e.Hunger = clamp(e.Hunger-hungerDecayRate, 0, 100)
-	e.Energy = clamp(e.Energy-energyDecayRate, 0, 100)
-	e.Mood = clamp(e.Mood-moodDecayRate, 0, 100)
+	maxStat := GetMaxStat(e.GrowthStage)
+	e.Hunger = clamp(e.Hunger-ApplyGrowthDecayMultiplier(e.GrowthStage, hungerDecayRate), 0, maxStat)
+	e.Energy = clamp(e.Energy-ApplyGrowthDecayMultiplier(e.GrowthStage, energyDecayRate), 0, maxStat)
+	e.Mood = clamp(e.Mood-ApplyGrowthDecayMultiplier(e.GrowthStage, moodDecayRate), 0, maxStat)
 }
 
 func applyEnvironmentEffects(e *model.LifeEntity, cell *WorldCell) {
@@ -57,6 +59,61 @@ func decideAction(e *model.LifeEntity) LifeAction {
 	if e.Hunger < 26 && e.Energy > 18 {
 		return ActionSeekingFood
 	}
+	if e.Mood < 28 {
+		return ActionWandering
+	}
+	if rand.Float64() < 0.18 {
+		return ActionWalking
+	}
+	return ActionIdle
+}
+
+// decideActionWithRelations 关系感知的行为决策
+func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.LifeEntity, rels []*model.LifeRelationship) LifeAction {
+	// 基础需求优先
+	if e.Energy < 15 {
+		return ActionSleeping
+	}
+	if e.Hunger < 26 && e.Energy > 18 {
+		return ActionSeekingFood
+	}
+
+	// 有对手在附近 → 远离对手
+	rivalID, rivalDist := FindNearbyRival(e, entities, rels)
+	if rivalID > 0 && rivalDist < 120 {
+		rival := entities[rivalID]
+		if rival != nil {
+			// 向远离对手的方向移动
+			dx := e.PositionX - rival.PositionX
+			dy := e.PositionY - rival.PositionY
+			dist := math.Sqrt(dx*dx + dy*dy)
+			if dist > 0 {
+				e.PositionX = clamp(e.PositionX+(dx/dist)*30, 0, worldWidth)
+				e.PositionY = clamp(e.PositionY+(dy/dist)*30, 0, worldHeight)
+			}
+			return ActionWalking
+		}
+	}
+
+	// 有朋友/伴侣在附近 → 倾向于走向对方
+	friendID, friendDist := FindNearbyFriend(e, entities, rels)
+	if friendID > 0 && friendDist > 40 && friendDist < 200 {
+		friend := entities[friendID]
+		if friend != nil {
+			// 向朋友移动
+			dx := friend.PositionX - e.PositionX
+			dy := friend.PositionY - e.PositionY
+			dist := math.Sqrt(dx*dx + dy*dy)
+			if dist > 0 {
+				e.PositionX = clamp(e.PositionX+(dx/dist)*25, 0, worldWidth)
+				e.PositionY = clamp(e.PositionY+(dy/dist)*25, 0, worldHeight)
+			}
+			e.Mood = clamp(e.Mood+0.3, 0, 100)
+			return ActionTalking
+		}
+	}
+
+	// 低情绪时寻求漫游
 	if e.Mood < 28 {
 		return ActionWandering
 	}

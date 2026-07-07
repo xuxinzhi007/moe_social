@@ -28,7 +28,7 @@
 | **Service** | `service/life/life.go` | AppService 组装 Store→Hub→Engine，对外暴露统一接口 |
 | **Biz** | `biz/life/` | 核心引擎逻辑：engine、tick、behavior、ecology、persistence、world_cache、ws_hub、store（接口）、types |
 | **Data** | `data/life/store.go` | GORM 实现，负责 MySQL 读写 |
-| **Model** | `model/` | `life_entity.go`、`life_event_log.go`、`life_world.go` |
+| **Model** | `model/` | `life_entity.go`、`life_event_log.go`、`life_world.go`、`life_relationship.go` |
 | **Wire** | `wire_life.go` + `api_life.go` | Feature Flag 控制 + 依赖注入 |
 
 ### 2.2 前端分层
@@ -37,6 +37,7 @@
 |------|------|------|
 | **Pages** | `life_world_page.dart` | 世界主页（连接状态、摘要卡、地图、Tab） |
 | | `life_entity_detail.dart` | 实体详情页 |
+| | `life_relationship_page.dart` | 蛛网式关系可视化页面 |
 | **Widgets** | `life_world_map.dart` | 2D 世界地图渲染 |
 | | `life_entity_sprite.dart` | AnimatedPositioned 精灵渲染 |
 | | `life_event_feed.dart` | 事件流（带动画入场） |
@@ -89,10 +90,12 @@ Mood < 28         → Wander（漫游）
 **死亡条件：**
 - Hunger ≤ 2 或 Energy ≤ 2 → 必定死亡
 - Danger > 92 时 → 8% 概率死亡
+- 老年阶段（elder）`age_ticks >= max_age_ticks` → 自然死亡
 
 **繁殖条件：**
 - Energy > 72 且 Hunger > 68 且 Mood > 74
-- 额外 2.5% 概率触发
+- 仅成年（adult）阶段可繁殖
+- 额外 2.5% 概率触发（mate 关系概率翻倍）
 - 世界实体上限 50
 
 ### 3.5 WebSocket 协议
@@ -123,6 +126,16 @@ Mood < 28         → Wander（漫游）
 - ✅ WebSocket Hub（按世界广播）
 - ✅ REST API（4 端点）
 - ✅ Feature Flag（`life_engine_enabled`）
+- ✅ 实体成长与进化系统（4 阶段：幼年→少年→成年→老年，经验积累、属性上限/衰减修正、老年自然死亡）
+- ✅ 社交关系网络系统（friend/rival/mate 三种关系，亲密度机制，关系形成/衰减/升级/解除）
+- ✅ 用户操作端点（`POST /api/life/action`：feed/pet，含冷却与 429 响应）
+- ✅ 社交关系 REST API（`GET /api/life/relationships`）
+- ✅ 关系影响行为决策（趋向朋友、远离对手）
+- ✅ mate 关系繁殖概率翻倍
+- ✅ WorldGrid 持久化（每 10 tick 序列化到 DB）
+- ✅ 死亡实体 DB 软删除（`is_alive` 字段）
+- ✅ WorldSnapshot 原子替换（消除竞态）
+- ✅ 优雅关闭支持（可取消 context + Shutdown）
 
 ### 前端
 
@@ -133,120 +146,59 @@ Mood < 28         → Wander（漫游）
 - ✅ WebSocket 自动重连（指数退避 3s→6s→12s→…→10s 上限）
 - ✅ 双格式 JSON 兼容（snake_case + camelCase）
 - ✅ Feature Flag 入口（`showLifeEngine`）
+- ✅ 用户操作交互（喂食/抚摸按钮 + 地图长按菜单）
+- ✅ 操作反馈动画（❤️/✨ 上浮）
+- ✅ 冷却温和提示（琥珀色 vs 红色）
+- ✅ 成长阶段 UI（阶段标签、进度条、年龄显示、精灵大小/透明度变化）
+- ✅ 蛛网式关系可视化页面（SpiderWebPainter + 力导向布局 + InteractiveViewer）
+- ✅ 成长事件金色高亮
+- ✅ 社交事件绿色高亮
+- ✅ 首次连接 Loading 态
 
 ---
 
-## 5. 发现的 Bug
+## 5. 发现的 Bug（均已修复）
 
-### 5.1 严重 Bug
+### 5.1 ~~严重 Bug~~（已修复）
 
-#### Bug #1：死亡实体前端永不消失
+#### ~~Bug #1：死亡实体前端永不消失~~ ✅ 已修复
 
 - **现象**：实体死亡后，其精灵仍永久显示在地图界面上，不会消失。
-- **位置**：`tick.go` + `life_provider.dart`
-- **根因分析**：
+- **修复方式**：后端 `TickBroadcast` 增加 `removed_entity_ids` 字段，死亡时将 ID 加入列表；前端 `_onStateUpdate` 读取该列表并从 `_entities` Map 中移除对应条目。
 
-  后端 `tick.go` 第 71 行在实体死亡时执行 `delete(mutableEntities, id)` 从内存 map 中移除，但广播的 `TickBroadcast` 中仅包含存活实体的 `EntityDiff`（第 82–92 行），**不包含任何"已移除实体 ID"字段**。
-
-  前端 `life_provider.dart` 的 `_onStateUpdate` 方法（第 59–73 行）只做**增量合并**——遍历 `entityChanges` 更新 `_entities` Map，**没有任何删除逻辑**。由于死亡实体不再出现在增量更新中，前端 `_entities[id]` 永远不会被移除，导致死亡实体永远残留在地图上。
-
-- **修复方向**：
-  1. 后端 `TickBroadcast` 增加 `removed_entity_ids []uint` 字段，在死亡时将 ID 加入列表。
-  2. 前端 `_onStateUpdate` 中读取 `removed_entity_ids`，从 `_entities` Map 中移除对应条目。
-
-#### Bug #2：死亡实体未从 DB 删除
+#### ~~Bug #2：死亡实体未从 DB 删除~~ ✅ 已修复
 
 - **现象**：服务重启后，之前死亡的实体会重新出现在世界中（"复活"）。
-- **位置**：`tick.go`
-- **根因分析**：
+- **修复方式**：Store 接口新增 `DeleteEntity` 方法，Data 层实现软删除（设置 `is_alive = false`）；死亡逻辑中调用 `store.DeleteEntity` 同步标记。
 
-  实体死亡时（`tick.go` 第 50–73 行），代码只执行了两个操作：
-  1. 入队一条 `death` 事件日志（`EnqueueEvent`）
-  2. 从内存 `mutableEntities` map 中 `delete` 该实体
+#### ~~Bug #3：WorldGrid 不持久化~~ ✅ 已修复
 
-  **但从未调用任何 DB 删除操作**（如 `store.DeleteEntity(ctx, id)`）。由于 `initWorld`（第 227 行）在启动时通过 `store.ListEntities` 从数据库加载所有实体，而死亡的实体仍留在 DB 中，重启后它们会被重新加载到内存中，造成"复活"。
+- **现象**：服务重启后，生态网格数据全部丢失。
+- **修复方式**：WorldGrid 每 10 tick 序列化（JSON）写入 `life_worlds` 表的 `grid_data` 字段；`initWorld` 启动时优先从 DB 加载 Grid，找不到时再创建新 Grid。
 
-- **修复方向**：
-  1. 在死亡逻辑中调用 `engine.persistence.EnqueueDeleteEntity(entity.ID)` 或直接同步删除。
-  2. 或者在 `Store` 接口增加 `DeleteEntity(ctx, id)` 方法，Data 层实现软删除/硬删除。
+### 5.2 ~~中等 Bug~~（已修复）
 
-#### Bug #3：WorldGrid 不持久化
+#### ~~Bug #4：WorldSnapshot 并发竞争~~ ✅ 已修复
 
-- **现象**：服务重启后，生态网格数据（食物分布、危险区域、地形状态）全部丢失，回到初始状态。
-- **位置**：`tick.go` + `world_cache.go`
-- **根因分析**：
+- **现象**：潜在数据竞争，Tick goroutine 与 WebSocket goroutine 同时读写 Snapshot。
+- **修复方式**：`RunLifeTick` 构建全新 `WorldSnapshot` 并通过 `cache.Set()` 原子替换，而非原地修改指针字段，消除竞态。
 
-  `WorldGrid`（`types.go` 第 55–59 行）是一个纯内存结构，存储在 `WorldSnapshot.Grid` 中。每个 Tick 中 `updateWorldEcology` 对 Grid 的修改（食物再生、危险波动、地形切换）**只影响内存数据**，从未被序列化到数据库。
+### 5.3 ~~轻微 Bug~~（已修复）
 
-  当服务重启时，`initWorld`（`tick.go` 第 247 行）调用 `newWorldGrid(engine.config)` 创建全新空白 Grid，所有生态模拟进展丢失。
-
-- **修复方向**：
-  1. 新增 `life_world_grids` 表，存储序列化 Grid JSON。
-  2. 在 `initWorld` 中尝试从 DB 加载 Grid，找不到时再创建新 Grid。
-  3. 定期（如每 N 个 Tick）将 Grid 入队持久化。
-
-### 5.2 中等 Bug
-
-#### Bug #4：WorldSnapshot 并发竞争
-
-- **现象**：潜在数据竞争，极端情况下可能导致 panic。
-- **位置**：`tick.go` vs `ws_hub.go`
-- **根因分析**：
-
-  `RunLifeTick` 在 `tick.go` 第 161 行执行 `snap.Entities = mutableEntities`，直接修改了 `WorldSnapshot` 的 `Entities` 字段（指针赋值）。而 `sendSnapshot`（`ws_hub.go` 第 147 行）通过 `engine.GetWorldCache().Get(worldID)` 获取同一个 `*WorldSnapshot` 指针，然后遍历 `snap.Entities`（第 162 行）。
-
-  虽然 `WorldCache` 的 `Get`/`Set` 操作有 `sync.RWMutex` 保护，但 **`Get` 返回的是指针**——一旦获取到指针后，对 `snap.Entities` 字段的读写就不再受锁保护。Tick goroutine 写入 `snap.Entities` 的同时，WebSocket goroutine 可能在读取 `snap.Entities`，形成 **data race**。
-
-  注意：当前代码中 Tick 使用 `mutableEntities` 做深拷贝操作，且赋值是原子级别的指针替换，实际触发 panic 的概率较低，但在 Go race detector 下会被检出。
-
-- **修复方向**：
-  1. `sendSnapshot` 中获取 snap 后，再做一次 `Entities` map 的浅拷贝。
-  2. 或者让 `RunLifeTick` 构建一个全新的 `WorldSnapshot` 并通过 `cache.Set()` 替换，而非原地修改。
-
-### 5.3 轻微 Bug
-
-#### Bug #5：onConnected 重复触发
+#### ~~Bug #5：onConnected 重复触发~~ ✅ 已修复
 
 - **现象**：每次收到 WebSocket 消息时都会触发 `onConnected` 回调，导致不必要的 widget rebuild。
-- **位置**：`life_ws_service.dart` 第 172–174 行
-- **根因分析**：
+- **修复方式**：增加 `_notifiedConnected` 标志位，仅在首次连接成功时触发 `onConnected`，后续消息不再重复调用。
 
-  `_handleRawMessage` 中判断 `if (!_connecting)` 就调用 `onConnected?.call()`。由于 `_connecting` 在 `connect()` 的 `finally` 块中被设为 `false`（第 138 行），**连接建立后 `_connecting` 永远为 `false`**，因此每收到一条消息都会触发 `onConnected`。
-
-  `life_provider.dart` 中 `onConnected` 回调（第 23–27 行）会调用 `notifyListeners()`，导致所有依赖该 Provider 的 widget 重新 build。
-
-- **修复方向**：
-  1. 增加 `_notifiedConnected` 标志位，只在首次从 false→true 时触发。
-  2. 或者在 `connect()` 成功建立连接后立即调用 `onConnected`，消息处理中不再重复触发。
-
-#### Bug #6：事件时间戳不准确
+#### ~~Bug #6：事件时间戳不准确~~ ✅ 已修复
 
 - **现象**：前端事件的时间戳全部是消息到达时间，而非服务端实际发生时间。
-- **位置**：`types.go` + `life_state.dart`
-- **根因分析**：
+- **修复方式**：后端 `EventDiff` 增加 `Timestamp` 字段，tick 处理时填充服务端时间；前端已有双格式解析逻辑，无需改动。
 
-  后端 `EventDiff` 结构（`types.go` 第 89–96 行）**没有 `timestamp` 字段**。前端 `LifeEvent.fromJson`（`life_state.dart` 第 152–164 行）尝试解析 `json['timestamp']`，但后端从未发送该字段，所以 `_parseTimestamp(nil)` 始终 fallback 到 `DateTime.now()`（第 247 行）。
+#### ~~Bug #7：seeking_rest 无中文标签~~ ✅ 已修复
 
-  这意味着所有事件的时间戳反映的是**前端收到消息的时刻**，而非服务端 Tick 处理的时刻，在消息延迟或批量到达时时间戳不准确。
-
-- **修复方向**：
-  1. 后端 `EventDiff` 增加 `Timestamp time.Time` 字段。
-  2. 前端 `LifeEvent.fromJson` 已有双格式兼容逻辑，无需改动。
-
-#### Bug #7：seeking_rest 无中文标签
-
-- **现象**：当实体处于 `seeking_rest` 行为状态时，前端 fallback 显示默认的"停留中"而非"寻找休息处"。
-- **位置**：`life_state.dart` 第 63–84 行
-- **根因分析**：
-
-  `LifeEntity.actionLabel` 的 switch 语句中列出了 8 种行为的中文映射，但**缺少 `seeking_rest` 的 case**。后端 `types.go` 第 14 行定义了 `ActionSeekingRest LifeAction = "seeking_rest"`，且 `tick.go` 第 196 行有对应的中文描述 `"在寻找安全角落"`，但前端 `actionLabel` 遗漏了该映射，导致进入 `default` 分支显示"停留中"。
-
-- **修复方向**：
-  在 `actionLabel` 的 switch 中增加：
-  ```dart
-  case 'seeking_rest':
-    return '寻找休息处';
-  ```
+- **现象**：`seeking_rest` 行为状态 fallback 显示"停留中"而非"寻找休息处"。
+- **修复方式**：前端 `actionLabel` switch 中补充 `case 'seeking_rest': return '寻找休息处';`。
 
 ---
 
@@ -254,7 +206,6 @@ Mood < 28         → Wander（漫游）
 
 | 功能 | 现状 | 影响 |
 |------|------|------|
-| **用户交互操作** | `POST /api/life/action` 返回 501 Not Implemented | 用户无法对实体执行任何操作 |
 | **Proto 定义** | Life 域无 `.proto` 文件 | 唯一缺失 Proto 的模块，无法使用 gRPC |
 | **WS 鉴权** | `CheckOrigin` 始终返回 `true`，无 token 校验 | 任意来源可建立 WS 连接 |
 | **多世界支持** | `worldId` 硬编码为 `"default"` | 无法运行多个独立世界 |
@@ -274,18 +225,15 @@ Mood < 28         → Wander（漫游）
 | 广播并发 | `BroadcastState` 为每个 member 起 goroutine | 使用 worker pool 限制并发数 |
 | 持久化丢弃 | channel 满时直接丢弃 | 保留脏标记，下次 flush 时重试 |
 | flush 失败处理 | 失败仅 log，数据丢失 | 失败后将数据放回队列或保留脏标记 |
-| 生命周期 | `context.Background()` 用于 DB 操作 | 改用服务生命周期 context |
 | 代码风格 | `persistence.go` 使用 `goto` 跳出循环 | 改为 `for` + `select` + `break` 模式 |
-| 测试覆盖 | 无单元测试 | 补充 engine、behavior、ecology 测试 |
+| 测试覆盖 | 无单元测试 | 补充 engine、behavior、ecology、growth、social 测试 |
 
 ### 7.2 前端优化
 
 | 问题 | 当前实现 | 建议 |
 |------|---------|------|
-| 实体删除 | `_entities` Map 无删除逻辑 | 配合 `removed_entity_ids` 支持删除 |
 | Provider 生命周期 | `dispose` 设置标志位但不主动断连 | `dispose` 中主动调用 `_wsService.disconnect()` |
 | 颜色硬编码 | 使用硬编码颜色值 | 替换为主题 Token（`Theme.of(context)`） |
-| 地图交互 | 固定尺寸渲染 | 增加 `InteractiveViewer` 支持缩放/平移 |
 | 事件列表 | 详情页事件直接渲染 | 改用 `ListView.builder` 提升性能 |
 | 路由 | 硬编码导航 | 统一命名路由 |
 | 测试覆盖 | 无 Widget 测试 | 补充关键组件测试 |
@@ -294,39 +242,92 @@ Mood < 28         → Wander（漫游）
 
 ## 8. 执行路线图
 
-### 第 1 周（P0）— Bug 修复冲刺
+### 第 1 周（P0）— Bug 修复冲刺 ✅ 已完成
 
-| 优先级 | 任务 | 预估工时 |
-|--------|------|---------|
-| P0-1 | 死亡实体前后端同步（增加 `removed_entity_ids` + 前端删除逻辑） | 4h |
-| P0-2 | 死亡实体 DB 删除（Store 增加 DeleteEntity + tick 调用） | 2h |
-| P0-3 | WorldGrid 持久化（新建表 + 序列化/反序列化） | 4h |
-| P0-4 | Snapshot 竞态修复（构建新 Snapshot 替换原地修改） | 2h |
-| P0-5 | 前端小 Bug 修复（onConnected 重复、seeking_rest 标签） | 1h |
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P0-1 | 死亡实体前后端同步（增加 `removed_entity_ids` + 前端删除逻辑） | ✅ 已完成 |
+| P0-2 | 死亡实体 DB 删除（Store 增加 DeleteEntity + tick 调用） | ✅ 已完成 |
+| P0-3 | WorldGrid 持久化（序列化到 life_worlds 表） | ✅ 已完成 |
+| P0-4 | Snapshot 竞态修复（构建新 Snapshot 原子替换） | ✅ 已完成 |
+| P0-5 | 前端小 Bug 修复（onConnected 重复、seeking_rest 标签、时间戳） | ✅ 已完成 |
 
-### 第 2 周（P1）— 数据层 + API
+### 第 2 周（P1）— 数据层 + API ✅ 已完成
 
-| 优先级 | 任务 | 预估工时 |
-|--------|------|---------|
-| P1-1 | 实现 `POST /api/life/action` 端点 | 6h |
-| P1-2 | Store 查询扩展（分页、筛选、排序） | 4h |
-| P1-3 | EventLog TTL 清理（定期归档/删除旧事件） | 2h |
-| P1-4 | 数据库迁移脚本 | 2h |
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P1-1 | 实现 `POST /api/life/action` 端点（feed/pet） | ✅ 已完成 |
+| P1-2 | 社交关系 REST API（`GET /api/life/relationships`） | ✅ 已完成 |
+| P1-3 | 实体成长系统后端（growth.go） | ✅ 已完成 |
+| P1-4 | 社交关系系统后端（social.go） | ✅ 已完成 |
 
-### 第 3 周（P1 下）— 前端打磨 + 安全
+### 第 3 周（P1 下）— 前端打磨 + 安全 ✅ 已完成
 
-| 优先级 | 任务 | 预估工时 |
-|--------|------|---------|
-| P1-5 | Loading 态 + 主题 Token 替换 | 3h |
-| P1-6 | WebSocket 鉴权（token 校验 + Origin 检查） | 4h |
-| P1-7 | 补充后端单元测试 + 前端 Widget 测试 | 6h |
+| 优先级 | 任务 | 状态 |
+|--------|------|------|
+| P1-5 | 用户操作交互 UI + 反馈动画 + 冷却提示 | ✅ 已完成 |
+| P1-6 | 成长阶段 UI（标签、进度条、精灵变化） | ✅ 已完成 |
+| P1-7 | 蛛网式关系可视化页面 | ✅ 已完成 |
+| P1-8 | 首次连接 Loading 态 + 事件高亮 | ✅ 已完成 |
 
 ### 远期（P2）— 功能演进
 
 | 任务 | 说明 |
 |------|------|
 | Proto 定义补全 | 为 Life 域添加 protobuf 定义，支持 gRPC |
+| WS 鉴权 | WebSocket 连接增加 JWT token 校验 |
+| 多世界支持 | 解除 worldId 硬编码，支持创建/切换世界 |
+| 历史回放 | 基于 EventLog 实现时间轴回放 |
 | 角色体系迁移 | 实体从简单属性系统迁移到角色/职业体系 |
 | 背包/道具系统 | 实体可持有物品，影响属性和行为 |
-| 历史回放 | 基于 EventLog 实现时间轴回放 |
-| 多世界支持 | 解除 worldId 硬编码，支持创建/切换世界 |
+
+---
+
+## 9. 本次会话已实现总结
+
+### 阶段一：用户交互深化 ✅ 已完成
+
+**核心交付物：**
+- 前端：实体详情页喂食/抚摸按钮、地图长按操作菜单、操作反馈浮动动画（❤️/✨）、冷却温和提示（琥珀色/红色双色态）
+- 后端：`POST /api/life/action` 端点实现 feed/pet 两种操作（含冷却限制与 429 响应）、操作事件日志
+- 首次连接 Loading 态
+
+### 阶段二：实体成长与进化 ✅ 已完成
+
+**核心交付物：**
+- 后端：4 阶段成长系统（幼年→少年→成年→老年），`growth.go` 封装成长阶段逻辑；经验积累机制（每 tick +1，操作额外奖励）；属性上限/衰减随阶段修正；老年自然死亡（`is_alive` 软删除）；成长事件日志（`growth` 类型）
+- 前端：成长阶段标签、经验进度条、年龄显示、精灵大小/透明度随阶段变化、成长事件金色高亮
+
+### 阶段三：社交关系网络 ✅ 已完成
+
+**核心交付物：**
+- 后端：`social.go` 封装社交关系逻辑；friend/rival/mate 三种关系类型；亲密度机制（距离检测 + 同区域积累 + 衰减）；关系形成/升级/解除自动判定；关系影响行为决策（趋向朋友、远离对手）；mate 关系繁殖概率翻倍；`GET /api/life/relationships` REST API
+- 前端：蛛网式关系可视化页面（`SpiderWebPainter` + 力导向布局 + `InteractiveViewer`），社交事件绿色高亮
+
+---
+
+## 10. 新增数据表
+
+### life_relationships
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `uint` | 主键 |
+| `world_id` | `string(64)` | 所属世界 ID |
+| `entity_id` | `uint` | 实体 ID |
+| `target_id` | `uint` | 目标实体 ID |
+| `relation_type` | `string(16)` | 关系类型：friend/rival/mate |
+| `affinity` | `float64` | 亲密度（0-100） |
+| `created_at` | `time.Time` | 创建时间 |
+| `updated_at` | `time.Time` | 更新时间 |
+
+---
+
+## 11. 新增文件
+
+| 文件路径 | 说明 |
+|----------|------|
+| `backend/internal/biz/life/growth.go` | 成长阶段系统（阶段定义、经验阈值、属性修正、成长触发） |
+| `backend/internal/biz/life/social.go` | 社交关系系统（亲密度计算、关系形成/衰减/升级/解除、行为影响） |
+| `backend/model/life_relationship.go` | 关系数据模型（LifeRelationship 结构体 + GORM tag） |
+| `lib/pages/life/life_relationship_page.dart` | 蛛网式关系可视化页面（SpiderWebPainter + 力导向布局） |

@@ -27,4 +27,12 @@ type Store interface {
 	BatchCreateEventLogs(ctx context.Context, logs []*model.LifeEventLog) error
 	ListRecentEventLogs(ctx context.Context, worldID string, limit int) ([]model.LifeEventLog, error)
 	CleanupOldEventLogs(ctx context.Context, before time.Time) (int64, error)
+
+	// 社交关系
+	UpsertRelationship(ctx context.Context, rel *model.LifeRelationship) error
+	BatchUpsertRelationships(ctx context.Context, rels []*model.LifeRelationship) error
+	ListRelationshipsByWorld(ctx context.Context, worldID string) ([]*model.LifeRelationship, error)
+	ListRelationshipsByEntity(ctx context.Context, entityID uint) ([]*model.LifeRelationship, error)
+	DeleteRelationship(ctx context.Context, id uint) error
+	BatchDeleteRelationships(ctx context.Context, ids []uint) error
 }

@@ -7,6 +7,7 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_feed.dart';
 import '../../widgets/life/life_world_map.dart';
 import 'life_entity_detail.dart';
+import 'life_relationship_page.dart';
 
 /// 数字生命世界观察主页。
 class LifeWorldPage extends StatefulWidget {
@@ -221,6 +222,15 @@ class _LifeWorldPageState extends State<LifeWorldPage>
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.hub_outlined, size: 20),
+            tooltip: '关系网络',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const LifeRelationshipPage(),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Row(
@@ -832,6 +842,48 @@ class _EntityCard extends StatelessWidget {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 2),
+            // 成长阶段小标签
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: entity.growthStageColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: entity.growthStageColor.withValues(alpha: 0.3),
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                entity.growthStageLabel,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: entity.growthStageColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            // 成长阶段小标签
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: entity.growthStageColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: entity.growthStageColor.withValues(alpha: 0.3),
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                entity.growthStageLabel,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: entity.growthStageColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

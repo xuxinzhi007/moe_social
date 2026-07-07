@@ -2,6 +2,8 @@ package lifebiz
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"time"
 
 	"backend/internal/platform/moelog"
@@ -28,6 +30,13 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		if k > maxEntityID {
 			maxEntityID = k
 		}
+	}
+
+	// 拷贝关系列表，避免并发问题
+	currentRels := make([]*model.LifeRelationship, len(oldSnap.Relationships))
+	for i, r := range oldSnap.Relationships {
+		rc := *r
+		currentRels[i] = &rc
 	}
 
 	// 复用或创建网格
@@ -60,6 +69,40 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		}
 
 		decayAttributes(entity)
+
+		// 经验积累与年龄增长
+		entity.Experience += 1.0
+		entity.Age += 1
+
+		// 成长检测
+		if nextStage, shouldGrow := ShouldGrow(entity.GrowthStage, entity.Experience); shouldGrow {
+			entity.GrowthStage = nextStage
+			evt := &model.LifeEventLog{
+				WorldID:     engine.config.WorldName,
+				EntityID:    entity.ID,
+				EntityType:  entity.Name,
+				EventType:   "growth",
+				Description: fmt.Sprintf("%s进入了%s期！", entity.Name, GrowthStageNames[nextStage]),
+				PositionX:   entity.PositionX,
+				PositionY:   entity.PositionY,
+				CreatedAt:   time.Now(),
+			}
+			engine.persistence.EnqueueEvent(evt)
+			eventDiffs = append(eventDiffs, EventDiff{
+				EntityID:   entity.ID,
+				EntityType: entity.Name,
+				EventType:  "growth",
+				Desc:       evt.Description,
+				PositionX:  entity.PositionX,
+				PositionY:  entity.PositionY,
+			})
+		}
+
+		// 属性上限限制（根据成长阶段）
+		maxStat := GetMaxStat(entity.GrowthStage)
+		entity.Hunger = clamp(entity.Hunger, 0, maxStat)
+		entity.Energy = clamp(entity.Energy, 0, maxStat)
+		entity.Mood = clamp(entity.Mood, 0, maxStat)
 
 		cellX, cellY := worldCellForEntity(grid, entity)
 		cell := &grid.Cells[cellY][cellX]
@@ -95,8 +138,40 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			continue
 		}
 
+		// 老年自然死亡概率
+		if entity.GrowthStage == StageElderly {
+			deathChance := 0.005 + float64(entity.Age-800)*0.00001
+			if deathChance > 0 && rand.Float64() < deathChance {
+				entity.CurrentAction = string(ActionDying)
+				evt := &model.LifeEventLog{
+					WorldID:     engine.config.WorldName,
+					EntityID:    entity.ID,
+					EntityType:  entity.Name,
+					EventType:   "death",
+					Description: entity.Name + " 因年迈而安详离世",
+					PositionX:   entity.PositionX,
+					PositionY:   entity.PositionY,
+					CreatedAt:   time.Now(),
+				}
+				engine.persistence.EnqueueEvent(evt)
+				eventDiffs = append(eventDiffs, EventDiff{
+					EntityID:   entity.ID,
+					EntityType: entity.Name,
+					EventType:  "death",
+					Desc:       evt.Description,
+					PositionX:  entity.PositionX,
+					PositionY:  entity.PositionY,
+				})
+				engine.persistence.EnqueueDeleteEntity(entity.ID)
+				removedEntityIDs = append(removedEntityIDs, entity.ID)
+				delete(mutableEntities, id)
+				deathCount++
+				continue
+			}
+		}
+
 		oldAction := entity.CurrentAction
-		newAction := decideAction(entity)
+		newAction := decideActionWithRelations(entity, mutableEntities, currentRels)
 		applyAction(entity, newAction, cell)
 		entity.LastActionAt = time.Now()
 		entity.UpdatedAt = time.Now()
@@ -111,6 +186,9 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			CurrentAction: LifeAction(entity.CurrentAction),
 			PositionX:     entity.PositionX,
 			PositionY:     entity.PositionY,
+			Age:           entity.Age,
+			GrowthStage:   entity.GrowthStage,
+			Experience:    entity.Experience,
 		})
 
 		if newAction != LifeAction(oldAction) {
@@ -136,7 +214,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		}
 
 		maxEntityID++
-		if child := maybeSpawnOffspring(engine.config.WorldName, mutableEntities, entity, maxEntityID); child != nil {
+		if child := maybeSpawnOffspring(engine.config.WorldName, mutableEntities, entity, maxEntityID, currentRels); child != nil {
 			now := time.Now()
 			child.LastActionAt = now
 			child.CreatedAt = now
@@ -154,6 +232,9 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				CurrentAction: LifeAction(child.CurrentAction),
 				PositionX:     child.PositionX,
 				PositionY:     child.PositionY,
+				Age:           child.Age,
+				GrowthStage:   child.GrowthStage,
+				Experience:    child.Experience,
 			})
 			birthEvt := &model.LifeEventLog{
 				WorldID:     engine.config.WorldName,
@@ -181,16 +262,85 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		engine.persistence.EnqueueEntity(&entityCopy)
 	}
 
+	// 社交关系更新
+	newRels, updatedRels, deletedRelIDs, socialEvents := engine.socialSystem.UpdateRelationships(
+		engine.config.WorldName, mutableEntities, currentRels,
+	)
+
+	// 持久化新关系
+	for _, r := range newRels {
+		rc := *r
+		engine.persistence.EnqueueRelationship(&rc)
+	}
+	// 持久化更新的关系
+	for _, r := range updatedRels {
+		rc := *r
+		engine.persistence.EnqueueRelationship(&rc)
+	}
+	// 持久化删除的关系
+	for _, id := range deletedRelIDs {
+		engine.persistence.EnqueueDeleteRelationship(id)
+	}
+
+	// 记录社交事件
+	var relDiffs []RelationshipDiff
+	var removedRelDiffs []RemovedRelationship
+	for _, evt := range socialEvents {
+		engine.persistence.EnqueueEvent(evt)
+		eventDiffs = append(eventDiffs, EventDiff{
+			EntityID:   evt.EntityID,
+			EntityType: evt.EntityType,
+			EventType:  evt.EventType,
+			Desc:       evt.Description,
+			PositionX:  evt.PositionX,
+			PositionY:  evt.PositionY,
+		})
+	}
+
+	// 构建关系 diff 用于广播
+	for _, r := range newRels {
+		relDiffs = append(relDiffs, RelationshipDiff{
+			EntityID:     r.EntityID,
+			TargetID:     r.TargetID,
+			RelationType: r.RelationType,
+			Affinity:     r.Affinity,
+		})
+	}
+	for _, r := range updatedRels {
+		relDiffs = append(relDiffs, RelationshipDiff{
+			EntityID:     r.EntityID,
+			TargetID:     r.TargetID,
+			RelationType: r.RelationType,
+			Affinity:     r.Affinity,
+		})
+	}
+	// 从 currentRels 中查找被删除关系的实体对
+	for _, delID := range deletedRelIDs {
+		for _, r := range currentRels {
+			if r.ID == delID {
+				removedRelDiffs = append(removedRelDiffs, RemovedRelationship{
+					EntityID: r.EntityID,
+					TargetID: r.TargetID,
+				})
+				break
+			}
+		}
+	}
+
+	// 构建当前 tick 后的完整关系列表（用于下一 tick）
+	finalRels := buildFinalRelationships(currentRels, newRels, updatedRels, deletedRelIDs)
+
 	newTickCount := oldSnap.TickCount + 1
 	summary := computeWorldSummary(grid, mutableEntities, birthCount, deathCount)
 
 	// Bug4: 构建全新的 WorldSnapshot，然后通过 cache.Set() 原子替换，避免并发读写竞争
 	newSnap := &WorldSnapshot{
-		World:     oldSnap.World,
-		Entities:  mutableEntities,
-		Grid:      grid,
-		Summary:   summary,
-		TickCount: newTickCount,
+		World:         oldSnap.World,
+		Entities:      mutableEntities,
+		Grid:          grid,
+		Summary:       summary,
+		TickCount:     newTickCount,
+		Relationships: finalRels,
 	}
 	newSnap.World.TickCount = newTickCount
 	engine.cache.Set(engine.config.WorldName, newSnap)
@@ -207,19 +357,61 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	engine.broadcastMu.RLock()
 	fn := engine.broadcastFn
 	engine.broadcastMu.RUnlock()
-	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || len(removedEntityIDs) > 0 || newTickCount == 1) {
+	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || len(removedEntityIDs) > 0 ||
+		len(relDiffs) > 0 || len(removedRelDiffs) > 0 || newTickCount == 1) {
 		fn(TickBroadcast{
 			Type:    "life_state",
 			WorldID: engine.config.WorldName,
 			Tick:    newTickCount,
 			Summary: summary,
 			Changes: TickChanges{
-				Entities:         entityDiffs,
-				Events:           eventDiffs,
-				RemovedEntityIDs: removedEntityIDs,
+				Entities:             entityDiffs,
+				Events:               eventDiffs,
+				RemovedEntityIDs:     removedEntityIDs,
+				Relationships:        relDiffs,
+				RemovedRelationships: removedRelDiffs,
 			},
 		})
 	}
+}
+
+// buildFinalRelationships 构建 tick 后的完整关系列表
+func buildFinalRelationships(
+	existing []*model.LifeRelationship,
+	newRels []*model.LifeRelationship,
+	updatedRels []*model.LifeRelationship,
+	deletedIDs []uint,
+) []*model.LifeRelationship {
+	// 构建删除集合
+	delSet := make(map[uint]struct{}, len(deletedIDs))
+	for _, id := range deletedIDs {
+		delSet[id] = struct{}{}
+	}
+
+	// 构建更新索引
+	updateMap := make(map[uint]*model.LifeRelationship, len(updatedRels))
+	for _, r := range updatedRels {
+		updateMap[r.ID] = r
+	}
+
+	var result []*model.LifeRelationship
+
+	// 保留未删除的旧关系（应用更新）
+	for _, r := range existing {
+		if _, deleted := delSet[r.ID]; deleted {
+			continue
+		}
+		if updated, ok := updateMap[r.ID]; ok {
+			result = append(result, updated)
+		} else {
+			result = append(result, r)
+		}
+	}
+
+	// 添加新关系
+	result = append(result, newRels...)
+
+	return result
 }
 
 func generateEventDesc(name string, action LifeAction) string {
@@ -301,13 +493,21 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 		grid = newWorldGrid(e.config)
 	}
 
+	// 加载现有社交关系
+	rels, err := e.store.ListRelationshipsByWorld(ctx, e.config.WorldName)
+	if err != nil {
+		moelog.Warnf("life: failed to load relationships for world %q: %v", e.config.WorldName, err)
+		rels = nil
+	}
+
 	summary := computeWorldSummary(grid, entityMap, 0, 0)
 	return &WorldSnapshot{
-		World:     *world,
-		Entities:  entityMap,
-		Grid:      grid,
-		Summary:   summary,
-		TickCount: world.TickCount,
+		World:         *world,
+		Entities:      entityMap,
+		Grid:          grid,
+		Summary:       summary,
+		TickCount:     world.TickCount,
+		Relationships: rels,
 	}
 }
 
@@ -315,17 +515,19 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 	seeds := []struct {
 		name, emoji string
 		x, y        float64
+		age         int
 	}{
-		{"小花", "🐰", 200, 300},
-		{"时雨", "🦊", 800, 400},
-		{"团子", "🐹", 500, 200},
-		{"啾啾", "🐥", 640, 150},
-		{"泡泡", "🐠", 300, 500},
-		{"小眠", "🦌", 900, 600},
+		{"小花", "🐰", 200, 300, 20},   // 幼年
+		{"时雨", "🦊", 800, 400, 150},  // 少年
+		{"团子", "🐹", 500, 200, 400},  // 成年
+		{"啾啾", "🐥", 640, 150, 50},   // 幼年
+		{"泡泡", "🐠", 300, 500, 250},  // 少年
+		{"小眠", "🦌", 900, 600, 850},  // 老年
 	}
 	var result []*model.LifeEntity
 	now := time.Now()
 	for _, s := range seeds {
+		stage := stageForAge(s.age)
 		result = append(result, &model.LifeEntity{
 			WorldID:       worldID,
 			Name:          s.name,
@@ -333,6 +535,9 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 			Hunger:        80,
 			Energy:        80,
 			Mood:          70,
+			Age:           s.age,
+			GrowthStage:   stage,
+			Experience:    float64(s.age),
 			IsAlive:       true,
 			CurrentAction: string(ActionIdle),
 			PositionX:     s.x,
@@ -343,4 +548,18 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 		})
 	}
 	return result
+}
+
+// stageForAge 根据年龄返回对应的成长阶段
+func stageForAge(age int) string {
+	switch {
+	case age < 100:
+		return StageJuvenile
+	case age < 300:
+		return StageAdolescent
+	case age < 800:
+		return StageAdult
+	default:
+		return StageElderly
+	}
 }

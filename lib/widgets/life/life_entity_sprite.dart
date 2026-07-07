@@ -5,6 +5,7 @@ import '../../models/life_state.dart';
 /// 世界地图上单个实体精灵组件。
 ///
 /// 显示 emoji、名称和迷你三色状态条（hunger / energy / mood）。
+/// 根据成长阶段调整 emoji 大小和显示效果。
 class LifeEntitySprite extends StatelessWidget {
   final LifeEntity entity;
   final VoidCallback? onTap;
@@ -17,6 +18,22 @@ class LifeEntitySprite extends StatelessWidget {
     this.onLongPress,
   });
 
+  /// 根据成长阶段返回 emoji 大小。
+  double get _emojiSize {
+    switch (entity.growthStage) {
+      case 'juvenile':
+        return 20;
+      case 'adolescent':
+        return 26;
+      case 'adult':
+        return 32;
+      case 'elderly':
+        return 30;
+      default:
+        return 26;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -25,10 +42,33 @@ class LifeEntitySprite extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Emoji 头像
-          Text(
-            entity.emoji,
-            style: const TextStyle(fontSize: 28),
+          // Emoji 头像（带成长阶段效果）
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: entity.growthStage == 'elderly' ? 0.7 : 1.0,
+                child: Text(
+                  entity.emoji,
+                  style: TextStyle(fontSize: _emojiSize),
+                ),
+              ),
+              // 成长阶段小色点标记（右下角）
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: entity.growthStageColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 2),
           // 名称标签

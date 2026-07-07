@@ -13,6 +13,8 @@ const (
 	eventChanSize  = 1000
 	deleteChanSize = 200
 	gridChanSize   = 10
+	relChanSize    = 500
+	relDelChanSize = 200
 )
 
 // gridPersistRequest 生态网格持久化请求
@@ -28,6 +30,8 @@ type PersistenceWriter struct {
 	eventCh  chan *model.LifeEventLog
 	deleteCh chan uint // 待软删除的实体 ID
 	gridCh   chan gridPersistRequest
+	relCh    chan *model.LifeRelationship // 关系 upsert
+	relDelCh chan uint                    // 关系删除 ID
 	config   LifeConfig
 }
 
@@ -39,6 +43,8 @@ func NewPersistenceWriter(store Store, config LifeConfig) *PersistenceWriter {
 		eventCh:  make(chan *model.LifeEventLog, eventChanSize),
 		deleteCh: make(chan uint, deleteChanSize),
 		gridCh:   make(chan gridPersistRequest, gridChanSize),
+		relCh:    make(chan *model.LifeRelationship, relChanSize),
+		relDelCh: make(chan uint, relDelChanSize),
 		config:   config,
 	}
 }
@@ -111,6 +117,24 @@ func (w *PersistenceWriter) EnqueueGridPersist(worldName string, gridData string
 	}
 }
 
+// EnqueueRelationship 入队关系 upsert（非阻塞）
+func (w *PersistenceWriter) EnqueueRelationship(rel *model.LifeRelationship) {
+	select {
+	case w.relCh <- rel:
+	default:
+		moelog.Warnf("life: relationship persist queue full, dropping rel %d-%d", rel.EntityID, rel.TargetID)
+	}
+}
+
+// EnqueueDeleteRelationship 入队关系删除（非阻塞）
+func (w *PersistenceWriter) EnqueueDeleteRelationship(relID uint) {
+	select {
+	case w.relDelCh <- relID:
+	default:
+		moelog.Warnf("life: relationship delete queue full, dropping delete for rel %d", relID)
+	}
+}
+
 func (w *PersistenceWriter) flush(ctx context.Context) {
 	// drain entityCh → BatchUpsertEntities
 	var entities []*model.LifeEntity
@@ -173,6 +197,40 @@ doneGrid:
 	if latestGrid != nil {
 		if err := w.store.UpdateWorldGridData(ctx, latestGrid.worldName, latestGrid.gridData); err != nil {
 			moelog.Errorf("life: update world grid data for %q: %v", latestGrid.worldName, err)
+		}
+	}
+
+	// drain relCh → BatchUpsertRelationships
+	var rels []*model.LifeRelationship
+	for {
+		select {
+		case r := <-w.relCh:
+			rels = append(rels, r)
+		default:
+			goto doneRels
+		}
+	}
+doneRels:
+	if len(rels) > 0 {
+		if err := w.store.BatchUpsertRelationships(ctx, rels); err != nil {
+			moelog.Errorf("life: batch upsert %d relationships: %v", len(rels), err)
+		}
+	}
+
+	// drain relDelCh → BatchDeleteRelationships
+	var relDelIDs []uint
+	for {
+		select {
+		case id := <-w.relDelCh:
+			relDelIDs = append(relDelIDs, id)
+		default:
+			goto doneRelDels
+		}
+	}
+doneRelDels:
+	if len(relDelIDs) > 0 {
+		if err := w.store.BatchDeleteRelationships(ctx, relDelIDs); err != nil {
+			moelog.Errorf("life: batch delete %d relationships: %v", len(relDelIDs), err)
 		}
 	}
 }
