@@ -7,11 +7,13 @@ import 'life_entity_sprite.dart';
 class LifeWorldMap extends StatelessWidget {
   final List<LifeEntity> entities;
   final void Function(int entityId)? onEntityTap;
+  final void Function(int entityId)? onEntityLongPress;
 
   const LifeWorldMap({
     super.key,
     required this.entities,
     this.onEntityTap,
+    this.onEntityLongPress,
   });
 
   /// 世界坐标范围
@@ -69,6 +71,7 @@ class LifeWorldMap extends StatelessWidget {
                     child: LifeEntitySprite(
                       entity: entity,
                       onTap: () => onEntityTap?.call(entity.id),
+                      onLongPress: () => onEntityLongPress?.call(entity.id),
                     ),
                   ),
                 // 空状态提示

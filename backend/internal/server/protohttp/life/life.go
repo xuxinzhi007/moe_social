@@ -2,8 +2,11 @@ package lifehttp
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	lifeapp "backend/internal/service/life"
 
@@ -81,10 +84,54 @@ func getEventsHandler(app *lifeapp.AppService) func(khttp.Context) error {
 	}
 }
 
-// POST /api/life/action — 用户操作（预留，暂返回 501）
-func actionHandler(_ *lifeapp.AppService) func(khttp.Context) error {
+// POST /api/life/action — 用户操作端点（feed/pet/move）
+func actionHandler(app *lifeapp.AppService) func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
-		return writeJSON(ctx, http.StatusNotImplemented, map[string]string{"message": "action endpoint reserved for future use"})
+		engine := app.Engine()
+		if engine == nil {
+			return writeJSON(ctx, http.StatusServiceUnavailable, map[string]string{"error": "engine not ready"})
+		}
+
+		var req struct {
+			Action   string                 `json:"action"`
+			EntityID uint                   `json:"entity_id"`
+			Params   map[string]interface{} `json:"params"`
+		}
+		if err := json.NewDecoder(ctx.Request().Body).Decode(&req); err != nil {
+			return writeJSON(ctx, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		}
+
+		if req.Action == "" {
+			return writeJSON(ctx, http.StatusBadRequest, map[string]string{"error": "action is required"})
+		}
+		if req.EntityID == 0 {
+			return writeJSON(ctx, http.StatusBadRequest, map[string]string{"error": "entity_id is required"})
+		}
+
+		worldName := engine.GetConfig().WorldName
+		result := engine.ApplyUserAction(worldName, req.EntityID, req.Action, req.Params)
+
+		if !result.Success {
+			// 冷却错误返回 HTTP 429
+			if strings.Contains(result.Message, "cooldown") {
+				retryAfter := extractRetrySeconds(result.Message)
+				return writeJSON(ctx, http.StatusTooManyRequests, map[string]interface{}{
+					"ok":          false,
+					"error":       "action in cooldown",
+					"retry_after": retryAfter,
+				})
+			}
+			return writeJSON(ctx, http.StatusBadRequest, map[string]interface{}{
+				"success": false,
+				"message": result.Message,
+			})
+		}
+
+		return writeJSON(ctx, http.StatusOK, map[string]interface{}{
+			"success": true,
+			"message": result.Message,
+			"entity":  result.Entity,
+		})
 	}
 }
 
@@ -92,4 +139,17 @@ func writeJSON(ctx khttp.Context, status int, data interface{}) error {
 	ctx.Response().Header().Set("Content-Type", "application/json")
 	ctx.Response().WriteHeader(status)
 	return json.NewEncoder(ctx.Response()).Encode(data)
+}
+
+// extractRetrySeconds 从冷却错误消息中提取剩余秒数
+func extractRetrySeconds(msg string) float64 {
+	// 消息格式: "action in cooldown, retry after X seconds"
+	var seconds float64
+	if _, err := fmt.Sscanf(msg, "action in cooldown, retry after %f seconds", &seconds); err == nil {
+		if seconds < 1 {
+			return 1
+		}
+		return math.Ceil(seconds)
+	}
+	return 3 // 解析失败时返回默认冷却时间
 }

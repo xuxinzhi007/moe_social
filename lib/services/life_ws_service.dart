@@ -20,6 +20,7 @@ class LifeWsService {
   StreamSubscription? _subscription;
   bool _connecting = false;
   bool _disposed = false;
+  bool _notifiedConnected = false;
 
   // ── 重连 ────────────────────────────────────────────────────────────────────
   Timer? _reconnectTimer;
@@ -150,6 +151,7 @@ class LifeWsService {
     _channel?.sink.close();
     _channel = null;
     _connecting = false;
+    _notifiedConnected = false;
     _reconnectAttempts = 0;
   }
 
@@ -169,7 +171,8 @@ class LifeWsService {
     _reconnectAttempts = 0;
 
     // 首次收到消息视为连接成功
-    if (!_connecting) {
+    if (!_notifiedConnected) {
+      _notifiedConnected = true;
       onConnected?.call();
     }
 
@@ -234,6 +237,7 @@ class LifeWsService {
     _channel = null;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+    _notifiedConnected = false;
 
     onDisconnected?.call();
 

@@ -13,10 +13,14 @@ type Store interface {
 	ListEntities(ctx context.Context, worldID string) ([]model.LifeEntity, error)
 	UpsertEntity(ctx context.Context, entity *model.LifeEntity) error
 	BatchUpsertEntities(ctx context.Context, entities []*model.LifeEntity) error
+	// SoftDeleteEntity 软删除实体（设置 is_alive=false）
+	SoftDeleteEntity(ctx context.Context, entityID uint) error
 
 	// World CRUD
 	GetWorld(ctx context.Context, name string) (*model.LifeWorld, error)
 	UpsertWorld(ctx context.Context, world *model.LifeWorld) error
+	// UpdateWorldGridData 更新世界的生态网格序列化数据
+	UpdateWorldGridData(ctx context.Context, worldName string, gridData string) error
 
 	// Event Log
 	CreateEventLog(ctx context.Context, log *model.LifeEventLog) error

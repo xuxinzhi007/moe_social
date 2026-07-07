@@ -21,3 +21,9 @@ Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-ap
 ## Skills（`.cursor/skills/`）
 
 `golang-style` · `effective-go` · `implementation-guardrails` · `golang-gin-database` · `git-commit`
+
+
+# backend目录内执行，生成cover.out
+go test ./internal/... -coverpkg=./internal/... -coverprofile=cover.out
+# 生成可视化报告
+go tool cover -html=cover.out -o coverage.html

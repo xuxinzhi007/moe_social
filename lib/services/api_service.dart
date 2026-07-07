@@ -32,9 +32,20 @@ import 'api_response.dart';
 class ApiException implements Exception {
   final String message;
   final int? code;
+  /// 原始响应体（仅当服务器返回可解析的 JSON 时携带），供调用方提取额外字段。
+  final Map<String, dynamic>? body;
 
-  ApiException(this.message, [this.code]);
+  ApiException(this.message, [this.code, this.body]);
 
+  @override
+  String toString() => message;
+}
+
+/// 数字生命操作冷却异常（HTTP 429）
+class LifeActionCooldownException implements Exception {
+  final int retryAfter;
+  final String message;
+  LifeActionCooldownException({required this.retryAfter, required this.message});
   @override
   String toString() => message;
 }
@@ -477,14 +488,14 @@ class ApiService {
         final errorCode = result['code'] ?? response.statusCode;
         _log('❌ API错误: $errorMessage (code: $errorCode)');
         throw ApiException(
-            errorMessage, errorCode is int ? errorCode : response.statusCode);
+            errorMessage, errorCode is int ? errorCode : response.statusCode, result);
       }
 
       // 检查HTTP状态码
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final errorMessage = result['message'] ?? '请求失败';
         _log('❌ HTTP错误: $errorMessage (status: ${response.statusCode})');
-        throw ApiException(errorMessage, response.statusCode);
+        throw ApiException(errorMessage, response.statusCode, result);
       }
 
       return result;
@@ -2335,5 +2346,54 @@ class ApiService {
     final result = await _request('/api/user/$userId/2fa/regenerate',
         method: 'POST', body: {'code': code});
     return _map(result);
+  }
+
+  // ── 数字生命模拟器 ─────────────────────────────────────────────────────────────
+
+  /// 向数字生命世界发送操作指令（喂食、抚摸等）。
+  /// 遇到 HTTP 429 时抛出 [LifeActionCooldownException]。
+  static Future<Map<String, dynamic>> postLifeAction(
+    String action,
+    int entityId, [
+    Map<String, dynamic>? params,
+  ]) async {
+    final body = <String, dynamic>{
+      'action': action,
+      'entity_id': entityId,
+      if (params != null) 'params': params,
+    };
+    try {
+      final result = await _request('/api/life/action',
+          method: 'POST', body: body);
+      // 检查 ok 字段（后端返回 {ok: false} 也算失败）
+      if (result['ok'] == false) {
+        final errMsg = result['error']?.toString() ?? '操作失败';
+        throw ApiException(errMsg, null, result);
+      }
+      return result;
+    } on ApiException catch (e) {
+      if (e.code == 429) {
+        // 优先从原始响应体提取 retry_after，失败再从 message 中正则匹配，最终兜底 3 秒。
+        int retryAfter = 3;
+        final bodyRetryAfter = e.body?['retry_after'];
+        if (bodyRetryAfter is num) {
+          retryAfter = bodyRetryAfter.ceil();
+        } else if (bodyRetryAfter is String) {
+          retryAfter = int.tryParse(bodyRetryAfter) ?? 3;
+        } else {
+          final match = RegExp(r'retry_after[:\s=]+(\d+)').firstMatch(e.message);
+          if (match != null) {
+            retryAfter = int.tryParse(match.group(1) ?? '3') ?? 3;
+          }
+        }
+        if (retryAfter <= 0) retryAfter = 3;
+        final msg = e.body?['error']?.toString() ?? e.message;
+        throw LifeActionCooldownException(
+          retryAfter: retryAfter,
+          message: msg.isNotEmpty ? msg : '操作冷却中',
+        );
+      }
+      rethrow;
+    }
   }
 }

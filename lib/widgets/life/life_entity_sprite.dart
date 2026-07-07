@@ -8,17 +8,20 @@ import '../../models/life_state.dart';
 class LifeEntitySprite extends StatelessWidget {
   final LifeEntity entity;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const LifeEntitySprite({
     super.key,
     required this.entity,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
