@@ -376,3 +376,41 @@ Flutter 官方支持把 Flutter Module 嵌入原生 Android / iOS App。
 2. `数字生命 WorldBox 化 RN 模块设计方案`
 
 这样就能从“是否迁移”直接进入“怎么实施”。
+
+## 15. 当前落地进度（2026-07-07）
+
+已完成首批 React Native + Expo 工程落地，目录位于 `app-rn/`。
+
+本轮已实现：
+
+- 创建独立的 Expo TypeScript 工程
+- 建立 RN 侧单一配置入口 `src/config/appConfig.ts`
+- 建立会话持久化 `src/services/tokenStorage.ts`
+- 建立轻量 API Client `src/services/apiClient.ts`
+- 建立数字生命 WebSocket 客户端 `src/services/lifeWsClient.ts`
+- 建立应用级状态容器 `src/store/appStore.tsx`
+- 建立首批基础组件：
+  - `Screen`
+  - `Panel`
+  - `MetricCard`
+  - `ActionButton`
+- 建立首批页面骨架：
+  - 登录页
+  - 首页
+  - 数字生命页
+  - 我的页
+- 建立底部导航主壳 `src/navigation/RootShell.tsx`
+
+当前目标不是 1:1 复制 Flutter 页面，而是先把新的产品底座跑通，让后续模块迁移有稳定承载层。
+
+已完成校验：
+
+- `npm install`
+- `npm run typecheck`
+
+下一步建议优先级：
+
+1. 接入真实登录接口，替换当前 demo session
+2. 抽离接口协议类型，开始迁移用户信息与首页数据
+3. 将数字生命页升级为连续渲染视图，而不是当前占位预览
+4. 再进入首页、我的、成就等高频业务页的正式迁移
