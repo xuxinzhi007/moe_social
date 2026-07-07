@@ -817,6 +817,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       scheme.primary.withValues(alpha: 0.04),
       scheme.surfaceContainerLowest,
     );
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
       backgroundColor: chatBg,
@@ -885,8 +886,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                           Flexible(
                             child: Text(
                               _peerDisplayUserId.isNotEmpty
-                                  ? 'ID ${_peerDisplayUserId}'
-                                  : 'Moe ${_peerMoeNo}',
+                                  ? 'ID $_peerDisplayUserId'
+                                  : 'Moe $_peerMoeNo',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: scheme.onSurfaceVariant,
@@ -923,50 +924,133 @@ class _DirectChatPageState extends State<DirectChatPage> {
               backgroundColor: scheme.surfaceContainerHighest,
             ),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              reverse: true,
-              itemCount: reversedMessages.length,
-              itemBuilder: (context, index) {
-                final message = reversedMessages[index];
-                final isMe =
-                    currentUserId != null && message.senderId == currentUserId;
-
-                final showPeerAvatar = !isMe &&
-                    (index == 0 ||
-                        reversedMessages[index - 1].senderId !=
-                            message.senderId);
-
-                var showTime = false;
-                if (index == reversedMessages.length - 1) {
-                  showTime = true;
-                } else {
-                  final nextMessage = reversedMessages[index + 1];
-                  final diff =
-                      message.time.difference(nextMessage.time).inMinutes.abs();
-                  if (diff > 5) showTime = true;
-                }
-
-                return Column(
-                  children: [
-                    if (showTime) _buildTimeTag(context, message.time),
-                    _buildMessageBubble(
-                      context,
-                      message,
-                      isMe,
-                      showPeerAvatar: showPeerAvatar,
-                      tightBottom: index > 0 &&
-                          reversedMessages[index - 1].senderId ==
-                              message.senderId,
+            child: reversedMessages.isEmpty
+                ? _buildEmptyConversationState(context)
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
                     ),
-                  ],
-                );
-              },
-            ),
+                    reverse: true,
+                    itemCount: reversedMessages.length,
+                    itemBuilder: (context, index) {
+                      final message = reversedMessages[index];
+                      final isMe = currentUserId != null &&
+                          message.senderId == currentUserId;
+
+                      final showPeerAvatar = !isMe &&
+                          (index == 0 ||
+                              reversedMessages[index - 1].senderId !=
+                                  message.senderId);
+
+                      var showTime = false;
+                      if (index == reversedMessages.length - 1) {
+                        showTime = true;
+                      } else {
+                        final nextMessage = reversedMessages[index + 1];
+                        final diff = message.time
+                            .difference(nextMessage.time)
+                            .inMinutes
+                            .abs();
+                        if (diff > 5) showTime = true;
+                      }
+
+                      return Column(
+                        children: [
+                          if (showTime) _buildTimeTag(context, message.time),
+                          _buildMessageBubble(
+                            context,
+                            message,
+                            isMe,
+                            showPeerAvatar: showPeerAvatar,
+                            tightBottom: index > 0 &&
+                                reversedMessages[index - 1].senderId ==
+                                    message.senderId,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
           ),
-          _buildInputArea(context),
+          AnimatedPadding(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.only(bottom: bottomInset > 0 ? 6 : 0),
+            child: _buildInputArea(context),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyConversationState(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 40,
+                color: scheme.primary,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              '和 ${widget.username} 开始聊天吧',
+              style: TextStyle(
+                color: scheme.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '发一条问候、分享图片，或者先看看对方主页。这里会保留你们的聊天节奏。',
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: 13,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.waving_hand_rounded, size: 18),
+                  label: const Text('发个招呼'),
+                  onPressed: () {
+                    _controller.text = '嗨～';
+                    _controller.selection = TextSelection.collapsed(
+                      offset: _controller.text.length,
+                    );
+                    _inputFocusNode.requestFocus();
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.person_rounded, size: 18),
+                  label: const Text('查看主页'),
+                  onPressed: () => _openPeerProfile(context),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
