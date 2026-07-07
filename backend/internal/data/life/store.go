@@ -145,7 +145,7 @@ func (s *gormStore) UpdateWorldGridData(ctx context.Context, worldName string, g
 func (s *gormStore) UpsertRelationship(ctx context.Context, rel *model.LifeRelationship) error {
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "entity_id"}, {Name: "target_id"}},
+			Columns: []clause.Column{{Name: "world_id"}, {Name: "entity_id"}, {Name: "target_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"world_id", "relation_type", "affinity", "last_interaction_at", "updated_at",
 			}),
@@ -159,7 +159,7 @@ func (s *gormStore) BatchUpsertRelationships(ctx context.Context, rels []*model.
 	}
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "entity_id"}, {Name: "target_id"}},
+			Columns: []clause.Column{{Name: "world_id"}, {Name: "entity_id"}, {Name: "target_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"world_id", "relation_type", "affinity", "last_interaction_at", "updated_at",
 			}),
