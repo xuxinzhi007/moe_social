@@ -1,15 +1,20 @@
-import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../theme/moe_tokens.dart';
 
 class AuthBackground extends StatefulWidget {
   final Widget child;
+
   const AuthBackground({super.key, required this.child});
 
   @override
   State<AuthBackground> createState() => _AuthBackgroundState();
 }
 
-class _AuthBackgroundState extends State<AuthBackground> with SingleTickerProviderStateMixin {
+class _AuthBackgroundState extends State<AuthBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -29,94 +34,98 @@ class _AuthBackgroundState extends State<AuthBackground> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    // Moe 配色 - 更柔和的梦幻渐变
-    final color1 = const Color(0xFFE0C3FC).withValues(alpha: 0.4); // 浅紫
-    final color2 = const Color(0xFF8EC5FC).withValues(alpha: 0.4); // 浅蓝
-    final color3 = const Color(0xFF91EAE4).withValues(alpha: 0.4); // 薄荷
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 420;
+    final orbScale = compact ? 0.72 : 1.0;
+    final color1 = const Color(0xFFE0C3FC).withValues(alpha: 0.34);
+    final color2 = const Color(0xFF8EC5FC).withValues(alpha: 0.28);
+    final color3 = const Color(0xFF91EAE4).withValues(alpha: 0.28);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: MoeTokens.pageBackground,
       body: Stack(
         children: [
-          // 1. 基础渐变层
-          Container(
-            decoration: const BoxDecoration(
+          const DecoratedBox(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFFDFBFD), Color(0xFFF4F7F9)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFFCFF),
+                  Color(0xFFF7F9FD),
+                  MoeTokens.pageBackground,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
+            child: SizedBox.expand(),
           ),
-
-          // 2. 动态流动极光 (使用 AnimatedBuilder + CustomPaint 实现流体效果会比较重，这里用位置动画模拟)
-          AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Stack(
-                children: [
-                  // 左上角流体
-                  Positioned(
-                    top: -100 + math.sin(_controller.value * math.pi) * 30,
-                    left: -50 + math.cos(_controller.value * math.pi) * 30,
-                    child: Container(
-                      width: 400,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [color1, Colors.transparent],
-                          radius: 0.7,
-                        ),
+          IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Stack(
+                  children: [
+                    Positioned(
+                      top: -90 + math.sin(_controller.value * math.pi) * 24,
+                      left: -60 + math.cos(_controller.value * math.pi) * 22,
+                      child: _GradientOrb(
+                        size: 360 * orbScale,
+                        colors: [color1, Colors.transparent],
                       ),
                     ),
-                  ),
-                  // 右中流体
-                  Positioned(
-                    top: 200 + math.cos(_controller.value * math.pi) * 40,
-                    right: -100 + math.sin(_controller.value * math.pi) * 20,
-                    child: Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [color2, Colors.transparent],
-                          radius: 0.6,
-                        ),
+                    Positioned(
+                      top: size.height * 0.18 +
+                          math.cos(_controller.value * math.pi) * 26,
+                      right: -110 + math.sin(_controller.value * math.pi) * 18,
+                      child: _GradientOrb(
+                        size: 280 * orbScale,
+                        colors: [color2, Colors.transparent],
+                        radius: 0.62,
                       ),
                     ),
-                  ),
-                  // 左下角流体
-                  Positioned(
-                    bottom: -50 + math.sin(_controller.value * 2 * math.pi) * 30,
-                    left: -50 + math.cos(_controller.value * 2 * math.pi) * 20,
-                    child: Container(
-                      width: 350,
-                      height: 350,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [color3, Colors.transparent],
-                          radius: 0.7,
-                        ),
+                    Positioned(
+                      bottom:
+                          -70 + math.sin(_controller.value * 2 * math.pi) * 24,
+                      left: -40 + math.cos(_controller.value * 2 * math.pi) * 16,
+                      child: _GradientOrb(
+                        size: 320 * orbScale,
+                        colors: [color3, Colors.transparent],
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
-
-          // 3. 玻璃拟态遮罩 (可选，增加模糊感让背景更朦胧)
-          // BackdropFilter(
-          //   filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          //   child: Container(color: Colors.transparent),
-          // ),
-
-          // 4. 内容层
           SafeArea(child: widget.child),
         ],
+      ),
+    );
+  }
+}
+
+class _GradientOrb extends StatelessWidget {
+  const _GradientOrb({
+    required this.size,
+    required this.colors,
+    this.radius = 0.72,
+  });
+
+  final double size;
+  final List<Color> colors;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: colors,
+          radius: radius,
+        ),
       ),
     );
   }

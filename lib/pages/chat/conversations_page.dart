@@ -53,6 +53,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
   List<PrivateConversationItem> _serverConversations = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   /// 与 [DirectChatPage] 本地缓存对齐的最后一条（用于在线聊天未进通知时的预览）
   Map<String, ({DateTime at, String rawPreview})> _localThreadTails = {};
@@ -65,6 +67,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_handleSearchChanged);
     ChatPushService.unreadBySender.addListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
     unawaited(_load());
@@ -72,9 +75,17 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_handleSearchChanged);
+    _searchController.dispose();
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.removeListener(_onLocalThreadsTick);
     super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    final next = _searchController.text.trim();
+    if (next == _searchQuery) return;
+    setState(() => _searchQuery = next);
   }
 
   void _onPushUnread() {
@@ -303,8 +314,53 @@ class _ConversationsPageState extends State<ConversationsPage> {
       future: _localChatPeerIds(AuthService.currentUser ?? ''),
       builder: (context, snap) {
         final localPeers = snap.data ?? {};
-        return _buildList(context, localPeers);
+        return Column(
+          children: [
+            _buildSearchBar(context),
+            Expanded(child: _buildList(context, localPeers)),
+          ],
+        );
       },
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: MoeTokens.cardShadow(
+            tint: MoeTheme.of(context).primary,
+            blur: 10,
+          ),
+        ),
+        child: TextField(
+          controller: _searchController,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: '搜索会话、好友昵称或 Moe ID',
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: scheme.onSurfaceVariant,
+            ),
+            suffixIcon: _searchQuery.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: '清空搜索',
+                    onPressed: () => _searchController.clear(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -349,9 +405,28 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget _buildList(BuildContext context, Set<String> localPeers) {
     final myId = AuthService.currentUser ?? '';
     final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
+    final query = _searchQuery.toLowerCase();
 
     if (_serverConversations.isNotEmpty) {
-      final rows = List<PrivateConversationItem>.from(_serverConversations);
+      final rows =
+          List<PrivateConversationItem>.from(_serverConversations).where((c) {
+        if (query.isEmpty) return true;
+        final peerId = c.peerUserId.trim().toLowerCase();
+        final peerName = c.peerName.trim().toLowerCase();
+        final friend = _friends.cast<User?>().firstWhere(
+              (u) => u?.id == c.peerUserId.trim(),
+              orElse: () => null,
+            );
+        final friendName = (friend?.username ?? '').trim().toLowerCase();
+        final moeNo = (friend?.moeNo ?? '').trim().toLowerCase();
+        return peerId.contains(query) ||
+            peerName.contains(query) ||
+            friendName.contains(query) ||
+            moeNo.contains(query);
+      }).toList();
+      if (rows.isEmpty) {
+        return _buildSearchEmptyState(context);
+      }
       return RefreshIndicator(
         onRefresh: _load,
         color: MoeTheme.of(context).primary,
@@ -493,15 +568,39 @@ class _ConversationsPageState extends State<ConversationsPage> {
       return lastActivity(b).compareTo(lastActivity(a));
     });
 
+    final filteredRows = rows.where((peerId) {
+      if (query.isEmpty) return true;
+      User? friend;
+      for (final u in _friends) {
+        if (u.id == peerId) {
+          friend = u;
+          break;
+        }
+      }
+      final last = lastBySender[peerId];
+      final title = friend?.username ??
+          ChatPushService.cachedSenderDisplayName(peerId) ??
+          last?.senderName ??
+          '';
+      final moeNo = friend?.moeNo ?? '';
+      return peerId.toLowerCase().contains(query) ||
+          title.toLowerCase().contains(query) ||
+          moeNo.toLowerCase().contains(query);
+    }).toList();
+
+    if (filteredRows.isEmpty) {
+      return _buildSearchEmptyState(context);
+    }
+
     return RefreshIndicator(
       onRefresh: _load,
       color: MoeTheme.of(context).primary,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: rows.length,
+        itemCount: filteredRows.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
-          final peerId = rows[i];
+          final peerId = filteredRows[i];
           User? friend;
           for (final u in _friends) {
             if (u.id == peerId) {
@@ -561,6 +660,32 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSearchEmptyState(BuildContext context) {
+    return Center(
+      child: MoeEmptyState(
+        icon: Icons.search_off_rounded,
+        title: '没有找到匹配的会话',
+        subtitle: '试试搜索好友昵称、用户 ID，或者先去添加新的好友。',
+        primaryAction: MoeEmptyStateAction(
+          label: '清空搜索',
+          icon: Icons.refresh_rounded,
+          onPressed: () => _searchController.clear(),
+        ),
+        secondaryAction: MoeEmptyStateAction(
+          label: '找好友',
+          icon: Icons.people_rounded,
+          onPressed: () {
+            if (widget.onEmptyFindFriends != null) {
+              widget.onEmptyFindFriends!();
+              return;
+            }
+            context.read<MainNavController>().requestTab(1);
+          },
+        ),
       ),
     );
   }
