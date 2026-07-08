@@ -128,7 +128,8 @@ class AiCharacterCardService {
   }
 
   /// 从系统文件选择器读取 JSON 角色卡（桌面端默认打开应用导出目录）。
-  Future<AiCharacterCardImportResult> importCharacterCardFromFilePicker() async {
+  Future<AiCharacterCardImportResult>
+      importCharacterCardFromFilePicker() async {
     final exportDir = await exportDirectoryPath();
     final initialDirectory =
         card_storage.desktopPickerInitialDirectory(exportDir);

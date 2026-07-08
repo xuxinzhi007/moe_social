@@ -35,6 +35,7 @@ import (
 	gamehttp "backend/internal/server/protohttp/game"
 	gifthttp "backend/internal/server/protohttp/gift"
 	landinghttp "backend/internal/server/protohttp/landing"
+	lifev1 "backend/api/life/v1"
 	lifehttp "backend/internal/server/protohttp/life"
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
@@ -119,7 +120,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 		gamehttp.RegisterStreamRoute(srv, d.GameApp)
 	}
 	if d.LifeApp != nil {
-		lifehttp.Register(d.LifeApp, srv)
+		lifev1.RegisterLifeHTTPServer(srv, lifehttp.New(d.LifeApp))
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

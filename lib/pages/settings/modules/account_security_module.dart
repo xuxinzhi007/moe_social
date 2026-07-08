@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../../../auth_service.dart';
-import '../../../services/api_service.dart';
+import '../../../services/user_service.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_error_state.dart';
@@ -86,7 +86,7 @@ class AccountSecurityModule extends StatelessWidget {
     if (!okAgain || !context.mounted) return;
 
     try {
-      await ApiService.deleteMyAccount();
+      await UserService.deleteMyAccount();
       if (!context.mounted) return;
       MoeToast.success(context, '账号已注销');
       AuthService.logout();
@@ -215,7 +215,7 @@ class AccountSecurityModule extends StatelessWidget {
                         }
 
                         try {
-                          await ApiService.updateUserPassword(
+                          await UserService.updateUserPassword(
                             userId,
                             oldPasswordController.text,
                             newPasswordController.text,
@@ -498,7 +498,7 @@ class AccountSecurityModule extends StatelessWidget {
 
   Future<List<Map<String, dynamic>>> _fetchLoginHistory() async {
     final userId = await AuthService.getUserId();
-    return ApiService.getLoginHistory(userId);
+    return UserService.getLoginHistory(userId);
   }
 
   void _showTwoFactorAuthDialog(BuildContext context) {
@@ -515,7 +515,7 @@ class AccountSecurityModule extends StatelessWidget {
             setState(() => isLoading = true);
             try {
               final userId = await AuthService.getUserId();
-              final status = await ApiService.getTwoFactorStatus(userId);
+              final status = await UserService.getTwoFactorStatus(userId);
               setState(() {
                 isEnabled = status['enabled'] as bool? ?? false;
                 statusMessage = isEnabled ? '两步验证已开启' : '两步验证未开启';
@@ -619,7 +619,7 @@ class AccountSecurityModule extends StatelessWidget {
             setState(() => isLoading = true);
             try {
               final userId = await AuthService.getUserId();
-              final result = await ApiService.enableTwoFactorAuth(userId);
+              final result = await UserService.enableTwoFactorAuth(userId);
               setState(() {
                 qrCodeUrl = result['qr_code'] as String?;
                 secretKey = result['secret'] as String?;
@@ -644,7 +644,7 @@ class AccountSecurityModule extends StatelessWidget {
             setState(() => isLoading = true);
             try {
               final userId = await AuthService.getUserId();
-              await ApiService.verifyTwoFactorCode(userId, code);
+              await UserService.verifyTwoFactorCode(userId, code);
               Navigator.pop(context);
               Navigator.pop(context); // 关闭设置对话框
               MoeToast.success(context, '两步验证已成功开启');
@@ -757,7 +757,7 @@ class AccountSecurityModule extends StatelessWidget {
             setState(() => isLoading = true);
             try {
               final userId = await AuthService.getUserId();
-              await ApiService.disableTwoFactorAuth(userId, code);
+              await UserService.disableTwoFactorAuth(userId, code);
               Navigator.pop(context);
               Navigator.pop(context); // 关闭设置对话框
               MoeToast.success(context, '两步验证已成功关闭');

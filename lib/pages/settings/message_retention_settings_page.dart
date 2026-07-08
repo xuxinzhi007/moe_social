@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -38,7 +38,7 @@ class _MessageRetentionSettingsPageState
         }
         return;
       }
-      final u = await ApiService.getUserInfo(id);
+      final u = await UserService.getUserInfo(id);
       if (!mounted) return;
       setState(() {
         _user = u;
@@ -64,7 +64,7 @@ class _MessageRetentionSettingsPageState
     if (u == null || _saving) return;
     setState(() => _saving = true);
     try {
-      final updated = await ApiService.updateUserInfo(
+      final updated = await UserService.updateUserInfo(
         u.id,
         messageRetention: _value,
       );

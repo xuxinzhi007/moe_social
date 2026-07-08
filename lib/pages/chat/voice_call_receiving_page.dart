@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'voice_call_launcher.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
@@ -24,7 +24,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
   Future<void> _answerCall(BuildContext context) async {
     try {
       // 调用后端API接听呼叫
-      await ApiService.answerCall(callId);
+      await ChatService.answerCall(callId);
 
       // 跳转到通话页面
       ChatPushService.clearActiveIncomingCall();
@@ -42,7 +42,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
   Future<void> _rejectCall(BuildContext context) async {
     try {
       // 调用后端API拒绝呼叫
-      await ApiService.rejectCall(callId);
+      await ChatService.rejectCall(callId);
       ChatPushService.clearActiveIncomingCall();
       if (context.mounted) Navigator.pop(context);
     } catch (e) {

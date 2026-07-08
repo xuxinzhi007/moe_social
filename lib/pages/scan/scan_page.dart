@@ -3,7 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../services/qr_code_service.dart';
 import '../../services/camera_permission_service.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -180,7 +180,7 @@ class _ScanPageState extends State<ScanPage>
 
     var relation = 'none';
     try {
-      relation = await ApiService.getFriendRelation(currentUserId, userId);
+      relation = await UserService.getFriendRelation(currentUserId, userId);
     } catch (_) {}
 
     if (!mounted) return;
@@ -336,7 +336,7 @@ class _ScanPageState extends State<ScanPage>
   Future<void> _sendFriendRequest(String userId, String username) async {
     try {
       final currentUserId = await AuthService.getUserId();
-      await ApiService.sendFriendRequestByUserId(currentUserId, userId);
+      await UserService.sendFriendRequestByUserId(currentUserId, userId);
       if (!mounted) return;
       MoeToast.success(context, '好友请求已发送给 $username');
       Navigator.pop(context);

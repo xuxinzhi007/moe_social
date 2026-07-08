@@ -35,28 +35,28 @@ class ExecutionStep {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'type': type,
-    'params': params,
-    'description': description,
-    'expectedOutcomes': expectedOutcomes,
-    'preconditions': preconditions,
-    'maxRetries': maxRetries,
-    'timeout': timeout.inSeconds,
-    'confidenceScore': confidenceScore,
-  };
+        'id': id,
+        'type': type,
+        'params': params,
+        'description': description,
+        'expectedOutcomes': expectedOutcomes,
+        'preconditions': preconditions,
+        'maxRetries': maxRetries,
+        'timeout': timeout.inSeconds,
+        'confidenceScore': confidenceScore,
+      };
 
   factory ExecutionStep.fromJson(Map<String, dynamic> json) => ExecutionStep(
-    id: json['id'],
-    type: json['type'],
-    params: Map<String, dynamic>.from(json['params']),
-    description: json['description'] ?? '',
-    expectedOutcomes: List<String>.from(json['expectedOutcomes'] ?? []),
-    preconditions: List<String>.from(json['preconditions'] ?? []),
-    maxRetries: json['maxRetries'] ?? 3,
-    timeout: Duration(seconds: json['timeout'] ?? 10),
-    confidenceScore: (json['confidenceScore'] ?? 1.0).toDouble(),
-  );
+        id: json['id'],
+        type: json['type'],
+        params: Map<String, dynamic>.from(json['params']),
+        description: json['description'] ?? '',
+        expectedOutcomes: List<String>.from(json['expectedOutcomes'] ?? []),
+        preconditions: List<String>.from(json['preconditions'] ?? []),
+        maxRetries: json['maxRetries'] ?? 3,
+        timeout: Duration(seconds: json['timeout'] ?? 10),
+        confidenceScore: (json['confidenceScore'] ?? 1.0).toDouble(),
+      );
 }
 
 /// 执行计划
@@ -118,26 +118,28 @@ class ExecutionResult {
     Map<String, dynamic>? result,
     required Duration duration,
     List<String> warnings = const [],
-  }) => ExecutionResult._(
-    stepId: stepId,
-    success: true,
-    result: result,
-    duration: duration,
-    warnings: warnings,
-  );
+  }) =>
+      ExecutionResult._(
+        stepId: stepId,
+        success: true,
+        result: result,
+        duration: duration,
+        warnings: warnings,
+      );
 
   factory ExecutionResult.failure({
     required String stepId,
     required String reason,
     required Duration duration,
     List<String> warnings = const [],
-  }) => ExecutionResult._(
-    stepId: stepId,
-    success: false,
-    reason: reason,
-    duration: duration,
-    warnings: warnings,
-  );
+  }) =>
+      ExecutionResult._(
+        stepId: stepId,
+        success: false,
+        reason: reason,
+        duration: duration,
+        warnings: warnings,
+      );
 }
 
 /// 智能任务规划器
@@ -146,11 +148,14 @@ class TaskPlanner {
   final AIInferenceService _aiService = AIInferenceService();
 
   /// 规划任务 - 使用AI推理生成执行计划
-  Future<ExecutionPlan> planTask(String userIntent, {Uint8List? screenshot}) async {
-    _logger.info('开始规划任务', metadata: {
-      'userIntent': userIntent,
-      'hasScreenshot': screenshot != null,
-    }, category: LogCategory.ai);
+  Future<ExecutionPlan> planTask(String userIntent,
+      {Uint8List? screenshot}) async {
+    _logger.info('开始规划任务',
+        metadata: {
+          'userIntent': userIntent,
+          'hasScreenshot': screenshot != null,
+        },
+        category: LogCategory.ai);
 
     try {
       // 使用AI服务生成任务计划
@@ -165,10 +170,12 @@ class TaskPlanner {
         return _convertAIPlanToExecutionPlan(aiPlan);
       }
     } catch (e) {
-      _logger.warn('AI规划失败，使用后备方案', metadata: {
-        'error': e.toString(),
-        'intent': userIntent,
-      }, category: LogCategory.ai);
+      _logger.warn('AI规划失败，使用后备方案',
+          metadata: {
+            'error': e.toString(),
+            'intent': userIntent,
+          },
+          category: LogCategory.ai);
     }
 
     // 后备方案：使用基于规则的规划
@@ -202,7 +209,8 @@ class TaskPlanner {
 
   /// 后备任务规划（当AI服务不可用时）
   Future<ExecutionPlan> _fallbackPlanTask(String userIntent) async {
-    _logger.info('使用后备规划器', metadata: {'userIntent': userIntent}, category: LogCategory.ai);
+    _logger.info('使用后备规划器',
+        metadata: {'userIntent': userIntent}, category: LogCategory.ai);
 
     // 分析任务复杂度
     final complexity = await _analyzeTaskComplexity(userIntent);
@@ -226,13 +234,15 @@ class TaskPlanner {
       createdAt: DateTime.now(),
     );
 
-    _logger.info('后备任务规划完成', metadata: {
-      'planId': plan.id,
-      'complexity': complexity.name,
-      'stepCount': steps.length,
-      'estimatedDuration': estimatedDuration.inSeconds,
-      'riskCount': risks.length,
-    }, category: LogCategory.ai);
+    _logger.info('后备任务规划完成',
+        metadata: {
+          'planId': plan.id,
+          'complexity': complexity.name,
+          'stepCount': steps.length,
+          'estimatedDuration': estimatedDuration.inSeconds,
+          'riskCount': risks.length,
+        },
+        category: LogCategory.ai);
 
     return plan;
   }
@@ -247,7 +257,8 @@ class TaskPlanner {
 
     if (complexKeywords.any((keyword) => lowerIntent.contains(keyword))) {
       return TaskComplexity.complex;
-    } else if (moderateKeywords.any((keyword) => lowerIntent.contains(keyword))) {
+    } else if (moderateKeywords
+        .any((keyword) => lowerIntent.contains(keyword))) {
       return TaskComplexity.moderate;
     } else if (simpleKeywords.any((keyword) => lowerIntent.contains(keyword))) {
       return TaskComplexity.simple;
@@ -379,14 +390,18 @@ class TaskPlanner {
   Duration _estimateExecutionTime(List<ExecutionStep> steps) {
     final baseTimePerStep = Duration(seconds: 3);
     final networkTimeBuffer = Duration(seconds: 2);
-    return Duration(seconds: steps.length * baseTimePerStep.inSeconds + networkTimeBuffer.inSeconds);
+    return Duration(
+        seconds: steps.length * baseTimePerStep.inSeconds +
+            networkTimeBuffer.inSeconds);
   }
 
   Future<List<RiskFactor>> _assessRisks(List<ExecutionStep> steps) async {
     final risks = <RiskFactor>[];
 
     // 网络相关风险
-    if (steps.any((step) => step.type == 'Type' && (step.params['text']?.toString().length ?? 0) > 100)) {
+    if (steps.any((step) =>
+        step.type == 'Type' &&
+        (step.params['text']?.toString().length ?? 0) > 100)) {
       risks.add(RiskFactor(
         type: 'input_complexity',
         description: '输入内容较长，可能影响输入稳定性',
@@ -423,10 +438,10 @@ class EnhancedExecutionEngine {
   final TaskPlanner _planner = TaskPlanner();
 
   /// 执行用户指令 - AI驱动的完整任务执行
-  Future<Map<String, dynamic>> executeUserInstruction(String instruction) async {
+  Future<Map<String, dynamic>> executeUserInstruction(
+      String instruction) async {
     _logger.info('开始执行用户指令',
-      metadata: {'instruction': instruction},
-      category: LogCategory.user);
+        metadata: {'instruction': instruction}, category: LogCategory.user);
 
     if (kIsWeb) {
       // Web端不支持实际执行，返回模拟结果
@@ -466,12 +481,14 @@ class EnhancedExecutionEngine {
       // 使用AI规划器生成执行计划（如果没有截图则退化为文本规划）
       final plan = await _planner.planTask(instruction, screenshot: screenshot);
 
-      _logger.info('任务规划完成', metadata: {
-        'planId': plan.id,
-        'stepCount': plan.steps.length,
-        'complexity': plan.complexity.name,
-        'estimatedTime': plan.estimatedDuration.inSeconds,
-      }, category: LogCategory.ai);
+      _logger.info('任务规划完成',
+          metadata: {
+            'planId': plan.id,
+            'stepCount': plan.steps.length,
+            'complexity': plan.complexity.name,
+            'estimatedTime': plan.estimatedDuration.inSeconds,
+          },
+          category: LogCategory.ai);
 
       // 执行计划中的所有步骤
       final results = <ExecutionResult>[];
@@ -485,12 +502,12 @@ class EnhancedExecutionEngine {
         if (!result.success) {
           allSuccess = false;
           _logger.warn('步骤执行失败，停止执行',
-            metadata: {
-              'stepIndex': i,
-              'stepId': step.id,
-              'reason': result.reason,
-            },
-            category: LogCategory.device);
+              metadata: {
+                'stepIndex': i,
+                'stepId': step.id,
+                'reason': result.reason,
+              },
+              category: LogCategory.device);
           break;
         }
 
@@ -513,28 +530,27 @@ class EnhancedExecutionEngine {
         'completedSteps': results.length,
         'successfulSteps': results.where((r) => r.success).length,
         'totalDuration': totalDuration.inMilliseconds,
-        'results': results.map((r) => {
-          'stepId': r.stepId,
-          'success': r.success,
-          'duration': r.duration.inMilliseconds,
-          'reason': r.reason,
-        }).toList(),
+        'results': results
+            .map((r) => {
+                  'stepId': r.stepId,
+                  'success': r.success,
+                  'duration': r.duration.inMilliseconds,
+                  'reason': r.reason,
+                })
+            .toList(),
       };
 
-      _logger.info('指令执行完成',
-        metadata: summary,
-        category: LogCategory.user);
+      _logger.info('指令执行完成', metadata: summary, category: LogCategory.user);
 
       return summary;
-
     } catch (e, stackTrace) {
       _logger.error('指令执行失败',
-        metadata: {
-          'instruction': instruction,
-          'error': e.toString(),
-          'stackTrace': stackTrace.toString(),
-        },
-        category: LogCategory.user);
+          metadata: {
+            'instruction': instruction,
+            'error': e.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+          category: LogCategory.user);
 
       return {
         'success': false,
@@ -548,12 +564,14 @@ class EnhancedExecutionEngine {
     final stopwatch = Stopwatch()..start();
     final stepId = step.id;
 
-    _logger.info('开始执行步骤: ${step.type}', metadata: {
-      'stepId': stepId,
-      'type': step.type,
-      'params': step.params,
-      'confidenceScore': step.confidenceScore,
-    }, category: LogCategory.device);
+    _logger.info('开始执行步骤: ${step.type}',
+        metadata: {
+          'stepId': stepId,
+          'type': step.type,
+          'params': step.params,
+          'confidenceScore': step.confidenceScore,
+        },
+        category: LogCategory.device);
 
     try {
       // 前置条件检查
@@ -575,7 +593,8 @@ class EnhancedExecutionEngine {
 
           // 结果验证
           if (await _verifyResult(step, result)) {
-            _logger.info('步骤执行成功: ${step.type}',
+            _logger.info(
+              '步骤执行成功: ${step.type}',
               metadata: {
                 'stepId': stepId,
                 'duration': stopwatch.elapsedMilliseconds,
@@ -596,7 +615,8 @@ class EnhancedExecutionEngine {
           }
         } catch (e) {
           lastError = e.toString();
-          _logger.warn('步骤执行失败 (尝试 $attempt/${step.maxRetries}): $e',
+          _logger.warn(
+            '步骤执行失败 (尝试 $attempt/${step.maxRetries}): $e',
             metadata: {
               'stepId': stepId,
               'type': step.type,
@@ -618,14 +638,15 @@ class EnhancedExecutionEngine {
         duration: stopwatch.elapsed,
         warnings: ['重试${step.maxRetries}次后仍失败'],
       );
-
     } catch (e, stackTrace) {
-      _logger.error('步骤执行异常: ${step.type}', metadata: {
-        'stepId': stepId,
-        'error': e.toString(),
-        'stackTrace': stackTrace.toString(),
-        'duration': stopwatch.elapsedMilliseconds,
-      }, category: LogCategory.device);
+      _logger.error('步骤执行异常: ${step.type}',
+          metadata: {
+            'stepId': stepId,
+            'error': e.toString(),
+            'stackTrace': stackTrace.toString(),
+            'duration': stopwatch.elapsedMilliseconds,
+          },
+          category: LogCategory.device);
 
       return ExecutionResult.failure(
         stepId: stepId,
@@ -640,7 +661,8 @@ class EnhancedExecutionEngine {
   Future<bool> _checkPreconditions(ExecutionStep step) async {
     for (final condition in step.preconditions) {
       if (!await _evaluateCondition(condition)) {
-        _logger.warn('前置条件检查失败: $condition',
+        _logger.warn(
+          '前置条件检查失败: $condition',
           metadata: {'stepId': step.id, 'condition': condition},
           category: LogCategory.device,
         );
@@ -652,8 +674,7 @@ class EnhancedExecutionEngine {
 
   Future<bool> _evaluateCondition(String condition) async {
     _logger.info('跳过前置条件检查: $condition',
-        metadata: {'condition': condition},
-        category: LogCategory.device);
+        metadata: {'condition': condition}, category: LogCategory.device);
     return true;
   }
 
@@ -703,8 +724,7 @@ class EnhancedExecutionEngine {
       return {'success': true, 'element': element};
     } else {
       _logger.warn('当前版本不支持通过名称点击元素: $element',
-          metadata: {'element': element},
-          category: LogCategory.device);
+          metadata: {'element': element}, category: LogCategory.device);
       return {'success': false, 'element': element};
     }
   }
@@ -719,7 +739,8 @@ class EnhancedExecutionEngine {
     return {'success': true, 'text': text};
   }
 
-  Future<Map<String, dynamic>> _performSwipe(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _performSwipe(
+      Map<String, dynamic> params) async {
     final start = params['start'];
     final end = params['end'];
     final duration = params['duration'] ?? 500;
@@ -756,11 +777,13 @@ class EnhancedExecutionEngine {
     return {'success': true, 'waitSeconds': waitSeconds};
   }
 
-  Future<Map<String, dynamic>> _performAnalyze(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _performAnalyze(
+      Map<String, dynamic> params) async {
     final target = params['target'] ?? '当前界面';
 
     final screenshotBase64 = await AutoGLMService.getScreenshot();
-    final hasScreenshot = screenshotBase64 != null && screenshotBase64.isNotEmpty;
+    final hasScreenshot =
+        screenshotBase64 != null && screenshotBase64.isNotEmpty;
 
     return {
       'success': hasScreenshot,
@@ -779,7 +802,8 @@ class EnhancedExecutionEngine {
     return {'success': true};
   }
 
-  Future<bool> _verifyResult(ExecutionStep step, Map<String, dynamic> result) async {
+  Future<bool> _verifyResult(
+      ExecutionStep step, Map<String, dynamic> result) async {
     // 基础成功检查
     if (result['success'] != true) {
       return false;
@@ -795,7 +819,8 @@ class EnhancedExecutionEngine {
     return true;
   }
 
-  Future<bool> _verifyOutcome(String outcome, Map<String, dynamic> result) async {
+  Future<bool> _verifyOutcome(
+      String outcome, Map<String, dynamic> result) async {
     _logger.info('跳过结果验证: $outcome',
         metadata: {'outcome': outcome, 'context': result},
         category: LogCategory.device);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/device_info_provider.dart';
-import '../../../services/api_service.dart';
+import '../../../services/user_service.dart';
 import '../../../services/update_service.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
@@ -90,7 +90,8 @@ class AboutModule extends StatelessWidget {
                   runSpacing: 8,
                   children: categories
                       .map((cat) => ChoiceChip(
-                            label: Text(cat, style: const TextStyle(fontSize: 13)),
+                            label:
+                                Text(cat, style: const TextStyle(fontSize: 13)),
                             selected: selectedCategory == cat,
                             onSelected: (selected) {
                               setState(() => selectedCategory = cat);
@@ -117,7 +118,8 @@ class AboutModule extends StatelessWidget {
                   decoration: const InputDecoration(
                     hintText: '请详细描述问题现象、机型、系统版本等',
                     border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   maxLines: 5,
@@ -135,7 +137,8 @@ class AboutModule extends StatelessWidget {
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -149,7 +152,7 @@ class AboutModule extends StatelessWidget {
                       }
                       setState(() => isSubmitting = true);
                       try {
-                        await ApiService.submitFeedback(
+                        await UserService.submitFeedback(
                           email: _feedbackEmail,
                           category: selectedCategory,
                           content: contentController.text.trim(),

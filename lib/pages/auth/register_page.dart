@@ -217,7 +217,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                 AutovalidateMode.onUserInteraction,
                             focusNode: _usernameFocus,
                             textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_emailFocus),
+                            onFieldSubmitted: (_) => FocusScope.of(context)
+                                .requestFocus(_emailFocus),
                           ),
                           const SizedBox(height: 20),
                           ValueListenableBuilder<List<String>>(
@@ -238,7 +239,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                     autovalidateMode:
                                         AutovalidateMode.onUserInteraction,
                                     textInputAction: TextInputAction.next,
-                                    onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_passwordFocus),
+                                    onFieldSubmitted: (_) =>
+                                        FocusScope.of(context)
+                                            .requestFocus(_passwordFocus),
                                   ),
                                   EmailSuffixBar(
                                     candidates: completions,
@@ -260,7 +263,8 @@ class _RegisterPageState extends State<RegisterPage> {
                             autovalidateMode: AutovalidateMode.disabled,
                             focusNode: _passwordFocus,
                             textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(_confirmPasswordFocus),
+                            onFieldSubmitted: (_) => FocusScope.of(context)
+                                .requestFocus(_confirmPasswordFocus),
                           ),
                           const SizedBox(height: 20),
                           MoeInputField(
@@ -285,7 +289,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                                  borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusButton),
                                 ),
                                 elevation: 8,
                                 shadowColor:
@@ -321,7 +326,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusMd),
                             onTap: () => Navigator.pop(context),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(

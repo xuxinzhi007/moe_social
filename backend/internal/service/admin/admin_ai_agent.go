@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListAiAgents(ctx context.Context, in *adminv1.AdminListAiAgentsReq) (*adminv1.AdminListAiAgentsResp, error) {
-	out, err := adminbiz.ListAiAgents(ctx, s.db, in)
+	out, err := adminbiz.ListAiAgents(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (s *AppService) ListAiAgents(ctx context.Context, in *adminv1.AdminListAiAg
 }
 
 func (s *AppService) DeleteAiAgent(ctx context.Context, in *adminv1.AdminDeleteAiAgentReq) (*adminv1.AdminDeleteAiAgentResp, error) {
-	out, err := adminbiz.DeleteAiAgent(ctx, s.db, in)
+	out, err := adminbiz.DeleteAiAgent(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}

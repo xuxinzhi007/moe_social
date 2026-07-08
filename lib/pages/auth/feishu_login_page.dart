@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_flow_service.dart';
 import '../../utils/feishu_oauth_helper.dart';
 import '../../utils/webview_platform_init.dart';
 import 'feishu_login_result.dart';
@@ -35,8 +36,8 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
       if (WebViewPlatform.instance == null) {
         throw Exception('当前环境无法使用内置授权页，请升级 App 后重试');
       }
-      final url =
-          await ApiService.getFeishuAuthorizeUrl(state: buildFeishuOAuthState());
+      final url = await AuthFlowService.getFeishuAuthorizeUrl(
+          state: buildFeishuOAuthState());
       final controller = WebViewController();
       // Web 端 webview_flutter 未实现 setJavaScriptMode，跳过即可。
       if (!kIsWeb) {
@@ -86,7 +87,7 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
 
   String _friendlyInitError(Object e) {
     final msg = e.toString();
-    final api = ApiService.baseUrl;
+    final api = ApiClient.baseUrl;
     if (!kIsWeb && msg.contains('127.0.0.1')) {
       return '飞书回调地址须与 App 访问的 API 一致。\n'
           '请将 config 中 feishu.redirect_uri 设为：\n'

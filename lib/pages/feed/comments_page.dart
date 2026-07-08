@@ -4,7 +4,8 @@ import '../../models/comment.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
-import '../../services/api_service.dart';
+import '../../services/post_service.dart';
+import '../../services/user_service.dart';
 import '../../auth_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
@@ -69,7 +70,7 @@ class _CommentsPageState extends State<CommentsPage> {
     if (userId == null) return;
 
     try {
-      final user = await ApiService.getUserInfo(userId);
+      final user = await UserService.getUserInfo(userId);
       setState(() {
         _userName = user.username;
         _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
@@ -130,7 +131,7 @@ class _CommentsPageState extends State<CommentsPage> {
         replyToUserName: _replyToUserName ?? '',
       );
 
-      final result = await ApiService.addCommentWithUnlocks(comment);
+      final result = await PostService.addCommentWithUnlocks(comment);
       final unlocked = result.newAchievements;
 
       final expandRootId = _replyThreadRootIdForParent(_replyParentId);

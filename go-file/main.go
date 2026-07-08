@@ -21,6 +21,10 @@ func main() {
 	}
 	baseDir = absRoot
 
+	if err := ensureWorkspace(baseDir); err != nil {
+		log.Fatalf("init workspace: %v", err)
+	}
+
 	initDashboard()
 	log.Print(appConfig.configSummary())
 
@@ -34,9 +38,10 @@ func main() {
 	r.StaticFS("/static", http.Dir("./static"))
 
 	registerDashboardRoutes(r)
+	registerWorkspaceRoutes(r)
 	registerMCPRoutes(r)
 
-	log.Printf("MCP server on :%s, root=%s, auth=%t", port, baseDir, authToken != "")
+	log.Printf("MCP server on :%s, workspace=%s, auth=%t", port, baseDir, authToken != "")
 	log.Printf("dashboard: http://localhost:%s/static/dashboard.html", port)
 	log.Printf("endpoints: POST/GET/DELETE /mcp, GET/POST /sse, POST /messages")
 	log.Fatal(r.Run(":" + port))

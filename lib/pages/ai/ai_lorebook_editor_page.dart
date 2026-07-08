@@ -78,7 +78,8 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
         updatedAt: now,
       );
       final normalizedEntries = _entries
-          .map((entry) => entry.copyWith(lorebookId: lorebook.id, updatedAt: now))
+          .map((entry) =>
+              entry.copyWith(lorebookId: lorebook.id, updatedAt: now))
           .toList();
       if (widget.lorebook == null) {
         await AiAgentCloudService().saveLorebook(lorebook, normalizedEntries);
@@ -187,7 +188,8 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
                   updatedAt: now,
                 );
                 setState(() {
-                  final idx = _entries.indexWhere((item) => item.id == entry.id);
+                  final idx =
+                      _entries.indexWhere((item) => item.id == entry.id);
                   if (idx == -1) {
                     _entries = [..._entries, entry];
                   } else {

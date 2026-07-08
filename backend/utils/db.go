@@ -42,10 +42,9 @@ func InitConfig() error {
 	viper.SetConfigType("yaml")
 
 	// 添加多个配置文件路径，支持从不同目录读取
-	viper.AddConfigPath("./config")                                                 // 当前目录下的config
-	viper.AddConfigPath("../config")                                                // 父目录下的config
-	viper.AddConfigPath("../../config")                                             // 祖父目录下的config
-	viper.AddConfigPath("/Users/admin/Documents/SuperAI_WebProject/backend/config") // 绝对路径
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath("../config")
+	viper.AddConfigPath("../../config")
 
 	// 读取配置文件
 	if err := viper.ReadInConfig(); err != nil {

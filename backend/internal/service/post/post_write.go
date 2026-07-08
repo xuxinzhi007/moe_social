@@ -2,12 +2,13 @@ package postapp
 
 import (
 	"context"
+
+	"backend/internal/platform/moelog"
 	"backend/internal/platform/socialhook"
 	"backend/pkg/achievement"
 	postv1 "backend/api/post/v1"
 	postbiz "backend/internal/biz/post"
 	checkinbiz "backend/internal/biz/checkin"
-	checkindata "backend/internal/data/checkin"
 )
 
 func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (*postv1.CreatePostReply, error) {
@@ -28,9 +29,13 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		return nil, err
 	}
 
-	if thumb, err := postbiz.EnsureHandDrawThumb(ctx, s.imageCfg, result.User, result.Post.HandDrawCard, result.Post.HandDrawThumbURL); err == nil && thumb != "" && thumb != result.Post.HandDrawThumbURL {
+	if thumb, err := postbiz.EnsureHandDrawThumb(ctx, s.imageCfg, result.User, result.Post.HandDrawCard, result.Post.HandDrawThumbURL); err != nil {
+		moelog.Warnf("ensure hand draw thumb failed post_id=%v err=%v", result.Post.ID, err)
+	} else if thumb != "" && thumb != result.Post.HandDrawThumbURL {
 		result.Post.HandDrawThumbURL = thumb
-		_ = s.store.WithContext(ctx).SavePost(ctx, &result.Post)
+		if err := s.store.WithContext(ctx).SavePost(ctx, &result.Post); err != nil {
+			moelog.Warnf("save hand draw thumb failed post_id=%v err=%v", result.Post.ID, err)
+		}
 	}
 
 	achUnlocks := socialhook.ApplyPostCreatedAchievements(s.store.Raw(), socialhook.PostCreatedMeta{
@@ -39,8 +44,9 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 		MoodTag: result.Post.MoodTag, HasHandDraw: result.Post.HandDrawCard != "",
 		HandDrawApproved: result.HandDrawApproved,
 	})
-	_, _ = checkinbiz.GrantDailyExpOnce(ctx, checkindata.NewStore(s.store.Raw()),
-		in.GetUserId(), checkinbiz.DailyExpActionPost)
+	if _, err := checkinbiz.GrantDailyExpOnce(ctx, s.checkinStore, in.GetUserId(), checkinbiz.DailyExpActionPost); err != nil {
+		moelog.Warnf("grant daily exp for post failed user_id=%s err=%v", in.GetUserId(), err)
+	}
 
 	post := postbiz.BuildPostV1ForDetail(result.Post, result.User, false)
 	post.Images = result.Images

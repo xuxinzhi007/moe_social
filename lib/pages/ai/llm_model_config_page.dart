@@ -5,7 +5,7 @@ import '../../theme/moe_tokens.dart';
 import 'package:http/http.dart' as http;
 
 import '../../services/api_response.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
 import '../../services/llm_endpoint_config.dart';
 
 class LlmModelConfigPage extends StatefulWidget {
@@ -36,16 +36,15 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
     });
     try {
       final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-      final uri = Uri.parse('${ApiService.baseUrl}/api/llm/config');
-      ApiService.logDirectHttp('GET', uri);
+      final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/config');
+      ApiClient.logDirectHttp('GET', uri);
       final response = await http
           .get(
             uri,
-            headers: ApiService.mergeTunnelHeaders(
+            headers: ApiClient.mergeTunnelHeaders(
               uri,
               headers: {
-                if (ApiService.token case final t?)
-                  'Authorization': 'Bearer $t',
+                if (ApiClient.token case final t?) 'Authorization': 'Bearer $t',
               },
             ),
           )
@@ -226,10 +225,8 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          _kv('推理服务地址',
-                              '${_ollama?['base_url'] ?? '-'}'),
-                          _kv('API 风格',
-                              '${_ollama?['api_style'] ?? 'openai'}'),
+                          _kv('推理服务地址', '${_ollama?['base_url'] ?? '-'}'),
+                          _kv('API 风格', '${_ollama?['api_style'] ?? 'openai'}'),
                           _kv('请求超时（秒）',
                               '${_ollama?['timeout_seconds'] ?? '-'}'),
                           _kv(

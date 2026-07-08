@@ -34,6 +34,7 @@ func dispatchMCP(ctx mcpCallContext, req jsonRPCRequest) mcpResponse {
 						"name":    "go-file-mcp",
 						"version": serverVersion,
 					},
+					"instructions": mcpServerInstructions,
 				},
 				"_sessionID": sessionID,
 			},
@@ -79,13 +80,16 @@ func dispatchMCP(ctx mcpCallContext, req jsonRPCRequest) mcpResponse {
 			},
 		}
 	default:
-		recordMCPRequest(ctx, req.Method, true, "no-op")
+		recordMCPRequest(ctx, req.Method, false, "unknown method")
 		return mcpResponse{
 			status: http.StatusOK,
 			body: gin.H{
 				"jsonrpc": "2.0",
 				"id":      req.ID,
-				"result":  gin.H{},
+				"error": gin.H{
+					"code":    -32601,
+					"message": "method not found: " + req.Method,
+				},
 			},
 		}
 	}
@@ -101,80 +105,6 @@ func toolsListResult() gin.H {
 		})
 	}
 	return gin.H{"tools": tools}
-}
-
-type toolCallDetail struct {
-	tool    string
-	summary string
-	isError bool
-}
-
-func toolsCallResult(req jsonRPCRequest) (gin.H, bool, toolCallDetail, string) {
-	var params struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-	}
-	if err := json.Unmarshal(req.Params, &params); err != nil {
-		return nil, false, toolCallDetail{tool: "unknown"}, "invalid params"
-	}
-
-	detail := toolCallDetail{tool: params.Name}
-	var text string
-	var isError bool
-
-	switch params.Name {
-	case "list_files":
-		var args struct {
-			Path string `json:"path"`
-		}
-		_ = json.Unmarshal(params.Arguments, &args)
-		detail.summary = fmt.Sprintf("path=%q", args.Path)
-		text, isError = toolListFiles(args.Path)
-	case "read_file":
-		var args struct {
-			Path string `json:"path"`
-		}
-		_ = json.Unmarshal(params.Arguments, &args)
-		detail.summary = fmt.Sprintf("path=%q", args.Path)
-		text, isError = toolReadFile(args.Path)
-	case "write_file":
-		var args struct {
-			Path    string `json:"path"`
-			Content string `json:"content"`
-		}
-		_ = json.Unmarshal(params.Arguments, &args)
-		detail.summary = fmt.Sprintf("path=%q bytes=%d", args.Path, len(args.Content))
-		text, isError = toolWriteFile(args.Path, args.Content)
-	default:
-		return gin.H{
-			"jsonrpc": "2.0",
-			"id":      req.ID,
-			"error": gin.H{
-				"code":    -32601,
-				"message": "unknown tool",
-			},
-		}, true, toolCallDetail{tool: params.Name, summary: "unknown tool"}, ""
-	}
-
-	detail.isError = isError
-	errMsg := ""
-	if isError {
-		errMsg = text
-	}
-
-	result := gin.H{
-		"content": []gin.H{
-			{"type": "text", "text": text},
-		},
-	}
-	if isError {
-		result["isError"] = true
-	}
-	return gin.H{
-		"jsonrpc": "2.0",
-		"id":      req.ID,
-		"result":  result,
-	}, true, detail, errMsg
 }
 
 func writeMCPResponse(c *gin.Context, resp mcpResponse) {

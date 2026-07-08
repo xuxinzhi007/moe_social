@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
-import '../../services/api_service.dart';
+import '../../services/post_service.dart';
 import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/post_card.dart';
@@ -87,9 +87,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       );
       final posts = result['posts'] as List<Post>;
       final totalRaw = result['total'];
-      final total = totalRaw is int
-          ? totalRaw
-          : (totalRaw is num ? totalRaw.toInt() : 0);
+      final total =
+          totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
 
       setState(() {
         _posts = posts;
@@ -129,9 +128,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       );
       final morePosts = result['posts'] as List<Post>;
       final totalRaw = result['total'];
-      final total = totalRaw is int
-          ? totalRaw
-          : (totalRaw is num ? totalRaw.toInt() : 0);
+      final total =
+          totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
 
       if (morePosts.isEmpty) {
         setState(() {
@@ -218,7 +216,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.tag_outlined, size: 64, color: Colors.grey[400]),
+                      Icon(Icons.tag_outlined,
+                          size: 64, color: Colors.grey[400]),
                       const SizedBox(height: 16),
                       Text(
                         '还没有相关动态呢 ~',
@@ -270,8 +269,8 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                               final i =
                                   _posts.indexWhere((p) => p.id == post.id);
                               if (i != -1) {
-                                _posts[i] = _posts[i]
-                                    .copyWith(comments: result);
+                                _posts[i] =
+                                    _posts[i].copyWith(comments: result);
                               }
                             });
                           }
@@ -300,15 +299,20 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                                 );
                                 if (updated != null && mounted) {
                                   setState(() {
-                                    final i = _posts.indexWhere(
-                                        (p) => p.id == updated.id);
+                                    final i = _posts
+                                        .indexWhere((p) => p.id == updated.id);
                                     if (i != -1) {
                                       _posts[i] = updated.copyWith(
                                         likes: post.likes,
                                         comments: post.comments,
                                         isLiked: post.isLiked,
-                                        userName: updated.userName.isNotEmpty ? updated.userName : post.userName,
-                                        userAvatar: updated.userAvatar.isNotEmpty ? updated.userAvatar : post.userAvatar,
+                                        userName: updated.userName.isNotEmpty
+                                            ? updated.userName
+                                            : post.userName,
+                                        userAvatar:
+                                            updated.userAvatar.isNotEmpty
+                                                ? updated.userAvatar
+                                                : post.userAvatar,
                                       );
                                     }
                                   });
@@ -318,7 +322,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
                         onDelete: post.userId == (AuthService.currentUser ?? '')
                             ? () async {
                                 try {
-                                  await ApiService.deletePost(post.id);
+                                  await PostService.deletePost(post.id);
                                   if (!mounted) return;
                                   setState(() => _posts
                                       .removeWhere((p) => p.id == post.id));

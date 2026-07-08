@@ -5,7 +5,8 @@ import 'api_service.dart';
 
 /// 用户设备登记（与对话记忆 [MemoryService] 分离）。
 class DeviceService {
-  static Future<void> syncDevice(String userId, Map<String, dynamic> info) async {
+  static Future<void> syncDevice(
+      String userId, Map<String, dynamic> info) async {
     await ApiService.post(
       '/api/user/$userId/devices/sync',
       body: info,

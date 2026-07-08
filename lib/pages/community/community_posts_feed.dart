@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/post.dart';
-import '../../services/api_service.dart';
+import '../../services/post_service.dart';
 import '../../auth_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -12,7 +12,7 @@ import '../../widgets/moe_search_bar.dart';
 import '../../widgets/post_card.dart';
 import '../../utils/post_navigation.dart';
 
-/// 社区内「话题讨论 / 内容广场」共用的帖子流：走 [ApiService.getPosts]，点赞与评论与首页闭环一致。
+/// 社区内「话题讨论 / 内容广场」共用的帖子流：走 [PostService.getPosts]，点赞与评论与首页闭环一致。
 class CommunityPostsFeed extends StatefulWidget {
   const CommunityPostsFeed({
     super.key,
@@ -28,6 +28,7 @@ class CommunityPostsFeed extends StatefulWidget {
   final String emptyTitle;
   final String emptySubtitle;
   final bool showTextSearch;
+
   /// 为 true 时展示「全部 / 带图 / 手绘 / 文字」筛选（仅客户端过滤已拉取的列表）。
   final bool showVisualKindRow;
 
@@ -58,7 +59,6 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
     }
   }
 
-
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -66,7 +66,7 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
     });
     try {
       final viewer = AuthService.currentUser;
-      final map = await ApiService.getPosts(
+      final map = await PostService.getPosts(
         page: 1,
         pageSize: 30,
         viewerUserId: viewer,
@@ -104,7 +104,8 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
           break;
         case _VisualKind.image:
           list = list
-              .where((p) => p.images.isNotEmpty || p.handDrawThumbUrl.isNotEmpty)
+              .where(
+                  (p) => p.images.isNotEmpty || p.handDrawThumbUrl.isNotEmpty)
               .toList();
           break;
         case _VisualKind.handDraw:
@@ -225,12 +226,14 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
                             },
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(right: 12, bottom: 4),
+                            padding:
+                                const EdgeInsets.only(right: 12, bottom: 4),
                             child: Align(
                               alignment: Alignment.centerRight,
                               child: TextButton.icon(
                                 onPressed: () => _openPostDetail(post),
-                                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                                icon: const Icon(Icons.open_in_new_rounded,
+                                    size: 18),
                                 label: const Text('查看全文与评论'),
                               ),
                             ),

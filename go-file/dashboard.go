@@ -12,7 +12,7 @@ import (
 
 const (
 	maxEventLog     = 200
-	serverVersion   = "1.3.0"
+	serverVersion   = "1.4.0"
 	dashboardAPIVer = "1"
 )
 
@@ -65,56 +65,6 @@ func initDashboard() {
 	}
 	for _, t := range toolDefinitions() {
 		dash.toolStats[t.Name] = &toolStats{}
-	}
-}
-
-func toolDefinitions() []toolDef {
-	return []toolDef{
-		{
-			Name:        "list_files",
-			Description: "List files and directories under the MCP root folder",
-			InputSchema: gin.H{
-				"type": "object",
-				"properties": gin.H{
-					"path": gin.H{
-						"type":        "string",
-						"description": "Relative directory path, empty for root",
-					},
-				},
-			},
-		},
-		{
-			Name:        "read_file",
-			Description: "Read a file under the MCP root folder",
-			InputSchema: gin.H{
-				"type": "object",
-				"properties": gin.H{
-					"path": gin.H{
-						"type":        "string",
-						"description": "Relative file path",
-					},
-				},
-				"required": []string{"path"},
-			},
-		},
-		{
-			Name:        "write_file",
-			Description: "Write content to a file under the MCP root folder",
-			InputSchema: gin.H{
-				"type": "object",
-				"properties": gin.H{
-					"path": gin.H{
-						"type":        "string",
-						"description": "Relative file path",
-					},
-					"content": gin.H{
-						"type":        "string",
-						"description": "File content to write",
-					},
-				},
-				"required": []string{"path", "content"},
-			},
-		},
 	}
 }
 
@@ -280,11 +230,11 @@ func dashboardSnapshot() gin.H {
 	return gin.H{
 		"api_version": dashboardAPIVer,
 		"server": ginH{
-			"name":           "go-file-mcp",
-			"version":        serverVersion,
-			"protocol":       protocolVersion,
-			"started_at":     dash.startedAt.Format(time.RFC3339),
-			"uptime_seconds": int64(time.Since(dash.startedAt).Seconds()),
+			"name":             "go-file-mcp",
+			"version":          serverVersion,
+			"protocol":         protocolVersion,
+			"started_at":       dash.startedAt.Format(time.RFC3339),
+			"uptime_seconds":   int64(time.Since(dash.startedAt).Seconds()),
 			"port":             appConfig.serverPort(),
 			"root":             baseDir,
 			"auth_enabled":     authToken != "",

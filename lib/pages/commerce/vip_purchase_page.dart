@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/commerce_service.dart';
 import '../../models/vip_plan.dart';
 import 'vip_order_confirm_page.dart';
 import '../../widgets/fade_in_up.dart';
@@ -42,8 +42,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     try {
       final userId = AuthService.currentUser;
       final futures = <Future<dynamic>>[
-        ApiService.getVipPlans(),
-        if (userId != null) ApiService.getUserInfo(userId),
+        CommerceService.getVipPlans(),
+        if (userId != null) CommerceService.getUserInfo(userId),
       ];
       final results = await Future.wait(futures);
       final plans = results[0] as List<VipPlan>;
@@ -97,7 +97,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
     final userId = AuthService.currentUser;
     if (userId == null) return;
     try {
-      final userInfo = await ApiService.getUserInfo(userId);
+      final userInfo = await CommerceService.getUserInfo(userId);
       if (mounted) {
         setState(() {
           _balance = userInfo.balance;
@@ -170,7 +170,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           Container(
             height: 320,
             decoration: BoxDecoration(
-                    gradient: LinearGradient(
+              gradient: LinearGradient(
                 colors: [_moe.primary, MoeTokens.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -221,8 +221,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 10, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color:
-                                              Colors.white.withValues(alpha: 0.2),
+                                          color: Colors.white
+                                              .withValues(alpha: 0.2),
                                           borderRadius:
                                               BorderRadius.circular(14),
                                         ),
@@ -485,7 +485,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 duration: const Duration(milliseconds: 200),
                 opacity: isSelected ? 1 : 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFD66B),
                     borderRadius: BorderRadius.circular(10),
@@ -594,7 +595,8 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
+                  style: TextStyle(
+                      color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
                 ),
               ],
             ),

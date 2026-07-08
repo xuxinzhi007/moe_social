@@ -34,7 +34,7 @@ func defaultConfig() Config {
 	return Config{
 		Server: ServerConfig{
 			Port: "8080",
-			Root: ".",
+			Root: "./workspace",
 		},
 		Ngrok: NgrokConfig{
 			AutoStart:    false,

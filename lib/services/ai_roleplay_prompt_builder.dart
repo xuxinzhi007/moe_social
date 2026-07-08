@@ -17,9 +17,10 @@ class AiRoleplayPromptBuilder {
     String? userPersona,
     List<AiLorebookEntry> lorebookEntries = const [],
   }) {
-    final basePrompt = (overrideSystemPrompt ?? agent.systemPrompt).trim().isEmpty
-        ? AiPromptDefaults.defaultAgentSystemPrompt
-        : (overrideSystemPrompt ?? agent.systemPrompt).trim();
+    final basePrompt =
+        (overrideSystemPrompt ?? agent.systemPrompt).trim().isEmpty
+            ? AiPromptDefaults.defaultAgentSystemPrompt
+            : (overrideSystemPrompt ?? agent.systemPrompt).trim();
 
     final out = StringBuffer(basePrompt);
 

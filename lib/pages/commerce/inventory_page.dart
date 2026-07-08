@@ -3,7 +3,7 @@ import '../../models/user.dart';
 import '../../models/virtual_item.dart';
 import '../../widgets/dynamic_avatar.dart';
 // import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -32,7 +32,7 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _loadInventory() async {
     // 模拟从背包ID列表加载物品详情
-    // 实际项目中应该调用 ApiService.getInventoryItems(ids)
+    // 实际项目中应该调用 UserService.getInventoryItems(ids)
 
     // 这里我们直接用 mockItems 匹配
     final allItems = VirtualItem.mockItems;
@@ -62,13 +62,13 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _equipItem(String itemId) async {
     try {
-      await ApiService.updateUserInfo(
+      await UserService.updateUserInfo(
         _currentUser.id,
         equippedFrameId: itemId,
         avatar: _currentUser.avatar.isEmpty ? null : _currentUser.avatar,
       );
 
-      final refreshed = await ApiService.getUserInfo(_currentUser.id);
+      final refreshed = await UserService.getUserInfo(_currentUser.id);
 
       if (mounted) {
         setState(() {
@@ -88,13 +88,13 @@ class _InventoryPageState extends State<InventoryPage> {
 
   Future<void> _unequipItem() async {
     try {
-      await ApiService.updateUserInfo(
+      await UserService.updateUserInfo(
         _currentUser.id,
         clearEquippedFrame: true,
         avatar: _currentUser.avatar.isEmpty ? null : _currentUser.avatar,
       );
 
-      final refreshed = await ApiService.getUserInfo(_currentUser.id);
+      final refreshed = await UserService.getUserInfo(_currentUser.id);
 
       if (mounted) {
         setState(() {
@@ -140,7 +140,8 @@ class _InventoryPageState extends State<InventoryPage> {
                     Text(
                       _currentUser.username,
                       style: const TextStyle(
-                          fontSize: MoeTokens.textLg, fontWeight: FontWeight.bold),
+                          fontSize: MoeTokens.textLg,
+                          fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     if (_currentUser.equippedFrameId != null)
@@ -192,7 +193,8 @@ class _InventoryPageState extends State<InventoryPage> {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: MoeTokens.cardBackground,
-                                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                                borderRadius:
+                                    BorderRadius.circular(MoeTokens.radiusMd),
                                 border: Border.all(
                                   color: isEquipped
                                       ? Colors.orange
@@ -267,7 +269,8 @@ class _InventoryPageState extends State<InventoryPage> {
                                         color: Colors.orange[50],
                                         borderRadius:
                                             const BorderRadius.vertical(
-                                                bottom: Radius.circular(MoeTokens.radiusMd)),
+                                                bottom: Radius.circular(
+                                                    MoeTokens.radiusMd)),
                                       ),
                                       child: const Center(
                                         child: Text(

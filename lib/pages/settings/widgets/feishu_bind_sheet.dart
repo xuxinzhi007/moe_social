@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../auth_service.dart';
 import '../../../models/user.dart';
-import '../../../services/api_service.dart';
+import '../../../services/user_service.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/feishu_enterprise_invite_banner.dart';
 import '../../../widgets/moe_toast.dart';
@@ -19,7 +19,7 @@ Future<void> showFeishuBindSheet(BuildContext context) async {
 
   User currentUser;
   try {
-    currentUser = await ApiService.getUserInfo(userId);
+    currentUser = await UserService.getUserInfo(userId);
   } catch (_) {
     if (context.mounted) {
       MoeToast.error(context, '加载用户信息失败，请稍后重试');
@@ -141,7 +141,7 @@ Future<void> showFeishuBindSheet(BuildContext context) async {
                             setLocal(() => busy = true);
                             try {
                               final updated =
-                                  await ApiService.bindFeishuEmail(email);
+                                  await UserService.bindFeishuEmail(email);
                               currentUser = updated;
                               if (ctx.mounted) {
                                 MoeToast.success(ctx, '飞书绑定成功');
@@ -172,7 +172,7 @@ Future<void> showFeishuBindSheet(BuildContext context) async {
                         : () async {
                             setLocal(() => busy = true);
                             try {
-                              await ApiService.sendFeishuTestCard();
+                              await UserService.sendFeishuTestCard();
                               if (ctx.mounted) {
                                 MoeToast.success(ctx, '测试卡片已发送，请在飞书中查看');
                               }
@@ -208,7 +208,7 @@ Future<void> showFeishuBindSheet(BuildContext context) async {
                                 setLocal(() => busy = true);
                                 try {
                                   final updated =
-                                      await ApiService.unbindFeishuEmail();
+                                      await UserService.unbindFeishuEmail();
                                   currentUser = updated;
                                   emailController.clear();
                                   if (ctx.mounted) {

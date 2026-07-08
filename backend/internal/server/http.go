@@ -34,7 +34,6 @@ func RegisterOpsHTTP(srv *khttp.Server, admin *moeadmin.AdminService) {
 	}
 	r := srv.Route("/")
 	r.GET("/health", healthHandler)
-	r.GET("/migration", migrationHandler)
 	r.GET("/kratos/v1/moe/runtimes", listRuntimesHandler(admin))
 }
 

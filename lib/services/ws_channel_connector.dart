@@ -29,4 +29,3 @@ WebSocketChannel connectMoeWebSocket(
   unawaited(channel.ready.catchError((Object _) {}));
   return channel;
 }
-

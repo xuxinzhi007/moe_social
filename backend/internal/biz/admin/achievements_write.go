@@ -33,7 +33,8 @@ type UpdateAchievementInput struct {
 }
 
 // UpdateAchievement 更新成就定义。
-func UpdateAchievement(ctx context.Context, db *gorm.DB, in UpdateAchievementInput) (*adminv1.AdminAchievementItem, error) {
+func UpdateAchievement(ctx context.Context, st AdminStore, in UpdateAchievementInput) (*adminv1.AdminAchievementItem, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -80,7 +81,8 @@ func UpdateAchievement(ctx context.Context, db *gorm.DB, in UpdateAchievementInp
 }
 
 // BootstrapAchievements 空表时导入默认成就定义。
-func BootstrapAchievements(ctx context.Context, db *gorm.DB) (int32, error) {
+func BootstrapAchievements(ctx context.Context, st AdminStore) (int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return 0, gorm.ErrInvalidDB
 	}

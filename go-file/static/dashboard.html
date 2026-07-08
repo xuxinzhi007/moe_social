@@ -124,6 +124,41 @@
         .kv { display: grid; grid-template-columns: 120px 1fr; gap: 8px 12px; font-size: 13px; }
         .kv dt { color: var(--muted); }
         .kv dd { word-break: break-all; }
+        .ws-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 12px;
+            min-height: 360px;
+        }
+        @media (max-width: 800px) { .ws-layout { grid-template-columns: 1fr; } }
+        .ws-files {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 420px;
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+        .ws-file {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+        }
+        .ws-file:hover, .ws-file.active { background: rgba(79,140,255,.12); color: var(--accent); }
+        .ws-preview {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: var(--mono);
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 420px;
+            overflow: auto;
+        }
+        .ws-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
         footer {
             text-align: center;
             color: var(--muted);
@@ -169,6 +204,18 @@
             </thead>
             <tbody id="tools-body"></tbody>
         </table>
+    </section>
+
+    <section class="card" style="margin-top:16px">
+        <h2>AI 工作区文件</h2>
+        <p class="ws-meta" id="ws-meta">Grok 通过 MCP 写入的文件会出现在这里</p>
+        <div class="ws-layout">
+            <div class="ws-files" id="ws-files">加载中...</div>
+            <div>
+                <div class="ws-meta" id="ws-file-path">选择文件预览</div>
+                <pre class="ws-preview" id="ws-preview">—</pre>
+            </div>
+        </div>
     </section>
 
     <section class="grid panels" style="margin-top:16px">
@@ -233,7 +280,7 @@
         `).join('');
 
         document.getElementById('server-info').innerHTML = `
-            <dt>根目录</dt><dd>${srv.root || '--'}</dd>
+            <dt>工作区</dt><dd>${srv.root || '--'}</dd>
             <dt>端口</dt><dd>${srv.port || '--'}</dd>
             <dt>配置文件</dt><dd>${srv.config_path || 'config.json'} · ngrok.auto_start=${srv.ngrok_auto_start ? 'true' : 'false'}</dd>
             <dt>鉴权</dt><dd>${srv.auth_enabled ? '已启用 Bearer Token' : '未启用'}</dd>
@@ -321,6 +368,40 @@
         });
 
     connectSSE();
+
+    const loadWorkspace = async () => {
+        try {
+            const res = await fetch('/api/workspace/tree');
+            const data = await res.json();
+            const el = document.getElementById('ws-files');
+            document.getElementById('ws-meta').textContent =
+                `共 ${data.count || 0} 个文件 · 点击预览内容`;
+            if (!data.files || !data.files.length) {
+                el.innerHTML = '<div class="ws-file">（工作区暂无文件）</div>';
+                return;
+            }
+            el.innerHTML = data.files.map(f => `
+                <div class="ws-file" data-path="${f.path}">📄 ${f.path} <span style="color:var(--muted)">(${f.size}B)</span></div>
+            `).join('');
+            el.querySelectorAll('.ws-file[data-path]').forEach(item => {
+                item.onclick = async () => {
+                    el.querySelectorAll('.ws-file').forEach(n => n.classList.remove('active'));
+                    item.classList.add('active');
+                    const path = item.dataset.path;
+                    document.getElementById('ws-file-path').textContent = path;
+                    const r = await fetch('/api/workspace/file?path=' + encodeURIComponent(path));
+                    const d = await r.json();
+                    document.getElementById('ws-preview').textContent =
+                        d.content ?? d.error ?? '无法预览';
+                };
+            });
+        } catch (e) {
+            document.getElementById('ws-files').textContent = '加载失败';
+        }
+    };
+
+    loadWorkspace();
+    setInterval(loadWorkspace, 5000);
 </script>
 </body>
 </html>

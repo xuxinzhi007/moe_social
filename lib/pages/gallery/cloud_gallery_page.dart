@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/api_response.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
 import '../../auth_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
@@ -82,7 +82,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   Future<void> _loadQuota() async {
     try {
-      final result = await ApiService.get('/api/images/quota');
+      final result = await ApiClient.get('/api/images/quota');
       final data = ApiResponse.object(result, keys: const ['quota']);
       if (data.isNotEmpty) {
         final used = data['used_bytes'];
@@ -104,7 +104,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     });
 
     try {
-      final result = await ApiService.get(
+      final result = await ApiClient.get(
           '/api/images?page=$_currentPage&page_size=$_pageSize');
       if (ApiResponse.isSuccess(result)) {
         final images =
@@ -222,7 +222,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         final image = _images[i] as Map;
         final filename = image['filename']?.toString() ?? '';
         if (filename.isEmpty) continue;
-        await ApiService.delete('/api/images/$filename');
+        await ApiClient.delete('/api/images/$filename');
       }
 
       await _refreshAll(exitSelect: true);
@@ -358,7 +358,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         _isMutating = true;
       });
 
-      final imageInfo = await ApiService.uploadImageInfo(File(picked.path));
+      final imageInfo = await ApiClient.uploadImageInfo(File(picked.path));
 
       if (!mounted) return;
       final key = imageInfo['filename']?.toString() ??

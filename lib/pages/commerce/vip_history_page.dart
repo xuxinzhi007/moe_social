@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/commerce_service.dart';
 import '../../models/vip_record.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -43,7 +43,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
     });
 
     try {
-      final result = await ApiService.getVipHistory(
+      final result = await CommerceService.getVipHistory(
         userId,
         page: _currentPage,
         pageSize: _pageSize,
@@ -123,7 +123,8 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                         const SizedBox(height: 16),
                         Text(
                           '暂无历史记录',
-                          style: TextStyle(color: MoeTokens.bodyText, fontSize: 16),
+                          style: TextStyle(
+                              color: MoeTokens.bodyText, fontSize: 16),
                         ),
                       ],
                     ),
@@ -155,7 +156,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
 
   Widget _buildRecordCard(VipRecord record) {
     final isActive = record.isActive;
-    
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -189,9 +190,11 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(record.status).withValues(alpha: 0.1),
+                    color:
+                        _getStatusColor(record.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                   ),
                   child: Row(
@@ -231,7 +234,9 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                     children: [
                       Text(
                         '开始时间',
-                        style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textSm),
+                        style: TextStyle(
+                            color: MoeTokens.bodyText,
+                            fontSize: MoeTokens.textSm),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -249,7 +254,9 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                     children: [
                       Text(
                         '结束时间',
-                        style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textSm),
+                        style: TextStyle(
+                            color: MoeTokens.bodyText,
+                            fontSize: MoeTokens.textSm),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -267,7 +274,8 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
               const SizedBox(height: 12),
               Text(
                 '创建时间: ${record.createdAtDateTime!.year}-${record.createdAtDateTime!.month.toString().padLeft(2, '0')}-${record.createdAtDateTime!.day.toString().padLeft(2, '0')}',
-                style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textXs),
+                style: TextStyle(
+                    color: MoeTokens.bodyText, fontSize: MoeTokens.textXs),
               ),
             ],
           ],
@@ -276,4 +284,3 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
     );
   }
 }
-

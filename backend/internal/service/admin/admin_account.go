@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListAccounts(ctx context.Context, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
-	out, err := adminbiz.ListAccounts(ctx, s.db, in)
+	out, err := adminbiz.ListAccounts(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (s *AppService) ListAccounts(ctx context.Context, in *adminv1.AdminListAcco
 }
 
 func (s *AppService) CreateAccount(ctx context.Context, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
-	out, err := adminbiz.CreateAccount(ctx, s.db, in)
+	out, err := adminbiz.CreateAccount(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (s *AppService) CreateAccount(ctx context.Context, in *adminv1.AdminCreateA
 }
 
 func (s *AppService) UpdateAccount(ctx context.Context, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
-	out, err := adminbiz.UpdateAccount(ctx, s.db, in)
+	out, err := adminbiz.UpdateAccount(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (s *AppService) UpdateAccount(ctx context.Context, in *adminv1.AdminUpdateA
 }
 
 func (s *AppService) DeleteAccount(ctx context.Context, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
-	out, err := adminbiz.DeleteAccount(ctx, s.db, in)
+	out, err := adminbiz.DeleteAccount(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}

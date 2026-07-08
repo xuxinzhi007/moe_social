@@ -8,7 +8,7 @@ import (
 
 func (s *AppService) AdminBootstrapTopicTags(ctx context.Context, in *adminv1.AdminBootstrapTopicTagsReq) (*adminv1.AdminBootstrapTopicTagsResp, error) {
 	_ = in
-	created, err := adminbiz.BootstrapTopicTags(ctx, s.db)
+	created, err := adminbiz.BootstrapTopicTags(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}

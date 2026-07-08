@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
+
+import '../models/achievement_unlock.dart';
 import '../models/post.dart';
 import '../models/comment.dart';
+import 'api_client.dart';
 import 'api_service.dart';
 import '../auth_service.dart';
 import 'like_state_manager.dart';
@@ -10,12 +14,13 @@ class PostService {
   static Future<Map<String, dynamic>> getPosts({
     int page = 1,
     int pageSize = 10,
+    String? viewerUserId,
     String? feedMode,
     String? topicTagId,
     String? authorUserId,
   }) async {
-    final viewer =
-        AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
+    final viewer = viewerUserId ??
+        (AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '');
     final result = await ApiService.getPosts(
       page: page,
       pageSize: pageSize,
@@ -35,7 +40,7 @@ class PostService {
     }
     // 统一在服务层裁剪缓存，避免页面各自实现导致策略分散。
     manager.trimPostCaches(maxEntries: 600);
-    
+
     return result;
   }
 
@@ -61,11 +66,11 @@ class PostService {
   static Future<Post> toggleLike(String postId, String userId) async {
     // 1. 乐观更新全局状态管理器（立即更新 UI）
     final manager = LikeStateManager();
-    
+
     // 获取当前状态用于回滚
     bool originalLiked = false;
     int originalCount = 0;
-    
+
     final statusNotifier = manager.getStatusNotifier(postId);
     final countNotifier = manager.getCountNotifier(postId);
     originalLiked = statusNotifier.value;
@@ -73,11 +78,11 @@ class PostService {
 
     // 立即切换状态
     manager.toggleLike(postId);
-    
+
     try {
       // 2. 调用 API
       final updatedPost = await ApiService.toggleLike(postId, userId);
-      
+
       // 3. 成功后使用服务器返回的最新状态确认更新（修正可能存在的偏差）
       manager.updateState(postId, updatedPost.isLiked, updatedPost.likes);
 
@@ -111,14 +116,14 @@ class PostService {
       postId,
       viewerUserId: viewer.isEmpty ? null : viewer,
     );
-    
+
     // 同步到全局状态管理器
     final manager = LikeStateManager();
     for (var comment in comments) {
       manager.syncCommentState(comment.id, comment.isLiked, comment.likes);
     }
     manager.trimCommentCaches(maxEntries: 1200);
-    
+
     return comments;
   }
 
@@ -127,15 +132,56 @@ class PostService {
     return await ApiService.addComment(comment);
   }
 
+  static Future<({Comment comment, List<AchievementUnlock> newAchievements})>
+      addCommentWithUnlocks(Comment comment) async {
+    return ApiService.addCommentWithUnlocks(comment);
+  }
+
+  static Future<void> deletePost(String postId) async {
+    await ApiService.deletePost(postId);
+  }
+
+  static Future<PostCreateResult> createPostWithUnlocks(
+    Post post, {
+    String? groupId,
+  }) async {
+    return ApiService.createPostWithUnlocks(post, groupId: groupId);
+  }
+
+  static Future<Post> updatePost(
+    String postId, {
+    String? content,
+    List<String>? images,
+    List<Map<String, dynamic>>? topicTags,
+    String? handDrawCard,
+    String? handDrawThumbUrl,
+  }) async {
+    return ApiService.updatePost(
+      postId,
+      content: content,
+      images: images,
+      topicTags: topicTags,
+      handDrawCard: handDrawCard,
+      handDrawThumbUrl: handDrawThumbUrl,
+    );
+  }
+
+  static Future<String> uploadImageBytes(
+    Uint8List bytes, {
+    String filename = 'upload.png',
+  }) =>
+      ApiClient.uploadImageBytes(bytes, filename: filename);
+
   // 点赞/取消点赞评论
-  static Future<Comment> toggleCommentLike(String commentId, String userId) async {
+  static Future<Comment> toggleCommentLike(
+      String commentId, String userId) async {
     // 1. 乐观更新全局状态管理器（立即更新 UI）
     final manager = LikeStateManager();
-    
+
     // 获取当前状态用于回滚
     bool originalLiked = false;
     int originalCount = 0;
-    
+
     final statusNotifier = manager.getCommentStatusNotifier(commentId);
     final countNotifier = manager.getCommentCountNotifier(commentId);
     originalLiked = statusNotifier.value;
@@ -143,14 +189,16 @@ class PostService {
 
     // 立即切换状态
     manager.toggleCommentLike(commentId);
-    
+
     try {
       // 2. 调用 API
-      final updatedComment = await ApiService.toggleCommentLike(commentId, userId);
-      
+      final updatedComment =
+          await ApiService.toggleCommentLike(commentId, userId);
+
       // 3. 成功后确认更新
-      manager.updateCommentState(commentId, updatedComment.isLiked, updatedComment.likes);
-      
+      manager.updateCommentState(
+          commentId, updatedComment.isLiked, updatedComment.likes);
+
       return updatedComment;
     } catch (e) {
       // 4. 失败回滚

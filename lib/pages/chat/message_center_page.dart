@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
@@ -51,7 +51,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
     if (uid == null) return;
     var myMoe = '';
     try {
-      final me = await ApiService.getUserInfo(uid);
+      final me = await UserService.getUserInfo(uid);
       myMoe = me.moeNo;
     } catch (_) {}
 

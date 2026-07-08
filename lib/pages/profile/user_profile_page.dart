@@ -6,7 +6,9 @@ import '../../models/user.dart';
 import '../../models/post.dart';
 import '../../models/achievement_badge.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
+import '../../services/post_service.dart';
+import '../../services/user_service.dart';
 import '../../services/achievement_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
@@ -17,7 +19,6 @@ import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/gift_selector.dart';
-import '../../services/post_service.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
 import '../feed/create_post_page.dart';
@@ -79,7 +80,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       print('🔍 AuthService.isLoggedIn: ${AuthService.isLoggedIn}');
       print('🔍 AuthService.currentUser: ${AuthService.currentUser}');
 
-      final user = await ApiService.getUserInfo(widget.userId);
+      final user = await UserService.getUserInfo(widget.userId);
       // 加载用户徽章
       final userBadges = _achievementService.getUserBadges(widget.userId);
 
@@ -92,7 +93,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           print('🔍 检查关注状态：当前用户ID = $currentUserId，被关注用户ID = ${widget.userId}');
           try {
             isFollowing =
-                await ApiService.checkFollow(currentUserId, widget.userId);
+                await UserService.checkFollow(currentUserId, widget.userId);
             print('🔍 关注状态检查结果：$isFollowing');
           } catch (e) {
             print('❌ 检查关注状态失败: $e');
@@ -100,7 +101,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             try {
               // 尝试关注，如果返回重复错误则说明已经关注
               final result =
-                  await ApiService.followUser(currentUserId, widget.userId);
+                  await UserService.followUser(currentUserId, widget.userId);
               print('🔍 尝试关注结果: $result');
               if (result['success']) {
                 isFollowing = true;
@@ -122,7 +123,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         final cur = AuthService.currentUser;
         if (cur != null && cur != widget.userId) {
           try {
-            friendRel = await ApiService.getFriendRelation(cur, widget.userId);
+            friendRel = await UserService.getFriendRelation(cur, widget.userId);
           } catch (_) {}
         }
       }
@@ -174,9 +175,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     try {
       // 获取关注数量和粉丝数量
       final followingResult =
-          await ApiService.getFollowings(widget.userId, page: 1, pageSize: 1);
+          await UserService.getFollowings(widget.userId, page: 1, pageSize: 1);
       final followersResult =
-          await ApiService.getFollowers(widget.userId, page: 1, pageSize: 1);
+          await UserService.getFollowers(widget.userId, page: 1, pageSize: 1);
 
       if (mounted) {
         setState(() {
@@ -242,7 +243,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Future<void> _deletePost(String postId) async {
     try {
-      await ApiService.deletePost(postId);
+      await PostService.deletePost(postId);
       if (!mounted) return;
       setState(() => _userPosts.removeWhere((p) => p.id == postId));
       _likeManager.evictPost(postId);
@@ -673,7 +674,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       return;
     }
     try {
-      await ApiService.sendFriendRequestByUserId(me, widget.userId);
+      await UserService.sendFriendRequestByUserId(me, widget.userId);
       if (mounted) {
         setState(() => _friendRelation = 'pending_out');
         MoeToast.success(context, '已发送好友申请');
@@ -703,8 +704,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     try {
       final result = _isFollowing
-          ? await ApiService.unfollowUser(currentUserId, widget.userId)
-          : await ApiService.followUser(currentUserId, widget.userId);
+          ? await UserService.unfollowUser(currentUserId, widget.userId)
+          : await UserService.followUser(currentUserId, widget.userId);
 
       if (result['success']) {
         setState(() {
@@ -929,11 +930,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     }
                                     () async {
                                       try {
-                                        final callData = await ApiService
-                                            .voiceCall(widget.userId);
-                                        final channelName = callData[
-                                                'channel_name']
-                                            ?.toString();
+                                        final callData =
+                                            await ChatService.voiceCall(
+                                                widget.userId);
+                                        final channelName =
+                                            callData['channel_name']
+                                                ?.toString();
                                         if (channelName == null ||
                                             channelName.isEmpty) {
                                           throw Exception('invalid channel');
@@ -942,15 +944,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         await openVoiceCallPage(
                                           context,
                                           channelName: channelName,
-                                          userName:
-                                              widget.userName ?? 'User',
-                                          userAvatar:
-                                              widget.userAvatar ?? '',
+                                          userName: widget.userName ?? 'User',
+                                          userAvatar: widget.userAvatar ?? '',
                                         );
                                       } catch (_) {
                                         if (context.mounted) {
-                                          MoeToast.error(
-                                              context, '发起通话失败，请重试');
+                                          MoeToast.error(context, '发起通话失败，请重试');
                                         }
                                       }
                                     }();

@@ -8,4 +8,3 @@ WebSocketChannel connectMoeWebSocketImpl(
 }) {
   return WebSocketChannel.connect(uri, protocols: protocols);
 }
-

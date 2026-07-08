@@ -324,8 +324,7 @@ class AiChatGatewayService {
       );
     }
     final baseUrl = await _resolveProviderBaseUrl(profile);
-    final uri =
-        Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
+    final uri = Uri.parse('${_normalizeBaseUrl(baseUrl)}/chat/completions');
     ApiService.logDirectHttp('POST', uri);
     final headers = await _buildProviderHeaders(profile, uri: uri);
     final payloadMessages = profile.supportsSystemMessages

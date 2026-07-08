@@ -198,7 +198,8 @@ class ChatPushService {
           // 如果是 401 错误，说明 Token 过期或无效，停止重试，避免无限循环报错
           if (error.toString().contains('401')) {
             if (kDebugMode) {
-              debugPrint('WebSocket 401 Unauthorized. Stopping retry. Please relogin.');
+              debugPrint(
+                  'WebSocket 401 Unauthorized. Stopping retry. Please relogin.');
             }
             stop();
             onAuthError?.call();
@@ -289,8 +290,11 @@ class ChatPushService {
     final from = map['from']?.toString();
     final content = map['content']?.toString();
     // 尝试从不同的字段名获取发送者信息
-    final senderName = map['sender_name']?.toString() ?? map['senderName']?.toString() ?? '用户';
-    final avatarUrl = map['sender_avatar']?.toString() ?? map['senderAvatar']?.toString() ?? '';
+    final senderName =
+        map['sender_name']?.toString() ?? map['senderName']?.toString() ?? '用户';
+    final avatarUrl = map['sender_avatar']?.toString() ??
+        map['senderAvatar']?.toString() ??
+        '';
     if (from == null || from.isEmpty || content == null) {
       return;
     }
@@ -302,7 +306,8 @@ class ChatPushService {
     }
 
     // 打印接收到的消息，用于调试
-    print('ChatPushService: Received message from $from: $content, senderName: $senderName, avatarUrl: $avatarUrl');
+    print(
+        'ChatPushService: Received message from $from: $content, senderName: $senderName, avatarUrl: $avatarUrl');
 
     // Broadcast message to listeners
     _incomingController.add(map);
@@ -360,7 +365,8 @@ class ChatPushService {
       show(_navigatorKey!.currentContext!);
     } else {
       if (kDebugMode) {
-        debugPrint('ChatPushService: No context available to show notification');
+        debugPrint(
+            'ChatPushService: No context available to show notification');
       }
     }
   }
@@ -422,8 +428,8 @@ class ChatPushService {
 
   static void _enqueuePending(String senderId, Map<String, dynamic> msg) {
     if (senderId.isEmpty) return;
-    final list = _pendingBySender.putIfAbsent(
-        senderId, () => <Map<String, dynamic>>[]);
+    final list =
+        _pendingBySender.putIfAbsent(senderId, () => <Map<String, dynamic>>[]);
     list.add(msg);
     // 防止无限增长：每个 sender 最多保留最近 50 条
     const maxPerSender = 50;

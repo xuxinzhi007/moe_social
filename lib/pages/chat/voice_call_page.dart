@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -52,7 +52,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
 
     // 2. 获取 Token 和 AppID
     try {
-      final response = await ApiService.getRtcToken(widget.channelName);
+      final response = await ChatService.getRtcToken(widget.channelName);
       _token = response['token'];
       _appId = response['app_id'];
     } catch (e) {
@@ -64,7 +64,7 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
     }
 
     if (_appId == null || _token == null) {
-       if (mounted) {
+      if (mounted) {
         MoeToast.error(context, '通话配置无效');
         Navigator.pop(context);
       }
@@ -97,7 +97,8 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
             });
           }
         },
-        onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
+        onUserOffline: (RtcConnection connection, int remoteUid,
+            UserOfflineReasonType reason) {
           debugPrint("remote user $remoteUid left channel");
           if (mounted) {
             setState(() {
@@ -184,14 +185,14 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
                 ],
               ),
             ),
-            
+
             const Spacer(),
 
             // 用户头像和名称
             Center(
               child: Column(
                 children: [
-                   CircleAvatar(
+                  CircleAvatar(
                     radius: 60,
                     backgroundImage: widget.userAvatar.isNotEmpty
                         ? NetworkImage(resolveMediaUrl(widget.userAvatar))
@@ -212,9 +213,9 @@ class _VoiceCallPageState extends State<VoiceCallPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    _isJoined 
-                      ? (_remoteUsers.isNotEmpty ? '通话中' : '等待对方加入...') 
-                      : '连接中...',
+                    _isJoined
+                        ? (_remoteUsers.isNotEmpty ? '通话中' : '等待对方加入...')
+                        : '连接中...',
                     style: TextStyle(
                       color: Colors.white70,
                       fontSize: 16,

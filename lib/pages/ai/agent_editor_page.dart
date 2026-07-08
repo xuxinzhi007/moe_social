@@ -12,7 +12,7 @@ import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_starter_templates.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
@@ -196,7 +196,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             children: [
               const Text(
                 '选择角色模板',
-                style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: MoeTokens.spaceSm),
               Text(
@@ -285,9 +286,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   Future<String> _fetchOllamaSystemPrompt(String modelName) async {
     try {
       final uri = LlmEndpointConfig.showUri();
-      ApiService.logDirectHttp('POST', uri);
-      final token = ApiService.token;
-      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+      ApiClient.logDirectHttp('POST', uri);
+      final token = ApiClient.token;
+      final headers = ApiClient.mergeTunnelHeaders(uri, headers: {
         'Content-Type': 'application/json',
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       });
@@ -395,7 +396,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                         padding: const EdgeInsets.all(MoeTokens.spaceMd),
                         decoration: BoxDecoration(
                           color: MoeTokens.cardBackground,
-                          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusSm),
                         ),
                         child: effectivePrompt.isEmpty
                             ? Text(
@@ -542,7 +544,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       }
     } finally {
       if (mounted && _pageActive && !didPop) {
-        context.read<LoadingProvider>().setOperationLoading(LoadingKeys.saveAgent, false);
+        context
+            .read<LoadingProvider>()
+            .setOperationLoading(LoadingKeys.saveAgent, false);
       }
     }
   }
@@ -582,11 +586,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     required String baseModel,
     required String prompt,
   }) async {
-    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
+    final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/agents');
     final headers = <String, String>{
       'Content-Type': 'application/json',
     };
-    final token = ApiService.token;
+    final token = ApiClient.token;
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
@@ -631,9 +635,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       final uri = LlmEndpointConfig.showUri();
       final headers = <String, String>{
         'Content-Type': 'application/json',
-        ...ApiService.mergeTunnelHeaders(uri),
+        ...ApiClient.mergeTunnelHeaders(uri),
       };
-      final token = ApiService.token;
+      final token = ApiClient.token;
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -773,332 +777,334 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
             FadeInUp(
               delay: Duration.zero,
               child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AiTheme.pagePadding,
-                8,
-                AiTheme.pagePadding,
-                0,
-              ),
-              child: AiSurfaceCard(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AiBrandTokens.primary.withValues(alpha: 0.08),
-                    AiBrandTokens.secondary.withValues(alpha: 0.06),
-                  ],
+                padding: const EdgeInsets.fromLTRB(
+                  AiTheme.pagePadding,
+                  8,
+                  AiTheme.pagePadding,
+                  0,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.badge_outlined,
-                      color: AiBrandTokens.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _selectedProviderIsBackend
-                            ? '角色卡会保存你的人设与绑定模型，并同步到你的账号。默认不会在服务器新建 Ollama 模型。'
-                            : '角色卡保存人设与模型绑定；开始聊天时将使用你选择的 API 与模型。',
-                        style: AiTheme.body.copyWith(fontSize: 13),
+                child: AiSurfaceCard(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AiBrandTokens.primary.withValues(alpha: 0.08),
+                      AiBrandTokens.secondary.withValues(alpha: 0.06),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.badge_outlined,
+                        color: AiBrandTokens.primary,
+                        size: 22,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _selectedProviderIsBackend
+                              ? '角色卡会保存你的人设与绑定模型，并同步到你的账号。默认不会在服务器新建 Ollama 模型。'
+                              : '角色卡保存人设与模型绑定；开始聊天时将使用你选择的 API 与模型。',
+                          style: AiTheme.body.copyWith(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
             ),
             FadeInUp(
               delay: MoeTokens.motionStaggerStep,
               child: _buildFieldSection(
-              title: '基础信息',
-              subtitle: '名称与一句话介绍',
-              children: [
-                MoeInputField(
-                  controller: _nameController,
-                  hintText: '角色名称',
-                  style: AiTheme.title.copyWith(fontSize: 16),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? '请输入名称' : null,
-                ),
-                const SizedBox(height: 12),
-                MoeInputField(
-                  controller: _descController,
-                  hintText: '简介',
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Consumer<LoadingProvider>(
-                    builder: (context, loading, _) => FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor:
-                            AiBrandTokens.primary.withValues(alpha: 0.1),
-                        foregroundColor: AiBrandTokens.primary,
+                title: '基础信息',
+                subtitle: '名称与一句话介绍',
+                children: [
+                  MoeInputField(
+                    controller: _nameController,
+                    hintText: '角色名称',
+                    style: AiTheme.title.copyWith(fontSize: 16),
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? '请输入名称' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  MoeInputField(
+                    controller: _descController,
+                    hintText: '简介',
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Consumer<LoadingProvider>(
+                      builder: (context, loading, _) => FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor:
+                              AiBrandTokens.primary.withValues(alpha: 0.1),
+                          foregroundColor: AiBrandTokens.primary,
+                        ),
+                        onPressed:
+                            loading.isOperationLoading(LoadingKeys.saveAgent)
+                                ? null
+                                : _applyStarterTemplate,
+                        icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                        label: const Text('套用角色模板'),
                       ),
-                      onPressed: loading.isOperationLoading(LoadingKeys.saveAgent)
-                          ? null
-                          : _applyStarterTemplate,
-                      icon: const Icon(Icons.auto_awesome_rounded, size: 18),
-                      label: const Text('套用角色模板'),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
             FadeInUp(
               delay: MoeTokens.motionStaggerStep * 2,
               child: _buildFieldSection(
-              title: '模型与来源',
-              subtitle: '选择 API 并填写要调用的模型 ID',
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _providerProfiles.any(
-                          (item) => item.id == _providerProfileId,
-                        )
-                            ? _providerProfileId
-                            : AiProviderProfile.builtinBackendId,
-                        isExpanded: true,
-                        decoration:
-                            AiTheme.inputDecoration(labelText: 'API 来源'),
-                        items: _providerProfiles
-                            .map(
-                              (item) => DropdownMenuItem(
-                                value: item.id,
-                                child: Text(
-                                  item.name,
-                                  overflow: TextOverflow.ellipsis,
+                title: '模型与来源',
+                subtitle: '选择 API 并填写要调用的模型 ID',
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _providerProfiles.any(
+                            (item) => item.id == _providerProfileId,
+                          )
+                              ? _providerProfileId
+                              : AiProviderProfile.builtinBackendId,
+                          isExpanded: true,
+                          decoration:
+                              AiTheme.inputDecoration(labelText: 'API 来源'),
+                          items: _providerProfiles
+                              .map(
+                                (item) => DropdownMenuItem(
+                                  value: item.id,
+                                  child: Text(
+                                    item.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) async {
-                          if (value == null) return;
-                          final profile = _providerProfiles.firstWhere(
-                            (item) => item.id == value,
-                            orElse: () => AiProviderProfile.builtinBackend(),
+                              )
+                              .toList(),
+                          onChanged: (value) async {
+                            if (value == null) return;
+                            final profile = _providerProfiles.firstWhere(
+                              (item) => item.id == value,
+                              orElse: () => AiProviderProfile.builtinBackend(),
+                            );
+                            setState(() {
+                              _providerProfileId = value;
+                              if (!profile.isBackendOllama) {
+                                _createRealModel = false;
+                                _syncModelOnEdit = false;
+                              }
+                              _models = profile.effectiveModelIds;
+                            });
+                            await AiProviderService()
+                                .saveLastSelectedProfileId(value);
+                            unawaited(_loadModels(background: true));
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        tooltip: '管理 Provider',
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AiProviderProfilesPage(),
+                            ),
                           );
-                          setState(() {
-                            _providerProfileId = value;
-                            if (!profile.isBackendOllama) {
-                              _createRealModel = false;
-                              _syncModelOnEdit = false;
-                            }
-                            _models = profile.effectiveModelIds;
-                          });
-                          await AiProviderService()
-                              .saveLastSelectedProfileId(value);
-                          unawaited(_loadModels(background: true));
+                          await _loadProviders();
                         },
+                        icon: const Icon(Icons.tune_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  MoeInputField(
+                    controller: _modelNameController,
+                    hintText: '绑定模型 ID',
+                    style: AiTheme.mono,
+                    validator: (v) =>
+                        v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
+                  ),
+                  if (_isLoadingModels)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color:
+                                  AiBrandTokens.primary.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('后台刷新模型列表…', style: AiTheme.caption),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      tooltip: '管理 Provider',
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AiProviderProfilesPage(),
-                          ),
-                        );
-                        await _loadProviders();
-                      },
-                      icon: const Icon(Icons.tune_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                MoeInputField(
-                  controller: _modelNameController,
-                  hintText: '绑定模型 ID',
-                  style: AiTheme.mono,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? '请输入绑定模型 ID' : null,
-                ),
-                if (_isLoadingModels)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AiBrandTokens.primary.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text('后台刷新模型列表…', style: AiTheme.caption),
-                      ],
+                  _buildModelChips(),
+                  const SizedBox(height: 12),
+                  MoeActionRow(
+                    icon: Icons.public_rounded,
+                    title: '发布到角色卡广场',
+                    subtitle: const Text('开启后，其他用户可在角色卡广场发现并使用这个角色'),
+                    onTap: () =>
+                        setState(() => _publishToPlaza = !_publishToPlaza),
+                    showDefaultTrailing: false,
+                    iconColor: AiBrandTokens.primary,
+                    trailing: Switch.adaptive(
+                      value: _publishToPlaza,
+                      activeThumbColor: AiBrandTokens.primary,
+                      onChanged: (v) => setState(() => _publishToPlaza = v),
                     ),
                   ),
-                _buildModelChips(),
-                const SizedBox(height: 12),
-                MoeActionRow(
-                  icon: Icons.public_rounded,
-                  title: '发布到角色卡广场',
-                  subtitle: const Text('开启后，其他用户可在角色卡广场发现并使用这个角色'),
-                  onTap: () =>
-                      setState(() => _publishToPlaza = !_publishToPlaza),
-                  showDefaultTrailing: false,
-                  iconColor: AiBrandTokens.primary,
-                  trailing: Switch.adaptive(
-                    value: _publishToPlaza,
-                    activeThumbColor: AiBrandTokens.primary,
-                    onChanged: (v) => setState(() => _publishToPlaza = v),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String?>(
-                  value: _lorebooks.any((item) => item.id == _lorebookId)
-                      ? _lorebookId
-                      : null,
-                  isExpanded: true,
-                  decoration: AiTheme.inputDecoration(labelText: '世界书（可选）'),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('不绑定世界书'),
-                    ),
-                    ..._lorebooks.map(
-                      (item) => DropdownMenuItem<String?>(
-                        value: item.id,
-                        child: Text(
-                          item.name,
-                          overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String?>(
+                    value: _lorebooks.any((item) => item.id == _lorebookId)
+                        ? _lorebookId
+                        : null,
+                    isExpanded: true,
+                    decoration: AiTheme.inputDecoration(labelText: '世界书（可选）'),
+                    items: [
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('不绑定世界书'),
+                      ),
+                      ..._lorebooks.map(
+                        (item) => DropdownMenuItem<String?>(
+                          value: item.id,
+                          child: Text(
+                            item.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                  onChanged: (value) => setState(() => _lorebookId = value),
-                ),
-              ],
-            ),
+                    ],
+                    onChanged: (value) => setState(() => _lorebookId = value),
+                  ),
+                ],
+              ),
             ),
             FadeInUp(
               delay: MoeTokens.motionStaggerStep * 3,
               child: _buildFieldSection(
-              title: '扮演设定',
-              subtitle: '人设与场景决定聊天时的身份感',
-              children: [
-                MoeInputField(
-                  controller: _personaController,
-                  hintText: '角色人设',
-                  maxLines: 5,
-                ),
-                const SizedBox(height: 12),
-                MoeInputField(
-                  controller: _scenarioController,
-                  hintText: '场景设定',
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 12),
-                MoeInputField(
-                  controller: _openingMessageController,
-                  hintText: '开场白',
-                  maxLines: 3,
-                ),
-              ],
-            ),
+                title: '扮演设定',
+                subtitle: '人设与场景决定聊天时的身份感',
+                children: [
+                  MoeInputField(
+                    controller: _personaController,
+                    hintText: '角色人设',
+                    maxLines: 5,
+                  ),
+                  const SizedBox(height: 12),
+                  MoeInputField(
+                    controller: _scenarioController,
+                    hintText: '场景设定',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+                  MoeInputField(
+                    controller: _openingMessageController,
+                    hintText: '开场白',
+                    maxLines: 3,
+                  ),
+                ],
+              ),
             ),
             FadeInUp(
               delay: MoeTokens.motionStaggerStep * 4,
               child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
-              child: AiSurfaceCard(
-                child: Column(
-                  children: [
-                    MoeActionRow(
-                      icon: Icons.tune_rounded,
-                      title: '高级选项',
-                      titleStyle: AiTheme.title.copyWith(fontSize: 16),
-                      subtitle: Text(
-                        _selectedProviderIsBackend
-                            ? '系统提示词、示例对话；可选同步到服务器模型'
-                            : '系统提示词、示例对话等进阶设定',
-                        style: AiTheme.caption,
-                      ),
-                      trailing: Icon(
-                        _showAdvancedFields
-                            ? Icons.expand_less_rounded
-                            : Icons.expand_more_rounded,
-                      ),
-                      showDefaultTrailing: false,
-                      onTap: () => setState(
-                        () => _showAdvancedFields = !_showAdvancedFields,
-                      ),
-                    ),
-                    if (_showAdvancedFields) ...[
-                      const Divider(height: 1),
-                      const SizedBox(height: 12),
-                      if (widget.agent == null &&
-                          !_isEphemeralDraft &&
-                          _selectedProviderIsBackend)
-                        MoeActionRow(
-                          icon: Icons.precision_manufacturing_rounded,
-                          title: '【可选】在服务器生成 Ollama 模型',
-                          subtitle: const Text('与身份卡无关；默认关闭。仅内置 Ollama 用户需要'),
-                          onTap: () => setState(
-                              () => _createRealModel = !_createRealModel),
-                          showDefaultTrailing: false,
-                          iconColor: AiBrandTokens.primary,
-                          trailing: Switch.adaptive(
-                            value: _createRealModel,
-                            activeThumbColor: AiBrandTokens.primary,
-                            onChanged: (v) =>
-                                setState(() => _createRealModel = v),
-                          ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AiTheme.pagePadding),
+                child: AiSurfaceCard(
+                  child: Column(
+                    children: [
+                      MoeActionRow(
+                        icon: Icons.tune_rounded,
+                        title: '高级选项',
+                        titleStyle: AiTheme.title.copyWith(fontSize: 16),
+                        subtitle: Text(
+                          _selectedProviderIsBackend
+                              ? '系统提示词、示例对话；可选同步到服务器模型'
+                              : '系统提示词、示例对话等进阶设定',
+                          style: AiTheme.caption,
                         ),
-                      if (widget.agent != null && _selectedProviderIsBackend)
-                        MoeActionRow(
-                          icon: Icons.sync_rounded,
-                          title: '同步更新 Ollama 模型',
-                          subtitle: const Text('保存后后台同步，不阻塞界面'),
-                          onTap: () => setState(
-                              () => _syncModelOnEdit = !_syncModelOnEdit),
-                          showDefaultTrailing: false,
-                          iconColor: AiBrandTokens.primary,
-                          trailing: Switch.adaptive(
-                            value: _syncModelOnEdit,
-                            activeThumbColor: AiBrandTokens.primary,
-                            onChanged: (v) =>
-                                setState(() => _syncModelOnEdit = v),
-                          ),
+                        trailing: Icon(
+                          _showAdvancedFields
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
                         ),
-                      if (widget.agent != null &&
-                          _selectedProviderIsBackend) ...[
-                        _buildPromptPreview(
-                          widget.agent!.systemPrompt,
-                          widget.agent!.modelName,
+                        showDefaultTrailing: false,
+                        onTap: () => setState(
+                          () => _showAdvancedFields = !_showAdvancedFields,
+                        ),
+                      ),
+                      if (_showAdvancedFields) ...[
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
+                        if (widget.agent == null &&
+                            !_isEphemeralDraft &&
+                            _selectedProviderIsBackend)
+                          MoeActionRow(
+                            icon: Icons.precision_manufacturing_rounded,
+                            title: '【可选】在服务器生成 Ollama 模型',
+                            subtitle: const Text('与身份卡无关；默认关闭。仅内置 Ollama 用户需要'),
+                            onTap: () => setState(
+                                () => _createRealModel = !_createRealModel),
+                            showDefaultTrailing: false,
+                            iconColor: AiBrandTokens.primary,
+                            trailing: Switch.adaptive(
+                              value: _createRealModel,
+                              activeThumbColor: AiBrandTokens.primary,
+                              onChanged: (v) =>
+                                  setState(() => _createRealModel = v),
+                            ),
+                          ),
+                        if (widget.agent != null && _selectedProviderIsBackend)
+                          MoeActionRow(
+                            icon: Icons.sync_rounded,
+                            title: '同步更新 Ollama 模型',
+                            subtitle: const Text('保存后后台同步，不阻塞界面'),
+                            onTap: () => setState(
+                                () => _syncModelOnEdit = !_syncModelOnEdit),
+                            showDefaultTrailing: false,
+                            iconColor: AiBrandTokens.primary,
+                            trailing: Switch.adaptive(
+                              value: _syncModelOnEdit,
+                              activeThumbColor: AiBrandTokens.primary,
+                              onChanged: (v) =>
+                                  setState(() => _syncModelOnEdit = v),
+                            ),
+                          ),
+                        if (widget.agent != null &&
+                            _selectedProviderIsBackend) ...[
+                          _buildPromptPreview(
+                            widget.agent!.systemPrompt,
+                            widget.agent!.modelName,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        MoeInputField(
+                          controller: _promptController,
+                          hintText: '系统提示词',
+                          maxLines: 6,
                         ),
                         const SizedBox(height: 12),
+                        MoeInputField(
+                          controller: _exampleDialoguesController,
+                          hintText: '示例对话',
+                          maxLines: 5,
+                        ),
                       ],
-                      MoeInputField(
-                        controller: _promptController,
-                        hintText: '系统提示词',
-                        maxLines: 6,
-                      ),
-                      const SizedBox(height: 12),
-                      MoeInputField(
-                        controller: _exampleDialoguesController,
-                        hintText: '示例对话',
-                        maxLines: 5,
-                      ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
             ),
           ],
         ),

@@ -94,8 +94,7 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
               .map(
                 (item) => AiTemplateTile(
                   title: item.name,
-                  subtitle:
-                      '${item.description} · ${item.entries.length} 条设定',
+                  subtitle: '${item.description} · ${item.entries.length} 条设定',
                   onTap: () => Navigator.pop(sheetContext, item),
                 ),
               )
@@ -154,7 +153,8 @@ class _AiLorebooksPageState extends State<AiLorebooksPage> {
             ),
             AiSectionHeader(
               title: '我的世界书',
-              subtitle: c.lorebooks.isEmpty ? null : '共 ${c.lorebooks.length} 本',
+              subtitle:
+                  c.lorebooks.isEmpty ? null : '共 ${c.lorebooks.length} 本',
             ),
             if (c.lorebooks.isEmpty)
               AiEmptyState(

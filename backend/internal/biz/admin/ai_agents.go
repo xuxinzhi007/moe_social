@@ -15,7 +15,8 @@ import (
 )
 
 // ListAiAgents Admin 公开 AI 角色列表。
-func ListAiAgents(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAiAgentsReq) (*adminv1.AdminListAiAgentsResp, error) {
+func ListAiAgents(ctx context.Context, st AdminStore, in *adminv1.AdminListAiAgentsReq) (*adminv1.AdminListAiAgentsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -88,7 +89,8 @@ func ListAiAgents(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAiAgent
 }
 
 // DeleteAiAgent Admin 删除公开 AI 角色。
-func DeleteAiAgent(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteAiAgentReq) (*adminv1.AdminDeleteAiAgentResp, error) {
+func DeleteAiAgent(ctx context.Context, st AdminStore, in *adminv1.AdminDeleteAiAgentReq) (*adminv1.AdminDeleteAiAgentResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

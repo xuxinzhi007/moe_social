@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/api_response.dart';
-import 'package:moe_social/services/api_service.dart';
+import 'package:moe_social/services/commerce_service.dart';
 import 'package:moe_social/pages/commerce/recharge_page.dart';
 import 'package:moe_social/pages/commerce/order_center_page.dart';
 import '../../widgets/fade_in_up.dart'; // 恢复导入
@@ -40,7 +40,7 @@ class _WalletPageState extends State<WalletPage> {
     try {
       final userId = AuthService.currentUser;
       if (userId == null) return;
-      final userInfo = await ApiService.getUserInfo(userId);
+      final userInfo = await CommerceService.getUserInfo(userId);
       if (mounted) {
         setState(() {
           _balance = userInfo.balance;
@@ -63,7 +63,7 @@ class _WalletPageState extends State<WalletPage> {
     try {
       final userId = AuthService.currentUser;
       if (userId == null) return;
-      final result = await ApiService.getTransactions(
+      final result = await CommerceService.getTransactions(
         userId,
         page: _page,
         pageSize: _pageSize,
@@ -73,7 +73,8 @@ class _WalletPageState extends State<WalletPage> {
         result,
         keys: const ['transactions', 'data'],
       );
-      final total = ApiResponse.intField(result, 'total') ?? transactions.length;
+      final total =
+          ApiResponse.intField(result, 'total') ?? transactions.length;
 
       // 解析amount为double
       final parsedTransactions = transactions.map((t) {
@@ -156,7 +157,9 @@ class _WalletPageState extends State<WalletPage> {
     return Scaffold(
       backgroundColor: _moe.pageBackground,
       appBar: AppBar(
-        title: const Text('我的钱包', style: TextStyle(fontWeight: FontWeight.bold, color: MoeTokens.titleText)),
+        title: const Text('我的钱包',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, color: MoeTokens.titleText)),
         centerTitle: true,
         backgroundColor: MoeTokens.cardBackground,
         elevation: 0,
@@ -171,7 +174,8 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               );
             },
-            icon: Icon(Icons.receipt_long_outlined, size: 20, color: _moe.primary),
+            icon: Icon(Icons.receipt_long_outlined,
+                size: 20, color: _moe.primary),
             label: Text('订单', style: TextStyle(color: _moe.primary)),
           ),
         ],
@@ -193,17 +197,18 @@ class _WalletPageState extends State<WalletPage> {
                   child: _buildBalanceCard(),
                 ),
               ),
-              
+
               // 交易明细标题
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: FadeInUp(
                   delay: const Duration(milliseconds: 200),
                   child: Row(
                     children: [
                       Container(
-                        width: 4, 
-                        height: 18, 
+                        width: 4,
+                        height: 18,
                         decoration: BoxDecoration(
                           color: _moe.primary,
                           borderRadius: BorderRadius.circular(2),
@@ -266,7 +271,8 @@ class _WalletPageState extends State<WalletPage> {
                           child: Center(
                             child: TextButton(
                               onPressed: _loadTransactions,
-                              child: Text('点击加载更多', style: TextStyle(color: _moe.primary)),
+                              child: Text('点击加载更多',
+                                  style: TextStyle(color: _moe.primary)),
                             ),
                           ),
                         );
@@ -275,7 +281,8 @@ class _WalletPageState extends State<WalletPage> {
                       }
                     }
 
-                    final transaction = _transactions[index] as Map<String, dynamic>;
+                    final transaction =
+                        _transactions[index] as Map<String, dynamic>;
                     return FadeInUp(
                       delay: Duration(milliseconds: 30 * (index % 8)),
                       child: _buildTransactionItem(transaction),
@@ -322,7 +329,8 @@ class _WalletPageState extends State<WalletPage> {
                   color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 20),
+                child: const Icon(Icons.account_balance_wallet_rounded,
+                    color: Colors.white, size: 20),
               ),
               const SizedBox(width: 8),
               Text(
@@ -335,9 +343,9 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // 中间：余额数字
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -368,9 +376,9 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // 底部：充值按钮
           Align(
             alignment: Alignment.centerRight,
@@ -382,8 +390,10 @@ class _WalletPageState extends State<WalletPage> {
                 backgroundColor: MoeTokens.cardBackground,
                 foregroundColor: _moe.primary,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
                 textStyle: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -396,8 +406,10 @@ class _WalletPageState extends State<WalletPage> {
   Widget _buildTransactionItem(Map<String, dynamic> transaction) {
     final type = transaction['type'] as String;
     final isRecharge = type == 'recharge';
-    final color = isRecharge ? const Color(0xFF4ECDC4) : const Color(0xFFFF6B6B); // 充值青色，消费红色
-    
+    final color = isRecharge
+        ? const Color(0xFF4ECDC4)
+        : const Color(0xFFFF6B6B); // 充值青色，消费红色
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -422,7 +434,9 @@ class _WalletPageState extends State<WalletPage> {
               borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             ),
             child: Icon(
-              isRecharge ? Icons.arrow_downward_rounded : Icons.shopping_bag_outlined,
+              isRecharge
+                  ? Icons.arrow_downward_rounded
+                  : Icons.shopping_bag_outlined,
               color: color,
               size: 24,
             ),
@@ -433,7 +447,8 @@ class _WalletPageState extends State<WalletPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction['description'] as String? ?? _formatTransactionType(type),
+                  transaction['description'] as String? ??
+                      _formatTransactionType(type),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,

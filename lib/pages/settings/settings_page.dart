@@ -580,7 +580,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     onChanged: (bool value) async {
                       await avatarProvider.setEnabled(value);
                       if (!mounted) return;
-                      MoeToast.info(context, value ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
+                      MoeToast.info(
+                          context, value ? 'AI 助手入口已开启' : 'AI 助手入口已关闭');
                     },
                   ),
                   onTap: () {

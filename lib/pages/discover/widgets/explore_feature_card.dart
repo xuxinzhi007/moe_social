@@ -72,7 +72,8 @@ class ExploreFeatureCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(isHero ? 16 : 14),
                       ),
-                      child: Icon(icon, color: Colors.white, size: isHero ? 28 : 24),
+                      child: Icon(icon,
+                          color: Colors.white, size: isHero ? 28 : 24),
                     ),
                     const SizedBox(width: 14),
                     Expanded(

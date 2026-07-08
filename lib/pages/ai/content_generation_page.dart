@@ -562,28 +562,28 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     }
 
     return Column(
-        key: ValueKey(message.id),
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          AiMessageBubble(
-            content: message.content,
-            contentType: contentType,
-            language: language,
-            isUser: isUser,
-            agentLabel: isUser ? null : widget.agent.name,
-            onContentExpanded: _scrollToBottom,
+      key: ValueKey(message.id),
+      crossAxisAlignment:
+          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        AiMessageBubble(
+          content: message.content,
+          contentType: contentType,
+          language: language,
+          isUser: isUser,
+          agentLabel: isUser ? null : widget.agent.name,
+          onContentExpanded: _scrollToBottom,
+        ),
+        Padding(
+          padding: isUser
+              ? const EdgeInsets.only(top: 4, right: 4)
+              : const EdgeInsets.only(top: 4, left: 48),
+          child: Text(
+            timeStr,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
           ),
-          Padding(
-            padding: isUser
-                ? const EdgeInsets.only(top: 4, right: 4)
-                : const EdgeInsets.only(top: 4, left: 48),
-            child: Text(
-              timeStr,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-            ),
-          ),
-        ],
+        ),
+      ],
     );
   }
 

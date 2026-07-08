@@ -37,8 +37,7 @@ class _HomeRedesignDemoState extends State<HomeRedesignDemo>
         bottom: TabBar(
           controller: _tabController,
           labelColor: Theme.of(context).colorScheme.primary,
-          unselectedLabelColor:
-              Theme.of(context).colorScheme.onSurfaceVariant,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle:
               const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
           tabs: const [
@@ -163,8 +162,7 @@ class _SchemeA extends StatelessWidget {
                     children: [
                       Text(
                         '下午好 ☕',
-                        style:
-                            TextStyle(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                       SizedBox(height: 2),
                       Text(
@@ -245,7 +243,11 @@ class _SchemeA extends StatelessWidget {
       (icon: Icons.smart_toy, label: 'AI助手', color: const Color(0xFFFFB347)),
       (icon: Icons.forum_rounded, label: '社区', color: const Color(0xFF5B8DEF)),
       (icon: Icons.photo_library, label: '云相册', color: const Color(0xFF4ECDC4)),
-      (icon: Icons.more_horiz_rounded, label: '更多', color: scheme.onSurfaceVariant),
+      (
+        icon: Icons.more_horiz_rounded,
+        label: '更多',
+        color: scheme.onSurfaceVariant
+      ),
     ];
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -270,8 +272,7 @@ class _SchemeA extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               onTap: () {},
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -281,8 +282,8 @@ class _SchemeA extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: a.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: a.color.withValues(alpha: 0.22)),
+                        border:
+                            Border.all(color: a.color.withValues(alpha: 0.22)),
                       ),
                       child: Icon(a.icon, color: a.color, size: 22),
                     ),
@@ -364,8 +365,8 @@ class _SchemeA extends StatelessWidget {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: scheme.primary.withValues(alpha: 0.1),
-                  child:
-                      Icon(Icons.person_rounded, color: scheme.primary, size: 18),
+                  child: Icon(Icons.person_rounded,
+                      color: scheme.primary, size: 18),
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
@@ -388,9 +389,7 @@ class _SchemeA extends StatelessWidget {
             Text(
               '这是一条动态内容示例~ 今天天气真好，和朋友们一起出去玩了！(｡•ᴗ•｡)',
               style: TextStyle(
-                  fontSize: 13.5,
-                  color: scheme.onSurface,
-                  height: 1.4),
+                  fontSize: 13.5, color: scheme.onSurface, height: 1.4),
             ),
             const SizedBox(height: 10),
             Row(
@@ -464,7 +463,8 @@ class _SchemeB extends StatelessWidget {
         ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _SchemeA()._buildLightPostCard(context, scheme, index),
+            (context, index) =>
+                _SchemeA()._buildLightPostCard(context, scheme, index),
             childCount: 5,
           ),
         ),
@@ -517,8 +517,8 @@ class _SchemeB extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('下午好 ☕',
-                          style: TextStyle(
-                              color: Colors.white70, fontSize: 11)),
+                          style:
+                              TextStyle(color: Colors.white70, fontSize: 11)),
                       SizedBox(height: 1),
                       Text('萌友',
                           style: TextStyle(
@@ -578,7 +578,8 @@ class _SchemeB extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
+        border:
+            Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -645,15 +646,18 @@ class _SchemeB extends StatelessWidget {
     );
   }
 
-  Widget _buildHorizontalActions(
-      BuildContext context, ColorScheme scheme) {
+  Widget _buildHorizontalActions(BuildContext context, ColorScheme scheme) {
     final actions = [
       (icon: Icons.smart_toy, label: 'AI助手', color: const Color(0xFFFFB347)),
       (icon: Icons.forum_rounded, label: '社区', color: const Color(0xFF5B8DEF)),
       (icon: Icons.photo_library, label: '云相册', color: const Color(0xFF4ECDC4)),
       (icon: Icons.games, label: '游戏', color: const Color(0xFF95E1D3)),
       (icon: Icons.card_giftcard, label: '抽卡', color: const Color(0xFFF38181)),
-      (icon: Icons.more_horiz_rounded, label: '更多', color: scheme.onSurfaceVariant),
+      (
+        icon: Icons.more_horiz_rounded,
+        label: '更多',
+        color: scheme.onSurfaceVariant
+      ),
     ];
     return Container(
       height: 72,
@@ -840,8 +844,7 @@ class _SchemeC extends StatelessWidget {
                             fontSize: 26,
                             fontWeight: FontWeight.w800)),
                     Text('北京 · 晴转多云',
-                        style:
-                            TextStyle(color: Colors.white70, fontSize: 12)),
+                        style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ],
                 ),
               ],
@@ -858,7 +861,8 @@ class _SchemeC extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
+        border:
+            Border.all(color: const Color(0xFFFFE082).withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

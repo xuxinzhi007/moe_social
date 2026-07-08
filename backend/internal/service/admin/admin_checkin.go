@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListCheckInRewards(ctx context.Context, in *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
-	out, err := adminbiz.ListCheckInRewards(ctx, s.db, in)
+	out, err := adminbiz.ListCheckInRewards(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (s *AppService) ListCheckInRewards(ctx context.Context, in *adminv1.AdminLi
 }
 
 func (s *AppService) UpdateCheckInReward(ctx context.Context, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
-	out, err := adminbiz.UpdateCheckInReward(ctx, s.db, in)
+	out, err := adminbiz.UpdateCheckInReward(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}

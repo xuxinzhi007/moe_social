@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -16,7 +16,8 @@ class VoiceCallInitiationPage extends StatefulWidget {
   });
 
   @override
-  State<VoiceCallInitiationPage> createState() => _VoiceCallInitiationPageState();
+  State<VoiceCallInitiationPage> createState() =>
+      _VoiceCallInitiationPageState();
 }
 
 class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
@@ -35,9 +36,9 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
 
     try {
       // 调用后端API发起呼叫
-      final response = await ApiService.initiateCall(widget.receiverId);
+      final response = await ChatService.initiateCall(widget.receiverId);
       final callId = response['call_id'];
-      
+
       // 等待对方响应
       await _waitForAnswer(callId);
     } catch (e) {
@@ -50,7 +51,7 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
     // 模拟等待对方响应
     // 实际实现中应该使用WebSocket或轮询来监听呼叫状态
     await Future.delayed(const Duration(seconds: 30));
-    
+
     if (!_isCancelled) {
       _showError('对方未接听');
       Navigator.pop(context);
@@ -62,10 +63,10 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
       _isCancelled = true;
       _callStatus = '取消呼叫...';
     });
-    
+
     try {
       // 调用后端API取消呼叫
-      await ApiService.cancelCall();
+      await ChatService.cancelCall();
     } catch (e) {
       print('取消呼叫失败: $e');
     } finally {
@@ -93,7 +94,8 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
           const SizedBox(height: 16),
           Text(
             widget.receiverName,
-            style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 32),
           CircleAvatar(
@@ -107,8 +109,7 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
                 : null,
           ),
           const SizedBox(height: 32),
-          if (_isCalling)
-            const CircularProgressIndicator(color: Colors.white),
+          if (_isCalling) const CircularProgressIndicator(color: Colors.white),
           const Spacer(),
           Padding(
             padding: const EdgeInsets.only(bottom: 48),
@@ -121,7 +122,8 @@ class _VoiceCallInitiationPageState extends State<VoiceCallInitiationPage> {
                   color: Colors.red,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.call_end, color: Colors.white, size: 32),
+                child:
+                    const Icon(Icons.call_end, color: Colors.white, size: 32),
               ),
             ),
           ),

@@ -8,7 +8,8 @@ import '../../auth_service.dart';
 import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
+import '../../services/user_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_local_reader.dart';
 import '../../services/direct_chat_sync_bus.dart';
@@ -153,7 +154,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
       );
       for (final peerId in peers) {
         try {
-          final page = await ApiService.listPrivateMessages(
+          final page = await ChatService.listPrivateMessages(
             peerUserId: peerId,
             limit: 1,
           );
@@ -185,7 +186,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Future<void> _refreshServerConversations() async {
     try {
       final page =
-          await ApiService.listPrivateConversations(limit: 120, offset: 0);
+          await ChatService.listPrivateConversations(limit: 120, offset: 0);
       if (!mounted) return;
       setState(() {
         _serverConversations = page.items;
@@ -208,11 +209,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
         return;
       }
 
-      final friends = await ApiService.getFriends(uid);
+      final friends = await UserService.getFriends(uid);
       List<PrivateConversationItem> serverConvs = [];
       try {
         final page =
-            await ApiService.listPrivateConversations(limit: 120, offset: 0);
+            await ChatService.listPrivateConversations(limit: 120, offset: 0);
         serverConvs = page.items;
       } catch (_) {}
 

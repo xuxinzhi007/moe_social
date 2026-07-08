@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListVipOrders(ctx context.Context, in *adminv1.AdminListVipOrdersReq) (*adminv1.AdminListVipOrdersResp, error) {
-	out, err := adminbiz.ListVipOrders(ctx, s.db, in)
+	out, err := adminbiz.ListVipOrders(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (s *AppService) ListVipOrders(ctx context.Context, in *adminv1.AdminListVip
 }
 
 func (s *AppService) ListGiftPurchaseOrders(ctx context.Context, in *adminv1.AdminListGiftPurchaseOrdersReq) (*adminv1.AdminListGiftPurchaseOrdersResp, error) {
-	out, err := adminbiz.ListGiftPurchaseOrders(ctx, s.db, in)
+	out, err := adminbiz.ListGiftPurchaseOrders(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}

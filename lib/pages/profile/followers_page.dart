@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/avatar_image.dart';
@@ -41,7 +41,7 @@ class _FollowersPageState extends State<FollowersPage> {
 
     try {
       final result =
-          await ApiService.getFollowers(widget.userId, page: 1, pageSize: 10);
+          await UserService.getFollowers(widget.userId, page: 1, pageSize: 10);
 
       if (result.containsKey('followers') && result['followers'] != null) {
         final followers = result['followers'] as List<User>;

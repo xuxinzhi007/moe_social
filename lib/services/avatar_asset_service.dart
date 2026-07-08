@@ -34,17 +34,20 @@ class AvatarAssetService {
 
       // 扫描所有assets文件
       for (final String key in manifestMap.keys) {
-        if (key.startsWith('assets/avatars/') && 
-           (key.endsWith('.svg') || key.endsWith('.png'))) {
+        if (key.startsWith('assets/avatars/') &&
+            (key.endsWith('.svg') || key.endsWith('.png'))) {
           final parts = key.split('/');
           if (parts.length >= 4) {
-            final category = parts[2]; // faces, hairs, eyes, clothes, accessories
+            final category =
+                parts[2]; // faces, hairs, eyes, clothes, accessories
             // 去掉扩展名，如果是 hair_01_front.png，归一化为 hair_01
-            var fileName = parts[3].replaceAll('.svg', '').replaceAll('.png', '');
-            
+            var fileName =
+                parts[3].replaceAll('.svg', '').replaceAll('.png', '');
+
             // 特殊处理发型分层：hair_01_front -> hair_01
             if (category == 'hairs') {
-              fileName = fileName.replaceAll('_front', '').replaceAll('_back', '');
+              fileName =
+                  fileName.replaceAll('_front', '').replaceAll('_back', '');
             }
 
             if (options.containsKey(category)) {
@@ -85,7 +88,8 @@ class AvatarAssetService {
   /// [category] 分类
   /// [name] 资源名
   /// [variant] 变体（如 'front', 'back'），仅用于 PNG
-  Future<String?> getAssetPath(String category, String name, {String? variant}) async {
+  Future<String?> getAssetPath(String category, String name,
+      {String? variant}) async {
     // 1. 尝试查找特定变体的 PNG (例如 hair_01_back.png)
     if (variant != null) {
       final pngVariantPath = 'assets/avatars/$category/${name}_$variant.png';
