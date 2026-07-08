@@ -4,7 +4,7 @@ import '../theme/moe_theme_extension.dart';
 import '../theme/moe_tokens.dart';
 import '../utils/moe_error_copy.dart';
 import 'custom_button.dart';
-import 'fade_in_up.dart';
+import 'motion/moe_reveal.dart';
 
 /// 统一错误态 UI（卡片 / 简洁两种布局）。
 class MoeErrorState extends StatelessWidget {
@@ -47,7 +47,7 @@ class MoeErrorState extends StatelessWidget {
         MoeErrorVariant.card => _buildCard(context),
         MoeErrorVariant.plain => _buildPlain(context),
       };
-    return animate ? FadeInUp(child: content) : content;
+    return animate ? MoeReveal(child: content) : content;
   }
 
   Widget _buildCard(BuildContext context) {

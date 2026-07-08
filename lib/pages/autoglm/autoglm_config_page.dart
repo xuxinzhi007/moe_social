@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
 import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 
 class AutoGLMConfigPage extends StatefulWidget {
@@ -124,22 +124,22 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 100),
                       child: _buildApiConfigSection(),
                     ),
                     const SizedBox(height: 24),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 200),
                       child: _buildTaskConfigSection(),
                     ),
                     const SizedBox(height: 24),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 300),
                       child: _buildSystemConfigSection(),
                     ),
                     const SizedBox(height: 32),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 400),
                       child: _buildActionButtons(),
                     ),

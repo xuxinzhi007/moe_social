@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
+import 'moe_motion.dart';
 
 class MoeReveal extends StatefulWidget {
   final Widget child;
@@ -15,7 +16,7 @@ class MoeReveal extends StatefulWidget {
     required this.child,
     this.duration = MoeTokens.motionMedium,
     this.delay = Duration.zero,
-    this.offsetY = 18,
+    this.offsetY = MoeTokens.motionFadeOffset,
     this.beginScale = 0.985,
     this.curve = Curves.easeOutCubic,
   });
@@ -73,6 +74,10 @@ class _MoeRevealState extends State<MoeReveal>
 
   @override
   Widget build(BuildContext context) {
+    if (moeReduceMotion(context)) {
+      return widget.child;
+    }
+
     return FadeTransition(
       opacity: _opacity,
       child: AnimatedBuilder(

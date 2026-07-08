@@ -20,7 +20,7 @@ import '../../widgets/app_message_widget.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/moe_input_field.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../theme/moe_tokens.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
@@ -581,12 +581,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   _buildGroupWarning(textTheme),
                   const SizedBox(height: 16),
                 ],
-                FadeInUp(
+                MoeReveal(
                   delay: Duration.zero,
                   child: _buildGreetingCard(textTheme),
                 ),
                 const SizedBox(height: 16),
-                FadeInUp(
+                MoeReveal(
                   delay: MoeTokens.motionStaggerStep,
                   child: _buildInputCard(textTheme),
                 ),

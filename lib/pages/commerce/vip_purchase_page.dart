@@ -3,7 +3,7 @@ import '../../auth_service.dart';
 import '../../services/commerce_service.dart';
 import '../../models/vip_plan.dart';
 import 'vip_order_confirm_page.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
@@ -269,9 +269,10 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
                               itemCount: _plans.length,
                               itemBuilder: (context, index) {
                                 final plan = _plans[index];
-                                return FadeInUp(
-                                  delay:
-                                      Duration(milliseconds: 30 * (index % 8)),
+                                return MoeStaggerReveal(
+                                  index: index,
+                                  maxAnimated: 8,
+                                  staggerStep: const Duration(milliseconds: 30),
                                   child: _buildPlanCard(plan),
                                 );
                               },

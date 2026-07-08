@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
 import '../ai/ai_brand_tokens.dart';
-import '../fade_in_up.dart';
+import '../motion/moe_reveal.dart';
 import '../../providers/ai_assistant_mock_provider.dart';
 
 /// AI 推荐卡片 — 横向滚动列表中单个推荐项。
@@ -18,7 +18,7 @@ class AiRecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FadeInUp(
+    return MoeReveal(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -206,7 +206,7 @@ class AiRecommendationList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (recommendations.isEmpty) return const SizedBox.shrink();
 
-    return FadeInUp(
+    return MoeReveal(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceSm),
         child: Column(

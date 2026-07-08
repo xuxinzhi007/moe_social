@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/moe_tokens.dart';
+import 'motion/moe_motion.dart';
 
 class AuthBackground extends StatefulWidget {
   final Widget child;
@@ -34,6 +35,7 @@ class _AuthBackgroundState extends State<AuthBackground>
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = moeReduceMotion(context);
     final size = MediaQuery.sizeOf(context);
     final compact = size.width < 420;
     final orbScale = compact ? 0.72 : 1.0;
@@ -60,42 +62,48 @@ class _AuthBackgroundState extends State<AuthBackground>
             child: SizedBox.expand(),
           ),
           IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Stack(
-                  children: [
-                    Positioned(
-                      top: -90 + math.sin(_controller.value * math.pi) * 24,
-                      left: -60 + math.cos(_controller.value * math.pi) * 22,
-                      child: _GradientOrb(
-                        size: 360 * orbScale,
-                        colors: [color1, Colors.transparent],
-                      ),
-                    ),
-                    Positioned(
-                      top: size.height * 0.18 +
-                          math.cos(_controller.value * math.pi) * 26,
-                      right: -110 + math.sin(_controller.value * math.pi) * 18,
-                      child: _GradientOrb(
-                        size: 280 * orbScale,
-                        colors: [color2, Colors.transparent],
-                        radius: 0.62,
-                      ),
-                    ),
-                    Positioned(
-                      bottom:
-                          -70 + math.sin(_controller.value * 2 * math.pi) * 24,
-                      left: -40 + math.cos(_controller.value * 2 * math.pi) * 16,
-                      child: _GradientOrb(
-                        size: 320 * orbScale,
-                        colors: [color3, Colors.transparent],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+            child: reduceMotion
+                ? const SizedBox.shrink()
+                : AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Stack(
+                        children: [
+                          Positioned(
+                            top: -90 +
+                                math.sin(_controller.value * math.pi) * 24,
+                            left: -60 +
+                                math.cos(_controller.value * math.pi) * 22,
+                            child: _GradientOrb(
+                              size: 360 * orbScale,
+                              colors: [color1, Colors.transparent],
+                            ),
+                          ),
+                          Positioned(
+                            top: size.height * 0.18 +
+                                math.cos(_controller.value * math.pi) * 26,
+                            right: -110 +
+                                math.sin(_controller.value * math.pi) * 18,
+                            child: _GradientOrb(
+                              size: 280 * orbScale,
+                              colors: [color2, Colors.transparent],
+                              radius: 0.62,
+                            ),
+                          ),
+                          Positioned(
+                            bottom: -70 +
+                                math.sin(_controller.value * 2 * math.pi) * 24,
+                            left: -40 +
+                                math.cos(_controller.value * 2 * math.pi) * 16,
+                            child: _GradientOrb(
+                              size: 320 * orbScale,
+                              colors: [color3, Colors.transparent],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
           ),
           SafeArea(child: widget.child),
         ],

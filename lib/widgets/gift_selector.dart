@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../models/gift.dart';
 import '../auth_service.dart';
+import '../models/gift.dart';
 import '../services/achievement_hooks.dart';
 import '../services/api_service.dart';
 import '../services/gift_catalog_service.dart';
 import '../utils/error_handler.dart';
 import 'motion/moe_sheet.dart';
+import 'motion/moe_vfx_profile.dart';
 import 'moe_loading.dart';
 import 'gift_haptic.dart';
 import 'gift_animation_manager.dart';
@@ -176,9 +177,23 @@ class _GiftSelectorState extends State<GiftSelector>
       if (mounted) setState(() => _userBalance = refreshed.balance);
       await _loadGiftCatalog();
       if (mounted) {
-        GiftAnimationManager().showGiftAnimation(context, gift,
-            comboCount: _comboCount);
+        final combo = _comboCount;
         widget.onGiftSent?.call(gift);
+        MoeVfxProfile? profile;
+        try {
+          profile = MoeVfxProfile.fromContext(context);
+        } catch (_) {}
+        Navigator.of(context).pop();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final overlay = AuthService.navigatorKey.currentState?.overlay;
+          if (overlay == null) return;
+          GiftAnimationManager().showOnOverlay(
+            overlay,
+            gift,
+            comboCount: combo,
+            vfxProfile: profile,
+          );
+        });
       }
     } catch (e) {
       if (mounted) {

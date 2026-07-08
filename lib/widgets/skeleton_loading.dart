@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../theme/moe_tokens.dart';
+import 'motion/moe_shimmer.dart';
 
 /// 统一的骨架屏基础 building blocks。
 abstract final class _SkeletonBase {
-  static const Color _baseColor = Color(0xFFE0E0E0);
-  static const Color _highlightColor = Color(0xFFF5F5F5);
-
-  static Shimmer shimmer({required Widget child}) {
-    return Shimmer.fromColors(
-      baseColor: _baseColor,
-      highlightColor: _highlightColor,
-      child: child,
-    );
+  static Widget shimmer({required Widget child}) {
+    return MoeShimmer(child: child);
   }
 
   static Widget circle({required double size}) {

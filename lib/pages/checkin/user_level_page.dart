@@ -8,7 +8,7 @@ import '../../providers/checkin_provider.dart';
 import '../../services/api_client.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_loading.dart';
 import '../achievements/achievements_page.dart';
 import 'checkin_page.dart';
@@ -306,7 +306,7 @@ class _UserLevelPageState extends State<UserLevelPage>
     final badgeUrl = _absoluteMediaUrl(ul?.badgeUrl);
     final colors = p.getLevelGradient(p.currentLevel);
 
-    return FadeInUp(
+    return MoeReveal(
       delay: Duration.zero,
       child: Container(
         width: double.infinity,
@@ -606,7 +606,7 @@ class _UserLevelPageState extends State<UserLevelPage>
 
   /// 横向等级之路，避免纵向长列表占满一屏
   Widget _buildLevelRoadmap(UserLevelProvider p) {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 80),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
@@ -746,7 +746,7 @@ class _UserLevelPageState extends State<UserLevelPage>
     final privileges =
         levelProvider.getLevelPrivileges(levelProvider.currentLevel);
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 400),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -843,7 +843,7 @@ class _UserLevelPageState extends State<UserLevelPage>
       {'title': '分享内容', 'exp': '8经验', 'completed': false, 'icon': Icons.share},
     ];
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 250),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -977,7 +977,7 @@ class _UserLevelPageState extends State<UserLevelPage>
     final total = stats?.totalBadges ?? 0;
     final pct = stats?.completionPercentage ?? 0;
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 350),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -1117,7 +1117,7 @@ class _UserLevelPageState extends State<UserLevelPage>
       },
     ];
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 400),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -1383,7 +1383,7 @@ class _UserLevelPageState extends State<UserLevelPage>
       },
     ];
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 500),
       child: Container(
         padding: const EdgeInsets.all(20),

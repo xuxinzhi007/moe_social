@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../../models/achievement_badge.dart';
+import '../../../models/gift.dart';
+import '../motion/category_particle_vfx.dart';
 import '../motion/moe_reveal.dart';
 import '../motion/moe_sheet.dart';
+import '../motion/moe_vfx_profile.dart';
 import 'achievement_badge_medallion.dart';
 
 class AchievementUnlockNotification extends StatefulWidget {
@@ -79,6 +82,8 @@ class _AchievementUnlockNotificationState
   @override
   Widget build(BuildContext context) {
     final badge = widget.badge;
+    final profile = MoeVfxProfile.fromContext(context);
+    final medallionSize = profile.isCompact ? 52.0 : 60.0;
 
     return Material(
       type: MaterialType.transparency,
@@ -121,12 +126,39 @@ class _AchievementUnlockNotificationState
                 child: Row(
                   children: [
                     SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: AchievementBadgeMedallion(
-                        badge: badge,
-                        diameter: 60,
-                        unlocked: true,
+                      width: medallionSize + 8,
+                      height: medallionSize + 8,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (!profile.reduceMotion &&
+                              profile.enableBurstParticles)
+                            CustomPaint(
+                              painter: CategoryParticleClusterPainter(
+                                targets: CategoryParticleVfx.shapePoints(
+                                  GiftCategory.special,
+                                  profile.scaledCoreCount(12),
+                                ),
+                                primaryColor: badge.color,
+                                secondaryColor:
+                                    badge.color.withValues(alpha: 0.5),
+                                converge: 1,
+                                pulse: _fadeAnimation.value,
+                                expand: 0,
+                                seed: badge.id.hashCode,
+                                dominantShape: 1,
+                              ),
+                              size: Size(
+                                medallionSize + 8,
+                                medallionSize + 8,
+                              ),
+                            ),
+                          AchievementBadgeMedallion(
+                            badge: badge,
+                            diameter: medallionSize,
+                            unlocked: true,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -224,8 +256,9 @@ class AchievementNotificationManager {
     final theme = Theme.of(context);
     _currentEntry = OverlayEntry(
       builder: (overlayContext) {
+        final bottomInset = MediaQuery.paddingOf(overlayContext).bottom;
         return Positioned(
-          bottom: 24,
+          bottom: bottomInset + 16,
           right: 0,
           left: 0,
           child: Align(

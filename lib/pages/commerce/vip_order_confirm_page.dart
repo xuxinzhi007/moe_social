@@ -9,7 +9,7 @@ import '../../models/vip_plan.dart';
 import '../../services/achievement_hooks.dart';
 import '../../services/api_client.dart' show ApiException;
 import '../../services/commerce_service.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import 'order_center_page.dart';
 import 'recharge_page.dart';
@@ -237,25 +237,25 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         child: Column(
           children: [
-            FadeInUp(child: _buildOrderSummaryCard()),
+            MoeReveal(child: _buildOrderSummaryCard()),
             const SizedBox(height: 14),
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 80),
               child: _buildAmountDetailsCard(),
             ),
             const SizedBox(height: 14),
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 120),
               child: _buildWalletPayHintCard(),
             ),
             const SizedBox(height: 14),
             if (_shortfall > 0)
-              FadeInUp(
+              MoeReveal(
                 delay: const Duration(milliseconds: 140),
                 child: _buildInsufficientCard(),
               ),
             const SizedBox(height: 14),
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 200),
               child: _buildProtocolCard(),
             ),

@@ -6,7 +6,8 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_activity_card.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_recommendation_card.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_input_field.dart';
 
@@ -141,7 +142,7 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
   // ─── 助手形象区域 ────────────────────────────────────────────────────────────
 
   Widget _buildHeroSection(BuildContext context) {
-    return FadeInUp(
+    return MoeReveal(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
         child: Container(
@@ -236,7 +237,7 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
   ) {
     final activities = provider.activities.take(5).toList();
 
-    return FadeInUp(
+    return MoeReveal(
       delay: MoeTokens.motionStaggerStep,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,11 +310,9 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
             ...activities.asMap().entries.map((entry) {
               final index = entry.key;
               final activity = entry.value;
-              return FadeInUp(
-                delay: Duration(
-                  milliseconds:
-                      MoeTokens.motionStaggerStep.inMilliseconds * (index + 2),
-                ),
+              return MoeStaggerReveal(
+                index: index + 2,
+                maxAnimated: 10,
                 child: AiActivityCard(
                   activity: activity,
                   onTap: () {
@@ -352,7 +351,7 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
   // ─── 底部对话入口 ──────────────────────────────────────────────────────────
 
   Widget _buildChatEntry(BuildContext context) {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 240),
       child: Container(
         decoration: BoxDecoration(

@@ -14,7 +14,8 @@ import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/profile_bg.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_toast.dart';
@@ -54,6 +55,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   List<AchievementBadge> _userBadges = [];
   final AchievementService _achievementService = AchievementService();
   final LikeStateManager _likeManager = LikeStateManager();
+  final Set<String> _revealedPostIds = {};
 
   // 关注统计数据
   int _followingCount = 0;
@@ -1037,7 +1039,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               )
             else
               const SizedBox(height: 4),
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 300),
               child: Container(
                 key: _postsSectionKey,
@@ -1107,8 +1109,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ..._userPosts.asMap().entries.map((entry) {
                         final index = entry.key;
                         final post = entry.value;
-                        return FadeInUp(
-                          delay: Duration(milliseconds: 30 * (index % 8)),
+                        return MoeStaggerReveal(
+                          index: index,
+                          maxAnimated: 8,
+                          staggerStep: const Duration(milliseconds: 30),
+                          itemKey: '${widget.userId}_${post.id}',
+                          revealedKeys: _revealedPostIds,
                           child: PostCard(
                             post: post,
                             heroTagPrefix: 'up_',

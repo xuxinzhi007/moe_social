@@ -15,7 +15,7 @@ import '../../widgets/gender_selector.dart';
 import '../../widgets/birthday_selector.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../widgets/moe_input_field.dart';
@@ -512,7 +512,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         children: [
                           // 头像编辑区域
                           Center(
-                            child: FadeInUp(
+                            child: MoeReveal(
                               delay: const Duration(milliseconds: 100),
                               child: Stack(
                                 children: [
@@ -589,7 +589,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           const SizedBox(height: 32),
 
                           // 基本信息卡片
-                          FadeInUp(
+                          MoeReveal(
                             delay: const Duration(milliseconds: 200),
                             child: Container(
                               decoration: BoxDecoration(
@@ -682,7 +682,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           const SizedBox(height: 20),
 
                           // 个人资料卡片
-                          FadeInUp(
+                          MoeReveal(
                             delay: const Duration(milliseconds: 300),
                             child: Container(
                               decoration: BoxDecoration(
@@ -767,7 +767,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           const SizedBox(height: 20),
 
                           // 账户信息卡片
-                          FadeInUp(
+                          MoeReveal(
                             delay: const Duration(milliseconds: 400),
                             child: Container(
                               decoration: BoxDecoration(
@@ -867,7 +867,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           const SizedBox(height: 32),
 
                           // 保存按钮
-                          FadeInUp(
+                          MoeReveal(
                             delay: const Duration(milliseconds: 500),
                             child: LoadingButton(
                               operationKey: LoadingKeys.updateProfile,

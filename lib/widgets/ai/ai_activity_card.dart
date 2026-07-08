@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
 import '../ai/ai_brand_tokens.dart';
-import '../fade_in_up.dart';
+import '../motion/moe_reveal.dart';
 import '../../providers/ai_assistant_mock_provider.dart';
 
 /// AI 互动卡片 — 展示在 Feed 流中，显示 AI 助手的点赞/评论等互动。
@@ -18,7 +18,7 @@ class AiActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FadeInUp(
+    return MoeReveal(
       child: Container(
         margin: const EdgeInsets.symmetric(
           horizontal: MoeTokens.spaceLg,

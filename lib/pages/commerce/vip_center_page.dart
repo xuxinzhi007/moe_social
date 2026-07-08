@@ -7,7 +7,7 @@ import '../../models/vip_record.dart';
 import 'vip_purchase_page.dart';
 import 'order_center_page.dart';
 import 'vip_history_page.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_menu_card.dart'; // 引入通用菜单组件
 
@@ -156,7 +156,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                             Padding(
                               padding: EdgeInsets.symmetric(
                                   horizontal: MoeTokens.spaceLg),
-                              child: FadeInUp(
+                              child: MoeReveal(
                                 child: _buildVipStatusCard(),
                               ),
                             ),
@@ -168,7 +168,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                               Padding(
                                 padding: EdgeInsets.symmetric(
                                     horizontal: MoeTokens.spaceLg),
-                                child: FadeInUp(
+                                child: MoeReveal(
                                   delay: const Duration(milliseconds: 100),
                                   child: _buildActiveRecordCard(),
                                 ),
@@ -180,7 +180,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                             Padding(
                               padding: EdgeInsets.symmetric(
                                   horizontal: MoeTokens.spaceLg),
-                              child: FadeInUp(
+                              child: MoeReveal(
                                 delay: const Duration(milliseconds: 200),
                                 child: MoeMenuCard(
                                   items: [
@@ -246,7 +246,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
                               Padding(
                                 padding: EdgeInsets.symmetric(
                                     horizontal: MoeTokens.spaceLg),
-                                child: FadeInUp(
+                                child: MoeReveal(
                                   delay: const Duration(milliseconds: 300),
                                   child: _buildAutoRenewCard(),
                                 ),
@@ -280,7 +280,7 @@ class _VipCenterPageState extends State<VipCenterPage> {
           ),
         ),
         Center(
-          child: FadeInUp(
+          child: MoeReveal(
             child: Padding(
               padding: EdgeInsets.all(MoeTokens.space2xl),
               child: Container(

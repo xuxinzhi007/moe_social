@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../providers/theme_provider.dart';
 import '../../autoglm/autoglm_service.dart';
@@ -690,7 +690,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
       body: Column(
         children: [
           // 状态栏
-          FadeInUp(
+          MoeReveal(
             delay: const Duration(milliseconds: 100),
             child: InkWell(
               onTap: () async {
@@ -764,7 +764,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           ),
 
           // 功能介绍卡片
-          FadeInUp(
+          MoeReveal(
             delay: const Duration(milliseconds: 150),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -811,7 +811,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
 
           // 日志区域
           Expanded(
-            child: FadeInUp(
+            child: MoeReveal(
               delay: const Duration(milliseconds: 200),
               child: Container(
                 margin: const EdgeInsets.all(16),
@@ -900,7 +900,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
           ),
 
           // 输入区域
-          FadeInUp(
+          MoeReveal(
             delay: const Duration(milliseconds: 250),
             child: Container(
               padding: const EdgeInsets.all(16),

@@ -5,7 +5,7 @@ import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/achievement_badge_display.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 
 class AchievementsPage extends StatefulWidget {
   final String? userId;
@@ -113,19 +113,19 @@ class _AchievementsPageState extends State<AchievementsPage> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     children: [
-                      FadeInUp(child: _buildStatisticsCard()),
+                      MoeReveal(child: _buildStatisticsCard()),
                       const SizedBox(height: 12),
-                      FadeInUp(
+                      MoeReveal(
                         delay: const Duration(milliseconds: 80),
                         child: _buildNearUnlockSection(),
                       ),
                       const SizedBox(height: 12),
-                      FadeInUp(
+                      MoeReveal(
                         delay: const Duration(milliseconds: 160),
                         child: _buildCategorySection(),
                       ),
                       const SizedBox(height: 14),
-                      FadeInUp(
+                      MoeReveal(
                         delay: const Duration(milliseconds: 240),
                         child: _buildBadgeGrid(),
                       ),

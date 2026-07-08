@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../notifications/notification_center_page.dart';
 import 'discover_match_tab.dart';
 import 'discover_play_tab.dart';
@@ -42,11 +42,11 @@ class _DiscoverPageState extends State<DiscoverPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FadeInUp(
+            MoeReveal(
               duration: MoeTokens.motionFadeDuration,
               child: _buildHeader(context, scheme),
             ),
-            FadeInUp(
+            MoeReveal(
               duration: MoeTokens.motionFadeDuration,
               delay: MoeTokens.motionStaggerStep,
               child: _buildSegmented(context, scheme),

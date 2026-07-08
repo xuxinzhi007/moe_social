@@ -8,7 +8,7 @@ import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/skeleton_loading.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../announcements/announcement_detail_page.dart';
 
 class NotificationCenterPage extends StatefulWidget {
@@ -19,6 +19,8 @@ class NotificationCenterPage extends StatefulWidget {
 }
 
 class _NotificationCenterPageState extends State<NotificationCenterPage> {
+  final Set<String> _revealedNotificationIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -188,11 +190,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         itemCount: notifications.length,
         itemBuilder: (context, index) {
           final notification = notifications[index];
-          final delay = Duration(
-            milliseconds: index * MoeTokens.motionStaggerStep.inMilliseconds,
-          );
-          return FadeInUp(
-            delay: delay,
+          return MoeStaggerReveal(
+            index: index,
+            itemKey: notification.id,
+            revealedKeys: _revealedNotificationIds,
             child: GestureDetector(
               onTap: () {
                 if (!notification.isRead) {
@@ -244,15 +245,13 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
                                   child: Text(
                                     notification.title,
                                     style: TextStyle(
-                                      fontWeight:
-                                          MoeTokens.fontWeightSubtitle,
+                                      fontWeight: MoeTokens.fontWeightSubtitle,
                                       fontSize: MoeTokens.textMd,
                                       color: MoeTokens.titleText,
                                     ),

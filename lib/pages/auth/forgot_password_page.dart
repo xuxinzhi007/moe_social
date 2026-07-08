@@ -5,7 +5,7 @@ import '../../services/auth_flow_service.dart';
 import '../../services/api_service.dart' show ApiException;
 import '../../utils/validators.dart';
 import '../../models/user.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
@@ -290,7 +290,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           SizedBox(
                               height: MediaQuery.of(context).padding.top + 40),
 
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 800),
                             child: Container(
                               padding: const EdgeInsets.all(16),
@@ -304,7 +304,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           ),
                           const SizedBox(height: 20),
 
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 800),
                             delay: const Duration(milliseconds: 100),
                             child: const Text(
@@ -321,7 +321,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           const Spacer(),
 
                           // 卡片区域
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 1000),
                             delay: const Duration(milliseconds: 200),
                             child: Container(
@@ -417,7 +417,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                           const SizedBox(height: 30),
 
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 1200),
                             delay: const Duration(milliseconds: 300),
                             child: Row(

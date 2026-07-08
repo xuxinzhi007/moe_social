@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import 'package:provider/provider.dart';
 import '../../providers/loading_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -173,7 +173,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 60), // 给返回按钮留出空间
-                  FadeInUp(
+                  MoeReveal(
                     duration: const Duration(milliseconds: 800),
                     child: Column(
                       children: [
@@ -201,7 +201,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 40),
 
-                  FadeInUp(
+                  MoeReveal(
                     delay: const Duration(milliseconds: 200),
                     duration: const Duration(milliseconds: 800),
                     child: Form(
@@ -313,7 +313,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   const SizedBox(height: 30),
 
-                  FadeInUp(
+                  MoeReveal(
                     delay: const Duration(milliseconds: 400),
                     duration: const Duration(milliseconds: 800),
                     child: Row(

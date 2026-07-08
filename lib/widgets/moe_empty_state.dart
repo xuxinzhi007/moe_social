@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/moe_theme_extension.dart';
 import '../theme/moe_tokens.dart';
 import 'custom_button.dart';
-import 'fade_in_up.dart';
+import 'motion/moe_reveal.dart';
 
 class MoeEmptyStateAction {
   const MoeEmptyStateAction({
@@ -80,7 +80,7 @@ class MoeEmptyState extends StatelessWidget {
         ),
       );
     }
-    return animate ? FadeInUp(child: content) : content;
+    return animate ? MoeReveal(child: content) : content;
   }
 
   Widget _buildContent(MoeTheme moe, {required bool inCard}) {

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_flow_service.dart';
 import '../../services/api_service.dart' show ApiException;
 import 'reset_password_page.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
 import '../../theme/moe_tokens.dart';
@@ -169,7 +169,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                         children: [
                           SizedBox(
                               height: MediaQuery.of(context).padding.top + 40),
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 800),
                             child: Container(
                               padding: const EdgeInsets.all(16),
@@ -182,7 +182,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 800),
                             delay: const Duration(milliseconds: 100),
                             child: const Text(
@@ -196,7 +196,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                             ),
                           ),
                           const Spacer(),
-                          FadeInUp(
+                          MoeReveal(
                             duration: const Duration(milliseconds: 1000),
                             delay: const Duration(milliseconds: 200),
                             child: Container(

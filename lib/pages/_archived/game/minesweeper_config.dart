@@ -1,11 +1,7 @@
 // 扫雷游戏配置和类型定义
 
 // 游戏难度枚举
-enum GameDifficulty {
-  easy,
-  medium,
-  hard
-}
+enum GameDifficulty { easy, medium, hard }
 
 // 游戏配置
 class GameConfig {

@@ -5,7 +5,6 @@ import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
-import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
@@ -17,7 +16,7 @@ import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -62,6 +61,9 @@ class _HomePageState extends State<HomePage>
   Timer? _loadMoreTimer;
   final LikeStateManager _likeManager = LikeStateManager();
 
+  /// Feed 入场动效去重：按「模式 + 话题 + 帖子 id」分桶，下拉刷新不重播。
+  final Set<String> _revealedFeedKeys = {};
+
   static const _tabs = [
     (
       label: '\u70ed\u95e8',
@@ -79,6 +81,9 @@ class _HomePageState extends State<HomePage>
       mode: _HomeFeedMode.following
     ),
   ];
+
+  String _feedRevealKey(String postId) =>
+      '${_mode.name}_${_activeTopic?.id ?? 'all'}_$postId';
 
   String get _sectionTitle {
     if (_activeTopic != null) return '#${_activeTopic!.name}';
@@ -458,8 +463,10 @@ class _HomePageState extends State<HomePage>
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => FadeInUp(
-                    delay: Duration(milliseconds: index * 60),
+                  (context, index) => MoeStaggerReveal(
+                    index: index,
+                    itemKey: _feedRevealKey(_displayPosts[index].id),
+                    revealedKeys: _revealedFeedKeys,
                     child: _buildPostCard(_displayPosts[index]),
                   ),
                   childCount: _displayPosts.length,
