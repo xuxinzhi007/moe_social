@@ -157,7 +157,7 @@ abstract final class MoeTokens {
   }
 
   // ─── Motion / Animation ──────────────────────────────────────────
-  /// 列表/区块入场动效（与 [FadeInUp] 默认值对齐）。
+  /// 列表/区块入场动效（与 [MoeReveal] 默认值对齐）。
   static const Duration motionFadeDuration = Duration(milliseconds: 300);
   static const Duration motionStaggerStep = Duration(milliseconds: 60);
   static const double motionFadeOffset = 30;

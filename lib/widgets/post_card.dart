@@ -13,7 +13,7 @@ import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
 import '../widgets/topic_tag_selector.dart';
 import '../widgets/like_button.dart';
-import '../widgets/moe_bouncing_button.dart';
+import '../widgets/motion/moe_pressable.dart';
 import '../widgets/moe_action_row.dart';
 import '../widgets/moe_toast.dart';
 
@@ -596,9 +596,9 @@ $link''';
       String? label,
       required VoidCallback onTap}) {
     final theme = Theme.of(context);
-    return MoeBouncingButton(
+    return MoePressable(
       onTap: onTap,
-      scaleFactor: 0.85,
+      pressedScale: 0.85,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(

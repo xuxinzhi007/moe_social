@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'ai_theme.dart';
+import '../motion/moe_shimmer.dart';
 
 class AiLoadingSkeleton extends StatelessWidget {
   const AiLoadingSkeleton({
@@ -22,44 +23,16 @@ class AiLoadingSkeleton extends StatelessWidget {
   }
 }
 
-class _SkeletonCard extends StatefulWidget {
+class _SkeletonCard extends StatelessWidget {
   const _SkeletonCard();
 
   @override
-  State<_SkeletonCard> createState() => _SkeletonCardState();
-}
-
-class _SkeletonCardState extends State<_SkeletonCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final opacity = 0.35 + _controller.value * 0.25;
-        return Opacity(opacity: opacity, child: child);
-      },
+    return MoeShimmer(
       child: Container(
         height: 88,
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         ),
       ),

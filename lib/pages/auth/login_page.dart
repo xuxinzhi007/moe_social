@@ -8,7 +8,7 @@ import '../../services/auth_flow_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
 import 'forgot_password_page.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/loading_provider.dart';
@@ -405,7 +405,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo 区域
-              FadeInUp(
+              MoeReveal(
                 duration: const Duration(milliseconds: 800),
                 child: Column(
                   children: [
@@ -454,7 +454,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 48),
 
               // 表单区域
-              FadeInUp(
+              MoeReveal(
                 delay: const Duration(milliseconds: 200),
                 duration: const Duration(milliseconds: 800),
                 child: OperationLoadingWidget(
@@ -619,7 +619,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 40),
 
               // 底部注册引导
-              FadeInUp(
+              MoeReveal(
                 delay: const Duration(milliseconds: 400),
                 duration: const Duration(milliseconds: 800),
                 child: Row(

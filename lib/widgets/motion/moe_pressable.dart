@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../theme/moe_tokens.dart';
+import 'moe_motion.dart';
 
 class MoePressable extends StatefulWidget {
   final Widget child;
@@ -84,7 +85,17 @@ class _MoePressableState extends State<MoePressable>
       return widget.child;
     }
 
-    final radius = widget.borderRadius ?? BorderRadius.circular(MoeTokens.radiusLg);
+    if (moeReduceMotion(context)) {
+      return GestureDetector(
+        behavior: widget.behavior,
+        onLongPress: widget.onLongPress,
+        onTap: widget.onTap,
+        child: widget.child,
+      );
+    }
+
+    final radius =
+        widget.borderRadius ?? BorderRadius.circular(MoeTokens.radiusLg);
 
     return GestureDetector(
       behavior: widget.behavior,

@@ -23,7 +23,7 @@ import '../../models/ai_agent.dart';
 import '../../models/ai_chat_session.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal_once.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
@@ -59,6 +59,7 @@ class _ChatPageState extends State<ChatPage> {
   List<AiChatSession> _sessions = [];
   AiChatSession? _currentSession;
   List<AiChatMessage> _messages = [];
+  final Set<String> _revealedMessageIds = {};
   double _temperature = 0.85;
   bool _terminalModeEnabled = false;
   String _systemPrompt = '';
@@ -179,16 +180,18 @@ class _ChatPageState extends State<ChatPage> {
           current ??= sessions.isNotEmpty ? sessions.first : null;
 
           if (mounted && current != null) {
+            final sessionMessages =
+                messages.where((m) => m.sessionId == current!.id).toList();
             setState(() {
               _sessions = sessions;
               _currentSession = current;
-              _messages =
-                  messages.where((m) => m.sessionId == current!.id).toList();
+              _messages = sessionMessages;
               if (savedPrompt != null) {
                 _systemPrompt = savedPrompt;
               }
               _isLoadingHistory = false;
             });
+            _markLoadedMessagesSeen(sessionMessages);
             _scrollToBottom(force: true);
             if (_messages.isEmpty) {
               unawaited(_seedOpeningMessageIfNeeded(current));
@@ -353,6 +356,12 @@ class _ChatPageState extends State<ChatPage> {
     controller.dispose();
   }
 
+  void _markLoadedMessagesSeen(Iterable<AiChatMessage> messages) {
+    _revealedMessageIds
+      ..clear()
+      ..addAll(messages.map((m) => m.id));
+  }
+
   Future<void> _createNewSession() async {
     final session = AiChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -408,6 +417,7 @@ class _ChatPageState extends State<ChatPage> {
         _isLoadingHistory = false;
         _stickToBottom = true;
       });
+      _markLoadedMessagesSeen(messages);
       _scrollToBottom(force: true);
       unawaited(_persistWebCache());
       if (messages.isEmpty) {
@@ -1881,8 +1891,10 @@ class _ChatPageState extends State<ChatPage> {
         contentType == MessageContentType.text &&
         message.content.trim().isNotEmpty;
 
-    return FadeInUp(
+    return MoeRevealOnce(
       key: ValueKey(message.id),
+      revealKey: message.id,
+      revealedKeys: _revealedMessageIds,
       duration: const Duration(milliseconds: 200),
       delay: const Duration(milliseconds: 50),
       child: GestureDetector(

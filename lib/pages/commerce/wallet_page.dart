@@ -4,7 +4,8 @@ import 'package:moe_social/services/api_response.dart';
 import 'package:moe_social/services/commerce_service.dart';
 import 'package:moe_social/pages/commerce/recharge_page.dart';
 import 'package:moe_social/pages/commerce/order_center_page.dart';
-import '../../widgets/fade_in_up.dart'; // 恢复导入
+import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../widgets/moe_loading.dart';
@@ -192,7 +193,7 @@ class _WalletPageState extends State<WalletPage> {
               // 余额卡片
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: FadeInUp(
+                child: MoeReveal(
                   delay: const Duration(milliseconds: 100),
                   child: _buildBalanceCard(),
                 ),
@@ -202,7 +203,7 @@ class _WalletPageState extends State<WalletPage> {
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: FadeInUp(
+                child: MoeReveal(
                   delay: const Duration(milliseconds: 200),
                   child: Row(
                     children: [
@@ -283,8 +284,10 @@ class _WalletPageState extends State<WalletPage> {
 
                     final transaction =
                         _transactions[index] as Map<String, dynamic>;
-                    return FadeInUp(
-                      delay: Duration(milliseconds: 30 * (index % 8)),
+                    return MoeStaggerReveal(
+                      index: index,
+                      maxAnimated: 8,
+                      staggerStep: const Duration(milliseconds: 30),
                       child: _buildTransactionItem(transaction),
                     );
                   },

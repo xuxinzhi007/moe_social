@@ -8,7 +8,7 @@ import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
 import '../../services/task_execution_engine.dart';
 import '../../services/ai_inference_service.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../autoglm/autoglm_service.dart';
 import 'autoglm_config_page.dart';
@@ -234,7 +234,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   }
 
   Widget _buildStatusCard() {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 100),
       child: GestureDetector(
         onTap: _isAccessibilityServiceConnected ? null : _openAccessibilitySettings,
@@ -358,7 +358,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   }
 
   Widget _buildLogDisplay() {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 200),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -573,7 +573,7 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
   }
 
   Widget _buildInputArea() {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 300),
       child: Container(
         margin: const EdgeInsets.all(16),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/game_provider.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import 'game_room_page.dart';
 
 class GameRoomListPage extends StatefulWidget {
@@ -36,7 +36,8 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('猜大小 · 猜颜色', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('猜大小 · 猜颜色',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: const Color(0xFF2D3748),
@@ -81,8 +82,9 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                 separatorBuilder: (_, __) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final room = rooms[index];
-                  return FadeInUp(
-                    delay: Duration(milliseconds: index * 100),
+                  return MoeStaggerReveal(
+                    index: index,
+                    staggerStep: const Duration(milliseconds: 100),
                     child: _buildRoomCard(context, room, provider),
                   );
                 },
@@ -94,7 +96,8 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
     );
   }
 
-  Widget _buildRoomCard(BuildContext context, GameRoomState room, GameProvider provider) {
+  Widget _buildRoomCard(
+      BuildContext context, GameRoomState room, GameProvider provider) {
     final isUrgent = room.countdown <= 5;
     final hasBet = provider.hasBet(room.id);
 
@@ -113,7 +116,10 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [room.gradient[0].withValues(alpha: 0.9), room.gradient[1].withValues(alpha: 0.9)],
+            colors: [
+              room.gradient[0].withValues(alpha: 0.9),
+              room.gradient[1].withValues(alpha: 0.9)
+            ],
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
@@ -175,7 +181,8 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.casino_rounded, color: Colors.white, size: 28),
+                        child: const Icon(Icons.casino_rounded,
+                            color: Colors.white, size: 28),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -193,13 +200,16 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                             const SizedBox(height: 3),
                             Text(
                               room.description,
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 12),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(14),
@@ -210,7 +220,10 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                         ),
                         child: Text(
                           '¥${room.minBet.toInt()} 起',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13),
                         ),
                       ),
                     ],
@@ -229,16 +242,25 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                   width: 20,
                                   height: 20,
                                   decoration: BoxDecoration(
-                                    color: isUrgent ? Colors.redAccent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
+                                    color: isUrgent
+                                        ? Colors.redAccent
+                                            .withValues(alpha: 0.2)
+                                        : Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Icon(Icons.timer_rounded, color: isUrgent ? Colors.redAccent : Colors.white70, size: 14),
+                                  child: Icon(Icons.timer_rounded,
+                                      color: isUrgent
+                                          ? Colors.redAccent
+                                          : Colors.white70,
+                                      size: 14),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isUrgent ? '即将开奖！' : '距离开奖',
                                   style: TextStyle(
-                                    color: isUrgent ? Colors.redAccent : Colors.white70,
+                                    color: isUrgent
+                                        ? Colors.redAccent
+                                        : Colors.white70,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -246,7 +268,9 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                                 Text(
                                   '${room.countdown} 秒',
                                   style: TextStyle(
-                                    color: isUrgent ? Colors.redAccent : Colors.white,
+                                    color: isUrgent
+                                        ? Colors.redAccent
+                                        : Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -258,9 +282,12 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                               borderRadius: BorderRadius.circular(6),
                               child: LinearProgressIndicator(
                                 value: room.countdown / room.totalTime,
-                                backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: 0.1),
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  isUrgent ? Colors.redAccent : room.gradient[0],
+                                  isUrgent
+                                      ? Colors.redAccent
+                                      : room.gradient[0],
                                 ),
                                 minHeight: 8,
                               ),
@@ -270,13 +297,19 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                       ),
                       const SizedBox(width: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 12),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: hasBet ? [Colors.green, Colors.greenAccent] : room.gradient),
+                          gradient: LinearGradient(
+                              colors: hasBet
+                                  ? [Colors.green, Colors.greenAccent]
+                                  : room.gradient),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: hasBet ? Colors.green.withValues(alpha: 0.3) : room.gradient[0].withValues(alpha: 0.3),
+                              color: hasBet
+                                  ? Colors.green.withValues(alpha: 0.3)
+                                  : room.gradient[0].withValues(alpha: 0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -284,7 +317,10 @@ class _GameRoomListPageState extends State<GameRoomListPage> {
                         ),
                         child: Text(
                           hasBet ? '已下注' : '进入下注',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14),
                         ),
                       ),
                     ],

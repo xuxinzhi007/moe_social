@@ -1,6 +1,6 @@
 // 扫雷游戏排行榜页面
 import 'package:flutter/material.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import 'minesweeper_config.dart';
 
 class MinesweeperScoreboardPage extends StatefulWidget {
@@ -136,8 +136,9 @@ class _MinesweeperScoreboardPageState extends State<MinesweeperScoreboardPage> {
               itemCount: _getCurrentScores().length,
               itemBuilder: (context, index) {
                 final score = _getCurrentScores()[index];
-                return FadeInUp(
-                  delay: Duration(milliseconds: index * 100),
+                return MoeStaggerReveal(
+                  index: index,
+                  staggerStep: const Duration(milliseconds: 100),
                   child: _buildScoreItem(index + 1, score),
                 );
               },

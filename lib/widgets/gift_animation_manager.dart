@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../auth_service.dart';
 import '../models/gift.dart';
-import 'optimized_gift_animation.dart';
+import 'live_gift_effect.dart';
+import 'motion/moe_vfx_profile.dart';
 
 /// Public API: call `GiftAnimationManager().showGiftAnimation(context, gift)`
 /// from wherever a gift is sent. The animation runs in an Overlay layer
@@ -34,6 +37,39 @@ class GiftAnimationManager {
     Gift gift, {
     int comboCount = 1,
   }) {
+    final overlay = resolveRootOverlay(context);
+    if (overlay == null) return;
+    _enqueue(overlay, gift, comboCount: comboCount, context: context);
+  }
+
+  /// 直接插入 root [OverlayState]（BottomSheet 关闭后推荐用这个）。
+  void showOnOverlay(
+    OverlayState overlay,
+    Gift gift, {
+    int comboCount = 1,
+    MoeVfxProfile? vfxProfile,
+  }) {
+    _enqueue(
+      overlay,
+      gift,
+      comboCount: comboCount,
+      vfxProfile: vfxProfile,
+    );
+  }
+
+  /// 全局 Navigator 的 root overlay（桌面 / 模拟器稳定）。
+  static OverlayState? resolveRootOverlay([BuildContext? context]) {
+    return AuthService.navigatorKey.currentState?.overlay ??
+        (context != null ? Overlay.maybeOf(context, rootOverlay: true) : null);
+  }
+
+  void _enqueue(
+    OverlayState overlay,
+    Gift gift, {
+    required int comboCount,
+    BuildContext? context,
+    MoeVfxProfile? vfxProfile,
+  }) {
     final now = DateTime.now();
     if (_lastSendTime != null &&
         now.difference(_lastSendTime!) < _comboWindow) {
@@ -43,7 +79,6 @@ class GiftAnimationManager {
     }
     _lastSendTime = now;
 
-    // Dedup: if same gift already in queue, bump its combo
     for (final task in _queue) {
       if (task.gift.id == gift.id) {
         task.comboCount = _comboCount;
@@ -51,15 +86,23 @@ class GiftAnimationManager {
       }
     }
 
-    final priority = _priorityOf(gift);
+    final profile = vfxProfile ??
+        (context != null
+            ? MoeVfxProfile.fromContext(context)
+            : MoeVfxProfile.standard);
+    if (profile.enableHaptics) {
+      unawaited(HapticFeedback.mediumImpact());
+    }
+    PerformanceController().applyVfxProfile(profile);
+
     final task = _AnimTask(
       gift: gift,
-      context: context,
-      priority: priority,
+      overlay: overlay,
+      priority: _priorityOf(gift),
       comboCount: _comboCount,
+      vfxProfile: profile,
     );
 
-    // Insert by priority
     int insertAt = _queue.length;
     for (int i = 0; i < _queue.length; i++) {
       if (task.priority > _queue[i].priority) {
@@ -97,41 +140,40 @@ class GiftAnimationManager {
   Future<void> _playTask(_AnimTask task) async {
     final completer = Completer<void>();
 
-    // Resolve overlay from the task's context
-    OverlayState? overlay;
-    try {
-      overlay = Overlay.of(task.context, rootOverlay: true);
-    } catch (_) {
-      await Future.delayed(task.gift.animationDuration);
-      return;
-    }
-
     late OverlayEntry entry;
     entry = OverlayEntry(
-      builder: (ctx) => IgnorePointer(
-        child: Material(
-          type: MaterialType.transparency,
-          child: SizedBox.expand(
-            child: OptimizedGiftAnimation(
-              gift: task.gift,
-              comboCount: task.comboCount,
-              duration: task.gift.animationDuration,
-              onAnimationComplete: () {
-                entry.remove();
-                _currentEntry = null;
-                completer.complete();
-              },
+      builder: (ctx) {
+        final screen = MediaQuery.sizeOf(ctx);
+        return Positioned(
+          left: 0,
+          top: 0,
+          width: screen.width,
+          height: screen.height,
+          child: IgnorePointer(
+            child: Material(
+              type: MaterialType.transparency,
+              child: LiveGiftEffect(
+                gift: task.gift,
+                comboCount: task.comboCount,
+                duration: task.gift.animationDuration,
+                vfxProfile: task.vfxProfile,
+                onComplete: () {
+                  entry.remove();
+                  _currentEntry = null;
+                  completer.complete();
+                },
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
 
     _currentEntry = entry;
-    overlay.insert(entry);
+    task.overlay.insert(entry);
 
     return completer.future.timeout(
-      task.gift.animationDuration + const Duration(seconds: 1),
+      task.gift.animationDuration + const Duration(seconds: 2),
       onTimeout: () {
         if (_currentEntry == entry) {
           try {
@@ -184,15 +226,17 @@ class GiftAnimationManager {
 
 class _AnimTask {
   final Gift gift;
-  final BuildContext context;
+  final OverlayState overlay;
   final int priority;
+  final MoeVfxProfile vfxProfile;
   int comboCount;
 
   _AnimTask({
     required this.gift,
-    required this.context,
+    required this.overlay,
     required this.priority,
     required this.comboCount,
+    required this.vfxProfile,
   });
 }
 
@@ -225,8 +269,13 @@ class PerformanceController {
             : 40;
   }
 
-  void setAnimationEnabled(bool v) => _animEnabled = v;
-  int getAdjustedParticleCount(int base) => base.clamp(0, _maxParticles);
-  Duration getAdjustedDuration(Duration d) => d;
-  void autoDetectPerformanceLevel() {}
+  void applyVfxProfile(MoeVfxProfile profile) {
+    _animEnabled = !profile.reduceMotion;
+    _maxParticles = profile.scaledBurstCount(40);
+    _level = switch (profile.tier) {
+      MoeVfxTier.low => DevicePerformanceLevel.low,
+      MoeVfxTier.standard => DevicePerformanceLevel.medium,
+      MoeVfxTier.high => DevicePerformanceLevel.high,
+    };
+  }
 }

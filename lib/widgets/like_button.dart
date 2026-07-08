@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/services/post_service.dart';
-import 'package:moe_social/widgets/moe_bouncing_button.dart';
+import 'package:moe_social/widgets/motion/moe_pressable.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 
 class LikeButton extends StatefulWidget {
@@ -23,7 +23,8 @@ class LikeButton extends StatefulWidget {
   State<LikeButton> createState() => _LikeButtonState();
 }
 
-class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateMixin {
+class _LikeButtonState extends State<LikeButton>
+    with SingleTickerProviderStateMixin {
   bool _isLiked = false;
   int _likeCount = 0;
   bool _isLoading = false;
@@ -70,28 +71,35 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
 
   Future<void> _toggleLike() async {
     if (_isLoading) return;
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
     try {
-      final updatedPost = await PostService.toggleLike(widget.postId, widget.userId);
+      final updatedPost =
+          await PostService.toggleLike(widget.postId, widget.userId);
       // LikeStateManager 已由 PostService 更新，本地跟服务端对齐
       setState(() {
         _isLiked = updatedPost.isLiked;
         _likeCount = updatedPost.likes;
       });
       if (_isLiked) {
-        _animationController.forward().then((_) => _animationController.reverse());
+        _animationController
+            .forward()
+            .then((_) => _animationController.reverse());
       }
       widget.onLikeChanged?.call(_isLiked, _likeCount);
     } catch (e) {
       MoeToast.show(context, '操作失败，请稍后重试');
     } finally {
-      setState(() { _isLoading = false; });
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MoeBouncingButton(
+    return MoePressable(
       onTap: _toggleLike,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -105,7 +113,8 @@ class _LikeButtonState extends State<LikeButton> with SingleTickerProviderStateM
                   opacity: _opacityAnimation.value,
                   child: Icon(
                     _isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: _isLiked ? const Color(0xFFFF4757) : Colors.grey[500],
+                    color:
+                        _isLiked ? const Color(0xFFFF4757) : Colors.grey[500],
                     size: 24,
                   ),
                 ),

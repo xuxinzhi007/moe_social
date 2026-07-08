@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/services/commerce_service.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_input_field.dart';
 import '../../widgets/app_message_widget.dart';
@@ -131,7 +131,7 @@ class _RechargePageState extends State<RechargePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 当前余额显示 - 样式与钱包页统一
-            FadeInUp(
+            MoeReveal(
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
@@ -182,7 +182,7 @@ class _RechargePageState extends State<RechargePage> {
             const SizedBox(height: 32),
 
             // 快捷充值金额
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +274,7 @@ class _RechargePageState extends State<RechargePage> {
             const SizedBox(height: 24),
 
             // 自定义金额输入
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 200),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,7 +327,7 @@ class _RechargePageState extends State<RechargePage> {
             const SizedBox(height: 24),
 
             // 充值说明
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 300),
               child: Container(
                 decoration: BoxDecoration(
@@ -355,7 +355,7 @@ class _RechargePageState extends State<RechargePage> {
             const SizedBox(height: 40),
 
             // 充值按钮
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 400),
               child: LoadingButton(
                 operationKey: LoadingKeys.recharge,
@@ -379,7 +379,7 @@ class _RechargePageState extends State<RechargePage> {
 
             // 充值提示
             const SizedBox(height: 24),
-            FadeInUp(
+            MoeReveal(
               delay: const Duration(milliseconds: 500),
               child: Container(
                 padding: const EdgeInsets.all(16),

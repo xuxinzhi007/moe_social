@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../theme/moe_tokens.dart';
 import '../../providers/checkin_provider.dart';
 import '../../providers/user_level_provider.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../services/achievement_hooks.dart';
 
@@ -145,7 +145,7 @@ class _CheckInPageState extends State<CheckInPage>
 
   /// 构建等级信息卡片
   Widget _buildLevelCard(UserLevelProvider levelProvider) {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 100),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -241,7 +241,7 @@ class _CheckInPageState extends State<CheckInPage>
     final hasChecked = checkInProvider.hasCheckedToday;
     final canCheckIn = checkInProvider.canCheckIn;
 
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 200),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -375,7 +375,7 @@ class _CheckInPageState extends State<CheckInPage>
 
   /// 构建奖励预览
   Widget _buildRewardPreview(CheckInProvider checkInProvider) {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 300),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -469,7 +469,7 @@ class _CheckInPageState extends State<CheckInPage>
 
   /// 构建统计卡片
   Widget _buildStatsCard(CheckInProvider checkInProvider, UserLevelProvider levelProvider) {
-    return FadeInUp(
+    return MoeReveal(
       delay: const Duration(milliseconds: 400),
       child: Container(
         padding: const EdgeInsets.all(16),

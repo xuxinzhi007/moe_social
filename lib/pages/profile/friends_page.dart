@@ -15,7 +15,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
@@ -1065,10 +1065,12 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     final dmUnread =
         context.watch<NotificationProvider>().unreadDmBySender[user.id] ?? 0;
     final isFavorite = _favoriteFriends.contains(user.id);
-    return FadeInUp(
+    return MoeStaggerReveal(
       key: ValueKey('contacts_panel_${user.id}'),
+      index: index,
+      maxAnimated: 5,
+      staggerStep: const Duration(milliseconds: 35),
       duration: const Duration(milliseconds: 180),
-      delay: Duration(milliseconds: 35 * (index % 5)),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),

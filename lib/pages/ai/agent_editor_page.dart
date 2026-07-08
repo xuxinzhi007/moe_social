@@ -28,7 +28,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../providers/loading_provider.dart';
 import '../../widgets/moe_input_field.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import 'ai_provider_profiles_page.dart';
 
 class AgentEditorPage extends StatefulWidget {
@@ -774,7 +774,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(bottom: 16 + bottomInset),
           children: [
-            FadeInUp(
+            MoeReveal(
               delay: Duration.zero,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -814,7 +814,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ),
               ),
             ),
-            FadeInUp(
+            MoeReveal(
               delay: MoeTokens.motionStaggerStep,
               child: _buildFieldSection(
                 title: '基础信息',
@@ -855,7 +855,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ],
               ),
             ),
-            FadeInUp(
+            MoeReveal(
               delay: MoeTokens.motionStaggerStep * 2,
               child: _buildFieldSection(
                 title: '模型与来源',
@@ -990,7 +990,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ],
               ),
             ),
-            FadeInUp(
+            MoeReveal(
               delay: MoeTokens.motionStaggerStep * 3,
               child: _buildFieldSection(
                 title: '扮演设定',
@@ -1016,7 +1016,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                 ],
               ),
             ),
-            FadeInUp(
+            MoeReveal(
               delay: MoeTokens.motionStaggerStep * 4,
               child: Padding(
                 padding:

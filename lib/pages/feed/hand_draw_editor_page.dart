@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/hand_draw_card.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/hand_draw/hand_draw_card_view.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -132,7 +132,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(ctx).bottom,
           ),
-          child: FadeInUp(
+          child: MoeReveal(
             duration: const Duration(milliseconds: 320),
             child: Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -230,7 +230,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: FadeInUp(
+              child: MoeReveal(
                 duration: const Duration(milliseconds: 400),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -266,7 +266,7 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
               ),
             ),
           ),
-          FadeInUp(
+          MoeReveal(
             duration: const Duration(milliseconds: 500),
             child: Container(
               width: double.infinity,

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
 import 'minesweeper_lobby_page.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 
 class GameLobbyPage extends StatelessWidget {
   const GameLobbyPage({super.key});
@@ -47,12 +47,12 @@ class GameLobbyPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 100),
                       child: _buildSectionTitle('热门娱乐'),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 200),
                       child: _buildGameCard(
                         context,
@@ -65,7 +65,7 @@ class GameLobbyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 300),
                       child: _buildGameCard(
                         context,
@@ -78,12 +78,12 @@ class GameLobbyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 400),
                       child: _buildSectionTitle('游戏规则'),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 500),
                       child: _buildRulesCard(),
                     ),

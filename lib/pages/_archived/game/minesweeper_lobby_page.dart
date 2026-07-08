@@ -5,7 +5,7 @@ import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
 import 'minesweeper_game_page.dart';
 import 'minesweeper_config.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 
 class MinesweeperLobbyPage extends StatelessWidget {
   const MinesweeperLobbyPage({super.key});
@@ -49,12 +49,12 @@ class MinesweeperLobbyPage extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 100),
                       child: _buildSectionTitle('扫雷游戏'),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 200),
                       child: _buildDifficultyCard(
                         context,
@@ -67,7 +67,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 300),
                       child: _buildDifficultyCard(
                         context,
@@ -80,7 +80,7 @@ class MinesweeperLobbyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 400),
                       child: _buildDifficultyCard(
                         context,
@@ -93,12 +93,12 @@ class MinesweeperLobbyPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 500),
                       child: _buildSectionTitle('游戏规则'),
                     ),
                     const SizedBox(height: 12),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 600),
                       child: _buildRulesCard(),
                     ),
@@ -154,17 +154,13 @@ class MinesweeperLobbyPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDifficultyCard(
-    BuildContext context,
-    {
-      required String title,
+  Widget _buildDifficultyCard(BuildContext context,
+      {required String title,
       required String subtitle,
       required String description,
       required IconData icon,
       required List<Color> gradient,
-      required GameDifficulty difficulty
-    }
-  ) {
+      required GameDifficulty difficulty}) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();

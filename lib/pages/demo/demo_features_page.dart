@@ -7,7 +7,8 @@ import '../../models/achievement_badge.dart';
 import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/achievement/achievement_badge_visuals.dart';
-import '../../widgets/gift_animation.dart';
+import '../../widgets/gift_animation_manager.dart';
+import '../../widgets/achievement/badge_unlock_animation.dart';
 
 /// 新功能演示页面
 class DemoFeaturesPage extends StatefulWidget {
@@ -73,17 +74,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
   }
 
   void _showGiftAnimation(Gift gift) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black54,
-      builder: (context) => GiftSendAnimation(
-        gift: gift,
-        onAnimationComplete: () {
-          Navigator.of(context).pop();
-        },
-      ),
-    );
+    GiftAnimationManager().showGiftAnimation(context, gift);
   }
 
   void _showBadgeUnlockAnimation() {
@@ -94,7 +85,6 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
       barrierColor: Colors.black54,
       builder: (context) => BadgeUnlockAnimation(
         badgeName: badge.name,
-        badgeEmoji: badge.emoji,
         badgeIcon: achievementIconForId(badge.id),
         badgeColor: badge.color,
         onAnimationComplete: () {
@@ -206,11 +196,13 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                             runSpacing: 6,
                             children: _selectedTopicTags.map((tag) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: tag.color.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: tag.color.withValues(alpha: 0.5)),
+                                  border: Border.all(
+                                      color: tag.color.withValues(alpha: 0.5)),
                                 ),
                                 child: Text(
                                   tag.name,
@@ -266,7 +258,8 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                           Text(
                             _giftsLoadError!,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 13),
                           ),
                           const SizedBox(height: 8),
                           TextButton(
@@ -277,56 +270,58 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                       ),
                     )
                   else
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: _demoGifts.map((gift) {
-                      return GestureDetector(
-                        onTap: () => _showGiftAnimation(gift),
-                        child: Container(
-                          width: 80,
-                          height: 100,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: gift.color.withValues(alpha: 0.3)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(gift.emoji, style: const TextStyle(fontSize: 32)),
-                              const SizedBox(height: 4),
-                              Text(
-                                gift.name,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: _demoGifts.map((gift) {
+                        return GestureDetector(
+                          onTap: () => _showGiftAnimation(gift),
+                          child: Container(
+                            width: 80,
+                            height: 100,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: gift.color.withValues(alpha: 0.3)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withValues(alpha: 0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: gift.color,
-                                  fontWeight: FontWeight.bold,
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(gift.emoji,
+                                    style: const TextStyle(fontSize: 32)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  gift.name,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  '¥${gift.price.toStringAsFixed(gift.price == gift.price.roundToDouble() ? 0 : 1)}',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: gift.color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                        );
+                      }).toList(),
+                    ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),

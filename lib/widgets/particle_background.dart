@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+import 'motion/moe_motion.dart';
 
 class ParticleBackground extends StatefulWidget {
   final Color primaryColor;
@@ -10,14 +13,15 @@ class ParticleBackground extends StatefulWidget {
     super.key,
     this.primaryColor = const Color(0xFF7F7FD5),
     this.secondaryColor = const Color(0xFF86A8E7),
-    this.particleCount = 30,
+    this.particleCount = kIsWeb ? 12 : 30,
   });
 
   @override
   State<ParticleBackground> createState() => _ParticleBackgroundState();
 }
 
-class _ParticleBackgroundState extends State<ParticleBackground> with SingleTickerProviderStateMixin {
+class _ParticleBackgroundState extends State<ParticleBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late List<Particle> _particles;
 
@@ -47,6 +51,10 @@ class _ParticleBackgroundState extends State<ParticleBackground> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    if (moeReduceMotion(context)) {
+      return const SizedBox.expand();
+    }
+
     return SizedBox.expand(
       child: AnimatedBuilder(
         animation: _controller,
@@ -116,4 +124,3 @@ class ParticlePainter extends CustomPainter {
     return true;
   }
 }
-

@@ -16,7 +16,7 @@ import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -359,11 +359,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Quick actions
-                    FadeInUp(
+                    MoeReveal(
                         delay: const Duration(milliseconds: 50),
                         child: _buildQuickActions()),
                     const SizedBox(height: 18),
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 65),
                       child: _menuSection('常用功能', [
                         _MenuItem(
@@ -391,13 +391,13 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 18),
                     // Achievements preview
                     if (_user != null) ...[
-                      FadeInUp(
+                      MoeReveal(
                           delay: const Duration(milliseconds: 80),
                           child: _buildAchievementsPreview()),
                       const SizedBox(height: 18),
                     ],
                     // Cloud & QR
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 110),
                       child: _menuSection('云端与相册', [
                         _MenuItem(
@@ -426,7 +426,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 20),
                     // Lab & System
-                    FadeInUp(
+                    MoeReveal(
                       delay: const Duration(milliseconds: 140),
                       child: _menuSection('AI 与设置', [
                         _MenuItem(
@@ -561,7 +561,7 @@ class _ProfilePageState extends State<ProfilePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Avatar
-                FadeInUp(
+                MoeReveal(
                   delay: const Duration(milliseconds: 80),
                   child: Material(
                     color: Colors.transparent,
@@ -593,7 +593,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 10),
                 // Name + VIP
-                FadeInUp(
+                MoeReveal(
                   delay: const Duration(milliseconds: 120),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -634,7 +634,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 8),
                 // Signature
-                FadeInUp(
+                MoeReveal(
                   delay: const Duration(milliseconds: 140),
                   child: GestureDetector(
                     onTap: _openEditProfile,
@@ -659,7 +659,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 12),
                 // Moe-No + Level pills
-                FadeInUp(
+                MoeReveal(
                   delay: const Duration(milliseconds: 160),
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -719,7 +719,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 16),
                 // Stats bar — each item is a tap target
-                FadeInUp(
+                MoeReveal(
                   delay: const Duration(milliseconds: 200),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(22),

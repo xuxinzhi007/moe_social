@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
@@ -73,11 +73,11 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FadeInUp(
+            MoeReveal(
               duration: MoeTokens.motionFadeDuration,
               child: _buildHeader(scheme),
             ),
-            FadeInUp(
+            MoeReveal(
               duration: MoeTokens.motionFadeDuration,
               delay: MoeTokens.motionStaggerStep,
               child: _buildSegmented(scheme),

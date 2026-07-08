@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/game_state.dart';
 import '../../theme/moe_tokens.dart';
-import '../fade_in_up.dart';
+import '../motion/moe_reveal.dart';
 
 /// 小说式叙事块（明亮游戏风）。
 class GameNarrativeBlock extends StatelessWidget {
@@ -23,9 +23,9 @@ class GameNarrativeBlock extends StatelessWidget {
 
     if (!animate) return content;
 
-    return FadeInUp(
+    return MoeReveal(
       duration: MoeTokens.motionFadeDuration,
-      offset: MoeTokens.motionFadeOffset,
+      offsetY: MoeTokens.motionFadeOffset,
       child: content,
     );
   }
@@ -50,8 +50,7 @@ class GameNarrativeBlock extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.play_arrow_rounded,
-                size: 16, color: MoeTokens.primary),
+            Icon(Icons.play_arrow_rounded, size: 16, color: MoeTokens.primary),
             const SizedBox(width: 6),
             Expanded(
               child: Text(

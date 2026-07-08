@@ -8,7 +8,7 @@ import '../../providers/device_info_provider.dart';
 
 import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
-import '../../widgets/fade_in_up.dart';
+import '../../widgets/motion/moe_reveal.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
@@ -505,12 +505,12 @@ class _SettingsPageState extends State<SettingsPage> {
     final avatarProvider = Provider.of<VirtualAvatarProvider>(context);
 
     return [
-      FadeInUp(
+      MoeReveal(
         delay: Duration.zero,
         child: _buildExperienceDashboard(avatarProvider),
       ),
       const SizedBox(height: 24),
-      FadeInUp(
+      MoeReveal(
         delay: const Duration(milliseconds: 60),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,7 +558,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       const SizedBox(height: 24),
-      FadeInUp(
+      MoeReveal(
         delay: const Duration(milliseconds: 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,7 +594,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       const SizedBox(height: 24),
-      FadeInUp(
+      MoeReveal(
         delay: const Duration(milliseconds: 180),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,7 +611,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       const SizedBox(height: 24),
-      FadeInUp(
+      MoeReveal(
         delay: const Duration(milliseconds: 240),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,7 +622,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       const SizedBox(height: 24),
-      FadeInUp(
+      MoeReveal(
         delay: const Duration(milliseconds: 300),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
