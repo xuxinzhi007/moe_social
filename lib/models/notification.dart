@@ -8,6 +8,7 @@ class NotificationModel {
   static const int system = 4;
   static const int directMessage = 6;
   static const int announcement = 7;
+  static const int giftReceived = 8;
 
   final String id;
   final int type; // 1:like, 2:comment, 3:follow, 4:system
@@ -95,6 +96,8 @@ class NotificationModel {
         return '系统公告';
       case directMessage:
         return senderName != null ? '$senderName 给你发来了私信' : '收到一条新的私信';
+      case giftReceived:
+        return senderName != null ? '$senderName 送给你礼物' : '收到一份礼物';
       default:
         return '新通知';
     }

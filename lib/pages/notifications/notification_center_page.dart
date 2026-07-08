@@ -99,6 +99,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.campaign_rounded;
         color = MoeTokens.primary;
         break;
+      case NotificationModel.giftReceived:
+        icon = Icons.card_giftcard_rounded;
+        color = Colors.amber;
+        break;
       default:
         icon = Icons.notifications_rounded;
         color = Colors.grey;

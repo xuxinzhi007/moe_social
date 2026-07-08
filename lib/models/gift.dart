@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 class Gift {
   final String id;
   final String name;
+  /// 后端 `icon` 原值（URL、emoji 遗留或空）。
+  final String icon;
   final String emoji;
   final String description;
   final double price;
@@ -15,6 +17,7 @@ class Gift {
   const Gift({
     required this.id,
     required this.name,
+    this.icon = '',
     required this.emoji,
     required this.description,
     required this.price,
@@ -27,6 +30,7 @@ class Gift {
   Gift copyWith({
     String? id,
     String? name,
+    String? icon,
     String? emoji,
     String? description,
     double? price,
@@ -38,6 +42,7 @@ class Gift {
     return Gift(
       id: id ?? this.id,
       name: name ?? this.name,
+      icon: icon ?? this.icon,
       emoji: emoji ?? this.emoji,
       description: description ?? this.description,
       price: price ?? this.price,
@@ -54,10 +59,22 @@ class Gift {
     return n != null && n > 0;
   }
 
+  /// `icon` 为 http(s) 时使用网络图。
+  String? get iconUrl {
+    final raw = icon.trim();
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    return null;
+  }
+
+  static String _legacyEmojiFromIcon(String rawIcon) {
+    if (rawIcon.startsWith('http') || rawIcon.isEmpty) return '🎁';
+    return rawIcon;
+  }
+
   /// `GET /api/gifts` 条目
   factory Gift.fromCatalogApi(Map<String, dynamic> json) {
     final rawIcon = json['icon'] as String? ?? '';
-    final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
+    final emoji = _legacyEmojiFromIcon(rawIcon);
     final price = (json['price'] as num?)?.toDouble() ?? 0;
     final category = GiftCategory.fromApi(json['category'] as String?);
 
@@ -66,6 +83,7 @@ class Gift {
       name: (json['name'] as String?)?.trim().isNotEmpty == true
           ? json['name'] as String
           : '礼物',
+      icon: rawIcon,
       emoji: emoji,
       description: json['description'] as String? ?? '',
       price: price,
@@ -79,11 +97,12 @@ class Gift {
   factory Gift.fromJson(Map<String, dynamic> json) {
     final category = GiftCategory.fromApi(json['category'] as String?);
     final rawIcon = json['emoji'] as String? ?? json['icon'] as String? ?? '';
-    final emoji = rawIcon.startsWith('http') || rawIcon.isEmpty ? '🎁' : rawIcon;
+    final emoji = _legacyEmojiFromIcon(rawIcon);
 
     return Gift(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? '礼物',
+      icon: rawIcon,
       emoji: emoji,
       description: json['description'] as String? ?? '',
       price: (json['price'] as num?)?.toDouble() ?? 0,
@@ -100,6 +119,7 @@ class Gift {
     return {
       'id': id,
       'name': name,
+      'icon': icon,
       'emoji': emoji,
       'description': description,
       'price': price,
