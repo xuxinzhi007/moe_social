@@ -7,6 +7,8 @@ class GenderSelector extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final String? errorText;
   final bool enabled;
+  final bool showTitle;
+  final bool showFooterHint;
 
   const GenderSelector({
     super.key,
@@ -14,6 +16,8 @@ class GenderSelector extends StatelessWidget {
     required this.onChanged,
     this.errorText,
     this.enabled = true,
+    this.showTitle = true,
+    this.showFooterHint = true,
   });
 
   static const List<_GenderOption> _genderOptions = [
@@ -47,17 +51,19 @@ class GenderSelector extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '性别',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: enabled
-                      ? theme.textTheme.bodyMedium?.color
-                      : theme.disabledColor,
+              if (showTitle) ...[
+                Text(
+                  '性别',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: enabled
+                        ? theme.textTheme.bodyMedium?.color
+                        : theme.disabledColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: _genderOptions.map((option) {
                   final isSelected = selectedGender == option.value;
@@ -133,7 +139,7 @@ class GenderSelector extends StatelessWidget {
         ],
 
         // 友好提示
-        if (errorText == null) ...[
+        if (errorText == null && showFooterHint) ...[
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 12),

@@ -8,6 +8,7 @@ import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../../widgets/achievement/achievement_badge_visuals.dart';
 import '../../widgets/gift_animation_manager.dart';
+import '../../widgets/gift_icon_widget.dart';
 import '../../widgets/achievement/badge_unlock_animation.dart';
 
 /// 新功能演示页面
@@ -296,8 +297,7 @@ class _DemoFeaturesPageState extends State<DemoFeaturesPage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(gift.emoji,
-                                    style: const TextStyle(fontSize: 32)),
+                                GiftIconWidget(gift: gift, size: 32),
                                 const SizedBox(height: 4),
                                 Text(
                                   gift.name,

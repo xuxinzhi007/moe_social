@@ -8,6 +8,7 @@ class BirthdaySelector extends StatelessWidget {
   final ValueChanged<DateTime?> onChanged;
   final String? errorText;
   final bool enabled;
+  final bool showFooterHint;
 
   const BirthdaySelector({
     super.key,
@@ -15,6 +16,7 @@ class BirthdaySelector extends StatelessWidget {
     required this.onChanged,
     this.errorText,
     this.enabled = true,
+    this.showFooterHint = true,
   });
 
   @override
@@ -145,7 +147,7 @@ class BirthdaySelector extends StatelessWidget {
         ],
 
         // 友好提示
-        if (errorText == null) ...[
+        if (errorText == null && showFooterHint) ...[
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 12),

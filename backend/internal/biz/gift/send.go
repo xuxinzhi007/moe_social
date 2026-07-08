@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	giftv1 "backend/api/gift/v1"
+	notifybiz "backend/internal/biz/notify"
 	"backend/internal/platform/socialhook"
 	"backend/pkg/achievement"
 	"backend/model"
@@ -16,7 +17,7 @@ import (
 )
 
 // Send 赠送礼物。
-func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, quantity int32) (*giftv1.SendGiftReply, error) {
+func Send(ctx context.Context, store GiftStore, notifyStore notifybiz.NotifyStore, fromRaw, toRaw, giftRaw string, quantity int32) (*giftv1.SendGiftReply, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -110,6 +111,8 @@ func Send(ctx context.Context, store GiftStore, fromRaw, toRaw, giftRaw string, 
 	})
 
 	giftProto := GiftToProto(gift, 0)
+	DeliverGiftReceived(ctx, notifyStore, uint(toUserID), sender, gift, quantity)
+
 	return &giftv1.SendGiftReply{
 		Success: true, Message: "gift sent successfully", NewAchievements: achievement.UnlocksToGiftV1(achUnlocks),
 		Record: RecordToProto(record, sender, receiver, giftProto),

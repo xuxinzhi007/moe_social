@@ -12,6 +12,7 @@ import 'motion/moe_vfx_profile.dart';
 import 'moe_loading.dart';
 import 'gift_haptic.dart';
 import 'gift_animation_manager.dart';
+import 'gift_icon_widget.dart';
 import '../pages/commerce/wallet_page.dart';
 
 class GiftSelector extends StatefulWidget {
@@ -296,7 +297,7 @@ class _GiftSelectorState extends State<GiftSelector>
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                '${_comboCount}x 连击 🔥',
+                '${_comboCount}x 连击',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
@@ -487,7 +488,7 @@ class _GiftSelectorState extends State<GiftSelector>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('🎒', style: TextStyle(fontSize: 48, color: Colors.grey[300])),
+            Icon(Icons.backpack_outlined, size: 48, color: Colors.grey[300]),
             const SizedBox(height: 12),
             const Text('背包是空的',
                 style:
@@ -592,12 +593,11 @@ class _GiftSelectorState extends State<GiftSelector>
                           scale: isPreviewing ? 1.22 : 1.0,
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.elasticOut,
-                          child: Text(
-                            gift.emoji,
-                            style: TextStyle(
-                              fontSize: 38,
-                              color: canSend ? null : Colors.grey[400],
-                            ),
+                          child: GiftIconWidget(
+                            gift: gift,
+                            size: 38,
+                            enabled: canSend,
+                            pulse: isPreviewing ? 0.85 : 0.55,
                           ),
                         ),
                       ),
@@ -655,8 +655,11 @@ class _GiftSelectorState extends State<GiftSelector>
                       color: Color(0xFFFFD700),
                       shape: BoxShape.circle,
                     ),
-                    child: const Text('👑',
-                        style: TextStyle(fontSize: 8)),
+                    child: Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 10,
+                      color: Color(0xFF5D4037),
+                    ),
                   ),
                 ),
 
@@ -774,16 +777,26 @@ class _GiftSelectorState extends State<GiftSelector>
         children: [
           const MoeSmallLoading(size: 18),
           const SizedBox(width: 10),
-          Text(
-            _sendingGift != null
-                ? '正在送出 ${_sendingGift!.emoji} ${_sendingGift!.name}…'
-                : '发送中…',
-            style: TextStyle(
-              color: Colors.pink.shade700,
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
+          if (_sendingGift != null) ...[
+            GiftIconWidget(gift: _sendingGift!, size: 18, pulse: 0.7),
+            const SizedBox(width: 8),
+            Text(
+              '正在送出 ${_sendingGift!.name}…',
+              style: TextStyle(
+                color: Colors.pink.shade700,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
-          ),
+          ] else
+            Text(
+              '发送中…',
+              style: TextStyle(
+                color: Colors.pink.shade700,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
           if (_comboCount > 1)
             Padding(
               padding: const EdgeInsets.only(left: 8),

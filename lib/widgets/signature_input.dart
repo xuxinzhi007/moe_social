@@ -8,6 +8,7 @@ class SignatureInput extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final String? errorText;
   final bool enabled;
+  final bool showFooterHint;
 
   const SignatureInput({
     super.key,
@@ -15,6 +16,7 @@ class SignatureInput extends StatefulWidget {
     required this.onChanged,
     this.errorText,
     this.enabled = true,
+    this.showFooterHint = true,
   });
 
   @override
@@ -140,7 +142,7 @@ class _SignatureInputState extends State<SignatureInput> {
         ],
 
         // 友好提示
-        if (widget.errorText == null) ...[
+        if (widget.errorText == null && widget.showFooterHint) ...[
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 12),

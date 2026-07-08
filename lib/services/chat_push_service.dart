@@ -9,8 +9,10 @@ import 'api_service.dart';
 import 'notification_service.dart';
 import 'ws_channel_connector.dart';
 import '../auth_service.dart';
+import '../models/gift.dart';
 import '../utils/chat_message_display.dart';
 import '../pages/chat/voice_call_receiving_page.dart';
+import '../widgets/gift_banner.dart';
 import '../widgets/message_notification.dart';
 
 // ChatPushService listens on /ws/chat to receive direct messages in real time.
@@ -263,6 +265,10 @@ class ChatPushService {
       }
       return;
     }
+    if (msgType == 'gift_received') {
+      _handleGiftReceived(map);
+      return;
+    }
     if (msgType == 'incoming_call') {
       _handleIncomingCall(map);
       return;
@@ -385,6 +391,34 @@ class ChatPushService {
     final list = _pendingBySender.remove(senderId);
     if (list == null || list.isEmpty) return const [];
     return List<Map<String, dynamic>>.from(list);
+  }
+
+  static void _handleGiftReceived(Map<String, dynamic> map) {
+    final senderName = map['sender_name']?.toString() ??
+        map['senderName']?.toString() ??
+        '用户';
+    final avatarUrl = map['sender_avatar']?.toString() ??
+        map['senderAvatar']?.toString();
+
+    final rawGift = map['gift'];
+    if (rawGift is! Map) return;
+
+    final gift = Gift.fromCatalogApi(Map<String, dynamic>.from(rawGift));
+
+    final ctx = _globalContext ?? _navigatorKey?.currentContext;
+    if (ctx == null) {
+      if (kDebugMode) {
+        debugPrint('ChatPushService: No context available to show gift banner');
+      }
+      return;
+    }
+
+    GiftBannerManager().showBanner(
+      ctx,
+      senderName: senderName,
+      senderAvatar: avatarUrl,
+      gift: gift,
+    );
   }
 
   static void _handleIncomingCall(Map<String, dynamic> map) {

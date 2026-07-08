@@ -7,6 +7,9 @@ const AdminSystemNotificationType = 4
 // AnnouncementNotificationType App 公告通知（post_id 存 announcement_id）。
 const AnnouncementNotificationType = 7
 
+// NotificationTypeGiftReceived 收到礼物（post_id 存 gift_id）。
+const NotificationTypeGiftReceived = 8
+
 // SystemNotificationContent 合并标题与正文。
 func SystemNotificationContent(title, content string) string {
 	title = strings.TrimSpace(title)

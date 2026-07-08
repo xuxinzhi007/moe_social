@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) SendGift(ctx context.Context, in *giftv1.SendGiftRequest) (*giftv1.SendGiftReply, error) {
-	return giftbiz.Send(ctx, s.store, in.GetFromUserId(), in.GetToUserId(), in.GetGiftId(), in.GetQuantity())
+	return giftbiz.Send(ctx, s.store, s.notify, in.GetFromUserId(), in.GetToUserId(), in.GetGiftId(), in.GetQuantity())
 }
 
 func (s *AppService) PurchaseGift(ctx context.Context, in *giftv1.PurchaseGiftRequest) (*giftv1.PurchaseGiftReply, error) {

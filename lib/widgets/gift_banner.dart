@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/gift.dart';
 import 'optimized_gift_animation.dart';
+import 'gift_icon_widget.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GiftBannerManager — singleton queue for receive-side banners
@@ -216,10 +217,7 @@ class _GiftBannerWidgetState extends State<_GiftBannerWidget>
           const SizedBox(width: 6),
           const Text('送出了', style: TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(width: 6),
-          Text(
-            widget.gift.emoji,
-            style: const TextStyle(fontSize: 22),
-          ),
+          GiftIconWidget(gift: widget.gift, size: 24, pulse: 0.65),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
