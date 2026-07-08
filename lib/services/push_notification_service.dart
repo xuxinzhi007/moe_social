@@ -16,7 +16,7 @@ class PushNotificationService {
       final callerName = data['caller_name'];
       final callerAvatar = data['caller_avatar'];
       final callId = data['call_id'];
-      
+
       if (callerId != null && callerName != null && callId != null) {
         // 导航到来电页面
         navigatorKey.currentState?.push(
@@ -47,7 +47,8 @@ class PushNotificationService {
   }
 
   // 模拟接收到来电通知
-  static void simulateIncomingCall(String callerId, String callerName, String callerAvatar, String callId) {
+  static void simulateIncomingCall(
+      String callerId, String callerName, String callerAvatar, String callId) {
     print('模拟收到来电通知');
     _handleMessage({
       'type': 'incoming_call',

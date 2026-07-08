@@ -20,7 +20,8 @@ type AchievementPage struct {
 }
 
 // ListAchievements Admin 成就定义列表。
-func ListAchievements(ctx context.Context, db *gorm.DB, in AchievementPage) ([]*adminv1.AdminAchievementItem, int32, error) {
+func ListAchievements(ctx context.Context, st AdminStore, in AchievementPage) ([]*adminv1.AdminAchievementItem, int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}

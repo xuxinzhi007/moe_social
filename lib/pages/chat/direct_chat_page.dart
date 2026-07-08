@@ -7,7 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
-import '../../services/api_service.dart';
+import '../../services/chat_service.dart';
+import '../../services/api_client.dart' show ApiException;
+import '../../services/user_service.dart';
 import '../../widgets/avatar_image.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
@@ -267,7 +269,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _loadPeerProfile() async {
     try {
-      final user = await ApiService.getUserInfo(widget.userId);
+      final user = await UserService.getUserInfo(widget.userId);
       if (!mounted) return;
       setState(() {
         _peerDisplayUserId = user.displayUserId.trim();
@@ -280,7 +282,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final currentUserId = _currentUserId;
     if (currentUserId == null || currentUserId.isEmpty) return;
     try {
-      final callData = await ApiService.voiceCall(widget.userId);
+      final callData = await ChatService.voiceCall(widget.userId);
       final channelName = callData['channel_name']?.toString() ??
           callData['call_id']?.toString();
       if (channelName == null || channelName.isEmpty) {
@@ -363,7 +365,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _fetchInitialServerHistory() async {
     try {
-      final page = await ApiService.listPrivateMessages(
+      final page = await ChatService.listPrivateMessages(
         peerUserId: widget.userId,
         limit: 40,
       );
@@ -400,7 +402,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     if (_loadingServerPage) return;
     setState(() => _loadingServerPage = true);
     try {
-      final page = await ApiService.listPrivateMessages(
+      final page = await ChatService.listPrivateMessages(
         peerUserId: widget.userId,
         beforeId: cursor,
         limit: 30,
@@ -528,7 +530,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _checkPeerOnline() async {
     try {
-      final map = await ApiService.getChatOnlineBatch([widget.userId]);
+      final map = await UserService.getChatOnlineBatch([widget.userId]);
       final online = map[widget.userId] ?? false;
       if (!mounted) return;
       setState(() {
@@ -634,7 +636,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
       final file = File(path);
       if (!await file.exists()) return;
-      final url = await ApiService.uploadImage(file);
+      final url = await ChatService.uploadImage(file);
       final content = '$_imgPrefix$url';
 
       if (!mounted) return;
@@ -653,7 +655,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
       final optimisticIdx = _messages.length - 1;
       try {
-        final saved = await ApiService.sendPrivateMessage(
+        final saved = await ChatService.sendPrivateMessage(
           receiverId: widget.userId,
           body: content,
         );
@@ -736,7 +738,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _scrollToBottom();
     final optimisticIdx = _messages.length - 1;
     try {
-      final saved = await ApiService.sendPrivateMessage(
+      final saved = await ChatService.sendPrivateMessage(
         receiverId: widget.userId,
         body: text,
       );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/models/gift_purchase_order.dart';
 import 'package:moe_social/models/vip_order.dart';
-import 'package:moe_social/services/api_service.dart';
+import 'package:moe_social/services/commerce_service.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 import 'package:moe_social/pages/commerce/wallet_page.dart';
 import '../../theme/moe_tokens.dart';
@@ -100,7 +100,7 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
 
     setState(() => _loading = true);
     try {
-      final r = await ApiService.getGiftPurchaseOrders(uid,
+      final r = await CommerceService.getGiftPurchaseOrders(uid,
           page: _page, pageSize: _pageSize);
       final list = r['orders'] as List<GiftPurchaseOrder>;
       final total = r['total'] as int;
@@ -202,7 +202,8 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
                   ),
                   const SizedBox(height: 6),
                   Text('订单号 ${o.orderNo}',
-                      style: TextStyle(fontSize: 12, color: MoeTokens.bodyText)),
+                      style:
+                          TextStyle(fontSize: 12, color: MoeTokens.bodyText)),
                   const SizedBox(height: 4),
                   Text(
                     '单价 ¥${o.unitPrice.toStringAsFixed(2)} × ${o.quantity}',
@@ -214,11 +215,13 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
                     children: [
                       Text(
                         o.payMethod == 'wallet' ? '心意支付' : o.payMethod,
-                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
+                        style:
+                            TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                       Text(
                         o.createdAt,
-                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
+                        style:
+                            TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                     ],
                   ),
@@ -268,8 +271,8 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
 
     setState(() => _loading = true);
     try {
-      final r =
-          await ApiService.getVipOrders(uid, page: _page, pageSize: _pageSize);
+      final r = await CommerceService.getVipOrders(uid,
+          page: _page, pageSize: _pageSize);
       final list = r['orders'] as List<VipOrder>;
       final total = r['total'] as int;
       if (!mounted) return;
@@ -378,7 +381,8 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.green.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusSm),
                         ),
                         child: Text(
                           _statusText(o.status),
@@ -410,7 +414,8 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
                       ),
                       Text(
                         o.createdAt,
-                        style: TextStyle(fontSize: 12, color: MoeTokens.bodyText),
+                        style:
+                            TextStyle(fontSize: 12, color: MoeTokens.bodyText),
                       ),
                     ],
                   ),
@@ -449,7 +454,8 @@ class _WalletTransactionsTabState extends State<_WalletTransactionsTab> {
     }
     setState(() => _loading = true);
     try {
-      final r = await ApiService.getTransactions(uid, page: 1, pageSize: 30);
+      final r =
+          await CommerceService.getTransactions(uid, page: 1, pageSize: 30);
       final raw = r['data'] as List;
       final parsed = raw.map((t) {
         final m = Map<String, dynamic>.from(t as Map);

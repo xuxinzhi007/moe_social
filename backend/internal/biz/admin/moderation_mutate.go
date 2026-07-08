@@ -15,7 +15,8 @@ import (
 )
 
 // DeleteFollow Admin 删除关注关系。
-func DeleteFollow(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteFollowReq) (*adminv1.AdminDeleteFollowResp, error) {
+func DeleteFollow(ctx context.Context, st AdminStore, in *adminv1.AdminDeleteFollowReq) (*adminv1.AdminDeleteFollowResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -30,7 +31,8 @@ func DeleteFollow(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteFollo
 }
 
 // DeletePost Admin 删除动态。
-func DeletePost(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeletePostReq) (*adminv1.AdminDeletePostResp, error) {
+func DeletePost(ctx context.Context, st AdminStore, in *adminv1.AdminDeletePostReq) (*adminv1.AdminDeletePostResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -59,7 +61,8 @@ func DeletePost(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeletePostReq
 }
 
 // DeleteComment Admin 删除评论。
-func DeleteComment(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteCommentReq) (*adminv1.AdminDeleteCommentResp, error) {
+func DeleteComment(ctx context.Context, st AdminStore, in *adminv1.AdminDeleteCommentReq) (*adminv1.AdminDeleteCommentResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

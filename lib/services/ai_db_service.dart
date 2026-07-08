@@ -557,6 +557,7 @@ class AiDbService {
 
   Future<void> clearMessages(String sessionId) async {
     final db = await database;
-    await db.delete('messages', where: 'session_id = ?', whereArgs: [sessionId]);
+    await db
+        .delete('messages', where: 'session_id = ?', whereArgs: [sessionId]);
   }
 }

@@ -373,7 +373,8 @@ class _AgentListPageState extends State<AgentListPage>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(MoeTokens.spaceXl, MoeTokens.spaceLg, MoeTokens.spaceXl, MoeTokens.space3xl),
+          padding: const EdgeInsets.fromLTRB(MoeTokens.spaceXl,
+              MoeTokens.spaceLg, MoeTokens.spaceXl, MoeTokens.space3xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -502,11 +503,14 @@ class _AgentListPageState extends State<AgentListPage>
         style: TextStyle(fontSize: MoeTokens.textBase, height: 1.4),
         decoration: InputDecoration(
           hintText: '搜索角色、描述或模型...',
-          hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: MoeTokens.textBase),
-          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
+          hintStyle: TextStyle(
+              color: Colors.grey.shade400, fontSize: MoeTokens.textBase),
+          prefixIcon:
+              Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: Icon(Icons.clear_rounded, color: Colors.grey.shade400, size: 20),
+                  icon: Icon(Icons.clear_rounded,
+                      color: Colors.grey.shade400, size: 20),
                   onPressed: () {
                     _updateTavernState(() => _searchQuery = '');
                     _filterAgents();
@@ -514,7 +518,8 @@ class _AgentListPageState extends State<AgentListPage>
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg, vertical: MoeTokens.spaceMd),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: MoeTokens.spaceLg, vertical: MoeTokens.spaceMd),
         ),
       ),
     );
@@ -565,7 +570,8 @@ class _AgentListPageState extends State<AgentListPage>
 
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceXs),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg,
+          MoeTokens.spaceLg, MoeTokens.spaceXs),
       child: Row(
         children: [
           Expanded(
@@ -582,7 +588,8 @@ class _AgentListPageState extends State<AgentListPage>
                 HapticFeedback.lightImpact();
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AgentEditorPage()),
+                  MaterialPageRoute(
+                      builder: (context) => const AgentEditorPage()),
                 );
                 if (result == true && mounted) {
                   await _loadAgents();
@@ -604,7 +611,8 @@ class _AgentListPageState extends State<AgentListPage>
               onTap: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const CharacterCardPlazaPage()),
+                  MaterialPageRoute(
+                      builder: (_) => const CharacterCardPlazaPage()),
                 );
                 if (mounted) await _loadAgents();
               },
@@ -651,7 +659,10 @@ class _AgentListPageState extends State<AgentListPage>
           borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
           boxShadow: [
             BoxShadow(
-              color: (gradient as LinearGradient).colors.first.withValues(alpha: 0.25),
+              color: (gradient as LinearGradient)
+                  .colors
+                  .first
+                  .withValues(alpha: 0.25),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -693,7 +704,8 @@ class _AgentListPageState extends State<AgentListPage>
 
   Widget _buildCustomTabBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceMd, MoeTokens.spaceLg, MoeTokens.spaceSm),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceMd,
+          MoeTokens.spaceLg, MoeTokens.spaceSm),
       child: Container(
         padding: const EdgeInsets.all(MoeTokens.spaceXs),
         decoration: BoxDecoration(
@@ -756,7 +768,8 @@ class _AgentListPageState extends State<AgentListPage>
     Widget? action,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceMd),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg,
+          MoeTokens.spaceLg, MoeTokens.spaceMd),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
@@ -847,7 +860,8 @@ class _AgentListPageState extends State<AgentListPage>
       backgroundColor: _brandPrimary,
       foregroundColor: Colors.white,
       elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radius2xl)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(MoeTokens.radius2xl)),
       heroTag: 'agent_list_fab',
       child: const Icon(Icons.add_rounded, size: 24),
     );
@@ -873,7 +887,8 @@ class _AgentListPageState extends State<AgentListPage>
           children: [
             const Text(
               '默认角色模板',
-              style: TextStyle(fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  fontSize: MoeTokens.textLg, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: MoeTokens.spaceSm),
             Text(
@@ -1248,7 +1263,8 @@ class _AgentListPageState extends State<AgentListPage>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
         title: const Text('确认删除'),
         content: Text('确定要删除角色卡「${agent.name}」吗？相关聊天记录也将被删除。'),
         actions: [

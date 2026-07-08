@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AiChatSessionPrefs {
   AiChatSessionPrefs._();
 
-  static String _temperatureKey(String agentId) => 'ai_chat_temperature_$agentId';
+  static String _temperatureKey(String agentId) =>
+      'ai_chat_temperature_$agentId';
 
   static Future<double> temperature(String agentId) async {
     final sp = await SharedPreferences.getInstance();

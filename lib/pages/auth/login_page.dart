@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_flow_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
 import 'forgot_password_page.dart';
@@ -179,10 +180,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _feishuLogin() async {
     if (kIsWeb) {
       try {
-        final url = await ApiService.getFeishuAuthorizeUrl(
+        final url = await AuthFlowService.getFeishuAuthorizeUrl(
           state: buildFeishuOAuthState(),
         );
-        final hint = feishuRedirectConfigMismatchHint(url, ApiService.baseUrl);
+        final hint = feishuRedirectConfigMismatchHint(url, ApiClient.baseUrl);
         if (hint != null && mounted) {
           MoeToast.error(context, hint);
           return;
@@ -195,10 +196,10 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      final url = await ApiService.getFeishuAuthorizeUrl(
+      final url = await AuthFlowService.getFeishuAuthorizeUrl(
         state: buildFeishuOAuthState(),
       );
-      final hint = feishuRedirectConfigMismatchHint(url, ApiService.baseUrl);
+      final hint = feishuRedirectConfigMismatchHint(url, ApiClient.baseUrl);
       if (!mounted) return;
       if (hint != null) {
         MoeToast.error(context, hint);
@@ -287,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _wechatLogin() async {
     if (kIsWeb) {
       try {
-        final url = await ApiService.getWechatAuthorizeUrl(
+        final url = await AuthFlowService.getWechatAuthorizeUrl(
           state: buildWechatOAuthState(),
           flow: 'website',
         );
@@ -540,7 +541,8 @@ class _LoginPageState extends State<LoginPage> {
                                 backgroundColor: _primaryColor,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                                  borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusButton),
                                 ),
                                 elevation: 8,
                                 shadowColor:
@@ -567,7 +569,8 @@ class _LoginPageState extends State<LoginPage> {
                                 side:
                                     const BorderSide(color: Color(0xFF07C160)),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                                  borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusButton),
                                 ),
                               ),
                               icon: const Icon(Icons.wechat, size: 22),
@@ -591,7 +594,8 @@ class _LoginPageState extends State<LoginPage> {
                                 side:
                                     const BorderSide(color: Color(0xFF3370FF)),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                                  borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusButton),
                                 ),
                               ),
                               icon: const Icon(Icons.hub_outlined, size: 22),

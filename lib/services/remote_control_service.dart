@@ -19,13 +19,16 @@ class RemoteControlService {
   static String? _deviceId;
   static bool _initializing = false;
   static int _requestCounter = 0;
-  static final Map<String, Completer<Map<String, dynamic>>> _pendingRequests = {};
+  static final Map<String, Completer<Map<String, dynamic>>> _pendingRequests =
+      {};
 
   static Future<void> init() async {
     if (_initializing) return;
     _initializing = true;
     try {
-      if (!AuthService.isLoggedIn || AuthService.currentUser == null || AuthService.currentUser!.isEmpty) {
+      if (!AuthService.isLoggedIn ||
+          AuthService.currentUser == null ||
+          AuthService.currentUser!.isEmpty) {
         return;
       }
       await _ensureDeviceId();
@@ -132,7 +135,8 @@ class RemoteControlService {
       }
 
       print('WebSocket连接: $uri');
-      print('Authorization: ${headers.containsKey('Authorization') ? '已设置' : '未设置'}');
+      print(
+          'Authorization: ${headers.containsKey('Authorization') ? '已设置' : '未设置'}');
 
       final channel = connectMoeWebSocket(uri, headers: headers);
       _channel = channel;

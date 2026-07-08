@@ -46,7 +46,8 @@ class AiAgentCloudService {
     await AiCloudConfigService().upsertAgent(record.toMap());
   }
 
-  Future<AiAgent> _withServerMetadata(AiAgent agent, {required bool isNew}) async {
+  Future<AiAgent> _withServerMetadata(AiAgent agent,
+      {required bool isNew}) async {
     final now = DateTime.now();
     String? creator = agent.createdByUserId;
     if (isNew) {

@@ -6,7 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DirectChatLocalReader {
   DirectChatLocalReader._();
 
-  static Future<Map<String, ({DateTime at, String rawPreview})>> readThreadTails(
+  static Future<Map<String, ({DateTime at, String rawPreview})>>
+      readThreadTails(
     String myUserId,
   ) async {
     if (myUserId.isEmpty) return {};

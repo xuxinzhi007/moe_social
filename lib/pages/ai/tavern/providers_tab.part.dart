@@ -14,7 +14,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
           const SizedBox(height: MoeTokens.spaceMd),
           Text(
             '正在加载 ${provider.name} 模型列表...',
-            style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
+            style: TextStyle(
+                color: MoeTokens.bodyText, fontSize: MoeTokens.textBase),
           ),
         ],
       );
@@ -47,10 +48,9 @@ extension TavernProvidersTabPart on _AgentListPageState {
           ),
           const SizedBox(height: MoeTokens.space2xl),
           Text(
-            provider.isBackendOllama
-                ? '未找到可用模型'
-                : '接口已连通，但暂无模型列表',
-            style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textLg),
+            provider.isBackendOllama ? '未找到可用模型' : '接口已连通，但暂无模型列表',
+            style: TextStyle(
+                color: MoeTokens.bodyText, fontSize: MoeTokens.textLg),
           ),
           const SizedBox(height: MoeTokens.spaceSm),
           Padding(
@@ -63,7 +63,9 @@ extension TavernProvidersTabPart on _AgentListPageState {
                       '保存后即可在此创建角色卡；聊天时直接调用该模型 ID。',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  color: MoeTokens.hintText, fontSize: MoeTokens.textBase, height: 1.45),
+                  color: MoeTokens.hintText,
+                  fontSize: MoeTokens.textBase,
+                  height: 1.45),
             ),
           ),
           const SizedBox(height: MoeTokens.space2xl),
@@ -87,8 +89,9 @@ extension TavernProvidersTabPart on _AgentListPageState {
               style: FilledButton.styleFrom(
                 backgroundColor: _AgentListPageState._brandSecondary,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: MoeTokens.space3xl, vertical: MoeTokens.spaceMd),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: MoeTokens.space3xl,
+                    vertical: MoeTokens.spaceMd),
               ),
               icon: const Icon(Icons.badge_outlined),
               label: const Text('直接输入模型 ID 创建角色卡'),
@@ -104,7 +107,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                   ? _AgentListPageState._brandSecondary
                   : null,
               foregroundColor: provider.isBackendOllama ? Colors.white : null,
-              padding: const EdgeInsets.symmetric(horizontal: MoeTokens.space3xl, vertical: MoeTokens.spaceMd),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: MoeTokens.space3xl, vertical: MoeTokens.spaceMd),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
               ),
@@ -118,7 +122,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
         itemCount: modelCategories.length,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceLg),
+        padding: const EdgeInsets.fromLTRB(
+            MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceLg),
         itemBuilder: (context, categoryIndex) {
           final category = modelCategories.keys.elementAt(categoryIndex);
           final categoryModels = modelCategories[category]!;
@@ -127,7 +132,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceSm),
+                padding:
+                    const EdgeInsets.symmetric(vertical: MoeTokens.spaceSm),
                 child: Row(
                   children: [
                     Container(
@@ -248,8 +254,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                         ),
                                         if (alreadyAdded)
                                           Container(
-                                            margin:
-                                                const EdgeInsets.only(left: MoeTokens.spaceSm),
+                                            margin: const EdgeInsets.only(
+                                                left: MoeTokens.spaceSm),
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: MoeTokens.spaceSm,
                                               vertical: 2,
@@ -258,7 +264,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                               color: const Color(0xFF4CAF50)
                                                   .withValues(alpha: 0.1),
                                               borderRadius:
-                                                  BorderRadius.circular(MoeTokens.radiusSm),
+                                                  BorderRadius.circular(
+                                                      MoeTokens.radiusSm),
                                             ),
                                             child: const Text(
                                               '已有角色卡',
@@ -294,8 +301,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                           decoration: BoxDecoration(
                                             color: cardColor.withValues(
                                                 alpha: 0.1),
-                                            borderRadius:
-                                                BorderRadius.circular(MoeTokens.radiusSm),
+                                            borderRadius: BorderRadius.circular(
+                                                MoeTokens.radiusSm),
                                           ),
                                           child: Text(
                                             sourceLabel,
@@ -313,8 +320,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[100],
-                                            borderRadius:
-                                                BorderRadius.circular(MoeTokens.radiusSm),
+                                            borderRadius: BorderRadius.circular(
+                                                MoeTokens.radiusSm),
                                           ),
                                           child: Text(
                                             provider.name,
@@ -332,8 +339,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                                           ),
                                           decoration: BoxDecoration(
                                             color: Colors.grey[100],
-                                            borderRadius:
-                                                BorderRadius.circular(MoeTokens.radiusSm),
+                                            borderRadius: BorderRadius.circular(
+                                                MoeTokens.radiusSm),
                                           ),
                                           child: Text(
                                             tavernGetModelSize(modelName),
@@ -379,7 +386,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
           subtitle: '选择 API 后绑定模型 ID 创建角色卡；/models 为空时请先在 Provider 填默认或手动模型。',
         ),
         Container(
-          margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceLg),
+          margin: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceLg),
           padding: const EdgeInsets.all(MoeTokens.spaceXl),
           decoration: BoxDecoration(
             color: MoeTokens.cardBackground,
@@ -400,7 +408,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
                       decoration: InputDecoration(
                         labelText: '当前模型来源',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusLg),
                         ),
                         filled: true,
                         fillColor: MoeTokens.pageBackground,
@@ -463,7 +472,8 @@ extension TavernProvidersTabPart on _AgentListPageState {
 
   Widget tavernSquareMetaChip(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(MoeTokens.radiusFull),

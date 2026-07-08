@@ -7,6 +7,6 @@ WebSocketChannel connectMoeWebSocketImpl(
   Map<String, String>? headers,
   Iterable<String>? protocols,
 }) {
-  return IOWebSocketChannel.connect(uri, headers: headers, protocols: protocols);
+  return IOWebSocketChannel.connect(uri,
+      headers: headers, protocols: protocols);
 }
-

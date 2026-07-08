@@ -89,7 +89,7 @@ fs8-split-api:
 # 日常检查：编译生产入口 + 核心包单测
 check:
 	go build -o /dev/null ./cmd/moe-social
-	go test ./internal/platform/moesocial/... ./internal/server/routestats/... ./internal/platform/kratosprogress/... -count=1
+	go test ./internal/platform/moesocial/... ./internal/server/routestats/... -count=1
 
 # P4 域 gRPC 冒烟（已退役）
 grpc-smoke:

@@ -24,7 +24,9 @@ alwaysApply: false
 
 ## 编码
 
+- **页面禁止直接 `ApiService`**：走 `UserService` / `PostService` / `ChatService` / `CommerceService` / `CommunityService` / `AuthFlowService` / `LifeService`；低层 URL/Header 用 `ApiClient`
 - 网络经 `lib/services/`；`Provider` + `if (mounted)`；避免 `!`
+- 新页面优先 **Provider/ChangeNotifier ViewModel**（参考 `GamePlayViewModel`、`CheckInProvider`），避免巨型 `setState`
 - 接口变更先对齐 `backend/` 契约，再改 models/services/pages
 - 充值等用户保留的演示功能不要顺手改真实链路
 - `dart format` + `flutter analyze`；加载/成功/失败三态自测

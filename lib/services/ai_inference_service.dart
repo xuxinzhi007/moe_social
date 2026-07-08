@@ -33,20 +33,20 @@ class AIInferenceService {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           _logger.debug('AI推理请求: ${options.method} ${options.path}',
-            category: LogCategory.ai,
-            metadata: {'headers': options.headers});
+              category: LogCategory.ai, metadata: {'headers': options.headers});
           handler.next(options);
         },
         onResponse: (response, handler) {
           _logger.debug('AI推理响应: ${response.statusCode}',
-            category: LogCategory.ai,
-            metadata: {'responseTime': '${DateTime.now().millisecondsSinceEpoch}'});
+              category: LogCategory.ai,
+              metadata: {
+                'responseTime': '${DateTime.now().millisecondsSinceEpoch}'
+              });
           handler.next(response);
         },
         onError: (error, handler) {
           _logger.error('AI推理请求失败: ${error.message}',
-            category: LogCategory.ai,
-            metadata: {'error': error.toString()});
+              category: LogCategory.ai, metadata: {'error': error.toString()});
           handler.next(error);
         },
       ),
@@ -60,9 +60,10 @@ class AIInferenceService {
     Map<String, dynamic>? context,
   }) async {
     try {
-      _logger.info('开始任务规划',
-        category: LogCategory.ai,
-        metadata: {'instruction': userInstruction, 'hasScreenshot': screenshot != null});
+      _logger.info('开始任务规划', category: LogCategory.ai, metadata: {
+        'instruction': userInstruction,
+        'hasScreenshot': screenshot != null
+      });
 
       final apiKey = await AppConfig.getApiKey();
       final apiUrl = await AppConfig.getApiUrl();
@@ -73,7 +74,8 @@ class AIInferenceService {
         throw Exception('API密钥未配置');
       }
 
-      final requestData = await _buildPlanRequest(userInstruction, screenshot, context);
+      final requestData =
+          await _buildPlanRequest(userInstruction, screenshot, context);
 
       final response = await _dio.post(
         apiUrl,
@@ -90,18 +92,15 @@ class AIInferenceService {
       }
     } catch (e) {
       _logger.error('任务规划失败',
-        category: LogCategory.ai,
-        metadata: {'error': e.toString(), 'instruction': userInstruction});
+          category: LogCategory.ai,
+          metadata: {'error': e.toString(), 'instruction': userInstruction});
       return _fallbackPlan(userInstruction);
     }
   }
 
   /// 构建规划请求
-  Future<Map<String, dynamic>> _buildPlanRequest(
-    String instruction,
-    Uint8List? screenshot,
-    Map<String, dynamic>? context
-  ) async {
+  Future<Map<String, dynamic>> _buildPlanRequest(String instruction,
+      Uint8List? screenshot, Map<String, dynamic>? context) async {
     final modelName = await AppConfig.getModelName();
 
     final systemPrompt = '''
@@ -189,9 +188,11 @@ class AIInferenceService {
   }
 
   /// 解析规划响应
-  TaskPlan? _parsePlanResponse(Map<String, dynamic> response, String instruction) {
+  TaskPlan? _parsePlanResponse(
+      Map<String, dynamic> response, String instruction) {
     try {
-      final content = response['choices']?[0]?['message']?['content'] as String?;
+      final content =
+          response['choices']?[0]?['message']?['content'] as String?;
       if (content == null) return null;
 
       // 尝试提取JSON
@@ -202,8 +203,8 @@ class AIInferenceService {
       return TaskPlan.fromJson(planData, instruction);
     } catch (e) {
       _logger.warn('解析AI响应失败',
-        category: LogCategory.ai,
-        metadata: {'error': e.toString(), 'response': response.toString()});
+          category: LogCategory.ai,
+          metadata: {'error': e.toString(), 'response': response.toString()});
       return null;
     }
   }
@@ -211,8 +212,7 @@ class AIInferenceService {
   /// 后备规划方案（当AI服务不可用时）
   TaskPlan _fallbackPlan(String instruction) {
     _logger.info('使用后备规划方案',
-      category: LogCategory.ai,
-      metadata: {'instruction': instruction});
+        category: LogCategory.ai, metadata: {'instruction': instruction});
 
     final lowerInstruction = instruction.toLowerCase();
 
@@ -325,9 +325,10 @@ class AIInferenceService {
     String? targetDescription,
   }) async {
     try {
-      _logger.info('开始界面分析',
-        category: LogCategory.ai,
-        metadata: {'target': targetDescription, 'screenshotSize': screenshot.length});
+      _logger.info('开始界面分析', category: LogCategory.ai, metadata: {
+        'target': targetDescription,
+        'screenshotSize': screenshot.length
+      });
 
       final apiKey = await AppConfig.getApiKey();
       final apiUrl = await AppConfig.getApiUrl();
@@ -336,7 +337,8 @@ class AIInferenceService {
         throw Exception('API密钥未配置');
       }
 
-      final requestData = await _buildAnalysisRequest(screenshot, targetDescription);
+      final requestData =
+          await _buildAnalysisRequest(screenshot, targetDescription);
 
       final response = await _dio.post(
         apiUrl,
@@ -353,8 +355,8 @@ class AIInferenceService {
       }
     } catch (e) {
       _logger.error('界面分析失败',
-        category: LogCategory.ai,
-        metadata: {'error': e.toString(), 'target': targetDescription});
+          category: LogCategory.ai,
+          metadata: {'error': e.toString(), 'target': targetDescription});
       return null;
     }
   }
@@ -391,10 +393,7 @@ focus: ${targetDescription ?? '分析所有可交互元素'}
                 'url': 'data:image/png;base64,${base64Encode(screenshot)}'
               }
             },
-            {
-              'type': 'text',
-              'text': targetDescription ?? '请分析这个界面的所有可交互元素'
-            },
+            {'type': 'text', 'text': targetDescription ?? '请分析这个界面的所有可交互元素'},
           ],
         },
       ],
@@ -406,7 +405,8 @@ focus: ${targetDescription ?? '分析所有可交互元素'}
   /// 解析分析响应
   UIAnalysis? _parseAnalysisResponse(Map<String, dynamic> response) {
     try {
-      final content = response['choices']?[0]?['message']?['content'] as String?;
+      final content =
+          response['choices']?[0]?['message']?['content'] as String?;
       if (content == null) return null;
 
       final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(content);
@@ -416,8 +416,7 @@ focus: ${targetDescription ?? '分析所有可交互元素'}
       return UIAnalysis.fromJson(analysisData);
     } catch (e) {
       _logger.warn('解析UI分析响应失败',
-        category: LogCategory.ai,
-        metadata: {'error': e.toString()});
+          category: LogCategory.ai, metadata: {'error': e.toString()});
       return null;
     }
   }
@@ -446,12 +445,13 @@ class TaskPlan {
       userInstruction: instruction,
       steps: (json['steps'] as List)
           .map((step) => ExecutionStep(
-            id: 'ai_step_${DateTime.now().millisecondsSinceEpoch}_${step['type']}',
-            type: step['type'],
-            params: Map<String, dynamic>.from(step['params'] ?? {}),
-            description: step['description'] ?? '',
-            expectedOutcomes: List<String>.from(step['expectedOutcomes'] ?? []),
-          ))
+                id: 'ai_step_${DateTime.now().millisecondsSinceEpoch}_${step['type']}',
+                type: step['type'],
+                params: Map<String, dynamic>.from(step['params'] ?? {}),
+                description: step['description'] ?? '',
+                expectedOutcomes:
+                    List<String>.from(step['expectedOutcomes'] ?? []),
+              ))
           .toList(),
       complexity: TaskComplexity.values.firstWhere(
         (c) => c.name == json['complexity'],
@@ -481,8 +481,9 @@ class UIAnalysis {
   factory UIAnalysis.fromJson(Map<String, dynamic> json) {
     return UIAnalysis(
       elements: (json['elements'] as List?)
-          ?.map((e) => UIElement.fromJson(e))
-          .toList() ?? [],
+              ?.map((e) => UIElement.fromJson(e))
+              .toList() ??
+          [],
       layout: json['layout'] ?? '',
       primaryAction: json['primaryAction'] ?? '',
       accessibility: Map<String, dynamic>.from(json['accessibility'] ?? {}),

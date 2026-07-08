@@ -13,7 +13,8 @@ import (
 )
 
 // ListAccounts Admin 管理员账号列表。
-func ListAccounts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
+func ListAccounts(ctx context.Context, st AdminStore, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -40,7 +41,8 @@ func ListAccounts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListAccount
 }
 
 // CreateAccount Admin 创建管理员账号。
-func CreateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
+func CreateAccount(ctx context.Context, st AdminStore, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -70,7 +72,8 @@ func CreateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateAcco
 }
 
 // UpdateAccount Admin 更新管理员账号。
-func UpdateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
+func UpdateAccount(ctx context.Context, st AdminStore, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -109,7 +112,8 @@ func UpdateAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateAcco
 }
 
 // DeleteAccount Admin 删除管理员账号。
-func DeleteAccount(ctx context.Context, db *gorm.DB, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
+func DeleteAccount(ctx context.Context, st AdminStore, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

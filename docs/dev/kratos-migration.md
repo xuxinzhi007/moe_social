@@ -5,7 +5,6 @@
 | 文档 | 用途 |
 |------|------|
 | 本文 | 架构、目录、命令 |
-| [kratos-migration-status.md](./kratos-migration-status.md) | 状态板 |
 | [new-api-kratos.md](./new-api-kratos.md) | **新接口开发** |
 | [openapi-apifox.md](./openapi-apifox.md) | Apifox 导入 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |

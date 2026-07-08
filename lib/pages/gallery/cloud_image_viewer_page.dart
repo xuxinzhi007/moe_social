@@ -37,7 +37,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
     super.initState();
     _index = widget.initialIndex.clamp(0, widget.images.length - 1);
     _controller = PageController(initialPage: _index);
-    
+
     // 设置全屏模式
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
@@ -91,10 +91,10 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
 
       if (!mounted) return;
       ErrorHandler.showSuccess(context, '已保存到本地');
-      
+
       // 震动反馈
       HapticFeedback.lightImpact();
-      
+
       // 可以直接打开文件
       // await OpenFilex.open(path);
     } catch (e) {
@@ -149,9 +149,11 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.broken_image_rounded, size: 64, color: Colors.white54),
+                          Icon(Icons.broken_image_rounded,
+                              size: 64, color: Colors.white54),
                           SizedBox(height: 16),
-                          Text('图片加载失败', style: TextStyle(color: Colors.white70)),
+                          Text('图片加载失败',
+                              style: TextStyle(color: Colors.white70)),
                         ],
                       ),
                     );
@@ -159,7 +161,8 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                 );
               },
               loadingBuilder: (context, event) {
-                final progress = (event == null || event.expectedTotalBytes == null)
+                final progress = (event == null ||
+                        event.expectedTotalBytes == null)
                     ? null
                     : event.cumulativeBytesLoaded / event.expectedTotalBytes!;
                 return Center(
@@ -169,7 +172,8 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withValues(alpha: 0.8)),
                     ),
                   ),
                 );
@@ -201,7 +205,8 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                 elevation: 0,
                 foregroundColor: Colors.white,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
                 title: Text(
@@ -223,10 +228,12 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Icon(Icons.download_rounded, color: Colors.white),
+                        : const Icon(Icons.download_rounded,
+                            color: Colors.white),
                     tooltip: '保存到本地',
                   ),
                 ],
@@ -276,11 +283,13 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.sd_storage_outlined, color: Colors.white70, size: 14),
+                      const Icon(Icons.sd_storage_outlined,
+                          color: Colors.white70, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         _formatBytes(fileSize),
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12),
                       ),
                     ],
                   ),

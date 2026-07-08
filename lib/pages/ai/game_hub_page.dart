@@ -24,7 +24,8 @@ class GameHubPage extends StatefulWidget {
 class _GameHubPageState extends State<GameHubPage> {
   bool _isLoading = false;
 
-  Future<void> _enterWorld({bool replace = false, bool forceNew = false}) async {
+  Future<void> _enterWorld(
+      {bool replace = false, bool forceNew = false}) async {
     if (!AuthService.isLoggedIn) {
       MoeToast.info(context, '请先登录后再进入游戏世界');
       return;

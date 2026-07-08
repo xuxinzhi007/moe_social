@@ -215,7 +215,8 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
                 runSpacing: MoeTokens.spaceSm,
                 alignment: WrapAlignment.center,
                 children: const [
-                  _FeatureChip(icon: Icons.notifications_active_rounded, label: '互动提醒'),
+                  _FeatureChip(
+                      icon: Icons.notifications_active_rounded, label: '互动提醒'),
                   _FeatureChip(icon: Icons.auto_awesome_rounded, label: '智能推荐'),
                   _FeatureChip(icon: Icons.chat_bubble_rounded, label: '聊天陪伴'),
                 ],
@@ -448,7 +449,8 @@ class _AssistantHomePageState extends State<AssistantHomePage> {
                       borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                       boxShadow: [
                         BoxShadow(
-                          color: AiBrandTokens.gradientPink.withValues(alpha: 0.3),
+                          color:
+                              AiBrandTokens.gradientPink.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),

@@ -4,7 +4,7 @@ import 'dart:async';
 import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
-import '../../services/api_service.dart';
+import '../../services/post_service.dart';
 import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/post_skeleton.dart';
@@ -63,9 +63,21 @@ class _HomePageState extends State<HomePage>
   final LikeStateManager _likeManager = LikeStateManager();
 
   static const _tabs = [
-    (label: '\u70ed\u95e8', icon: Icons.whatshot_rounded, mode: _HomeFeedMode.hot),
-    (label: '\u6700\u65b0', icon: Icons.new_releases_rounded, mode: _HomeFeedMode.latest),
-    (label: '\u5173\u6ce8', icon: Icons.star_rounded, mode: _HomeFeedMode.following),
+    (
+      label: '\u70ed\u95e8',
+      icon: Icons.whatshot_rounded,
+      mode: _HomeFeedMode.hot
+    ),
+    (
+      label: '\u6700\u65b0',
+      icon: Icons.new_releases_rounded,
+      mode: _HomeFeedMode.latest
+    ),
+    (
+      label: '\u5173\u6ce8',
+      icon: Icons.star_rounded,
+      mode: _HomeFeedMode.following
+    ),
   ];
 
   String get _sectionTitle {
@@ -312,7 +324,8 @@ class _HomePageState extends State<HomePage>
       if (error is Exception) {
         ErrorHandler.handleException(context, error);
       } else {
-        ErrorHandler.showError(context, '\u52a0\u8f7d\u9996\u9875\u52a8\u6001\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5');
+        ErrorHandler.showError(context,
+            '\u52a0\u8f7d\u9996\u9875\u52a8\u6001\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5');
       }
     }
   }
@@ -502,13 +515,15 @@ class _HomePageState extends State<HomePage>
         IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: () {
-            MoeToast.info(context, '\u641c\u7d22\u529f\u80fd\u5373\u5c06\u4e0a\u7ebf');
+            MoeToast.info(
+                context, '\u641c\u7d22\u529f\u80fd\u5373\u5c06\u4e0a\u7ebf');
           },
           tooltip: '\u641c\u7d22',
         ),
         IconButton(
           tooltip: 'AI \u52a9\u624b\u8bbe\u7f6e',
-          onPressed: () => Navigator.pushNamed(context, '/virtual-avatar-settings'),
+          onPressed: () =>
+              Navigator.pushNamed(context, '/virtual-avatar-settings'),
           icon: Icon(
             Icons.smart_toy_rounded,
             color: MoeTheme.of(context).primary,
@@ -527,7 +542,8 @@ class _HomePageState extends State<HomePage>
             ),
             Consumer<NotificationProvider>(
               builder: (context, provider, _) {
-                if (provider.activityUnreadCount == 0) return const SizedBox.shrink();
+                if (provider.activityUnreadCount == 0)
+                  return const SizedBox.shrink();
                 return Positioned(
                   top: 8,
                   right: 8,
@@ -730,7 +746,8 @@ class _HomePageState extends State<HomePage>
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? scheme.primary.withValues(alpha: 0.14)
@@ -743,16 +760,19 @@ class _HomePageState extends State<HomePage>
                     Icon(
                       tab.icon,
                       size: 13,
-                      color: isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                      color:
+                          isSelected ? scheme.primary : scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       tab.label,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color:
-                            isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -767,8 +787,9 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildRefreshButton(ColorScheme scheme) {
     return TextButton.icon(
-      onPressed:
-          _isLoading || _isRefreshing ? null : () => _fetchPosts(resetContent: false),
+      onPressed: _isLoading || _isRefreshing
+          ? null
+          : () => _fetchPosts(resetContent: false),
       style: TextButton.styleFrom(
         foregroundColor: scheme.primary,
         textStyle: const TextStyle(
@@ -785,7 +806,8 @@ class _HomePageState extends State<HomePage>
   String _lastUpdatedText() {
     if (_isRefreshing) return '\u6b63\u5728\u5237\u65b0\u5185\u5bb9...';
     final updatedAt = _lastUpdatedAt;
-    if (updatedAt == null) return '\u5c1a\u672a\u52a0\u8f7d\u6700\u65b0\u52a8\u6001';
+    if (updatedAt == null)
+      return '\u5c1a\u672a\u52a0\u8f7d\u6700\u65b0\u52a8\u6001';
     final hour = updatedAt.hour.toString().padLeft(2, '0');
     final minute = updatedAt.minute.toString().padLeft(2, '0');
     return '\u6700\u540e\u66f4\u65b0 ' + hour + ':' + minute;
@@ -857,7 +879,8 @@ class _HomePageState extends State<HomePage>
       return _buildUnifiedStatePanel(
         icon: Icons.star_border_rounded,
         title: '\u5173\u6ce8\u7684\u4eba\u8fd8\u6ca1\u6709\u53d1\u52a8\u6001',
-        subtitle: '\u5148\u53bb\u793e\u533a\u901b\u901b\u8bdd\u9898\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\uff0c\u8ba9\u9996\u9875\u6162\u6162\u70ed\u95f9\u8d77\u6765\u3002',
+        subtitle:
+            '\u5148\u53bb\u793e\u533a\u901b\u901b\u8bdd\u9898\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\uff0c\u8ba9\u9996\u9875\u6162\u6162\u70ed\u95f9\u8d77\u6765\u3002',
         accentColor: const Color(0xFFFFB347),
         action: SizedBox(
           width: double.infinity,
@@ -898,8 +921,14 @@ class _HomePageState extends State<HomePage>
     final inTopic = _activeTopic != null;
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
-      title: inTopic ? '#' + (topicName ?? '') + ' \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001' : '\u8fd9\u91cc\u8fd8\u662f\u7a7a\u7684',
-      subtitle: inTopic ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002' : '\u53d1\u4e00\u6761\u52a8\u6001\u8bb0\u5f55\u4eca\u5929\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\u3002',
+      title: inTopic
+          ? '#' +
+              (topicName ?? '') +
+              ' \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001'
+          : '\u8fd9\u91cc\u8fd8\u662f\u7a7a\u7684',
+      subtitle: inTopic
+          ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002'
+          : '\u53d1\u4e00\u6761\u52a8\u6001\u8bb0\u5f55\u4eca\u5929\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\u3002',
       accentColor: _moe.primary,
       action: SizedBox(
         width: double.infinity,
@@ -1011,7 +1040,8 @@ class _HomePageState extends State<HomePage>
         child: Center(
           child: _buildBottomStateCapsule(
             icon: const MoeSmallLoading(),
-            label: '濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞瀹曟煡鏌熼柇锕€鏋涚紒韬插€濋弻锕€螣娓氼垱顎嗛梺鑲╁鐎笛囧Φ閸曨喚鐤€闁规崘娉涢。铏圭磽娴ｆ彃浜炬繝銏ｅ煐閸旀牠鎮￠悢闀愮箚妞ゆ牗绮岀敮鍫曟煕閺傛鍎戠紒杈ㄥ笚閹峰懎鐣￠弶璺ㄣ偖闂備礁鎼惌澶屾崲濠靛棛鏆﹂柛顐ｆ礀鎯熼梺鎸庢煥婢т粙鍩㈣箛鏂剧箚?..',
+            label:
+                '濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞瀹曟煡鏌熼柇锕€鏋涚紒韬插€濋弻锕€螣娓氼垱顎嗛梺鑲╁鐎笛囧Φ閸曨喚鐤€闁规崘娉涢。铏圭磽娴ｆ彃浜炬繝銏ｅ煐閸旀牠鎮￠悢闀愮箚妞ゆ牗绮岀敮鍫曟煕閺傛鍎戠紒杈ㄥ笚閹峰懎鐣￠弶璺ㄣ偖闂備礁鎼惌澶屾崲濠靛棛鏆﹂柛顐ｆ礀鎯熼梺鎸庢煥婢т粙鍩㈣箛鏂剧箚?..',
           ),
         ),
       );
@@ -1046,7 +1076,8 @@ class _HomePageState extends State<HomePage>
               color: Colors.grey[500],
               size: 18,
             ),
-            label: '闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡櫣浠撮梺鎼炲妽缁诲牓寮婚妸鈺傚亜闁告繂瀚呴姀銏㈢＜闁逞屽墴瀹曞崬鈽夊▎鎴濆箰濠电姰鍨煎▔娑氣偓娑掓櫇濞戠數鎹勯崨闈涢叄瀹曞爼濡搁敂杞拌檸闂?~',
+            label:
+                '闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡櫣浠撮梺鎼炲妽缁诲牓寮婚妸鈺傚亜闁告繂瀚呴姀銏㈢＜闁逞屽墴瀹曞崬鈽夊▎鎴濆箰濠电姰鍨煎▔娑氣偓娑掓櫇濞戠數鎹勯崨闈涢叄瀹曞爼濡搁敂杞拌檸闂?~',
           ),
         ),
       );
@@ -1203,7 +1234,7 @@ class _HomePageState extends State<HomePage>
       onDelete: post.userId == (AuthService.currentUser ?? '')
           ? () async {
               try {
-                await ApiService.deletePost(post.id);
+                await PostService.deletePost(post.id);
                 if (!mounted) return;
                 setState(() {
                   _allPosts.removeWhere((p) => p.id == post.id);
@@ -1211,7 +1242,9 @@ class _HomePageState extends State<HomePage>
                 });
                 _likeManager.evictPost(post.id);
               } catch (e) {
-                if (mounted) ErrorHandler.showError(context, '闂傚倸鍊搁崐椋庣矆娓氣偓楠炲鏁嶉崟顒佹闂佺粯鍔曢顓犵不妤ｅ啯鐓冪憸婊堝礈濮樿鲸宕叉繛鎴欏灩瀹告繃銇勯幘璺哄壉闁告柨顦甸幃妤呭垂椤愶絿鍑￠柣搴㈠嚬閸樺ジ鈥﹂崶顏嗙杸婵炴垼椴搁弲婵嬫⒑闂堟侗妲归柛鏃€鐗曠叅闁绘梻鍘ч拑?e');
+                if (mounted)
+                  ErrorHandler.showError(context,
+                      '闂傚倸鍊搁崐椋庣矆娓氣偓楠炲鏁嶉崟顒佹闂佺粯鍔曢顓犵不妤ｅ啯鐓冪憸婊堝礈濮樿鲸宕叉繛鎴欏灩瀹告繃銇勯幘璺哄壉闁告柨顦甸幃妤呭垂椤愶絿鍑￠柣搴㈠嚬閸樺ジ鈥﹂崶顏嗙杸婵炴垼椴搁弲婵嬫⒑闂堟侗妲归柛鏃€鐗曠叅闁绘梻鍘ч拑?e');
               }
             }
           : null,
@@ -1234,4 +1267,3 @@ class _PostPageResult {
   final int total;
   const _PostPageResult({required this.posts, required this.total});
 }
-

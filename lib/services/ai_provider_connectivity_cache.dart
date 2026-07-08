@@ -7,14 +7,17 @@ class AiProviderConnectivityCache {
   static const _prefix = 'ai_provider_conn_';
   static const _ttl = Duration(minutes: 5);
 
-  static Future<void> saveSuccess(String profileId, {int modelCount = 0}) async {
+  static Future<void> saveSuccess(String profileId,
+      {int modelCount = 0}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_prefix$profileId', 'ok:${DateTime.now().millisecondsSinceEpoch}:$modelCount');
+    await prefs.setString('$_prefix$profileId',
+        'ok:${DateTime.now().millisecondsSinceEpoch}:$modelCount');
   }
 
   static Future<void> saveFailure(String profileId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_prefix$profileId', 'fail:${DateTime.now().millisecondsSinceEpoch}');
+    await prefs.setString(
+        '$_prefix$profileId', 'fail:${DateTime.now().millisecondsSinceEpoch}');
   }
 
   static Future<ProviderConnectivityState?> read(String profileId) async {

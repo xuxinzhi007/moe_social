@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/commerce_service.dart';
 import '../../models/vip_order.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -43,7 +43,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
     });
 
     try {
-      final result = await ApiService.getVipOrders(
+      final result = await CommerceService.getVipOrders(
         userId,
         page: _currentPage,
         pageSize: _pageSize,
@@ -127,7 +127,9 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                         const SizedBox(height: 16),
                         Text(
                           '暂无订单',
-                          style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textSm),
+                          style: TextStyle(
+                              color: MoeTokens.bodyText,
+                              fontSize: MoeTokens.textSm),
                         ),
                       ],
                     ),
@@ -181,7 +183,8 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        (order.orderNo != null && order.orderNo!.trim().isNotEmpty)
+                        (order.orderNo != null &&
+                                order.orderNo!.trim().isNotEmpty)
                             ? '订单号: ${order.orderNo}'
                             : '订单编号: ${order.id}',
                         style: TextStyle(
@@ -193,7 +196,8 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _getStatusColor(order.status).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
@@ -251,7 +255,9 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                       const SizedBox(height: 4),
                       Text(
                         '支付时间: ${order.paidAtDateTime != null ? '${order.paidAtDateTime!.year}-${order.paidAtDateTime!.month.toString().padLeft(2, '0')}-${order.paidAtDateTime!.day.toString().padLeft(2, '0')}' : order.paidAt}',
-                        style: TextStyle(color: MoeTokens.bodyText, fontSize: MoeTokens.textXs),
+                        style: TextStyle(
+                            color: MoeTokens.bodyText,
+                            fontSize: MoeTokens.textXs),
                       ),
                     ],
                   ],
@@ -264,4 +270,3 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
     );
   }
 }
-

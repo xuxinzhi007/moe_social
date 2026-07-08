@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	adminbiz "backend/internal/biz/admin"
+	admindata "backend/internal/data/admin"
 	"backend/model"
 
 	"gorm.io/driver/sqlite"
@@ -25,7 +26,7 @@ func openTestDB(t *testing.T) *gorm.DB {
 
 func TestBootstrapTopicTagsEmptyTable(t *testing.T) {
 	db := openTestDB(t)
-	created, err := adminbiz.BootstrapTopicTags(context.Background(), db)
+	created, err := adminbiz.BootstrapTopicTags(context.Background(), admindata.NewStore(db))
 	if err != nil {
 		t.Fatalf("bootstrap: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestDeduplicateGiftsByName(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	removed, err := adminbiz.DeduplicateGiftsByName(context.Background(), db)
+	removed, err := adminbiz.DeduplicateGiftsByName(context.Background(), admindata.NewStore(db))
 	if err != nil {
 		t.Fatalf("dedupe: %v", err)
 	}

@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
+import '../../services/user_service.dart';
 import '../../models/user.dart';
 import '../../utils/validators.dart';
 import '../../widgets/avatar_image.dart';
@@ -144,7 +145,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
-          final imageUrl = await ApiService.uploadImage(file);
+          final imageUrl = await ApiClient.uploadImage(file);
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
@@ -182,7 +183,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
-          final imageUrl = await ApiService.uploadImage(file);
+          final imageUrl = await ApiClient.uploadImage(file);
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
@@ -417,7 +418,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     try {
       final avatarText = _avatarController.text.trim();
-      final updated = await ApiService.updateUserInfo(
+      final updated = await UserService.updateUserInfo(
         userId,
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
@@ -441,7 +442,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } finally {
       if (mounted) {
-        context.read<LoadingProvider>().setOperationLoading(LoadingKeys.updateProfile, false);
+        context
+            .read<LoadingProvider>()
+            .setOperationLoading(LoadingKeys.updateProfile, false);
       }
     }
   }
@@ -549,9 +552,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     right: 0,
                                     child: GestureDetector(
                                       onTap: () {
-                                              HapticFeedback.lightImpact();
-                                              _showAvatarOptions();
-                                            },
+                                        HapticFeedback.lightImpact();
+                                        _showAvatarOptions();
+                                      },
                                       child: Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(
@@ -634,8 +637,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   MoeInputField(
                                     controller: _usernameController,
                                     hintText: '用户名',
-                                    prefixIcon: const Icon(
-                                        Icons.person_outline,
+                                    prefixIcon: const Icon(Icons.person_outline,
                                         color: Color(0xFF7F7FD5)),
                                     validator: Validators.username,
                                   ),
@@ -646,8 +648,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   MoeInputField(
                                     controller: _emailController,
                                     hintText: '邮箱',
-                                    prefixIcon: const Icon(
-                                        Icons.email_outlined,
+                                    prefixIcon: const Icon(Icons.email_outlined,
                                         color: Color(0xFF7F7FD5)),
                                     keyboardType: TextInputType.emailAddress,
                                     validator: Validators.email,
@@ -659,8 +660,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   MoeInputField(
                                     controller: _avatarController,
                                     hintText: '头像URL',
-                                    prefixIcon: const Icon(
-                                        Icons.image_outlined,
+                                    prefixIcon: const Icon(Icons.image_outlined,
                                         color: Color(0xFF7F7FD5)),
                                     keyboardType: TextInputType.url,
                                     suffixIcon: IconButton(
@@ -885,7 +885,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                     ? Colors.white
                                     : Colors.grey[600],
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                                  borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusButton),
                                 ),
                                 minimumSize: const Size(double.infinity, 50),
                                 elevation: _hasUnsavedChanges ? 8 : 0,

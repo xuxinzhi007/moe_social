@@ -6,7 +6,8 @@ import '../../widgets/gacha_machine_display.dart';
 import '../../models/user.dart';
 import '../../models/virtual_item.dart';
 import '../../auth_service.dart';
-import '../../services/api_service.dart';
+import '../../services/commerce_service.dart';
+import '../../services/user_service.dart';
 import 'inventory_page.dart';
 import 'recharge_page.dart';
 import '../../theme/moe_tokens.dart';
@@ -58,7 +59,7 @@ class _GachaPageState extends State<GachaPage>
     final userId = AuthService.currentUser;
     if (userId != null) {
       try {
-        final user = await ApiService.getUserInfo(userId);
+        final user = await CommerceService.getUserInfo(userId);
         if (mounted) {
           setState(() {
             _currentUser = user;
@@ -115,7 +116,8 @@ class _GachaPageState extends State<GachaPage>
 
     // 2. 扣费 (调用后端 API)
     try {
-      final res = await ApiService.recharge(_currentUser!.id, -cost, '扭蛋消费');
+      final res =
+          await CommerceService.recharge(_currentUser!.id, -cost, '扭蛋消费');
       if (res['success'] != true) {
         throw Exception(res['message'] ?? '余额不足或网络异常');
       }
@@ -200,7 +202,7 @@ class _GachaPageState extends State<GachaPage>
     if (_currentUser != null) {
       // 抽奖前先刷新用户信息，确保 inventory 是最新的，避免覆盖旧数据
       try {
-        final latestUser = await ApiService.getUserInfo(_currentUser!.id);
+        final latestUser = await CommerceService.getUserInfo(_currentUser!.id);
         if (mounted) {
           _currentUser = latestUser;
         }
@@ -216,14 +218,14 @@ class _GachaPageState extends State<GachaPage>
 
       // 调用后端 API 保存背包数据
       try {
-        await ApiService.updateUserInfo(
+        await UserService.updateUserInfo(
           _currentUser!.id,
           inventory: newInventory,
           avatar: _currentUser!.avatar.isEmpty ? null : _currentUser!.avatar,
         );
 
         // Refresh from server (inventory/equip are server-truth)
-        final refreshed = await ApiService.getUserInfo(_currentUser!.id);
+        final refreshed = await CommerceService.getUserInfo(_currentUser!.id);
         if (mounted) {
           _currentUser = refreshed;
         }
@@ -531,7 +533,8 @@ class _GachaPageState extends State<GachaPage>
       decoration: BoxDecoration(
         color: Color(item.rarityColor).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(item.rarityColor).withValues(alpha: 0.3)),
+        border:
+            Border.all(color: Color(item.rarityColor).withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -808,7 +811,8 @@ class _GachaPageState extends State<GachaPage>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.stars_rounded,
-                                color: Colors.white.withValues(alpha: 0.6), size: 32),
+                                color: Colors.white.withValues(alpha: 0.6),
+                                size: 32),
                             const SizedBox(height: 8),
                             Text(
                               'Moe Gacha',
@@ -852,8 +856,7 @@ class _GachaPageState extends State<GachaPage>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.card_giftcard,
-                          size: 16, color: moe.primary),
+                      Icon(Icons.card_giftcard, size: 16, color: moe.primary),
                       const SizedBox(width: 6),
                       const Text(
                         '当前奖品池',

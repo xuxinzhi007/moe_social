@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListAchievements(ctx context.Context, in *adminv1.AdminListAchievementsReq) (*adminv1.AdminListAchievementsResp, error) {
-	items, total, err := adminbiz.ListAchievements(ctx, s.db, adminbiz.AchievementPage{
+	items, total, err := adminbiz.ListAchievements(ctx, s.store, adminbiz.AchievementPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(),
 		Keyword: in.GetKeyword(), Category: in.GetCategory(),
 	})
@@ -18,7 +18,7 @@ func (s *AppService) ListAchievements(ctx context.Context, in *adminv1.AdminList
 }
 
 func (s *AppService) UpdateAchievement(ctx context.Context, in *adminv1.AdminUpdateAchievementReq) (*adminv1.AdminUpdateAchievementResp, error) {
-	item, err := adminbiz.UpdateAchievement(ctx, s.db, adminbiz.UpdateAchievementInput{
+	item, err := adminbiz.UpdateAchievement(ctx, s.store, adminbiz.UpdateAchievementInput{
 		ID: in.GetId(), Name: in.GetName(), Description: in.GetDescription(),
 		Enabled: in.GetEnabled(), ExpReward: in.GetExpReward(), SortOrder: in.GetSortOrder(),
 		UpdateName: in.GetUpdateName(), UpdateDescription: in.GetUpdateDescription(),
@@ -33,7 +33,7 @@ func (s *AppService) UpdateAchievement(ctx context.Context, in *adminv1.AdminUpd
 
 func (s *AppService) BootstrapAchievements(ctx context.Context, in *adminv1.AdminBootstrapAchievementsReq) (*adminv1.AdminBootstrapAchievementsResp, error) {
 	_ = in
-	created, err := adminbiz.BootstrapAchievements(ctx, s.db)
+	created, err := adminbiz.BootstrapAchievements(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}

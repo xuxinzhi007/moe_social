@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
-import '../../services/api_service.dart';
+import '../../services/user_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/match_suggestion_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
@@ -112,7 +112,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
 
   Future<void> _openDirectChatWith(String peerId) async {
     try {
-      final u = await ApiService.getUserInfo(peerId);
+      final u = await UserService.getUserInfo(peerId);
       if (!mounted) return;
       await Navigator.pushNamed(context, '/direct-chat', arguments: {
         'userId': u.id,
@@ -396,7 +396,8 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusXl),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.45),
                           ),
@@ -497,7 +498,8 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     foregroundColor: Colors.grey,
                   ),
-                  child: const Text('清除', style: TextStyle(fontSize: MoeTokens.textSm)),
+                  child: const Text('清除',
+                      style: TextStyle(fontSize: MoeTokens.textSm)),
                 ),
             ],
           ),
@@ -506,7 +508,8 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
             _selectedTagIds.isEmpty
                 ? '不选也可以，会从站内随机推荐新面孔'
                 : '已选 ${_selectedTagIds.length} 个话题（已自动刷新推荐）',
-            style: TextStyle(fontSize: MoeTokens.textSm, color: Colors.grey.shade500),
+            style: TextStyle(
+                fontSize: MoeTokens.textSm, color: Colors.grey.shade500),
           ),
           SizedBox(height: widget.compact ? 9 : 12),
           Wrap(

@@ -61,7 +61,8 @@ class AchievementHooks {
         onViewAchievements: _openAchievementsCenter,
       );
     } catch (_) {}
-    MoeToast.success(ctx, '解锁 ${uniqueUnlocked.length} 个成就：$names$more$expNote');
+    MoeToast.success(
+        ctx, '解锁 ${uniqueUnlocked.length} 个成就：$names$more$expNote');
   }
 
   static String _expNoteForUnlocks(List<AchievementBadge> badges) {
@@ -105,8 +106,7 @@ class AchievementHooks {
       final badges = unlocks.map((u) => u.toDisplayBadge()).toList();
       final ctx = AuthService.navigatorKey.currentContext;
       if (ctx != null && ctx.mounted) {
-        final totalExp =
-            unlocks.fold<int>(0, (sum, u) => sum + u.expGranted);
+        final totalExp = unlocks.fold<int>(0, (sum, u) => sum + u.expGranted);
         if (totalExp > 0) {
           try {
             MoeToast.success(ctx, '获得 $totalExp 经验');

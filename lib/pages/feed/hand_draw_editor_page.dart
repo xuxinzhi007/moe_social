@@ -205,7 +205,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
     return Scaffold(
       backgroundColor: const Color(_bg),
       appBar: AppBar(
-        title: const Text('手绘卡片', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('手绘卡片', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(_bg),
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -233,10 +234,14 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                 duration: const Duration(milliseconds: 400),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final box = Size(constraints.maxWidth, constraints.maxHeight);
+                    final box =
+                        Size(constraints.maxWidth, constraints.maxHeight);
                     final merged = HandDrawCardData(
                       backgroundArgb: _bg,
-                      strokes: [..._strokes, if (_current.isNotEmpty) _workingStroke()],
+                      strokes: [
+                        ..._strokes,
+                        if (_current.isNotEmpty) _workingStroke()
+                      ],
                     );
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(24),
@@ -250,7 +255,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                           onPanEnd: (_) => _onPanEnd(),
                           child: CustomPaint(
                             size: box,
-                            painter: HandDrawCardPainter(data: merged, progress: 1),
+                            painter:
+                                HandDrawCardPainter(data: merged, progress: 1),
                           ),
                         ),
                       ),
@@ -267,7 +273,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
                     color: primary.withValues(alpha: 0.08),
@@ -281,7 +288,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('颜色', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text('颜色',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -313,7 +321,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                                     boxShadow: [
                                       if (c == 0xFFFFFFFF)
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.06),
+                                          color: Colors.black
+                                              .withValues(alpha: 0.06),
                                           blurRadius: 4,
                                         ),
                                     ],
@@ -348,7 +357,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                         Expanded(
                           child: Text(
                             _eraserOn ? '擦除笔迹（撤销 / 重做仍可用）' : '普通画笔',
-                            style: TextStyle(fontSize: 13, color: Colors.black54),
+                            style:
+                                TextStyle(fontSize: 13, color: Colors.black54),
                           ),
                         ),
                       ],
@@ -356,7 +366,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        const Text('粗细', style: TextStyle(fontWeight: FontWeight.w600)),
+                        const Text('粗细',
+                            style: TextStyle(fontWeight: FontWeight.w600)),
                         Expanded(
                           child: Slider(
                             value: _widthNorm,
@@ -399,7 +410,8 @@ class _HandDrawEditorPageState extends State<HandDrawEditorPage> {
   HandDrawStroke _workingStroke() {
     return HandDrawStroke(
       colorArgb: _colorArgb,
-      widthNorm: _eraserOn ? (_widthNorm * 1.35).clamp(0.012, 0.04) : _widthNorm,
+      widthNorm:
+          _eraserOn ? (_widthNorm * 1.35).clamp(0.012, 0.04) : _widthNorm,
       points: List.from(_current),
       erase: _eraserOn,
     );

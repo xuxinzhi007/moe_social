@@ -3,7 +3,8 @@ part of '../agent_list_page.dart';
 extension TavernAgentsTabPart on _AgentListPageState {
   Widget tavernBuildFilterPanel() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceXs, MoeTokens.spaceLg, MoeTokens.spaceSm),
+      margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceXs,
+          MoeTokens.spaceLg, MoeTokens.spaceSm),
       padding: const EdgeInsets.all(MoeTokens.spaceMd),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -35,7 +36,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
                 .map(
                   (option) => DropdownMenuItem<String>(
                     value: option,
-                    child: Text(option, style: const TextStyle(fontSize: MoeTokens.textSm)),
+                    child: Text(option,
+                        style: const TextStyle(fontSize: MoeTokens.textSm)),
                   ),
                 )
                 .toList(),
@@ -64,7 +66,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
         .length;
     final backendAgents = _agents.length - customProviders;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceSm),
+      padding: const EdgeInsets.fromLTRB(
+          MoeTokens.spaceLg, 0, MoeTokens.spaceLg, MoeTokens.spaceSm),
       child: Row(
         children: [
           Expanded(
@@ -181,7 +184,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
           child: _buildAgentsSectionHeader(),
         ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceSm, MoeTokens.spaceLg, 120),
+          padding: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceLg, MoeTokens.spaceSm, MoeTokens.spaceLg, 120),
           sliver: _filteredAgents.isEmpty
               ? SliverToBoxAdapter(child: _buildEmptySearchState())
               : SliverGrid(
@@ -206,7 +210,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
 
   Widget _buildAgentsSectionHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceSm, MoeTokens.spaceLg, MoeTokens.spaceXs),
+      padding: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceSm,
+          MoeTokens.spaceLg, MoeTokens.spaceXs),
       child: Row(
         children: [
           Expanded(
@@ -233,7 +238,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
+            padding: const EdgeInsets.symmetric(
+                horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
             decoration: BoxDecoration(
               color: MoeTokens.cardBackground,
               borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
@@ -249,7 +255,9 @@ extension TavernAgentsTabPart on _AgentListPageState {
                         value: option,
                         child: Text(
                           option,
-                          style: const TextStyle(fontSize: MoeTokens.textSm, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                              fontSize: MoeTokens.textSm,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     )
@@ -259,7 +267,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
                   _updateTavernState(() => _sortBy = value);
                   _filterAgents();
                 },
-                icon: Icon(Icons.sort_rounded, size: MoeTokens.spaceLg, color: MoeTokens.bodyText),
+                icon: Icon(Icons.sort_rounded,
+                    size: MoeTokens.spaceLg, color: MoeTokens.bodyText),
               ),
             ),
           ),
@@ -302,13 +311,13 @@ extension TavernAgentsTabPart on _AgentListPageState {
   }
 
   Widget _buildAgentGridCard(AiAgent agent) {
-    final agentColor = _agentColors[agent.id] ?? _AgentListPageState._brandPrimary;
+    final agentColor =
+        _agentColors[agent.id] ?? _AgentListPageState._brandPrimary;
     final usageCount = _usageCounts[agent.id] ?? 0;
     final provider = _resolveProviderById(agent.providerProfileId);
     final isBackendProvider = provider.isBuiltinBackend;
-    final providerColor = isBackendProvider
-        ? MoeTokens.secondary
-        : const Color(0xFF00A86B);
+    final providerColor =
+        isBackendProvider ? MoeTokens.secondary : const Color(0xFF00A86B);
 
     return GestureDetector(
       onTap: () {
@@ -348,7 +357,8 @@ extension TavernAgentsTabPart on _AgentListPageState {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceXl),
+                padding:
+                    const EdgeInsets.symmetric(vertical: MoeTokens.spaceXl),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -384,15 +394,18 @@ extension TavernAgentsTabPart on _AgentListPageState {
                     const SizedBox(height: MoeTokens.spaceSm),
                     if (usageCount > 0)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceSm, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: MoeTokens.spaceSm, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusMd),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.favorite_rounded, size: 10, color: Colors.white),
+                            const Icon(Icons.favorite_rounded,
+                                size: 10, color: Colors.white),
                             const SizedBox(width: MoeTokens.spaceXs),
                             Text(
                               '$usageCount',
@@ -441,10 +454,12 @@ extension TavernAgentsTabPart on _AgentListPageState {
                         runSpacing: MoeTokens.spaceXs,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceSm, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: MoeTokens.spaceSm, vertical: 3),
                             decoration: BoxDecoration(
                               color: agentColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                              borderRadius:
+                                  BorderRadius.circular(MoeTokens.radiusSm),
                             ),
                             child: Text(
                               agent.modelName.length > 10
@@ -460,10 +475,12 @@ extension TavernAgentsTabPart on _AgentListPageState {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceSm, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: MoeTokens.spaceSm, vertical: 3),
                             decoration: BoxDecoration(
                               color: providerColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                              borderRadius:
+                                  BorderRadius.circular(MoeTokens.radiusSm),
                             ),
                             child: Text(
                               provider.name.length > 6

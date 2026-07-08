@@ -14,7 +14,8 @@ import (
 )
 
 // ListLevelConfigs Admin 等级配置列表。
-func ListLevelConfigs(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListLevelConfigsReq) (*adminv1.AdminListLevelConfigsResp, error) {
+func ListLevelConfigs(ctx context.Context, st AdminStore, _ *adminv1.AdminListLevelConfigsReq) (*adminv1.AdminListLevelConfigsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -30,7 +31,8 @@ func ListLevelConfigs(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListLeve
 }
 
 // UpdateLevelConfig Admin 更新等级配置。
-func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateLevelConfigReq) (*adminv1.AdminUpdateLevelConfigResp, error) {
+func UpdateLevelConfig(ctx context.Context, st AdminStore, in *adminv1.AdminUpdateLevelConfigReq) (*adminv1.AdminUpdateLevelConfigResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -74,7 +76,8 @@ func UpdateLevelConfig(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdate
 }
 
 // BootstrapLevels Admin 初始化等级与签到奖励。
-func BootstrapLevels(ctx context.Context, db *gorm.DB, _ *adminv1.AdminBootstrapLevelsReq) (*adminv1.AdminBootstrapLevelsResp, error) {
+func BootstrapLevels(ctx context.Context, st AdminStore, _ *adminv1.AdminBootstrapLevelsReq) (*adminv1.AdminBootstrapLevelsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -89,7 +92,8 @@ func BootstrapLevels(ctx context.Context, db *gorm.DB, _ *adminv1.AdminBootstrap
 }
 
 // ListCheckInRewards Admin 签到奖励列表。
-func ListCheckInRewards(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
+func ListCheckInRewards(ctx context.Context, st AdminStore, _ *adminv1.AdminListCheckInRewardsReq) (*adminv1.AdminListCheckInRewardsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -105,7 +109,8 @@ func ListCheckInRewards(ctx context.Context, db *gorm.DB, _ *adminv1.AdminListCh
 }
 
 // UpdateCheckInReward Admin 更新签到奖励。
-func UpdateCheckInReward(ctx context.Context, db *gorm.DB, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
+func UpdateCheckInReward(ctx context.Context, st AdminStore, in *adminv1.AdminUpdateCheckInRewardReq) (*adminv1.AdminUpdateCheckInRewardResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

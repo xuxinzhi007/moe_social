@@ -216,7 +216,8 @@ class LikeStateManager {
 
       if (_commentLikeCounts.containsKey(commentId)) {
         final currentCount = _commentLikeCounts[commentId]!.value;
-        _commentLikeCounts[commentId]!.value = currentCount + (!current ? 1 : -1);
+        _commentLikeCounts[commentId]!.value =
+            currentCount + (!current ? 1 : -1);
       }
     }
     _touchComment(commentId);
@@ -256,7 +257,8 @@ class LikeStateManager {
   void trimPostCaches({int maxEntries = _defaultPostCacheLimit}) {
     if (maxEntries <= 0 || _likeStatus.length <= maxEntries) return;
     final keys = _postTouchTicks.keys.toList()
-      ..sort((a, b) => (_postTouchTicks[a] ?? 0).compareTo(_postTouchTicks[b] ?? 0));
+      ..sort((a, b) =>
+          (_postTouchTicks[a] ?? 0).compareTo(_postTouchTicks[b] ?? 0));
     final overflow = _likeStatus.length - maxEntries;
     for (var i = 0; i < overflow && i < keys.length; i++) {
       evictPost(keys[i]);
@@ -281,7 +283,8 @@ class LikeStateManager {
   void trimCommentCaches({int maxEntries = _defaultCommentCacheLimit}) {
     if (maxEntries <= 0 || _commentLikeStatus.length <= maxEntries) return;
     final keys = _commentTouchTicks.keys.toList()
-      ..sort((a, b) => (_commentTouchTicks[a] ?? 0).compareTo(_commentTouchTicks[b] ?? 0));
+      ..sort((a, b) =>
+          (_commentTouchTicks[a] ?? 0).compareTo(_commentTouchTicks[b] ?? 0));
     final overflow = _commentLikeStatus.length - maxEntries;
     for (var i = 0; i < overflow && i < keys.length; i++) {
       evictComment(keys[i]);

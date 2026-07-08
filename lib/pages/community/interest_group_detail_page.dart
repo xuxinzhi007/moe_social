@@ -7,7 +7,8 @@ import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
 import '../../models/post.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart' show ApiException;
+import '../../services/community_service.dart';
 import '../../utils/media_url.dart';
 import '../../utils/post_navigation.dart';
 import '../../widgets/avatar_image.dart';
@@ -78,7 +79,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     });
     try {
       final uid = AuthService.currentUser;
-      final group = await ApiService.getCommunityGroup(
+      final group = await CommunityService.getCommunityGroup(
         groupId: widget.groupId,
         userId: uid,
       );
@@ -102,7 +103,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     setState(() => _loadingPosts = true);
     try {
       final uid = AuthService.currentUser;
-      final res = await ApiService.getGroupPosts(
+      final res = await CommunityService.getGroupPosts(
         groupId: widget.groupId,
         userId: uid,
         pageSize: 30,
@@ -127,7 +128,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
   Future<void> _loadMembers() async {
     setState(() => _loadingMembers = true);
     try {
-      final res = await ApiService.getGroupMembers(
+      final res = await CommunityService.getGroupMembers(
         groupId: widget.groupId,
         pageSize: 50,
       );
@@ -151,10 +152,10 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     }
     try {
       if (g.isJoined) {
-        await ApiService.leaveCommunityGroup(groupId: g.id, userId: uid);
+        await CommunityService.leaveCommunityGroup(groupId: g.id, userId: uid);
         if (mounted) MoeToast.success(context, '已退出群组');
       } else {
-        await ApiService.joinCommunityGroup(groupId: g.id, userId: uid);
+        await CommunityService.joinCommunityGroup(groupId: g.id, userId: uid);
         if (mounted) MoeToast.success(context, '已加入群组');
       }
       await _loadAll();
@@ -171,7 +172,7 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
     }
     CommunityGroup g;
     try {
-      g = await ApiService.getCommunityGroup(
+      g = await CommunityService.getCommunityGroup(
         groupId: widget.groupId,
         userId: uid,
       );
@@ -368,7 +369,8 @@ class _InterestGroupDetailPageState extends State<InterestGroupDetailPage>
               const SizedBox(height: 12),
               const Text(
                 '群内还没有动态',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: MoeTokens.textLg),
+                style: TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: MoeTokens.textLg),
               ),
               const SizedBox(height: 8),
               Text(

@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) ListLevelConfigs(ctx context.Context, in *adminv1.AdminListLevelConfigsReq) (*adminv1.AdminListLevelConfigsResp, error) {
-	out, err := adminbiz.ListLevelConfigs(ctx, s.db, in)
+	out, err := adminbiz.ListLevelConfigs(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +15,7 @@ func (s *AppService) ListLevelConfigs(ctx context.Context, in *adminv1.AdminList
 }
 
 func (s *AppService) UpdateLevelConfig(ctx context.Context, in *adminv1.AdminUpdateLevelConfigReq) (*adminv1.AdminUpdateLevelConfigResp, error) {
-	out, err := adminbiz.UpdateLevelConfig(ctx, s.db, in)
+	out, err := adminbiz.UpdateLevelConfig(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (s *AppService) UpdateLevelConfig(ctx context.Context, in *adminv1.AdminUpd
 }
 
 func (s *AppService) BootstrapLevels(ctx context.Context, in *adminv1.AdminBootstrapLevelsReq) (*adminv1.AdminBootstrapLevelsResp, error) {
-	out, err := adminbiz.BootstrapLevels(ctx, s.db, in)
+	out, err := adminbiz.BootstrapLevels(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}

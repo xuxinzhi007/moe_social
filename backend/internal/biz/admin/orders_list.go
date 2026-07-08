@@ -13,7 +13,8 @@ import (
 )
 
 // ListVipOrders Admin VIP 订单列表。
-func ListVipOrders(ctx context.Context, db *gorm.DB, in *adminv1.AdminListVipOrdersReq) (*adminv1.AdminListVipOrdersResp, error) {
+func ListVipOrders(ctx context.Context, st AdminStore, in *adminv1.AdminListVipOrdersReq) (*adminv1.AdminListVipOrdersResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -79,7 +80,8 @@ func ListVipOrders(ctx context.Context, db *gorm.DB, in *adminv1.AdminListVipOrd
 }
 
 // ListGiftPurchaseOrders Admin 礼物购买订单列表。
-func ListGiftPurchaseOrders(ctx context.Context, db *gorm.DB, in *adminv1.AdminListGiftPurchaseOrdersReq) (*adminv1.AdminListGiftPurchaseOrdersResp, error) {
+func ListGiftPurchaseOrders(ctx context.Context, st AdminStore, in *adminv1.AdminListGiftPurchaseOrdersReq) (*adminv1.AdminListGiftPurchaseOrdersResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

@@ -24,7 +24,8 @@ type GiftPage struct {
 }
 
 // ListGifts Admin 礼物列表（keyword/category 筛选）。
-func ListGifts(ctx context.Context, db *gorm.DB, in GiftPage) ([]*adminv1.Gift, int32, error) {
+func ListGifts(ctx context.Context, st AdminStore, in GiftPage) ([]*adminv1.Gift, int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, 0, gorm.ErrInvalidDB
 	}
@@ -64,7 +65,8 @@ func ListGifts(ctx context.Context, db *gorm.DB, in GiftPage) ([]*adminv1.Gift, 
 }
 
 // GetGift Admin 礼物详情。
-func GetGift(ctx context.Context, db *gorm.DB, giftIDRaw string) (*adminv1.Gift, error) {
+func GetGift(ctx context.Context, st AdminStore, giftIDRaw string) (*adminv1.Gift, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

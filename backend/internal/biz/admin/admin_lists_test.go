@@ -60,7 +60,7 @@ func TestListAchievementsCategory(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	items, total, err := adminbiz.ListAchievements(context.Background(), db, adminbiz.AchievementPage{
+	items, total, err := adminbiz.ListAchievements(context.Background(), admindata.NewStore(db), adminbiz.AchievementPage{
 		Page: 1, PageSize: 10, Category: "social",
 	})
 	if err != nil {

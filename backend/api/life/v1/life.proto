@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package life.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/life/v1;lifev1";
+
+// Life — 数字生命引擎 HTTP 契约（与 /api/life/* 对齐）。
+
+message LifeWorld {
+  uint64 id = 1;
+  string name = 2;
+  int64 tick_count = 3;
+  bool is_running = 4;
+  string grid_data = 5;
+  string updated_at = 6;
+  string created_at = 7;
+}
+
+message LifeWorldSummary {
+  int32 entity_count = 1;
+  int32 alive_count = 2;
+  int32 birth_count = 3;
+  int32 death_count = 4;
+  double avg_hunger = 5;
+  double avg_energy = 6;
+  double avg_mood = 7;
+  double total_food = 8;
+  int32 habitable_cells = 9;
+  int32 danger_cells = 10;
+}
+
+message LifeEntity {
+  uint64 id = 1;
+  string world_id = 2;
+  string name = 3;
+  string emoji = 4;
+  double hunger = 5;
+  double energy = 6;
+  double mood = 7;
+  string current_action = 8;
+  double position_x = 9;
+  double position_y = 10;
+  uint64 target_entity_id = 11;
+  int32 age = 12;
+  string growth_stage = 13;
+  double experience = 14;
+  bool is_alive = 15;
+  string last_action_at = 16;
+  string updated_at = 17;
+  string created_at = 18;
+}
+
+message LifeEventLog {
+  uint64 id = 1;
+  string world_id = 2;
+  uint64 entity_id = 3;
+  string entity_type = 4;
+  string event_type = 5;
+  string description = 6;
+  double position_x = 7;
+  double position_y = 8;
+  string created_at = 9;
+}
+
+message LifeRelationship {
+  uint64 id = 1;
+  string world_id = 2;
+  uint64 entity_id = 3;
+  uint64 target_id = 4;
+  string relation_type = 5;
+  double affinity = 6;
+  string last_interaction_at = 7;
+  string created_at = 8;
+  string updated_at = 9;
+}
+
+message GetLifeWorldRequest {}
+
+message GetLifeWorldReply {
+  LifeWorld world = 1;
+  int64 tick_count = 2;
+  int32 entity_count = 3;
+  LifeWorldSummary summary = 4;
+}
+
+message ListLifeEntitiesRequest {}
+
+message ListLifeEntitiesReply {
+  repeated LifeEntity entities = 1;
+}
+
+message ListLifeEventsRequest {
+  int32 limit = 1;
+}
+
+message ListLifeEventsReply {
+  repeated LifeEventLog events = 1;
+}
+
+message ListLifeRelationshipsRequest {
+  string world = 1;
+}
+
+message ListLifeRelationshipsReply {
+  repeated LifeRelationship relationships = 1;
+}
+
+message ApplyLifeActionRequest {
+  string action = 1;
+  uint64 entity_id = 2;
+  map<string, string> params = 3;
+}
+
+message ApplyLifeActionReply {
+  bool success = 1;
+  string message = 2;
+  LifeEntity entity = 3;
+  bool cooldown = 4;
+  double retry_after = 5;
+}
+
+service Life {
+  rpc GetWorld(GetLifeWorldRequest) returns (GetLifeWorldReply) {
+    option (google.api.http) = {get: "/api/life/world"};
+  }
+  rpc ListEntities(ListLifeEntitiesRequest) returns (ListLifeEntitiesReply) {
+    option (google.api.http) = {get: "/api/life/entities"};
+  }
+  rpc ListEvents(ListLifeEventsRequest) returns (ListLifeEventsReply) {
+    option (google.api.http) = {get: "/api/life/events"};
+  }
+  rpc ListRelationships(ListLifeRelationshipsRequest) returns (ListLifeRelationshipsReply) {
+    option (google.api.http) = {get: "/api/life/relationships"};
+  }
+  rpc ApplyAction(ApplyLifeActionRequest) returns (ApplyLifeActionReply) {
+    option (google.api.http) = {
+      post: "/api/life/action"
+      body: "*"
+    };
+  }
+}

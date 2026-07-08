@@ -161,9 +161,8 @@ class RemoteApiConfigService {
         normalizeBaseUrl(fallbackBakedUrl) ?? 'http://127.0.0.1:8888';
     final cached = normalizeBaseUrl(prefs.getString(_prefsKey));
 
-    String? official = cached != null
-        ? await _fetchOfficialFromEntry(cached, timeout)
-        : null;
+    String? official =
+        cached != null ? await _fetchOfficialFromEntry(cached, timeout) : null;
     official ??= await _fetchOfficialFromEntry(fallback, timeout);
 
     String? githubBootstrap;
@@ -172,8 +171,7 @@ class RemoteApiConfigService {
     if (official == null && jsonUrl.isNotEmpty) {
       githubBootstrap = await _tryStaticJsonUrl(jsonUrl, timeout);
       if (githubBootstrap != null) {
-        official =
-            await _fetchOfficialFromEntry(githubBootstrap, timeout);
+        official = await _fetchOfficialFromEntry(githubBootstrap, timeout);
         if (official != null) {
           officialCameFromGithubEntry = true;
         }
@@ -223,8 +221,7 @@ class RemoteApiConfigService {
     }
 
     if (githubBootstrap != null) {
-      _startupConfigHint =
-          '未能完成服务器校验，暂用 GitHub 上的地址。请确认隧道与 yaml 正常。';
+      _startupConfigHint = '未能完成服务器校验，暂用 GitHub 上的地址。请确认隧道与 yaml 正常。';
       await prefs.setString(_prefsKey, githubBootstrap);
       if (kDebugMode) {
         debugPrint('RemoteApiConfig: 降级使用 GitHub $githubBootstrap');
@@ -232,8 +229,7 @@ class RemoteApiConfigService {
       return githubBootstrap;
     }
 
-    _startupConfigHint =
-        '无法拉取配置，使用应用内置兜底。请检查网络或 GitHub moe_api.json。';
+    _startupConfigHint = '无法拉取配置，使用应用内置兜底。请检查网络或 GitHub moe_api.json。';
     if (kDebugMode) {
       debugPrint('RemoteApiConfig: 降级使用兜底 $fallback');
     }

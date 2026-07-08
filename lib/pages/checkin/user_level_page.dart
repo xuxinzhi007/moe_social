@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../theme/moe_tokens.dart';
 import '../../providers/user_level_provider.dart';
 import '../../providers/checkin_provider.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/fade_in_up.dart';
@@ -75,9 +75,7 @@ class _UserLevelPageState extends State<UserLevelPage>
         setState(() {
           _achievementStats =
               _achievementService.getBadgeStatistics(widget.userId);
-          _recentUnlocked = badges
-              .where((b) => b.isUnlocked)
-              .toList()
+          _recentUnlocked = badges.where((b) => b.isUnlocked).toList()
             ..sort((a, b) => (b.unlockedAt ?? DateTime(2000))
                 .compareTo(a.unlockedAt ?? DateTime(2000)));
           if (_recentUnlocked.length > 2) {
@@ -181,9 +179,11 @@ class _UserLevelPageState extends State<UserLevelPage>
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
-            fontSize: MediaQuery.textScalerOf(context).scale(17).clamp(15.0, 22.0),
+            fontSize:
+                MediaQuery.textScalerOf(context).scale(17).clamp(15.0, 22.0),
             shadows: const [
-              Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 1)),
+              Shadow(
+                  color: Colors.black26, blurRadius: 8, offset: Offset(0, 1)),
             ],
           ),
         ),
@@ -221,7 +221,7 @@ class _UserLevelPageState extends State<UserLevelPage>
     if (path == null || path.isEmpty) return null;
     final t = path.trim();
     if (t.startsWith('http://') || t.startsWith('https://')) return t;
-    final base = ApiService.baseUrl.replaceAll(RegExp(r'/$'), '');
+    final base = ApiClient.baseUrl.replaceAll(RegExp(r'/$'), '');
     final p = t.startsWith('/') ? t : '/$t';
     return '$base$p';
   }
@@ -255,13 +255,14 @@ class _UserLevelPageState extends State<UserLevelPage>
       ),
       padding: const EdgeInsets.all(3),
       child: Container(
-        decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+        decoration:
+            const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
         clipBehavior: Clip.antiAlias,
         child: imageUrl != null
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                headers: ApiService.tunnelBypassHeadersForUrl(imageUrl),
+                headers: ApiClient.tunnelBypassHeadersForUrl(imageUrl),
                 errorBuilder: (_, __, ___) => _levelBadgeFallback(),
               )
             : _levelBadgeFallback(),
@@ -474,7 +475,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: colors.first, width: 2),
+                                border:
+                                    Border.all(color: colors.first, width: 2),
                                 boxShadow: [
                                   BoxShadow(
                                     color: colors.first.withValues(alpha: 0.4),
@@ -534,12 +536,17 @@ class _UserLevelPageState extends State<UserLevelPage>
                     ),
                   );
                   if (!context.mounted) return;
-                  await context.read<UserLevelProvider>().loadUserLevel(widget.userId);
-                  await context.read<CheckInProvider>().loadCheckInStatus(widget.userId);
+                  await context
+                      .read<UserLevelProvider>()
+                      .loadUserLevel(widget.userId);
+                  await context
+                      .read<CheckInProvider>()
+                      .loadCheckInStatus(widget.userId);
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     color: colors.first.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(16),
@@ -663,8 +670,10 @@ class _UserLevelPageState extends State<UserLevelPage>
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                cg.first.withValues(alpha: current ? 0.95 : 0.55),
-                                cg.last.withValues(alpha: current ? 0.85 : 0.45),
+                                cg.first
+                                    .withValues(alpha: current ? 0.95 : 0.55),
+                                cg.last
+                                    .withValues(alpha: current ? 0.85 : 0.45),
                               ],
                             )
                           : null,
@@ -701,7 +710,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
-                            color: unlocked ? Colors.white : Colors.grey.shade600,
+                            color:
+                                unlocked ? Colors.white : Colors.grey.shade600,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -733,7 +743,8 @@ class _UserLevelPageState extends State<UserLevelPage>
 
   /// 构建特权卡片
   Widget _buildPrivilegesCard(UserLevelProvider levelProvider) {
-    final privileges = levelProvider.getLevelPrivileges(levelProvider.currentLevel);
+    final privileges =
+        levelProvider.getLevelPrivileges(levelProvider.currentLevel);
 
     return FadeInUp(
       delay: const Duration(milliseconds: 400),
@@ -758,7 +769,8 @@ class _UserLevelPageState extends State<UserLevelPage>
               children: [
                 Icon(
                   Icons.workspace_premium_rounded,
-                  color: levelProvider.getLevelColor(levelProvider.currentLevel),
+                  color:
+                      levelProvider.getLevelColor(levelProvider.currentLevel),
                   size: 24,
                 ),
                 const SizedBox(width: 8),
@@ -780,10 +792,11 @@ class _UserLevelPageState extends State<UserLevelPage>
                   .map(
                     (privilege) => Chip(
                       avatar: CircleAvatar(
-                        backgroundColor:
-                            levelProvider.getLevelColor(levelProvider.currentLevel),
+                        backgroundColor: levelProvider
+                            .getLevelColor(levelProvider.currentLevel),
                         radius: 12,
-                        child: const Icon(Icons.check, color: Colors.white, size: 14),
+                        child: const Icon(Icons.check,
+                            color: Colors.white, size: 14),
                       ),
                       label: Text(privilege),
                       labelStyle: const TextStyle(
@@ -799,7 +812,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                             .getLevelColor(levelProvider.currentLevel)
                             .withValues(alpha: 0.22),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 2),
                     ),
                   )
                   .toList(),
@@ -814,8 +828,18 @@ class _UserLevelPageState extends State<UserLevelPage>
   Widget _buildDailyTasksCard() {
     final dailyTasks = [
       {'title': '发布帖子', 'exp': '10经验', 'completed': false, 'icon': Icons.edit},
-      {'title': '评论互动', 'exp': '5经验', 'completed': false, 'icon': Icons.comment},
-      {'title': '点赞内容', 'exp': '3经验', 'completed': false, 'icon': Icons.favorite},
+      {
+        'title': '评论互动',
+        'exp': '5经验',
+        'completed': false,
+        'icon': Icons.comment
+      },
+      {
+        'title': '点赞内容',
+        'exp': '3经验',
+        'completed': false,
+        'icon': Icons.favorite
+      },
       {'title': '分享内容', 'exp': '8经验', 'completed': false, 'icon': Icons.share},
     ];
 
@@ -840,7 +864,8 @@ class _UserLevelPageState extends State<UserLevelPage>
           children: [
             Row(
               children: [
-                Icon(Icons.task_alt_rounded, color: Colors.indigo.shade400, size: 22),
+                Icon(Icons.task_alt_rounded,
+                    color: Colors.indigo.shade400, size: 22),
                 const SizedBox(width: 8),
                 const Text(
                   '每日任务',
@@ -868,7 +893,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        task['completed'] as bool ? Icons.check : task['icon'] as IconData,
+                        task['completed'] as bool
+                            ? Icons.check
+                            : task['icon'] as IconData,
                         color: task['completed'] as bool
                             ? const Color(0xFF4CAF50)
                             : MoeTokens.secondary,
@@ -1030,8 +1057,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          AchievementsPage(userId: widget.userId),
+                      builder: (_) => AchievementsPage(userId: widget.userId),
                     ),
                   );
                 },
@@ -1115,7 +1141,8 @@ class _UserLevelPageState extends State<UserLevelPage>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.leaderboard_rounded, color: Colors.deepPurple.shade400, size: 22),
+                    Icon(Icons.leaderboard_rounded,
+                        color: Colors.deepPurple.shade400, size: 22),
                     const SizedBox(width: 8),
                     const Text(
                       '社区排名',
@@ -1128,7 +1155,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
                     color: MoeTokens.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
@@ -1153,11 +1181,16 @@ class _UserLevelPageState extends State<UserLevelPage>
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isCurrentUser
-                        ? levelProvider.getLevelColor(levelProvider.currentLevel).withValues(alpha: 0.1)
+                        ? levelProvider
+                            .getLevelColor(levelProvider.currentLevel)
+                            .withValues(alpha: 0.1)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                     border: isCurrentUser
-                        ? Border.all(color: levelProvider.getLevelColor(levelProvider.currentLevel).withValues(alpha: 0.3))
+                        ? Border.all(
+                            color: levelProvider
+                                .getLevelColor(levelProvider.currentLevel)
+                                .withValues(alpha: 0.3))
                         : null,
                   ),
                   child: Row(
@@ -1169,12 +1202,22 @@ class _UserLevelPageState extends State<UserLevelPage>
                           gradient: item['rank'] as int <= 3
                               ? LinearGradient(
                                   colors: [
-                                    item['rank'] as int == 1 ? const Color(0xFFFFD700) : (item['rank'] as int == 2 ? const Color(0xFFC0C0C0) : const Color(0xFFCD7F32)),
-                                    item['rank'] as int == 1 ? const Color(0xFFFFA500) : (item['rank'] as int == 2 ? const Color(0xFFA9A9A9) : const Color(0xFFB87333)),
+                                    item['rank'] as int == 1
+                                        ? const Color(0xFFFFD700)
+                                        : (item['rank'] as int == 2
+                                            ? const Color(0xFFC0C0C0)
+                                            : const Color(0xFFCD7F32)),
+                                    item['rank'] as int == 1
+                                        ? const Color(0xFFFFA500)
+                                        : (item['rank'] as int == 2
+                                            ? const Color(0xFFA9A9A9)
+                                            : const Color(0xFFB87333)),
                                   ],
                                 )
                               : null,
-                          color: item['rank'] as int <= 3 ? null : Colors.grey.shade200,
+                          color: item['rank'] as int <= 3
+                              ? null
+                              : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Center(
@@ -1183,7 +1226,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: item['rank'] as int <= 3 ? Colors.white : Colors.grey.shade600,
+                              color: item['rank'] as int <= 3
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ),
@@ -1201,7 +1246,8 @@ class _UserLevelPageState extends State<UserLevelPage>
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 color: isCurrentUser
-                                    ? levelProvider.getLevelColor(levelProvider.currentLevel)
+                                    ? levelProvider.getLevelColor(
+                                        levelProvider.currentLevel)
                                     : MoeTokens.bodyText,
                               ),
                             ),
@@ -1217,9 +1263,11 @@ class _UserLevelPageState extends State<UserLevelPage>
                       ),
                       if (isCurrentUser)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: levelProvider.getLevelColor(levelProvider.currentLevel),
+                            color: levelProvider
+                                .getLevelColor(levelProvider.currentLevel),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text(
@@ -1303,11 +1351,36 @@ class _UserLevelPageState extends State<UserLevelPage>
   /// 构建经验来源卡片
   Widget _buildExpSourcesCard() {
     final expSources = [
-      {'title': '每日签到', 'exp': '10-100经验', 'icon': Icons.calendar_today, 'color': MoeTokens.primary},
-      {'title': '发布帖子', 'exp': '5-20经验', 'icon': Icons.edit, 'color': MoeTokens.secondary},
-      {'title': '点赞互动', 'exp': '1-5经验', 'icon': Icons.favorite, 'color': const Color(0xFFFF6B6B)},
-      {'title': '评论互动', 'exp': '2-10经验', 'icon': Icons.comment, 'color': MoeTokens.accent},
-      {'title': 'VIP奖励', 'exp': '额外50%', 'icon': Icons.star, 'color': const Color(0xFFFFD700)},
+      {
+        'title': '每日签到',
+        'exp': '10-100经验',
+        'icon': Icons.calendar_today,
+        'color': MoeTokens.primary
+      },
+      {
+        'title': '发布帖子',
+        'exp': '5-20经验',
+        'icon': Icons.edit,
+        'color': MoeTokens.secondary
+      },
+      {
+        'title': '点赞互动',
+        'exp': '1-5经验',
+        'icon': Icons.favorite,
+        'color': const Color(0xFFFF6B6B)
+      },
+      {
+        'title': '评论互动',
+        'exp': '2-10经验',
+        'icon': Icons.comment,
+        'color': MoeTokens.accent
+      },
+      {
+        'title': 'VIP奖励',
+        'exp': '额外50%',
+        'icon': Icons.star,
+        'color': const Color(0xFFFFD700)
+      },
     ];
 
     return FadeInUp(
@@ -1331,7 +1404,8 @@ class _UserLevelPageState extends State<UserLevelPage>
           children: [
             Row(
               children: [
-                Icon(Icons.source_rounded, color: Colors.teal.shade400, size: 22),
+                Icon(Icons.source_rounded,
+                    color: Colors.teal.shade400, size: 22),
                 const SizedBox(width: 8),
                 const Text(
                   '经验来源',

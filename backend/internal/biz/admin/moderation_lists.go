@@ -15,7 +15,8 @@ import (
 )
 
 // ListFollows Admin 关注列表。
-func ListFollows(ctx context.Context, db *gorm.DB, in *adminv1.AdminListFollowsReq) (*adminv1.AdminListFollowsResp, error) {
+func ListFollows(ctx context.Context, st AdminStore, in *adminv1.AdminListFollowsReq) (*adminv1.AdminListFollowsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -86,7 +87,8 @@ func followKeywordUserIDs(db *gorm.DB, kw string) ([]uint, error) {
 }
 
 // ListPosts Admin 动态列表。
-func ListPosts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostsReq) (*adminv1.AdminListPostsResp, error) {
+func ListPosts(ctx context.Context, st AdminStore, in *adminv1.AdminListPostsReq) (*adminv1.AdminListPostsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -148,7 +150,8 @@ func ListPosts(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostsReq) 
 }
 
 // ListComments Admin 评论列表。
-func ListComments(ctx context.Context, db *gorm.DB, in *adminv1.AdminListCommentsReq) (*adminv1.AdminListCommentsResp, error) {
+func ListComments(ctx context.Context, st AdminStore, in *adminv1.AdminListCommentsReq) (*adminv1.AdminListCommentsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -228,7 +231,8 @@ func ListComments(ctx context.Context, db *gorm.DB, in *adminv1.AdminListComment
 }
 
 // ListGroups Admin 社区列表。
-func ListGroups(ctx context.Context, db *gorm.DB, in *adminv1.AdminListGroupsReq) (*adminv1.AdminListGroupsResp, error) {
+func ListGroups(ctx context.Context, st AdminStore, in *adminv1.AdminListGroupsReq) (*adminv1.AdminListGroupsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -282,7 +286,8 @@ func ListGroups(ctx context.Context, db *gorm.DB, in *adminv1.AdminListGroupsReq
 }
 
 // ListFriendRequests Admin 好友申请列表。
-func ListFriendRequests(ctx context.Context, db *gorm.DB, in *adminv1.AdminListFriendRequestsReq) (*adminv1.AdminListFriendRequestsResp, error) {
+func ListFriendRequests(ctx context.Context, st AdminStore, in *adminv1.AdminListFriendRequestsReq) (*adminv1.AdminListFriendRequestsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -329,7 +334,8 @@ func ListFriendRequests(ctx context.Context, db *gorm.DB, in *adminv1.AdminListF
 }
 
 // ListPostReports Admin 举报列表。
-func ListPostReports(ctx context.Context, db *gorm.DB, in *adminv1.AdminListPostReportsReq) (*adminv1.AdminListPostReportsResp, error) {
+func ListPostReports(ctx context.Context, st AdminStore, in *adminv1.AdminListPostReportsReq) (*adminv1.AdminListPostReportsResp, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}

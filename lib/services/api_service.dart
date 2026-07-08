@@ -32,6 +32,7 @@ import 'api_response.dart';
 class ApiException implements Exception {
   final String message;
   final int? code;
+
   /// 原始响应体（仅当服务器返回可解析的 JSON 时携带），供调用方提取额外字段。
   final Map<String, dynamic>? body;
 
@@ -45,7 +46,8 @@ class ApiException implements Exception {
 class LifeActionCooldownException implements Exception {
   final int retryAfter;
   final String message;
-  LifeActionCooldownException({required this.retryAfter, required this.message});
+  LifeActionCooldownException(
+      {required this.retryAfter, required this.message});
   @override
   String toString() => message;
 }
@@ -487,8 +489,8 @@ class ApiService {
         final errorMessage = result['message'] ?? '请求失败';
         final errorCode = result['code'] ?? response.statusCode;
         _log('❌ API错误: $errorMessage (code: $errorCode)');
-        throw ApiException(
-            errorMessage, errorCode is int ? errorCode : response.statusCode, result);
+        throw ApiException(errorMessage,
+            errorCode is int ? errorCode : response.statusCode, result);
       }
 
       // 检查HTTP状态码
@@ -2363,8 +2365,8 @@ class ApiService {
       if (params != null) 'params': params,
     };
     try {
-      final result = await _request('/api/life/action',
-          method: 'POST', body: body);
+      final result =
+          await _request('/api/life/action', method: 'POST', body: body);
       // 检查 ok 字段（后端返回 {ok: false} 也算失败）
       if (result['ok'] == false) {
         final errMsg = result['error']?.toString() ?? '操作失败';
@@ -2381,7 +2383,8 @@ class ApiService {
         } else if (bodyRetryAfter is String) {
           retryAfter = int.tryParse(bodyRetryAfter) ?? 3;
         } else {
-          final match = RegExp(r'retry_after[:\s=]+(\d+)').firstMatch(e.message);
+          final match =
+              RegExp(r'retry_after[:\s=]+(\d+)').firstMatch(e.message);
           if (match != null) {
             retryAfter = int.tryParse(match.group(1) ?? '3') ?? 3;
           }

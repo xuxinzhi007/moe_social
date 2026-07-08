@@ -38,7 +38,8 @@ type UpdateGiftInput struct {
 }
 
 // CreateGift 创建礼物。
-func CreateGift(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateGiftReq) (*adminv1.Gift, error) {
+func CreateGift(ctx context.Context, st AdminStore, in *adminv1.AdminCreateGiftReq) (*adminv1.Gift, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -74,7 +75,8 @@ func CreateGift(ctx context.Context, db *gorm.DB, in *adminv1.AdminCreateGiftReq
 }
 
 // UpdateGift 更新礼物。
-func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*adminv1.Gift, error) {
+func UpdateGift(ctx context.Context, st AdminStore, in UpdateGiftInput) (*adminv1.Gift, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -131,7 +133,8 @@ func UpdateGift(ctx context.Context, db *gorm.DB, in UpdateGiftInput) (*adminv1.
 }
 
 // DeleteGift 删除礼物。
-func DeleteGift(ctx context.Context, db *gorm.DB, giftIDRaw string) error {
+func DeleteGift(ctx context.Context, st AdminStore, giftIDRaw string) error {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return gorm.ErrInvalidDB
 	}
@@ -150,7 +153,8 @@ func DeleteGift(ctx context.Context, db *gorm.DB, giftIDRaw string) error {
 }
 
 // BootstrapGifts 空表时写入默认礼物。
-func BootstrapGifts(ctx context.Context, db *gorm.DB) (int32, error) {
+func BootstrapGifts(ctx context.Context, st AdminStore) (int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return 0, gorm.ErrInvalidDB
 	}
@@ -169,7 +173,8 @@ func BootstrapGifts(ctx context.Context, db *gorm.DB) (int32, error) {
 }
 
 // DeduplicateGiftsByName 合并同名礼物：保留最小 ID，迁移引用后删除重复项。
-func DeduplicateGiftsByName(ctx context.Context, db *gorm.DB) (int32, error) {
+func DeduplicateGiftsByName(ctx context.Context, st AdminStore) (int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return 0, gorm.ErrInvalidDB
 	}

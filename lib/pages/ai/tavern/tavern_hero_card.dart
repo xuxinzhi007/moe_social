@@ -19,7 +19,8 @@ class TavernHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceLg, MoeTokens.spaceSm),
+      margin: const EdgeInsets.fromLTRB(MoeTokens.spaceLg, MoeTokens.spaceLg,
+          MoeTokens.spaceLg, MoeTokens.spaceSm),
       decoration: BoxDecoration(
         gradient: AiBrandTokens.heroGradient,
         borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
@@ -113,7 +114,8 @@ class TavernHeroCard extends StatelessWidget {
 
   Widget _chip(String label, IconData icon) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: MoeTokens.spaceMd, vertical: MoeTokens.spaceSm),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(MoeTokens.radiusFull),

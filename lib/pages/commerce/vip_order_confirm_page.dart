@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/vip_plan.dart';
 import '../../services/achievement_hooks.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart' show ApiException;
+import '../../services/commerce_service.dart';
 import '../../widgets/fade_in_up.dart';
 import '../../widgets/moe_toast.dart';
 import 'order_center_page.dart';
@@ -52,7 +53,7 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
     }
 
     try {
-      final userInfo = await ApiService.getUserInfo(userId);
+      final userInfo = await CommerceService.getUserInfo(userId);
       if (!mounted) {
         return;
       }
@@ -101,10 +102,10 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
     });
 
     try {
-      final vipResult =
-          await ApiService.createVipOrderWithUnlocks(userId, widget.plan.id);
+      final vipResult = await CommerceService.createVipOrderWithUnlocks(
+          userId, widget.plan.id);
       final order = vipResult.order;
-      await ApiService.syncUserVipStatus(userId);
+      await CommerceService.syncUserVipStatus(userId);
       await _refreshBalance();
 
       if (!mounted) {
@@ -174,8 +175,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
           title: const Row(
             children: [
               Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)),
@@ -223,7 +224,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       appBar: AppBar(
         title: const Text(
           '确认订单',
-          style: TextStyle(color: MoeTokens.titleText, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: MoeTokens.titleText, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: MoeTokens.cardBackground,
@@ -488,7 +490,9 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.account_balance_wallet_rounded, color: _moe.primary,
+          Icon(
+            Icons.account_balance_wallet_rounded,
+            color: _moe.primary,
             size: 20,
           ),
           const SizedBox(width: 10),
@@ -555,7 +559,8 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : Text(

@@ -61,9 +61,8 @@ class AchievementService {
     final total = all.length;
     final rarityStats = <BadgeRarity, int>{};
     for (final rarity in BadgeRarity.values) {
-      rarityStats[rarity] = all
-          .where((b) => b.rarity == rarity && b.isUnlocked)
-          .length;
+      rarityStats[rarity] =
+          all.where((b) => b.rarity == rarity && b.isUnlocked).length;
     }
     return BadgeStatistics(
       totalBadges: total,

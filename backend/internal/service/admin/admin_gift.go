@@ -7,7 +7,7 @@ import (
 )
 
 func (s *AppService) AdminListGifts(ctx context.Context, in *adminv1.AdminListGiftsReq) (*adminv1.AdminListGiftsResp, error) {
-	gifts, total, err := adminbiz.ListGifts(ctx, s.db, adminbiz.GiftPage{
+	gifts, total, err := adminbiz.ListGifts(ctx, s.store, adminbiz.GiftPage{
 		Page: in.GetPage(), PageSize: in.GetPageSize(),
 		Keyword: in.GetKeyword(), Category: in.GetCategory(),
 	})
@@ -18,7 +18,7 @@ func (s *AppService) AdminListGifts(ctx context.Context, in *adminv1.AdminListGi
 }
 
 func (s *AppService) AdminGetGift(ctx context.Context, in *adminv1.AdminGetGiftReq) (*adminv1.AdminGetGiftResp, error) {
-	gift, err := adminbiz.GetGift(ctx, s.db, in.GetGiftId())
+	gift, err := adminbiz.GetGift(ctx, s.store, in.GetGiftId())
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (s *AppService) AdminGetGift(ctx context.Context, in *adminv1.AdminGetGiftR
 }
 
 func (s *AppService) AdminCreateGift(ctx context.Context, in *adminv1.AdminCreateGiftReq) (*adminv1.AdminCreateGiftResp, error) {
-	gift, err := adminbiz.CreateGift(ctx, s.db, in)
+	gift, err := adminbiz.CreateGift(ctx, s.store, in)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func (s *AppService) AdminCreateGift(ctx context.Context, in *adminv1.AdminCreat
 }
 
 func (s *AppService) AdminUpdateGift(ctx context.Context, in *adminv1.AdminUpdateGiftReq) (*adminv1.AdminUpdateGiftResp, error) {
-	gift, err := adminbiz.UpdateGift(ctx, s.db, adminbiz.UpdateGiftInput{
+	gift, err := adminbiz.UpdateGift(ctx, s.store, adminbiz.UpdateGiftInput{
 		GiftIDRaw:         in.GetGiftId(),
 		Name:              in.GetName(),
 		Price:             in.GetPrice(),
@@ -56,7 +56,7 @@ func (s *AppService) AdminUpdateGift(ctx context.Context, in *adminv1.AdminUpdat
 }
 
 func (s *AppService) AdminDeleteGift(ctx context.Context, in *adminv1.AdminDeleteGiftReq) (*adminv1.AdminDeleteGiftResp, error) {
-	if err := adminbiz.DeleteGift(ctx, s.db, in.GetGiftId()); err != nil {
+	if err := adminbiz.DeleteGift(ctx, s.store, in.GetGiftId()); err != nil {
 		return nil, err
 	}
 	return &adminv1.AdminDeleteGiftResp{}, nil
@@ -64,7 +64,7 @@ func (s *AppService) AdminDeleteGift(ctx context.Context, in *adminv1.AdminDelet
 
 func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *adminv1.AdminBootstrapGiftsReq) (*adminv1.AdminBootstrapGiftsResp, error) {
 	_ = in
-	created, err := adminbiz.BootstrapGifts(ctx, s.db)
+	created, err := adminbiz.BootstrapGifts(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *AppService) AdminBootstrapGifts(ctx context.Context, in *adminv1.AdminB
 
 func (s *AppService) AdminDedupeGifts(ctx context.Context, in *adminv1.AdminDedupeGiftsReq) (*adminv1.AdminDedupeGiftsResp, error) {
 	_ = in
-	removed, err := adminbiz.DeduplicateGiftsByName(ctx, s.db)
+	removed, err := adminbiz.DeduplicateGiftsByName(ctx, s.store)
 	if err != nil {
 		return nil, err
 	}

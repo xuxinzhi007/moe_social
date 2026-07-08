@@ -104,7 +104,8 @@ class LifeWsService {
 
       // 连接成功后，发送 subscribe 消息
       try {
-        _channel?.sink.add(jsonEncode({'type': 'subscribe', 'world': 'default'}));
+        _channel?.sink
+            .add(jsonEncode({'type': 'subscribe', 'world': 'default'}));
         debugPrint('LifeWsService: 已发送 subscribe 消息');
       } catch (e) {
         debugPrint('LifeWsService: 发送 subscribe 失败: $e');
@@ -194,13 +195,14 @@ class LifeWsService {
     if (type == 'state_snapshot') {
       // state_snapshot 包含完整实体列表，当作全量 state update 处理
       try {
-        final entities = (map['entities'] as List?)
-            ?.cast<Map<String, dynamic>>() ?? [];
+        final entities =
+            (map['entities'] as List?)?.cast<Map<String, dynamic>>() ?? [];
         onStateUpdate?.call(LifeStateUpdate(
           worldId: map['world_id']?.toString() ?? 'default',
           tick: map['tick'] is int ? map['tick'] as int : 0,
           summary: map['summary'] is Map<String, dynamic>
-              ? LifeWorldSummary.fromJson(map['summary'] as Map<String, dynamic>)
+              ? LifeWorldSummary.fromJson(
+                  map['summary'] as Map<String, dynamic>)
               : map['summary'] is Map
                   ? LifeWorldSummary.fromJson(
                       Map<String, dynamic>.from(map['summary'] as Map),

@@ -20,7 +20,6 @@ var protoJSONOptions = protojson.MarshalOptions{UseProtoNames: true}
 
 var envelopeSkipPrefixes = []string{
 	"/health",
-	"/migration",
 	"/swagger",
 	"/doc",
 }

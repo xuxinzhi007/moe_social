@@ -112,9 +112,7 @@ class AiProviderService {
     if (kIsWeb) {
       final prefs = await SharedPreferences.getInstance();
       final current = await listProfiles();
-      final customs = current
-          .where((e) => !e.isBuiltin)
-          .toList();
+      final customs = current.where((e) => !e.isBuiltin).toList();
       final next = <AiProviderProfile>[];
       var replaced = false;
       for (final item in customs) {

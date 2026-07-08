@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
 import '../../models/community_group.dart';
-import '../../services/api_service.dart';
+import '../../services/community_service.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/media_url.dart';
@@ -59,7 +59,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     }
     setState(() => _loadingMyGroups = true);
     try {
-      final list = await ApiService.getUserCommunityGroups(userId: uid);
+      final list = await CommunityService.getUserCommunityGroups(userId: uid);
       if (!mounted) return;
       setState(() {
         _myGroups = list;
@@ -77,7 +77,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     });
     try {
       final uid = AuthService.currentUser;
-      final res = await ApiService.getCommunityGroups(
+      final res = await CommunityService.getCommunityGroups(
         page: 1,
         pageSize: 40,
         keyword: keyword,
@@ -127,10 +127,10 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     }
     try {
       if (g.isJoined) {
-        await ApiService.leaveCommunityGroup(groupId: g.id, userId: uid);
+        await CommunityService.leaveCommunityGroup(groupId: g.id, userId: uid);
         if (mounted) MoeToast.success(context, '已退出群组');
       } else {
-        await ApiService.joinCommunityGroup(groupId: g.id, userId: uid);
+        await CommunityService.joinCommunityGroup(groupId: g.id, userId: uid);
         if (mounted) MoeToast.success(context, '已加入群组');
       }
       await _load(keyword: _keyword.isEmpty ? null : _keyword);
@@ -240,8 +240,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                           const SizedBox(height: 16),
                                           FilledButton.icon(
                                             onPressed: _showCreateGroup,
-                                            icon:
-                                                const Icon(Icons.add_rounded),
+                                            icon: const Icon(Icons.add_rounded),
                                             label: const Text('新建群组'),
                                           ),
                                         ],
@@ -257,8 +256,7 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                                 itemBuilder: (context, i) {
                                   if (i == 0) {
                                     return Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.only(bottom: 8),
                                       child: Text(
                                         '发现圈子',
                                         style: TextStyle(
@@ -416,7 +414,7 @@ class _CreateInterestGroupSheetState extends State<_CreateInterestGroupSheet> {
     }
     setState(() => _submitting = true);
     try {
-      await ApiService.createCommunityGroup(
+      await CommunityService.createCommunityGroup(
         userId: widget.userId,
         name: n,
         description: _descCtrl.text.trim(),
@@ -638,8 +636,7 @@ class _GroupCard extends StatelessWidget {
                             ),
                           ),
                           Chip(
-                            avatar:
-                                const Icon(Icons.people_outline, size: 18),
+                            avatar: const Icon(Icons.people_outline, size: 18),
                             label: Text('${group.memberCount} 成员'),
                             visualDensity: VisualDensity.compact,
                             materialTapTargetSize:

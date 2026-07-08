@@ -10,7 +10,8 @@ import (
 )
 
 // BootstrapTopicTags 空表时写入官方推荐话题标签。
-func BootstrapTopicTags(ctx context.Context, db *gorm.DB) (int32, error) {
+func BootstrapTopicTags(ctx context.Context, st AdminStore) (int32, error) {
+	db := dbFromStore(ctx, st)
 	if db == nil {
 		return 0, gorm.ErrInvalidDB
 	}

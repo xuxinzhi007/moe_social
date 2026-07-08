@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart' show ApiException;
+import '../../services/user_service.dart';
 import '../../widgets/gift_selector.dart';
 import '../../services/presence_service.dart';
 import '../../widgets/avatar_image.dart';
@@ -223,7 +224,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     final me = AuthService.currentUser;
     if (me == null || requestId.isEmpty) return;
     try {
-      await ApiService.acceptFriendRequest(me, requestId);
+      await UserService.acceptFriendRequest(me, requestId);
       if (mounted) MoeToast.success(context, '已同意');
       await _loadFriends();
     } catch (e) {
@@ -235,7 +236,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     final me = AuthService.currentUser;
     if (me == null || requestId.isEmpty) return;
     try {
-      await ApiService.rejectFriendRequest(me, requestId);
+      await UserService.rejectFriendRequest(me, requestId);
       if (mounted) MoeToast.info(context, '已拒绝');
       await _loadFriends();
     } catch (e) {
@@ -309,12 +310,12 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     }
 
     try {
-      final friends = await ApiService.getFriends(currentUserId);
+      final friends = await UserService.getFriends(currentUserId);
       final incoming =
-          await ApiService.getIncomingFriendRequests(currentUserId);
+          await UserService.getIncomingFriendRequests(currentUserId);
       User? self;
       try {
-        self = await ApiService.getUserInfo(currentUserId);
+        self = await UserService.getUserInfo(currentUserId);
       } catch (_) {}
       friends.sort((a, b) => a.username.compareTo(b.username));
       if (!mounted) return;
@@ -397,7 +398,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
     final ids = List<String>.from(_friends.map((u) => u.id));
     try {
-      final status = await ApiService.getChatOnlineBatch(ids);
+      final status = await UserService.getChatOnlineBatch(ids);
       if (!mounted) return;
       setState(() {
         _onlineStatus = status;

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/life_state.dart';
-import '../services/api_service.dart';
+import '../services/life_service.dart';
 import '../services/life_ws_service.dart';
 
 /// 数字生命状态管理 Provider
@@ -73,9 +73,12 @@ class LifeProvider extends ChangeNotifier {
   }
 
   /// 关系统计
-  int get friendCount => _relationships.where((r) => r.relationType == 'friend').length;
-  int get mateCount => _relationships.where((r) => r.relationType == 'mate').length;
-  int get rivalCount => _relationships.where((r) => r.relationType == 'rival').length;
+  int get friendCount =>
+      _relationships.where((r) => r.relationType == 'friend').length;
+  int get mateCount =>
+      _relationships.where((r) => r.relationType == 'mate').length;
+  int get rivalCount =>
+      _relationships.where((r) => r.relationType == 'rival').length;
 
   /// 连接 WebSocket，开始接收世界状态推送。
   void startListening() {
@@ -130,7 +133,9 @@ class LifeProvider extends ChangeNotifier {
     // 移除已解除的关系
     for (final removed in update.removedRelationships) {
       _relationships.removeWhere(
-        (r) => r.entityId == removed['entity_id'] && r.targetId == removed['target_id'],
+        (r) =>
+            r.entityId == removed['entity_id'] &&
+            r.targetId == removed['target_id'],
       );
     }
 
@@ -196,7 +201,7 @@ class LifeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await ApiService.postLifeAction(action, entityId);
+      await LifeService.postLifeAction(action, entityId);
 
       // 插入本地临时事件（即时反馈）
       final String eventName;

@@ -10,7 +10,9 @@ import '../../models/achievement_badge.dart';
 import '../../models/user.dart';
 import '../../providers/user_level_provider.dart';
 import '../../services/achievement_service.dart';
-import '../../services/api_service.dart';
+import '../../services/commerce_service.dart';
+import '../../services/post_service.dart';
+import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
@@ -129,11 +131,12 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await _achievementService.initializeUserBadges(userId);
       final results = await Future.wait([
-        ApiService.getUserVipStatus(userId)
+        CommerceService.getUserVipStatus(userId)
             .timeout(const Duration(seconds: 5))
             .catchError((_) => <String, dynamic>{}),
-        _getCount(() => ApiService.getFollowings(userId, page: 1, pageSize: 1)),
-        _getCount(() => ApiService.getFollowers(userId, page: 1, pageSize: 1)),
+        _getCount(
+            () => UserService.getFollowings(userId, page: 1, pageSize: 1)),
+        _getCount(() => UserService.getFollowers(userId, page: 1, pageSize: 1)),
         _getPostCount(userId),
       ]);
       final vipStatus = results[0] as Map<String, dynamic>;
@@ -175,7 +178,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<int> _getPostCount(String userId) async {
     try {
       final viewer = AuthService.currentUser ?? '';
-      final r = await ApiService.getPosts(
+      final r = await PostService.getPosts(
         page: 1,
         pageSize: 1,
         viewerUserId: viewer.isEmpty ? null : viewer,

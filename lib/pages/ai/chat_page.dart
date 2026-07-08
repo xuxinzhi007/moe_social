@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
@@ -831,8 +831,8 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _syncPromptToServerModel(String prompt) async {
     final baseModel = await _resolveBaseModelFromModel();
-    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/agents');
-    final token = ApiService.token;
+    final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/agents');
+    final token = ApiClient.token;
     final headers = <String, String>{
       'Content-Type': 'application/json',
       if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
@@ -861,8 +861,8 @@ class _ChatPageState extends State<ChatPage> {
   Future<String> _resolveBaseModelFromModel() async {
     try {
       final uri = LlmEndpointConfig.showUri();
-      final token = ApiService.token;
-      final headers = ApiService.mergeTunnelHeaders(uri, headers: {
+      final token = ApiClient.token;
+      final headers = ApiClient.mergeTunnelHeaders(uri, headers: {
         'Content-Type': 'application/json',
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
       });

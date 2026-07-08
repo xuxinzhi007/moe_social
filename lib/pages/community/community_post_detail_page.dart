@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/post.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart' show ApiException;
 import '../../services/post_service.dart';
 import '../../widgets/moe_loading.dart';
 import '../feed/comments_page.dart';
@@ -18,7 +18,8 @@ class CommunityPostDetailPage extends StatefulWidget {
   final Post? initialPost;
 
   @override
-  State<CommunityPostDetailPage> createState() => _CommunityPostDetailPageState();
+  State<CommunityPostDetailPage> createState() =>
+      _CommunityPostDetailPageState();
 }
 
 class _CommunityPostDetailPageState extends State<CommunityPostDetailPage> {

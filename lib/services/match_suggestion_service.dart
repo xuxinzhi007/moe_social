@@ -46,7 +46,8 @@ class MatchSuggestionService {
 
     final excluded = <String>{myId};
     try {
-      final follow = await ApiService.getFollowings(myId, page: 1, pageSize: 500);
+      final follow =
+          await ApiService.getFollowings(myId, page: 1, pageSize: 500);
       final list = (follow['followings'] as List<dynamic>).cast<User>();
       excluded.addAll(list.map((u) => u.id));
     } catch (_) {}

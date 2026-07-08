@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../auth_service.dart';
-import '../../../services/api_service.dart';
+import '../../../services/user_service.dart';
 import '../../../theme/moe_theme_extension.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/motion/moe_pressable.dart';
@@ -74,7 +74,7 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
 
     try {
       if (raw.contains('@')) {
-        final targetUser = await ApiService.checkUserByEmail(raw);
+        final targetUser = await UserService.checkUserByEmail(raw);
         if (targetUser.id == currentUserId) {
           setState(() {
             _isLoading = false;
@@ -82,7 +82,7 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
           });
           return;
         }
-        final relation = await ApiService.getFriendRelation(
+        final relation = await UserService.getFriendRelation(
           currentUserId,
           targetUser.id,
         );
@@ -107,9 +107,10 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
           });
           return;
         }
-        await ApiService.sendFriendRequestByUserId(currentUserId, targetUser.id);
+        await UserService.sendFriendRequestByUserId(
+            currentUserId, targetUser.id);
       } else if (RegExp(r'^\d{10}$').hasMatch(raw)) {
-        await ApiService.sendFriendRequestByMoeNo(currentUserId, raw);
+        await UserService.sendFriendRequestByMoeNo(currentUserId, raw);
       } else {
         setState(() {
           _isLoading = false;
@@ -224,7 +225,8 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
                 onTap: () => _copyLine(context, myMoe, '已复制我的 Moe 号'),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: moe.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -260,7 +262,8 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                    onPressed:
+                        _isLoading ? null : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(

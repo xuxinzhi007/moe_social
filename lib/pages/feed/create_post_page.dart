@@ -9,7 +9,11 @@ import '../../auth_service.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
-import '../../services/api_service.dart';
+import '../../services/api_client.dart';
+import '../../services/api_client.dart' show ApiException;
+import '../../services/community_service.dart';
+import '../../services/post_service.dart';
+import '../../services/user_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
 import '../../widgets/app_message_widget.dart';
@@ -68,8 +72,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
         title: const Text('确定离开？'),
         content: const Text('内容尚未发布，确定要离开吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('继续编辑')),
-          TextButton(onPressed: () { Navigator.pop(ctx); Navigator.pop(context); }, child: const Text('离开')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('继续编辑')),
+          TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pop(context);
+              },
+              child: const Text('离开')),
         ],
       ),
     );
@@ -225,7 +235,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
 
     try {
-      final user = await ApiService.getUserInfo(userId);
+      final user = await UserService.getUserInfo(userId);
       if (!mounted) return;
       setState(() {
         _userName = user.username;
@@ -246,7 +256,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
     try {
       final group =
-          await ApiService.getCommunityGroup(groupId: gid, userId: uid);
+          await CommunityService.getCommunityGroup(groupId: gid, userId: uid);
       if (!mounted) return;
       setState(() => _canPostToGroup = group.isJoined);
     } catch (e) {
@@ -296,7 +306,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
         // 上传本地选择的图片
         for (final image in _selectedImages) {
-          final imageUrl = await ApiService.uploadImage(image);
+          final imageUrl = await ApiClient.uploadImage(image);
           imageUrls.add(imageUrl);
         }
 
@@ -315,7 +325,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           try {
             final png = await handDrawCardToPngBytes(_handDrawCard!);
             if (png != null && png.isNotEmpty) {
-              thumbUrl = await ApiService.uploadImageBytes(
+              thumbUrl = await ApiClient.uploadImageBytes(
                 png,
                 filename: 'hand_draw_thumb.png',
               );
@@ -343,7 +353,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           moodTag: _selectedMoodTag ?? '',
         );
 
-        final created = await ApiService.createPostWithUnlocks(
+        final created = await PostService.createPostWithUnlocks(
           newPost,
           groupId: widget.groupId,
         );
@@ -396,7 +406,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       operation: () async {
         final List<String> imageUrls = [];
         for (final image in _selectedImages) {
-          imageUrls.add(await ApiService.uploadImage(image));
+          imageUrls.add(await ApiClient.uploadImage(image));
         }
         imageUrls.addAll(_selectedImageUrls);
 
@@ -409,7 +419,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             try {
               final png = await handDrawCardToPngBytes(_handDrawCard!);
               if (png != null && png.isNotEmpty) {
-                thumbUrl = await ApiService.uploadImageBytes(
+                thumbUrl = await ApiClient.uploadImageBytes(
                   png,
                   filename: 'hand_draw_thumb.png',
                 );
@@ -424,7 +434,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           }
         }
 
-        return await ApiService.updatePost(
+        return await PostService.updatePost(
           init.id,
           content: caption,
           images: imageUrls,
@@ -496,94 +506,94 @@ class _CreatePostPageState extends State<CreatePostPage> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFFAF8FF),
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          _isEditMode ? '编辑动态' : (_isGroupPost ? '发到本群' : '记录心情'),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        backgroundColor: const Color(0xFFFAF8FF),
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(
+            _isEditMode ? '编辑动态' : (_isGroupPost ? '发到本群' : '记录心情'),
           ),
-          child: IconButton(
-            icon: const Icon(Icons.close_rounded,
-                color: Color(0xFF636E72), size: 20),
-            onPressed: () {
-              if (_hasUnsavedChanges) {
-                _showExitConfirmation();
-              } else {
-                Navigator.pop(context);
-              }
-            },
-            padding: EdgeInsets.zero,
-          ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
-            alignment: Alignment.center,
-            child: SizedBox(
-              height: 36,
-              width: 76,
-              child: LoadingButton(
-                operationKey: LoadingKeys.createPost,
-                onPressed: _isGroupPost && _canPostToGroup != true
-                    ? null
-                    : _publishPost,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shadowColor: primaryColor.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  padding: EdgeInsets.zero,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          leading: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Text(_isEditMode ? '保存' : '发布'),
-              ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.close_rounded,
+                  color: Color(0xFF636E72), size: 20),
+              onPressed: () {
+                if (_hasUnsavedChanges) {
+                  _showExitConfirmation();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+              padding: EdgeInsets.zero,
             ),
           ),
-        ],
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 90, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_isGroupPost && _canPostToGroup == false) ...[
-                _buildGroupWarning(textTheme),
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 16, top: 4, bottom: 4),
+              alignment: Alignment.center,
+              child: SizedBox(
+                height: 36,
+                width: 76,
+                child: LoadingButton(
+                  operationKey: LoadingKeys.createPost,
+                  onPressed: _isGroupPost && _canPostToGroup != true
+                      ? null
+                      : _publishPost,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: primaryColor.withValues(alpha: 0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Text(_isEditMode ? '保存' : '发布'),
+                ),
+              ),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 90, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_isGroupPost && _canPostToGroup == false) ...[
+                  _buildGroupWarning(textTheme),
+                  const SizedBox(height: 16),
+                ],
+                FadeInUp(
+                  delay: Duration.zero,
+                  child: _buildGreetingCard(textTheme),
+                ),
                 const SizedBox(height: 16),
+                FadeInUp(
+                  delay: MoeTokens.motionStaggerStep,
+                  child: _buildInputCard(textTheme),
+                ),
               ],
-              FadeInUp(
-                delay: Duration.zero,
-                child: _buildGreetingCard(textTheme),
-              ),
-              const SizedBox(height: 16),
-              FadeInUp(
-                delay: MoeTokens.motionStaggerStep,
-                child: _buildInputCard(textTheme),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
