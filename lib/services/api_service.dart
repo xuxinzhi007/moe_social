@@ -24,6 +24,7 @@ import '../models/exp_log.dart';
 import '../models/achievement_badge.dart';
 import '../models/achievement_unlock.dart';
 import '../models/feishu_public_config.dart';
+import '../models/life_state.dart';
 import '../utils/jwt_exp.dart';
 import '../utils/config.dart' as moe_launch_config;
 import 'api_response.dart';
@@ -2398,5 +2399,44 @@ class ApiService {
       }
       rethrow;
     }
+  }
+
+  /// 获取道具定义列表。
+  static Future<List<LifeItem>> getLifeItems() async {
+    final result = await _request('/api/life/items');
+    final raw = result['items'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => LifeItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// 获取背包道具列表。
+  static Future<List<LifeInventoryItem>> getLifeInventory() async {
+    final result = await _request('/api/life/inventory');
+    final raw = result['items'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => LifeInventoryItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// 对指定实体使用道具。
+  static Future<bool> useLifeItem(int entityId, int itemId) async {
+    final result = await _request(
+      '/api/life/use-item',
+      method: 'POST',
+      body: {'entity_id': entityId, 'item_id': itemId},
+    );
+    // 后端成功返回 {message: "item used successfully"}
+    return result['error'] == null;
+  }
+
+  /// 签到领取每日道具。
+  static Future<bool> claimLifeItems() async {
+    final result = await _request('/api/life/items/claim', method: 'POST');
+    return result['error'] == null;
   }
 }

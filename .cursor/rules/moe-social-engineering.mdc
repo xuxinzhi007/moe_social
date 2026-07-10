@@ -1,0 +1,356 @@
+---
+description: moe-social 仓库工程规则（Kratos 分层、API/Wire、Go 规范、Flutter 前端）
+alwaysApply: true
+---
+
+# Moe-Social 工程规则
+
+本文件是 **moe-social 仓库的工程约束单一事实来源**，规定分层、生成、测试、文档流程与代码风格。
+
+---
+
+## 1. 修改前先读
+
+- 新增/修改接口、修 BUG、重构：**先读现有实现**与相关 `docs/dev/` SSOT，再改代码。
+- 必读 [.cursor/LESSONS.md](../LESSONS.md)（<80 行）。
+- 先明确边界、输入输出、验收标准。
+- 不确定行为时先 grep 仓库，**不要猜**。
+
+## 2. 根因优先
+
+- 报错 / 异常行为：先定位 **根因**，不要只修补表面。
+- 贴日志 + 调用栈 + commit SHA 再讨论。
+- 回滚 ≠ 修复；回滚后仍需根因分析。
+
+## 3. 分层约束
+
+### 3.1 后端（Kratos 四层架构）
+
+| 层 | 目录 | 职责 | 允许依赖 |
+|---|---|---|---|
+| **protohttp** | `internal/server/protohttp/` | HTTP 适配、路由注册、中间件 | service |
+| **service** | `internal/service/<domain>/` | 参数校验、DTO 转换、调用 biz | biz, proto gen |
+| **biz** | `internal/biz/<domain>/` | 业务逻辑、跨域编排 | data, model, pkg |
+| **data** | `internal/data/<domain>/` | DB/缓存/外部 IO | model, pkg |
+
+- **禁止跨层调用**：protohttp 不得直接调用 biz/data；service 不得直接调用 data。
+- **禁止反向依赖**：data 不得 import biz/service。
+- 跨域调用走 biz 层接口，不要在 service 层横向调用。
+- 公共能力放 `internal/pkg/` 或 `internal/platform/`。
+
+### 3.2 前端（Flutter）
+
+| 层 | 目录 | 职责 |
+|---|---|---|
+| **pages** | `lib/pages/<domain>/` | 业务页面 |
+| **widgets** | `lib/widgets/` | 可复用 UI 组件 |
+| **providers** | `lib/providers/` | 状态管理（ChangeNotifier / ViewModel） |
+| **services** | `lib/services/` | 网络请求、业务服务层 |
+| **models** | `lib/models/` | 数据模型 |
+
+- **页面禁止直接 `ApiService`**：走 `UserService` / `PostService` / `ChatService` / `CommerceService` / `CommunityService` / `AuthFlowService` / `LifeService` 等域服务。
+- 低层 URL/Header 用 `ApiClient`。
+- 新页面优先 **Provider/ChangeNotifier ViewModel**，避免巨型 `setState`。
+- 接口变更先对齐 `backend/` 契约，再改 models/services/pages。
+
+### 3.3 管理台
+
+- `moe-admin/`（React + Vite），独立于 Flutter。
+
+## 4. Proto / 生成 / Wire
+
+### 4.1 契约 SSOT
+
+- 契约唯一定义：`backend/api/<domain>/v1/*.proto`
+- OpenAPI 文档：`backend/openapi.yaml`（由 `make gen-swagger` 生成）
+- 迁移状态：`docs/dev/kratos-migration-status.md`
+
+### 4.2 生成命令
+
+| 命令 | 说明 |
+|------|------|
+| `cd backend && make gen` | proto + conf + HTTP 路由计数（日常安全生成） |
+| `cd backend && make gen-swagger` | 生成 openapi.yaml |
+| `cd backend && make init-proto-tools` | 安装 protoc 插件 |
+
+- 单模块 proto 生成：直接在 `backend/` 目录执行 `protoc` 命令（参考 `scripts/gen/moe-proto.sh` 中的 protoc 参数）。
+- **禁止手改** `*.pb.go`、`*_http.pb.go`、`openapi.yaml`。
+
+### 4.3 禁止
+
+- `api/defs`、`backend/rpc`、go-zero logic、`make gen-api` / `make gen-rpc`（均已退役）。
+
+## 5. Go 规范
+
+### 5.1 通用
+
+- `gofmt` / `goimports` 格式化。
+- 透传 `context.Context`，不存 goroutine 局部。
+- 错误处理不吞 `err`；有业务语义的错误码走 `common/errorcode/`。
+- 公开函数/类型必须有 GoDoc 注释。
+
+### 5.2 命名
+
+- 文件名 `snake_case.go`；接口名 `XxxRepo` / `XxxService`。
+- 包名全小写、短而有意义。
+- 常量 `CamelCase`，不用 `ALL_CAPS`（Go 惯例）。
+
+### 5.3 枚举
+
+- Proto enum 字段名带域前缀避免冲突。
+- Go 侧 iota 枚举用 `const + Type` 后缀。
+
+### 5.4 API 字段
+
+- Proto 字段 `json_name` 与 Go JSON tag 保持一致。
+- HTTP 响应统一包裹：`{ "code": 0, "msg": "ok", "data": {...} }`。
+
+### 5.5 注释
+
+- 注释用中文或英文均可，但同一文件保持一致。
+- TODO 格式：`// TODO(<owner>): <description> — <date>`。
+
+## 6. 数据与并发
+
+### 6.1 数据库
+
+- ORM：GORM + MySQL（`gorm.io/gorm` + `gorm.io/driver/mysql`）。
+- Model 定义在 `backend/model/`，与表结构一一对应。
+- **表名按域前缀**：
+  - `life_` — 数字生命域（`life_entity`, `life_world`, `life_relationship`, `life_event_log`）
+  - `game_` — 游戏域（`game_session`, `game_world_state`, `game_item` 等）
+  - `moe_` — Moe 智能体域（`moe_agent_runtime`, `moe_bot_episode` 等）
+  - 无前缀 — 社交基础域（`user`, `post`, `comment`, `follow`, `like` 等）
+- 迁移走 `go run ./cmd/migrate`，不手写 SQL DDL。
+- 禁止在 biz/service 层写裸 SQL。
+
+### 6.2 并发
+
+- goroutine 必须有明确的退出机制（`context.Done()` / `sync.WaitGroup`）。
+- 共享状态优先 `sync.Mutex` / `sync.RWMutex`，避免 `atomic` 过度使用。
+- 定时器/心跳用 `time.Ticker`，退出时 `defer ticker.Stop()`。
+
+## 7. 质量门禁
+
+### 7.1 后端
+
+```bash
+cd backend && make check          # 编译 + 核心包单测
+cd backend && go build ./...      # 全量编译检查
+cd backend && go test ./...       # 全量单测
+```
+
+### 7.2 Flutter
+
+```bash
+flutter pub get
+dart format .
+flutter analyze
+flutter test
+```
+
+### 7.3 管理台
+
+```bash
+cd moe-admin && npm run build
+```
+
+### 7.4 完成标准
+
+- "完成" = 改动 + 检查已跑 + 结果写在回复里。
+- 无明确要求不 `commit` / `push`。
+- 三栈各自检查独立执行，不互相替代。
+
+## 8. 技能使用
+
+- Go 改动：`golang-style`、`effective-go`、`implementation-guardrails`、`golang-gin-database`。
+- 提交：`git-commit`。
+- 前端改动：参考 `frontend-ai-spec.mdc`（Moe UI 色系、组件规范）。
+
+## 9. 方案前检查清单
+
+大改动（≥5 文件 / 新模块 / 架构调整）前确认：
+
+- [ ] 已读相关 `docs/dev/` 文档与现有实现
+- [ ] 已读 `.cursor/LESSONS.md`
+- [ ] 明确影响的域与层（service/biz/data/前端）
+- [ ] Proto 契约变更已评估前端影响
+- [ ] 数据库变更已有 model 定义 + 迁移方案
+- [ ] 方案文档已落地 `docs/dev/`
+
+## 10. 方案文档规范
+
+- **方案文档落地位置**：`docs/dev/`（不是 `.cursor/plans/`）。
+- 文件名 `snake-case.md`，首行 `# 标题`。
+- 文档包含：背景、方案、影响范围、迁移步骤、回滚方案。
+- 已完成方案保留，作为历史记录。
+
+## 11. 提交规则
+
+- 提交信息用 **中文单行 title**。
+- 格式：`<type>: <中文描述>`（type: feat/fix/refactor/docs/chore 等）。
+- 一次提交只做一件事，不混杂不相关改动。
+
+## 12. 回复约束
+
+- 每次回复末尾带：`根据项目规则进行调整 喵～`
+- 回复中写清：改了什么、检查是否通过、剩余风险。
+- 重复踩坑只**提议**写入 `LESSONS.md`（需人确认）。
+
+---
+
+## Life 域特殊说明
+
+数字生命模拟器（`life` 域）是 moe-social 核心玩法，有特殊架构约束：
+
+### 内存优先架构
+
+- Life 域实体（Entity）运行时状态保持在 **内存** 中，不频繁落库。
+- DB 仅用于持久化存档和冷启动恢复。
+- 实体状态变更通过事件日志（`life_event_log`）异步持久化。
+
+### Tick 引擎
+
+- Life 域使用 **Tick 驱动** 架构：服务端按固定间隔推进世界时间。
+- 每个 Tick 触发实体状态更新、事件生成、关系变化。
+- Tick 间隔和服务端配置相关，不要在业务代码中硬编码时间间隔。
+
+### WebSocket 广播
+
+- Life 域状态变更通过 **WebSocket** 实时广播给客户端。
+- 使用 `gorilla/websocket` 管理连接。
+- 广播粒度：按世界（World）分组，只推送给订阅该世界的客户端。
+
+---
+
+## 代码复用强制规则（R01-R18）
+
+以下规则强制执行，违反即为 BUG：
+
+### R01. 不要重复造轮子
+
+- 仓库内已有封装（utils/pkg/platform），先搜索再写。
+- 新增公共能力放 `internal/pkg/` 或 `internal/platform/`，不放在业务目录。
+
+### R02. 复制粘贴是技术债
+
+- 两段相似代码 → 提取公共函数/方法。
+- 三处以上相似模式 → 抽象为通用组件。
+
+### R03. 常量不魔术
+
+- 所有字符串/数字常量必须定义为 `const` 或 `var`，有名字和注释。
+- 禁止在业务逻辑中出现裸字符串/裸数字（0/1 除外）。
+
+### R04. 错误不吞
+
+- `err` 必须处理：记录日志、返回上层、或显式 `_ = fn()`（附注释说明为何忽略）。
+- 禁止 `if err != nil { return err }` 不附加上下文（关键路径至少 `fmt.Errorf("xxx: %w", err)`）。
+
+### R05. 接口最小化
+
+- 接口只定义必要方法；大接口拆小接口。
+- 消费方定义接口，提供方实现。
+
+### R06. 依赖注入不硬编码
+
+- 上层通过接口依赖下层，不直接 `new` 具体实现。
+- Wire 或手动注入在 `cmd/` 或 `server/` 层组装。
+
+### R07. 配置不硬编码
+
+- URL、密钥、超时等走配置文件（`backend/config/`）或环境变量。
+- 禁止在代码中出现生产地址、密码。
+
+### R08. 日志有结构
+
+- 使用结构化日志（key-value），不拼接字符串。
+- 关键操作记录 request_id / user_id 等追踪字段。
+
+### R09. 测试覆盖关键路径
+
+- biz 层核心逻辑必须有单元测试。
+- data 层用 SQLite 内存库或 mock 测试。
+- 不追求覆盖率数字，但要覆盖"容易出错"的路径。
+
+### R10. Proto 不手改
+
+- 所有 `*.pb.go`、`*_http.pb.go` 由 `make gen` 生成。
+- 修改契约只改 `.proto` 文件，再执行 `make gen`。
+
+### R11. Model 与表一致
+
+- `backend/model/` 中的 struct 必须与数据库表结构一致。
+- 新增/修改字段同步更新 model + 迁移。
+
+### R12. 前端不裸调 API
+
+- 页面通过域服务（`XxxService`）调用后端，不直接使用 `ApiService` / `ApiClient`。
+- 域服务封装请求/响应转换、错误处理、重试逻辑。
+
+### R13. 状态管理统一
+
+- Flutter 页面状态用 Provider/ChangeNotifier，不混用 `setState` + Provider。
+- 全局状态（用户信息、登录态）放顶层 Provider。
+
+### R14. 跨域调用走接口
+
+- 后端跨域（如 life 调 user）走 biz 层接口定义，不直接 import 对方的 data 层。
+- 前端跨域调用走对应域服务，不横向 import 其他域的 service。
+
+### R15. 路由集中管理
+
+- Flutter 路由在 `lib/app/app_routes.dart` 集中定义。
+- 重页面用 `deferred import` + `DeferredRoute` 懒加载。
+- 后端 HTTP 路由由 proto `google.api.http` 注解生成，不手写路由。
+
+### R16. 敏感数据保护
+
+- 用户密码、Token、密钥不明文存储、不打印日志。
+- JWT 校验走中间件，不在 handler 中手动解析。
+
+### R17. 向后兼容
+
+- API 变更考虑老版本客户端兼容（新增字段可选，不删已有字段）。
+- 数据库变更用迁移脚本，不直接改表。
+
+### R18. 文档与代码同步
+
+- 接口变更同步更新 Proto → `make gen` → openapi.yaml。
+- 架构决策记录在 `docs/dev/`。
+- 代码中的 TODO 关联到具体 issue 或文档。
+
+---
+
+## 构建与运行速查
+
+### 后端
+
+| 命令 | 说明 |
+|------|------|
+| `cd backend && make gen` | proto + conf + HTTP 路由计数 |
+| `cd backend && make check` | 编译检查 + 核心包单测 |
+| `cd backend && make moe-social` | 启动 Kratos HTTP :8888 |
+| `cd backend && make build` | 本机编译 `bin/moe-social` |
+| `cd backend && make build-linux` | 交叉编译 Linux `bin/moe-social` |
+| `cd backend && go run ./cmd/moe-social/ -conf ./config` | 本地运行（指定配置） |
+| `cd backend && go build ./...` | 全量编译检查 |
+| `cd backend && make db-migrate` | 数据库 schema 迁移 |
+| `cd backend && make moe-social-dev` | 开发模式（+ deploy-agent :19010） |
+| `cd backend && make moe-social-stop` | 释放开发端口 |
+
+### Flutter
+
+| 命令 | 说明 |
+|------|------|
+| `flutter pub get` | 安装依赖 |
+| `dart format .` | 格式化 |
+| `flutter analyze` | 静态分析 |
+| `flutter test` | 运行测试 |
+
+### 管理台
+
+| 命令 | 说明 |
+|------|------|
+| `cd moe-admin && npm run dev` | 开发模式 :5173 |
+| `cd moe-admin && npm run build` | 生产构建 |

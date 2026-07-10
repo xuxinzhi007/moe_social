@@ -2,7 +2,6 @@ package lifebiz
 
 import (
 	"context"
-	"time"
 
 	"backend/model"
 )
@@ -26,7 +25,7 @@ type Store interface {
 	CreateEventLog(ctx context.Context, log *model.LifeEventLog) error
 	BatchCreateEventLogs(ctx context.Context, logs []*model.LifeEventLog) error
 	ListRecentEventLogs(ctx context.Context, worldID string, limit int) ([]model.LifeEventLog, error)
-	CleanupOldEventLogs(ctx context.Context, before time.Time) (int64, error)
+	CleanupOldEventLogs(ctx context.Context) (int64, error)
 
 	// 社交关系
 	UpsertRelationship(ctx context.Context, rel *model.LifeRelationship) error
@@ -35,4 +34,12 @@ type Store interface {
 	ListRelationshipsByEntity(ctx context.Context, entityID uint) ([]*model.LifeRelationship, error)
 	DeleteRelationship(ctx context.Context, id uint) error
 	BatchDeleteRelationships(ctx context.Context, ids []uint) error
+
+	// 道具与背包
+	ListItems(ctx context.Context) ([]*model.LifeItem, error)
+	GetItem(ctx context.Context, id uint) (*model.LifeItem, error)
+	SeedItems(ctx context.Context, items []*model.LifeItem) error
+	GetInventory(ctx context.Context, userID string) ([]*model.LifeInventory, error)
+	DecrementInventory(ctx context.Context, userID string, itemID uint) error
+	GrantItem(ctx context.Context, userID string, itemID uint, qty int) error
 }

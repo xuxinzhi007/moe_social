@@ -59,6 +59,8 @@ func (w *PersistenceWriter) Start(ctx context.Context) {
 		}()
 		ticker := time.NewTicker(w.config.FlushInterval)
 		defer ticker.Stop()
+		cleanupTicker := time.NewTicker(6 * time.Hour)
+		defer cleanupTicker.Stop()
 		for {
 			select {
 			case <-ctx.Done():
@@ -69,6 +71,12 @@ func (w *PersistenceWriter) Start(ctx context.Context) {
 				return
 			case <-ticker.C:
 				w.flush(ctx)
+			case <-cleanupTicker.C:
+				if n, err := w.store.CleanupOldEventLogs(ctx); err != nil {
+					moelog.Errorf("life: cleanup old event logs: %v", err)
+				} else if n > 0 {
+					moelog.Infof("life: cleaned up %d old event logs (tiered)", n)
+				}
 			default:
 				// 检查 channel 是否达到 batch size
 				if len(w.entityCh) >= w.config.FlushBatchSize {

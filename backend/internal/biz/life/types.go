@@ -58,39 +58,92 @@ type WorldCell struct {
 
 // WorldGrid is a low-cost ecological world layer.
 type WorldGrid struct {
-	Width  int          `json:"width"`
-	Height int          `json:"height"`
-	Cells  [][]WorldCell `json:"cells,omitempty"`
+	Width   int           `json:"width"`
+	Height  int           `json:"height"`
+	Cells   [][]WorldCell `json:"cells,omitempty"`
+	Weather string        `json:"weather,omitempty"` // 全局天气状态
+}
+
+// WorldEventType 世界事件类型
+type WorldEventType string
+
+const (
+	WorldEventRain      WorldEventType = "weather_rain"
+	WorldEventDrought   WorldEventType = "weather_drought"
+	WorldEventStorm     WorldEventType = "disaster_storm"
+	WorldEventDepletion WorldEventType = "resource_depletion"
+)
+
+// GridPos 网格坐标
+type GridPos struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+// WorldEventState 活跃世界事件状态
+type WorldEventState struct {
+	Type           WorldEventType
+	Active         bool
+	RemainingTicks int
+	AffectedCells  []GridPos // 受影响的网格坐标
+	Intensity      float64
+}
+
+// WorldEventDiff 广播用
+type WorldEventDiff struct {
+	Type      string  `json:"type"`
+	Active    bool    `json:"active"`
+	Intensity float64 `json:"intensity"`
+	Message   string  `json:"message,omitempty"`
 }
 
 // WorldSummary provides a compact ecosystem overview for UI and telemetry.
 type WorldSummary struct {
-	EntityCount    int     `json:"entity_count"`
-	AliveCount     int     `json:"alive_count"`
-	BirthCount     int     `json:"birth_count"`
-	DeathCount     int     `json:"death_count"`
-	AvgHunger      float64 `json:"avg_hunger"`
-	AvgEnergy      float64 `json:"avg_energy"`
-	AvgMood        float64 `json:"avg_mood"`
-	TotalFood      float64 `json:"total_food"`
-	HabitableCells int     `json:"habitable_cells"`
-	DangerCells    int     `json:"danger_cells"`
+	EntityCount    int      `json:"entity_count"`
+	AliveCount     int      `json:"alive_count"`
+	BirthCount     int      `json:"birth_count"`
+	DeathCount     int      `json:"death_count"`
+	AvgHunger      float64  `json:"avg_hunger"`
+	AvgEnergy      float64  `json:"avg_energy"`
+	AvgMood        float64  `json:"avg_mood"`
+	TotalFood      float64  `json:"total_food"`
+	HabitableCells int      `json:"habitable_cells"`
+	DangerCells    int      `json:"danger_cells"`
+	Weather        string   `json:"weather"`
+	ActiveEvents   []string `json:"active_events,omitempty"`
+}
+
+// ActiveEffect 活跃持续效果（buff）
+type ActiveEffect struct {
+	ItemID         uint    `json:"item_id"`
+	EffectKey      string  `json:"effect_key"`      // hunger/energy/mood/experience/all
+	EffectValue    float64 `json:"effect_value"`     // 每 tick 效果值
+	RemainingTicks int     `json:"remaining_ticks"`
+}
+
+// ActiveEffectSummary 广播用（给前端展示 buff 图标）
+type ActiveEffectSummary struct {
+	ItemID    uint   `json:"item_id"`
+	Icon      string `json:"icon"`
+	Name      string `json:"name"`
+	Remaining int    `json:"remaining"`
 }
 
 // EntityDiff is the wire format for entity updates.
 type EntityDiff struct {
-	ID            uint       `json:"id"`
-	Name          string     `json:"name"`
-	Emoji         string     `json:"emoji"`
-	Hunger        float64    `json:"hunger"`
-	Energy        float64    `json:"energy"`
-	Mood          float64    `json:"mood"`
-	CurrentAction LifeAction `json:"action"`
-	PositionX     float64    `json:"x"`
-	PositionY     float64    `json:"y"`
-	Age           int        `json:"age"`
-	GrowthStage   string     `json:"growth_stage"`
-	Experience    float64    `json:"experience"`
+	ID            uint                  `json:"id"`
+	Name          string                `json:"name"`
+	Emoji         string                `json:"emoji"`
+	Hunger        float64               `json:"hunger"`
+	Energy        float64               `json:"energy"`
+	Mood          float64               `json:"mood"`
+	CurrentAction LifeAction            `json:"action"`
+	PositionX     float64               `json:"x"`
+	PositionY     float64               `json:"y"`
+	Age           int                   `json:"age"`
+	GrowthStage   string                `json:"growth_stage"`
+	Experience    float64               `json:"experience"`
+	ActiveEffects []ActiveEffectSummary `json:"active_effects,omitempty"`
 }
 
 // EventDiff is the wire format for world events.
@@ -133,6 +186,7 @@ type TickChanges struct {
 	RemovedEntityIDs     []uint                `json:"removed_entity_ids,omitempty"`
 	Relationships        []RelationshipDiff    `json:"relationships,omitempty"`
 	RemovedRelationships []RemovedRelationship `json:"removed_relationships,omitempty"`
+	WorldEvents          []WorldEventDiff      `json:"world_events,omitempty"`
 }
 
 // SerializeGrid 将 WorldGrid 序列化为 JSON 字符串
@@ -157,4 +211,28 @@ func DeserializeGrid(data string) (*WorldGrid, error) {
 		return nil, err
 	}
 	return &grid, nil
+}
+
+// SerializeActiveEffects 将 ActiveEffect 切片序列化为 JSON 字符串
+func SerializeActiveEffects(effects []ActiveEffect) (string, error) {
+	if len(effects) == 0 {
+		return "", nil
+	}
+	data, err := json.Marshal(effects)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+// DeserializeActiveEffects 从 JSON 字符串反序列化 ActiveEffect 切片
+func DeserializeActiveEffects(data string) ([]ActiveEffect, error) {
+	if data == "" {
+		return nil, nil
+	}
+	var effects []ActiveEffect
+	if err := json.Unmarshal([]byte(data), &effects); err != nil {
+		return nil, err
+	}
+	return effects, nil
 }

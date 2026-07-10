@@ -41,7 +41,7 @@ func (s *gormStore) UpsertEntity(ctx context.Context, entity *model.LifeEntity) 
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
 				"target_entity_id", "is_alive", "last_action_at", "updated_at",
-				"age", "growth_stage", "experience",
+				"age", "growth_stage", "experience", "active_effects_json",
 			}),
 		}).
 		Create(entity).Error
@@ -59,7 +59,7 @@ func (s *gormStore) BatchUpsertEntities(ctx context.Context, entities []*model.L
 				"hunger", "energy", "mood",
 				"current_action", "position_x", "position_y",
 				"target_entity_id", "is_alive", "last_action_at", "updated_at",
-				"age", "growth_stage", "experience",
+				"age", "growth_stage", "experience", "active_effects_json",
 			}),
 		}).
 		Create(entities).Error
@@ -114,11 +114,20 @@ func (s *gormStore) ListRecentEventLogs(ctx context.Context, worldID string, lim
 	return logs, err
 }
 
-func (s *gormStore) CleanupOldEventLogs(ctx context.Context, before time.Time) (int64, error) {
-	result := s.db.WithContext(ctx).
-		Where("created_at < ?", before).
+func (s *gormStore) CleanupOldEventLogs(ctx context.Context) (int64, error) {
+	now := time.Now()
+	// 普通事件 7 天 TTL
+	r1 := s.db.WithContext(ctx).
+		Where("importance = ? AND created_at < ?", 0, now.Add(-7*24*time.Hour)).
 		Delete(&model.LifeEventLog{})
-	return result.RowsAffected, result.Error
+	if r1.Error != nil {
+		return 0, r1.Error
+	}
+	// 重要事件 30 天 TTL
+	r2 := s.db.WithContext(ctx).
+		Where("importance = ? AND created_at < ?", 1, now.Add(-30*24*time.Hour)).
+		Delete(&model.LifeEventLog{})
+	return r1.RowsAffected + r2.RowsAffected, r2.Error
 }
 
 // SoftDeleteEntity 软删除实体，设置 is_alive=false
@@ -190,4 +199,73 @@ func (s *gormStore) BatchDeleteRelationships(ctx context.Context, ids []uint) er
 		return nil
 	}
 	return s.db.WithContext(ctx).Where("id IN ?", ids).Delete(&model.LifeRelationship{}).Error
+}
+
+// --- 道具与背包 ---
+
+func (s *gormStore) ListItems(ctx context.Context) ([]*model.LifeItem, error) {
+	var items []*model.LifeItem
+	err := s.db.WithContext(ctx).Find(&items).Error
+	return items, err
+}
+
+func (s *gormStore) GetItem(ctx context.Context, id uint) (*model.LifeItem, error) {
+	var item model.LifeItem
+	err := s.db.WithContext(ctx).First(&item, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (s *gormStore) SeedItems(ctx context.Context, items []*model.LifeItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(items).Error
+}
+
+func (s *gormStore) GetInventory(ctx context.Context, userID string) ([]*model.LifeInventory, error) {
+	var inv []*model.LifeInventory
+	err := s.db.WithContext(ctx).Where("user_id = ?", userID).Find(&inv).Error
+	return inv, err
+}
+
+func (s *gormStore) DecrementInventory(ctx context.Context, userID string, itemID uint) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.LifeInventory{}).
+		Where("user_id = ? AND item_id = ? AND quantity > 0", userID, itemID).
+		Updates(map[string]interface{}{
+			"quantity":   gorm.Expr("quantity - 1"),
+			"updated_at": time.Now(),
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("inventory item not found or quantity is zero")
+	}
+	return nil
+}
+
+func (s *gormStore) GrantItem(ctx context.Context, userID string, itemID uint, qty int) error {
+	inv := &model.LifeInventory{
+		UserID:   userID,
+		ItemID:   itemID,
+		Quantity: qty,
+	}
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "user_id"}, {Name: "item_id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"quantity":   gorm.Expr("quantity + ?", qty),
+				"updated_at": time.Now(),
+			}),
+		}).
+		Create(inv).Error
 }

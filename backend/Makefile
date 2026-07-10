@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-proto-route-count gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
+.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-proto-route-count gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto api-one check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -80,6 +80,17 @@ gen-moe-admin:
 
 api-moe-proto:
 	bash scripts/gen/moe-proto.sh
+
+# 单模块 proto 生成：make api-one PROTO=api/<module>/v1/<module>.proto
+api-one:
+	@if [ -z "$(PROTO)" ]; then echo "Usage: make api-one PROTO=api/<module>/v1/<module>.proto"; exit 1; fi
+	protoc \
+		--proto_path=. \
+		--proto_path=./third_party \
+		--go_out=. --go_opt=module=backend \
+		--go-grpc_out=. --go-grpc_opt=module=backend \
+		--go-http_out=. --go-http_opt=module=backend \
+		$(PROTO)
 
 # DEPRECATED (P6 完成)：脚本已迁至 scripts/archive/fs8-rollback/
 fs8-split-api:
@@ -303,6 +314,7 @@ dev:
 
 help:
 	@echo make gen              - proto + conf + HTTP 路由计数
+	@echo make api-one           - 单模块 proto 生成 'PROTO=api/<mod>/v1/<mod>.proto'
 	@echo make gen-swagger      - 生成 openapi.yaml（与 make gen 同源）
 	@echo make build            - 本机编译 bin/moe-social
 	@echo make build-linux      - 交叉编译 Linux bin/moe-social
@@ -315,6 +327,6 @@ help:
 	@echo make db-migrate         - 数据库 schema 迁移
 	@echo make deploy-agent       - 部署调试代理 :19010
 	@echo ""
-	@echo 契约 SSOT: api/<domain>/v1/*.proto  Apifox: backend/openapi.yaml
+	@echo 契约 SSOT: 'api/<domain>/v1/*.proto'  Apifox: backend/openapi.yaml
 	@echo 布局说明: LAYOUT.md  迁移状态: docs/dev/kratos-migration-status.md
 

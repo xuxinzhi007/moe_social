@@ -10,6 +10,15 @@ import (
 	"backend/model"
 )
 
+// recordableActions 仅记录有意义的行为切换事件，过滤日常低价值行为（walking/idle/sleeping/seeking_food/seeking_rest）
+var recordableActions = map[LifeAction]bool{
+	ActionEating:      true,
+	ActionTalking:     true,
+	ActionWandering:   true,
+	ActionReproducing: true,
+	ActionDying:       true,
+}
+
 // gridPersistInterval 每 N 个 tick 持久化一次生态网格
 const gridPersistInterval = 10
 
@@ -57,6 +66,13 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	}
 	updateWorldEcology(grid)
 
+	// 世界事件处理
+	worldEventDiffs := engine.worldEventEngine.Step(grid, int(oldSnap.TickCount), func(evt *model.LifeEventLog) {
+		evt.WorldID = engine.config.WorldName
+		evt.Importance = eventImportance(evt.EventType)
+		engine.persistence.EnqueueEvent(evt)
+	})
+
 	var entityDiffs []EntityDiff
 	var eventDiffs []EventDiff
 	var removedEntityIDs []uint
@@ -69,6 +85,22 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		}
 
 		decayAttributes(entity)
+
+		// 应用活跃效果（buff）
+		if entity.ActiveEffectsJSON != "" {
+			effects, _ := DeserializeActiveEffects(entity.ActiveEffectsJSON)
+			if len(effects) > 0 {
+				var remaining []ActiveEffect
+				for _, eff := range effects {
+					applyItemEffect(entity, eff.EffectKey, eff.EffectValue)
+					eff.RemainingTicks--
+					if eff.RemainingTicks > 0 {
+						remaining = append(remaining, eff)
+					}
+				}
+				entity.ActiveEffectsJSON, _ = SerializeActiveEffects(remaining)
+			}
+		}
 
 		// 经验积累与年龄增长
 		entity.Experience += 1.0
@@ -87,6 +119,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				PositionY:   entity.PositionY,
 				CreatedAt:   time.Now(),
 			}
+			evt.Importance = eventImportance(evt.EventType)
 			engine.persistence.EnqueueEvent(evt)
 			eventDiffs = append(eventDiffs, EventDiff{
 				EntityID:   entity.ID,
@@ -120,6 +153,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				PositionY:   entity.PositionY,
 				CreatedAt:   time.Now(),
 			}
+			evt.Importance = eventImportance(evt.EventType)
 			engine.persistence.EnqueueEvent(evt)
 			eventDiffs = append(eventDiffs, EventDiff{
 				EntityID:   entity.ID,
@@ -153,6 +187,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 					PositionY:   entity.PositionY,
 					CreatedAt:   time.Now(),
 				}
+				evt.Importance = eventImportance(evt.EventType)
 				engine.persistence.EnqueueEvent(evt)
 				eventDiffs = append(eventDiffs, EventDiff{
 					EntityID:   entity.ID,
@@ -176,6 +211,23 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		entity.LastActionAt = time.Now()
 		entity.UpdatedAt = time.Now()
 
+		// 构建 ActiveEffectSummary（给前端展示 buff 图标）
+		var effectSummaries []ActiveEffectSummary
+		if entity.ActiveEffectsJSON != "" {
+			if effects, _ := DeserializeActiveEffects(entity.ActiveEffectsJSON); len(effects) > 0 {
+				for _, eff := range effects {
+					if def, ok := engine.itemSystem.GetItemDefinition(eff.ItemID); ok {
+						effectSummaries = append(effectSummaries, ActiveEffectSummary{
+							ItemID:    eff.ItemID,
+							Icon:      def.Icon,
+							Name:      def.Name,
+							Remaining: eff.RemainingTicks,
+						})
+					}
+				}
+			}
+		}
+
 		entityDiffs = append(entityDiffs, EntityDiff{
 			ID:            entity.ID,
 			Name:          entity.Name,
@@ -189,28 +241,33 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			Age:           entity.Age,
 			GrowthStage:   entity.GrowthStage,
 			Experience:    entity.Experience,
+			ActiveEffects: effectSummaries,
 		})
 
 		if newAction != LifeAction(oldAction) {
-			evt := &model.LifeEventLog{
-				WorldID:     engine.config.WorldName,
-				EntityID:    entity.ID,
-				EntityType:  entity.Name,
-				EventType:   string(newAction),
-				Description: generateEventDesc(entity.Name, newAction),
-				PositionX:   entity.PositionX,
-				PositionY:   entity.PositionY,
-				CreatedAt:   time.Now(),
+			// 仅记录有意义的行为切换，过滤 walking/idle/sleeping 等低价值事件
+			if recordableActions[newAction] {
+				evt := &model.LifeEventLog{
+					WorldID:     engine.config.WorldName,
+					EntityID:    entity.ID,
+					EntityType:  entity.Name,
+					EventType:   string(newAction),
+					Description: generateEventDesc(entity.Name, newAction),
+					PositionX:   entity.PositionX,
+					PositionY:   entity.PositionY,
+					CreatedAt:   time.Now(),
+				}
+				evt.Importance = eventImportance(evt.EventType)
+				engine.persistence.EnqueueEvent(evt)
+				eventDiffs = append(eventDiffs, EventDiff{
+					EntityID:   entity.ID,
+					EntityType: entity.Name,
+					EventType:  string(newAction),
+					Desc:       evt.Description,
+					PositionX:  entity.PositionX,
+					PositionY:  entity.PositionY,
+				})
 			}
-			engine.persistence.EnqueueEvent(evt)
-			eventDiffs = append(eventDiffs, EventDiff{
-				EntityID:   entity.ID,
-				EntityType: entity.Name,
-				EventType:  string(newAction),
-				Desc:       evt.Description,
-				PositionX:  entity.PositionX,
-				PositionY:  entity.PositionY,
-			})
 		}
 
 		maxEntityID++
@@ -246,6 +303,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				PositionY:   child.PositionY,
 				CreatedAt:   now,
 			}
+			birthEvt.Importance = eventImportance(birthEvt.EventType)
 			engine.persistence.EnqueueEvent(birthEvt)
 			eventDiffs = append(eventDiffs, EventDiff{
 				EntityID:   child.ID,
@@ -286,6 +344,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	var relDiffs []RelationshipDiff
 	var removedRelDiffs []RemovedRelationship
 	for _, evt := range socialEvents {
+		evt.Importance = eventImportance(evt.EventType)
 		engine.persistence.EnqueueEvent(evt)
 		eventDiffs = append(eventDiffs, EventDiff{
 			EntityID:   evt.EntityID,
@@ -332,6 +391,8 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 
 	newTickCount := oldSnap.TickCount + 1
 	summary := computeWorldSummary(grid, mutableEntities, birthCount, deathCount)
+	summary.Weather = grid.Weather
+	summary.ActiveEvents = engine.worldEventEngine.ActiveEventDescriptions()
 
 	// Bug4: 构建全新的 WorldSnapshot，然后通过 cache.Set() 原子替换，避免并发读写竞争
 	newSnap := &WorldSnapshot{
@@ -358,7 +419,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	fn := engine.broadcastFn
 	engine.broadcastMu.RUnlock()
 	if fn != nil && (len(entityDiffs) > 0 || len(eventDiffs) > 0 || len(removedEntityIDs) > 0 ||
-		len(relDiffs) > 0 || len(removedRelDiffs) > 0 || newTickCount == 1) {
+		len(relDiffs) > 0 || len(removedRelDiffs) > 0 || len(worldEventDiffs) > 0 || newTickCount == 1) {
 		fn(TickBroadcast{
 			Type:    "life_state",
 			WorldID: engine.config.WorldName,
@@ -370,6 +431,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				RemovedEntityIDs:     removedEntityIDs,
 				Relationships:        relDiffs,
 				RemovedRelationships: removedRelDiffs,
+				WorldEvents:          worldEventDiffs,
 			},
 		})
 	}

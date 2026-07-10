@@ -15,6 +15,7 @@ class LifeEntity {
   final String growthStage; // 成长阶段: juvenile/adolescent/adult/elderly
   final double experience;  // 经验值
   final int age;            // 年龄（tick 数）
+  final List<ActiveEffectSummary> activeEffects; // 活跃 buff 效果
 
   const LifeEntity({
     required this.id,
@@ -29,6 +30,7 @@ class LifeEntity {
     this.growthStage = 'juvenile',
     this.experience = 0,
     this.age = 0,
+    this.activeEffects = const [],
   });
 
   factory LifeEntity.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class LifeEntity {
           'juvenile',
       experience: _asDouble(json['experience']),
       age: _asInt(json['age']),
+      activeEffects: _parseActiveEffects(json['active_effects'] ?? json['activeEffects']),
     );
   }
 
@@ -78,6 +81,11 @@ class LifeEntity {
           ? _asDouble(json['experience'], fallback: experience)
           : experience,
       age: json.containsKey('age') ? _asInt(json['age'], fallback: age) : age,
+      activeEffects: json.containsKey('active_effects')
+          ? _parseActiveEffects(json['active_effects'])
+          : json.containsKey('activeEffects')
+              ? _parseActiveEffects(json['activeEffects'])
+              : activeEffects,
     );
   }
 
@@ -163,6 +171,154 @@ class LifeEntity {
   int get ageInDays => (age / (720 * 24)).floor();
 }
 
+/// 道具定义
+class LifeItem {
+  final int id;
+  final String name;
+  final String icon;
+  final String description;
+  final String itemType;    // food/toy/medicine/decoration
+  final String effectKey;   // hunger/energy/mood/experience/all
+  final double effectValue;
+  final int durationTicks;  // 0=即时
+
+  const LifeItem({
+    required this.id,
+    required this.name,
+    this.icon = '📦',
+    this.description = '',
+    this.itemType = 'food',
+    this.effectKey = 'hunger',
+    this.effectValue = 10,
+    this.durationTicks = 0,
+  });
+
+  factory LifeItem.fromJson(Map<String, dynamic> json) {
+    return LifeItem(
+      id: _asInt(json['id']),
+      name: json['name']?.toString() ?? '',
+      icon: json['icon']?.toString() ?? '📦',
+      description: json['description']?.toString() ?? '',
+      itemType: json['item_type']?.toString() ?? json['itemType']?.toString() ?? 'food',
+      effectKey: json['effect_key']?.toString() ?? json['effectKey']?.toString() ?? 'hunger',
+      effectValue: _asDouble(json['effect_value'] ?? json['effectValue'], fallback: 10),
+      durationTicks: _asInt(json['duration_ticks'] ?? json['durationTicks']),
+    );
+  }
+
+  /// 道具类型颜色
+  Color get typeColor {
+    switch (itemType) {
+      case 'food':
+        return const Color(0xFF4CAF50); // 绿色
+      case 'toy':
+        return const Color(0xFF9C27B0); // 紫色
+      case 'medicine':
+        return const Color(0xFF2196F3); // 蓝色
+      case 'decoration':
+        return const Color(0xFFFF9800); // 橙色
+      default:
+        return const Color(0xFF9E9E9E);
+    }
+  }
+
+  /// 道具类型中文标签
+  String get typeLabel {
+    switch (itemType) {
+      case 'food': return '食物';
+      case 'toy': return '玩具';
+      case 'medicine': return '药品';
+      case 'decoration': return '装饰';
+      default: return '其他';
+    }
+  }
+
+  /// 效果描述
+  String get effectLabel {
+    final key = effectKey == 'all' ? '全属性' : effectKey;
+    final suffix = durationTicks > 0 ? '/tick ×$durationTicks' : '';
+    return '$key +${effectValue.toInt()}$suffix';
+  }
+}
+
+/// 背包道具（含数量和关联道具定义）
+class LifeInventoryItem {
+  final int itemId;
+  final int quantity;
+  final LifeItem? item;
+
+  const LifeInventoryItem({
+    required this.itemId,
+    required this.quantity,
+    this.item,
+  });
+
+  factory LifeInventoryItem.fromJson(Map<String, dynamic> json) {
+    // 后端 inventory 接口已合并道具定义字段
+    final hasName = json.containsKey('name');
+    LifeItem? item;
+    if (hasName) {
+      item = LifeItem(
+        id: _asInt(json['item_id'] ?? json['itemId']),
+        name: json['name']?.toString() ?? '',
+        icon: json['icon']?.toString() ?? '📦',
+        description: json['description']?.toString() ?? '',
+        itemType: json['item_type']?.toString() ?? json['itemType']?.toString() ?? 'food',
+        effectKey: json['effect_key']?.toString() ?? json['effectKey']?.toString() ?? 'hunger',
+        effectValue: _asDouble(json['effect_value'] ?? json['effectValue'], fallback: 10),
+        durationTicks: _asInt(json['duration_ticks'] ?? json['durationTicks']),
+      );
+    }
+    return LifeInventoryItem(
+      itemId: _asInt(json['item_id'] ?? json['itemId']),
+      quantity: _asInt(json['quantity']),
+      item: item,
+    );
+  }
+
+  /// 显示名称（优先取关联道具定义）
+  String get displayName => item?.name ?? '道具#$itemId';
+
+  /// 显示图标
+  String get displayIcon => item?.icon ?? '📦';
+}
+
+/// 活跃 buff 效果摘要（精灵图标展示用）
+class ActiveEffectSummary {
+  final int itemId;
+  final String icon;
+  final String name;
+  final int remaining;
+
+  const ActiveEffectSummary({
+    required this.itemId,
+    required this.icon,
+    required this.name,
+    required this.remaining,
+  });
+
+  factory ActiveEffectSummary.fromJson(Map<String, dynamic> json) {
+    return ActiveEffectSummary(
+      itemId: _asInt(json['item_id'] ?? json['itemId']),
+      icon: json['icon']?.toString() ?? '✨',
+      name: json['name']?.toString() ?? '',
+      remaining: _asInt(json['remaining']),
+    );
+  }
+}
+
+/// 解析 active_effects 数组
+List<ActiveEffectSummary> _parseActiveEffects(dynamic raw) {
+  if (raw is! List) return const [];
+  final result = <ActiveEffectSummary>[];
+  for (final e in raw) {
+    if (e is Map) {
+      result.add(ActiveEffectSummary.fromJson(Map<String, dynamic>.from(e)));
+    }
+  }
+  return result;
+}
+
 /// 实体间社交关系
 class LifeRelationship {
   final int entityId;
@@ -210,6 +366,30 @@ class LifeRelationship {
   String get key => '${entityId}_$targetId';
 }
 
+/// 世界事件差异（广播用）
+class WorldEventDiff {
+  final String type;     // weather_rain/disaster_storm 等
+  final bool active;
+  final double intensity;
+  final String message;  // 中文事件描述
+
+  const WorldEventDiff({
+    required this.type,
+    this.active = false,
+    this.intensity = 0,
+    this.message = '',
+  });
+
+  factory WorldEventDiff.fromJson(Map<String, dynamic> json) {
+    return WorldEventDiff(
+      type: json['type']?.toString() ?? '',
+      active: json['active'] == true,
+      intensity: _asDouble(json['intensity']),
+      message: json['message']?.toString() ?? '',
+    );
+  }
+}
+
 /// 世界生态摘要
 class LifeWorldSummary {
   final int entityCount;
@@ -222,6 +402,8 @@ class LifeWorldSummary {
   final double totalFood;
   final int habitableCells;
   final int dangerCells;
+  final String weather;           // clear/rain/drought/storm
+  final List<String> activeEvents; // 当前活跃事件描述列表
 
   const LifeWorldSummary({
     this.entityCount = 0,
@@ -234,9 +416,18 @@ class LifeWorldSummary {
     this.totalFood = 0,
     this.habitableCells = 0,
     this.dangerCells = 0,
+    this.weather = 'clear',
+    this.activeEvents = const [],
   });
 
   factory LifeWorldSummary.fromJson(Map<String, dynamic> json) {
+    final rawEvents = json['active_events'] ?? json['activeEvents'];
+    final events = <String>[];
+    if (rawEvents is List) {
+      for (final e in rawEvents) {
+        events.add(e.toString());
+      }
+    }
     return LifeWorldSummary(
       entityCount: _asInt(json['entity_count'] ?? json['entityCount']),
       aliveCount: _asInt(json['alive_count'] ?? json['aliveCount']),
@@ -249,6 +440,8 @@ class LifeWorldSummary {
       habitableCells:
           _asInt(json['habitable_cells'] ?? json['habitableCells']),
       dangerCells: _asInt(json['danger_cells'] ?? json['dangerCells']),
+      weather: json['weather']?.toString() ?? json['Weather']?.toString() ?? 'clear',
+      activeEvents: events,
     );
   }
 
@@ -264,6 +457,7 @@ class LifeEvent {
   final double x;
   final double y;
   final DateTime timestamp;
+  final int importance;
 
   const LifeEvent({
     required this.entityId,
@@ -273,6 +467,7 @@ class LifeEvent {
     this.x = 0,
     this.y = 0,
     required this.timestamp,
+    this.importance = 0,
   });
 
   factory LifeEvent.fromJson(Map<String, dynamic> json) {
@@ -286,8 +481,12 @@ class LifeEvent {
       x: _asDouble(json['x']),
       y: _asDouble(json['y']),
       timestamp: _parseTimestamp(json['timestamp'] ?? json['created_at'] ?? json['createdAt']),
+      importance: _asInt(json['importance'] ?? json['Importance']),
     );
   }
+
+  /// 是否为重要事件（importance >= 1）
+  bool get isImportant => importance >= 1;
 }
 
 /// Tick 广播更新
@@ -300,6 +499,7 @@ class LifeStateUpdate {
   final List<int> removedEntityIds;
   final List<LifeRelationship> relationshipChanges;
   final List<Map<String, int>> removedRelationships; // [{entity_id, target_id}]
+  final List<WorldEventDiff> worldEvents; // 新增/变化的世界事件
 
   const LifeStateUpdate({
     required this.worldId,
@@ -310,6 +510,7 @@ class LifeStateUpdate {
     this.removedEntityIds = const [],
     this.relationshipChanges = const [],
     this.removedRelationships = const [],
+    this.worldEvents = const [],
   });
 
   factory LifeStateUpdate.fromJson(Map<String, dynamic> json) {
@@ -371,6 +572,17 @@ class LifeStateUpdate {
       }
     }
 
+    // 解析 world_events（双格式兼容）
+    final rawWorldEvents = source['world_events'] ?? source['worldEvents'];
+    final worldEvents = <WorldEventDiff>[];
+    if (rawWorldEvents is List) {
+      for (final w in rawWorldEvents) {
+        if (w is Map) {
+          worldEvents.add(WorldEventDiff.fromJson(Map<String, dynamic>.from(w)));
+        }
+      }
+    }
+
     return LifeStateUpdate(
       worldId: json['world_id']?.toString() ??
           json['worldId']?.toString() ??
@@ -388,6 +600,7 @@ class LifeStateUpdate {
       removedEntityIds: removedIds,
       relationshipChanges: relChanges,
       removedRelationships: removedRels,
+      worldEvents: worldEvents,
     );
   }
 }

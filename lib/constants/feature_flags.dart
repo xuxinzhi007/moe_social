@@ -19,6 +19,6 @@ class FeatureFlags {
 
   static const bool showLocalModelSettings = showExperimentalFeatures;
 
-  /// 数字生命模拟器（实验性）。
+  /// 数字生命 — 用户个人小世界（增强型功能 P1）
   static const bool showLifeEngine = true;
 }

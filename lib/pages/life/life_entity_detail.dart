@@ -17,6 +17,7 @@ class LifeEntityDetailPage extends StatefulWidget {
 
 class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
   bool _isActing = false;
+  bool _isUsingItem = false;
 
   Future<void> _doAction(String action) async {
     if (_isActing) return;
@@ -54,6 +55,149 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
       }
     } finally {
       if (mounted) setState(() => _isActing = false);
+    }
+  }
+
+  /// 显示道具选择 BottomSheet
+  void _showItemSheet() async {
+    final provider = context.read<LifeProvider>();
+    // 确保背包已加载
+    if (provider.inventory.isEmpty) {
+      await provider.fetchInventory();
+    }
+    if (!mounted) return;
+
+    final items = provider.inventory.where((i) => i.quantity > 0).toList();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: MoeTokens.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '📦 选择道具',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: MoeTokens.titleText,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text(
+                      '背包空空如也~',
+                      style: TextStyle(color: MoeTokens.hintText),
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.4,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      itemBuilder: (ctx2, i) {
+                        final inv = items[i];
+                        final typeColor = inv.item?.typeColor ?? MoeTokens.primary;
+                        return ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: typeColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(inv.displayIcon, style: const TextStyle(fontSize: 22)),
+                          ),
+                          title: Text(inv.displayName),
+                          subtitle: Text(
+                            inv.item?.effectLabel ?? '',
+                            style: TextStyle(fontSize: 12, color: typeColor),
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: MoeTokens.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '×${inv.quantity}',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: MoeTokens.primary,
+                              ),
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _useItemOnEntity(inv);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _useItemOnEntity(LifeInventoryItem invItem) async {
+    if (_isUsingItem) return;
+    final provider = context.read<LifeProvider>();
+    setState(() => _isUsingItem = true);
+    try {
+      final ok = await provider.useItem(widget.entity.id, invItem.itemId);
+      if (!mounted) return;
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✨ ${invItem.displayName} 使用成功！'),
+            backgroundColor: MoeTokens.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (provider.lastActionError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.lastActionError!),
+            backgroundColor: MoeTokens.danger,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        provider.clearActionError();
+      }
+    } finally {
+      if (mounted) setState(() => _isUsingItem = false);
     }
   }
 
@@ -359,10 +503,15 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
             ),
           ),
           // 底部操作按钮栏
-          _BottomActionBar(
-            isActing: _isActing,
-            onFeed: () => _doAction('feed'),
-            onPet: () => _doAction('pet'),
+          SafeArea(
+            top: false,
+            child: _BottomActionBar(
+              isActing: _isActing,
+              isUsingItem: _isUsingItem,
+              onFeed: () => _doAction('feed'),
+              onPet: () => _doAction('pet'),
+              onItem: _showItemSheet,
+            ),
           ),
         ],
       ),
@@ -380,13 +529,17 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
 /// 底部操作按钮栏。
 class _BottomActionBar extends StatelessWidget {
   final bool isActing;
+  final bool isUsingItem;
   final VoidCallback onFeed;
   final VoidCallback onPet;
+  final VoidCallback onItem;
 
   const _BottomActionBar({
     required this.isActing,
+    required this.isUsingItem,
     required this.onFeed,
     required this.onPet,
+    required this.onItem,
   });
 
   @override
@@ -415,7 +568,7 @@ class _BottomActionBar extends StatelessWidget {
               onTap: onFeed,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: _ActionButton(
               label: '抚摸',
@@ -424,6 +577,17 @@ class _BottomActionBar extends StatelessWidget {
               color: Colors.pink,
               isActing: isActing,
               onTap: onPet,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ActionButton(
+              label: '道具',
+              icon: Icons.inventory_2_outlined,
+              emoji: '📦',
+              color: MoeTokens.primary,
+              isActing: isUsingItem,
+              onTap: onItem,
             ),
           ),
         ],

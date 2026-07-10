@@ -15,11 +15,17 @@ class LifeProvider extends ChangeNotifier {
   final Map<int, LifeEntity> _entities = {};
   List<LifeEvent> _recentEvents = [];
   final List<LifeRelationship> _relationships = [];
+  final List<WorldEventDiff> _worldEvents = [];
   int _tickCount = 0;
   bool _connected = false;
   bool _isInitialized = false;
   String _worldId = 'default';
   LifeWorldSummary _summary = LifeWorldSummary.empty;
+
+  // 背包道具状态
+  List<LifeInventoryItem> _inventory = [];
+  List<LifeItem> _allItems = [];
+  bool _inventoryLoading = false;
 
   /// 最近一次操作失败的错误信息（null 表示无错误）。
   String? _lastActionError;
@@ -46,11 +52,21 @@ class LifeProvider extends ChangeNotifier {
   List<LifeEntity> get entities => _entities.values.toList();
   List<LifeEvent> get recentEvents => List.unmodifiable(_recentEvents);
   List<LifeRelationship> get relationships => List.unmodifiable(_relationships);
+  List<WorldEventDiff> get worldEvents => List.unmodifiable(_worldEvents);
   int get tickCount => _tickCount;
   bool get connected => _connected;
   bool get isInitialized => _isInitialized;
   String get worldId => _worldId;
   LifeWorldSummary get summary => _summary;
+
+  /// 背包道具列表
+  List<LifeInventoryItem> get inventory => List.unmodifiable(_inventory);
+
+  /// 所有道具定义
+  List<LifeItem> get allItems => List.unmodifiable(_allItems);
+
+  /// 背包加载中
+  bool get inventoryLoading => _inventoryLoading;
 
   /// 最近一次操作失败的错误信息，null 表示无错误。
   String? get lastActionError => _lastActionError;
@@ -145,6 +161,18 @@ class LifeProvider extends ChangeNotifier {
       _recentEvents = _recentEvents.sublist(_recentEvents.length - 50);
     }
 
+    // 合并世界事件增量
+    for (final we in update.worldEvents) {
+      final idx = _worldEvents.indexWhere((e) => e.type == we.type);
+      if (idx >= 0) {
+        _worldEvents[idx] = we;
+      } else {
+        _worldEvents.add(we);
+      }
+    }
+    // 移除已停用的世界事件
+    _worldEvents.removeWhere((e) => !e.active);
+
     _tickCount = update.tick;
     _worldId = update.worldId;
     _summary = update.summary;
@@ -181,6 +209,7 @@ class LifeProvider extends ChangeNotifier {
         growthStage: entity.growthStage,
         experience: entity.experience,
         age: entity.age,
+        activeEffects: entity.activeEffects,
       );
     } else if (action == 'pet') {
       _entities[entityId] = LifeEntity(
@@ -196,6 +225,7 @@ class LifeProvider extends ChangeNotifier {
         growthStage: entity.growthStage,
         experience: entity.experience,
         age: entity.age,
+        activeEffects: entity.activeEffects,
       );
     }
     notifyListeners();
@@ -254,6 +284,98 @@ class LifeProvider extends ChangeNotifier {
 
   /// 抚摸指定实体。
   Future<bool> petEntity(int entityId) => performAction('pet', entityId);
+
+  // ── 背包道具操作 ──────────────────────────────────────────────────────────
+
+  /// 加载背包和道具定义。
+  Future<void> fetchInventory() async {
+    if (_inventoryLoading) return;
+    _inventoryLoading = true;
+    notifyListeners();
+    try {
+      final results = await Future.wait([
+        LifeService.getLifeInventory(),
+        LifeService.getLifeItems(),
+      ]);
+      if (_disposed) return;
+      _inventory = results[0] as List<LifeInventoryItem>;
+      _allItems = results[1] as List<LifeItem>;
+    } catch (e) {
+      debugPrint('fetchInventory error: $e');
+    } finally {
+      _inventoryLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 对指定实体使用道具（带乐观更新）。
+  Future<bool> useItem(int entityId, int itemId) async {
+    final entity = _entities[entityId];
+    if (entity == null) return false;
+
+    // 找到背包中对应道具
+    final invIdx = _inventory.indexWhere((i) => i.itemId == itemId);
+    if (invIdx < 0) return false;
+    final invItem = _inventory[invIdx];
+    if (invItem.quantity <= 0) return false;
+
+    // 快照用于回滚
+    final previousInventory = List<LifeInventoryItem>.from(_inventory);
+
+    // 乐观更新：本地 quantity - 1
+    _inventory[invIdx] = LifeInventoryItem(
+      itemId: invItem.itemId,
+      quantity: invItem.quantity - 1,
+      item: invItem.item,
+    );
+    notifyListeners();
+
+    try {
+      final ok = await LifeService.useLifeItem(entityId, itemId);
+      if (!ok) throw Exception('使用道具失败');
+
+      // 插入本地临时事件
+      final itemName = invItem.displayName;
+      final localEvent = LifeEvent(
+        entityId: entityId,
+        entityType: entity.emoji,
+        type: 'user_use_item',
+        desc: '你对${entity.name}使用了 $itemName',
+        x: entity.x,
+        y: entity.y,
+        timestamp: DateTime.now(),
+      );
+      _recentEvents.insert(0, localEvent);
+      if (_recentEvents.length > 50) _recentEvents.removeLast();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      // 回滚乐观更新
+      _inventory = previousInventory;
+      _lastActionError = e.toString();
+      _lastActionIsCooldown = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// 签到领取每日道具。
+  Future<bool> claimItems() async {
+    try {
+      final ok = await LifeService.claimLifeItems();
+      if (ok) {
+        // 重新拉取背包
+        await fetchInventory();
+      }
+      return ok;
+    } catch (e) {
+      debugPrint('claimItems error: $e');
+      _lastActionError = e.toString();
+      _lastActionIsCooldown = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   @override
   void dispose() {
