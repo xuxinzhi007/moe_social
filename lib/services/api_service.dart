@@ -2402,6 +2402,73 @@ class ApiService {
   }
 
   /// 获取道具定义列表。
+  static Future<Map<String, dynamic>> getLifeWorld() async {
+    final result = await _request('/api/life/world');
+    final summaryRaw = result['summary'];
+    final worldRaw = result['world'];
+    return {
+      'world_id': worldRaw is Map
+          ? (worldRaw['name']?.toString() ?? 'default')
+          : 'default',
+      'tick': result['tick_count'] ?? result['tickCount'] ?? 0,
+      'entity_count': result['entity_count'] ?? result['entityCount'] ?? 0,
+      'summary': summaryRaw is Map
+          ? Map<String, dynamic>.from(summaryRaw)
+          : <String, dynamic>{},
+    };
+  }
+
+  static Future<List<Map<String, dynamic>>> getLifeEntities() async {
+    final result = await _request('/api/life/entities');
+    final raw = result['entities'];
+    if (raw is! List) return const [];
+    return raw.whereType<Map>().map((e) {
+      final map = Map<String, dynamic>.from(e);
+      return <String, dynamic>{
+        'id': map['id'],
+        'name': map['name'],
+        'emoji': map['emoji'],
+        'hunger': map['hunger'],
+        'energy': map['energy'],
+        'mood': map['mood'],
+        'action': map['action'] ?? map['current_action'],
+        'x': map['x'] ?? map['position_x'],
+        'y': map['y'] ?? map['position_y'],
+        'age': map['age'],
+        'growth_stage': map['growth_stage'] ?? map['growthStage'],
+        'experience': map['experience'],
+      };
+    }).toList();
+  }
+
+  static Future<List<LifeRelationship>> getLifeRelationships() async {
+    final result = await _request('/api/life/relationships');
+    final raw = result['relationships'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => LifeRelationship.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static Future<List<LifeEvent>> getLifeEvents([int limit = 50]) async {
+    final result = await _request('/api/life/events?limit=$limit');
+    final raw = result['events'];
+    if (raw is! List) return const [];
+    return raw.whereType<Map>().map((e) {
+      final map = Map<String, dynamic>.from(e);
+      return LifeEvent.fromJson({
+        'entity_id': map['entity_id'] ?? map['entityId'],
+        'entity_type': map['entity_type'] ?? map['entityType'],
+        'type': map['type'] ?? map['event_type'] ?? map['eventType'],
+        'desc': map['desc'] ?? map['description'],
+        'x': map['x'] ?? map['position_x'],
+        'y': map['y'] ?? map['position_y'],
+        'created_at': map['created_at'] ?? map['createdAt'],
+      });
+    }).toList();
+  }
+
   static Future<List<LifeItem>> getLifeItems() async {
     final result = await _request('/api/life/items');
     final raw = result['items'];

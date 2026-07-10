@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
+import 'moe_motion.dart';
 
 typedef MoeSheetBuilder = Widget Function(BuildContext context);
 typedef MoeDraggableSheetBuilder = Widget Function(
@@ -103,6 +104,37 @@ class _MoeSheetContainer extends StatelessWidget {
       ),
     );
 
+    final sheet = Material(
+      color: backgroundColor ?? Colors.white,
+      shape: shape ?? radius,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: padding ?? EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showHandle) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD7D1C8),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+            Flexible(child: child),
+          ],
+        ),
+      ),
+    );
+
+    if (moeReduceMotion(context)) {
+      return sheet;
+    }
+
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: MoeTokens.motionMedium,
@@ -117,32 +149,7 @@ class _MoeSheetContainer extends StatelessWidget {
           ),
         );
       },
-      child: Material(
-        color: backgroundColor ?? Colors.white,
-        shape: shape ?? radius,
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: padding ?? EdgeInsets.zero,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (showHandle) ...[
-                const SizedBox(height: 10),
-                Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7D1C8),
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              Flexible(child: child),
-            ],
-          ),
-        ),
-      ),
+      child: sheet,
     );
   }
 }

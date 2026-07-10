@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -29,52 +31,73 @@ class AchievementUnlockNotification extends StatefulWidget {
 class _AchievementUnlockNotificationState
     extends State<AchievementUnlockNotification>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+  static const _displayDuration = Duration(seconds: 4);
+
+  late final AnimationController _controller;
+  late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _fadeAnimation;
+  Timer? _autoCloseTimer;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 260),
+      reverseDuration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _slideAnimation = Tween<double>(begin: 300, end: 0).animate(
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.18),
+      end: Offset.zero,
+    ).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
       ),
     );
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+        curve: Curves.easeOutBack,
+        reverseCurve: Curves.easeInCubic,
       ),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.2, curve: Curves.easeOut),
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
       ),
     );
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _controller.forward();
+      _autoCloseTimer = Timer(_displayDuration, _dismiss);
     });
+  }
 
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        _controller.reverse().then((_) {
-          widget.onClose?.call();
-        });
-      }
-    });
+  Future<void> _dismiss() async {
+    _autoCloseTimer?.cancel();
+    if (!mounted) return;
+
+    final reduceMotion = MoeVfxProfile.fromContext(context).reduceMotion;
+    if (reduceMotion || _controller.status == AnimationStatus.dismissed) {
+      widget.onClose?.call();
+      return;
+    }
+
+    await _controller.reverse();
+    if (mounted) {
+      widget.onClose?.call();
+    }
   }
 
   @override
   void dispose() {
+    _autoCloseTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -85,160 +108,148 @@ class _AchievementUnlockNotificationState
     final profile = MoeVfxProfile.fromContext(context);
     final medallionSize = profile.isCompact ? 52.0 : 60.0;
 
+    final notificationCard = Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            badge.rarity.tierGradient.first,
+            badge.rarity.tierGradient.last,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: badge.rarity.tierGradient.last.withValues(alpha: 0.5),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: medallionSize + 8,
+            height: medallionSize + 8,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (!profile.reduceMotion && profile.enableBurstParticles)
+                  CustomPaint(
+                    painter: CategoryParticleClusterPainter(
+                      targets: CategoryParticleVfx.shapePoints(
+                        GiftCategory.special,
+                        profile.scaledCoreCount(12),
+                      ),
+                      primaryColor: badge.color,
+                      secondaryColor: badge.color.withValues(alpha: 0.5),
+                      converge: 1,
+                      pulse: _fadeAnimation.value,
+                      expand: 0,
+                      seed: badge.id.hashCode,
+                      dominantShape: 1,
+                    ),
+                    size: Size(
+                      medallionSize + 8,
+                      medallionSize + 8,
+                    ),
+                  ),
+                AchievementBadgeMedallion(
+                  badge: badge,
+                  diameter: medallionSize,
+                  unlocked: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '鎴愬氨瑙ｉ攣',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  badge.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  badge.description,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    fontSize: 14,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (widget.onView != null) ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: widget.onView,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      child: const Text(
+                        '鏌ョ湅鎴愬氨涓績',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _dismiss,
+            icon: const Icon(Icons.close, color: Colors.white),
+            padding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+    );
+
     return Material(
       type: MaterialType.transparency,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform(
-            transform: Matrix4.identity()
-              ..translateByDouble(_slideAnimation.value, 0.0, 0.0, 1.0)
-              ..scaleByDouble(
-                _scaleAnimation.value,
-                _scaleAnimation.value,
-                1.0,
-                1.0,
-              ),
-            child: Opacity(
-              opacity: _fadeAnimation.value,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      badge.rarity.tierGradient.first,
-                      badge.rarity.tierGradient.last,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          badge.rarity.tierGradient.last.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: medallionSize + 8,
-                      height: medallionSize + 8,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (!profile.reduceMotion &&
-                              profile.enableBurstParticles)
-                            CustomPaint(
-                              painter: CategoryParticleClusterPainter(
-                                targets: CategoryParticleVfx.shapePoints(
-                                  GiftCategory.special,
-                                  profile.scaledCoreCount(12),
-                                ),
-                                primaryColor: badge.color,
-                                secondaryColor:
-                                    badge.color.withValues(alpha: 0.5),
-                                converge: 1,
-                                pulse: _fadeAnimation.value,
-                                expand: 0,
-                                seed: badge.id.hashCode,
-                                dominantShape: 1,
-                              ),
-                              size: Size(
-                                medallionSize + 8,
-                                medallionSize + 8,
-                              ),
-                            ),
-                          AchievementBadgeMedallion(
-                            badge: badge,
-                            diameter: medallionSize,
-                            unlocked: true,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '成就解锁',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            badge.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            badge.description,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (widget.onView != null) ...[
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: widget.onView,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                child: const Text(
-                                  '查看成就中心',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        _controller.reverse().then((_) {
-                          widget.onClose?.call();
-                        });
-                      },
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
+      child: profile.reduceMotion
+          ? notificationCard
+          : FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: notificationCard,
                 ),
               ),
             ),
-          );
-        },
-      ),
     );
   }
 }
@@ -326,7 +337,7 @@ class AchievementNotificationManager {
                       child: MoeReveal(
                         delay: const Duration(milliseconds: 30),
                         child: Text(
-                          '太棒了，这次解锁了 $unlockedCount 个成就，去成就中心看看完整进度吧',
+                          '澶浜嗭紝杩欐瑙ｉ攣浜?$unlockedCount 涓垚灏憋紝鍘绘垚灏变腑蹇冪湅鐪嬪畬鏁磋繘搴﹀惂',
                           style: const TextStyle(
                             color: Colors.black87,
                             fontSize: 14,

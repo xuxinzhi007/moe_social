@@ -195,22 +195,17 @@ class LifeWsService {
     if (type == 'state_snapshot') {
       // state_snapshot 包含完整实体列表，当作全量 state update 处理
       try {
-        final entities =
-            (map['entities'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-        onStateUpdate?.call(LifeStateUpdate(
-          worldId: map['world_id']?.toString() ?? 'default',
-          tick: map['tick'] is int ? map['tick'] as int : 0,
-          summary: map['summary'] is Map<String, dynamic>
-              ? LifeWorldSummary.fromJson(
-                  map['summary'] as Map<String, dynamic>)
-              : map['summary'] is Map
-                  ? LifeWorldSummary.fromJson(
-                      Map<String, dynamic>.from(map['summary'] as Map),
-                    )
-                  : LifeWorldSummary.empty,
-          entityChanges: entities,
-          events: const [],
-        ));
+        final snapshotUpdate = LifeStateUpdate.fromJson({
+          'world_id': map['world_id'],
+          'tick': map['tick'],
+          'summary': map['summary'],
+          'changes': {
+            'entities': map['entities'],
+            'relationships': map['relationships'],
+            'world_events': map['world_events'],
+          },
+        });
+        onStateUpdate?.call(snapshotUpdate);
       } catch (e) {
         if (kDebugMode) {
           debugPrint('LifeWsService: state_snapshot 解析失败: $e');

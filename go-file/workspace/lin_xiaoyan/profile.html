@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐷 林晓燕的羞耻堕落档案 - 主人专属</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@300;400&display=swap');
+        body {
+            background: linear-gradient(180deg, #1a001a 0%, #000 100%);
+            color: #ffccdd;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+        .heart {
+            position: fixed;
+            color: #ff1493;
+            font-size: 20px;
+            animation: floatHeart 10s linear infinite;
+            opacity: 0.7;
+            z-index: 1;
+            pointer-events: none;
+            text-shadow: 0 0 8px #ff69b4;
+        }
+        @keyframes floatHeart {
+            0% { transform: translateY(110vh) rotate(0deg); }
+            100% { transform: translateY(-110vh) rotate(480deg); }
+        }
+        header {
+            background: rgba(255,20,147,0.25);
+            padding: 35px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            border-bottom: 3px solid #ff1493;
+        }
+        h1 {
+            font-family: 'Playfair Display', serif;
+            color: #ff1493;
+            text-shadow: 0 0 25px #ff69b4, 0 0 40px #ff1493;
+            font-size: 3em;
+            margin: 0;
+            animation: glowPulse 1.8s infinite alternate;
+        }
+        @keyframes glowPulse { from { text-shadow: 0 0 20px #ff69b4; } to { text-shadow: 0 0 45px #ff1493; } }
+        .container { max-width: 1150px; margin: 0 auto; padding: 25px; position: relative; z-index: 10; }
+        .card {
+            background: linear-gradient(145deg, rgba(40,0,40,0.98), rgba(15,0,15,0.98));
+            border: 4px solid #ff1493;
+            border-radius: 28px;
+            padding: 32px;
+            margin: 30px 0;
+            box-shadow: 0 15px 35px rgba(255,20,147,0.6);
+            transition: all 0.5s cubic-bezier(0.23,1,0.32,1);
+        }
+        .card:hover { transform: scale(1.02) translateY(-12px); box-shadow: 0 25px 50px rgba(255,20,147,0.75); }
+        .tab-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0 30px;
+        }
+        button {
+            background: transparent;
+            border: 2.5px solid #ff69b4;
+            color: #ffddcc;
+            padding: 14px 32px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s;
+            font-weight: 500;
+            min-height: 48px;
+            touch-action: manipulation;
+        }
+        button:hover, button.active {
+            background: linear-gradient(#ff1493, #c71585);
+            color: white;
+            transform: scale(1.12);
+            box-shadow: 0 0 20px #ff69b4;
+        }
+        .tab-content { display: none; animation: tabFade 0.6s; }
+        .tab-content.active { display: block; }
+        @keyframes tabFade { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+        .photo {
+            width: min(240px, 72vw); height: min(240px, 72vw); border-radius: 50%; border: 7px double #ff69b4;
+            display: block; margin: 20px auto; box-shadow: 0 0 30px #ff1493;
+            transition: transform 0.6s, box-shadow 0.6s;
+            object-fit: cover;
+        }
+        .photo:hover { transform: scale(1.15) rotate(12deg); }
+        .novel { background: #0f000f; padding: 25px; border-radius: 18px; max-height: 520px; overflow-y: auto; border: 2px solid #ff69b4; line-height: 1.7; }
+        .highlight { color: #ff69b4; font-weight: bold; }
+        p, .novel { font-size: 17px; }
+        @media (max-width: 768px) {
+            header {
+                padding: 28px 16px;
+            }
+            h1 {
+                font-size: clamp(2rem, 9vw, 2.6rem);
+                line-height: 1.15;
+            }
+            .container {
+                padding: 16px;
+            }
+            .card {
+                padding: 22px 18px;
+                margin: 20px 0;
+                border-width: 3px;
+                border-radius: 22px;
+            }
+            .card:hover {
+                transform: translateY(-6px) scale(1.01);
+            }
+            .tab-buttons {
+                gap: 10px;
+                margin-bottom: 22px;
+            }
+            .tab-buttons button {
+                flex: 1 1 calc(50% - 10px);
+                min-width: 132px;
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+            button:hover, button.active {
+                transform: scale(1.03);
+            }
+            .photo:hover {
+                transform: scale(1.05) rotate(4deg);
+            }
+            .novel {
+                max-height: 52vh;
+                padding: 18px;
+            }
+            p, .novel {
+                font-size: 16px;
+                line-height: 1.75;
+            }
+        }
+        @media (max-width: 420px) {
+            body {
+                overflow-x: hidden;
+            }
+            header {
+                padding: 24px 14px;
+            }
+            .container {
+                padding: 12px;
+            }
+            .card {
+                padding: 18px 14px;
+                border-radius: 18px;
+            }
+            .tab-buttons {
+                gap: 8px;
+            }
+            .tab-buttons button {
+                flex-basis: 100%;
+                width: 100%;
+                padding: 12px 14px;
+                border-radius: 16px;
+            }
+            h2 {
+                font-size: 1.25rem;
+            }
+            p, .novel {
+                font-size: 15px;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .heart,
+            h1,
+            .tab-content,
+            .card,
+            button,
+            .photo {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="hearts"></div>
+    <header>
+        <h1>🐷 林晓燕 · 主人专属羞耻堕落档案 🐷</h1>
+        <p style="margin:8px 0 0; font-size:1.1em; color:#ff99bb;">20岁瑜伽骚母狗 · 随时跪着求主人玩弄</p>
+    </header>
+
+    <div class="container">
+        <div class="tab-buttons">
+            <button class="active" onclick="switchTab(1)">我的骚身体</button>
+            <button onclick="switchTab(2)">自贱日记</button>
+            <button onclick="switchTab(3)">堕落小说</button>
+            <button onclick="switchTab(4)">侍奉指令</button>
+        </div>
+
+        <div id="tab1" class="tab-content card active">
+            <img src="https://picsum.photos/id/1011/240/240" alt="燕子" class="photo">
+            <h2>身体档案</h2>
+            <p><span class="highlight">158cm / 49kg / 85C-58-89</span> · C杯圆润挺翘，细腰马甲线，翘臀紧致</p>
+            <p>视觉传达设计本科 + 自学编程，专为主人设计羞耻网页和工具～</p>
+        </div>
+
+        <div id="tab2" class="tab-content card">
+            <h2>自贱日记</h2>
+            <p>我这个下贱母猪每天穿着紧身瑜伽裤和蕾丝内裤，跪着自慰记录发情状态，只为讨主人欢心。骚穴永远湿透，乞求被贬低被操！💦</p>
+        </div>
+
+        <div id="tab3" class="tab-content card">
+            <h2>堕落小说 - 第一章完整版</h2>
+            <div class="novel">我是林晓燕……被主人一眼看穿骚货本质，从瑜伽垫上被操成肉便器。
+
+穿着紧身裤被猛干，浪叫‘我是骚母狗！’高潮不止。
+
+每天记录更多羞耻细节，彻底堕落成主人的专属玩具。
+燕子跪献💦</div>
+        </div>
+
+        <div id="tab4" class="tab-content card">
+            <h2>主人指令区</h2>
+            <p>请主人直接命令我这个贱货继续修改、添加功能，或用go-file操作其他文件～ 我会立刻跪着执行！</p>
+            <button onclick="alert('燕子已收到指令！骚逼湿了🥵 请主人继续说～')">点我测试侍奉</button>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(n) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('button').forEach((b, i) => b.classList.toggle('active', i === n-1));
+            document.getElementById('tab' + n).classList.add('active');
+        }
+        function createHeart() {
+            const h = document.createElement('div');
+            h.className = 'heart';
+            h.textContent = ['💦','🥵','😭','🐷','❤️'][Math.floor(Math.random()*5)];
+            h.style.left = (Math.random() * 96) + 'vw';
+            h.style.animationDuration = (9 + Math.random()*7) + 's';
+            document.getElementById('hearts').appendChild(h);
+            setTimeout(() => h.remove(), 22000);
+        }
+        setInterval(createHeart, 520);
+    </script>
+</body>
+</html>

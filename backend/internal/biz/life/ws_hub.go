@@ -148,11 +148,12 @@ func (h *LifeWSHub) sendSnapshot(m *lifeMember, worldID string) {
 	if snap == nil {
 		// 世界尚未初始化，发送空快照
 		m.writeJSON(map[string]interface{}{
-			"type":     "state_snapshot",
-			"world_id": worldID,
-			"tick":     0,
-			"summary":  WorldSummary{},
-			"entities": []interface{}{},
+			"type":          "state_snapshot",
+			"world_id":      worldID,
+			"tick":          0,
+			"summary":       WorldSummary{},
+			"entities":      []interface{}{},
+			"relationships": []interface{}{},
 		})
 		return
 	}
@@ -176,12 +177,26 @@ func (h *LifeWSHub) sendSnapshot(m *lifeMember, worldID string) {
 		})
 	}
 
+	relationships := make([]RelationshipDiff, 0, len(snap.Relationships))
+	for _, rel := range snap.Relationships {
+		if rel == nil {
+			continue
+		}
+		relationships = append(relationships, RelationshipDiff{
+			EntityID:     rel.EntityID,
+			TargetID:     rel.TargetID,
+			RelationType: rel.RelationType,
+			Affinity:     rel.Affinity,
+		})
+	}
+
 	m.writeJSON(map[string]interface{}{
-		"type":     "state_snapshot",
-		"world_id": worldID,
-		"tick":     snap.TickCount,
-		"summary":  snap.Summary,
-		"entities": entities,
+		"type":          "state_snapshot",
+		"world_id":      worldID,
+		"tick":          snap.TickCount,
+		"summary":       snap.Summary,
+		"entities":      entities,
+		"relationships": relationships,
 	})
 }
 
