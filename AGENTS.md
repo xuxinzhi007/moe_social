@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-**规则入口**：`.cursor/rules/moe-social-unified.mdc` · **踩坑**：`.cursor/LESSONS.md` · **Review**：`code_review.md`
+**规则入口**：`.cursor/rules/moe-social-engineering.mdc`（工程规则 SSOT）· `.cursor/rules/moe-social-unified.mdc` · **踩坑**：`.cursor/LESSONS.md` · **Review**：`code_review.md`
 
 ## Structure
 

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import '../../models/life_state.dart';
@@ -6,12 +8,14 @@ import 'life_entity_sprite.dart';
 /// 世界地图组件 — 2D 场景，entity 位置可视化（AnimatedPositioned 平滑移动）。
 class LifeWorldMap extends StatelessWidget {
   final List<LifeEntity> entities;
+  final String weather; // clear/rain/drought/storm
   final void Function(int entityId)? onEntityTap;
   final void Function(int entityId)? onEntityLongPress;
 
   const LifeWorldMap({
     super.key,
     required this.entities,
+    this.weather = 'clear',
     this.onEntityTap,
     this.onEntityLongPress,
   });
@@ -61,6 +65,14 @@ class LifeWorldMap extends StatelessWidget {
               children: [
                 // 网格装饰线
                 _GridDecoration(width: mapWidth, height: mapHeight),
+                // 天气图层（在实体下方）
+                RepaintBoundary(
+                  child: _WeatherLayer(
+                    weather: weather,
+                    width: mapWidth,
+                    height: mapHeight,
+                  ),
+                ),
                 // Entity 精灵
                 for (final entity in entities)
                   AnimatedPositioned(
@@ -101,6 +113,80 @@ class LifeWorldMap extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// 天气图层组件 — 仅在 weather 变化时重绘。
+class _WeatherLayer extends StatelessWidget {
+  final String weather;
+  final double width;
+  final double height;
+
+  const _WeatherLayer({
+    required this.weather,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(width, height),
+      painter: _WeatherPainter(weather: weather),
+    );
+  }
+}
+
+class _WeatherPainter extends CustomPainter {
+  final String weather;
+  final Random _rng = Random(42); // 固定种子保证稳定渲染
+
+  _WeatherPainter({required this.weather});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    switch (weather) {
+      case 'rain':
+        // 半透明蓝色遮罩
+        canvas.drawRect(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Paint()..color = Colors.blue.withValues(alpha: 0.1),
+        );
+        // 雨滴粒子（上限 30 个）
+        final rainPaint = Paint()..color = Colors.blue.withValues(alpha: 0.4);
+        for (int i = 0; i < 30; i++) {
+          final x = _rng.nextDouble() * size.width;
+          final y = _rng.nextDouble() * size.height;
+          canvas.drawCircle(Offset(x, y), 1.5, rainPaint);
+        }
+        break;
+      case 'drought':
+        // 黄褐色覆盖
+        canvas.drawRect(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          Paint()..color = Colors.brown.withValues(alpha: 0.15),
+        );
+        break;
+      case 'storm':
+        // 红色脉冲边框
+        final borderPaint = Paint()
+          ..color = Colors.red.withValues(alpha: 0.3)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3;
+        canvas.drawRect(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+          borderPaint,
+        );
+        break;
+      default:
+        // clear — 不绘制
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeatherPainter oldDelegate) {
+    return oldDelegate.weather != weather;
   }
 }
 

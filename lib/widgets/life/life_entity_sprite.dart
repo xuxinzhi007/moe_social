@@ -4,8 +4,8 @@ import '../../models/life_state.dart';
 
 /// 世界地图上单个实体精灵组件。
 ///
-/// 显示 emoji、名称和迷你三色状态条（hunger / energy / mood）。
-/// 根据成长阶段调整 emoji 大小和显示效果。
+/// 显示 emoji、名称和综合健康色环。
+/// 触摸目标 >= 44x44dp，符合移动端可访问性标准。
 class LifeEntitySprite extends StatelessWidget {
   final LifeEntity entity;
   final VoidCallback? onTap;
@@ -34,91 +34,154 @@ class LifeEntitySprite extends StatelessWidget {
     }
   }
 
+  /// 综合健康度色环：(hunger + energy + mood) / 3
+  Color get _healthColor {
+    final avg = (entity.hunger + entity.energy + entity.mood) / 3;
+    if (avg >= 70) return Colors.green;
+    if (avg >= 40) return Colors.amber;
+    return Colors.red;
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Emoji 头像（带成长阶段效果）
-          Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Opacity(
-                opacity: entity.growthStage == 'elderly' ? 0.7 : 1.0,
-                child: Text(
-                  entity.emoji,
-                  style: TextStyle(fontSize: _emojiSize),
-                ),
-              ),
-              // 成长阶段小色点标记（右下角）
-              Positioned(
-                right: -2,
-                bottom: -2,
-                child: Container(
-                  width: 6,
-                  height: 6,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emoji 头像 + 健康色环 + 成长阶段标记
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                // 综合健康色环
+                Container(
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: entity.growthStageColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1),
+                    border: Border.all(
+                      color: _healthColor,
+                      width: 2,
+                    ),
+                  ),
+                  child: Opacity(
+                    opacity: entity.growthStage == 'elderly' ? 0.7 : 1.0,
+                    child: Text(
+                      entity.emoji,
+                      style: TextStyle(fontSize: _emojiSize),
+                    ),
                   ),
                 ),
+                // 成长阶段小色点标记（右下角）
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: entity.growthStageColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1),
+                    ),
+                  ),
+                ),
+                // Buff 效果图标（右上方）
+                if (entity.activeEffects.isNotEmpty)
+                  Positioned(
+                    right: -8,
+                    top: -6,
+                    child: _BuffIcons(effects: entity.activeEffects),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            // 名称标签
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(4),
               ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          // 名称标签
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(4),
+              child: Text(
+                entity.name,
+                style: const TextStyle(fontSize: 10, color: Colors.black87),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            child: Text(
-              entity.name,
-              style: const TextStyle(fontSize: 10, color: Colors.black87),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // 迷你三色状态条
-          _MiniStatBar(value: entity.hunger / 100, color: Colors.orange),
-          _MiniStatBar(value: entity.energy / 100, color: Colors.blue),
-          _MiniStatBar(value: entity.mood / 100, color: Colors.pink),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _MiniStatBar extends StatelessWidget {
-  final double value;
-  final Color color;
+/// 活跃 buff 效果图标组件。
+///
+/// 最多显示 2 个图标 + 如果更多显示 "+N"。
+class _BuffIcons extends StatelessWidget {
+  final List<ActiveEffectSummary> effects;
 
-  const _MiniStatBar({required this.value, required this.color});
+  const _BuffIcons({required this.effects});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 1),
-      child: SizedBox(
-        width: 32,
-        height: 2,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(1),
-          child: LinearProgressIndicator(
-            value: value.clamp(0.0, 1.0),
-            backgroundColor: color.withValues(alpha: 0.15),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-            minHeight: 2,
+    const int maxShow = 2;
+    final show = effects.take(maxShow).toList();
+    final extra = effects.length - maxShow;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final eff in show)
+          Container(
+            margin: const EdgeInsets.only(right: 2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(1),
+            child: Text(
+              eff.icon,
+              style: const TextStyle(fontSize: 12, height: 1),
+            ),
           ),
-        ),
-      ),
+        if (extra > 0)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Text(
+              '+$extra',
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+                height: 1,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Moe Social 统一规则（单一事实来源）
 
-本文件是本仓库 Cursor 规则入口。域细则由 glob 自动加载：`frontend-ai-spec`（`lib/`）、`backend-ai-spec`（`backend/`）、`moe-admin-ai-spec`（`moe-admin/`）。
+本文件是本仓库 Cursor 规则入口。工程规则细则见 `moe-social-engineering.mdc`。域细则由 glob 自动加载：`frontend-ai-spec`（`lib/`）、`backend-ai-spec`（`backend/`）、`moe-admin-ai-spec`（`moe-admin/`）。
 
 ## 1. 动手前
 

@@ -16,6 +16,24 @@ class LifeRelationshipPage extends StatefulWidget {
 
 class _LifeRelationshipPageState extends State<LifeRelationshipPage> {
   int? _selectedEntityId;
+  SpiderWebPainter? _currentPainter;
+
+  void _handleTap(Offset tapPosition) {
+    final positions = _currentPainter?.nodePositions;
+    if (positions == null || positions.isEmpty) return;
+
+    const hitRadius = 24.0;
+    for (final entry in positions.entries) {
+      if ((entry.value - tapPosition).distance <= hitRadius) {
+        setState(() {
+          _selectedEntityId = _selectedEntityId == entry.key ? null : entry.key;
+        });
+        return;
+      }
+    }
+    // 未命中任何节点，清除选中
+    setState(() => _selectedEntityId = null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,28 +65,103 @@ class _LifeRelationshipPageState extends State<LifeRelationshipPage> {
               maxScale: 3.0,
               child: Consumer<LifeProvider>(
                 builder: (context, provider, _) {
-                  return CustomPaint(
-                    size: Size(
-                      MediaQuery.of(context).size.width,
-                      MediaQuery.of(context).size.height - 160,
-                    ),
-                    painter: SpiderWebPainter(
-                      entities: provider.entities,
-                      relationships: provider.relationships,
-                      selectedEntityId: _selectedEntityId,
-                      onEntityTap: (id) => setState(() {
-                        _selectedEntityId = _selectedEntityId == id ? null : id;
-                      }),
-                    ),
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final canvasSize = Size(
+                        constraints.maxWidth,
+                        constraints.maxHeight,
+                      );
+                      final painter = SpiderWebPainter(
+                        entities: provider.entities,
+                        relationships: provider.relationships,
+                        selectedEntityId: _selectedEntityId,
+                      );
+                      _currentPainter = painter;
+                      return Stack(
+                        children: [
+                          CustomPaint(
+                            size: canvasSize,
+                            painter: painter,
+                          ),
+                          Positioned.fill(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onTapUp: (details) {
+                                _handleTap(details.localPosition);
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   );
                 },
               ),
             ),
           ),
+          // 选中实体简要信息
+          if (_selectedEntityId != null)
+            _buildSelectedInfo(),
           // 底部统计栏
           _buildStatsBar(),
         ],
       ),
+    );
+  }
+
+  Widget _buildSelectedInfo() {
+    return Consumer<LifeProvider>(
+      builder: (context, provider, _) {
+        final entity = provider.entities.cast<LifeEntity?>().firstWhere(
+          (e) => e!.id == _selectedEntityId,
+          orElse: () => null,
+        );
+        if (entity == null) return const SizedBox.shrink();
+        final relCount = provider.relationships.where(
+          (r) => r.entityId == entity.id || r.targetId == entity.id,
+        ).length;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: MoeTokens.primary.withValues(alpha: 0.06),
+            border: Border(
+              top: BorderSide(color: MoeTokens.primary.withValues(alpha: 0.15)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(entity.emoji, style: const TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Text(
+                entity.name,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: MoeTokens.titleText,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$relCount 个关系',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: MoeTokens.bodyText,
+                ),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() => _selectedEntityId = null),
+                child: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: MoeTokens.bodyText,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -89,36 +182,40 @@ class _LifeRelationshipPageState extends State<LifeRelationshipPage> {
           ),
           child: SafeArea(
             top: false,
-            child: Row(
-              children: [
-                _StatChip(
-                  label: '总关系',
-                  value: '${provider.relationships.length}',
-                  color: MoeTokens.primary,
-                  icon: Icons.hub_outlined,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: '朋友',
-                  value: '${provider.friendCount}',
-                  color: const Color(0xFF4CAF50),
-                  icon: Icons.favorite_border,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: '伴侣',
-                  value: '${provider.mateCount}',
-                  color: const Color(0xFFFFC107),
-                  icon: Icons.favorite,
-                ),
-                const SizedBox(width: 8),
-                _StatChip(
-                  label: '对手',
-                  value: '${provider.rivalCount}',
-                  color: const Color(0xFFF44336),
-                  icon: Icons.bolt,
-                ),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _StatChip(
+                    label: '总关系',
+                    value: '${provider.relationships.length}',
+                    color: MoeTokens.primary,
+                    icon: Icons.hub_outlined,
+                  ),
+                  const SizedBox(width: 8),
+                  _StatChip(
+                    label: '朋友',
+                    value: '${provider.friendCount}',
+                    color: const Color(0xFF4CAF50),
+                    icon: Icons.favorite_border,
+                  ),
+                  const SizedBox(width: 8),
+                  _StatChip(
+                    label: '伴侣',
+                    value: '${provider.mateCount}',
+                    color: const Color(0xFFFFC107),
+                    icon: Icons.favorite,
+                  ),
+                  const SizedBox(width: 8),
+                  _StatChip(
+                    label: '对手',
+                    value: '${provider.rivalCount}',
+                    color: const Color(0xFFF44336),
+                    icon: Icons.bolt,
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -170,38 +267,37 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
+    return Container(
+      width: 90,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.14)),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: color,
                 ),
-                Text(
-                  label,
-                  style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.8)),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              Text(
+                label,
+                style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.8)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -212,16 +308,17 @@ class SpiderWebPainter extends CustomPainter {
   final List<LifeEntity> entities;
   final List<LifeRelationship> relationships;
   final int? selectedEntityId;
-  final ValueChanged<int>? onEntityTap;
 
   SpiderWebPainter({
     required this.entities,
     required this.relationships,
     this.selectedEntityId,
-    this.onEntityTap,
   });
 
   final Map<int, Offset> _positions = {};
+
+  /// 暴露节点位置供外部命中测试使用。
+  Map<int, Offset> get nodePositions => Map.unmodifiable(_positions);
 
   @override
   void paint(Canvas canvas, Size size) {

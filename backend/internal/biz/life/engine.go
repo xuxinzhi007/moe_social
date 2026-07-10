@@ -2,6 +2,7 @@ package lifebiz
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -15,27 +16,31 @@ type BroadcastFunc func(msg TickBroadcast)
 
 // LifeEngine 数字生命引擎
 type LifeEngine struct {
-	store           Store
-	cache           *WorldCache
-	persistence     *PersistenceWriter
-	socialSystem    *SocialSystem
-	config          LifeConfig
-	broadcastMu     sync.RWMutex
-	broadcastFn     BroadcastFunc
-	actionCooldowns map[uint]time.Time // 实体 ID→冷却到期时间
-	cooldownMu      sync.Mutex
+	store            Store
+	cache            *WorldCache
+	persistence      *PersistenceWriter
+	socialSystem     *SocialSystem
+	worldEventEngine *WorldEventEngine
+	itemSystem       *ItemSystem
+	config           LifeConfig
+	broadcastMu      sync.RWMutex
+	broadcastFn      BroadcastFunc
+	actionCooldowns  map[uint]time.Time // 实体 ID→冷却到期时间
+	cooldownMu       sync.Mutex
 }
 
 // NewLifeEngine 创建数字生命引擎
 func NewLifeEngine(store Store, config LifeConfig, broadcastFn BroadcastFunc) *LifeEngine {
 	engine := &LifeEngine{
-		store:           store,
-		cache:           NewWorldCache(),
-		persistence:     NewPersistenceWriter(store, config),
-		socialSystem:    NewSocialSystem(),
-		config:          config,
-		broadcastFn:     broadcastFn,
-		actionCooldowns: make(map[uint]time.Time),
+		store:            store,
+		cache:            NewWorldCache(),
+		persistence:      NewPersistenceWriter(store, config),
+		socialSystem:     NewSocialSystem(),
+		worldEventEngine: NewWorldEventEngine(),
+		itemSystem:       NewItemSystem(store),
+		config:           config,
+		broadcastFn:      broadcastFn,
+		actionCooldowns:  make(map[uint]time.Time),
 	}
 	return engine
 }
@@ -44,6 +49,11 @@ func NewLifeEngine(store Store, config LifeConfig, broadcastFn BroadcastFunc) *L
 func StartLifeEngine(ctx context.Context, e *LifeEngine) {
 	// 启动持久化写入器
 	e.persistence.Start(ctx)
+
+	// 初始化种子道具
+	if err := e.itemSystem.SeedItems(ctx); err != nil {
+		moelog.Errorf("life: failed to seed items: %v", err)
+	}
 
 	go func() {
 		defer func() {
@@ -83,10 +93,13 @@ func (e *LifeEngine) GetConfig() LifeConfig { return e.config }
 // GetStore 暴露 store 供外部读取
 func (e *LifeEngine) GetStore() Store { return e.store }
 
+// GetItemSystem 暴露道具系统供外部读取
+func (e *LifeEngine) GetItemSystem() *ItemSystem { return e.itemSystem }
+
 // ActionResult 用户操作结果
 type ActionResult struct {
-	Success bool            `json:"success"`
-	Message string          `json:"message"`
+	Success bool              `json:"success"`
+	Message string            `json:"message"`
 	Entity  *model.LifeEntity `json:"entity,omitempty"`
 }
 
@@ -156,12 +169,104 @@ func (e *LifeEngine) ApplyUserAction(worldName string, entityID uint, action str
 		PositionY:   entity.PositionY,
 		CreatedAt:   now,
 	}
+	evt.Importance = eventImportance(evt.EventType)
 	e.persistence.EnqueueEvent(evt)
 
 	return ActionResult{
 		Success: true,
 		Message: "用户" + desc,
 		Entity:  entity,
+	}
+}
+
+// maxActiveEffects 单个实体最大活跃 buff 数量
+const maxActiveEffects = 5
+
+// UseItem 对指定实体使用道具
+func (e *LifeEngine) UseItem(worldName, userID string, entityID, itemID uint) error {
+	// 1. 查道具定义
+	item, ok := e.itemSystem.GetItemDefinition(itemID)
+	if !ok {
+		return errors.New("item not found")
+	}
+
+	// 2. 扣减背包
+	ctx := context.Background()
+	if err := e.store.DecrementInventory(ctx, userID, itemID); err != nil {
+		return fmt.Errorf("inventory insufficient: %w", err)
+	}
+
+	// 3. 查找实体
+	snap := e.cache.Get(worldName)
+	if snap == nil {
+		return errors.New("world not initialized")
+	}
+	entity, ok := snap.Entities[entityID]
+	if !ok || entity == nil {
+		return errors.New("entity not found")
+	}
+
+	now := time.Now()
+
+	if item.DurationTicks > 0 {
+		// 持续效果：加入 ActiveEffects
+		effects, _ := DeserializeActiveEffects(entity.ActiveEffectsJSON)
+		if len(effects) >= maxActiveEffects {
+			return fmt.Errorf("active effects limit reached (%d/%d)", len(effects), maxActiveEffects)
+		}
+		effects = append(effects, ActiveEffect{
+			ItemID:         itemID,
+			EffectKey:      item.EffectKey,
+			EffectValue:    item.EffectValue,
+			RemainingTicks: item.DurationTicks,
+		})
+		effectsJSON, err := SerializeActiveEffects(effects)
+		if err != nil {
+			return fmt.Errorf("serialize effects: %w", err)
+		}
+		entity.ActiveEffectsJSON = effectsJSON
+	} else {
+		// 即时效果：直接修改属性
+		applyItemEffect(entity, item.EffectKey, item.EffectValue)
+	}
+	entity.UpdatedAt = now
+
+	// 持久化实体变更
+	entityCopy := *entity
+	e.persistence.EnqueueEntity(&entityCopy)
+
+	// 4. 记录事件
+	evt := &model.LifeEventLog{
+		WorldID:     worldName,
+		EntityID:    entityID,
+		EntityType:  entity.Name,
+		EventType:   "user_use_item",
+		Description: fmt.Sprintf("对 %s 使用了 %s", entity.Name, item.Name),
+		PositionX:   entity.PositionX,
+		PositionY:   entity.PositionY,
+		CreatedAt:   now,
+		Importance:  1,
+	}
+	e.persistence.EnqueueEvent(evt)
+
+	return nil
+}
+
+// applyItemEffect 对实体施加即时道具效果
+func applyItemEffect(entity *model.LifeEntity, effectKey string, value float64) {
+	switch effectKey {
+	case "hunger":
+		entity.Hunger = clamp(entity.Hunger+value, 0, 100)
+	case "energy":
+		entity.Energy = clamp(entity.Energy+value, 0, 100)
+	case "mood":
+		entity.Mood = clamp(entity.Mood+value, 0, 100)
+	case "experience":
+		entity.Experience += value
+	case "all":
+		entity.Hunger = clamp(entity.Hunger+value, 0, 100)
+		entity.Energy = clamp(entity.Energy+value, 0, 100)
+		entity.Mood = clamp(entity.Mood+value, 0, 100)
 	}
 }
 

@@ -121,6 +121,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.LifeApp != nil {
 		lifev1.RegisterLifeHTTPServer(srv, lifehttp.New(d.LifeApp))
+		lifehttp.RegisterItemRoutes(srv, d.LifeApp)
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

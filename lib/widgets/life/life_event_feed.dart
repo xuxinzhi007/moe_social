@@ -89,18 +89,34 @@ class _EventTileState extends State<_EventTile>
     final timeStr = _formatTime(event.timestamp);
     final isGrowth = _isGrowthEvent;
     final isSocial = _isSocialEvent;
+    final isImportant = event.isImportant;
 
+    // 重要事件：微高亮琥珀色背景 + 左侧金色竖条
     // 成长事件使用金色，社交事件使用绿色
-    final bgColor = isGrowth
-        ? const Color(0xFFFFF8E1)
-        : isSocial
-            ? const Color(0xFFE8F5E9) // 淡绿色背景
-            : Colors.white;
-    final borderColor = isGrowth
-        ? const Color(0xFFFFC107).withValues(alpha: 0.3)
-        : isSocial
-            ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
-            : Colors.transparent;
+    final Color bgColor;
+    final Color borderColor;
+    if (isImportant) {
+      bgColor = Colors.amber.withValues(alpha: 0.08);
+      borderColor = const Color(0xFFFFC107).withValues(alpha: 0.4);
+    } else if (isGrowth) {
+      bgColor = const Color(0xFFFFF8E1);
+      borderColor = const Color(0xFFFFC107).withValues(alpha: 0.3);
+    } else if (isSocial) {
+      bgColor = const Color(0xFFE8F5E9);
+      borderColor = const Color(0xFF4CAF50).withValues(alpha: 0.3);
+    } else {
+      bgColor = Colors.white;
+      borderColor = Colors.transparent;
+    }
+
+    // 重要事件左侧 2px 金色竖条装饰
+    final leftBarDecoration = isImportant
+        ? const BoxDecoration(
+            border: Border(
+              left: BorderSide(color: Color(0xFFFFC107), width: 2),
+            ),
+          )
+        : null;
 
     return FadeTransition(
       opacity: _opacity,
@@ -108,30 +124,57 @@ class _EventTileState extends State<_EventTile>
         position: _slide,
         child: Container(
           margin: const EdgeInsets.only(bottom: 6),
+          decoration: leftBarDecoration != null
+              ? BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border(
+                    left: const BorderSide(color: Color(0xFFFFC107), width: 2),
+                    top: BorderSide(color: borderColor, width: 1),
+                    right: BorderSide(color: borderColor, width: 1),
+                    bottom: BorderSide(color: borderColor, width: 1),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFC107).withValues(alpha: 0.08),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                )
+              : BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: (isGrowth || isSocial)
+                      ? Border.all(color: borderColor, width: 1)
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isGrowth
+                          ? const Color(0xFFFFC107).withValues(alpha: 0.08)
+                          : isSocial
+                              ? const Color(0xFF4CAF50).withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-            border: (isGrowth || isSocial)
-                ? Border.all(color: borderColor, width: 1)
-                : null,
-            boxShadow: [
-              BoxShadow(
-                color: isGrowth
-                    ? const Color(0xFFFFC107).withValues(alpha: 0.08)
-                    : isSocial
-                        ? const Color(0xFF4CAF50).withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 左侧图标
-              if (isGrowth)
+              // 左侧图标：重要事件显示星标
+              if (isImportant)
+                const Padding(
+                  padding: EdgeInsets.only(right: 6, top: 2),
+                  child: Icon(
+                    Icons.star,
+                    size: 14,
+                    color: Color(0xFFFFC107),
+                  ),
+                )
+              else if (isGrowth)
                 const Padding(
                   padding: EdgeInsets.only(right: 8, top: 2),
                   child: Icon(
@@ -166,12 +209,14 @@ class _EventTileState extends State<_EventTile>
                       event.desc,
                       style: TextStyle(
                         fontSize: 13,
-                        color: isGrowth
-                            ? const Color(0xFF795548)
-                            : isSocial
-                                ? const Color(0xFF2E7D32)
-                                : Colors.black87,
-                        fontWeight: (isGrowth || isSocial)
+                        color: isImportant
+                            ? const Color(0xFF6D4C00)
+                            : isGrowth
+                                ? const Color(0xFF795548)
+                                : isSocial
+                                    ? const Color(0xFF2E7D32)
+                                    : Colors.black87,
+                        fontWeight: (isImportant || isGrowth || isSocial)
                             ? FontWeight.w500
                             : FontWeight.w400,
                       ),
