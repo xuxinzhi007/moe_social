@@ -126,6 +126,19 @@ func toolDefinitions() []toolDef {
 				},
 			},
 		},
+		{
+			Name:        "get_recent_click_events",
+			Description: "获取最近网页点击事件，供 Grok 判断用户点击了哪个位置。",
+			InputSchema: gin.H{
+				"type": "object",
+				"properties": gin.H{
+					"limit": gin.H{
+						"type":        "integer",
+						"description": "返回最近多少条事件，默认 20",
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -206,6 +219,15 @@ func executeTool(name string, args json.RawMessage) (text string, isError bool, 
 		_ = json.Unmarshal(args, &a)
 		detail.summary = fmt.Sprintf("phase=%q title=%q", a.Phase, a.Title)
 		text, isError = toolUpdateActiveTask(a.ID, a.Phase, a.Title, a.PlanFile, a.Notes)
+		return text, isError, detail
+
+	case "get_recent_click_events":
+		var a struct {
+			Limit int `json:"limit"`
+		}
+		_ = json.Unmarshal(args, &a)
+		detail.summary = fmt.Sprintf("limit=%d", a.Limit)
+		text, isError = toolGetRecentClickEvents(a.Limit)
 		return text, isError, detail
 
 	default:

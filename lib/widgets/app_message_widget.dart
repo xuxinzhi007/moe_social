@@ -10,9 +10,9 @@ class AppMessageWidget extends StatefulWidget {
   final Widget child;
 
   const AppMessageWidget({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<AppMessageWidget> createState() => _AppMessageWidgetState();
@@ -63,11 +63,11 @@ class OperationLoadingWidget extends StatelessWidget {
   final String? loadingText;
 
   const OperationLoadingWidget({
-    Key? key,
+    super.key,
     required this.operationKey,
     required this.child,
     this.loadingText,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -120,12 +120,12 @@ class LoadingButton extends StatelessWidget {
   final ButtonStyle? style;
 
   const LoadingButton({
-    Key? key,
+    super.key,
     required this.operationKey,
     required this.onPressed,
     required this.child,
     this.style,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

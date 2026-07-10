@@ -10,7 +10,7 @@
 
 class AppConfig {
   /// true = 线上 API；false = 本地 API
-  static const bool isProduction = true;
+  static const bool isProduction = false;
 
   /// Debug：REST 日志路径过滤。空 = 全部；例 `/api/user`
   static const String apiLogPathFilter = '';

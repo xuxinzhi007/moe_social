@@ -39,6 +39,7 @@ func main() {
 
 	registerDashboardRoutes(r)
 	registerWorkspaceRoutes(r)
+	registerClickTrackerRoutes(r)
 	registerMCPRoutes(r)
 
 	log.Printf("MCP server on :%s, workspace=%s, auth=%t", port, baseDir, authToken != "")

@@ -12,6 +12,7 @@ class LifeProvider extends ChangeNotifier {
   final LifeWsService _wsService = LifeWsService();
 
   bool _disposed = false;
+  bool _isBootstrapping = false;
   final Map<int, LifeEntity> _entities = {};
   List<LifeEvent> _recentEvents = [];
   final List<LifeRelationship> _relationships = [];
@@ -98,12 +99,49 @@ class LifeProvider extends ChangeNotifier {
 
   /// 连接 WebSocket，开始接收世界状态推送。
   void startListening() {
-    _wsService.connect();
+    if (_isBootstrapping) return;
+    if (_isInitialized) {
+      _wsService.connect();
+      return;
+    }
+    _bootstrapAndConnect();
   }
 
   /// 断开 WebSocket，停止监听。
   void stopListening() {
     _wsService.disconnect();
+  }
+
+  Future<void> _bootstrapAndConnect() async {
+    _isBootstrapping = true;
+    try {
+      final snapshot = await LifeService.getInitialState();
+      if (_disposed) return;
+      _applyInitialState(snapshot);
+    } catch (e) {
+      debugPrint('LifeProvider bootstrap failed: $e');
+    } finally {
+      _isBootstrapping = false;
+      if (!_disposed) {
+        _wsService.connect();
+      }
+    }
+  }
+
+  void _applyInitialState(LifeInitialState snapshot) {
+    _entities
+      ..clear()
+      ..addEntries(snapshot.entities.map((e) => MapEntry(e.id, e)));
+    _relationships
+      ..clear()
+      ..addAll(snapshot.relationships);
+    _recentEvents = List<LifeEvent>.from(snapshot.events);
+    _worldEvents.clear();
+    _tickCount = snapshot.tick;
+    _worldId = snapshot.worldId;
+    _summary = snapshot.summary;
+    _isInitialized = true;
+    notifyListeners();
   }
 
   /// 处理 Tick 广播更新
