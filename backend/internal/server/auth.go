@@ -16,6 +16,7 @@ var publicPaths = []string{
 	"/api/user/login",
 	"/api/user/register",
 	"/api/user/check-email",
+	"/api/user/temp-mail/",
 	"/api/user/send-reset-code",
 	"/api/user/verify-reset-code",
 	"/api/user/reset-password",

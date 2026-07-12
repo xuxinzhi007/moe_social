@@ -69,6 +69,18 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   bool get _busy => _isFetching || _isMutating;
 
+  bool _isCompactLayout(BuildContext context) {
+    return MediaQuery.of(context).size.width < 680;
+  }
+
+  int _gridCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1280) return 5;
+    if (width >= 960) return 4;
+    if (width >= 680) return 3;
+    return 2;
+  }
+
   String _formatBytes(int bytes) {
     const kb = 1024.0;
     const mb = kb * 1024.0;
@@ -384,25 +396,34 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     }
   }
 
-  Widget _buildQuotaCard() {
+  Widget _buildHeroHeader(BuildContext context) {
+    final compact = _isCompactLayout(context);
     final maxBytes = _maxBytes ?? 0;
     final usedBytes = _usedBytes ?? 0;
-    if (widget.isSelectMode || maxBytes <= 0) return const SizedBox.shrink();
-
-    final progress = (usedBytes / maxBytes).clamp(0.0, 1.0);
-    final isWarning = progress > 0.85;
+    final progress =
+        maxBytes > 0 ? (usedBytes / maxBytes).clamp(0.0, 1.0) : 0.0;
+    final remainingBytes =
+        maxBytes > usedBytes ? _formatBytes(maxBytes - usedBytes) : '0 B';
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.fromLTRB(12, 10, 12, compact ? 10 : 18),
+      padding: EdgeInsets.all(compact ? 14 : 22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFF8F6FF),
+            Color(0xFFEFF4FF),
+            Color(0xFFFDF9FF),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: MoeTokens.primary.withValues(alpha: 0.08),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -410,61 +431,164 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
+                width: compact ? 42 : 58,
+                height: compact ? 42 : 58,
                 decoration: BoxDecoration(
-                  color: (isWarning ? Colors.red : Colors.blue)
-                      .withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(compact ? 14 : 18),
                 ),
                 child: Icon(
-                  Icons.cloud_done_outlined,
-                  size: 20,
-                  color: isWarning ? Colors.red : Colors.blue,
+                  Icons.cloud_circle_rounded,
+                  size: compact ? 22 : 32,
+                  color: MoeTokens.primary,
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: compact ? 12 : 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '云端存储空间',
+                      '把灵感收进云端',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        fontSize: compact ? 18 : 24,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF25273A),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: compact ? 4 : 6),
                     Text(
-                      '已用 ${_formatBytes(usedBytes)} / 共 ${_formatBytes(maxBytes)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      _images.isEmpty
+                          ? '从第一张图开始整理你的收藏、头像素材和创作灵感。'
+                          : '你的图片会统一存放在这里，随时回看、下载或继续挑选使用。',
+                      style: TextStyle(
+                        fontSize: compact ? 13 : 14,
+                        height: compact ? 1.4 : 1.5,
+                        color: const Color(0xFF69708A),
+                      ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isWarning ? Colors.red : Colors.blue,
-                ),
+            ],
+          ),
+          SizedBox(height: compact ? 12 : 18),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildInfoChip(
+                icon: Icons.collections_outlined,
+                label: '已存图片',
+                value: '${_images.length}',
+              ),
+              _buildInfoChip(
+                icon: Icons.auto_awesome_outlined,
+                label: '剩余空间',
+                value: maxBytes > 0 ? remainingBytes : '未统计',
+              ),
+              _buildInfoChip(
+                icon: Icons.backup_outlined,
+                label: '云端状态',
+                value: _busy ? '同步中' : '可上传',
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isWarning ? Colors.redAccent : Colors.blueAccent,
+          if (maxBytes > 0) ...[
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.74),
+                borderRadius: BorderRadius.circular(20),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '空间使用情况',
+                        style: TextStyle(
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF30344B),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${(progress * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                          color: MoeTokens.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 8,
+                      backgroundColor: Colors.white,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(MoeTokens.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '已用 ${_formatBytes(usedBytes)} / 共 ${_formatBytes(maxBytes)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF7A819B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: MoeTokens.primary),
+          const SizedBox(width: 6),
+          Text(
+            '$label  ',
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF77809A),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF2E3142),
             ),
           ),
         ],
@@ -473,24 +597,126 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   }
 
   Widget _buildEmptyState() {
+    final compact = _isCompactLayout(context);
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, 6, 12, compact ? 16 : 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 760),
+          padding: EdgeInsets.all(compact ? 18 : 30),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(compact ? 22 : 30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: compact ? 68 : 100,
+                height: compact ? 68 : 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      MoeTokens.primary.withValues(alpha: 0.16),
+                      const Color(0xFF9BD8FF).withValues(alpha: 0.22),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(compact ? 22 : 30),
+                ),
+                child: Icon(
+                  Icons.add_photo_alternate_rounded,
+                  size: compact ? 32 : 48,
+                  color: MoeTokens.primary,
+                ),
+              ),
+              SizedBox(height: compact ? 14 : 18),
+              Text(
+                '你的云图库还在等待第一批灵感',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: compact ? 18 : 24,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF2A2C3E),
+                ),
+              ),
+              SizedBox(height: compact ? 8 : 10),
+              Text(
+                '上传头像素材、创作参考图或日常收藏图，让它们在这里被整齐保存，也方便后续发帖时直接取用。',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 14,
+                  height: compact ? 1.45 : 1.6,
+                  color: const Color(0xFF737B93),
+                ),
+              ),
+              SizedBox(height: compact ? 14 : 18),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildFeatureTag(Icons.bolt_rounded, '上传后立即可用'),
+                  _buildFeatureTag(Icons.folder_copy_outlined, '统一整理常用图片'),
+                  _buildFeatureTag(Icons.phone_iphone_rounded, '移动端也更顺手'),
+                ],
+              ),
+              SizedBox(height: compact ? 18 : 24),
+              FilledButton.icon(
+                onPressed: _busy ? null : _pickAndUpload,
+                icon: const Icon(Icons.cloud_upload_rounded),
+                label: const Text('上传第一张图片'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: MoeTokens.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, compact ? 48 : 54),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 22 : 28,
+                    vertical: compact ? 14 : 16,
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: compact ? 14 : 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureTag(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F7FB),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.photo_library_outlined, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('图库空空如也',
-              style: TextStyle(fontSize: 16, color: Colors.grey[500])),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.cloud_upload_outlined),
-            label: const Text('上传第一张图片'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+          Icon(icon, size: 14, color: MoeTokens.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF5B627A),
             ),
-            onPressed: _pickAndUpload,
           ),
         ],
       ),
@@ -536,7 +762,9 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
             ),
         ],
       ),
-      floatingActionButton: widget.isSelectMode || _selectMode
+      floatingActionButton: widget.isSelectMode ||
+              _selectMode ||
+              _images.isEmpty
           ? null
           : FloatingActionButton.extended(
               heroTag: "cloud_gallery_upload_button",
@@ -550,16 +778,18 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
             ),
       body: Column(
         children: [
-          _buildQuotaCard(),
+          _buildHeroHeader(context),
           Expanded(
             child: _isFetching && _images.isEmpty
                 ? GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _isCompactLayout(context) ? 12 : 16,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _gridCrossAxisCount(context),
+                      crossAxisSpacing: _isCompactLayout(context) ? 8 : 10,
+                      mainAxisSpacing: _isCompactLayout(context) ? 8 : 10,
+                      childAspectRatio: 1,
                     ),
                     itemCount: 15,
                     itemBuilder: (_, __) => Shimmer.fromColors(
@@ -577,12 +807,17 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                     ? _buildEmptyState()
                     : GridView.builder(
                         controller: _scrollController,
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
+                        padding: EdgeInsets.fromLTRB(
+                          _isCompactLayout(context) ? 12 : 16,
+                          0,
+                          _isCompactLayout(context) ? 12 : 16,
+                          _isCompactLayout(context) ? 88 : 96,
+                        ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _gridCrossAxisCount(context),
+                          crossAxisSpacing: _isCompactLayout(context) ? 8 : 10,
+                          mainAxisSpacing: _isCompactLayout(context) ? 8 : 10,
+                          childAspectRatio: 1,
                         ),
                         itemCount: _images.length + (_hasMore ? 1 : 0),
                         itemBuilder: (context, index) {

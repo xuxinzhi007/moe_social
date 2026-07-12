@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../pages/ai/agent_list_page.dart';
+import '../utils/main_tab_navigation.dart';
 import '../utils/responsive.dart';
 import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
@@ -54,14 +54,7 @@ class QuickActionsGrid extends StatelessWidget {
         'label': 'AI 互动',
         'hint': '找灵感',
         'color': const Color(0xFFFFB347),
-        'onTap': () {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const AgentListPage(),
-            ),
-          );
-        },
+        'onTap': () => openMainTab(context, 2),
       },
       {
         'icon': Icons.settings_rounded,
@@ -98,7 +91,8 @@ class QuickActionsGrid extends StatelessWidget {
             final isNarrow = constraints.maxWidth < 420;
             final columns = isNarrow ? 3 : 6;
             final spacing = 10.0;
-            final itemWidth = (constraints.maxWidth - (columns - 1) * spacing) / columns;
+            final itemWidth =
+                (constraints.maxWidth - (columns - 1) * spacing) / columns;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

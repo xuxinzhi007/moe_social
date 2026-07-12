@@ -27,12 +27,33 @@ class CheckInPage extends StatefulWidget {
   State<CheckInPage> createState() => _CheckInPageState();
 }
 
+class _CheckInTaskViewData {
+  final String title;
+  final String subtitle;
+  final String reward;
+  final String badge;
+  final IconData icon;
+  final Color accent;
+  final bool completed;
+
+  const _CheckInTaskViewData({
+    required this.title,
+    required this.subtitle,
+    required this.reward,
+    required this.badge,
+    required this.icon,
+    required this.accent,
+    required this.completed,
+  });
+}
+
 class _CheckInPageState extends State<CheckInPage>
     with TickerProviderStateMixin {
   late final AnimationController _rippleController;
   late final AnimationController _bounceController;
   late final Animation<double> _rippleAnimation;
   late final Animation<double> _bounceAnimation;
+  int _selectedInsightIndex = 0;
 
   @override
   void initState() {
@@ -109,6 +130,7 @@ class _CheckInPageState extends State<CheckInPage>
           final initialLoading = (checkInProvider.isLoading &&
                   checkInProvider.checkInStatus == null) ||
               (levelProvider.isLoading && levelProvider.userLevel == null);
+          final isCompact = MediaQuery.sizeOf(context).width < 420;
 
           return CustomScrollView(
             slivers: [
@@ -123,11 +145,28 @@ class _CheckInPageState extends State<CheckInPage>
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      _buildHeroCard(checkInProvider, levelProvider),
+                      _buildHeroCard(
+                        checkInProvider,
+                        levelProvider,
+                        isCompact: isCompact,
+                      ),
                       const SizedBox(height: 18),
-                      _buildRewardPreview(checkInProvider),
-                      const SizedBox(height: 18),
-                      _buildStatsCard(checkInProvider, levelProvider),
+                      if (isCompact)
+                        _buildInsightSwitcher(checkInProvider, levelProvider)
+                      else ...[
+                        _buildTaskList(
+                          checkInProvider,
+                          levelProvider,
+                        ),
+                        const SizedBox(height: 18),
+                        _buildDailyQuestBoard(checkInProvider, levelProvider),
+                        const SizedBox(height: 18),
+                        _buildRewardPreview(checkInProvider),
+                        const SizedBox(height: 18),
+                        _buildStreakMilestones(checkInProvider),
+                        const SizedBox(height: 18),
+                        _buildStatsCard(checkInProvider, levelProvider),
+                      ],
                     ]),
                   ),
                 ),
@@ -143,8 +182,9 @@ class _CheckInPageState extends State<CheckInPage>
     CheckInProvider checkInProvider,
     UserLevelProvider levelProvider,
   ) {
+    final tasks = _buildTasks(checkInProvider, levelProvider);
     return SliverAppBar(
-      expandedHeight: 196,
+      expandedHeight: 276,
       pinned: true,
       elevation: 0,
       backgroundColor: MoeTokens.primary,
@@ -187,7 +227,7 @@ class _CheckInPageState extends State<CheckInPage>
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -230,6 +270,18 @@ class _CheckInPageState extends State<CheckInPage>
                           ),
                         ],
                       ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: 34,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: tasks.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, index) =>
+                              _buildHeroTaskTag(tasks[index]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -243,8 +295,9 @@ class _CheckInPageState extends State<CheckInPage>
 
   Widget _buildHeroCard(
     CheckInProvider checkInProvider,
-    UserLevelProvider levelProvider,
-  ) {
+    UserLevelProvider levelProvider, {
+    bool isCompact = false,
+  }) {
     final hasChecked = checkInProvider.hasCheckedToday;
     final canCheckIn = checkInProvider.canCheckIn;
     final isChecking = checkInProvider.isCheckingIn;
@@ -256,10 +309,10 @@ class _CheckInPageState extends State<CheckInPage>
     return MoeReveal(
       delay: const Duration(milliseconds: 80),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isCompact ? 16 : 20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(isCompact ? 24 : 28),
           boxShadow: [
             BoxShadow(
               color: MoeTokens.primary.withValues(alpha: 0.08),
@@ -284,7 +337,8 @@ class _CheckInPageState extends State<CheckInPage>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _statusColor(ctaEnabled, hasChecked).withValues(
+                          color:
+                              _statusColor(ctaEnabled, hasChecked).withValues(
                             alpha: 0.12,
                           ),
                           borderRadius: BorderRadius.circular(999),
@@ -298,41 +352,46 @@ class _CheckInPageState extends State<CheckInPage>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      SizedBox(height: isCompact ? 10 : 14),
                       Text(
                         _headlineText(hasChecked, isChecking),
-                        style: const TextStyle(
-                          fontSize: 24,
+                        style: TextStyle(
+                          fontSize: isCompact ? 21 : 24,
                           fontWeight: FontWeight.w800,
                           color: MoeTokens.titleText,
                           height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: isCompact ? 8 : 10),
                       Text(
                         _descriptionText(checkInProvider, levelProvider),
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: isCompact ? 13 : 14,
                           color: Colors.grey.shade700,
                           height: 1.5,
                         ),
+                        maxLines: isCompact ? 3 : null,
+                        overflow: isCompact
+                            ? TextOverflow.ellipsis
+                            : TextOverflow.visible,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 18),
+                SizedBox(width: isCompact ? 14 : 18),
                 _buildCheckInButton(
                   checkInProvider: checkInProvider,
                   levelProvider: levelProvider,
                   hasChecked: hasChecked,
                   canCheckIn: canCheckIn,
                   isChecking: isChecking,
+                  size: isCompact ? 96 : 120,
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            SizedBox(height: isCompact ? 14 : 18),
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(isCompact ? 12 : 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -414,6 +473,7 @@ class _CheckInPageState extends State<CheckInPage>
     required bool hasChecked,
     required bool canCheckIn,
     required bool isChecking,
+    double size = 120,
   }) {
     final enabled = canCheckIn && !hasChecked && !isChecking;
     final reduceMotion = moeReduceMotion(context);
@@ -430,15 +490,15 @@ class _CheckInPageState extends State<CheckInPage>
         return Transform.scale(
           scale: scale,
           child: SizedBox(
-            width: 120,
-            height: 120,
+            width: size,
+            height: size,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 if (enabled && !reduceMotion)
                   Container(
-                    width: 120 + (_rippleAnimation.value * 28),
-                    height: 120 + (_rippleAnimation.value * 28),
+                    width: size + (_rippleAnimation.value * 28),
+                    height: size + (_rippleAnimation.value * 28),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -450,8 +510,8 @@ class _CheckInPageState extends State<CheckInPage>
                     ),
                   ),
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: size,
+                  height: size,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: gradient,
@@ -479,18 +539,18 @@ class _CheckInPageState extends State<CheckInPage>
                                 ? Icons.hourglass_top_rounded
                                 : Icons.bolt_rounded,
                         color: Colors.white,
-                        size: 34,
+                        size: size < 110 ? 28 : 34,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: size < 110 ? 4 : 6),
                       Text(
                         hasChecked
                             ? '已签到'
                             : isChecking
                                 ? '签到中'
                                 : '立即签到',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: size < 110 ? 12 : 14,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -514,14 +574,17 @@ class _CheckInPageState extends State<CheckInPage>
     );
   }
 
-  Widget _buildRewardPreview(CheckInProvider checkInProvider) {
+  Widget _buildRewardPreview(
+    CheckInProvider checkInProvider, {
+    bool compact = false,
+  }) {
     final streakTier = math.max(1, checkInProvider.consecutiveDays);
     final streakReward = 10 + (streakTier * 2);
 
     return MoeReveal(
       delay: const Duration(milliseconds: 160),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -560,7 +623,8 @@ class _CheckInPageState extends State<CheckInPage>
                   child: _buildRewardPanel(
                     title: '今日签到',
                     value: '+${checkInProvider.todayReward} EXP',
-                    subtitle: checkInProvider.hasCheckedToday ? '今日已领取' : '完成后立即到账',
+                    subtitle:
+                        checkInProvider.hasCheckedToday ? '今日已领取' : '完成后立即到账',
                     icon: Icons.today_rounded,
                     colors: const [MoeTokens.primary, MoeTokens.secondary],
                   ),
@@ -632,10 +696,942 @@ class _CheckInPageState extends State<CheckInPage>
     );
   }
 
-  Widget _buildStatsCard(
+  Widget _buildDailyQuestBoard(
     CheckInProvider checkInProvider,
     UserLevelProvider levelProvider,
   ) {
+    final hasChecked = checkInProvider.hasCheckedToday;
+    final canCheckIn = checkInProvider.canCheckIn;
+    final streakTarget = math.max(3, checkInProvider.consecutiveDays + 1);
+    final daysLeft =
+        math.max(0, streakTarget - checkInProvider.consecutiveDays);
+    final sideQuestReward = 12 + (streakTarget * 2);
+
+    return MoeReveal(
+      delay: const Duration(milliseconds: 120),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '今日任务面板',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: MoeTokens.titleText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '把签到、连签奖励和成长进度收在一起，像清任务一样把今天的收益拿满。',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildQuestRow(
+              title: '主线任务: 每日签到',
+              subtitle: hasChecked
+                  ? '今日奖励已到账，可以继续冲击更高等级。'
+                  : canCheckIn
+                      ? '完成后立即获得经验，并维持连签节奏。'
+                      : '当前暂不可领取，稍后回来再试试看。',
+              reward: '+${checkInProvider.todayReward} EXP',
+              icon: hasChecked ? Icons.verified_rounded : Icons.bolt_rounded,
+              stateLabel: hasChecked
+                  ? '已完成'
+                  : canCheckIn
+                      ? '可领取'
+                      : '未开启',
+              accent: hasChecked ? const Color(0xFF2E9B62) : MoeTokens.primary,
+              completed: hasChecked,
+            ),
+            const SizedBox(height: 12),
+            _buildQuestRow(
+              title: '明日预告: 连续回归',
+              subtitle:
+                  '明天回来可继续领取 +${checkInProvider.nextDayReward} EXP，保持成长不断档。',
+              reward: '+${checkInProvider.nextDayReward} EXP',
+              icon: Icons.calendar_month_rounded,
+              stateLabel: '明日解锁',
+              accent: const Color(0xFFFFB347),
+            ),
+            const SizedBox(height: 12),
+            _buildQuestRow(
+              title: '支线奖励: 连签里程碑',
+              subtitle: daysLeft == 0
+                  ? '当前已经踩在线上奖励点，下一次签到会继续滚动奖励。'
+                  : '距离 $streakTarget 天里程碑还差 $daysLeft 天，预计可拿额外 +$sideQuestReward EXP。',
+              reward: '+$sideQuestReward EXP',
+              icon: Icons.flag_rounded,
+              stateLabel: daysLeft == 0 ? '进行中' : '差 $daysLeft 天',
+              accent: levelProvider.getLevelColor(levelProvider.currentLevel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTaskList(
+      CheckInProvider checkInProvider, UserLevelProvider levelProvider,
+      {bool isCompact = false, bool embedded = false}) {
+    final tasks = _buildTasks(checkInProvider, levelProvider);
+    final completedCount = tasks.where((task) => task.completed).length;
+    final progress = tasks.isEmpty ? 0.0 : completedCount / tasks.length;
+    final previewTasks = isCompact ? tasks.take(2).toList() : tasks;
+
+    if (embedded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    minHeight: 8,
+                    backgroundColor: const Color(0xFFF1F3F8),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      MoeTokens.primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: MoeTokens.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$completedCount / ${tasks.length} 瀹屾垚',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: MoeTokens.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...previewTasks.map((task) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildTaskItem(task),
+              )),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _showTaskDrawer(context, tasks),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                foregroundColor: MoeTokens.primary,
+              ),
+              icon: const Icon(Icons.toc_rounded, size: 18),
+              label: Text(
+                '鏌ョ湅鍏ㄩ儴 ${tasks.length} 涓换鍔?',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return MoeReveal(
+      delay: const Duration(milliseconds: 100),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '任务列表',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: MoeTokens.titleText,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: MoeTokens.primary.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '$completedCount / ${tasks.length} 完成',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: MoeTokens.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '先把今天能做的成长任务清掉，经验和连签收益都会更直观。',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 8,
+                backgroundColor: const Color(0xFFF1F3F8),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  MoeTokens.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...previewTasks.map((task) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildTaskItem(task),
+                )),
+            if (isCompact)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => _showTaskDrawer(context, tasks),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    foregroundColor: MoeTokens.primary,
+                  ),
+                  icon: const Icon(Icons.toc_rounded, size: 18),
+                  label: Text(
+                    '查看全部 ${tasks.length} 个任务',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroTaskTag(_CheckInTaskViewData task) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.16),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            task.icon,
+            size: 14,
+            color: Colors.white.withValues(alpha: 0.96),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            task.title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withValues(alpha: 0.96),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              task.badge,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.96),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightSwitcher(
+    CheckInProvider checkInProvider,
+    UserLevelProvider levelProvider,
+  ) {
+    final tabs = const [
+      ('任务板', Icons.dashboard_customize_rounded),
+      ('奖励', Icons.card_giftcard_rounded),
+      ('连签', Icons.timeline_rounded),
+      ('成长', Icons.insights_rounded),
+    ];
+
+    return MoeReveal(
+      delay: const Duration(milliseconds: 180),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '更多面板',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: MoeTokens.titleText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '把次级信息收进切换面板里，先看重点，再按需展开。',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(tabs.length, (index) {
+                final selected = _selectedInsightIndex == index;
+                final item = tabs[index];
+                return MoePressable(
+                  onTap: () {
+                    setState(() {
+                      _selectedInsightIndex = index;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? MoeTokens.primary.withValues(alpha: 0.12)
+                          : const Color(0xFFF5F7FB),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: selected
+                            ? MoeTokens.primary.withValues(alpha: 0.24)
+                            : const Color(0xFFE8ECF4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.$2,
+                          size: 16,
+                          color: selected
+                              ? MoeTokens.primary
+                              : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          item.$1,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: selected
+                                ? MoeTokens.primary
+                                : Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 16),
+            _buildSelectedInsight(checkInProvider, levelProvider),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedInsight(
+    CheckInProvider checkInProvider,
+    UserLevelProvider levelProvider,
+  ) {
+    switch (_selectedInsightIndex) {
+      case 0:
+        return _buildTaskList(
+          checkInProvider,
+          levelProvider,
+          isCompact: true,
+          embedded: true,
+        );
+      case 1:
+        return _buildRewardPreview(checkInProvider, compact: true);
+      case 2:
+        return _buildStreakMilestones(checkInProvider, compact: true);
+      default:
+        return _buildStatsCard(checkInProvider, levelProvider, compact: true);
+    }
+  }
+
+  Future<void> _showTaskDrawer(
+    BuildContext context,
+    List<_CheckInTaskViewData> tasks,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SafeArea(
+          top: false,
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7DBE6),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '今日任务列表',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: MoeTokens.titleText,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    itemCount: tasks.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) =>
+                        _buildTaskItem(tasks[index]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<_CheckInTaskViewData> _buildTasks(
+    CheckInProvider checkInProvider,
+    UserLevelProvider levelProvider,
+  ) {
+    final streak = checkInProvider.consecutiveDays;
+    final streakMilestone = streak < 3
+        ? 3
+        : streak < 5
+            ? 5
+            : streak < 7
+                ? 7
+                : streak + 3;
+    final streakRemaining = math.max(0, streakMilestone - streak);
+    final nextLevelExp =
+        levelProvider.isMaxLevel ? 0 : math.max(0, levelProvider.expToNext);
+
+    return [
+      _CheckInTaskViewData(
+        title: '每日签到',
+        subtitle: checkInProvider.hasCheckedToday
+            ? '今日签到已经完成，奖励已到账。'
+            : checkInProvider.canCheckIn
+                ? '领取今日签到奖励并保持连签。'
+                : '当前暂不可签到，稍后可以再回来看看。',
+        reward: '+${checkInProvider.todayReward} EXP',
+        badge: checkInProvider.hasCheckedToday
+            ? '已完成'
+            : checkInProvider.canCheckIn
+                ? '可领取'
+                : '未开启',
+        icon: checkInProvider.hasCheckedToday
+            ? Icons.check_circle_rounded
+            : Icons.bolt_rounded,
+        accent: checkInProvider.hasCheckedToday
+            ? const Color(0xFF2E9B62)
+            : MoeTokens.primary,
+        completed: checkInProvider.hasCheckedToday,
+      ),
+      _CheckInTaskViewData(
+        title: '连续签到里程碑',
+        subtitle: streakRemaining == 0
+            ? '你已经站上当前里程碑，继续保持就会滚动解锁下一档奖励。'
+            : '还差 $streakRemaining 天即可触发第 $streakMilestone 天连签奖励。',
+        reward: '+${12 + streakMilestone * 2} EXP',
+        badge: streakRemaining == 0 ? '进行中' : '差 $streakRemaining 天',
+        icon: Icons.local_fire_department_rounded,
+        accent: const Color(0xFFFF8A5B),
+        completed: false,
+      ),
+      _CheckInTaskViewData(
+        title: '等级成长',
+        subtitle: levelProvider.isMaxLevel
+            ? '当前已经达到最高等级，今天继续保持活跃就好。'
+            : '距离下一等级还差 $nextLevelExp EXP，完成日常任务会更快升级。',
+        reward: levelProvider.isMaxLevel
+            ? '已满级'
+            : '目标 Lv.${levelProvider.currentLevel + 1}',
+        badge: levelProvider.isMaxLevel
+            ? '已达上限'
+            : '${(levelProvider.progressPercentage).toStringAsFixed(0)}%',
+        icon: Icons.auto_awesome_rounded,
+        accent: levelProvider.getLevelColor(levelProvider.currentLevel),
+        completed: levelProvider.isMaxLevel,
+      ),
+      const _CheckInTaskViewData(
+        title: '更多活跃任务',
+        subtitle: '后续可以在这里接入发动态、逛社区、进入 AI 等日常任务。',
+        reward: '即将开放',
+        badge: '预告',
+        icon: Icons.explore_rounded,
+        accent: Color(0xFF9095A0),
+        completed: false,
+      ),
+    ];
+  }
+
+  Widget _buildTaskItem(_CheckInTaskViewData task) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: task.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: task.accent.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: task.accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(task.icon, size: 22, color: task.accent),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        task.badge,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: task.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  task.subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      task.reward,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: task.accent,
+                      ),
+                    ),
+                    if (task.completed) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: Color(0xFF2E9B62),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestRow({
+    required String title,
+    required String subtitle,
+    required String reward,
+    required IconData icon,
+    required String stateLabel,
+    required Color accent,
+    bool completed = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: accent.withValues(alpha: 0.12),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        stateLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      reward,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                      ),
+                    ),
+                    if (completed) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 16,
+                        color: Color(0xFF2E9B62),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStreakMilestones(
+    CheckInProvider checkInProvider, {
+    bool compact = false,
+  }) {
+    final milestones = [1, 3, 5, 7];
+    final streak = checkInProvider.consecutiveDays;
+
+    return MoeReveal(
+      delay: const Duration(milliseconds: 200),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '连签里程碑',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: MoeTokens.titleText,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '连续签到越久，成长收益越稳。把今天当作连签任务链里的一格。',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: List.generate(milestones.length, (index) {
+                final day = milestones[index];
+                final reached = streak >= day;
+                final isCurrent =
+                    !reached && (index == 0 || streak >= milestones[index - 1]);
+
+                return Expanded(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: reached
+                                    ? const LinearGradient(
+                                        colors: [
+                                          MoeTokens.primary,
+                                          MoeTokens.secondary,
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                                color: reached
+                                    ? null
+                                    : isCurrent
+                                        ? const Color(0xFFFFF3DD)
+                                        : const Color(0xFFF4F5F9),
+                                border: Border.all(
+                                  color: reached
+                                      ? Colors.transparent
+                                      : isCurrent
+                                          ? const Color(0xFFFFB347)
+                                          : const Color(0xFFE6E8F0),
+                                  width: 2,
+                                ),
+                              ),
+                              child: Icon(
+                                reached
+                                    ? Icons.check_rounded
+                                    : isCurrent
+                                        ? Icons.flag_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                color: reached
+                                    ? Colors.white
+                                    : isCurrent
+                                        ? const Color(0xFFE09020)
+                                        : const Color(0xFFB7BDCF),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              '第 $day 天',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: MoeTokens.titleText,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              reached
+                                  ? '已达成'
+                                  : isCurrent
+                                      ? '当前目标'
+                                      : '待解锁',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: reached
+                                    ? MoeTokens.primary
+                                    : Colors.grey.shade600,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (index != milestones.length - 1)
+                        Container(
+                          width: 18,
+                          height: 2,
+                          margin: const EdgeInsets.only(bottom: 36),
+                          color: streak >= milestones[index + 1]
+                              ? MoeTokens.primary.withValues(alpha: 0.7)
+                              : const Color(0xFFE4E7F0),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(
+    CheckInProvider checkInProvider,
+    UserLevelProvider levelProvider, {
+    bool compact = false,
+  }) {
     return MoeReveal(
       delay: const Duration(milliseconds: 220),
       child: Container(
@@ -720,9 +1716,12 @@ class _CheckInPageState extends State<CheckInPage>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 11,
@@ -732,6 +1731,8 @@ class _CheckInPageState extends State<CheckInPage>
                 const SizedBox(height: 2),
                 Text(
                   value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,

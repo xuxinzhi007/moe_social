@@ -30,6 +30,7 @@ const OperationUserServiceFeishuAuthorizeURL = "/user.v1.UserService/FeishuAutho
 const OperationUserServiceFeishuLogin = "/user.v1.UserService/FeishuLogin"
 const OperationUserServiceFeishuPublicConfig = "/user.v1.UserService/FeishuPublicConfig"
 const OperationUserServiceFollowUser = "/user.v1.UserService/FollowUser"
+const OperationUserServiceGenerateTempEmail = "/user.v1.UserService/GenerateTempEmail"
 const OperationUserServiceGetAvatarOutfit = "/user.v1.UserService/GetAvatarOutfit"
 const OperationUserServiceGetAvatarOutfits = "/user.v1.UserService/GetAvatarOutfits"
 const OperationUserServiceGetEmojiPack = "/user.v1.UserService/GetEmojiPack"
@@ -37,6 +38,7 @@ const OperationUserServiceGetEmojiPacks = "/user.v1.UserService/GetEmojiPacks"
 const OperationUserServiceGetFollowers = "/user.v1.UserService/GetFollowers"
 const OperationUserServiceGetFollowings = "/user.v1.UserService/GetFollowings"
 const OperationUserServiceGetFriendRelation = "/user.v1.UserService/GetFriendRelation"
+const OperationUserServiceGetTempEmailLatestCode = "/user.v1.UserService/GetTempEmailLatestCode"
 const OperationUserServiceGetTransaction = "/user.v1.UserService/GetTransaction"
 const OperationUserServiceGetTransactions = "/user.v1.UserService/GetTransactions"
 const OperationUserServiceGetUser = "/user.v1.UserService/GetUser"
@@ -80,6 +82,7 @@ type UserServiceHTTPServer interface {
 	FeishuLogin(context.Context, *FeishuLoginReq) (*FeishuLoginResp, error)
 	FeishuPublicConfig(context.Context, *emptypb.Empty) (*FeishuPublicConfigResp, error)
 	FollowUser(context.Context, *FollowUserReq) (*FollowUserResp, error)
+	GenerateTempEmail(context.Context, *GenerateTempEmailReq) (*GenerateTempEmailResp, error)
 	GetAvatarOutfit(context.Context, *GetAvatarOutfitReq) (*GetAvatarOutfitResp, error)
 	GetAvatarOutfits(context.Context, *GetAvatarOutfitsReq) (*GetAvatarOutfitsResp, error)
 	GetEmojiPack(context.Context, *GetEmojiPackReq) (*GetEmojiPackResp, error)
@@ -87,6 +90,7 @@ type UserServiceHTTPServer interface {
 	GetFollowers(context.Context, *GetFollowersReq) (*GetFollowersResp, error)
 	GetFollowings(context.Context, *GetFollowingsReq) (*GetFollowingsResp, error)
 	GetFriendRelation(context.Context, *GetFriendRelationReq) (*GetFriendRelationResp, error)
+	GetTempEmailLatestCode(context.Context, *GetTempEmailLatestCodeReq) (*GetTempEmailLatestCodeResp, error)
 	GetTransaction(context.Context, *GetTransactionReq) (*GetTransactionResp, error)
 	GetTransactions(context.Context, *GetTransactionsReq) (*GetTransactionsResp, error)
 	GetUser(context.Context, *GetUserReq) (*GetUserResp, error)
@@ -153,6 +157,8 @@ func RegisterUserServiceHTTPServer(s *http.Server, srv UserServiceHTTPServer) {
 	r.GET("/api/user/{user_id}/transactions", _UserService_GetTransactions0_HTTP_Handler(srv))
 	r.POST("/api/user/{user_id}/wallet/recharge", _UserService_Recharge0_HTTP_Handler(srv))
 	r.POST("/api/user/check-email", _UserService_GetUserByEmail0_HTTP_Handler(srv))
+	r.POST("/api/user/temp-mail/generate", _UserService_GenerateTempEmail0_HTTP_Handler(srv))
+	r.POST("/api/user/temp-mail/latest-code", _UserService_GetTempEmailLatestCode0_HTTP_Handler(srv))
 	r.POST("/api/user/reset-password", _UserService_ResetPassword0_HTTP_Handler(srv))
 	r.GET("/api/users", _UserService_GetUsers0_HTTP_Handler(srv))
 	r.GET("/api/users/count", _UserService_GetUserCount0_HTTP_Handler(srv))
@@ -869,6 +875,50 @@ func _UserService_GetUserByEmail0_HTTP_Handler(srv UserServiceHTTPServer) func(c
 	}
 }
 
+func _UserService_GenerateTempEmail0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GenerateTempEmailReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGenerateTempEmail)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GenerateTempEmail(ctx, req.(*GenerateTempEmailReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GenerateTempEmailResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _UserService_GetTempEmailLatestCode0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetTempEmailLatestCodeReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationUserServiceGetTempEmailLatestCode)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetTempEmailLatestCode(ctx, req.(*GetTempEmailLatestCodeReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetTempEmailLatestCodeResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _UserService_ResetPassword0_HTTP_Handler(srv UserServiceHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ResetPasswordReq
@@ -1248,6 +1298,7 @@ type UserServiceHTTPClient interface {
 	FeishuLogin(ctx context.Context, req *FeishuLoginReq, opts ...http.CallOption) (rsp *FeishuLoginResp, err error)
 	FeishuPublicConfig(ctx context.Context, req *emptypb.Empty, opts ...http.CallOption) (rsp *FeishuPublicConfigResp, err error)
 	FollowUser(ctx context.Context, req *FollowUserReq, opts ...http.CallOption) (rsp *FollowUserResp, err error)
+	GenerateTempEmail(ctx context.Context, req *GenerateTempEmailReq, opts ...http.CallOption) (rsp *GenerateTempEmailResp, err error)
 	GetAvatarOutfit(ctx context.Context, req *GetAvatarOutfitReq, opts ...http.CallOption) (rsp *GetAvatarOutfitResp, err error)
 	GetAvatarOutfits(ctx context.Context, req *GetAvatarOutfitsReq, opts ...http.CallOption) (rsp *GetAvatarOutfitsResp, err error)
 	GetEmojiPack(ctx context.Context, req *GetEmojiPackReq, opts ...http.CallOption) (rsp *GetEmojiPackResp, err error)
@@ -1255,6 +1306,7 @@ type UserServiceHTTPClient interface {
 	GetFollowers(ctx context.Context, req *GetFollowersReq, opts ...http.CallOption) (rsp *GetFollowersResp, err error)
 	GetFollowings(ctx context.Context, req *GetFollowingsReq, opts ...http.CallOption) (rsp *GetFollowingsResp, err error)
 	GetFriendRelation(ctx context.Context, req *GetFriendRelationReq, opts ...http.CallOption) (rsp *GetFriendRelationResp, err error)
+	GetTempEmailLatestCode(ctx context.Context, req *GetTempEmailLatestCodeReq, opts ...http.CallOption) (rsp *GetTempEmailLatestCodeResp, err error)
 	GetTransaction(ctx context.Context, req *GetTransactionReq, opts ...http.CallOption) (rsp *GetTransactionResp, err error)
 	GetTransactions(ctx context.Context, req *GetTransactionsReq, opts ...http.CallOption) (rsp *GetTransactionsResp, err error)
 	GetUser(ctx context.Context, req *GetUserReq, opts ...http.CallOption) (rsp *GetUserResp, err error)
@@ -1426,6 +1478,19 @@ func (c *UserServiceHTTPClientImpl) FollowUser(ctx context.Context, in *FollowUs
 	return &out, nil
 }
 
+func (c *UserServiceHTTPClientImpl) GenerateTempEmail(ctx context.Context, in *GenerateTempEmailReq, opts ...http.CallOption) (*GenerateTempEmailResp, error) {
+	var out GenerateTempEmailResp
+	pattern := "/api/user/temp-mail/generate"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceGenerateTempEmail))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *UserServiceHTTPClientImpl) GetAvatarOutfit(ctx context.Context, in *GetAvatarOutfitReq, opts ...http.CallOption) (*GetAvatarOutfitResp, error) {
 	var out GetAvatarOutfitResp
 	pattern := "/api/avatar/outfits/{outfit_id}"
@@ -1511,6 +1576,19 @@ func (c *UserServiceHTTPClientImpl) GetFriendRelation(ctx context.Context, in *G
 	opts = append(opts, http.Operation(OperationUserServiceGetFriendRelation))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *UserServiceHTTPClientImpl) GetTempEmailLatestCode(ctx context.Context, in *GetTempEmailLatestCodeReq, opts ...http.CallOption) (*GetTempEmailLatestCodeResp, error) {
+	var out GetTempEmailLatestCodeResp
+	pattern := "/api/user/temp-mail/latest-code"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationUserServiceGetTempEmailLatestCode))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

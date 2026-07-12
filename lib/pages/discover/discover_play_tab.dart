@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/moe_tokens.dart';
-
+import '../../utils/main_tab_navigation.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
-import '../ai/agent_list_page.dart';
 import 'widgets/explore_feature_card.dart';
 
 /// 探索页 · AI 互动（社交增强，不含游戏入口）。
@@ -42,12 +41,7 @@ class DiscoverPlayTab extends StatelessWidget {
           subtitle: '角色、世界观与模型来源，服务社交场景下的对话互动',
           icon: Icons.auto_awesome_rounded,
           gradient: AiBrandTokens.heroGradient,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AgentListPage()),
-            );
-          },
+          onTap: () => openMainTab(context, 2),
         ),
       ],
     );

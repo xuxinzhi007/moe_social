@@ -13,7 +13,7 @@
 | 范围 | 命令 |
 |------|------|
 | Flutter | `flutter pub get` · `flutter analyze` · `flutter test` |
-| 后端 | `cd backend && make gen` · `make check` · `make moe-social` · `go test ./...` |
+| 后端 | `cd backend && make gen` · `make check` · `make moe-social` · `make temp-mail-password EMAIL=foo@web-library.net` · `go test ./...` |
 | 管理台 | `cd moe-admin && npm run build` |
 
 Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-apifox.md`
