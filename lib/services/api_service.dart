@@ -669,6 +669,28 @@ class ApiService {
     return User.fromJson(_map(result, keys: const ['user']));
   }
 
+  static Future<String> generateTempEmail() async {
+    final result = await _request(
+      '/api/user/temp-mail/generate',
+      method: 'POST',
+      body: const {},
+    );
+    final email = ApiResponse.stringField(result, 'email') ?? '';
+    if (email.trim().isEmpty) {
+      throw ApiException('临时邮箱生成失败，返回数据不完整');
+    }
+    return email.trim();
+  }
+
+  static Future<Map<String, dynamic>> getTempEmailLatestCode(
+      String email) async {
+    return await _request(
+      '/api/user/temp-mail/latest-code',
+      method: 'POST',
+      body: {'email': email.trim().toLowerCase()},
+    );
+  }
+
   // 重置密码
   static Future<Map<String, dynamic>> resetPassword(
       String email, String code, String newPassword) async {

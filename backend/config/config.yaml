@@ -136,6 +136,13 @@ app_client:
 
 
 
+temp_mail:
+  enabled: true
+  base_url: "https://api.mail.tm"
+  api_key: ""
+  fallback_domain: "web-library.net"
+  timeout_seconds: 30
+
 # 图片「云图库」：本机 go run 默认落盘 ./data/images，URL 走本机 :8888
 # Docker/云部署时改回 /app/data/images + 公网域名（见下方注释）
 #image:

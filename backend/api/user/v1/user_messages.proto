@@ -205,6 +205,26 @@ message GetUserByEmailResp {
   User user = 1;
 }
 
+message GenerateTempEmailReq {}
+
+message GenerateTempEmailResp {
+  string email = 1;
+  string local_part = 2;
+  string domain = 3;
+}
+
+message GetTempEmailLatestCodeReq {
+  string email = 1;
+}
+
+message GetTempEmailLatestCodeResp {
+  string code = 1;
+  bool matched = 2;
+  string message_id = 3;
+  string subject = 4;
+  string received_at = 5;
+}
+
 message GetUserCountReq {
 }
 
@@ -876,6 +896,12 @@ service UserService {
   }
   rpc GetUserByEmail(GetUserByEmailReq) returns (GetUserByEmailResp) {
     option (google.api.http) = { post: "/api/user/check-email" body: "*" };
+  }
+  rpc GenerateTempEmail(GenerateTempEmailReq) returns (GenerateTempEmailResp) {
+    option (google.api.http) = { post: "/api/user/temp-mail/generate" body: "*" };
+  }
+  rpc GetTempEmailLatestCode(GetTempEmailLatestCodeReq) returns (GetTempEmailLatestCodeResp) {
+    option (google.api.http) = { post: "/api/user/temp-mail/latest-code" body: "*" };
   }
   rpc ResetPassword(ResetPasswordReq) returns (ResetPasswordResp) {
     option (google.api.http) = { post: "/api/user/reset-password" body: "*" };

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/achievement_hooks.dart';
+import '../../services/api_service.dart';
 import '../../utils/validators.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +35,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordFocus = FocusNode();
   final _confirmPasswordFocus = FocusNode();
   Timer? _emailCompletionDebounce;
+  bool _isGeneratingTempEmail = false;
+  bool _hasGeneratedTempEmail = false;
+  String? _generatedTempEmail;
 
   final Color _primaryColor = MoeTokens.primary;
   final ValueNotifier<List<String>> _emailCompletions =
@@ -47,6 +51,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _onEmailTextChanged() {
+    final generated = _generatedTempEmail;
+    if (generated != null && _emailController.text.trim() != generated) {
+      _generatedTempEmail = null;
+      if (_hasGeneratedTempEmail && mounted) {
+        setState(() => _hasGeneratedTempEmail = false);
+      }
+    }
     _emailCompletionDebounce?.cancel();
     _emailCompletionDebounce = Timer(
       const Duration(milliseconds: 100),
@@ -90,6 +101,49 @@ class _RegisterPageState extends State<RegisterPage> {
         Validators.emailDomainCompletionCandidates(_emailController.text);
     if (listEquals(_emailCompletions.value, next)) return;
     _emailCompletions.value = next;
+  }
+
+  Future<void> _generateTempEmail() async {
+    if (_isGeneratingTempEmail) return;
+    setState(() {
+      _isGeneratingTempEmail = true;
+      _hasGeneratedTempEmail = false;
+      _generatedTempEmail = null;
+    });
+    try {
+      final email = await ApiService.generateTempEmail();
+      if (!mounted) return;
+      _emailController.value = TextEditingValue(
+        text: email,
+        selection: TextSelection.collapsed(offset: email.length),
+      );
+      _emailCompletions.value = const [];
+      _formKey.currentState?.validate();
+      setState(() {
+        _hasGeneratedTempEmail = true;
+        _generatedTempEmail = email;
+      });
+      FocusScope.of(context).requestFocus(_passwordFocus);
+      MoeToast.info(context, '临时邮箱已生成，注册成功后记得保存这个邮箱地址');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasGeneratedTempEmail = false;
+        _generatedTempEmail = null;
+      });
+      MoeToast.error(context, e.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _hasGeneratedTempEmail = false;
+        _generatedTempEmail = null;
+      });
+      MoeToast.error(context, '临时邮箱生成失败，请稍后重试');
+    } finally {
+      if (mounted) {
+        setState(() => _isGeneratingTempEmail = false);
+      }
+    }
   }
 
   Future<void> _register() async {
@@ -230,8 +284,14 @@ class _RegisterPageState extends State<RegisterPage> {
                                   MoeInputField(
                                     controller: _emailController,
                                     focusNode: _emailFocus,
+                                    maxLines: 1,
                                     hintText: '电子邮箱',
                                     icon: Icons.email_outlined,
+                                    suffixIcon: _TempMailButton(
+                                      isLoading: _isGeneratingTempEmail,
+                                      onTap: _generateTempEmail,
+                                      accentColor: _primaryColor,
+                                    ),
                                     validator: completions.isNotEmpty
                                         ? (_) => null
                                         : Validators.email,
@@ -247,6 +307,56 @@ class _RegisterPageState extends State<RegisterPage> {
                                     candidates: completions,
                                     accentColor: _primaryColor,
                                     onSelected: _pickEmailSuffix,
+                                  ),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    child: _hasGeneratedTempEmail
+                                        ? Container(
+                                            key: const ValueKey(
+                                                'temp-mail-hint'),
+                                            margin:
+                                                const EdgeInsets.only(top: 10),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 12,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _primaryColor.withValues(
+                                                  alpha: 0.08),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                MoeTokens.radiusLg,
+                                              ),
+                                              border: Border.all(
+                                                color: _primaryColor.withValues(
+                                                    alpha: 0.18),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Icon(
+                                                  Icons.mark_email_read_rounded,
+                                                  size: 18,
+                                                  color: _primaryColor,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    '已为你填入临时邮箱。完成注册后请保存该邮箱，后续收验证码或回查会更方便。',
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          MoeTokens.textSm,
+                                                      height: 1.45,
+                                                      color: MoeTokens.bodyText,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
                                   ),
                                   SizedBox(
                                       height: completions.isEmpty ? 20 : 12),
@@ -372,5 +482,75 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+}
+
+class _TempMailButton extends StatelessWidget {
+  const _TempMailButton({
+    required this.isLoading,
+    required this.onTap,
+    required this.accentColor,
+  });
+
+  final bool isLoading;
+  final VoidCallback onTap;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      widthFactor: 1,
+      heightFactor: 1,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 10),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: isLoading ? null : onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: accentColor.withValues(alpha: 0.22),
+                ),
+              ),
+              child: isLoading
+                  ? SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 14,
+                          color: accentColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '临邮',
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: MoeTokens.textXs,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

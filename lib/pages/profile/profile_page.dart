@@ -20,13 +20,13 @@ import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
+import '../../utils/main_tab_navigation.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
-import '../ai/agent_list_page.dart';
 import '../checkin/checkin_page.dart';
 import '../checkin/user_level_page.dart';
 import '../commerce/wallet_page.dart';
@@ -436,10 +436,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             color: const Color(0xFFFFB347),
                             onTap: () {
                               HapticFeedback.lightImpact();
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const AgentListPage()));
+                              openMainTab(context, 2);
                             }),
                         _MenuItem(
                             icon: Icons.settings_outlined,

@@ -2,7 +2,7 @@
 
 
 
-.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-proto-route-count gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto api-one check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero \
+.PHONY: all gen gen-all gen-legacy-goctl gen-moe-proto gen-moe-conf gen-proto-route-count gen-moekratospilot-get gen-rpc gen-api gen-swagger gen-moe-admin api-moe-proto api-one check fs8-split-api fs8-split-super-proto fs9b-rewrite-imports moe-social moe-social-dev moe-social-stop moe-platform moe-kratos migrate-moe build build-moe-social build build-linux env-status grpc-smoke split-deploy-smoke remove-hybrid-gozero temp-mail-password \
 
 	deploy-agent deploy-agent-stop moe-social-stop admin \
 
@@ -101,6 +101,17 @@ fs8-split-api:
 check:
 	go build -o /dev/null ./cmd/moe-social
 	go test ./internal/platform/moesocial/... ./internal/server/routestats/... -count=1
+
+# 计算临时邮箱对应的 mail.tm 内部密码
+# 用法：make temp-mail-password EMAIL=foo@web-library.net
+temp-mail-password:
+ifeq ($(OS),Windows_NT)
+	@if "$(EMAIL)"=="" (echo Usage: make temp-mail-password EMAIL=foo@web-library.net && exit /b 1)
+	go run ./cmd/temp-mail-password --email "$(EMAIL)"
+else
+	@if [ -z "$(EMAIL)" ]; then echo "Usage: make temp-mail-password EMAIL=foo@web-library.net"; exit 1; fi
+	go run ./cmd/temp-mail-password --email "$(EMAIL)"
+endif
 
 # P4 域 gRPC 冒烟（已退役）
 grpc-smoke:
