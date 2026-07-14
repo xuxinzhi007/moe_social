@@ -169,6 +169,68 @@ class LifeEntity {
 
   /// 年龄（天）— 假设 5 秒/tick, 720 tick/小时, 24 小时/天
   int get ageInDays => (age / (720 * 24)).floor();
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'emoji': emoji,
+    'hunger': hunger,
+    'energy': energy,
+    'mood': mood,
+    'action': action,
+    'x': x,
+    'y': y,
+    'growth_stage': growthStage,
+    'experience': experience,
+    'age': age,
+    'active_effects': activeEffects.map((e) => e.toJson()).toList(),
+  };
+
+  /// 预计算 Canvas 渲染数据，避免在 paint() 中重复计算
+  EntityRenderData toRenderData() {
+    final avg = (hunger + energy + mood) / 3;
+    final Color healthColor;
+    if (avg >= 70) {
+      healthColor = const Color(0xFF4CAF50); // 绿色
+    } else if (avg >= 40) {
+      healthColor = const Color(0xFFFFC107); // 琥珀色
+    } else {
+      healthColor = const Color(0xFFF44336); // 红色
+    }
+    return EntityRenderData(
+      emoji: emoji,
+      worldX: x,
+      worldY: y,
+      healthColor: healthColor,
+      stageColor: growthStageColor,
+      name: name,
+      id: id,
+      action: action,
+    );
+  }
+}
+
+/// Canvas 渲染预计算数据，避免在 paint() 中重复计算
+class EntityRenderData {
+  final String emoji;
+  final double worldX;
+  final double worldY;
+  final Color healthColor; // (hunger+energy+mood)/3 → 绿/黄/红
+  final Color stageColor;  // 成长阶段颜色
+  final String name;
+  final int id;
+  final String? action;    // 当前行为
+
+  const EntityRenderData({
+    required this.emoji,
+    required this.worldX,
+    required this.worldY,
+    required this.healthColor,
+    required this.stageColor,
+    required this.name,
+    required this.id,
+    this.action,
+  });
 }
 
 /// 道具定义
@@ -305,6 +367,13 @@ class ActiveEffectSummary {
       remaining: _asInt(json['remaining']),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'item_id': itemId,
+    'icon': icon,
+    'name': name,
+    'remaining': remaining,
+  };
 }
 
 /// 解析 active_effects 数组
@@ -446,6 +515,21 @@ class LifeWorldSummary {
   }
 
   static const empty = LifeWorldSummary();
+
+  Map<String, dynamic> toJson() => {
+    'entity_count': entityCount,
+    'alive_count': aliveCount,
+    'birth_count': birthCount,
+    'death_count': deathCount,
+    'avg_hunger': avgHunger,
+    'avg_energy': avgEnergy,
+    'avg_mood': avgMood,
+    'total_food': totalFood,
+    'habitable_cells': habitableCells,
+    'danger_cells': dangerCells,
+    'weather': weather,
+    'active_events': activeEvents,
+  };
 }
 
 /// 世界事件

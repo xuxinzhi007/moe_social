@@ -3,14 +3,27 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../models/life_state.dart';
+import '../../theme/moe_tokens.dart';
+import 'life_empty_state.dart';
 import 'life_entity_sprite.dart';
+import 'life_world_canvas.dart';
 
-/// 世界地图组件 — 2D 场景，entity 位置可视化（AnimatedPositioned 平滑移动）。
+/// 世界地图组件 — 2D 场景，entity 位置可视化。
+///
+/// 支持两种渲染模式：
+/// - Canvas 模式（默认）：使用 CustomPaint 批量绘制，性能更优
+/// - 传统模式：Stack + AnimatedPositioned，逐实体 Widget
 class LifeWorldMap extends StatelessWidget {
   final List<LifeEntity> entities;
   final String weather; // clear/rain/drought/storm
   final void Function(int entityId)? onEntityTap;
   final void Function(int entityId)? onEntityLongPress;
+
+  /// 是否使用 Canvas 渲染路径（默认 true）
+  final bool useCanvas;
+
+  /// 空状态引导关闭回调（可选）
+  final VoidCallback? onEmptyDismissed;
 
   const LifeWorldMap({
     super.key,
@@ -18,6 +31,8 @@ class LifeWorldMap extends StatelessWidget {
     this.weather = 'clear',
     this.onEntityTap,
     this.onEntityLongPress,
+    this.useCanvas = true,
+    this.onEmptyDismissed,
   });
 
   /// 世界坐标范围
@@ -52,67 +67,77 @@ class LifeWorldMap extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final mapWidth = constraints.maxWidth;
-            final mapHeight = constraints.maxHeight;
+        child: AnimatedSwitcher(
+          duration: MoeTokens.motionFadeDuration,
+          child: entities.isEmpty
+              ? LifeEmptyState(
+                  key: const ValueKey('empty_state'),
+                  onDismissed: () => onEmptyDismissed?.call(),
+                )
+              : Semantics(
+                  key: const ValueKey('map_content'),
+                  label: '世界地图，${entities.length} 个实体',
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final mapWidth = constraints.maxWidth;
+                      final mapHeight = constraints.maxHeight;
 
-            // 坐标映射因子
-            final xFactor = mapWidth / _worldWidth;
-            final yFactor = mapHeight / _worldHeight;
+                      // 坐标映射因子
+                      final xFactor = mapWidth / _worldWidth;
+                      final yFactor = mapHeight / _worldHeight;
 
-            return Stack(
-              children: [
-                // 网格装饰线
-                _GridDecoration(width: mapWidth, height: mapHeight),
-                // 天气图层（在实体下方）
-                RepaintBoundary(
-                  child: _WeatherLayer(
-                    weather: weather,
-                    width: mapWidth,
-                    height: mapHeight,
+                      return Stack(
+                        children: [
+                          // Canvas 渲染路径 或 传统 Stack+AnimatedPositioned 路径
+                          if (useCanvas)
+                            LifeWorldCanvas(
+                              entities: entities,
+                              weather: weather,
+                              onEntityTap: onEntityTap,
+                              onEntityLongPress: onEntityLongPress,
+                            )
+                          else
+                            ..._buildLegacyEntities(xFactor, yFactor),
+                        ],
+                      );
+                    },
                   ),
                 ),
-                // Entity 精灵
-                for (final entity in entities)
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
-                    left: (entity.x * xFactor) - 20, // 居中偏移
-                    top: (entity.y * yFactor) - 24,
-                    child: LifeEntitySprite(
-                      entity: entity,
-                      onTap: () => onEntityTap?.call(entity.id),
-                      onLongPress: () => onEntityLongPress?.call(entity.id),
-                    ),
-                  ),
-                // 空状态提示
-                if (entities.isEmpty)
-                  Positioned.fill(
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.eco_outlined,
-                              size: 48, color: Colors.green.shade200),
-                          const SizedBox(height: 8),
-                          Text(
-                            '等待生命出现…',
-                            style: TextStyle(
-                              color: Colors.green.shade400,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
         ),
       ),
     );
+  }
+
+  /// 传统渲染路径：网格 + 天气 + AnimatedPositioned 实体
+  List<Widget> _buildLegacyEntities(double xFactor, double yFactor) {
+    return [
+      // 网格装饰线
+      _GridDecoration(
+        width: xFactor * _worldWidth,
+        height: yFactor * _worldHeight,
+      ),
+      // 天气图层
+      RepaintBoundary(
+        child: _WeatherLayer(
+          weather: weather,
+          width: xFactor * _worldWidth,
+          height: yFactor * _worldHeight,
+        ),
+      ),
+      // Entity 精灵
+      for (final entity in entities)
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          left: (entity.x * xFactor) - 20,
+          top: (entity.y * yFactor) - 24,
+          child: LifeEntitySprite(
+            entity: entity,
+            onTap: () => onEntityTap?.call(entity.id),
+            onLongPress: () => onEntityLongPress?.call(entity.id),
+          ),
+        ),
+    ];
   }
 }
 

@@ -1,0 +1,3177 @@
+{
+  "duplicates": [
+    {
+      "firstFile": {
+        "end": 141,
+        "endLoc": {
+          "column": 22,
+          "line": 141,
+          "position": 3453
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 16,
+          "line": 128,
+          "position": 3013
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listAiAgents: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 14,
+      "secondFile": {
+        "end": 119,
+        "endLoc": {
+          "column": 22,
+          "line": 119,
+          "position": 4348
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 106,
+        "startLoc": {
+          "column": 14,
+          "line": 106,
+          "position": 3908
+        }
+      },
+      "tokens": 107
+    },
+    {
+      "firstFile": {
+        "end": 141,
+        "endLoc": {
+          "column": 22,
+          "line": 141,
+          "position": 3453
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 16,
+          "line": 128,
+          "position": 3013
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listAiAgents: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 14,
+      "secondFile": {
+        "end": 232,
+        "endLoc": {
+          "column": 35,
+          "line": 232,
+          "position": 8279
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 220,
+        "startLoc": {
+          "column": 17,
+          "line": 220,
+          "position": 7851
+        }
+      },
+      "tokens": 107
+    },
+    {
+      "firstFile": {
+        "end": 141,
+        "endLoc": {
+          "column": 22,
+          "line": 141,
+          "position": 3453
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 16,
+          "line": 128,
+          "position": 3013
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listAiAgents: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 14,
+      "secondFile": {
+        "end": 51,
+        "endLoc": {
+          "column": 22,
+          "line": 51,
+          "position": 1700
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 38,
+        "startLoc": {
+          "column": 16,
+          "line": 38,
+          "position": 1260
+        }
+      },
+      "tokens": 107
+    },
+    {
+      "firstFile": {
+        "end": 142,
+        "endLoc": {
+          "column": 33,
+          "line": 142,
+          "position": 3487
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 16,
+          "line": 128,
+          "position": 3013
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listAiAgents: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            owner_user_id: string",
+      "lines": 15,
+      "secondFile": {
+        "end": 76,
+        "endLoc": {
+          "column": 28,
+          "line": 76,
+          "position": 1742
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/userClient.ts",
+        "start": 62,
+        "startLoc": {
+          "column": 13,
+          "line": 62,
+          "position": 1273
+        }
+      },
+      "tokens": 110
+    },
+    {
+      "firstFile": {
+        "end": 136,
+        "endLoc": {
+          "column": 17,
+          "line": 136,
+          "position": 3297
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)",
+      "lines": 6,
+      "secondFile": {
+        "end": 187,
+        "endLoc": {
+          "column": 17,
+          "line": 187,
+          "position": 4902
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 182,
+        "startLoc": {
+          "column": 8,
+          "line": 182,
+          "position": 4689
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 137,
+        "endLoc": {
+          "column": 18,
+          "line": 137,
+          "position": 3357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()",
+      "lines": 7,
+      "secondFile": {
+        "end": 109,
+        "endLoc": {
+          "column": 17,
+          "line": 109,
+          "position": 3358
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 103,
+        "startLoc": {
+          "column": 14,
+          "line": 103,
+          "position": 3086
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 137,
+        "endLoc": {
+          "column": 18,
+          "line": 137,
+          "position": 3357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()",
+      "lines": 7,
+      "secondFile": {
+        "end": 178,
+        "endLoc": {
+          "column": 17,
+          "line": 178,
+          "position": 5481
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 172,
+        "startLoc": {
+          "column": 12,
+          "line": 172,
+          "position": 5209
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 137,
+        "endLoc": {
+          "column": 18,
+          "line": 137,
+          "position": 3357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()",
+      "lines": 7,
+      "secondFile": {
+        "end": 53,
+        "endLoc": {
+          "column": 17,
+          "line": 53,
+          "position": 2015
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 47,
+        "startLoc": {
+          "column": 13,
+          "line": 47,
+          "position": 1743
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 136,
+        "endLoc": {
+          "column": 17,
+          "line": 136,
+          "position": 3297
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 6,
+          "line": 131,
+          "position": 3077
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)",
+      "lines": 6,
+      "secondFile": {
+        "end": 277,
+        "endLoc": {
+          "column": 17,
+          "line": 277,
+          "position": 9805
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 272,
+        "startLoc": {
+          "column": 6,
+          "line": 272,
+          "position": 9585
+        }
+      },
+      "tokens": 60
+    },
+    {
+      "firstFile": {
+        "end": 136,
+        "endLoc": {
+          "column": 17,
+          "line": 136,
+          "position": 3297
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)",
+      "lines": 6,
+      "secondFile": {
+        "end": 133,
+        "endLoc": {
+          "column": 17,
+          "line": 133,
+          "position": 4350
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 14,
+          "line": 128,
+          "position": 4137
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 137,
+        "endLoc": {
+          "column": 18,
+          "line": 137,
+          "position": 3357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()",
+      "lines": 7,
+      "secondFile": {
+        "end": 234,
+        "endLoc": {
+          "column": 17,
+          "line": 234,
+          "position": 7566
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 228,
+        "startLoc": {
+          "column": 16,
+          "line": 228,
+          "position": 7294
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 137,
+        "endLoc": {
+          "column": 18,
+          "line": 137,
+          "position": 3357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 131,
+        "startLoc": {
+          "column": 13,
+          "line": 131,
+          "position": 3084
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()",
+      "lines": 7,
+      "secondFile": {
+        "end": 161,
+        "endLoc": {
+          "column": 17,
+          "line": 161,
+          "position": 4155
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/userClient.ts",
+        "start": 155,
+        "startLoc": {
+          "column": 13,
+          "line": 155,
+          "position": 3883
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 189,
+        "endLoc": {
+          "column": 17,
+          "line": 189,
+          "position": 5029
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 180,
+        "startLoc": {
+          "column": 16,
+          "line": 180,
+          "position": 4651
+        }
+      },
+      "format": "typescript",
+      "fragment": "      session_id?: string\n      from?: string\n      to?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.session_id) q.set('session_id', params.session_id)\n      if (params.from) q.set('from', params.from)",
+      "lines": 10,
+      "secondFile": {
+        "end": 225,
+        "endLoc": {
+          "column": 17,
+          "line": 225,
+          "position": 6136
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 216,
+        "startLoc": {
+          "column": 13,
+          "line": 216,
+          "position": 5758
+        }
+      },
+      "tokens": 99
+    },
+    {
+      "firstFile": {
+        "end": 187,
+        "endLoc": {
+          "column": 17,
+          "line": 187,
+          "position": 4902
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 181,
+        "startLoc": {
+          "column": 6,
+          "line": 181,
+          "position": 4667
+        }
+      },
+      "format": "typescript",
+      "fragment": "      from?: string\n      to?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)",
+      "lines": 7,
+      "secondFile": {
+        "end": 336,
+        "endLoc": {
+          "column": 17,
+          "line": 336,
+          "position": 9519
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 330,
+        "startLoc": {
+          "column": 6,
+          "line": 330,
+          "position": 9284
+        }
+      },
+      "tokens": 64
+    },
+    {
+      "firstFile": {
+        "end": 198,
+        "endLoc": {
+          "column": 30,
+          "line": 198,
+          "position": 5309
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 188,
+        "startLoc": {
+          "column": 66,
+          "line": 188,
+          "position": 5010
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.session_id) q.set('session_id', params.session_id)\n      if (params.from) q.set('from', params.from)\n      if (params.to) q.set('to', params.to)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            user_id: string\n            username?: string\n            session_id: string",
+      "lines": 11,
+      "secondFile": {
+        "end": 236,
+        "endLoc": {
+          "column": 30,
+          "line": 236,
+          "position": 6525
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 226,
+        "startLoc": {
+          "column": 57,
+          "line": 226,
+          "position": 6226
+        }
+      },
+      "tokens": 65
+    },
+    {
+      "firstFile": {
+        "end": 195,
+        "endLoc": {
+          "column": 22,
+          "line": 195,
+          "position": 5220
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 188,
+        "startLoc": {
+          "column": 66,
+          "line": 188,
+          "position": 5010
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.session_id) q.set('session_id', params.session_id)\n      if (params.from) q.set('from', params.from)\n      if (params.to) q.set('to', params.to)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 8,
+      "secondFile": {
+        "end": 348,
+        "endLoc": {
+          "column": 22,
+          "line": 348,
+          "position": 10068
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 341,
+        "startLoc": {
+          "column": 57,
+          "line": 341,
+          "position": 9858
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 228,
+        "endLoc": {
+          "column": 43,
+          "line": 228,
+          "position": 6321
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 222,
+        "startLoc": {
+          "column": 71,
+          "line": 222,
+          "position": 5990
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.session_id) q.set('session_id', params.session_id)\n      if (params.role) q.set('role', params.role)\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.from) q.set('from', params.from)\n      if (params.to) q.set('to', params.to)",
+      "lines": 7,
+      "secondFile": {
+        "end": 263,
+        "endLoc": {
+          "column": 43,
+          "line": 263,
+          "position": 7369
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/aiClient.ts",
+        "start": 257,
+        "startLoc": {
+          "column": 36,
+          "line": 257,
+          "position": 7038
+        }
+      },
+      "tokens": 97
+    },
+    {
+      "firstFile": {
+        "end": 18,
+        "endLoc": {
+          "column": 17,
+          "line": 18,
+          "position": 731
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 11,
+        "startLoc": {
+          "column": 13,
+          "line": 11,
+          "position": 427
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n      include_deleted?: boolean\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.include_deleted) q.set('include_deleted', 'true')",
+      "lines": 8,
+      "secondFile": {
+        "end": 19,
+        "endLoc": {
+          "column": 17,
+          "line": 19,
+          "position": 771
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 12,
+        "startLoc": {
+          "column": 23,
+          "line": 12,
+          "position": 467
+        }
+      },
+      "tokens": 79
+    },
+    {
+      "firstFile": {
+        "end": 115,
+        "endLoc": {
+          "column": 24,
+          "line": 115,
+          "position": 3542
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 99,
+        "startLoc": {
+          "column": 13,
+          "line": 99,
+          "position": 2991
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listGifts: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n      category?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.category) q.set('category', params.category)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            name: string",
+      "lines": 17,
+      "secondFile": {
+        "end": 284,
+        "endLoc": {
+          "column": 24,
+          "line": 284,
+          "position": 9221
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 268,
+        "startLoc": {
+          "column": 20,
+          "line": 268,
+          "position": 8670
+        }
+      },
+      "tokens": 130
+    },
+    {
+      "firstFile": {
+        "end": 108,
+        "endLoc": {
+          "column": 58,
+          "line": 108,
+          "position": 3340
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 103,
+        "startLoc": {
+          "column": 6,
+          "line": 103,
+          "position": 3078
+        }
+      },
+      "format": "typescript",
+      "fragment": "      category?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)",
+      "lines": 6,
+      "secondFile": {
+        "end": 133,
+        "endLoc": {
+          "column": 61,
+          "line": 133,
+          "position": 3361
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/userClient.ts",
+        "start": 128,
+        "startLoc": {
+          "column": 6,
+          "line": 128,
+          "position": 3096
+        }
+      },
+      "tokens": 72
+    },
+    {
+      "firstFile": {
+        "end": 116,
+        "endLoc": {
+          "column": 17,
+          "line": 116,
+          "position": 3560
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 106,
+        "startLoc": {
+          "column": 28,
+          "line": 106,
+          "position": 3179
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.category) q.set('category', params.category)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            name: string\n            price: number",
+      "lines": 11,
+      "secondFile": {
+        "end": 285,
+        "endLoc": {
+          "column": 23,
+          "line": 285,
+          "position": 9245
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 275,
+        "startLoc": {
+          "column": 28,
+          "line": 275,
+          "position": 8858
+        }
+      },
+      "tokens": 86
+    },
+    {
+      "firstFile": {
+        "end": 185,
+        "endLoc": {
+          "column": 27,
+          "line": 185,
+          "position": 5721
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 167,
+        "startLoc": {
+          "column": 17,
+          "line": 167,
+          "position": 5093
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listVipOrders: (params: {\n      page?: number\n      page_size?: number\n      user_id?: string\n      keyword?: string\n      status?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.status) q.set('status', params.status)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            user_id: string",
+      "lines": 19,
+      "secondFile": {
+        "end": 217,
+        "endLoc": {
+          "column": 27,
+          "line": 217,
+          "position": 6696
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 199,
+        "startLoc": {
+          "column": 26,
+          "line": 199,
+          "position": 6068
+        }
+      },
+      "tokens": 150
+    },
+    {
+      "firstFile": {
+        "end": 178,
+        "endLoc": {
+          "column": 17,
+          "line": 178,
+          "position": 5481
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 171,
+        "startLoc": {
+          "column": 6,
+          "line": 171,
+          "position": 5180
+        }
+      },
+      "format": "typescript",
+      "fragment": "      keyword?: string\n      status?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.keyword) q.set('keyword', params.keyword)",
+      "lines": 8,
+      "secondFile": {
+        "end": 149,
+        "endLoc": {
+          "column": 17,
+          "line": 149,
+          "position": 5384
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 142,
+        "startLoc": {
+          "column": 6,
+          "line": 142,
+          "position": 5083
+        }
+      },
+      "tokens": 80
+    },
+    {
+      "firstFile": {
+        "end": 186,
+        "endLoc": {
+          "column": 19,
+          "line": 186,
+          "position": 5741
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 175,
+        "startLoc": {
+          "column": 28,
+          "line": 175,
+          "position": 5302
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.status) q.set('status', params.status)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            user_id: string\n            plan_id: string",
+      "lines": 12,
+      "secondFile": {
+        "end": 218,
+        "endLoc": {
+          "column": 20,
+          "line": 218,
+          "position": 6717
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 207,
+        "startLoc": {
+          "column": 28,
+          "line": 207,
+          "position": 6277
+        }
+      },
+      "tokens": 102
+    },
+    {
+      "firstFile": {
+        "end": 184,
+        "endLoc": {
+          "column": 22,
+          "line": 184,
+          "position": 5693
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/commerceClient.ts",
+        "start": 177,
+        "startLoc": {
+          "column": 57,
+          "line": 177,
+          "position": 5462
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.user_id) q.set('user_id', params.user_id)\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.status) q.set('status', params.status)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 8,
+      "secondFile": {
+        "end": 154,
+        "endLoc": {
+          "column": 22,
+          "line": 154,
+          "position": 5537
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 147,
+        "startLoc": {
+          "column": 71,
+          "line": 147,
+          "position": 5306
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 12,
+          "line": 37,
+          "position": 1030
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/deployClient.ts",
+        "start": 25,
+        "startLoc": {
+          "column": 4,
+          "line": 25,
+          "position": 703
+        }
+      },
+      "format": "typescript",
+      "fragment": "    const text = await res.text()\n    let data: Record<string, unknown>\n    try {\n      data = JSON.parse(text) as Record<string, unknown>\n    } catch {\n      data = { raw: text }\n    }\n    if (!res.ok) {\n      const msg =\n        (data.message as string) ||\n        (data.error as string) ||\n        res.statusText ||\n        text",
+      "lines": 13,
+      "secondFile": {
+        "end": 102,
+        "endLoc": {
+          "column": 12,
+          "line": 102,
+          "position": 3226
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/request.ts",
+        "start": 90,
+        "startLoc": {
+          "column": 4,
+          "line": 90,
+          "position": 2899
+        }
+      },
+      "tokens": 78
+    },
+    {
+      "firstFile": {
+        "end": 154,
+        "endLoc": {
+          "column": 22,
+          "line": 154,
+          "position": 5537
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/postClient.ts",
+        "start": 139,
+        "startLoc": {
+          "column": 21,
+          "line": 139,
+          "position": 5019
+        }
+      },
+      "format": "typescript",
+      "fragment": "    listAnnouncements: (params: {\n      page?: number\n      page_size?: number\n      keyword?: string\n      status?: string\n    } = {}) => {\n      const q = new URLSearchParams()\n      if (params.page) q.set('page', String(params.page))\n      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      if (params.status) q.set('status', params.status)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string",
+      "lines": 16,
+      "secondFile": {
+        "end": 193,
+        "endLoc": {
+          "column": 22,
+          "line": 193,
+          "position": 5140
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/userClient.ts",
+        "start": 178,
+        "startLoc": {
+          "column": 22,
+          "line": 178,
+          "position": 4622
+        }
+      },
+      "tokens": 127
+    },
+    {
+      "firstFile": {
+        "end": 53,
+        "endLoc": {
+          "column": 16,
+          "line": 53,
+          "position": 1746
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 45,
+        "startLoc": {
+          "column": 30,
+          "line": 45,
+          "position": 1484
+        }
+      },
+      "format": "typescript",
+      "fragment": "      if (params.page_size) q.set('page_size', String(params.page_size))\n      if (params.keyword) q.set('keyword', params.keyword)\n      const qs = q.toString()\n      return api<\n        BaseResp<{\n          items: Array<{\n            id: string\n            username: string\n            role: string",
+      "lines": 9,
+      "secondFile": {
+        "end": 77,
+        "endLoc": {
+          "column": 17,
+          "line": 77,
+          "position": 1760
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/userClient.ts",
+        "start": 69,
+        "startLoc": {
+          "column": 30,
+          "line": 69,
+          "position": 1497
+        }
+      },
+      "tokens": 52
+    },
+    {
+      "firstFile": {
+        "end": 485,
+        "endLoc": {
+          "column": 9,
+          "line": 485,
+          "position": 14795
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/api/systemClient.ts",
+        "start": 471,
+        "startLoc": {
+          "column": 17,
+          "line": 471,
+          "position": 14174
+        }
+      },
+      "format": "typescript",
+      "fragment": "        BaseResp<{\n          user_total: number\n          users_new_7d: number\n          users_by_day: Array<{ date: string; count: number }>\n          memory_total: number\n          memory_users: number\n          memories_by_day: Array<{ date: string; count: number }>\n          memory_by_type: Array<{ memory_type: string; count: number }>\n          moe_tool_calls_7d: number\n          moe_tool_success_rate: number\n          moe_tools_by_day: Array<{ date: string; count: number }>\n          chat_sessions_total: number\n          chat_messages_7d: number\n          chat_messages_by_day: Array<{ date: string; count: number }>\n        }>",
+      "lines": 15,
+      "secondFile": {
+        "end": 17,
+        "endLoc": {
+          "column": 1,
+          "line": 17,
+          "position": 580
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/lib/analyticsData.ts",
+        "start": 3,
+        "startLoc": {
+          "column": 32,
+          "line": 3,
+          "position": 71
+        }
+      },
+      "tokens": 96
+    },
+    {
+      "firstFile": {
+        "end": 309,
+        "endLoc": {
+          "column": 22,
+          "line": 309,
+          "position": 9972
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/components/MoeToolCallsPanel.tsx",
+        "start": 295,
+        "startLoc": {
+          "column": 52,
+          "line": 295,
+          "position": 9553
+        }
+      },
+      "format": "tsx",
+      "fragment": "                  #{detailRow.id} · {detailRow.tool}\n                </p>\n              </div>\n              <button\n                type=\"button\"\n                className=\"btn btn-ghost drawer-close\"\n                onClick={() => setDetailRow(null)}\n              >\n                ✕\n              </button>\n            </div>\n            <div className=\"drawer-body\">\n              <dl className=\"moe-call-detail-grid\">\n                <div>\n                  <dt>时间</dt>",
+      "lines": 15,
+      "secondFile": {
+        "end": 192,
+        "endLoc": {
+          "column": 22,
+          "line": 192,
+          "position": 6341
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/ReportsPage.tsx",
+        "start": 182,
+        "startLoc": {
+          "column": 70,
+          "line": 182,
+          "position": 5985
+        }
+      },
+      "tokens": 64
+    },
+    {
+      "firstFile": {
+        "end": 21,
+        "endLoc": {
+          "column": 7,
+          "line": 21,
+          "position": 680
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/components/PostContentPreview.tsx",
+        "start": 14,
+        "startLoc": {
+          "column": 2,
+          "line": 14,
+          "position": 403
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const { apiTarget, health } = usePlatform()\n  const devDirect = useDirectAdminApi()\n  const apiBase = useMemo(() => {\n    const h = apiTarget === 'cloud' ? health?.cloud_api : health?.local_api\n    return h?.base_url?.replace(/\\/$/, '') || ''\n  }, [apiTarget, health])\n\n  const mediaUrls = useMemo(() => {",
+      "lines": 8,
+      "secondFile": {
+        "end": 76,
+        "endLoc": {
+          "column": 7,
+          "line": 76,
+          "position": 2063
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MediaGalleryPage.tsx",
+        "start": 70,
+        "startLoc": {
+          "column": 2,
+          "line": 70,
+          "position": 1787
+        }
+      },
+      "tokens": 61
+    },
+    {
+      "firstFile": {
+        "end": 21,
+        "endLoc": {
+          "column": 17,
+          "line": 21,
+          "position": 690
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/components/PostContentPreview.tsx",
+        "start": 14,
+        "startLoc": {
+          "column": 19,
+          "line": 14,
+          "position": 420
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const { apiTarget, health } = usePlatform()\n  const devDirect = useDirectAdminApi()\n  const apiBase = useMemo(() => {\n    const h = apiTarget === 'cloud' ? health?.cloud_api : health?.local_api\n    return h?.base_url?.replace(/\\/$/, '') || ''\n  }, [apiTarget, health])\n\n  const mediaUrls = useMemo(() => {",
+      "lines": 8,
+      "secondFile": {
+        "end": 52,
+        "endLoc": {
+          "column": 9,
+          "line": 52,
+          "position": 1818
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PlatformPage.tsx",
+        "start": 46,
+        "startLoc": {
+          "column": 35,
+          "line": 46,
+          "position": 1557
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 4,
+          "line": 27,
+          "position": 859
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/lib/moePipelineSse.ts",
+        "start": 18,
+        "startLoc": {
+          "column": 46,
+          "line": 18,
+          "position": 602
+        }
+      },
+      "format": "typescript",
+      "fragment": "export function buildMoeBrainPipelineStreamUrl(\n  agentKey: string,\n  clientOpts: AdminClientOptions,\n  resolveUrl: (path: string, opts: AdminClientOptions) => string,\n): string {\n  const key = agentKey.trim()\n  const q = new URLSearchParams({\n    agent_key: key,\n    admin_token: clientOpts.token,\n  })",
+      "lines": 10,
+      "secondFile": {
+        "end": 45,
+        "endLoc": {
+          "column": 4,
+          "line": 45,
+          "position": 1114
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/lib/moePipelineWs.ts",
+        "start": 36,
+        "startLoc": {
+          "column": 42,
+          "line": 36,
+          "position": 857
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 31,
+          "line": 37,
+          "position": 1544
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 18,
+        "startLoc": {
+          "column": 33,
+          "line": 18,
+          "position": 831
+        }
+      },
+      "format": "tsx",
+      "fragment": "export function AdminAccountsPage() {\n  const { client } = useAdminAuth()\n  const [items, setItems] = useState<Row[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')\n  const [modal, setModal] = useState<'create' | 'edit' | null>(null)\n  const [editing, setEditing] = useState<Row | null>(null)\n  const [form, setForm] = useState(emptyForm)\n  const [formError, setFormError] = useState('')\n  const [saving, setSaving] = useState(false)\n  const pageSize = 20\n\n  const load = useCallback(async () => {\n    setLoading(true)\n    setError('')\n    try {\n      const res = await client.listAccounts({ page, page_size: pageSize })",
+      "lines": 20,
+      "secondFile": {
+        "end": 36,
+        "endLoc": {
+          "column": 31,
+          "line": 36,
+          "position": 1498
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 17,
+        "startLoc": {
+          "column": 33,
+          "line": 17,
+          "position": 785
+        }
+      },
+      "tokens": 180
+    },
+    {
+      "firstFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 9,
+          "line": 25,
+          "position": 1096
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 40,
+          "line": 20,
+          "position": 912
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<Row[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')",
+      "lines": 6,
+      "secondFile": {
+        "end": 61,
+        "endLoc": {
+          "column": 9,
+          "line": 61,
+          "position": 1724
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiChatLogsPage.tsx",
+        "start": 56,
+        "startLoc": {
+          "column": 53,
+          "line": 56,
+          "position": 1540
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 9,
+          "line": 25,
+          "position": 1096
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 40,
+          "line": 20,
+          "position": 912
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<Row[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')",
+      "lines": 6,
+      "secondFile": {
+        "end": 49,
+        "endLoc": {
+          "column": 9,
+          "line": 49,
+          "position": 1754
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/ReportsPage.tsx",
+        "start": 44,
+        "startLoc": {
+          "column": 46,
+          "line": 44,
+          "position": 1570
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 25,
+        "endLoc": {
+          "column": 7,
+          "line": 25,
+          "position": 1094
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 40,
+          "line": 20,
+          "position": 912
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<Row[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')",
+      "lines": 6,
+      "secondFile": {
+        "end": 52,
+        "endLoc": {
+          "column": 7,
+          "line": 52,
+          "position": 1711
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/SocialPage.tsx",
+        "start": 47,
+        "startLoc": {
+          "column": 53,
+          "line": 47,
+          "position": 1529
+        }
+      },
+      "tokens": 52
+    },
+    {
+      "firstFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 9,
+          "line": 27,
+          "position": 1210
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 40,
+          "line": 20,
+          "position": 912
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<Row[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')\n  const [modal, setModal] = useState<'create' | 'edit' | null>(null)\n  const [editing, setEditing] = useState<Row | null>(null)",
+      "lines": 8,
+      "secondFile": {
+        "end": 59,
+        "endLoc": {
+          "column": 9,
+          "line": 59,
+          "position": 1946
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/TagsCenterPage.tsx",
+        "start": 51,
+        "startLoc": {
+          "column": 52,
+          "line": 51,
+          "position": 1647
+        }
+      },
+      "tokens": 82
+    },
+    {
+      "firstFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 41,
+          "line": 27,
+          "position": 1242
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 22,
+        "startLoc": {
+          "column": 36,
+          "line": 22,
+          "position": 996
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')\n  const [modal, setModal] = useState<'create' | 'edit' | null>(null)\n  const [editing, setEditing] = useState<Row | null>(null)",
+      "lines": 6,
+      "secondFile": {
+        "end": 41,
+        "endLoc": {
+          "column": 41,
+          "line": 41,
+          "position": 1326
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/GiftsPage.tsx",
+        "start": 36,
+        "startLoc": {
+          "column": 41,
+          "line": 36,
+          "position": 1080
+        }
+      },
+      "tokens": 61
+    },
+    {
+      "firstFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 41,
+          "line": 27,
+          "position": 1242
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 22,
+        "startLoc": {
+          "column": 36,
+          "line": 22,
+          "position": 996
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [message, setMessage] = useState('')\n  const [modal, setModal] = useState<'create' | 'edit' | null>(null)\n  const [editing, setEditing] = useState<Row | null>(null)",
+      "lines": 6,
+      "secondFile": {
+        "end": 39,
+        "endLoc": {
+          "column": 41,
+          "line": 39,
+          "position": 1248
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 33,
+        "startLoc": {
+          "column": 60,
+          "line": 33,
+          "position": 1001
+        }
+      },
+      "tokens": 61
+    },
+    {
+      "firstFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 31,
+          "line": 37,
+          "position": 1544
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 27,
+        "startLoc": {
+          "column": 45,
+          "line": 27,
+          "position": 1246
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [editing, setEditing] = useState<Row | null>(null)\n  const [form, setForm] = useState(emptyForm)\n  const [formError, setFormError] = useState('')\n  const [saving, setSaving] = useState(false)\n  const pageSize = 20\n\n  const load = useCallback(async () => {\n    setLoading(true)\n    setError('')\n    try {\n      const res = await client.listAccounts({ page, page_size: pageSize })",
+      "lines": 11,
+      "secondFile": {
+        "end": 50,
+        "endLoc": {
+          "column": 31,
+          "line": 50,
+          "position": 1558
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 39,
+        "startLoc": {
+          "column": 52,
+          "line": 39,
+          "position": 1259
+        }
+      },
+      "tokens": 69
+    },
+    {
+      "firstFile": {
+        "end": 51,
+        "endLoc": {
+          "column": 18,
+          "line": 51,
+          "position": 1967
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 37,
+        "startLoc": {
+          "column": 72,
+          "line": 37,
+          "position": 1585
+        }
+      },
+      "format": "tsx",
+      "fragment": "      const res = await client.listAccounts({ page, page_size: pageSize })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        setItems([])\n        setTotal(0)\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page])",
+      "lines": 15,
+      "secondFile": {
+        "end": 45,
+        "endLoc": {
+          "column": 18,
+          "line": 45,
+          "position": 1746
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 31,
+        "startLoc": {
+          "column": 102,
+          "line": 31,
+          "position": 1364
+        }
+      },
+      "tokens": 87
+    },
+    {
+      "firstFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 9,
+          "line": 58,
+          "position": 2056
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 37,
+        "startLoc": {
+          "column": 43,
+          "line": 37,
+          "position": 1556
+        }
+      },
+      "format": "tsx",
+      "fragment": "      const res = await client.listAccounts({ page, page_size: pageSize })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        setItems([])\n        setTotal(0)\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page])\n\n  useEffect(() => {\n    void load()\n  }, [load])\n\n  async function save() {\n    const username = form.username.trim()",
+      "lines": 22,
+      "secondFile": {
+        "end": 57,
+        "endLoc": {
+          "column": 9,
+          "line": 57,
+          "position": 2015
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 36,
+        "startLoc": {
+          "column": 48,
+          "line": 36,
+          "position": 1515
+        }
+      },
+      "tokens": 119
+    },
+    {
+      "firstFile": {
+        "end": 47,
+        "endLoc": {
+          "column": 72,
+          "line": 47,
+          "position": 1902
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 37,
+        "startLoc": {
+          "column": 72,
+          "line": 37,
+          "position": 1585
+        }
+      },
+      "format": "tsx",
+      "fragment": "      const res = await client.listAccounts({ page, page_size: pageSize })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        setItems([])\n        setTotal(0)\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')",
+      "lines": 11,
+      "secondFile": {
+        "end": 65,
+        "endLoc": {
+          "column": 72,
+          "line": 65,
+          "position": 2018
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 55,
+        "startLoc": {
+          "column": 6,
+          "line": 55,
+          "position": 1701
+        }
+      },
+      "tokens": 73
+    },
+    {
+      "firstFile": {
+        "end": 51,
+        "endLoc": {
+          "column": 19,
+          "line": 51,
+          "position": 1968
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 41,
+        "startLoc": {
+          "column": 18,
+          "line": 41,
+          "position": 1714
+        }
+      },
+      "format": "tsx",
+      "fragment": "        setTotal(0)\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page])",
+      "lines": 11,
+      "secondFile": {
+        "end": 54,
+        "endLoc": {
+          "column": 19,
+          "line": 54,
+          "position": 1716
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 44,
+        "startLoc": {
+          "column": 46,
+          "line": 44,
+          "position": 1462
+        }
+      },
+      "tokens": 57
+    },
+    {
+      "firstFile": {
+        "end": 109,
+        "endLoc": {
+          "column": 12,
+          "line": 109,
+          "position": 3508
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 92,
+        "startLoc": {
+          "column": 30,
+          "line": 92,
+          "position": 3090
+        }
+      },
+      "format": "tsx",
+      "fragment": "        setMessage('已更新')\n      }\n      setModal(null)\n      await load()\n    } catch (e) {\n      setFormError(e instanceof DeployApiError ? e.message : '保存失败')\n    } finally {\n      setSaving(false)\n    }\n  }\n\n  const totalPages = Math.max(1, Math.ceil(total / pageSize))\n\n  const columns = useMemo(\n    (): AdminTableColumn<Row>[] => [\n      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },\n      {\n        key: 'user',",
+      "lines": 18,
+      "secondFile": {
+        "end": 95,
+        "endLoc": {
+          "column": 12,
+          "line": 95,
+          "position": 3126
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 79,
+        "startLoc": {
+          "column": 36,
+          "line": 79,
+          "position": 2716
+        }
+      },
+      "tokens": 102
+    },
+    {
+      "firstFile": {
+        "end": 106,
+        "endLoc": {
+          "column": 25,
+          "line": 106,
+          "position": 3400
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 94,
+        "startLoc": {
+          "column": 14,
+          "line": 94,
+          "position": 3114
+        }
+      },
+      "format": "tsx",
+      "fragment": "      setModal(null)\n      await load()\n    } catch (e) {\n      setFormError(e instanceof DeployApiError ? e.message : '保存失败')\n    } finally {\n      setSaving(false)\n    }\n  }\n\n  const totalPages = Math.max(1, Math.ceil(total / pageSize))\n\n  const columns = useMemo(\n    (): AdminTableColumn<Row>[] => [",
+      "lines": 13,
+      "secondFile": {
+        "end": 87,
+        "endLoc": {
+          "column": 25,
+          "line": 87,
+          "position": 2716
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 75,
+        "startLoc": {
+          "column": 16,
+          "line": 75,
+          "position": 2430
+        }
+      },
+      "tokens": 62
+    },
+    {
+      "firstFile": {
+        "end": 106,
+        "endLoc": {
+          "column": 6,
+          "line": 106,
+          "position": 3381
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 94,
+        "startLoc": {
+          "column": 14,
+          "line": 94,
+          "position": 3114
+        }
+      },
+      "format": "tsx",
+      "fragment": "      setModal(null)\n      await load()\n    } catch (e) {\n      setFormError(e instanceof DeployApiError ? e.message : '保存失败')\n    } finally {\n      setSaving(false)\n    }\n  }\n\n  const totalPages = Math.max(1, Math.ceil(total / pageSize))\n\n  const columns = useMemo(\n    (): AdminTableColumn<Row>[] => [",
+      "lines": 13,
+      "secondFile": {
+        "end": 139,
+        "endLoc": {
+          "column": 6,
+          "line": 139,
+          "position": 4358
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/UsersPage.tsx",
+        "start": 127,
+        "startLoc": {
+          "column": 17,
+          "line": 127,
+          "position": 4091
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 163,
+        "endLoc": {
+          "column": 14,
+          "line": 163,
+          "position": 4970
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 146,
+        "startLoc": {
+          "column": 54,
+          "line": 146,
+          "position": 4659
+        }
+      },
+      "format": "tsx",
+      "fragment": "                const res = await client.deleteAccount(row.id)\n                if (!res.success) setError(res.message || '删除失败')\n                else await load()\n              }}\n            >\n              删除\n            </button>\n          </>\n        ),\n      },\n    ],\n    [client, load],\n  )\n\n  return (\n    <>\n      <ListPageLayout\n        title=\"管理员账号\"",
+      "lines": 18,
+      "secondFile": {
+        "end": 165,
+        "endLoc": {
+          "column": 14,
+          "line": 165,
+          "position": 5357
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 148,
+        "startLoc": {
+          "column": 59,
+          "line": 148,
+          "position": 5046
+        }
+      },
+      "tokens": 59
+    },
+    {
+      "firstFile": {
+        "end": 184,
+        "endLoc": {
+          "column": 104,
+          "line": 184,
+          "position": 5782
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 178,
+        "startLoc": {
+          "column": 10,
+          "line": 178,
+          "position": 5462
+        }
+      },
+      "format": "tsx",
+      "fragment": "          </button>\n        }\n        banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}\n        error={error}\n        pagination={{ page, totalPages, total, onPageChange: setPage }}\n      >\n        <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText=\"暂无账号\" />",
+      "lines": 7,
+      "secondFile": {
+        "end": 185,
+        "endLoc": {
+          "column": 104,
+          "line": 185,
+          "position": 6096
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 179,
+        "startLoc": {
+          "column": 10,
+          "line": 179,
+          "position": 5776
+        }
+      },
+      "tokens": 82
+    },
+    {
+      "firstFile": {
+        "end": 196,
+        "endLoc": {
+          "column": 25,
+          "line": 196,
+          "position": 6170
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AdminAccountsPage.tsx",
+        "start": 189,
+        "startLoc": {
+          "column": 73,
+          "line": 189,
+          "position": 5951
+        }
+      },
+      "format": "tsx",
+      "fragment": "        title={modal === 'create' ? '新建管理员' : '编辑管理员'}\n        subtitle={editing ? `ID ${editing.id}` : undefined}\n        error={formError}\n        saving={saving}\n        onClose={() => setModal(null)}\n        onSave={() => void save()}\n      >\n        <FormField label=\"用户名\" required>",
+      "lines": 8,
+      "secondFile": {
+        "end": 197,
+        "endLoc": {
+          "column": 25,
+          "line": 197,
+          "position": 6478
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AnnouncementsPage.tsx",
+        "start": 190,
+        "startLoc": {
+          "column": 67,
+          "line": 190,
+          "position": 6259
+        }
+      },
+      "tokens": 52
+    },
+    {
+      "firstFile": {
+        "end": 22,
+        "endLoc": {
+          "column": 7,
+          "line": 22,
+          "position": 996
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [editRow, setEditRow] = useState<AiAgentRow | null>(null)",
+      "lines": 8,
+      "secondFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 7,
+          "line": 27,
+          "position": 857
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 45,
+          "line": 20,
+          "position": 587
+        }
+      },
+      "tokens": 74
+    },
+    {
+      "firstFile": {
+        "end": 22,
+        "endLoc": {
+          "column": 9,
+          "line": 22,
+          "position": 998
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [editRow, setEditRow] = useState<AiAgentRow | null>(null)",
+      "lines": 8,
+      "secondFile": {
+        "end": 39,
+        "endLoc": {
+          "column": 9,
+          "line": 39,
+          "position": 1180
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/GiftsPage.tsx",
+        "start": 32,
+        "startLoc": {
+          "column": 44,
+          "line": 32,
+          "position": 908
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 20,
+        "endLoc": {
+          "column": 9,
+          "line": 20,
+          "position": 909
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)",
+      "lines": 6,
+      "secondFile": {
+        "end": 82,
+        "endLoc": {
+          "column": 9,
+          "line": 82,
+          "position": 2339
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MediaGalleryPage.tsx",
+        "start": 77,
+        "startLoc": {
+          "column": 47,
+          "line": 77,
+          "position": 2156
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 20,
+        "endLoc": {
+          "column": 9,
+          "line": 20,
+          "position": 909
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)",
+      "lines": 6,
+      "secondFile": {
+        "end": 32,
+        "endLoc": {
+          "column": 9,
+          "line": 32,
+          "position": 1079
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 27,
+        "startLoc": {
+          "column": 44,
+          "line": 27,
+          "position": 896
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 22,
+        "endLoc": {
+          "column": 9,
+          "line": 22,
+          "position": 998
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const [editRow, setEditRow] = useState<AiAgentRow | null>(null)",
+      "lines": 8,
+      "secondFile": {
+        "end": 27,
+        "endLoc": {
+          "column": 9,
+          "line": 27,
+          "position": 1221
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/UsersPage.tsx",
+        "start": 20,
+        "startLoc": {
+          "column": 44,
+          "line": 20,
+          "position": 949
+        }
+      },
+      "tokens": 75
+    },
+    {
+      "firstFile": {
+        "end": 20,
+        "endLoc": {
+          "column": 9,
+          "line": 20,
+          "position": 909
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 15,
+        "startLoc": {
+          "column": 47,
+          "line": 15,
+          "position": 726
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [items, setItems] = useState<AiAgentRow[]>([])\n  const [total, setTotal] = useState(0)\n  const [page, setPage] = useState(1)\n  const [keyword, setKeyword] = useState('')\n  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)",
+      "lines": 6,
+      "secondFile": {
+        "end": 33,
+        "endLoc": {
+          "column": 9,
+          "line": 33,
+          "position": 950
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 28,
+        "startLoc": {
+          "column": 47,
+          "line": 28,
+          "position": 767
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 51,
+        "endLoc": {
+          "column": 10,
+          "line": 51,
+          "position": 1818
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 31,
+        "startLoc": {
+          "column": 43,
+          "line": 31,
+          "position": 1305
+        }
+      },
+      "format": "tsx",
+      "fragment": "      const res = await client.listAiAgents({ page, page_size: pageSize, keyword: search || undefined })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        setItems([])\n        setTotal(0)\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, search])\n\n  useEffect(() => {\n    void load()\n  }, [load])\n\n  function parseName(payload: string) {",
+      "lines": 21,
+      "secondFile": {
+        "end": 71,
+        "endLoc": {
+          "column": 7,
+          "line": 71,
+          "position": 2151
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/GiftsPage.tsx",
+        "start": 51,
+        "startLoc": {
+          "column": 40,
+          "line": 51,
+          "position": 1641
+        }
+      },
+      "tokens": 121
+    },
+    {
+      "firstFile": {
+        "end": 153,
+        "endLoc": {
+          "column": 26,
+          "line": 153,
+          "position": 4676
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 143,
+        "startLoc": {
+          "column": 41,
+          "line": 143,
+          "position": 4365
+        }
+      },
+      "format": "tsx",
+      "fragment": "        metrics={[{ label: '公开 Agent', value: loading ? '…' : total }]}\n        toolbar={\n          <AdminToolbar\n            search={{\n              value: keyword,\n              onChange: setKeyword,\n              onSubmit: () => {\n                setPage(1)\n                setSearch(keyword.trim())\n              },\n              placeholder: '搜索角色名 / 用户',",
+      "lines": 11,
+      "secondFile": {
+        "end": 97,
+        "endLoc": {
+          "column": 24,
+          "line": 97,
+          "position": 3048
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 87,
+        "startLoc": {
+          "column": 39,
+          "line": 87,
+          "position": 2757
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 153,
+        "endLoc": {
+          "column": 26,
+          "line": 153,
+          "position": 4676
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 143,
+        "startLoc": {
+          "column": 41,
+          "line": 143,
+          "position": 4365
+        }
+      },
+      "format": "tsx",
+      "fragment": "        metrics={[{ label: '公开 Agent', value: loading ? '…' : total }]}\n        toolbar={\n          <AdminToolbar\n            search={{\n              value: keyword,\n              onChange: setKeyword,\n              onSubmit: () => {\n                setPage(1)\n                setSearch(keyword.trim())\n              },\n              placeholder: '搜索角色名 / 用户',",
+      "lines": 11,
+      "secondFile": {
+        "end": 153,
+        "endLoc": {
+          "column": 24,
+          "line": 153,
+          "position": 4532
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 143,
+        "startLoc": {
+          "column": 39,
+          "line": 143,
+          "position": 4241
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 153,
+        "endLoc": {
+          "column": 26,
+          "line": 153,
+          "position": 4676
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiAgentsPage.tsx",
+        "start": 143,
+        "startLoc": {
+          "column": 41,
+          "line": 143,
+          "position": 4365
+        }
+      },
+      "format": "tsx",
+      "fragment": "        metrics={[{ label: '公开 Agent', value: loading ? '…' : total }]}\n        toolbar={\n          <AdminToolbar\n            search={{\n              value: keyword,\n              onChange: setKeyword,\n              onSubmit: () => {\n                setPage(1)\n                setSearch(keyword.trim())\n              },\n              placeholder: '搜索角色名 / 用户',",
+      "lines": 11,
+      "secondFile": {
+        "end": 216,
+        "endLoc": {
+          "column": 26,
+          "line": 216,
+          "position": 6460
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/UsersPage.tsx",
+        "start": 206,
+        "startLoc": {
+          "column": 41,
+          "line": 206,
+          "position": 6149
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 111,
+        "endLoc": {
+          "column": 6,
+          "line": 111,
+          "position": 3324
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiChatLogsPage.tsx",
+        "start": 103,
+        "startLoc": {
+          "column": 19,
+          "line": 103,
+          "position": 3112
+        }
+      },
+      "format": "tsx",
+      "fragment": "        setMessages(res.data.items || [])\n        setTotal(res.data.total || 0)\n      }\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [applied, client, page, pageSize, tab])",
+      "lines": 9,
+      "secondFile": {
+        "end": 92,
+        "endLoc": {
+          "column": 6,
+          "line": 92,
+          "position": 2800
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/SocialPage.tsx",
+        "start": 84,
+        "startLoc": {
+          "column": 19,
+          "line": 84,
+          "position": 2588
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 111,
+        "endLoc": {
+          "column": 14,
+          "line": 111,
+          "position": 3332
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiChatLogsPage.tsx",
+        "start": 103,
+        "startLoc": {
+          "column": 19,
+          "line": 103,
+          "position": 3112
+        }
+      },
+      "format": "tsx",
+      "fragment": "        setMessages(res.data.items || [])\n        setTotal(res.data.total || 0)\n      }\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [applied, client, page, pageSize, tab])",
+      "lines": 9,
+      "secondFile": {
+        "end": 108,
+        "endLoc": {
+          "column": 13,
+          "line": 108,
+          "position": 3507
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/TagsCenterPage.tsx",
+        "start": 100,
+        "startLoc": {
+          "column": 20,
+          "line": 100,
+          "position": 3288
+        }
+      },
+      "tokens": 52
+    },
+    {
+      "firstFile": {
+        "end": 191,
+        "endLoc": {
+          "column": 12,
+          "line": 191,
+          "position": 5403
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiChatLogsPage.tsx",
+        "start": 179,
+        "startLoc": {
+          "column": 6,
+          "line": 179,
+          "position": 5165
+        }
+      },
+      "format": "tsx",
+      "fragment": "      {\n        key: 'user',\n        header: '用户',\n        render: (row) => (\n          <>\n            {row.username || '—'}\n            <br />\n            <IdCell id={row.user_id} />\n          </>\n        ),\n      },\n      {\n        key: 'session',",
+      "lines": 13,
+      "secondFile": {
+        "end": 235,
+        "endLoc": {
+          "column": 12,
+          "line": 235,
+          "position": 6655
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AiChatLogsPage.tsx",
+        "start": 223,
+        "startLoc": {
+          "column": 6,
+          "line": 223,
+          "position": 6417
+        }
+      },
+      "tokens": 54
+    },
+    {
+      "firstFile": {
+        "end": 75,
+        "endLoc": {
+          "column": 16,
+          "line": 75,
+          "position": 2335
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AppConfigPage.tsx",
+        "start": 63,
+        "startLoc": {
+          "column": 7,
+          "line": 63,
+          "position": 2114
+        }
+      },
+      "format": "tsx",
+      "fragment": "      })\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client])\n\n  useEffect(() => {\n    void load()\n  }, [load])\n\n  async function save() {",
+      "lines": 13,
+      "secondFile": {
+        "end": 53,
+        "endLoc": {
+          "column": 16,
+          "line": 53,
+          "position": 1464
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MenusPage.tsx",
+        "start": 41,
+        "startLoc": {
+          "column": 6,
+          "line": 41,
+          "position": 1243
+        }
+      },
+      "tokens": 51
+    },
+    {
+      "firstFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 31,
+          "line": 37,
+          "position": 1215
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 28,
+        "startLoc": {
+          "column": 69,
+          "line": 28,
+          "position": 981
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [filters, setFilters] = useState({ action: '', resource: '' })\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const pageSize = 30\n\n  const load = useCallback(async () => {\n    setLoading(true)\n    setError('')\n    try {\n      const res = await client.listAuditLogs({",
+      "lines": 10,
+      "secondFile": {
+        "end": 35,
+        "endLoc": {
+          "column": 31,
+          "line": 35,
+          "position": 1162
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommentsPage.tsx",
+        "start": 26,
+        "startLoc": {
+          "column": 49,
+          "line": 26,
+          "position": 928
+        }
+      },
+      "tokens": 53
+    },
+    {
+      "firstFile": {
+        "end": 54,
+        "endLoc": {
+          "column": 27,
+          "line": 54,
+          "position": 1724
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 41,
+        "startLoc": {
+          "column": 35,
+          "line": 41,
+          "position": 1354
+        }
+      },
+      "format": "tsx",
+      "fragment": "        resource: filters.resource || undefined,\n      })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, filters])",
+      "lines": 14,
+      "secondFile": {
+        "end": 52,
+        "endLoc": {
+          "column": 26,
+          "line": 52,
+          "position": 1655
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommentsPage.tsx",
+        "start": 39,
+        "startLoc": {
+          "column": 28,
+          "line": 39,
+          "position": 1286
+        }
+      },
+      "tokens": 83
+    },
+    {
+      "firstFile": {
+        "end": 54,
+        "endLoc": {
+          "column": 28,
+          "line": 54,
+          "position": 1725
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 41,
+        "startLoc": {
+          "column": 35,
+          "line": 41,
+          "position": 1354
+        }
+      },
+      "format": "tsx",
+      "fragment": "        resource: filters.resource || undefined,\n      })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, filters])",
+      "lines": 14,
+      "secondFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 27,
+          "line": 58,
+          "position": 1842
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 45,
+        "startLoc": {
+          "column": 34,
+          "line": 45,
+          "position": 1472
+        }
+      },
+      "tokens": 84
+    },
+    {
+      "firstFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 12,
+          "line": 58,
+          "position": 1776
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 42,
+        "startLoc": {
+          "column": 6,
+          "line": 42,
+          "position": 1374
+        }
+      },
+      "format": "tsx",
+      "fragment": "      })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, filters])\n\n  useEffect(() => {\n    void load()\n  }, [load])",
+      "lines": 17,
+      "secondFile": {
+        "end": 49,
+        "endLoc": {
+          "column": 12,
+          "line": 49,
+          "position": 1463
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 33,
+        "startLoc": {
+          "column": 100,
+          "line": 33,
+          "position": 1062
+        }
+      },
+      "tokens": 98
+    },
+    {
+      "firstFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 10,
+          "line": 58,
+          "position": 1774
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 42,
+        "startLoc": {
+          "column": 6,
+          "line": 42,
+          "position": 1374
+        }
+      },
+      "format": "tsx",
+      "fragment": "      })\n      if (!res.success || !res.data) {\n        setError(res.message || '加载失败')\n        return\n      }\n      setItems(res.data.items || [])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, filters])\n\n  useEffect(() => {\n    void load()\n  }, [load])",
+      "lines": 17,
+      "secondFile": {
+        "end": 74,
+        "endLoc": {
+          "column": 12,
+          "line": 74,
+          "position": 2460
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/ReportsPage.tsx",
+        "start": 58,
+        "startLoc": {
+          "column": 75,
+          "line": 58,
+          "position": 2067
+        }
+      },
+      "tokens": 96
+    },
+    {
+      "firstFile": {
+        "end": 130,
+        "endLoc": {
+          "column": 18,
+          "line": 130,
+          "position": 3874
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 117,
+        "startLoc": {
+          "column": 42,
+          "line": 117,
+          "position": 3572
+        }
+      },
+      "format": "tsx",
+      "fragment": "              onChange={(e) => setResource(e.target.value)}\n            />\n          }\n        />\n      }\n      error={error}\n      pagination={{ page, totalPages, total, onPageChange: setPage }}\n    >\n      <AdminTable\n        columns={columns}\n        rows={items}\n        rowKey={(row) => row.id}\n        loading={loading}\n        emptyText=\"暂无操作记录\"",
+      "lines": 14,
+      "secondFile": {
+        "end": 125,
+        "endLoc": {
+          "column": 102,
+          "line": 125,
+          "position": 3805
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommentsPage.tsx",
+        "start": 117,
+        "startLoc": {
+          "column": 40,
+          "line": 117,
+          "position": 3543
+        }
+      },
+      "tokens": 66
+    },
+    {
+      "firstFile": {
+        "end": 130,
+        "endLoc": {
+          "column": 18,
+          "line": 130,
+          "position": 3874
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 118,
+        "startLoc": {
+          "column": 13,
+          "line": 118,
+          "position": 3603
+        }
+      },
+      "format": "tsx",
+      "fragment": "            />\n          }\n        />\n      }\n      error={error}\n      pagination={{ page, totalPages, total, onPageChange: setPage }}\n    >\n      <AdminTable\n        columns={columns}\n        rows={items}\n        rowKey={(row) => row.id}\n        loading={loading}\n        emptyText=\"暂无操作记录\"",
+      "lines": 13,
+      "secondFile": {
+        "end": 174,
+        "endLoc": {
+          "column": 102,
+          "line": 174,
+          "position": 5235
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 167,
+        "startLoc": {
+          "column": 20,
+          "line": 167,
+          "position": 5004
+        }
+      },
+      "tokens": 57
+    },
+    {
+      "firstFile": {
+        "end": 130,
+        "endLoc": {
+          "column": 18,
+          "line": 130,
+          "position": 3874
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/AuditLogsPage.tsx",
+        "start": 119,
+        "startLoc": {
+          "column": 10,
+          "line": 119,
+          "position": 3615
+        }
+      },
+      "format": "tsx",
+      "fragment": "          }\n        />\n      }\n      error={error}\n      pagination={{ page, totalPages, total, onPageChange: setPage }}\n    >\n      <AdminTable\n        columns={columns}\n        rows={items}\n        rowKey={(row) => row.id}\n        loading={loading}\n        emptyText=\"暂无操作记录\"",
+      "lines": 12,
+      "secondFile": {
+        "end": 104,
+        "endLoc": {
+          "column": 102,
+          "line": 104,
+          "position": 3304
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 98,
+        "startLoc": {
+          "column": 11,
+          "line": 98,
+          "position": 3085
+        }
+      },
+      "tokens": 56
+    },
+    {
+      "firstFile": {
+        "end": 80,
+        "endLoc": {
+          "column": 27,
+          "line": 80,
+          "position": 2568
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommentsPage.tsx",
+        "start": 65,
+        "startLoc": {
+          "column": 71,
+          "line": 65,
+          "position": 2182
+        }
+      },
+      "format": "tsx",
+      "fragment": "      { key: 'content', header: '内容', render: (row) => row.content },\n      {\n        key: 'time',\n        header: '时间',\n        cellClassName: 'muted',\n        render: (row) => formatDateTime(row.created_at),\n      },\n      {\n        key: 'actions',\n        header: '',\n        render: (row) => (\n          <button\n            type=\"button\"\n            className=\"btn btn-ghost btn-sm\"\n            onClick={async () => {\n              if (!confirm('删除该评论？')) return",
+      "lines": 16,
+      "secondFile": {
+        "end": 125,
+        "endLoc": {
+          "column": 27,
+          "line": 125,
+          "position": 3750
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 110,
+        "startLoc": {
+          "column": 6,
+          "line": 110,
+          "position": 3364
+        }
+      },
+      "tokens": 67
+    },
+    {
+      "firstFile": {
+        "end": 33,
+        "endLoc": {
+          "column": 31,
+          "line": 33,
+          "position": 993
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 24,
+        "startLoc": {
+          "column": 26,
+          "line": 24,
+          "position": 744
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [search, setSearch] = useState('')\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const pageSize = 20\n\n  const load = useCallback(async () => {\n    setLoading(true)\n    setError('')\n    try {\n      const res = await client.listGroups({ page, page_size: pageSize, keyword: search || undefined })",
+      "lines": 10,
+      "secondFile": {
+        "end": 41,
+        "endLoc": {
+          "column": 31,
+          "line": 41,
+          "position": 1345
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 32,
+        "startLoc": {
+          "column": 26,
+          "line": 32,
+          "position": 1096
+        }
+      },
+      "tokens": 58
+    },
+    {
+      "firstFile": {
+        "end": 85,
+        "endLoc": {
+          "column": 12,
+          "line": 85,
+          "position": 2649
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/CommunityGroupsPage.tsx",
+        "start": 70,
+        "startLoc": {
+          "column": 50,
+          "line": 70,
+          "position": 2375
+        }
+      },
+      "format": "tsx",
+      "fragment": "              const res = await client.deleteGroup(row.id)\n              if (!res.success) setError(res.message || '删除失败')\n              else await load()\n            }}\n          >\n            删除\n          </button>\n        ),\n      },\n    ],\n    [client, load],\n  )\n\n  return (\n    <ListPageLayout\n      title=\"兴趣社区\"",
+      "lines": 16,
+      "secondFile": {
+        "end": 141,
+        "endLoc": {
+          "column": 12,
+          "line": 141,
+          "position": 4109
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 126,
+        "startLoc": {
+          "column": 49,
+          "line": 126,
+          "position": 3835
+        }
+      },
+      "tokens": 52
+    },
+    {
+      "firstFile": {
+        "end": 96,
+        "endLoc": {
+          "column": 34,
+          "line": 96,
+          "position": 2841
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/DashboardPage.tsx",
+        "start": 88,
+        "startLoc": {
+          "column": 30,
+          "line": 88,
+          "position": 2576
+        }
+      },
+      "format": "tsx",
+      "fragment": "            {health?.local_api?.online ? (\n              <span className=\"tag tag-ok\">可达</span>\n            ) : (\n              <span className=\"tag tag-fail\">不可达</span>\n            )}\n          </span>\n        </div>\n        <div className=\"metric\">\n          <span className=\"label\">云端 API</span>",
+      "lines": 9,
+      "secondFile": {
+        "end": 106,
+        "endLoc": {
+          "column": 34,
+          "line": 106,
+          "position": 3189
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/DashboardPage.tsx",
+        "start": 98,
+        "startLoc": {
+          "column": 30,
+          "line": 98,
+          "position": 2924
+        }
+      },
+      "tokens": 55
+    },
+    {
+      "firstFile": {
+        "end": 222,
+        "endLoc": {
+          "column": 26,
+          "line": 222,
+          "position": 6942
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/GiftsPage.tsx",
+        "start": 207,
+        "startLoc": {
+          "column": 12,
+          "line": 207,
+          "position": 6517
+        }
+      },
+      "format": "tsx",
+      "fragment": "            </button>\n          </div>\n        }\n        banner={\n          message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined\n        }\n        toolbar={\n          <AdminToolbar\n            search={{\n              value: keyword,\n              onChange: setKeyword,\n              onSubmit: () => {\n                setPage(1)\n                setSearch(keyword.trim())\n              },\n              placeholder: '搜索名称 / 说明',",
+      "lines": 16,
+      "secondFile": {
+        "end": 247,
+        "endLoc": {
+          "column": 26,
+          "line": 247,
+          "position": 7228
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 234,
+        "startLoc": {
+          "column": 12,
+          "line": 234,
+          "position": 6823
+        }
+      },
+      "tokens": 74
+    },
+    {
+      "firstFile": {
+        "end": 318,
+        "endLoc": {
+          "column": 79,
+          "line": 318,
+          "position": 9671
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/GrowthPage.tsx",
+        "start": 308,
+        "startLoc": {
+          "column": 75,
+          "line": 308,
+          "position": 9376
+        }
+      },
+      "format": "tsx",
+      "fragment": "      { key: 'exp', header: '经验', render: (row) => row.exp_reward ?? 0 },\n      {\n        key: 'enabled',\n        header: '启用',\n        render: (row) => <AdminTag spec={boolTag(row.enabled)} />,\n      },\n      {\n        key: 'actions',\n        header: '',\n        render: (row) => (\n          <button type=\"button\" className=\"btn btn-ghost btn-sm\" onClick={() => openAchEdit(row)}>",
+      "lines": 11,
+      "secondFile": {
+        "end": 126,
+        "endLoc": {
+          "column": 79,
+          "line": 126,
+          "position": 3541
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MenusPage.tsx",
+        "start": 116,
+        "startLoc": {
+          "column": 71,
+          "line": 116,
+          "position": 3246
+        }
+      },
+      "tokens": 64
+    },
+    {
+      "firstFile": {
+        "end": 45,
+        "endLoc": {
+          "column": 85,
+          "line": 45,
+          "position": 2128
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MoeBotFlowPage.tsx",
+        "start": 40,
+        "startLoc": {
+          "column": 2,
+          "line": 40,
+          "position": 1883
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const loadAgents = useCallback(async () => {\n    try {\n      const res = await client.listMoeRuntimes()\n      if (res.success && res.data) {\n        setAgents(\n          asArray<{ agent_key: string; display_name?: string }>(res.data.items).map((it) => ({",
+      "lines": 6,
+      "secondFile": {
+        "end": 67,
+        "endLoc": {
+          "column": 85,
+          "line": 67,
+          "position": 3051
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/MoeBrainPage.tsx",
+        "start": 62,
+        "startLoc": {
+          "column": 2,
+          "line": 62,
+          "position": 2806
+        }
+      },
+      "tokens": 58
+    },
+    {
+      "firstFile": {
+        "end": 121,
+        "endLoc": {
+          "column": 11,
+          "line": 121,
+          "position": 3610
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/PostsPage.tsx",
+        "start": 108,
+        "startLoc": {
+          "column": 12,
+          "line": 108,
+          "position": 3345
+        }
+      },
+      "format": "tsx",
+      "fragment": "          </>\n        ),\n      },\n      {\n        key: 'time',\n        header: '时间',\n        cellClassName: 'muted',\n        render: (row) => formatDateTime(row.created_at),\n      },\n      {\n        key: 'actions',\n        header: '',\n        render: (row) => (\n          <button",
+      "lines": 14,
+      "secondFile": {
+        "end": 133,
+        "endLoc": {
+          "column": 11,
+          "line": 133,
+          "position": 4146
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/ReportsPage.tsx",
+        "start": 120,
+        "startLoc": {
+          "column": 18,
+          "line": 120,
+          "position": 3881
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 58,
+        "endLoc": {
+          "column": 17,
+          "line": 58,
+          "position": 1833
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/SocialPage.tsx",
+        "start": 49,
+        "startLoc": {
+          "column": 36,
+          "line": 49,
+          "position": 1613
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [page, setPage] = useState(1)\n  const [loading, setLoading] = useState(false)\n  const [error, setError] = useState('')\n  const pageSize = 20\n\n  const load = useCallback(async () => {\n    setLoading(true)\n    setError('')\n    try {\n      if (tab === 'follows') {",
+      "lines": 10,
+      "secondFile": {
+        "end": 35,
+        "endLoc": {
+          "column": 17,
+          "line": 35,
+          "position": 1303
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/WalletOrdersPage.tsx",
+        "start": 26,
+        "startLoc": {
+          "column": 38,
+          "line": 26,
+          "position": 1083
+        }
+      },
+      "tokens": 51
+    },
+    {
+      "firstFile": {
+        "end": 103,
+        "endLoc": {
+          "column": 3,
+          "line": 103,
+          "position": 2994
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/SocialPage.tsx",
+        "start": 92,
+        "startLoc": {
+          "column": 18,
+          "line": 92,
+          "position": 2812
+        }
+      },
+      "format": "tsx",
+      "fragment": "  }, [client, page, search, tab])\n\n  useEffect(() => {\n    void load()\n  }, [load])\n\n  function setTab(next: Tab) {\n    setParams({ tab: next })\n    setPage(1)\n    setKeyword('')\n    setSearch('')\n  }",
+      "lines": 12,
+      "secondFile": {
+        "end": 119,
+        "endLoc": {
+          "column": 3,
+          "line": 119,
+          "position": 3718
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/TagsCenterPage.tsx",
+        "start": 108,
+        "startLoc": {
+          "column": 42,
+          "line": 108,
+          "position": 3536
+        }
+      },
+      "tokens": 51
+    },
+    {
+      "firstFile": {
+        "end": 221,
+        "endLoc": {
+          "column": 1,
+          "line": 221,
+          "position": 6720
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/SocialPage.tsx",
+        "start": 211,
+        "startLoc": {
+          "column": 51,
+          "line": 211,
+          "position": 6429
+        }
+      },
+      "format": "tsx",
+      "fragment": "              第 {page} / {totalPages} 页 · 共 {total} 条\n            </span>\n            <button type=\"button\" className=\"btn btn-ghost\" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>\n              下一页\n            </button>\n          </div>\n        ) : null}\n      </AdminPanel>\n    </TabbedPageLayout>\n  )\n}",
+      "lines": 11,
+      "secondFile": {
+        "end": 170,
+        "endLoc": {
+          "column": 1,
+          "line": 170,
+          "position": 5819
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/WalletOrdersPage.tsx",
+        "start": 155,
+        "startLoc": {
+          "column": 41,
+          "line": 155,
+          "position": 5459
+        }
+      },
+      "tokens": 68
+    },
+    {
+      "firstFile": {
+        "end": 67,
+        "endLoc": {
+          "column": 26,
+          "line": 67,
+          "position": 2596
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/UsersPage.tsx",
+        "start": 58,
+        "startLoc": {
+          "column": 48,
+          "line": 58,
+          "position": 2356
+        }
+      },
+      "format": "tsx",
+      "fragment": "      setItems((res.data.items || []) as UserRow[])\n      setTotal(res.data.total || 0)\n    } catch (e) {\n      setError(e instanceof DeployApiError ? e.message : '加载失败')\n      setItems([])\n      setTotal(0)\n    } finally {\n      setLoading(false)\n    }\n  }, [client, page, search])",
+      "lines": 10,
+      "secondFile": {
+        "end": 71,
+        "endLoc": {
+          "column": 26,
+          "line": 71,
+          "position": 2128
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/pages/VipPlansPage.tsx",
+        "start": 62,
+        "startLoc": {
+          "column": 33,
+          "line": 62,
+          "position": 1888
+        }
+      },
+      "tokens": 56
+    },
+    {
+      "firstFile": {
+        "end": 57,
+        "endLoc": {
+          "column": 7,
+          "line": 57,
+          "position": 1360
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/ui/ListPageLayout.tsx",
+        "start": 51,
+        "startLoc": {
+          "column": 22,
+          "line": 51,
+          "position": 1111
+        }
+      },
+      "format": "tsx",
+      "fragment": "}: ListPageLayoutProps) {\n  return (\n    <>\n      <PageHead title={title} description={description} actions={headActions} />\n      {envNote ? <DataEnvBar note={envNote} /> : null}\n      {metrics && metrics.length > 0 ? <PageInsightStrip items={metrics} /> : null}\n      {banner?.message ? (",
+      "lines": 7,
+      "secondFile": {
+        "end": 32,
+        "endLoc": {
+          "column": 7,
+          "line": 32,
+          "position": 887
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/ui/MonitorPageLayout.tsx",
+        "start": 26,
+        "startLoc": {
+          "column": 25,
+          "line": 26,
+          "position": 638
+        }
+      },
+      "tokens": 66
+    },
+    {
+      "firstFile": {
+        "end": 57,
+        "endLoc": {
+          "column": 6,
+          "line": 57,
+          "position": 1359
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/ui/ListPageLayout.tsx",
+        "start": 51,
+        "startLoc": {
+          "column": 22,
+          "line": 51,
+          "position": 1111
+        }
+      },
+      "format": "tsx",
+      "fragment": "}: ListPageLayoutProps) {\n  return (\n    <>\n      <PageHead title={title} description={description} actions={headActions} />\n      {envNote ? <DataEnvBar note={envNote} /> : null}\n      {metrics && metrics.length > 0 ? <PageInsightStrip items={metrics} /> : null}\n      {banner?.message ? (",
+      "lines": 7,
+      "secondFile": {
+        "end": 37,
+        "endLoc": {
+          "column": 6,
+          "line": 37,
+          "position": 1070
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/src/ui/TabbedPageLayout.tsx",
+        "start": 31,
+        "startLoc": {
+          "column": 27,
+          "line": 31,
+          "position": 822
+        }
+      },
+      "tokens": 65
+    }
+  ],
+  "statistics": {
+    "detectionDate": "2026-07-14T12:52:14.785Z",
+    "formats": {
+      "tsx": {
+        "clones": 57,
+        "duplicatedLines": 585,
+        "duplicatedTokens": 3836,
+        "lines": 14778,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 3.958587088915956,
+        "percentageTokens": 4.169247992000609,
+        "sources": 83,
+        "tokens": 92007
+      },
+      "typescript": {
+        "clones": 30,
+        "duplicatedLines": 275,
+        "duplicatedTokens": 2525,
+        "lines": 5974,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 4.60328088382993,
+        "percentageTokens": 7.744923624317527,
+        "sources": 47,
+        "tokens": 32602
+      }
+    },
+    "total": {
+      "clones": 87,
+      "duplicatedLines": 860,
+      "duplicatedTokens": 6361,
+      "lines": 20752,
+      "newClones": 0,
+      "newDuplicatedLines": 0,
+      "percentage": 4.144178874325366,
+      "percentageTokens": 5.104767713407539,
+      "sources": 130,
+      "tokens": 124609
+    }
+  }
+}

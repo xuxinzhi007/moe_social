@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moe Social 代码重复率分析报告</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+  --border: #475569; --text: #f1f5f9; --text2: #94a3b8;
+  --blue: #3b82f6; --cyan: #06b6d4; --green: #22c55e;
+  --orange: #f97316; --red: #ef4444; --purple: #a855f7;
+  --yellow: #eab308; --pink: #ec4899;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+/* Header */
+.header { text-align: center; padding: 48px 0 32px; position: relative; }
+.header::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:200px; height:4px; background:linear-gradient(90deg,var(--blue),var(--cyan)); border-radius:2px; }
+.header h1 { font-size: 2.2rem; background: linear-gradient(135deg, var(--blue), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+.header .meta { color: var(--text2); font-size: 0.95rem; }
+.header .meta span { margin: 0 12px; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 20px; margin: 32px 0; }
+.card { background: var(--surface); border-radius: 16px; padding: 28px; position: relative; overflow: hidden; border: 1px solid var(--border); transition: transform .2s, box-shadow .2s; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+.card .label { font-size: .85rem; color: var(--text2); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.card .value { font-size: 2.4rem; font-weight: 700; }
+.card .sub { font-size: .85rem; color: var(--text2); margin-top: 6px; }
+.card .icon { position:absolute; right:20px; top:20px; font-size:2rem; opacity:.15; }
+.card.green .value { color: var(--green); }
+.card.blue .value { color: var(--blue); }
+.card.orange .value { color: var(--orange); }
+.card.cyan .value { color: var(--cyan); }
+.card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.card.green::after { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.card.blue::after { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+.card.orange::after { background: linear-gradient(90deg, var(--orange), var(--yellow)); }
+.card.cyan::after { background: linear-gradient(90deg, var(--cyan), var(--blue)); }
+
+/* Gauge */
+.gauge-section { background: var(--surface); border-radius: 16px; padding: 36px; margin: 32px 0; border: 1px solid var(--border); }
+.gauge-section h2 { font-size: 1.3rem; margin-bottom: 24px; color: var(--text); }
+.gauge-wrap { display: flex; align-items: center; gap: 48px; flex-wrap: wrap; justify-content: center; }
+.gauge-bar-container { flex: 1; min-width: 300px; }
+.gauge-bar-bg { width:100%; height:40px; background:var(--surface2); border-radius:20px; position:relative; overflow:hidden; }
+.gauge-bar-fill { height:100%; border-radius:20px; background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width 1.5s ease; position:relative; }
+.gauge-bar-fill::after { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background:linear-gradient(180deg,rgba(255,255,255,.15),transparent); }
+.gauge-target { position:absolute; top:-8px; bottom:-8px; width:3px; background:var(--red); border-radius:2px; z-index:2; }
+.gauge-target::before { content:'5% 目标线'; position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:.7rem; color:var(--red); white-space:nowrap; }
+.gauge-labels { display:flex; justify-content:space-between; margin-top:8px; font-size:.8rem; color:var(--text2); }
+.gauge-info { text-align:center; min-width:160px; }
+.gauge-info .pct { font-size:3.5rem; font-weight:800; color:var(--green); }
+.gauge-info .status { display:inline-block; padding:4px 16px; border-radius:20px; background:rgba(34,197,94,.15); color:var(--green); font-size:.9rem; font-weight:600; margin-top:4px; }
+
+/* Section */
+.section { background: var(--surface); border-radius: 16px; padding: 32px; margin: 32px 0; border: 1px solid var(--border); }
+.section h2 { font-size: 1.3rem; margin-bottom: 20px; display:flex; align-items:center; gap:10px; }
+.section h2 .dot { width:10px; height:10px; border-radius:50%; }
+.chart-container { position:relative; width:100%; }
+.chart-row { display:grid; grid-template-columns: 1fr 1fr; gap:24px; }
+@media(max-width:900px){ .chart-row{grid-template-columns:1fr; } }
+
+/* Table */
+.tbl { width:100%; border-collapse:collapse; font-size:.88rem; }
+.tbl th { text-align:left; padding:12px 14px; background:var(--surface2); color:var(--text2); font-weight:600; border-bottom:2px solid var(--border); }
+.tbl th:first-child { border-radius:8px 0 0 0; }
+.tbl th:last-child { border-radius:0 8px 0 0; }
+.tbl td { padding:11px 14px; border-bottom:1px solid rgba(71,85,105,.4); }
+.tbl tr:nth-child(even) td { background:rgba(51,65,85,.2); }
+.tbl tr:hover td { background:rgba(59,130,246,.08); }
+.lang-badge { display:inline-block; padding:2px 10px; border-radius:10px; font-size:.75rem; font-weight:600; }
+.lang-dart { background:rgba(0,180,216,.15); color:var(--cyan); }
+.lang-go { background:rgba(59,130,246,.15); color:var(--blue); }
+.lang-tsx { background:rgba(249,115,22,.15); color:var(--orange); }
+.lang-ts { background:rgba(168,85,247,.15); color:var(--purple); }
+
+/* Suggestions */
+.suggestions { display:grid; grid-template-columns: repeat(auto-fit, minmax(380px,1fr)); gap:20px; }
+.sug-card { background:var(--surface); border-radius:14px; padding:24px; border:1px solid var(--border); border-left:4px solid; transition: transform .2s; }
+.sug-card:hover { transform:translateY(-2px); }
+.sug-card.high { border-left-color: var(--red); }
+.sug-card.mid { border-left-color: var(--orange); }
+.sug-card.low { border-left-color: var(--green); }
+.sug-card h3 { font-size:1rem; margin-bottom:8px; }
+.sug-card p { font-size:.88rem; color:var(--text2); line-height:1.6; }
+.sug-card .tag { display:inline-block; padding:2px 10px; border-radius:10px; font-size:.72rem; font-weight:700; margin-bottom:10px; }
+.sug-card .tag.high { background:rgba(239,68,68,.15); color:var(--red); }
+.sug-card .tag.mid { background:rgba(249,115,22,.15); color:var(--orange); }
+.sug-card .tag.low { background:rgba(34,197,94,.15); color:var(--green); }
+.sug-card .est { font-size:.8rem; color:var(--cyan); margin-top:10px; }
+
+/* Footer */
+.footer { text-align:center; padding:40px 0 24px; color:var(--text2); font-size:.82rem; }
+.footer a { color:var(--blue); text-decoration:none; }
+
+/* Animations */
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.card, .section, .gauge-section { animation: fadeUp .6s ease forwards; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>Moe Social 代码重复率分析报告</h1>
+  <div class="meta">
+    <span>📅 扫描日期: 2026-07-14</span>
+    <span>📦 项目: moe_social</span>
+    <span>🔧 工具: jscpd v4</span>
+  </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="cards" id="overview-cards">
+  <div class="card green">
+    <div class="icon">📊</div>
+    <div class="label">总体重复率（行）</div>
+    <div class="value" data-target="3.56">0%</div>
+    <div class="sub">✅ 已达标（目标 &lt; 5%）</div>
+  </div>
+  <div class="card blue">
+    <div class="icon">📝</div>
+    <div class="label">总代码行数</div>
+    <div class="value" data-target="202495">0</div>
+    <div class="sub">1,248 个源文件</div>
+  </div>
+  <div class="card orange">
+    <div class="icon">🔁</div>
+    <div class="label">重复克隆数</div>
+    <div class="value" data-target="602">0</div>
+    <div class="sub">重复代码 7,215 行</div>
+  </div>
+  <div class="card cyan">
+    <div class="icon">🎯</div>
+    <div class="label">距 5% 目标余量</div>
+    <div class="value" data-target="1.44">0%</div>
+    <div class="sub">Token 重复率: 4.09%</div>
+  </div>
+</div>
+
+<!-- Gauge -->
+<div class="gauge-section">
+  <h2>📈 达标状态指示器</h2>
+  <div class="gauge-wrap">
+    <div class="gauge-info">
+      <div class="pct">3.56%</div>
+      <div class="status">✅ 达标</div>
+    </div>
+    <div class="gauge-bar-container">
+      <div class="gauge-bar-bg">
+        <div class="gauge-bar-fill" id="gauge-fill" style="width:0%"></div>
+        <div class="gauge-target" style="left:71.2%"></div>
+      </div>
+      <div class="gauge-labels">
+        <span>0%</span><span>1%</span><span>2%</span><span>3%</span><span>4%</span><span>5%</span><span>6%</span><span>7%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Module Comparison -->
+<div class="section">
+  <h2><span class="dot" style="background:var(--blue)"></span>各模块重复率对比</h2>
+  <div class="chart-container" style="height:380px">
+    <canvas id="moduleChart"></canvas>
+  </div>
+</div>
+
+<!-- File Type + Size Distribution -->
+<div class="chart-row">
+  <div class="section">
+    <h2><span class="dot" style="background:var(--cyan)"></span>按文件类型分布</h2>
+    <div class="chart-container" style="height:320px">
+      <canvas id="fileTypeChart"></canvas>
+    </div>
+  </div>
+  <div class="section">
+    <h2><span class="dot" style="background:var(--orange)"></span>重复代码块大小分布</h2>
+    <div class="chart-container" style="height:320px">
+      <canvas id="sizeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Top 20 Files -->
+<div class="section">
+  <h2><span class="dot" style="background:var(--red)"></span>重复代码 Top 20 文件</h2>
+  <div class="chart-container" style="height:620px">
+    <canvas id="top20Chart"></canvas>
+  </div>
+</div>
+
+<!-- Pattern Analysis -->
+<div class="section">
+  <h2><span class="dot" style="background:var(--purple)"></span>重复模式分析</h2>
+  <div class="chart-row">
+    <div class="chart-container" style="height:360px">
+      <canvas id="patternChart"></canvas>
+    </div>
+    <div class="chart-container" style="height:360px">
+      <canvas id="patternRadar"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Top 10 Table -->
+<div class="section">
+  <h2><span class="dot" style="background:var(--yellow)"></span>Top 10 最大重复代码块</h2>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>行数</th><th>语言</th><th>文件 A</th><th>文件 B</th><th>描述</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>125</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>game_lobby_page.dart:154-278</td><td>minesweeper_lobby_page.dart:167-291</td><td>游戏大厅 UI Widget 构建</td></tr>
+        <tr><td>2</td><td><b>99</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>api_service.dart:789-887</td><td>api_service.dart:790-888</td><td>同文件内代码偏移重复</td></tr>
+        <tr><td>3</td><td><b>60</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>followers_page.dart:126-185</td><td>following_page.dart:126-185</td><td>用户列表构建逻辑</td></tr>
+        <tr><td>4</td><td><b>40</b></td><td><span class="lang-badge lang-go">Go</span></td><td>proto_convert.go:52-91</td><td>rpc_convert.go:158-194</td><td>Pipeline 数据转换</td></tr>
+        <tr><td>5</td><td><b>40</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>reset_password_page.dart:67-106</td><td>verify_code_page.dart:113-152</td><td>认证页面 Scaffold 构建</td></tr>
+        <tr><td>6</td><td><b>36</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>particle_pool.dart:12-47</td><td>gift_particle.dart:12-47</td><td>粒子系统 Particle 类定义</td></tr>
+        <tr><td>7</td><td><b>33</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>compact_topic_selector.dart:62-94</td><td>compact_topic_selector.dart:280-312</td><td>同文件内选择器逻辑</td></tr>
+        <tr><td>8</td><td><b>32</b></td><td><span class="lang-badge lang-tsx">TSX</span></td><td>AiScreen.tsx:420-451</td><td>ChatScreen.tsx:418-449</td><td>StyleSheet 样式定义</td></tr>
+        <tr><td>9</td><td><b>32</b></td><td><span class="lang-badge lang-dart">Dart</span></td><td>reset_password_page.dart:143-174</td><td>verify_code_page.dart:189-220</td><td>密码设置 UI 文本和样式</td></tr>
+        <tr><td>10</td><td><b>31</b></td><td><span class="lang-badge lang-go">Go</span></td><td>admin/proto_helpers.go:27-57</td><td>user/proto.go:24-54</td><td>User proto 字段映射</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Suggestions -->
+<div class="section">
+  <h2><span class="dot" style="background:var(--green)"></span>优化建议</h2>
+  <div class="suggestions">
+    <div class="sug-card high">
+      <span class="tag high">高优先级</span>
+      <h3>提取 auth 页面公共组件</h3>
+      <p>reset_password_page.dart 和 verify_code_page.dart 存在大量重复 Scaffold/表单代码，可抽取为 AuthFormPage 基类 Widget，统一表单验证、UI 布局和交互逻辑。</p>
+      <div class="est">⬇️ 预估可减少 ~520 行重复</div>
+    </div>
+    <div class="sug-card high">
+      <span class="tag high">高优先级</span>
+      <h3>统一 moe-admin API Client</h3>
+      <p>多个 *Client.ts 文件存在重复的请求处理、错误处理和 Loading 状态管理模式，可抽取为 BaseApiClient 抽象类统一处理。</p>
+      <div class="est">⬇️ 预估可减少 ~400 行重复</div>
+    </div>
+    <div class="sug-card mid">
+      <span class="tag mid">中优先级</span>
+      <h3>提取 backend Store 公共 CRUD</h3>
+      <p>data/ 目录下各 store 文件重复查询/创建/更新模式，可抽取为泛型仓储基类，减少样板代码。</p>
+      <div class="est">⬇️ 预估可减少 ~460 行重复</div>
+    </div>
+    <div class="sug-card mid">
+      <span class="tag mid">中优先级</span>
+      <h3>合并 proto_convert.go 和 rpc_convert.go</h3>
+      <p>两个文件存在高度相似的数据转换逻辑（40 行级别克隆），建议合并为统一转换层或提取公共函数。</p>
+      <div class="est">⬇️ 预估可减少 ~340 行重复</div>
+    </div>
+    <div class="sug-card low">
+      <span class="tag low">低优先级</span>
+      <h3>清理 _archived 目录</h3>
+      <p>已归档的 game 页面（game_lobby_page、minesweeper_lobby_page）仍在贡献重复计数，如确认不再使用可直接删除。</p>
+      <div class="est">⬇️ 预估可减少 ~480 行重复</div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>生成时间: 2026-07-14 &nbsp;|&nbsp; 工具: <a href="https://github.com/kucherenko/jscpd" target="_blank">jscpd v4</a> &nbsp;|&nbsp; 可视化: Chart.js</p>
+  <p style="margin-top:6px">Moe Social 代码质量监控 · 重复率目标 &lt; 5% · 当前 3.56% ✅</p>
+</div>
+
+</div><!-- end container -->
+
+<script>
+// === Color palette ===
+const C = {
+  blue:'#3b82f6', cyan:'#06b6d4', green:'#22c55e', orange:'#f97316',
+  red:'#ef4444', purple:'#a855f7', yellow:'#eab308', pink:'#ec4899',
+  blueA:'rgba(59,130,246,.7)', cyanA:'rgba(6,182,212,.7)',
+  orangeA:'rgba(249,115,22,.7)', purpleA:'rgba(168,85,247,.7)',
+  greenA:'rgba(34,197,94,.2)', redLine:'#ef4444'
+};
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(71,85,105,.3)';
+Chart.defaults.font.family = "-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+
+// === Animated counters ===
+function animateCounters(){
+  document.querySelectorAll('.card .value').forEach(el=>{
+    const target = parseFloat(el.dataset.target);
+    const isPct = el.textContent.includes('%');
+    const isInt = target > 100;
+    let start = 0; const dur = 1200; const t0 = performance.now();
+    function tick(now){
+      const p = Math.min((now-t0)/dur,1);
+      const ease = 1-Math.pow(1-p,3);
+      const v = start + (target-start)*ease;
+      el.textContent = isPct ? v.toFixed(2)+'%' : isInt ? Math.round(v).toLocaleString() : v.toFixed(2);
+      if(p<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+// === Gauge animation ===
+function animateGauge(){ setTimeout(()=>{ document.getElementById('gauge-fill').style.width='50.86%'; },300); }
+
+// === Module Chart ===
+function initModuleChart(){
+  new Chart(document.getElementById('moduleChart'),{
+    type:'bar',
+    data:{
+      labels:['lib/ (Dart)','backend/ (Go)','moe-admin/src/ (TS/TSX)','app-rn/src/ (TS/TSX)'],
+      datasets:[
+        { label:'行重复率 %', data:[3.36,3.72,4.14,3.29], backgroundColor:C.blueA, borderColor:C.blue, borderWidth:1, borderRadius:6 },
+        { label:'Token 重复率 %', data:[3.65,4.42,5.10,2.92], backgroundColor:C.cyanA, borderColor:C.cyan, borderWidth:1, borderRadius:6 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'top' },
+        annotation:{}
+      },
+      scales:{
+        y:{ beginAtZero:true, max:7, title:{display:true,text:'重复率 %'},
+          grid:{color:'rgba(71,85,105,.2)'}
+        },
+        x:{ grid:{display:false} }
+      }
+    },
+    plugins:[{
+      id:'targetLine',
+      afterDraw(chart){
+        const y = chart.scales.y.getPixelForValue(5);
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.setLineDash([8,4]);
+        ctx.strokeStyle = C.redLine;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(chart.chartArea.left, y);
+        ctx.lineTo(chart.chartArea.right, y);
+        ctx.stroke();
+        ctx.fillStyle = C.redLine;
+        ctx.font = '12px sans-serif';
+        ctx.fillText('5% 目标线', chart.chartArea.right - 75, y - 6);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// === File Type Donut ===
+function initFileTypeChart(){
+  new Chart(document.getElementById('fileTypeChart'),{
+    type:'doughnut',
+    data:{
+      labels:['Dart (3,797行)','Go (2,890行)','TSX (780行)','TypeScript (350行)'],
+      datasets:[{
+        data:[3797,2890,780,350],
+        backgroundColor:[C.cyan, C.blue, C.orange, C.purple],
+        borderWidth:0,
+        hoverOffset:12
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'55%',
+      plugins:{
+        legend:{ position:'bottom', labels:{padding:16, usePointStyle:true, pointStyleWidth:12} }
+      }
+    }
+  });
+}
+
+// === Size Distribution ===
+function initSizeChart(){
+  new Chart(document.getElementById('sizeChart'),{
+    type:'bar',
+    data:{
+      labels:['5-10行','11-20行','21-30行','31-50行','51-100行','100+行'],
+      datasets:[
+        { label:'克隆数', data:[259,290,43,7,2,1], backgroundColor:C.blueA, borderColor:C.blue, borderWidth:1, borderRadius:6, yAxisID:'y' },
+        { label:'总重复行数', data:[2161,4077,1051,244,159,125], type:'line', borderColor:C.orange, backgroundColor:'rgba(249,115,22,.1)', pointBackgroundColor:C.orange, pointRadius:5, tension:.3, fill:true, yAxisID:'y1' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'} },
+      scales:{
+        y:{ beginAtZero:true, position:'left', title:{display:true,text:'克隆数'}, grid:{color:'rgba(71,85,105,.2)'} },
+        y1:{ beginAtZero:true, position:'right', title:{display:true,text:'重复行数'}, grid:{display:false} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+// === Top 20 Horizontal Bar ===
+function initTop20Chart(){
+  const files = [
+    'home_redesign_demo.dart','home_page.dart','llm client.go','data/post/store.go',
+    'data/admin/store.go','rpc_convert.go','proto_convert.go','user_level_page.dart',
+    'account_security_module.dart','aiClient.ts','moderation_lists.go',
+    'AdminAccountsPage.tsx','verify_code_page.dart','order_center_page.dart',
+    'forgot_password_page.dart','minesweeper_lobby_page.dart','game_lobby_page.dart',
+    'api_service.dart','reset_password_page.dart','checkin_page.dart'
+  ];
+  const lines = [144,155,156,149,165,168,168,179,186,202,202,205,208,214,217,222,258,273,303,319];
+  const modules = [
+    'lib','lib','backend','backend','backend','backend','backend','lib','lib','moe-admin','backend',
+    'moe-admin','lib','lib','lib','lib','lib','lib','lib','lib'
+  ];
+  const colors = modules.map(m => m==='lib'?C.cyan:m==='backend'?C.blue:m==='moe-admin'?C.orange:C.purple);
+
+  new Chart(document.getElementById('top20Chart'),{
+    type:'bar',
+    data:{
+      labels: files,
+      datasets:[{ label:'重复行数', data:lines, backgroundColor:colors.map(c=>c+'b3'), borderColor:colors, borderWidth:1, borderRadius:4 }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:ctx=> ctx.parsed.x + ' 行重复 · ' + modules[ctx.dataIndex] + ' 模块' } }
+      },
+      scales:{
+        x:{ beginAtZero:true, title:{display:true,text:'重复行数'}, grid:{color:'rgba(71,85,105,.2)'} },
+        y:{ grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+}
+
+// === Pattern Analysis ===
+function initPatternChart(){
+  const labels = ['UI Widget Builder','通用逻辑','认证流程','Proto/Model 转换','Data Store','API Client','样式/配置','Import/Header'];
+  const clones = [209,216,48,38,48,35,7,1];
+  const linesD = [3028,2562,727,506,456,446,84,8];
+
+  new Chart(document.getElementById('patternChart'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        { label:'克隆数', data:clones, backgroundColor:C.blueA, borderColor:C.blue, borderWidth:1, borderRadius:6 },
+        { label:'总行数', data:linesD, backgroundColor:C.orangeA, borderColor:C.orange, borderWidth:1, borderRadius:6 }
+      ]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'} },
+      scales:{
+        x:{ beginAtZero:true, grid:{color:'rgba(71,85,105,.2)'} },
+        y:{ grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+
+  // Radar
+  new Chart(document.getElementById('patternRadar'),{
+    type:'radar',
+    data:{
+      labels,
+      datasets:[
+        { label:'克隆数占比', data:clones.map(v=>v/602*100), borderColor:C.blue, backgroundColor:'rgba(59,130,246,.15)', pointBackgroundColor:C.blue, pointRadius:4 },
+        { label:'行数占比', data:linesD.map(v=>v/7807*100), borderColor:C.orange, backgroundColor:'rgba(249,115,22,.12)', pointBackgroundColor:C.orange, pointRadius:4 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top'} },
+      scales:{
+        r:{ beginAtZero:true, grid:{color:'rgba(71,85,105,.3)'}, angleLines:{color:'rgba(71,85,105,.3)'}, pointLabels:{font:{size:10}} }
+      }
+    }
+  });
+}
+
+// === Init ===
+window.addEventListener('DOMContentLoaded', ()=>{
+  animateCounters();
+  animateGauge();
+  initModuleChart();
+  initFileTypeChart();
+  initSizeChart();
+  initTop20Chart();
+  initPatternChart();
+});
+</script>
+</body>
+</html>
