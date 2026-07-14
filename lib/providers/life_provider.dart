@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/life_state.dart';
+import '../services/life_cache_service.dart';
 import '../services/life_service.dart';
 import '../services/life_ws_service.dart';
 
@@ -14,12 +17,17 @@ class LifeProvider extends ChangeNotifier {
   bool _disposed = false;
   bool _isBootstrapping = false;
   final Map<int, LifeEntity> _entities = {};
+  List<LifeEntity> _entitiesList = const [];
   List<LifeEvent> _recentEvents = [];
   final List<LifeRelationship> _relationships = [];
   final List<WorldEventDiff> _worldEvents = [];
   int _tickCount = 0;
   bool _connected = false;
   bool _isInitialized = false;
+  bool _isOfflineMode = false;
+
+  /// 缓存写入 debounce Timer（30 秒）
+  Timer? _cacheDebounceTimer;
   String _worldId = 'default';
   LifeWorldSummary _summary = LifeWorldSummary.empty;
 
@@ -39,24 +47,30 @@ class LifeProvider extends ChangeNotifier {
     _wsService.onConnected = () {
       if (_disposed) return;
       _connected = true;
+      _isOfflineMode = false;
       notifyListeners();
     };
     _wsService.onDisconnected = () {
       if (_disposed) return;
       _connected = false;
+      // 断连时进入离线模式，保留内存中现有数据
+      _isOfflineMode = true;
       notifyListeners();
     };
   }
 
   // ── Getters ─────────────────────────────────────────────────────────────────
 
-  List<LifeEntity> get entities => _entities.values.toList();
+  List<LifeEntity> get entities => _entitiesList;
   List<LifeEvent> get recentEvents => List.unmodifiable(_recentEvents);
   List<LifeRelationship> get relationships => List.unmodifiable(_relationships);
   List<WorldEventDiff> get worldEvents => List.unmodifiable(_worldEvents);
   int get tickCount => _tickCount;
   bool get connected => _connected;
   bool get isInitialized => _isInitialized;
+
+  /// 是否处于离线降级模式（显示缓存数据）。
+  bool get isOfflineMode => _isOfflineMode;
   String get worldId => _worldId;
   LifeWorldSummary get summary => _summary;
 
@@ -87,6 +101,11 @@ class LifeProvider extends ChangeNotifier {
     return _relationships
         .where((r) => r.entityId == entityId || r.targetId == entityId)
         .toList();
+  }
+
+  /// 获取指定实体的最近事件（已按时间倒序）。
+  List<LifeEvent> getEventsForEntity(int entityId) {
+    return _recentEvents.where((e) => e.entityId == entityId).toList().reversed.toList();
   }
 
   /// 关系统计
@@ -120,6 +139,8 @@ class LifeProvider extends ChangeNotifier {
       _applyInitialState(snapshot);
     } catch (e) {
       debugPrint('LifeProvider bootstrap failed: $e');
+      // 尝试从缓存恢复离线模式
+      await _tryLoadOfflineCache();
     } finally {
       _isBootstrapping = false;
       if (!_disposed) {
@@ -140,8 +161,26 @@ class LifeProvider extends ChangeNotifier {
     _tickCount = snapshot.tick;
     _worldId = snapshot.worldId;
     _summary = snapshot.summary;
+    _entitiesList = List.unmodifiable(_entities.values);
     _isInitialized = true;
     notifyListeners();
+  }
+
+  /// 尝试从本地缓存加载离线数据。
+  Future<void> _tryLoadOfflineCache() async {
+    final cached = await LifeCacheService.loadState();
+    if (cached == null || _disposed) return;
+
+    _entities
+      ..clear()
+      ..addEntries(cached.entities.map((e) => MapEntry(e.id, e)));
+    _entitiesList = List.unmodifiable(_entities.values);
+    _tickCount = cached.tick;
+    _summary = LifeWorldSummary.fromJson(cached.summary);
+    _isOfflineMode = true;
+    _isInitialized = true;
+    notifyListeners();
+    debugPrint('LifeProvider: 已从缓存加载离线数据，tick=${cached.tick}');
   }
 
   /// 处理 Tick 广播更新
@@ -211,6 +250,7 @@ class LifeProvider extends ChangeNotifier {
     // 移除已停用的世界事件
     _worldEvents.removeWhere((e) => !e.active);
 
+    _entitiesList = List.unmodifiable(_entities.values);
     _tickCount = update.tick;
     _worldId = update.worldId;
     _summary = update.summary;
@@ -218,6 +258,18 @@ class LifeProvider extends ChangeNotifier {
       _isInitialized = true;
     }
     notifyListeners();
+
+    // debounce 缓存写入（30 秒内无新更新才写入）
+    _cacheDebounceTimer?.cancel();
+    _cacheDebounceTimer = Timer(const Duration(seconds: 30), () {
+      if (!_disposed) {
+        LifeCacheService.saveState(
+          entities: _entitiesList,
+          summary: _summary.toJson(),
+          tick: _tickCount,
+        );
+      }
+    });
   }
 
   // ── 操作方法 ──────────────────────────────────────────────────────────────────
@@ -266,8 +318,9 @@ class LifeProvider extends ChangeNotifier {
         activeEffects: entity.activeEffects,
       );
     }
+    _entitiesList = List.unmodifiable(_entities.values);
     notifyListeners();
-
+    
     try {
       await LifeService.postLifeAction(action, entityId);
 
@@ -303,6 +356,7 @@ class LifeProvider extends ChangeNotifier {
     } on LifeActionCooldownException catch (e) {
       // 回滚乐观更新
       _entities[entityId] = previousEntity;
+      _entitiesList = List.unmodifiable(_entities.values);
       _lastActionError = '稍等一下，${e.retryAfter}秒后再试试吧~';
       _lastActionIsCooldown = true;
       notifyListeners();
@@ -310,6 +364,7 @@ class LifeProvider extends ChangeNotifier {
     } catch (e) {
       // 回滚乐观更新
       _entities[entityId] = previousEntity;
+      _entitiesList = List.unmodifiable(_entities.values);
       _lastActionError = e.toString();
       _lastActionIsCooldown = false;
       notifyListeners();
@@ -366,6 +421,7 @@ class LifeProvider extends ChangeNotifier {
       quantity: invItem.quantity - 1,
       item: invItem.item,
     );
+    _entitiesList = List.unmodifiable(_entities.values);
     notifyListeners();
 
     try {
@@ -418,6 +474,7 @@ class LifeProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _cacheDebounceTimer?.cancel();
     _wsService.dispose();
     super.dispose();
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/life/life_event_tile.dart';
 
 /// Entity 详情页 — 展示单个实体的属性和最近事件。
 class LifeEntityDetailPage extends StatefulWidget {
@@ -203,19 +204,28 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final lifeProvider = context.watch<LifeProvider>();
-    // 从 provider 获取最新状态
-    final currentEntity = lifeProvider.entities
-            .where((e) => e.id == widget.entity.id)
-            .firstOrNull ??
-        widget.entity;
-    final entityEvents = lifeProvider.recentEvents
-        .where((e) => e.entityId == widget.entity.id)
-        .toList()
-        .reversed
-        .toList();
+    return Selector<LifeProvider, LifeEntity?>(
+      selector: (_, p) => p.entities
+              .where((e) => e.id == widget.entity.id)
+              .firstOrNull ??
+          widget.entity,
+      shouldRebuild: (prev, next) =>
+          prev?.id != next?.id ||
+          prev?.hunger != next?.hunger ||
+          prev?.energy != next?.energy ||
+          prev?.mood != next?.mood ||
+          prev?.action != next?.action ||
+          prev?.x != next?.x ||
+          prev?.y != next?.y ||
+          prev?.experience != next?.experience ||
+          prev?.age != next?.age,
+      builder: (context, selected, _) {
+        final currentEntity = selected ?? widget.entity;
+        final entityEvents = context
+            .read<LifeProvider>()
+            .getEventsForEntity(widget.entity.id);
 
-    return Scaffold(
+        return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
         title: Text('${currentEntity.emoji} ${currentEntity.name}'),
@@ -448,54 +458,14 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
                       ),
                     )
                   else
-                    ...entityEvents.map((event) => Container(
-                          margin: const EdgeInsets.only(bottom: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: MoeTokens.cardBackground,
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                    ...entityEvents.asMap().entries.map(
+                          (entry) => LifeEventTile(
+                            event: entry.value,
+                            compact: true,
+                            showTimeline: true,
+                            isLast: entry.key == entityEvents.length - 1,
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.circle,
-                                  size: 6,
-                                  color: MoeTokens.primary
-                                      .withValues(alpha: 0.5)),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      event.desc,
-                                      style: const TextStyle(
-                                          fontSize: 13,
-                                          color: MoeTokens.bodyText),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      _formatTimestamp(event.timestamp),
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade500),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
+                        ),
                   // 底部留空，避免被操作栏遮挡
                   const SizedBox(height: 16),
                 ],
@@ -516,14 +486,11 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
         ],
       ),
     );
+      },
+    );
   }
 
-  String _formatTimestamp(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    final s = dt.second.toString().padLeft(2, '0');
-    return '$h:$m:$s';
-  }
+
 }
 
 /// 底部操作按钮栏。
@@ -680,6 +647,8 @@ class _StatBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedValue = (value / 100).clamp(0.0, 1.0);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -703,14 +672,24 @@ class _StatBar extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: (value / 100).clamp(0.0, 1.0),
-                backgroundColor: color.withValues(alpha: 0.12),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                minHeight: 8,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(
+                begin: 0,
+                end: normalizedValue,
               ),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              builder: (context, animatedValue, child) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: animatedValue,
+                    backgroundColor: color.withValues(alpha: 0.12),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                    minHeight: 8,
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(width: 10),

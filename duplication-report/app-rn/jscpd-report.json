@@ -1,0 +1,405 @@
+{
+  "duplicates": [
+    {
+      "firstFile": {
+        "end": 8,
+        "endLoc": {
+          "column": 8,
+          "line": 8,
+          "position": 365
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 1,
+        "startLoc": {
+          "column": 34,
+          "line": 1,
+          "position": 34
+        }
+      },
+      "format": "tsx",
+      "fragment": "import React, { useEffect, useMemo, useState } from 'react';\nimport { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';\n\nimport { ActionButton } from '../../components/ActionButton';\nimport { MetricCard } from '../../components/MetricCard';\nimport { Panel } from '../../components/Panel';\nimport { Screen } from '../../components/Screen';\nimport { StatusNotice } from '../../components/StatusNotice';",
+      "lines": 8,
+      "secondFile": {
+        "end": 8,
+        "endLoc": {
+          "column": 8,
+          "line": 8,
+          "position": 356
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/profile/ProfileScreen.tsx",
+        "start": 1,
+        "startLoc": {
+          "column": 25,
+          "line": 1,
+          "position": 25
+        }
+      },
+      "tokens": 51
+    },
+    {
+      "firstFile": {
+        "end": 43,
+        "endLoc": {
+          "column": 17,
+          "line": 43,
+          "position": 1336
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 31,
+        "startLoc": {
+          "column": 57,
+          "line": 31,
+          "position": 1042
+        }
+      },
+      "format": "tsx",
+      "fragment": "  const [history, setHistory] = useState<AiChatTurn[]>([]);\n  const [draft, setDraft] = useState('');\n  const [loading, setLoading] = useState(false);\n  const [sending, setSending] = useState(false);\n  const [error, setError] = useState('');\n\n  useEffect(() => {\n    if (!session?.userId) {\n      return;\n    }\n\n    setLoading(true);\n    setError('');",
+      "lines": 13,
+      "secondFile": {
+        "end": 39,
+        "endLoc": {
+          "column": 17,
+          "line": 39,
+          "position": 1127
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 27,
+        "startLoc": {
+          "column": 18,
+          "line": 27,
+          "position": 833
+        }
+      },
+      "tokens": 77
+    },
+    {
+      "firstFile": {
+        "end": 290,
+        "endLoc": {
+          "column": 4,
+          "line": 290,
+          "position": 10751
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 268,
+        "startLoc": {
+          "column": 45,
+          "line": 268,
+          "position": 10365
+        }
+      },
+      "format": "tsx",
+      "fragment": "    backgroundColor: 'rgba(255,255,255,0.24)',\n    alignItems: 'center',\n    justifyContent: 'center',\n  },\n  heroBadgeText: {\n    color: colors.white,\n    fontSize: 22,\n    fontWeight: '900',\n  },\n  heroBody: {\n    flex: 1,\n    gap: spacing.xxs,\n  },\n  heroTitle: {\n    color: colors.white,\n    fontSize: 22,\n    fontWeight: '900',\n  },\n  heroCopy: {\n    color: 'rgba(255,255,255,0.82)',\n    fontSize: 13,\n    lineHeight: 20,\n  },",
+      "lines": 23,
+      "secondFile": {
+        "end": 285,
+        "endLoc": {
+          "column": 4,
+          "line": 285,
+          "position": 10658
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 263,
+        "startLoc": {
+          "column": 45,
+          "line": 263,
+          "position": 10272
+        }
+      },
+      "tokens": 81
+    },
+    {
+      "firstFile": {
+        "end": 368,
+        "endLoc": {
+          "column": 4,
+          "line": 368,
+          "position": 12330
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 347,
+        "startLoc": {
+          "column": 21,
+          "line": 347,
+          "position": 11956
+        }
+      },
+      "format": "tsx",
+      "fragment": "    fontWeight: '700',\n  },\n  chatHeader: {\n    flexDirection: 'row',\n    justifyContent: 'space-between',\n    alignItems: 'flex-start',\n    gap: spacing.sm,\n  },\n  chatHeaderMeta: {\n    flex: 1,\n    gap: 4,\n  },\n  chatHeaderTitle: {\n    color: colors.text,\n    fontSize: 16,\n    fontWeight: '800',\n  },\n  chatHeaderCopy: {\n    color: colors.textMuted,\n    fontSize: 12,\n    lineHeight: 18,\n  },",
+      "lines": 22,
+      "secondFile": {
+        "end": 406,
+        "endLoc": {
+          "column": 4,
+          "line": 406,
+          "position": 13014
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 385,
+        "startLoc": {
+          "column": 36,
+          "line": 385,
+          "position": 12640
+        }
+      },
+      "tokens": 77
+    },
+    {
+      "firstFile": {
+        "end": 451,
+        "endLoc": {
+          "column": 4,
+          "line": 451,
+          "position": 14091
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 420,
+        "startLoc": {
+          "column": 13,
+          "line": 420,
+          "position": 13437
+        }
+      },
+      "format": "tsx",
+      "fragment": "  chatHistory: {\n    gap: spacing.sm,\n    borderRadius: radii.lg,\n    backgroundColor: 'rgba(248,245,255,0.72)',\n    borderWidth: 1,\n    borderColor: colors.line,\n    padding: spacing.md,\n  },\n  emptyState: {\n    borderRadius: radii.lg,\n    backgroundColor: colors.panelSoft,\n    padding: spacing.md,\n    gap: 6,\n    borderWidth: 1,\n    borderColor: colors.line,\n  },\n  emptyEyebrow: {\n    color: colors.primaryDeep,\n    fontSize: 11,\n    fontWeight: '800',\n    textTransform: 'uppercase',\n  },\n  emptyTitle: {\n    color: colors.text,\n    fontWeight: '800',\n    fontSize: 16,\n  },\n  emptyCopy: {\n    color: colors.textMuted,\n    fontSize: 13,\n    lineHeight: 19,\n  },",
+      "lines": 32,
+      "secondFile": {
+        "end": 449,
+        "endLoc": {
+          "column": 4,
+          "line": 449,
+          "position": 13918
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 418,
+        "startLoc": {
+          "column": 11,
+          "line": 418,
+          "position": 13264
+        }
+      },
+      "tokens": 134
+    },
+    {
+      "firstFile": {
+        "end": 516,
+        "endLoc": {
+          "column": 14,
+          "line": 516,
+          "position": 15359
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 488,
+        "startLoc": {
+          "column": 18,
+          "line": 488,
+          "position": 14814
+        }
+      },
+      "format": "tsx",
+      "fragment": "    lineHeight: 20,\n  },\n  composer: {\n    gap: spacing.sm,\n    padding: spacing.md,\n    borderRadius: radii.lg,\n    backgroundColor: colors.panelSoft,\n    borderWidth: 1,\n    borderColor: colors.line,\n  },\n  composerHintRow: {\n    flexDirection: 'row',\n    justifyContent: 'space-between',\n    alignItems: 'center',\n    gap: spacing.sm,\n  },\n  composerHint: {\n    color: colors.textMuted,\n    fontSize: 12,\n    lineHeight: 18,\n    flex: 1,\n  },\n  composerMeta: {\n    color: colors.textSoft,\n    fontSize: 11,\n    fontWeight: '700',\n  },\n  input: {\n    minHeight: 96,",
+      "lines": 29,
+      "secondFile": {
+        "end": 522,
+        "endLoc": {
+          "column": 14,
+          "line": 522,
+          "position": 15372
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 494,
+        "startLoc": {
+          "column": 16,
+          "line": 494,
+          "position": 14827
+        }
+      },
+      "tokens": 112
+    },
+    {
+      "firstFile": {
+        "end": 526,
+        "endLoc": {
+          "column": 3,
+          "line": 526,
+          "position": 15607
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/ai/AiScreen.tsx",
+        "start": 516,
+        "startLoc": {
+          "column": 17,
+          "line": 516,
+          "position": 15362
+        }
+      },
+      "format": "tsx",
+      "fragment": "    minHeight: 96,\n    borderRadius: radii.lg,\n    backgroundColor: colors.white,\n    borderWidth: 1,\n    borderColor: colors.line,\n    paddingHorizontal: spacing.md,\n    paddingVertical: spacing.sm,\n    color: colors.text,\n    textAlignVertical: 'top',\n  },\n});",
+      "lines": 11,
+      "secondFile": {
+        "end": 532,
+        "endLoc": {
+          "column": 3,
+          "line": 532,
+          "position": 15620
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/features/chat/ChatScreen.tsx",
+        "start": 522,
+        "startLoc": {
+          "column": 17,
+          "line": 522,
+          "position": 15375
+        }
+      },
+      "tokens": 50
+    },
+    {
+      "firstFile": {
+        "end": 19,
+        "endLoc": {
+          "column": 8,
+          "line": 19,
+          "position": 452
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/aiService.ts",
+        "start": 7,
+        "startLoc": {
+          "column": 20,
+          "line": 7,
+          "position": 151
+        }
+      },
+      "format": "typescript",
+      "fragment": "} from '../types/ai';\n\nimport { ApiClient } from './apiClient';\n\nfunction asRecord(value: unknown): Record<string, unknown> {\n  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};\n}\n\nfunction asString(value: unknown) {\n  return typeof value === 'string' ? value : '';\n}\n\nfunction parseJsonObject(value: unknown) {",
+      "lines": 13,
+      "secondFile": {
+        "end": 14,
+        "endLoc": {
+          "column": 8,
+          "line": 14,
+          "position": 416
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/chatService.ts",
+        "start": 2,
+        "startLoc": {
+          "column": 66,
+          "line": 2,
+          "position": 115
+        }
+      },
+      "tokens": 68
+    },
+    {
+      "firstFile": {
+        "end": 20,
+        "endLoc": {
+          "column": 47,
+          "line": 20,
+          "position": 534
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/aiService.ts",
+        "start": 7,
+        "startLoc": {
+          "column": 20,
+          "line": 7,
+          "position": 151
+        }
+      },
+      "format": "typescript",
+      "fragment": "} from '../types/ai';\n\nimport { ApiClient } from './apiClient';\n\nfunction asRecord(value: unknown): Record<string, unknown> {\n  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};\n}\n\nfunction asString(value: unknown) {\n  return typeof value === 'string' ? value : '';\n}\n\nfunction parseJsonObject(value: unknown) {\n  if (typeof value !== 'string' || !value.trim()) {",
+      "lines": 14,
+      "secondFile": {
+        "end": 18,
+        "endLoc": {
+          "column": 8,
+          "line": 18,
+          "position": 508
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/feedService.ts",
+        "start": 2,
+        "startLoc": {
+          "column": 71,
+          "line": 2,
+          "position": 120
+        }
+      },
+      "tokens": 87
+    },
+    {
+      "firstFile": {
+        "end": 24,
+        "endLoc": {
+          "column": 36,
+          "line": 24,
+          "position": 602
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/aiService.ts",
+        "start": 7,
+        "startLoc": {
+          "column": 20,
+          "line": 7,
+          "position": 151
+        }
+      },
+      "format": "typescript",
+      "fragment": "} from '../types/ai';\n\nimport { ApiClient } from './apiClient';\n\nfunction asRecord(value: unknown): Record<string, unknown> {\n  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};\n}\n\nfunction asString(value: unknown) {\n  return typeof value === 'string' ? value : '';\n}\n\nfunction parseJsonObject(value: unknown) {\n  if (typeof value !== 'string' || !value.trim()) {\n    return {};\n  }\n  try {\n    const parsed = JSON.parse(value) as unknown;",
+      "lines": 18,
+      "secondFile": {
+        "end": 22,
+        "endLoc": {
+          "column": 8,
+          "line": 22,
+          "position": 581
+        },
+        "name": "/Users/xuxinzhi/Documents/gowork/moe_social/app-rn/src/services/profileService.ts",
+        "start": 2,
+        "startLoc": {
+          "column": 51,
+          "line": 2,
+          "position": 100
+        }
+      },
+      "tokens": 106
+    }
+  ],
+  "statistics": {
+    "detectionDate": "2026-07-14T12:52:13.875Z",
+    "formats": {
+      "tsx": {
+        "clones": 7,
+        "duplicatedLines": 131,
+        "duplicatedTokens": 582,
+        "lines": 3931,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 3.3324853726787076,
+        "percentageTokens": 2.7042096459436853,
+        "sources": 13,
+        "tokens": 21522
+      },
+      "typescript": {
+        "clones": 3,
+        "duplicatedLines": 42,
+        "duplicatedTokens": 261,
+        "lines": 1320,
+        "newClones": 0,
+        "newDuplicatedLines": 0,
+        "percentage": 3.1818181818181817,
+        "percentageTokens": 3.5341909275558567,
+        "sources": 17,
+        "tokens": 7385
+      }
+    },
+    "total": {
+      "clones": 10,
+      "duplicatedLines": 173,
+      "duplicatedTokens": 843,
+      "lines": 5251,
+      "newClones": 0,
+      "newDuplicatedLines": 0,
+      "percentage": 3.2946105503713583,
+      "percentageTokens": 2.91624865949424,
+      "sources": 30,
+      "tokens": 28907
+    }
+  }
+}
