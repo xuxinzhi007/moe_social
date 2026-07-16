@@ -130,17 +130,18 @@ class LifeEntityGrid extends StatelessWidget {
     }
 
     if (isCompact) {
-      return ListView.separated(
-        padding: const EdgeInsets.all(10),
-        scrollDirection: Axis.horizontal,
+      return GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.05,
+        ),
         itemCount: entities.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final entity = entities[index];
-          return SizedBox(
-            width: 132,
-            child: LifeEntityCard(entity: entity, onTap: () => onTap(entity)),
-          );
+          return LifeEntityCard(entity: entity, onTap: () => onTap(entity));
         },
       );
     }
@@ -175,30 +176,37 @@ class LifeEntityCard extends StatelessWidget {
       onTap: onTap,
       child: RepaintBoundary(
         child: Container(
-          padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
           decoration: BoxDecoration(
-            color: MoeTokens.pageBackground,
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: MoeTokens.primary.withValues(alpha: 0.1),
+              color: MoeTokens.primary.withValues(alpha: 0.12),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(entity.emoji, style: const TextStyle(fontSize: 28)),
+              Text(entity.emoji, style: const TextStyle(fontSize: 30)),
               const SizedBox(height: 4),
               Text(
                 entity.name,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
@@ -208,7 +216,7 @@ class LifeEntityCard extends StatelessWidget {
                 child: Text(
                   entity.actionLabel,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     color: MoeTokens.primary,
                   ),
                   maxLines: 1,
@@ -230,7 +238,7 @@ class LifeEntityCard extends StatelessWidget {
                 child: Text(
                   entity.growthStageLabel,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 8,
                     color: entity.growthStageColor,
                     fontWeight: FontWeight.w600,
                   ),

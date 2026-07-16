@@ -1,22 +1,21 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
+import '../../services/game_service.dart';
 import '../../theme/moe_tokens.dart';
-import '../../widgets/life/life_event_banner.dart';
-import '../../widgets/life/life_feedback_overlay.dart';
-import '../../widgets/life/life_panel_sheet.dart';
-import '../../widgets/life/life_summary_card.dart';
-import '../../widgets/life/life_world_map.dart';
+import '../../widgets/life/life_event_tile.dart';
+import '../../widgets/moe_toast.dart';
+import '../ai/game_play_page.dart';
 import 'life_entity_detail.dart';
 import 'life_inventory_page.dart';
 import 'life_relationship_page.dart';
 
-/// 数字生命世界观察主页。
+/// AI 伙伴陪伴主页。
+///
+/// 页面刻意不使用地图、世界坐标或 Canvas，优先保证移动端内容可见、
+/// 可操作，并让用户聚焦于一个具体生命。
 class LifeWorldPage extends StatefulWidget {
   const LifeWorldPage({super.key});
 
@@ -24,720 +23,820 @@ class LifeWorldPage extends StatefulWidget {
   State<LifeWorldPage> createState() => _LifeWorldPageState();
 }
 
-class _LifeWorldPageState extends State<LifeWorldPage>
-    with TickerProviderStateMixin {
-  late final LifeProvider _lifeProvider;
-
-  // 反馈动画队列
-  final List<FeedbackItem> _feedbacks = [];
-  int _feedbackKeyCounter = 0;
-
-  // 世界事件通知横幅
-  final List<WorldEventBannerData> _eventBanners = [];
-  int _bannerKeyCounter = 0;
-  final Set<String> _seenWorldEventTypes = {};
-
-  // 引导气泡（首次进入时展示）
-  bool _showGuideBubble = false;
+class _LifeWorldPageState extends State<LifeWorldPage> {
+  late final LifeProvider _provider;
+  int? _selectedEntityId;
+  bool _isActing = false;
+  bool _isOpeningStory = false;
+  String? _response;
 
   @override
   void initState() {
     super.initState();
-    _lifeProvider = context.read<LifeProvider>();
-    _lifeProvider.startListening();
-    // 异步检查是否首次进入，展示引导气泡
-    SharedPreferences.getInstance().then((prefs) {
-      if (!(prefs.getBool('life_guide_seen') ?? false)) {
-        if (!mounted) return;
-        setState(() => _showGuideBubble = true);
-        // 8秒后自动消失
-        Future.delayed(const Duration(seconds: 8), () {
-          if (mounted) setState(() => _showGuideBubble = false);
-        });
-      }
-    });
+    _provider = context.read<LifeProvider>();
+    _provider.startListening();
   }
 
   @override
   void dispose() {
-    _lifeProvider.stopListening();
+    _provider.stopListening();
     super.dispose();
   }
 
-  /// 显示世界事件通知横幅
-  void _showWorldEventBanner(WorldEventDiff event) {
-    final key = _bannerKeyCounter++;
-    final emoji = _weatherEmoji(event.type);
+  LifeEntity? _selectedEntity(List<LifeEntity> entities) {
+    if (entities.isEmpty) return null;
+    for (final entity in entities) {
+      if (entity.id == _selectedEntityId) return entity;
+    }
+    return entities.first;
+  }
+
+  Future<void> _performAction(String action, LifeEntity entity) async {
+    if (_isActing || _provider.isOfflineMode) return;
     setState(() {
-      _eventBanners.add(WorldEventBannerData(
-        key: key,
-        emoji: emoji,
-        message: event.message,
-      ));
+      _isActing = true;
+      _response = null;
     });
-    // 3 秒自动消失
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _eventBanners.removeWhere((b) => b.key == key);
-        });
-      }
-    });
-  }
 
-  String _weatherEmoji(String type) {
-    if (type.contains('rain')) return '🌧️';
-    if (type.contains('drought')) return '🏜️';
-    if (type.contains('storm')) return '⛈️';
-    if (type.contains('depletion')) return '⚠️';
-    return '🌍';
-  }
-
-  /// 单击实体弹出操作菜单。
-  void _showEntityActionSheet(LifeEntity entity) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: MoeTokens.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final provider = ctx.read<LifeProvider>();
-        final isOffline = provider.isOfflineMode;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 拖动指示条
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // 实体信息
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                  child: Row(
-                    children: [
-                      Text(entity.emoji,
-                          style: const TextStyle(fontSize: 28)),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entity.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: MoeTokens.titleText,
-                            ),
-                          ),
-                          Text(
-                            entity.actionLabel,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: MoeTokens.hintText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 20, indent: 20, endIndent: 20),
-                // 操作选项——离线时禁用
-                Tooltip(
-                  message: isOffline ? '连接恢复后可操作' : '',
-                  child: ListTile(
-                    leading: const Icon(Icons.restaurant_menu,
-                        color: Colors.orange),
-                    title: const Text('喂食'),
-                    enabled: !isOffline,
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _performActionWithFeedback(provider, 'feed', entity);
-                    },
-                  ),
-                ),
-                Tooltip(
-                  message: isOffline ? '连接恢复后可操作' : '',
-                  child: ListTile(
-                    leading:
-                        const Icon(Icons.front_hand, color: Colors.pink),
-                    title: const Text('抚摸'),
-                    enabled: !isOffline,
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await _performActionWithFeedback(provider, 'pet', entity);
-                    },
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.info_outline,
-                      color: MoeTokens.primary),
-                  title: const Text('查看详情'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => LifeEntityDetailPage(entity: entity),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 弹出实体列表 / 事件流 BottomSheet。
-  void _showPanelSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: MoeTokens.cardBackground,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return ChangeNotifierProvider.value(
-          value: context.read<LifeProvider>(),
-          child: Consumer<LifeProvider>(
-            builder: (ctx, lifeProvider, _) {
-              return DraggableScrollableSheet(
-                initialChildSize: 0.65,
-                minChildSize: 0.3,
-                maxChildSize: 0.9,
-                expand: false,
-                builder: (_, scrollController) {
-                  return LifePanelSheet(
-                    entities: lifeProvider.entities,
-                    events: lifeProvider.recentEvents,
-                    scrollController: scrollController,
-                    onEntityTap: (entity) {
-                      Navigator.pop(ctx);
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              LifeEntityDetailPage(entity: entity),
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// 执行操作并显示反馈动画。
-  Future<void> _performActionWithFeedback(
-    LifeProvider provider,
-    String action,
-    LifeEntity entity,
-  ) async {
-    final success = await provider.performAction(action, entity.id);
+    final success = await _provider.performAction(action, entity.id);
     if (!mounted) return;
+
     if (success) {
-      _showFeedback(action, entity);
-    } else if (provider.lastActionError != null) {
-      final isCooldown = provider.lastActionIsCooldown;
+      setState(() {
+        _response = action == 'feed'
+            ? entity.hunger < 35
+                ? '终于吃到了，谢谢你。'
+                : '好满足，感觉又有精神了！'
+            : entity.mood > 75
+                ? '最喜欢你陪着我了。'
+                : '感觉安心多了。';
+      });
+    } else if (_provider.lastActionError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              if (isCooldown) ...[Icon(Icons.timer_outlined, size: 18, color: Colors.white), const SizedBox(width: 6)],
-              Expanded(child: Text(provider.lastActionError!)),
-            ],
-          ),
-          backgroundColor: isCooldown ? MoeTokens.warning : MoeTokens.danger,
-          duration: const Duration(seconds: 2),
+          content: Text(_provider.lastActionError!),
+          backgroundColor: _provider.lastActionIsCooldown
+              ? MoeTokens.warning
+              : MoeTokens.danger,
         ),
       );
-      provider.clearActionError();
+      _provider.clearActionError();
+    }
+
+    if (mounted) setState(() => _isActing = false);
+  }
+
+  void _openDetail(LifeEntity entity) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => LifeEntityDetailPage(entity: entity)),
+    );
+  }
+
+  Future<void> _openStory(LifeEntity entity) async {
+    if (_isOpeningStory) return;
+    setState(() => _isOpeningStory = true);
+    try {
+      final state = await GameService().initSession();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GamePlayPage(
+            initialState: state,
+            companionName: entity.name,
+            companionEmoji: entity.emoji,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _isOpeningStory = false);
     }
   }
 
-  /// 在地图上显示反馈 emoji 动画。
-  void _showFeedback(String action, LifeEntity entity) {
-    final emoji = action == 'feed' ? '❤️' : '✨';
-    final key = _feedbackKeyCounter++;
-    setState(() {
-      _feedbacks.add(FeedbackItem(
-        key: key,
-        emoji: emoji,
-        entityX: entity.x,
-        entityY: entity.y,
-      ));
-    });
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted) {
-        setState(() {
-          _feedbacks.removeWhere((f) => f.key == key);
-        });
-      }
-    });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F5F2),
+      appBar: AppBar(
+        title: const Text('AI 伙伴'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: MoeTokens.titleText,
+        elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: '我的背包',
+            icon: const Icon(Icons.backpack_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LifeInventoryPage()),
+            ),
+          ),
+          IconButton(
+            tooltip: '关系网络',
+            icon: const Icon(Icons.hub_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const LifeRelationshipPage()),
+            ),
+          ),
+          Selector<LifeProvider, bool>(
+            selector: (_, provider) => provider.connected,
+            builder: (_, connected, __) => Padding(
+              padding: const EdgeInsets.only(left: 4, right: 16),
+              child: Center(
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: connected ? MoeTokens.success : MoeTokens.warning,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: Selector<LifeProvider, _CompanionPageData>(
+        selector: (_, provider) {
+          final selected = _selectedEntity(provider.entities);
+          return _CompanionPageData(
+            entities: provider.entities,
+            selected: selected,
+            events: selected == null
+                ? const []
+                : provider.getEventsForEntity(selected.id).take(5).toList(),
+            isInitialized: provider.isInitialized,
+            isOffline: provider.isOfflineMode,
+          );
+        },
+        builder: (context, data, _) {
+          if (!data.isInitialized && data.entities.isEmpty) {
+            return const _LoadingState();
+          }
+          if (data.entities.isEmpty) {
+            return _EmptyState(isOffline: data.isOffline);
+          }
+
+          final selected = data.selected!;
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              _provider.startListening();
+              await Future<void>.delayed(const Duration(milliseconds: 500));
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
+              children: [
+                if (data.isOffline) const _OfflineBanner(),
+                _CompanionHero(
+                  entity: selected,
+                  response: _response,
+                  isActing: _isActing,
+                  onFeed: () => _performAction('feed', selected),
+                  onPet: () => _performAction('pet', selected),
+                  onStory: () => _openStory(selected),
+                  isOpeningStory: _isOpeningStory,
+                  onDetail: () => _openDetail(selected),
+                ),
+                const SizedBox(height: 18),
+                _SectionTitle(
+                  title: '状态',
+                  trailing:
+                      '${selected.growthStageLabel} · ${selected.ageInDays} 天',
+                ),
+                const SizedBox(height: 10),
+                _VitalCard(entity: selected),
+                if (data.entities.length > 1) ...[
+                  const SizedBox(height: 22),
+                  _SectionTitle(
+                    title: '其他居民',
+                    trailing: '${data.entities.length} 位伙伴',
+                  ),
+                  const SizedBox(height: 10),
+                  _ResidentList(
+                    entities: data.entities,
+                    selectedId: selected.id,
+                    onSelected: (entity) {
+                      setState(() {
+                        _selectedEntityId = entity.id;
+                        _response = null;
+                      });
+                    },
+                  ),
+                ],
+                const SizedBox(height: 22),
+                _SectionTitle(
+                  title: '最近发生',
+                  trailing: '共同记忆',
+                ),
+                const SizedBox(height: 10),
+                _EventSection(events: data.events),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CompanionPageData {
+  final List<LifeEntity> entities;
+  final LifeEntity? selected;
+  final List<LifeEvent> events;
+  final bool isInitialized;
+  final bool isOffline;
+
+  const _CompanionPageData({
+    required this.entities,
+    required this.selected,
+    required this.events,
+    required this.isInitialized,
+    required this.isOffline,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _CompanionPageData &&
+        isInitialized == other.isInitialized &&
+        isOffline == other.isOffline &&
+        _sameEntityState(selected, other.selected) &&
+        _sameResidents(entities, other.entities) &&
+        _sameLifeEvents(events, other.events);
   }
 
   @override
+  int get hashCode => Object.hash(
+        isInitialized,
+        isOffline,
+        selected?.id,
+        selected?.action,
+        selected == null ? 0 : _statusBucket(selected!.hunger),
+        entities.length,
+        events.length,
+      );
+}
+
+bool _sameEntityState(LifeEntity? left, LifeEntity? right) {
+  if (identical(left, right)) return true;
+  if (left == null || right == null) return left == right;
+  return left.id == right.id &&
+      left.name == right.name &&
+      left.emoji == right.emoji &&
+      left.action == right.action &&
+      left.growthStage == right.growthStage &&
+      _statusBucket(left.hunger) == _statusBucket(right.hunger) &&
+      _statusBucket(left.energy) == _statusBucket(right.energy) &&
+      _statusBucket(left.mood) == _statusBucket(right.mood);
+}
+
+bool _sameResidents(List<LifeEntity> left, List<LifeEntity> right) {
+  if (left.length != right.length) return false;
+  for (var i = 0; i < left.length; i++) {
+    if (left[i].id != right[i].id ||
+        left[i].name != right[i].name ||
+        left[i].emoji != right[i].emoji ||
+        left[i].growthStage != right[i].growthStage) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _sameLifeEvents(List<LifeEvent> left, List<LifeEvent> right) {
+  if (left.length != right.length) return false;
+  for (var i = 0; i < left.length; i++) {
+    if (left[i].type != right[i].type ||
+        left[i].desc != right[i].desc ||
+        left[i].timestamp != right[i].timestamp) {
+      return false;
+    }
+  }
+  return true;
+}
+
+int _statusBucket(double value) => (value.clamp(0, 100) / 5).floor();
+
+class _CompanionHero extends StatelessWidget {
+  final LifeEntity entity;
+  final String? response;
+  final bool isActing;
+  final VoidCallback onFeed;
+  final VoidCallback onPet;
+  final VoidCallback onStory;
+  final bool isOpeningStory;
+  final VoidCallback onDetail;
+
+  const _CompanionHero({
+    required this.entity,
+    required this.response,
+    required this.isActing,
+    required this.onFeed,
+    required this.onPet,
+    required this.onStory,
+    required this.isOpeningStory,
+    required this.onDetail,
+  });
+
+  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 420;
-
-    return Scaffold(
-      backgroundColor: MoeTokens.pageBackground,
-      appBar: AppBar(
-        title: const Text('数字生命'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.backpack_outlined, size: 20),
-            tooltip: '我的背包',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const LifeInventoryPage(),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.hub_outlined, size: 20),
-            tooltip: '关系网络',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const LifeRelationshipPage(),
-              ),
-            ),
-          ),
-          // 连接状态三态指示器 — 已连接/重连中/离线
-          Selector<LifeProvider, ({bool connected, bool isOfflineMode})>(
-            selector: (_, p) => (
-              connected: p.connected,
-              isOfflineMode: p.isOfflineMode,
-            ),
-            builder: (context, state, _) {
-              final connected = state.connected;
-              final isOffline = state.isOfflineMode;
-
-              // 三态颜色和文字
-              final Color dotColor;
-              final String label;
-              if (connected) {
-                dotColor = MoeTokens.success;
-                label = '已连接';
-              } else if (isOffline) {
-                dotColor = Colors.amber;
-                label = '离线模式';
-              } else {
-                dotColor = Colors.orange;
-                label = '重连中';
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 重连中状态添加脉冲动画
-                    if (!connected && !isOffline)
-                      _PulsingDot(color: dotColor, size: 8)
-                    else
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: dotColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    // 小屏隐藏文字
-                    if (!isCompact) ...[
-                      const SizedBox(width: 4),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: dotColor,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            },
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF1D6), Color(0xFFFFFBF4)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFFFD89C)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1AFFA94D),
+            blurRadius: 24,
+            offset: Offset(0, 10),
           ),
         ],
-        backgroundColor: MoeTokens.cardBackground,
-        elevation: 0,
-        foregroundColor: MoeTokens.titleText,
       ),
-      // 浮动按钮：弹出实体列表/事件面板
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showPanelSheet,
-        backgroundColor: MoeTokens.primary,
-        child: const Icon(Icons.list, color: Colors.white),
-      ),
-      body: Column(
+      child: Column(
         children: [
-          // 加载指示器 — 仅监听 isInitialized + connected
-          Selector<LifeProvider, ({bool isInitialized, bool connected})>(
-            selector: (_, p) => (
-              isInitialized: p.isInitialized,
-              connected: p.connected
-            ),
-            builder: (context, state, _) {
-              if (!state.isInitialized && state.connected) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 92,
+                height: 92,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.84),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: entity.growthStageColor.withValues(alpha: 0.45),
+                    width: 2,
+                  ),
+                ),
+                child: Text(entity.emoji, style: const TextStyle(fontSize: 54)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 7),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 12),
                       Text(
-                        '正在连接世界...',
-                        style: TextStyle(
+                        entity.name,
+                        style: const TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF312A25),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        entity.actionLabel,
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF9A6B32),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: Text(
+                          response ?? _defaultThought(entity),
+                          key: ValueKey(response ?? entity.action),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: Color(0xFF6E625A),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-          // 可折叠摘要卡 — 监听 summary + weather
-          Selector<LifeProvider, SummaryCardData>(
-            selector: (_, p) => SummaryCardData(
-              summary: p.summary,
-              tickCount: p.tickCount,
-              isConnected: p.connected,
-              entityCount: p.entities.length,
-              weather: p.summary.weather,
-            ),
-            builder: (context, data, _) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: LifeSummaryCard(
-                  summary: data.summary,
-                  tickCount: data.tickCount,
-                  isConnected: data.isConnected,
-                  entityCount: data.entityCount,
-                  weather: data.weather,
                 ),
-              );
-            },
+              ),
+            ],
           ),
-          // 世界事件通知横幅监听
-          Selector<LifeProvider, List<WorldEventDiff>>(
-            selector: (_, p) => p.worldEvents,
-            builder: (context, worldEvents, _) {
-              // 检测新的世界事件
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                for (final we in worldEvents) {
-                  if (!_seenWorldEventTypes.contains(we.type) && we.message.isNotEmpty) {
-                    _seenWorldEventTypes.add(we.type);
-                    _showWorldEventBanner(we);
-                  }
-                }
-              });
-              return const SizedBox.shrink();
-            },
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _HeroAction(
+                  icon: Icons.restaurant_rounded,
+                  label: '喂食',
+                  color: const Color(0xFFF59E42),
+                  busy: isActing,
+                  onTap: onFeed,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _HeroAction(
+                  icon: Icons.front_hand_rounded,
+                  label: '陪伴',
+                  color: const Color(0xFFE97891),
+                  busy: isActing,
+                  onTap: onPet,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _DetailButton(onTap: onDetail),
+            ],
           ),
-          // 地图占据全部剩余空间 — 监听 entities + weather
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Stack(
-                children: [
-                  // 地图
-                  Positioned.fill(
-                    child: Selector<LifeProvider, ({List<LifeEntity> entities, String weather})>(
-                      selector: (_, p) => (entities: p.entities, weather: p.summary.weather),
-                      builder: (context, data, _) {
-                        final entities = data.entities;
-                        return LifeWorldMap(
-                          entities: entities,
-                          weather: data.weather,
-                          onEntityTap: (entityId) {
-                            final entity = entities
-                                .where((e) => e.id == entityId)
-                                .firstOrNull;
-                            if (entity != null) {
-                              _showEntityActionSheet(entity);
-                            }
-                          },
-                          onEntityLongPress: (entityId) {
-                            // 长按快捷喂食，离线时禁用
-                            final provider = context.read<LifeProvider>();
-                            if (provider.isOfflineMode) return;
-                            final entity = entities
-                                .where((e) => e.id == entityId)
-                                .firstOrNull;
-                            if (entity != null) {
-                              _performActionWithFeedback(
-                                  provider, 'feed', entity);
-                            }
-                          },
-                          onEmptyDismissed: () {
-                            // 标记引导已看过，关闭气泡
-                            SharedPreferences.getInstance().then((prefs) {
-                              prefs.setBool('life_guide_seen', true);
-                            });
-                            setState(() => _showGuideBubble = false);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  // 离线模式横幅
-                  Selector<LifeProvider, bool>(
-                    selector: (_, p) => p.isOfflineMode,
-                    builder: (context, isOffline, _) {
-                      if (!isOffline) return const SizedBox.shrink();
-                      return Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          color: Colors.amber.shade100,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cloud_off,
-                                  size: 16, color: Colors.amber.shade800),
-                              const SizedBox(width: 6),
-                              Text(
-                                '离线模式 — 显示最近缓存数据',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.amber.shade800,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  // 提示标签
-                  Positioned(
-                    top: 8,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          '点击实体可互动',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 世界事件横幅（使用本地状态，不依赖 Selector）
-                  ..._buildEventBanners(),
-                  // 反馈动画层（使用本地状态，不依赖 Selector）
-                  ..._buildFeedbackOverlays(),
-                  // 引导气泡（首次进入时展示）
-                  if (_showGuideBubble)
-                    Positioned(
-                      bottom: 16,
-                      left: 24,
-                      right: 24,
-                      child: _buildGuideBubble(),
-                    ),
-                ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: isOpeningStory ? null : onStory,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF70594A),
+              side: const BorderSide(color: Color(0xFFD8B98D)),
+              minimumSize: const Size.fromHeight(46),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
+            icon: isOpeningStory
+                ? const SizedBox.square(
+                    dimension: 17,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_stories_rounded),
+            label: Text(
+              '和 ${entity.name} 开始互动故事',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
+}
 
-  /// 构建世界事件横幅列表
-  List<Widget> _buildEventBanners() {
-    if (_eventBanners.isEmpty) return const [];
+String _defaultThought(LifeEntity entity) {
+  if (entity.hunger < 30) return '肚子有点饿了，想吃点东西。';
+  if (entity.energy < 30) return '今天有点困，想安静地休息。';
+  if (entity.mood < 35) return '希望你能多陪我一会儿。';
+  return '今天也在认真生活，见到你很开心。';
+}
 
-    return [
-      Positioned(
-        top: 36,
-        left: 20,
-        right: 20,
-        child: Column(
-          children: [
-            for (final banner in _eventBanners)
-              LifeEventBanner(
-                key: ValueKey(banner.key),
-                banner: banner,
-                onDismiss: () {
-                  setState(() {
-                    _eventBanners.removeWhere((b) => b.key == banner.key);
-                  });
-                },
+class _HeroAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool busy;
+  final VoidCallback onTap;
+
+  const _HeroAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.busy,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: busy ? null : onTap,
+      style: FilledButton.styleFrom(
+        backgroundColor: color,
+        disabledBackgroundColor: color.withValues(alpha: 0.55),
+        minimumSize: const Size.fromHeight(48),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      icon: busy
+          ? const SizedBox.square(
+              dimension: 17,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
+            )
+          : Icon(icon, size: 19),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _DetailButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _DetailButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filledTonal(
+      onPressed: onTap,
+      tooltip: '查看详情',
+      style: IconButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF70594A),
+      ),
+      icon: const Icon(Icons.arrow_forward_rounded),
+    );
+  }
+}
+
+class _VitalCard extends StatelessWidget {
+  final LifeEntity entity;
+
+  const _VitalCard({required this.entity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: MoeTokens.shadowSm(),
+      ),
+      child: Column(
+        children: [
+          _VitalRow(
+            label: '饱腹',
+            value: entity.hunger,
+            icon: Icons.restaurant_rounded,
+            color: const Color(0xFFF59E42),
+          ),
+          const SizedBox(height: 14),
+          _VitalRow(
+            label: '精力',
+            value: entity.energy,
+            icon: Icons.bolt_rounded,
+            color: const Color(0xFF5B8DEF),
+          ),
+          const SizedBox(height: 14),
+          _VitalRow(
+            label: '心情',
+            value: entity.mood,
+            icon: Icons.favorite_rounded,
+            color: const Color(0xFFE97891),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VitalRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final IconData icon;
+  final Color color;
+
+  const _VitalRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 19, color: color),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 42,
+          child:
+              Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: (value / 100).clamp(0, 1),
+              minHeight: 8,
+              backgroundColor: color.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 30,
+          child: Text(
+            '${value.round()}',
+            textAlign: TextAlign.right,
+            style: TextStyle(fontWeight: FontWeight.w800, color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ResidentList extends StatelessWidget {
+  final List<LifeEntity> entities;
+  final int selectedId;
+  final ValueChanged<LifeEntity> onSelected;
+
+  const _ResidentList({
+    required this.entities,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 106,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: entities.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final entity = entities[index];
+          final selected = entity.id == selectedId;
+          return InkWell(
+            onTap: () => onSelected(entity),
+            borderRadius: BorderRadius.circular(18),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 96,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: selected ? const Color(0xFFFFEAC6) : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: selected
+                      ? const Color(0xFFF59E42)
+                      : const Color(0xFFE8E5E1),
+                ),
               ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(entity.emoji, style: const TextStyle(fontSize: 31)),
+                  const SizedBox(height: 5),
+                  Text(
+                    entity.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EventSection extends StatelessWidget {
+  final List<LifeEvent> events;
+
+  const _EventSection({required this.events});
+
+  @override
+  Widget build(BuildContext context) {
+    if (events.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.auto_stories_outlined, color: Color(0xFFB4AEA8)),
+            SizedBox(height: 8),
+            Text('相处的故事会记录在这里', style: TextStyle(color: Color(0xFF8B837C))),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < events.length; i++)
+          LifeEventTile(
+            event: events[i],
+            compact: true,
+            showTimeline: true,
+            isLast: i == events.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final String trailing;
+
+  const _SectionTitle({required this.title, required this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF312E2B),
+            ),
+          ),
+        ),
+        Text(trailing,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF938C86))),
+      ],
+    );
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0D5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, size: 18, color: MoeTokens.warning),
+          SizedBox(width: 8),
+          Expanded(child: Text('当前展示缓存状态，连接恢复后可以互动。')),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 14),
+          Text('正在唤醒 AI 伙伴...'),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final bool isOffline;
+
+  const _EmptyState({required this.isOffline});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🥚', style: TextStyle(fontSize: 72)),
+            const SizedBox(height: 16),
+            const Text(
+              '生命正在孵化',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isOffline ? '连接恢复后再来看看它吧。' : '世界已经启动，请稍等片刻。',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Color(0xFF827B75)),
+            ),
           ],
         ),
       ),
-    ];
-  }
-
-  /// 构建反馈动画 overlay 列表。
-  List<Widget> _buildFeedbackOverlays() {
-    if (_feedbacks.isEmpty) return const [];
-
-    return [
-      Positioned.fill(
-        child: IgnorePointer(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const double mapMarginH = 12;
-              final mapWidth = constraints.maxWidth - mapMarginH * 2;
-              final mapHeight = constraints.maxHeight;
-              const double worldW = 1280;
-              const double worldH = 720;
-              final xFactor = mapWidth / worldW;
-              final yFactor = mapHeight / worldH;
-
-              return Stack(
-                children: [
-                  for (final fb in _feedbacks)
-                    LifeFeedbackOverlay(
-                      key: ValueKey(fb.key),
-                      emoji: fb.emoji,
-                      pixelX: (fb.entityX * xFactor) + mapMarginH,
-                      pixelY: (fb.entityY * yFactor).clamp(0.0, mapHeight),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    ];
-  }
-
-  /// 构建引导气泡——新用户首次进入时在地图底部展示。
-  Widget _buildGuideBubble() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceLg,
-        vertical: MoeTokens.spaceMd,
-      ),
-      decoration: BoxDecoration(
-        gradient: MoeTokens.primaryGradient,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        boxShadow: MoeTokens.shadowMd(),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.lightbulb_outline, color: Colors.white, size: 20),
-          const SizedBox(width: MoeTokens.spaceSm),
-          const Expanded(
-            child: Text(
-              '这里是你的数字生命世界，实体出现后点击即可互动',
-              style: TextStyle(
-                fontSize: MoeTokens.textSm,
-                color: Colors.white,
-                height: 1.4,
-              ),
-            ),
-          ),
-          const SizedBox(width: MoeTokens.spaceSm),
-          GestureDetector(
-            onTap: () {
-              SharedPreferences.getInstance().then((prefs) {
-                prefs.setBool('life_guide_seen', true);
-              });
-              setState(() => _showGuideBubble = false);
-            },
-            child: const Icon(Icons.close, color: Colors.white, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 重连中脉冲圆点动画
-class _PulsingDot extends StatefulWidget {
-  final Color color;
-  final double size;
-
-  const _PulsingDot({required this.color, required this.size});
-
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 1.0, end: 0.3).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _animation.value,
-          child: Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              color: widget.color,
-              shape: BoxShape.circle,
-            ),
-          ),
-        );
-      },
     );
   }
 }

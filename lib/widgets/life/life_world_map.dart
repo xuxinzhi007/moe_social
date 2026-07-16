@@ -1,12 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 import '../../models/life_state.dart';
 import '../../theme/moe_tokens.dart';
 import 'life_empty_state.dart';
-import 'life_entity_sprite.dart';
-import 'life_world_canvas.dart';
 
 /// 世界地图组件 — 2D 场景，entity 位置可视化。
 ///
@@ -19,9 +15,6 @@ class LifeWorldMap extends StatelessWidget {
   final void Function(int entityId)? onEntityTap;
   final void Function(int entityId)? onEntityLongPress;
 
-  /// 是否使用 Canvas 渲染路径（默认 true）
-  final bool useCanvas;
-
   /// 空状态引导关闭回调（可选）
   final VoidCallback? onEmptyDismissed;
 
@@ -31,42 +24,35 @@ class LifeWorldMap extends StatelessWidget {
     this.weather = 'clear',
     this.onEntityTap,
     this.onEntityLongPress,
-    this.useCanvas = true,
     this.onEmptyDismissed,
   });
 
-  /// 世界坐标范围
-  static const double _worldWidth = 1280;
-  static const double _worldHeight = 720;
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE8F5E9), // green.shade50
-            Color(0xFFE3F2FD), // blue.shade50
+    return SizedBox.expand(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const RadialGradient(
+            center: Alignment(-0.45, -0.72),
+            radius: 1.28,
+            colors: [Color(0xFFFFF6D8), Color(0xFFE2F8EA), Color(0xFFDDEBFF)],
+            stops: [0, 0.52, 1],
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.85),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
-        border: Border.all(
-          color: Colors.green.withValues(alpha: 0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: AnimatedSwitcher(
           duration: MoeTokens.motionFadeDuration,
           child: entities.isEmpty
@@ -74,182 +60,271 @@ class LifeWorldMap extends StatelessWidget {
                   key: const ValueKey('empty_state'),
                   onDismissed: () => onEmptyDismissed?.call(),
                 )
-              : Semantics(
-                  key: const ValueKey('map_content'),
-                  label: '世界地图，${entities.length} 个实体',
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final mapWidth = constraints.maxWidth;
-                      final mapHeight = constraints.maxHeight;
-
-                      // 坐标映射因子
-                      final xFactor = mapWidth / _worldWidth;
-                      final yFactor = mapHeight / _worldHeight;
-
-                      return Stack(
-                        children: [
-                          // Canvas 渲染路径 或 传统 Stack+AnimatedPositioned 路径
-                          if (useCanvas)
-                            LifeWorldCanvas(
-                              entities: entities,
-                              weather: weather,
-                              onEntityTap: onEntityTap,
-                              onEntityLongPress: onEntityLongPress,
-                            )
-                          else
-                            ..._buildLegacyEntities(xFactor, yFactor),
-                        ],
-                      );
-                    },
-                  ),
+              : _LifeStageView(
+                  key: const ValueKey('stage_content'),
+                  entities: entities,
+                  weather: weather,
+                  onEntityTap: onEntityTap,
+                  onEntityLongPress: onEntityLongPress,
                 ),
         ),
       ),
     );
   }
-
-  /// 传统渲染路径：网格 + 天气 + AnimatedPositioned 实体
-  List<Widget> _buildLegacyEntities(double xFactor, double yFactor) {
-    return [
-      // 网格装饰线
-      _GridDecoration(
-        width: xFactor * _worldWidth,
-        height: yFactor * _worldHeight,
-      ),
-      // 天气图层
-      RepaintBoundary(
-        child: _WeatherLayer(
-          weather: weather,
-          width: xFactor * _worldWidth,
-          height: yFactor * _worldHeight,
-        ),
-      ),
-      // Entity 精灵
-      for (final entity in entities)
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-          left: (entity.x * xFactor) - 20,
-          top: (entity.y * yFactor) - 24,
-          child: LifeEntitySprite(
-            entity: entity,
-            onTap: () => onEntityTap?.call(entity.id),
-            onLongPress: () => onEntityLongPress?.call(entity.id),
-          ),
-        ),
-    ];
-  }
 }
 
-/// 天气图层组件 — 仅在 weather 变化时重绘。
-class _WeatherLayer extends StatelessWidget {
+class _LifeStageView extends StatelessWidget {
+  final List<LifeEntity> entities;
   final String weather;
-  final double width;
-  final double height;
+  final void Function(int entityId)? onEntityTap;
+  final void Function(int entityId)? onEntityLongPress;
 
-  const _WeatherLayer({
+  const _LifeStageView({
+    super.key,
+    required this.entities,
     required this.weather,
-    required this.width,
-    required this.height,
+    this.onEntityTap,
+    this.onEntityLongPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(width, height),
-      painter: _WeatherPainter(weather: weather),
+    return Stack(
+      children: [
+        const Positioned.fill(child: _WorldBackdrop()),
+        Positioned(
+          left: 18,
+          right: 18,
+          top: 16,
+          child: _StageHeader(entityCount: entities.length, weather: weather),
+        ),
+        Positioned.fill(
+          top: 72,
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 26),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 14,
+              crossAxisSpacing: 14,
+              childAspectRatio: 0.95,
+            ),
+            itemCount: entities.length,
+            itemBuilder: (context, index) {
+              final entity = entities[index];
+              return _StageEntityCard(
+                entity: entity,
+                onTap: () => onEntityTap?.call(entity.id),
+                onLongPress: () => onEntityLongPress?.call(entity.id),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _WeatherPainter extends CustomPainter {
+class _StageHeader extends StatelessWidget {
+  final int entityCount;
   final String weather;
-  final Random _rng = Random(42); // 固定种子保证稳定渲染
 
-  _WeatherPainter({required this.weather});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    switch (weather) {
-      case 'rain':
-        // 半透明蓝色遮罩
-        canvas.drawRect(
-          Rect.fromLTWH(0, 0, size.width, size.height),
-          Paint()..color = Colors.blue.withValues(alpha: 0.1),
-        );
-        // 雨滴粒子（上限 30 个）
-        final rainPaint = Paint()..color = Colors.blue.withValues(alpha: 0.4);
-        for (int i = 0; i < 30; i++) {
-          final x = _rng.nextDouble() * size.width;
-          final y = _rng.nextDouble() * size.height;
-          canvas.drawCircle(Offset(x, y), 1.5, rainPaint);
-        }
-        break;
-      case 'drought':
-        // 黄褐色覆盖
-        canvas.drawRect(
-          Rect.fromLTWH(0, 0, size.width, size.height),
-          Paint()..color = Colors.brown.withValues(alpha: 0.15),
-        );
-        break;
-      case 'storm':
-        // 红色脉冲边框
-        final borderPaint = Paint()
-          ..color = Colors.red.withValues(alpha: 0.3)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3;
-        canvas.drawRect(
-          Rect.fromLTWH(0, 0, size.width, size.height),
-          borderPaint,
-        );
-        break;
-      default:
-        // clear — 不绘制
-        break;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WeatherPainter oldDelegate) {
-    return oldDelegate.weather != weather;
-  }
-}
-
-/// 地图网格装饰
-class _GridDecoration extends StatelessWidget {
-  final double width;
-  final double height;
-
-  const _GridDecoration({required this.width, required this.height});
+  const _StageHeader({required this.entityCount, required this.weather});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(width, height),
-      painter: _GridPainter(),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
+      ),
+      child: Row(
+        children: [
+          const Text('🌱', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              '生命舞台',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF334155),
+              ),
+            ),
+          ),
+          Text(
+            '$entityCount 位居民',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF7C75DD),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(_weatherEmoji(weather), style: const TextStyle(fontSize: 18)),
+        ],
+      ),
     );
   }
 }
 
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.green.withValues(alpha: 0.08)
-      ..strokeWidth = 0.5;
-
-    const step = 40.0;
-
-    // 竖线
-    for (double x = step; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    // 横线
-    for (double y = step; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
+String _weatherEmoji(String weather) {
+  switch (weather) {
+    case 'rain':
+      return '🌧️';
+    case 'drought':
+      return '🏜️';
+    case 'storm':
+      return '⛈️';
+    default:
+      return '☀️';
   }
+}
+
+class _StageEntityCard extends StatelessWidget {
+  final LifeEntity entity;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _StageEntityCard({
+    required this.entity,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    final avg =
+        ((entity.hunger + entity.energy + entity.mood) / 3).clamp(0, 100);
+    return Material(
+      color: Colors.white.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+                color: entity.growthStageColor.withValues(alpha: 0.25)),
+            boxShadow: [
+              BoxShadow(
+                color: entity.growthStageColor.withValues(alpha: 0.12),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(entity.emoji, style: const TextStyle(fontSize: 42)),
+              const SizedBox(height: 8),
+              Text(
+                entity.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF172033),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                entity.actionLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF7C75DD),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 9),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  minHeight: 6,
+                  value: avg / 100,
+                  backgroundColor: Colors.black.withValues(alpha: 0.06),
+                  valueColor: AlwaysStoppedAnimation(entity.growthStageColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WorldBackdrop extends StatelessWidget {
+  const _WorldBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          left: -40,
+          right: -40,
+          bottom: -28,
+          height: 150,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: const Color(0xFF7BCB86).withValues(alpha: 0.22),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(140)),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 24,
+          top: 28,
+          child: _SceneryBubble(icon: '🌿', color: const Color(0xFF5DBB72)),
+        ),
+        Positioned(
+          right: 26,
+          top: 42,
+          child: _SceneryBubble(icon: '🌸', color: const Color(0xFFFF8FB3)),
+        ),
+        Positioned(
+          left: 36,
+          bottom: 80,
+          child: _SceneryBubble(icon: '🍄', color: const Color(0xFFFFA15E)),
+        ),
+        Positioned(
+          right: 48,
+          bottom: 104,
+          child: _SceneryBubble(icon: '✨', color: const Color(0xFF7C75DD)),
+        ),
+      ],
+    );
+  }
+}
+
+class _SceneryBubble extends StatelessWidget {
+  final String icon;
+  final Color color;
+
+  const _SceneryBubble({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.68),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Text(icon, style: const TextStyle(fontSize: 20)),
+    );
+  }
 }

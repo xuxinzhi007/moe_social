@@ -29,6 +29,9 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		oldSnap = engine.initWorld(ctx)
 		engine.cache.Set(engine.config.WorldName, oldSnap)
 	}
+	if len(oldSnap.Entities) == 0 {
+		seedEmptyWorld(ctx, engine, oldSnap)
+	}
 
 	// 构建新的实体副本（避免并发读写竞争）
 	mutableEntities := make(map[uint]*model.LifeEntity, len(oldSnap.Entities))
@@ -437,6 +440,24 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	}
 }
 
+func seedEmptyWorld(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot) {
+	seeds := createSeedEntities(engine.config.WorldName)
+	if snap.Entities == nil {
+		snap.Entities = make(map[uint]*model.LifeEntity, len(seeds))
+	}
+	for _, seed := range seeds {
+		if seed == nil {
+			continue
+		}
+		if err := engine.store.UpsertEntity(ctx, seed); err != nil {
+			moelog.Errorf("life: failed to reseed empty world entity %q: %v", seed.Name, err)
+			continue
+		}
+		snap.Entities[seed.ID] = seed
+	}
+	moelog.Infof("life: reseeded empty world %q with %d entities", engine.config.WorldName, len(snap.Entities))
+}
+
 // buildFinalRelationships 构建 tick 后的完整关系列表
 func buildFinalRelationships(
 	existing []*model.LifeRelationship,
@@ -579,12 +600,12 @@ func createSeedEntities(worldID string) []*model.LifeEntity {
 		x, y        float64
 		age         int
 	}{
-		{"小花", "🐰", 200, 300, 20},   // 幼年
-		{"时雨", "🦊", 800, 400, 150},  // 少年
-		{"团子", "🐹", 500, 200, 400},  // 成年
-		{"啾啾", "🐥", 640, 150, 50},   // 幼年
-		{"泡泡", "🐠", 300, 500, 250},  // 少年
-		{"小眠", "🦌", 900, 600, 850},  // 老年
+		{"小花", "🐰", 200, 300, 20},  // 幼年
+		{"时雨", "🦊", 800, 400, 150}, // 少年
+		{"团子", "🐹", 500, 200, 400}, // 成年
+		{"啾啾", "🐥", 640, 150, 50},  // 幼年
+		{"泡泡", "🐠", 300, 500, 250}, // 少年
+		{"小眠", "🦌", 900, 600, 850}, // 老年
 	}
 	var result []*model.LifeEntity
 	now := time.Now()

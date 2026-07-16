@@ -2459,6 +2459,7 @@ class ApiService {
         'age': map['age'],
         'growth_stage': map['growth_stage'] ?? map['growthStage'],
         'experience': map['experience'],
+        'active_effects': map['active_effects'] ?? map['activeEffects'],
       };
     }).toList();
   }

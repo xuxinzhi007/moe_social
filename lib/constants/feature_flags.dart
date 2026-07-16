@@ -19,6 +19,6 @@ class FeatureFlags {
 
   static const bool showLocalModelSettings = showExperimentalFeatures;
 
-  /// 数字生命 — 用户个人小世界（增强型功能 P1）
+  /// AI 伙伴 — 用户的陪伴角色与持续状态（增强型功能 P1）
   static const bool showLifeEngine = true;
 }

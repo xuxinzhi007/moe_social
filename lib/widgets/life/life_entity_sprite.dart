@@ -69,21 +69,22 @@ class _LifeEntitySpriteState extends State<LifeEntitySprite>
   double get _emojiSize {
     switch (widget.entity.growthStage) {
       case 'juvenile':
-        return 20;
+        return 28;
       case 'adolescent':
-        return 26;
+        return 34;
       case 'adult':
-        return 32;
+        return 40;
       case 'elderly':
-        return 30;
+        return 36;
       default:
-        return 26;
+        return 34;
     }
   }
 
   /// 综合健康度色环：(hunger + energy + mood) / 3
   Color get _healthColor {
-    final avg = (widget.entity.hunger + widget.entity.energy + widget.entity.mood) / 3;
+    final avg =
+        (widget.entity.hunger + widget.entity.energy + widget.entity.mood) / 3;
     if (avg >= 70) return Colors.green;
     if (avg >= 40) return Colors.amber;
     return Colors.red;
@@ -95,7 +96,7 @@ class _LifeEntitySpriteState extends State<LifeEntitySprite>
       onTap: widget.onTap,
       onLongPress: widget.onLongPress,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        constraints: const BoxConstraints(minWidth: 64, minHeight: 74),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -116,14 +117,25 @@ class _LifeEntitySpriteState extends State<LifeEntitySprite>
             const SizedBox(height: 2),
             // 名称标签
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(4),
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 widget.entity.name,
-                style: const TextStyle(fontSize: 10, color: Colors.black87),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w700,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -144,13 +156,21 @@ class _LifeEntitySpriteState extends State<LifeEntitySprite>
       children: [
         // 综合健康色环
         Container(
-          padding: const EdgeInsets.all(3),
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.88),
             border: Border.all(
               color: _healthColor,
-              width: 2,
+              width: 2.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: _healthColor.withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Opacity(
             opacity: widget.entity.growthStage == 'elderly' ? 0.7 : 1.0,

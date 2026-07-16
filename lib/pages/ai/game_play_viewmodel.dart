@@ -67,6 +67,13 @@ class GamePlayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 添加仅用于当前页面展示的故事上下文，不写入服务端历史。
+  void addContextLine(String content) {
+    if (_disposed || content.trim().isEmpty) return;
+    _lines.add(GameNarrativeLine(type: 'highlight', content: content.trim()));
+    notifyListeners();
+  }
+
   // ===== Echo 行管理（供页面层调用） =====
 
   /// 在行动发送前添加 echo 行，显示用户的输入。

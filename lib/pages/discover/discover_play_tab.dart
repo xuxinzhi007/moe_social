@@ -18,7 +18,7 @@ class DiscoverPlayTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 72),
       children: [
         Text(
-          'AI 互动',
+          'AI 伙伴',
           style: TextStyle(
             fontSize: MoeTokens.textLg,
             fontWeight: FontWeight.w800,

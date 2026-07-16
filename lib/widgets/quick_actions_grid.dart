@@ -51,8 +51,8 @@ class QuickActionsGrid extends StatelessWidget {
       },
       {
         'icon': Icons.auto_awesome_rounded,
-        'label': 'AI 互动',
-        'hint': '找灵感',
+        'label': 'AI 伙伴',
+        'hint': '陪伴与故事',
         'color': const Color(0xFFFFB347),
         'onTap': () => openMainTab(context, 2),
       },

@@ -206,6 +206,11 @@ class LifeEntity {
       name: name,
       id: id,
       action: action,
+      growthStage: growthStage,
+      hunger: hunger,
+      energy: energy,
+      mood: mood,
+      activeEffects: activeEffects,
     );
   }
 }
@@ -220,6 +225,11 @@ class EntityRenderData {
   final String name;
   final int id;
   final String? action;    // 当前行为
+  final String growthStage;
+  final double hunger;
+  final double energy;
+  final double mood;
+  final List<ActiveEffectSummary> activeEffects;
 
   const EntityRenderData({
     required this.emoji,
@@ -230,6 +240,11 @@ class EntityRenderData {
     required this.name,
     required this.id,
     this.action,
+    this.growthStage = 'juvenile',
+    this.hunger = 80,
+    this.energy = 80,
+    this.mood = 70,
+    this.activeEffects = const [],
   });
 }
 
