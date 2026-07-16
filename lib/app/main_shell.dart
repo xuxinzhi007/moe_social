@@ -99,7 +99,7 @@ class _MainPageState extends State<MainPage> {
           const NavigationDestination(
             icon: Icon(Icons.auto_awesome_outlined),
             selectedIcon: Icon(Icons.auto_awesome_rounded),
-            label: 'AI互动',
+            label: 'AI伙伴',
           ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline),

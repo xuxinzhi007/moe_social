@@ -16,8 +16,15 @@ import 'game_play_viewmodel.dart';
 
 class GamePlayPage extends StatefulWidget {
   final GameSessionState initialState;
+  final String? companionName;
+  final String? companionEmoji;
 
-  const GamePlayPage({super.key, required this.initialState});
+  const GamePlayPage({
+    super.key,
+    required this.initialState,
+    this.companionName,
+    this.companionEmoji,
+  });
 
   @override
   State<GamePlayPage> createState() => _GamePlayPageState();
@@ -43,6 +50,12 @@ class _GamePlayPageState extends State<GamePlayPage> {
     _vm.scrollToBottom = _jumpToBottom;
     _vm.addListener(_onViewModelChanged);
     _vm.initialize(widget.initialState);
+    final companionName = widget.companionName?.trim() ?? '';
+    if (companionName.isNotEmpty) {
+      _vm.addContextLine(
+        '${widget.companionEmoji ?? '🐾'} $companionName 会作为你的伙伴一起经历这段故事。',
+      );
+    }
     _initialLineCount = _vm.lines.length;
     _scrollToBottom();
   }
@@ -136,7 +149,7 @@ class _GamePlayPageState extends State<GamePlayPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    vm.state.scene.name.isEmpty ? '文字世界' : vm.state.scene.name,
+                    vm.state.scene.name.isEmpty ? '互动故事' : vm.state.scene.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 17,

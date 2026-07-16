@@ -32,18 +32,26 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
     final ok = await provider.claimItems();
     if (!mounted) return;
     setState(() => _claiming = false);
+    final itemCount =
+        provider.inventory.fold<int>(0, (sum, item) => sum + item.quantity);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? '🎁 签到领取成功！' : '领取失败，请稍后重试'),
+        content: Text(ok
+            ? itemCount > 0
+                ? '🎁 已领取，背包新增道具！'
+                : '🎁 已签到，但暂时没有可用道具'
+            : provider.lastActionError ?? '领取失败，请稍后重试'),
         backgroundColor: ok ? MoeTokens.success : MoeTokens.danger,
         duration: const Duration(seconds: 2),
       ),
     );
+    provider.clearActionError();
   }
 
   void _showUseItemSheet(LifeInventoryItem invItem) {
     final provider = context.read<LifeProvider>();
-    final entities = provider.entities.where((e) => e.action != 'dying').toList();
+    final entities =
+        provider.entities.where((e) => e.action != 'dying').toList();
 
     showModalBottomSheet<void>(
       context: context,
@@ -70,10 +78,12 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                 ),
                 // 道具信息
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   child: Row(
                     children: [
-                      Text(invItem.displayIcon, style: const TextStyle(fontSize: 28)),
+                      Text(invItem.displayIcon,
+                          style: const TextStyle(fontSize: 28)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -89,7 +99,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                             ),
                             Text(
                               invItem.item?.description ?? '',
-                              style: const TextStyle(fontSize: 12, color: MoeTokens.hintText),
+                              style: const TextStyle(
+                                  fontSize: 12, color: MoeTokens.hintText),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -97,7 +108,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: invItem.item?.typeColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -133,7 +145,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                 if (entities.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Text('暂无可用实体', style: TextStyle(color: MoeTokens.hintText)),
+                    child: Text('暂无可用实体',
+                        style: TextStyle(color: MoeTokens.hintText)),
                   )
                 else
                   ConstrainedBox(
@@ -146,7 +159,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                       itemBuilder: (ctx2, i) {
                         final entity = entities[i];
                         return ListTile(
-                          leading: Text(entity.emoji, style: const TextStyle(fontSize: 24)),
+                          leading: Text(entity.emoji,
+                              style: const TextStyle(fontSize: 24)),
                           title: Text(entity.name),
                           subtitle: Text(
                             '${entity.actionLabel} · ${entity.growthStageLabel}',
@@ -173,14 +187,18 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
     );
   }
 
-  Future<void> _confirmUseItem(LifeInventoryItem invItem, LifeEntity entity) async {
+  Future<void> _confirmUseItem(
+      LifeInventoryItem invItem, LifeEntity entity) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('使用 ${invItem.displayName}？'),
-        content: Text('对 ${entity.emoji} ${entity.name} 使用 ${invItem.displayName}'),
+        content:
+            Text('对 ${entity.emoji} ${entity.name} 使用 ${invItem.displayName}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: MoeTokens.primary),
@@ -219,7 +237,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
       ),
       body: Consumer<LifeProvider>(
         builder: (context, provider, _) {
-          final items = provider.inventory.where((i) => i.quantity > 0).toList();
+          final items =
+              provider.inventory.where((i) => i.quantity > 0).toList();
 
           return Column(
             children: [
@@ -280,27 +299,57 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
               // 空背包状态
               else if (items.isEmpty)
                 Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.backpack_outlined,
-                            size: 56, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        Text(
-                          '背包空空如也~',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Center(
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 28),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: MoeTokens.primary.withValues(alpha: 0.10),
                           ),
+                          boxShadow: MoeTokens.shadowSm(),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '试试签到领取吧 ✨',
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 74,
+                              height: 74,
+                              decoration: BoxDecoration(
+                                color:
+                                    MoeTokens.primary.withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.backpack_outlined,
+                                  size: 38, color: MoeTokens.primary),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '还没有可用道具',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: MoeTokens.titleText,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '点击上方按钮领取每日补给；如果刚领取后仍为空，说明服务端今天没有发放可用道具。',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.45,
+                                color: MoeTokens.hintText,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 )
@@ -391,7 +440,8 @@ class _ItemGridCell extends StatelessWidget {
                   const SizedBox(height: 2),
                   // 类型标签
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: typeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
@@ -410,8 +460,10 @@ class _ItemGridCell extends StatelessWidget {
                 top: -4,
                 right: -4,
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  constraints:
+                      const BoxConstraints(minWidth: 20, minHeight: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: MoeTokens.primary,
                     shape: BoxShape.circle,

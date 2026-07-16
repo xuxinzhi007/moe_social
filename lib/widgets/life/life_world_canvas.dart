@@ -70,6 +70,9 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
   /// 活跃反馈粒子列表
   final List<_FeedbackParticle> _particles = [];
 
+  /// 微动动画，让静止实体也保留生命感。
+  late final AnimationController _ambientController;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +80,10 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+    _ambientController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat();
     _updateRenderData();
     // 初始位置直接设为目标位置（不做动画）
     for (final rd in _renderDataList) {
@@ -134,6 +141,7 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
   void dispose() {
     _animController.removeListener(_tickParticles);
     _animController.dispose();
+    _ambientController.dispose();
     super.dispose();
   }
 
@@ -188,7 +196,7 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
             if (id != null) widget.onEntityLongPress?.call(id);
           },
           child: AnimatedBuilder(
-            animation: _animController,
+            animation: Listenable.merge([_animController, _ambientController]),
             builder: (context, _) {
               return CustomPaint(
                 size: _canvasSize,
@@ -200,6 +208,7 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
                   xFactor: xFactor,
                   yFactor: yFactor,
                   particles: List.of(_particles),
+                  ambientProgress: _ambientController.value,
                 ),
               );
             },
@@ -219,6 +228,7 @@ class LifeWorldCanvasPainter extends CustomPainter {
   final double xFactor;
   final double yFactor;
   final List<Object> particles;
+  final double ambientProgress;
 
   LifeWorldCanvasPainter({
     required this.renderDataList,
@@ -228,6 +238,7 @@ class LifeWorldCanvasPainter extends CustomPainter {
     required this.xFactor,
     required this.yFactor,
     required this.particles,
+    required this.ambientProgress,
   });
 
   @override
@@ -321,6 +332,48 @@ class LifeWorldCanvasPainter extends CustomPainter {
     }
   }
 
+  String _actionIcon(String? action) {
+    switch (action) {
+      case 'sleeping':
+        return 'Zz';
+      case 'seeking_food':
+      case 'eating':
+        return '🍃';
+      case 'talking':
+        return '♪';
+      case 'reproducing':
+        return '♡';
+      case 'dying':
+        return '!';
+      case 'seeking_rest':
+        return '…';
+      default:
+        return '';
+    }
+  }
+
+  String _needHint(EntityRenderData rd) {
+    if (rd.hunger < 30) return '饿了';
+    if (rd.energy < 25) return '困了';
+    if (rd.mood < 30) return '想陪伴';
+    return '';
+  }
+
+  double _stageScale(String stage) {
+    switch (stage) {
+      case 'juvenile':
+        return 0.82;
+      case 'adolescent':
+        return 0.94;
+      case 'adult':
+        return 1.12;
+      case 'elderly':
+        return 1.02;
+      default:
+        return 1.0;
+    }
+  }
+
   /// 3. 实体精灵 — emoji + 健康色环 + 成长阶段色点 + 名称标签
   void _paintEntities(Canvas canvas, Size size) {
     // 根据屏幕宽度自适应 emoji 字号
@@ -335,21 +388,53 @@ class LifeWorldCanvasPainter extends CustomPainter {
       // 世界坐标 → 屏幕像素
       final screenX = currentPos.dx * xFactor;
       final screenY = currentPos.dy * yFactor;
-      final center = Offset(screenX, screenY);
+
+      final phase = ambientProgress * pi * 2 + rd.id * 0.7;
+      final isSleeping = rd.action == 'sleeping';
+      final isMoving = rd.action == 'walking' ||
+          rd.action == 'wandering' ||
+          rd.action == 'seeking_food' ||
+          rd.action == 'seeking_rest';
+      final bob = isSleeping
+          ? sin(phase) * 1.0
+          : isMoving
+              ? sin(phase * 1.8) * 2.2
+              : sin(phase) * 0.8;
+      final pulse = isSleeping ? 0.94 + sin(phase) * 0.04 : 1.0;
+      final opacity = rd.action == 'dying' || rd.growthStage == 'elderly' ? 0.72 : 1.0;
+      final stageScale = _stageScale(rd.growthStage);
+
+      // --- 阴影 ---
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(screenX, screenY + baseFontSize * 0.68),
+          width: baseFontSize * stageScale * 1.35,
+          height: 7,
+        ),
+        shadowPaint,
+      );
+
+      final drawCenter = Offset(screenX, screenY + bob);
 
       // --- 健康色环 ---
       final ringPaint = Paint()
         ..color = rd.healthColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2.0;
-      final ringRadius = baseFontSize * 0.8;
-      canvas.drawCircle(center, ringRadius, ringPaint);
+      final ringRadius = baseFontSize * 0.8 * stageScale * pulse;
+      canvas.drawCircle(drawCenter, ringRadius, ringPaint);
 
       // --- Emoji ---
       final emojiPainter = TextPainter(
         text: TextSpan(
           text: rd.emoji,
-          style: TextStyle(fontSize: baseFontSize),
+          style: TextStyle(
+            fontSize: baseFontSize * stageScale * pulse,
+            color: Colors.black.withValues(alpha: opacity),
+          ),
         ),
         textDirection: TextDirection.ltr,
       );
@@ -357,15 +442,15 @@ class LifeWorldCanvasPainter extends CustomPainter {
       emojiPainter.paint(
         canvas,
         Offset(
-          screenX - emojiPainter.width / 2,
-          screenY - emojiPainter.height / 2,
+          drawCenter.dx - emojiPainter.width / 2,
+          drawCenter.dy - emojiPainter.height / 2,
         ),
       );
 
       // --- 成长阶段色点（右下角） ---
       final dotOffset = Offset(
-        screenX + ringRadius * 0.6,
-        screenY + ringRadius * 0.6,
+        drawCenter.dx + ringRadius * 0.6,
+        drawCenter.dy + ringRadius * 0.6,
       );
       final dotPaint = Paint()..color = rd.stageColor;
       canvas.drawCircle(dotOffset, 3.0, dotPaint);
@@ -375,6 +460,41 @@ class LifeWorldCanvasPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.0;
       canvas.drawCircle(dotOffset, 3.0, dotBorderPaint);
+
+      final actionIcon = _actionIcon(rd.action);
+      if (actionIcon.isNotEmpty) {
+        _paintBadge(
+          canvas,
+          actionIcon,
+          Offset(drawCenter.dx + ringRadius * 0.55, drawCenter.dy - ringRadius * 0.9),
+          color: rd.action == 'dying'
+              ? Colors.red.shade600
+              : const Color(0xFF6A4C93),
+        );
+      }
+
+      if (rd.activeEffects.isNotEmpty) {
+        final effects = rd.activeEffects.take(2).toList();
+        for (var i = 0; i < effects.length; i++) {
+          _paintSmallEmoji(
+            canvas,
+            effects[i].icon,
+            Offset(
+              drawCenter.dx - ringRadius * 0.8 + i * 15,
+              drawCenter.dy - ringRadius * 0.95,
+            ),
+          );
+        }
+      }
+
+      final needHint = _needHint(rd);
+      if (needHint.isNotEmpty) {
+        _paintNeedBubble(
+          canvas,
+          needHint,
+          Offset(drawCenter.dx, drawCenter.dy - ringRadius - 24),
+        );
+      }
 
       // --- 名称标签（emoji 下方） ---
       final namePainter = TextPainter(
@@ -395,10 +515,69 @@ class LifeWorldCanvasPainter extends CustomPainter {
         canvas,
         Offset(
           screenX - namePainter.width / 2,
-          screenY + ringRadius + 2,
+          drawCenter.dy + ringRadius + 2,
         ),
       );
     }
+  }
+
+  void _paintBadge(Canvas canvas, String text, Offset center, {required Color color}) {
+    final bgPaint = Paint()..color = Colors.white.withValues(alpha: 0.92);
+    canvas.drawCircle(center, 10, bgPaint);
+    canvas.drawCircle(
+      center,
+      10,
+      Paint()
+        ..color = color.withValues(alpha: 0.22)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(fontSize: text.length > 1 ? 9 : 13, color: color, fontWeight: FontWeight.w700),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 24);
+    painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
+  }
+
+  void _paintSmallEmoji(Canvas canvas, String emoji, Offset center) {
+    final painter = TextPainter(
+      text: TextSpan(text: emoji, style: const TextStyle(fontSize: 13)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    canvas.drawCircle(center, 8, Paint()..color = Colors.white.withValues(alpha: 0.9));
+    painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
+  }
+
+  void _paintNeedBubble(Canvas canvas, String text, Offset anchor) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 10,
+          color: Color(0xFF4A3D4F),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 48);
+    final rect = Rect.fromCenter(
+      center: anchor,
+      width: painter.width + 14,
+      height: painter.height + 8,
+    );
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(12));
+    canvas.drawRRect(rrect, Paint()..color = Colors.white.withValues(alpha: 0.94));
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0xFFFF8A80).withValues(alpha: 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    painter.paint(canvas, Offset(anchor.dx - painter.width / 2, anchor.dy - painter.height / 2));
   }
 
   @override
@@ -406,6 +585,7 @@ class LifeWorldCanvasPainter extends CustomPainter {
     return !identical(oldDelegate.renderDataList, renderDataList) ||
         oldDelegate.weather != weather ||
         oldDelegate.animProgress != animProgress ||
+        oldDelegate.ambientProgress != ambientProgress ||
         !identical(oldDelegate.particles, particles);
   }
 }

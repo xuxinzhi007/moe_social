@@ -431,7 +431,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: _menuSection('AI 与设置', [
                         _MenuItem(
                             icon: Icons.smart_toy_rounded,
-                            title: 'AI 互动',
+                            title: 'AI 伙伴',
                             subtitle: '智能体对话，增强社交互动',
                             color: const Color(0xFFFFB347),
                             onTap: () {

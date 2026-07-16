@@ -204,26 +204,20 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<LifeProvider, LifeEntity?>(
-      selector: (_, p) => p.entities
-              .where((e) => e.id == widget.entity.id)
-              .firstOrNull ??
-          widget.entity,
-      shouldRebuild: (prev, next) =>
-          prev?.id != next?.id ||
-          prev?.hunger != next?.hunger ||
-          prev?.energy != next?.energy ||
-          prev?.mood != next?.mood ||
-          prev?.action != next?.action ||
-          prev?.x != next?.x ||
-          prev?.y != next?.y ||
-          prev?.experience != next?.experience ||
-          prev?.age != next?.age,
-      builder: (context, selected, _) {
-        final currentEntity = selected ?? widget.entity;
-        final entityEvents = context
-            .read<LifeProvider>()
-            .getEventsForEntity(widget.entity.id);
+    return Selector<LifeProvider, _EntityDetailData>(
+      selector: (_, p) {
+        final selected = p.entities
+                .where((e) => e.id == widget.entity.id)
+                .firstOrNull ??
+            widget.entity;
+        return _EntityDetailData(
+          entity: selected,
+          events: p.getEventsForEntity(widget.entity.id),
+        );
+      },
+      builder: (context, data, _) {
+        final currentEntity = data.entity;
+        final entityEvents = data.events;
 
         return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
@@ -491,6 +485,60 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
   }
 
 
+}
+
+class _EntityDetailData {
+  final LifeEntity entity;
+  final List<LifeEvent> events;
+
+  const _EntityDetailData({required this.entity, required this.events});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _EntityDetailData &&
+          entity.id == other.entity.id &&
+          entity.hunger == other.entity.hunger &&
+          entity.energy == other.entity.energy &&
+          entity.mood == other.entity.mood &&
+          entity.action == other.entity.action &&
+          entity.x == other.entity.x &&
+          entity.y == other.entity.y &&
+          entity.experience == other.entity.experience &&
+          entity.age == other.entity.age &&
+          entity.growthStage == other.entity.growthStage &&
+          _sameEvents(events, other.events);
+
+  @override
+  int get hashCode => Object.hash(
+        entity.id,
+        entity.hunger,
+        entity.energy,
+        entity.mood,
+        entity.action,
+        entity.x,
+        entity.y,
+        entity.experience,
+        entity.age,
+        entity.growthStage,
+        events.length,
+        events.isEmpty ? 0 : events.first.timestamp.millisecondsSinceEpoch,
+      );
+}
+
+bool _sameEvents(List<LifeEvent> a, List<LifeEvent> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    final left = a[i];
+    final right = b[i];
+    if (left.type != right.type ||
+        left.desc != right.desc ||
+        left.timestamp != right.timestamp) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// 底部操作按钮栏。
