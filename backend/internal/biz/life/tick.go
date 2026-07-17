@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"os"
+	"strings"
 	"time"
 
 	"backend/internal/platform/moelog"
@@ -17,6 +19,7 @@ var recordableActions = map[LifeAction]bool{
 	ActionWandering:   true,
 	ActionReproducing: true,
 	ActionDying:       true,
+	ActionFleeing:     true,
 }
 
 // gridPersistInterval 每 N 个 tick 持久化一次生态网格
@@ -170,6 +173,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			engine.persistence.EnqueueDeleteEntity(entity.ID)
 			// Bug2: 收集死亡实体 ID，供前端感知并移除
 			removedEntityIDs = append(removedEntityIDs, entity.ID)
+			delete(engine.eventCooldowns, id)
 			delete(mutableEntities, id)
 			deathCount++
 			continue
@@ -202,6 +206,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				})
 				engine.persistence.EnqueueDeleteEntity(entity.ID)
 				removedEntityIDs = append(removedEntityIDs, entity.ID)
+				delete(engine.eventCooldowns, id)
 				delete(mutableEntities, id)
 				deathCount++
 				continue
@@ -209,7 +214,8 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		}
 
 		oldAction := entity.CurrentAction
-		newAction := decideActionWithRelations(entity, mutableEntities, currentRels)
+		interactionEnabled := os.Getenv("MOE_LIFE_INTERACTION_ENABLED") != "false" // 默认 true
+		newAction := decideActionWithInteraction(entity, mutableEntities, currentRels, interactionEnabled)
 		applyAction(entity, newAction, cell)
 		entity.LastActionAt = time.Now()
 		entity.UpdatedAt = time.Now()
@@ -249,12 +255,13 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 
 		if newAction != LifeAction(oldAction) {
 			// 仅记录有意义的行为切换，过滤 walking/idle/sleeping 等低价值事件
-			if recordableActions[newAction] {
+			actionString := string(newAction)
+			if recordableActions[newAction] && shouldRecordEvent(engine, id, actionString) {
 				evt := &model.LifeEventLog{
 					WorldID:     engine.config.WorldName,
 					EntityID:    entity.ID,
 					EntityType:  entity.Name,
-					EventType:   string(newAction),
+					EventType:   actionString,
 					Description: generateEventDesc(entity.Name, newAction),
 					PositionX:   entity.PositionX,
 					PositionY:   entity.PositionY,
@@ -265,7 +272,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				eventDiffs = append(eventDiffs, EventDiff{
 					EntityID:   entity.ID,
 					EntityType: entity.Name,
-					EventType:  string(newAction),
+					EventType:  actionString,
 					Desc:       evt.Description,
 					PositionX:  entity.PositionX,
 					PositionY:  entity.PositionY,
@@ -497,6 +504,48 @@ func buildFinalRelationships(
 	return result
 }
 
+// shouldRecordEvent 检查事件是否应被记录（冷却机制）
+// 重要事件（birth/death/growth/mate_formed/user_*）不受冷却限制
+// talking/wandering: 120s 冷却（24 tick）
+// eating: 60s 冷却（12 tick）
+func shouldRecordEvent(engine *LifeEngine, entityID uint, eventType string) bool {
+	// 重要事件不受冷却限制
+	switch eventType {
+	case "birth", "death", "growth", "mate_formed", "mate_broken":
+		return true
+	}
+	if strings.HasPrefix(eventType, "user_") {
+		return true
+	}
+
+	// 检查冷却
+	now := time.Now()
+	if cooldowns, ok := engine.eventCooldowns[entityID]; ok {
+		if expiry, ok := cooldowns[eventType]; ok {
+			if now.Before(expiry) {
+				return false // 仍在冷却中
+			}
+		}
+	}
+
+	// 设置新冷却时间
+	var cooldownDuration time.Duration
+	switch eventType {
+	case "talking", "wandering":
+		cooldownDuration = 120 * time.Second
+	case "eating":
+		cooldownDuration = 60 * time.Second
+	default:
+		return true // 未知事件类型不限制
+	}
+
+	if engine.eventCooldowns[entityID] == nil {
+		engine.eventCooldowns[entityID] = make(map[string]time.Time)
+	}
+	engine.eventCooldowns[entityID][eventType] = now.Add(cooldownDuration)
+	return true
+}
+
 func generateEventDesc(name string, action LifeAction) string {
 	switch action {
 	case ActionSleeping:
@@ -519,6 +568,10 @@ func generateEventDesc(name string, action LifeAction) string {
 		return name + " 生命接近终点"
 	case ActionIdle:
 		return name + " 暂时停下了行动"
+	case ActionFleeing:
+		return name + " 发现了危险，正在逃跑！"
+	case ActionPlaying:
+		return name + " 正在和朋友玩耍 🎮"
 	default:
 		return name + " 正在活动"
 	}

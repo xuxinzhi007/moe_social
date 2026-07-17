@@ -1,6 +1,7 @@
 package lifebiz
 
 import (
+	"math"
 	"math/rand"
 	"time"
 
@@ -95,6 +96,34 @@ func (e *WorldEventEngine) evaluate(grid *WorldGrid, tickCount int, enqueueEvent
 	if tickCount%e.stormInterval == 0 && !e.isEventActive(WorldEventStorm) {
 		if e.rng.Float64() < 0.03 {
 			e.triggerStorm(grid, enqueueEvent)
+		}
+	}
+
+	// 热浪：8% 概率，持续 20 tick
+	if !e.isEventActive(WorldEventHeatwave) {
+		if e.rng.Float64() < 0.08 {
+			e.triggerEvent(WorldEventHeatwave, 20, 0.6, grid, enqueueEvent)
+		}
+	}
+
+	// 大雾：12% 概率，持续 8 tick
+	if !e.isEventActive(WorldEventFog) {
+		if e.rng.Float64() < 0.12 {
+			e.triggerEvent(WorldEventFog, 8, 0.5, grid, enqueueEvent)
+		}
+	}
+
+	// 资源丰饶：5% 概率，持续 40 tick
+	if !e.isEventActive(WorldEventAbundance) {
+		if e.rng.Float64() < 0.05 {
+			e.triggerEvent(WorldEventAbundance, 40, 0.7, grid, enqueueEvent)
+		}
+	}
+
+	// 迁徙潮：3% 概率，持续 15 tick
+	if !e.isEventActive(WorldEventMigration) {
+		if e.rng.Float64() < 0.03 {
+			e.triggerEvent(WorldEventMigration, 15, 0.5, grid, enqueueEvent)
 		}
 	}
 }
@@ -242,11 +271,48 @@ func (e *WorldEventEngine) applyEffects(grid *WorldGrid) {
 					cell.Food = clamp(cell.Food-0.9, 0, maxCellFood)
 				}
 			}
+		case WorldEventHeatwave:
+			// 热浪：水分-2, 食物衰减加速
+			for y := 0; y < grid.Height; y++ {
+				for x := 0; x < grid.Width; x++ {
+					cell := &grid.Cells[y][x]
+					cell.Moisture = math.Max(0, cell.Moisture-2*evt.Intensity)
+					cell.Food = math.Max(0, cell.Food-0.3*evt.Intensity)
+				}
+			}
+		case WorldEventFog:
+			// 大雾：危险度+1（视线受阻）
+			for y := 0; y < grid.Height; y++ {
+				for x := 0; x < grid.Width; x++ {
+					cell := &grid.Cells[y][x]
+					cell.Danger = math.Min(100, cell.Danger+1*evt.Intensity)
+				}
+			}
+		case WorldEventAbundance:
+			// 资源丰饶：食物+3，仅 habitable cells
+			for y := 0; y < grid.Height; y++ {
+				for x := 0; x < grid.Width; x++ {
+					cell := &grid.Cells[y][x]
+					if cell.Habitable {
+						cell.Food = math.Min(100, cell.Food+3*evt.Intensity)
+					}
+				}
+			}
+		case WorldEventMigration:
+			// 迁徙潮：随机 2-3 个 cell food+5
+			numCells := 2 + e.rng.Intn(2)
+			for n := 0; n < numCells; n++ {
+				rx := e.rng.Intn(grid.Width)
+				ry := e.rng.Intn(grid.Height)
+				cell := &grid.Cells[ry][rx]
+				cell.Food = math.Min(100, cell.Food+5*evt.Intensity)
+			}
 		}
 	}
 }
 
 // currentWeather 返回当前主导天气
+// 优先级：storm > heatwave > drought > rain > fog > clear
 func (e *WorldEventEngine) currentWeather() string {
 	for i := range e.activeEvents {
 		evt := &e.activeEvents[i]
@@ -256,10 +322,14 @@ func (e *WorldEventEngine) currentWeather() string {
 		switch evt.Type {
 		case WorldEventStorm:
 			return "storm"
+		case WorldEventHeatwave:
+			return "heatwave"
 		case WorldEventDrought:
 			return "drought"
 		case WorldEventRain:
 			return "rain"
+		case WorldEventFog:
+			return "fog"
 		}
 	}
 	return "clear"
@@ -303,6 +373,14 @@ func (e *WorldEventEngine) triggerMessage(t WorldEventType) string {
 		return "暴风雨席卷了部分区域！"
 	case WorldEventDepletion:
 		return "食物资源正在枯竭..."
+	case WorldEventHeatwave:
+		return "🔥 热浪来袭，水分加速蒸发"
+	case WorldEventFog:
+		return "🌫️ 大雾弥漫，视线受阻"
+	case WorldEventAbundance:
+		return "🌾 资源丰饶，食物充足"
+	case WorldEventMigration:
+		return "🦋 迁徙潮涌，远方带来了新的资源"
 	default:
 		return "世界发生了变化..."
 	}
@@ -318,6 +396,14 @@ func (e *WorldEventEngine) endMessage(t WorldEventType) string {
 		return "暴风雨过去了。"
 	case WorldEventDepletion:
 		return "资源开始恢复了。"
+	case WorldEventHeatwave:
+		return "☀️ 热浪消退，温度恢复正常"
+	case WorldEventFog:
+		return "🌤️ 大雾散去，视线恢复清晰"
+	case WorldEventAbundance:
+		return "🍂 丰饶期结束，资源回归正常"
+	case WorldEventMigration:
+		return "🦅 迁徙潮退去，世界恢复平静"
 	default:
 		return "世界事件结束了。"
 	}

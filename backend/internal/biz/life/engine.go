@@ -25,7 +25,8 @@ type LifeEngine struct {
 	config           LifeConfig
 	broadcastMu      sync.RWMutex
 	broadcastFn      BroadcastFunc
-	actionCooldowns  map[uint]time.Time // 实体 ID→冷却到期时间
+	actionCooldowns  map[uint]time.Time                // 实体 ID→冷却到期时间
+	eventCooldowns   map[uint]map[string]time.Time      // entityID → eventType → cooldown expiry
 	cooldownMu       sync.Mutex
 }
 
@@ -41,6 +42,7 @@ func NewLifeEngine(store Store, config LifeConfig, broadcastFn BroadcastFunc) *L
 		config:           config,
 		broadcastFn:      broadcastFn,
 		actionCooldowns:  make(map[uint]time.Time),
+		eventCooldowns:   make(map[uint]map[string]time.Time),
 	}
 	return engine
 }
