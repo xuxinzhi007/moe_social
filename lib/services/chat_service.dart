@@ -40,6 +40,11 @@ class ChatService {
         imagePaths: imagePaths,
       );
 
+  static Future<void> clearPrivateChatHistory({
+    required String peerUserId,
+  }) =>
+      ApiService.clearPrivateChatHistory(peerUserId: peerUserId);
+
   static Future<Map<String, dynamic>> voiceCall(String receiverId) =>
       ApiService.voiceCall(receiverId);
 

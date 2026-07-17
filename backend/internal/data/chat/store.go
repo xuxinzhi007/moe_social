@@ -160,3 +160,10 @@ func (s *store) CountPrivateChatUnreadByPeer(ctx context.Context, viewerID uint)
 	}
 	return unreadByPeer, nil
 }
+
+func (s *store) DeletePrivateMessagesBetween(ctx context.Context, userID, peerID uint) error {
+	return s.db.WithContext(ctx).
+		Where("(sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)",
+			userID, peerID, peerID, userID).
+		Delete(&model.PrivateMessage{}).Error
+}

@@ -58,3 +58,14 @@ func (s *Server) ListPrivateConversations(ctx context.Context, in *chatv1.ListPr
 	}
 	return app.ListPrivateConversations(ctx, in)
 }
+
+func (s *Server) ClearPrivateChatHistory(ctx context.Context, in *chatv1.ClearPrivateChatHistoryReq) (*chatv1.ClearPrivateChatHistoryResp, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	if err := fillClearPrivateChatHistoryRequest(ctx, in); err != nil {
+		return nil, err
+	}
+	return app.ClearPrivateChatHistory(ctx, in)
+}

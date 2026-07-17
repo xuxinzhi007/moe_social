@@ -326,26 +326,23 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Widget _buildSearchBar(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: MoeTokens.cardShadow(
-            tint: MoeTheme.of(context).primary,
-            blur: 10,
-          ),
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowCard(),
         ),
         child: TextField(
           controller: _searchController,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: '搜索会话、好友昵称或 Moe ID',
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.search_rounded,
-              color: scheme.onSurfaceVariant,
+              color: MoeTokens.hintText,
             ),
             suffixIcon: _searchQuery.isEmpty
                 ? null
@@ -389,16 +386,32 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('消息'),
+        title: Text(
+          '消息',
+          style: TextStyle(
+            fontSize: MoeTokens.textXl,
+            fontWeight: MoeTokens.fontWeightTitle,
+            color: MoeTokens.titleText,
+          ),
+        ),
+        backgroundColor: MoeTokens.surface1,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shape: const ContinuousRectangleBorder(
+          side: BorderSide(color: MoeTokens.surfaceBorder),
+        ),
         actions: [
           IconButton(
             tooltip: '刷新',
             onPressed: _loading ? null : () => unawaited(_load()),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: MoeTokens.hintText,
+            ),
           ),
         ],
       ),
+      backgroundColor: MoeTokens.surface0,
       body: body,
     );
   }
@@ -467,12 +480,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 : formatDmPreviewForUi(previewRaw);
             final pushBadge = pushUnread[peerId] ?? 0;
             final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
+            // 解析最后活跃时间
+            DateTime? lastActive;
+            try {
+              lastActive = DateTime.parse(c.lastMessage.createdAt);
+            } catch (_) {}
             return _buildConversationRow(
               context,
               avatar: avatar,
               title: title,
               preview: preview,
               badge: badge,
+              lastActive: lastActive,
               onTap: () async {
                 if (!context.mounted) return;
                 await Navigator.pushNamed(
@@ -646,6 +665,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             title: title,
             preview: preview.isEmpty ? '点击开始聊天' : preview,
             badge: badge,
+            lastActive: lastActivity(peerId),
             onTap: () async {
               if (!context.mounted) return;
               await Navigator.pushNamed(
@@ -698,29 +718,67 @@ class _ConversationsPageState extends State<ConversationsPage> {
     required String preview,
     required int badge,
     required VoidCallback onTap,
+    DateTime? lastActive,
   }) {
-    final scheme = Theme.of(context).colorScheme;
+    // 格式化时间戳
+    String? timeLabel;
+    if (lastActive != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final msgDate =
+          DateTime(lastActive.year, lastActive.month, lastActive.day);
+      final hm =
+          '${lastActive.hour.toString().padLeft(2, '0')}:${lastActive.minute.toString().padLeft(2, '0')}';
+      if (msgDate == today) {
+        timeLabel = hm;
+      } else if (msgDate == today.subtract(const Duration(days: 1))) {
+        timeLabel = '昨天';
+      } else {
+        timeLabel = '${lastActive.month}/${lastActive.day}';
+      }
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
         child: Ink(
           decoration: BoxDecoration(
-            color: MoeTokens.cardBackground,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
-            boxShadow: MoeTokens.cardShadow(blur: 12),
+            color: MoeTokens.surface1,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+            boxShadow: MoeTokens.shadowCard(),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: MoeTokens.spaceMd,
+              vertical: MoeTokens.spaceMd,
+            ),
             child: Row(
               children: [
-                NetworkAvatarImage(
-                  imageUrl: avatar,
-                  radius: 24,
-                  placeholderIcon: Icons.person_rounded,
+                // 头像 + 渐变环
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: MoeTokens.gradientSoft,
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: avatar.trim().isNotEmpty
+                      ? NetworkAvatarImage(
+                          imageUrl: avatar,
+                          radius: 24,
+                        )
+                      : ClipOval(
+                          child: Image.asset(
+                            'assets/chat/avatar_placeholder.png',
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: MoeTokens.spaceMd),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,42 +787,69 @@ class _ConversationsPageState extends State<ConversationsPage> {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                        style: TextStyle(
+                          fontWeight: MoeTokens.fontWeightSubtitle,
+                          fontSize: MoeTokens.textMd,
                           color: MoeTokens.titleText,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: MoeTokens.spaceXs),
                       Text(
                         preview,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: MoeTokens.hintText,
-                          fontSize: 13,
+                          fontSize: MoeTokens.textSm,
                         ),
                       ),
                     ],
                   ),
                 ),
-                if (badge > 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: scheme.error,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      badge > 99 ? '99+' : '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                SizedBox(width: MoeTokens.spaceSm),
+                // 右侧：时间 + 未读 badge
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (timeLabel != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          timeLabel,
+                          style: TextStyle(
+                            color: MoeTokens.hintText,
+                            fontSize: MoeTokens.textXs,
+                            fontWeight: MoeTokens.fontWeightCaption,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    if (badge > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: MoeTokens.gradientPrimary,
+                          borderRadius: BorderRadius.circular(
+                            MoeTokens.radiusFull,
+                          ),
+                          boxShadow: MoeTokens.shadowGlow(
+                            MoeTokens.primary.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Text(
+                          badge > 99 ? '99+' : '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: MoeTokens.textSm,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

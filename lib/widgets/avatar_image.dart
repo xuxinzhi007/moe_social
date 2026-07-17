@@ -10,7 +10,7 @@ class NetworkAvatarImage extends StatelessWidget {
   final String? imageUrl;
   final double radius;
   final Color? backgroundColor;
-  final IconData placeholderIcon;
+  final IconData? placeholderIcon;
   final Color? placeholderColor;
 
   const NetworkAvatarImage({
@@ -55,12 +55,22 @@ class NetworkAvatarImage extends StatelessWidget {
 
   /// 构建占位图
   Widget _buildPlaceholder() {
+    if (placeholderIcon == null) {
+      return ClipOval(
+        child: Image.asset(
+          'assets/chat/avatar_placeholder.png',
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
     return CircleAvatar(
       radius: radius,
       backgroundColor: backgroundColor ?? Colors.grey[200],
       foregroundColor: placeholderColor ?? Colors.grey[400],
       child: Icon(
-        placeholderIcon,
+        placeholderIcon!,
         size: radius,
         color: placeholderColor ?? Colors.grey[500],
       ),
@@ -72,7 +82,7 @@ class NetworkAvatarImage extends StatelessWidget {
     try {
       final base64String = dataUri.split(',')[1];
       final bytes = base64Decode(base64String);
-      
+
       return ClipOval(
         child: Image.memory(
           bytes,
