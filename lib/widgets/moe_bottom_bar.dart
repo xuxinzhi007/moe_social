@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_tokens.dart';
+
 class MoeBottomBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
@@ -16,8 +18,7 @@ class MoeBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
+    final primaryColor = MoeTokens.primary;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -28,14 +29,8 @@ class MoeBottomBar extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
-              ),
-            ],
+            color: MoeTokens.surface0,
+            boxShadow: MoeTokens.shadowCard(),
           ),
           child: SafeArea(
             child: Container(
@@ -45,15 +40,13 @@ class MoeBottomBar extends StatelessWidget {
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
+                  color: MoeTokens.surface1.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withValues(alpha: 0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  border: Border.all(
+                    color: MoeTokens.surfaceBorder,
+                    width: 1,
+                  ),
+                  boxShadow: MoeTokens.shadowCard(),
                 ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: compact ? 6 : 8),
@@ -76,9 +69,17 @@ class MoeBottomBar extends StatelessWidget {
                           curve: Curves.easeOutBack,
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? primaryColor.withValues(alpha: 0.15)
-                                : Colors.transparent,
+                            gradient: isSelected
+                                ? LinearGradient(
+                                    colors: [
+                                      primaryColor.withValues(alpha: 0.16),
+                                      primaryColor.withValues(alpha: 0.08),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  )
+                                : null,
+                            color: isSelected ? null : Colors.transparent,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Material(

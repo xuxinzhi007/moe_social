@@ -95,7 +95,17 @@ abstract final class MoeTokens {
   static const double radiusCardLarge = radius2xl; // 24
   static const double radiusIconBg = 14.0;
 
-  // ─── Gradient ────────────────────────────────────────────────────
+  // ─── Surface elevation system ────────────────────────────────────
+  /// 4 级表面色，从底到顶逐渐变亮，用于分层视觉。
+  static const Color surface0 = Color(0xFFF5F7FA); // 页面背景（≈ pageBackground）
+  static const Color surface1 = Color(0xFFFFFFFF); // 卡片
+  static const Color surface2 = Color(0xFFFFFFFF); // 浮层 / Sheet（配合 blur）
+  static const Color surface3 = Color(0xFFFFFFFF); // 最高层 Tooltip / Dialog
+
+  /// 表面色对应的边框色（半透明描边用）。
+  static const Color surfaceBorder = Color(0x147F7FD5); // primary @ ~8%
+
+  // ─── Gradient system ─────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [primary, secondary],
     begin: Alignment.topLeft,
@@ -104,6 +114,41 @@ abstract final class MoeTokens {
 
   static const LinearGradient heroGradient = LinearGradient(
     colors: [primary, secondary, accent],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// 按钮渐变 — 主 CTA（紫→薰衣草）。
+  static const LinearGradient gradientPrimary = LinearGradient(
+    colors: [Color(0xFF7F7FD5), Color(0xFF9B8FE8)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// 柔和渐变 — 次级 CTA / 装饰背景。
+  static const LinearGradient gradientSoft = LinearGradient(
+    colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// 萌系渐变 — 品牌特色（粉→桃→紫）。
+  static const LinearGradient gradientKawaii = LinearGradient(
+    colors: [Color(0xFFFF9A9E), Color(0xFFFAD0C4), Color(0xFFA18CD1)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// 页面背景微渐变。
+  static const LinearGradient gradientPageBg = LinearGradient(
+    colors: [Color(0xFFFFFCFF), Color(0xFFF0F2FF), Color(0xFFF5F7FA)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  /// 文字渐变遮罩 — 用于 ShaderMask 实现渐变文字。
+  static const LinearGradient gradientText = LinearGradient(
+    colors: [Color(0xFF7F7FD5), Color(0xFF9B8FE8), Color(0xFF86A8E7)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -155,6 +200,56 @@ abstract final class MoeTokens {
       ),
     ];
   }
+
+  /// 双层卡片阴影 — 内层硬阴影 + 外层柔阴影，比单层更有层次。
+  static List<BoxShadow> shadowCard() => [
+        BoxShadow(
+          color: primary.withValues(alpha: 0.07),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+        BoxShadow(
+          color: primary.withValues(alpha: 0.04),
+          blurRadius: 24,
+          offset: const Offset(0, 12),
+        ),
+      ];
+
+  /// 双层浮层阴影 — 弹窗 / Sheet 使用。
+  static List<BoxShadow> shadowElevated() => [
+        BoxShadow(
+          color: primary.withValues(alpha: 0.09),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: primary.withValues(alpha: 0.05),
+          blurRadius: 40,
+          offset: const Offset(0, 20),
+        ),
+      ];
+
+  /// 按钮光晕阴影 — 渐变按钮的外发光效果。
+  static List<BoxShadow> shadowGlow(Color color) => [
+        BoxShadow(
+          color: color.withValues(alpha: 0.31),
+          blurRadius: 20,
+          spreadRadius: -2,
+        ),
+        BoxShadow(
+          color: color.withValues(alpha: 0.16),
+          blurRadius: 40,
+          spreadRadius: 4,
+        ),
+      ];
+
+  // ─── Glassmorphism / Blur ────────────────────────────────────────
+  /// 重模糊 — 弹窗 / Sheet。
+  static const double blurHeavy = 24.0;
+  /// 中模糊 — 卡片。
+  static const double blurMedium = 16.0;
+  /// 轻模糊 — 导航栏。
+  static const double blurLight = 8.0;
 
   // ─── Motion / Animation ──────────────────────────────────────────
   /// 列表/区块入场动效（与 [MoeReveal] 默认值对齐）。

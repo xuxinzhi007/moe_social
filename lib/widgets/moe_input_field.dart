@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/theme/moe_tokens.dart';
 
-/// 萌社交统一输入框组件。
+/// 萌社交统一输入框组件 — 渐变背景 + 聚焦发光 + 图标渐变圆圈。
 ///
 /// 作为项目唯一标准输入框，覆盖登录/注册/发帖/搜索等全部场景。
 /// 所有视觉参数基于 [MoeTokens]，保持全局一致性。
@@ -65,43 +65,109 @@ class MoeInputField extends StatefulWidget {
 
 class _MoeInputFieldState extends State<MoeInputField> {
   bool _obscurePassword = true;
+  late FocusNode _internalFocus;
+  bool _isFocused = false;
+
+  FocusNode get _focusNode => widget.focusNode ?? _internalFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _internalFocus = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant MoeInputField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      _focusNode.removeListener(_onFocusChanged);
+      if (oldWidget.focusNode == null) _internalFocus.dispose();
+      _internalFocus = widget.focusNode ?? FocusNode();
+      _focusNode.addListener(_onFocusChanged);
+    }
+  }
+
+  void _onFocusChanged() {
+    setState(() => _isFocused = _focusNode.hasFocus);
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChanged);
+    if (widget.focusNode == null) _internalFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controller,
-      maxLines: widget.maxLines ?? (widget.isPassword ? 1 : null),
-      minLines: widget.minLines,
-      readOnly: widget.readOnly,
-      onTap: widget.onTap,
-      focusNode: widget.focusNode,
-      textInputAction: widget.textInputAction ??
-          (widget.isPassword ? TextInputAction.done : TextInputAction.next),
-      keyboardType: widget.keyboardType ??
-          (widget.isPassword ? TextInputType.visiblePassword : null),
-      onFieldSubmitted: widget.onFieldSubmitted,
-      onEditingComplete: widget.onEditingComplete,
-      validator: widget.validator,
-      autovalidateMode:
-          widget.autovalidateMode ?? AutovalidateMode.disabled,
-      obscureText: widget.isPassword && _obscurePassword,
-      style: widget.style ??
-          TextStyle(
-            fontSize: MoeTokens.textBase,
-            color: MoeTokens.titleText,
-          ),
-      decoration: _buildDecoration(),
+    return AnimatedContainer(
+      duration: MoeTokens.motionMedium,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(MoeTokens.radiusInput + 4),
+        boxShadow: _isFocused
+            ? [
+                BoxShadow(
+                  color: widget.primaryColor.withValues(alpha: 0.12),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+              ]
+            : [],
+      ),
+      child: TextFormField(
+        controller: widget.controller,
+        maxLines: widget.maxLines ?? (widget.isPassword ? 1 : null),
+        minLines: widget.minLines,
+        readOnly: widget.readOnly,
+        onTap: widget.onTap,
+        focusNode: _focusNode,
+        textInputAction: widget.textInputAction ??
+            (widget.isPassword ? TextInputAction.done : TextInputAction.next),
+        keyboardType: widget.keyboardType ??
+            (widget.isPassword ? TextInputType.visiblePassword : null),
+        onFieldSubmitted: widget.onFieldSubmitted,
+        onEditingComplete: widget.onEditingComplete,
+        validator: widget.validator,
+        autovalidateMode:
+            widget.autovalidateMode ?? AutovalidateMode.disabled,
+        obscureText: widget.isPassword && _obscurePassword,
+        style: widget.style ??
+            TextStyle(
+              fontSize: MoeTokens.textBase,
+              color: MoeTokens.titleText,
+            ),
+        decoration: _buildDecoration(),
+      ),
     );
   }
 
   InputDecoration _buildDecoration() {
-    // 前缀图标：优先 prefixIcon > icon 参数
+    // 前缀图标：渐变圆形容器内的图标
     Widget? prefix = widget.prefixIcon;
     if (prefix == null && widget.icon != null) {
-      prefix = Icon(
-        widget.icon,
-        color: widget.primaryColor.withValues(alpha: 0.6),
-        size: 22,
+      prefix = Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          gradient: _isFocused
+              ? MoeTokens.gradientPrimary
+              : LinearGradient(
+                  colors: [
+                    widget.primaryColor.withValues(alpha: 0.10),
+                    widget.primaryColor.withValues(alpha: 0.04),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          widget.icon,
+          color: _isFocused ? Colors.white : widget.primaryColor.withValues(alpha: 0.6),
+          size: 16,
+        ),
       );
     }
 
@@ -113,7 +179,7 @@ class _MoeInputFieldState extends State<MoeInputField> {
           _obscurePassword
               ? Icons.visibility_off_outlined
               : Icons.visibility_outlined,
-          color: Colors.grey[300],
+          color: Colors.grey[400],
           size: 20,
         ),
         onPressed: () =>
@@ -123,18 +189,21 @@ class _MoeInputFieldState extends State<MoeInputField> {
 
     return InputDecoration(
       filled: widget.filled,
-      fillColor: widget.fillColor ?? MoeTokens.pageBackground,
+      fillColor: widget.fillColor ?? Colors.white.withValues(alpha: 0.6),
 
-      // 默认状态：无边框，圆角背景
+      // 默认状态：半透明边框
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: BorderSide.none,
+        borderSide: BorderSide(color: MoeTokens.surfaceBorder.withAlpha(20)),
       ),
 
-      // 聚焦状态：紫色 1.5px 边框
+      // 聚焦状态：渐变边框色
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
-        borderSide: BorderSide(color: MoeTokens.primary, width: 1.5),
+        borderSide: BorderSide(
+          color: widget.primaryColor.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
       ),
 
       // 错误状态：红色 1.5px 边框
@@ -159,6 +228,10 @@ class _MoeInputFieldState extends State<MoeInputField> {
           TextStyle(color: MoeTokens.hintText, fontSize: MoeTokens.textBase),
 
       prefixIcon: prefix,
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: 42,
+        minHeight: 42,
+      ),
       suffixIcon: suffix,
     );
   }
