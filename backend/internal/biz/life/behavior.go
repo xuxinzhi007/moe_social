@@ -123,6 +123,49 @@ func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.Lif
 	return ActionIdle
 }
 
+// decideActionWithInteraction 在基础行为决策上增加物种互动（食物链/玩耍）
+// Feature Flag: 通过 interactionEnabled 参数控制，关闭时回退到 decideActionWithRelations
+func decideActionWithInteraction(
+	e *model.LifeEntity,
+	entities map[uint]*model.LifeEntity,
+	rels []*model.LifeRelationship,
+	interactionEnabled bool,
+) LifeAction {
+	// 基础行为（现有逻辑）
+	baseAction := decideActionWithRelations(e, entities, rels)
+
+	if !interactionEnabled {
+		return baseAction
+	}
+
+	// 1. 食物链检查：附近是否有捕食者
+	for _, other := range entities {
+		if other.ID == e.ID || !other.IsAlive {
+			continue
+		}
+		dx := e.PositionX - other.PositionX
+		dy := e.PositionY - other.PositionY
+		dist := math.Sqrt(dx*dx + dy*dy)
+		if dist < 80 && IsPredatorOf(other.Emoji, e.Emoji) {
+			return ActionFleeing // 发现捕食者，逃跑！
+		}
+	}
+
+	// 2. 玩耍：无威胁 + 情绪 > 60 + 有朋友在场 → 20% 概率玩耍
+	if baseAction == ActionIdle || baseAction == ActionWalking {
+		if e.Mood > 60 {
+			friendID, _ := FindNearbyFriend(e, entities, rels)
+			if friendID > 0 {
+				if rand.Float64() < 0.20 {
+					return ActionPlaying
+				}
+			}
+		}
+	}
+
+	return baseAction
+}
+
 func applyAction(e *model.LifeEntity, action LifeAction, cell *WorldCell) {
 	e.CurrentAction = string(action)
 
@@ -162,6 +205,16 @@ func applyAction(e *model.LifeEntity, action LifeAction, cell *WorldCell) {
 		e.Hunger = clamp(e.Hunger+idleRecovery, 0, 100)
 		e.Energy = clamp(e.Energy+idleRecovery*0.5, 0, 100)
 		e.Mood = clamp(e.Mood+idleRecovery*0.3, 0, 100)
+	case ActionFleeing:
+		// 逃跑：消耗 energy，向随机方向快速移动
+		e.Energy = clamp(e.Energy-3, 0, 100)
+		e.PositionX = clamp(e.PositionX+(rand.Float64()-0.5)*120, 0, worldWidth)
+		e.PositionY = clamp(e.PositionY+(rand.Float64()-0.5)*120, 0, worldHeight)
+	case ActionPlaying:
+		// 玩耍：提升情绪，轻微消耗能量
+		maxStat := GetMaxStat(e.GrowthStage)
+		e.Mood = clamp(e.Mood+5, 0, maxStat)
+		e.Energy = clamp(e.Energy-1, 0, 100)
 	}
 }
 
