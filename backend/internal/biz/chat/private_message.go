@@ -173,3 +173,31 @@ func LoadMoeNoByUserID(st PrivateMessageStore, ids ...uint) map[uint]string {
 	}
 	return moeBy
 }
+
+// ClearPrivateChatHistory 清空双方私信历史（双向删除）。
+func ClearPrivateChatHistory(ctx context.Context, st PrivateMessageStore, userID, peerID uint) error {
+	if st == nil {
+		return errors.New("db not ready")
+	}
+	if userID == 0 || peerID == 0 {
+		return errors.New("invalid user_id or peer_id")
+	}
+	if userID == peerID {
+		return errors.New("cannot clear chat with self")
+	}
+	st = st.WithContext(ctx)
+	// 验证双方用户存在
+	if _, err := st.GetUser(ctx, userID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return err
+	}
+	if _, err := st.GetUser(ctx, peerID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("peer not found")
+		}
+		return err
+	}
+	return st.DeletePrivateMessagesBetween(ctx, userID, peerID)
+}

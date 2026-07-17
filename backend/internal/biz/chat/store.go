@@ -30,4 +30,5 @@ type PrivateMessageStore interface {
 	GetPrivateMessagesByIDs(ctx context.Context, ids []uint) ([]model.PrivateMessage, error)
 	GetUsersByIDs(ctx context.Context, ids []uint) ([]model.User, error)
 	CountPrivateChatUnreadByPeer(ctx context.Context, viewerID uint) (map[uint]int32, error)
+	DeletePrivateMessagesBetween(ctx context.Context, userID, peerID uint) error
 }

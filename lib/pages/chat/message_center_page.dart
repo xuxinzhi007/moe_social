@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
 import '../../services/user_service.dart';
-import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/motion/moe_sheet.dart';
@@ -70,23 +69,29 @@ class _MessageCenterPageState extends State<MessageCenterPage>
 
   @override
   Widget build(BuildContext context) {
-    final moe = MoeTheme.of(context);
-
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
       backgroundColor: MoeTokens.pageBackground,
       body: Scaffold(
         backgroundColor: MoeTokens.pageBackground,
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             '好友',
-            style: TextStyle(fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontWeight: MoeTokens.fontWeightTitle,
+              fontSize: MoeTokens.textXl,
+              color: MoeTokens.titleText,
+            ),
           ),
           centerTitle: true,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: MoeTokens.pageBackground,
+          backgroundColor: MoeTokens.surface1,
           foregroundColor: MoeTokens.titleText,
+          surfaceTintColor: Colors.transparent,
+          shape: const Border(
+            bottom: BorderSide(color: MoeTokens.surfaceBorder),
+          ),
           actions: [
             IconButton(
               tooltip: '添加同好',
@@ -101,9 +106,10 @@ class _MessageCenterPageState extends State<MessageCenterPage>
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: MoeTokens.cardShadow(tint: moe.primary, blur: 10),
+                  color: MoeTokens.surface1,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                  border: Border.all(color: MoeTokens.surfaceBorder),
+                  boxShadow: MoeTokens.shadowCard(),
                 ),
                 child: TabBar(
                   controller: _tabController,

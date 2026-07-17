@@ -57,3 +57,22 @@ func fillSendPrivateMessageRequest(ctx context.Context, in *chatv1.SendPrivateMe
 	in.SenderId = uid
 	return nil
 }
+
+func fillClearPrivateChatHistoryRequest(ctx context.Context, in *chatv1.ClearPrivateChatHistoryReq) error {
+	if in == nil {
+		return status.Error(codes.InvalidArgument, "request required")
+	}
+	uid, err := actorUserID(ctx)
+	if err != nil {
+		return status.Error(codes.Unauthenticated, "请先登录")
+	}
+	in.ViewerId = uid
+	if strings.TrimSpace(in.GetPeerId()) == "" {
+		peer := queryFirst(ctx, "peer_user_id", "peerUserId", "peer_id", "peerId")
+		if peer == "" {
+			return status.Error(codes.InvalidArgument, "peer_user_id required")
+		}
+		in.PeerId = peer
+	}
+	return nil
+}

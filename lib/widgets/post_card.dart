@@ -71,22 +71,14 @@ class _PostCardState extends State<PostCard>
   Widget build(BuildContext context) {
     super.build(context);
     final theme = Theme.of(context);
-    final primaryColor = theme.primaryColor;
-    final secondaryColor = theme.colorScheme.secondary;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withValues(alpha: 0.08), // 使用主题色阴影
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-        ],
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+        border: Border.all(color: MoeTokens.surfaceBorder, width: 1),
+        boxShadow: MoeTokens.shadowCard(),
       ),
       child: Material(
         color: Colors.transparent,
@@ -109,25 +101,14 @@ class _PostCardState extends State<PostCard>
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                primaryColor.withValues(alpha: 0.3),
-                                secondaryColor.withValues(alpha: 0.3),
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: primaryColor.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
+                            gradient: MoeTokens.gradientSoft,
+                            boxShadow: MoeTokens.shadowGlow(MoeTokens.primary),
                           ),
                           padding: const EdgeInsets.all(2),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: theme.scaffoldBackgroundColor, // 适配暗黑模式
+                              color: MoeTokens.surface1,
                             ),
                             child: NetworkAvatarImage(
                               imageUrl: widget.post.userAvatar,

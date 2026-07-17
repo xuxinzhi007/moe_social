@@ -1519,6 +1519,20 @@ class ApiService {
     return (items: list, total: total, hasMore: hasMore);
   }
 
+  /// 清空与指定用户的私信历史（服务端双向删除，JWT）。
+  static Future<void> clearPrivateChatHistory({
+    required String peerUserId,
+  }) async {
+    final peer = peerUserId.trim();
+    if (peer.isEmpty) {
+      throw ApiException('peer_user_id 不能为空', 400);
+    }
+    await _request(
+      '/api/private-messages/history?peer_user_id=${Uri.encodeComponent(peer)}',
+      method: 'DELETE',
+    );
+  }
+
   /// 发送私信：服务端写入 `private_messages` 并向对端推送 WS（离线则写通知）。
   static Future<PrivateMessageItem> sendPrivateMessage({
     required String receiverId,

@@ -20,6 +20,7 @@ import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
 import '../../theme/moe_theme_extension.dart';
+import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -31,8 +32,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
-  MoeTheme get _moe => MoeTheme.of(context);
-
   List<Post> _allPosts = [];
   List<Post> _displayPosts = [];
   bool _isLoading = false;
@@ -482,7 +481,6 @@ class _HomePageState extends State<HomePage>
 
   SliverAppBar _buildSliverAppBar(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final scheme = Theme.of(context).colorScheme;
     final screenWidth = screenSize.width;
     final expandedHeight = screenWidth < 360 ? 66.0 : 70.0;
 
@@ -490,37 +488,41 @@ class _HomePageState extends State<HomePage>
       pinned: true,
       expandedHeight: expandedHeight,
       elevation: 0,
-      backgroundColor: scheme.surface,
-      surfaceTintColor: scheme.surfaceTint,
-      foregroundColor: scheme.onSurface,
+      backgroundColor: MoeTokens.surface1,
+      surfaceTintColor: Colors.transparent,
+      foregroundColor: MoeTokens.titleText,
       title: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+              gradient: MoeTokens.gradientPrimary,
+              borderRadius: BorderRadius.circular(22),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.favorite_rounded,
-              color: scheme.primary,
+              color: Colors.white,
               size: 18,
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            'Moe Social',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
-              color: scheme.onSurface,
+          ShaderMask(
+            shaderCallback: (bounds) =>
+                MoeTokens.gradientText.createShader(bounds),
+            child: const Text(
+              'Moe Social',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.search_rounded),
+          icon: const Icon(Icons.search_rounded, color: MoeTokens.titleText),
           onPressed: () {
             MoeToast.info(
                 context, '\u641c\u7d22\u529f\u80fd\u5373\u5c06\u4e0a\u7ebf');
@@ -531,20 +533,22 @@ class _HomePageState extends State<HomePage>
           tooltip: 'AI \u52a9\u624b\u8bbe\u7f6e',
           onPressed: () =>
               Navigator.pushNamed(context, '/virtual-avatar-settings'),
-          icon: Icon(
+          icon: const Icon(
             Icons.smart_toy_rounded,
-            color: MoeTheme.of(context).primary,
+            color: MoeTokens.titleText,
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.qr_code_scanner_rounded),
+          icon: const Icon(Icons.qr_code_scanner_rounded,
+              color: MoeTokens.titleText),
           onPressed: () => Navigator.pushNamed(context, '/scan'),
           tooltip: '\u626b\u7801\u6dfb\u52a0\u597d\u53cb',
         ),
         Stack(
           children: [
             IconButton(
-              icon: const Icon(Icons.notifications_outlined),
+              icon: const Icon(Icons.notifications_outlined,
+                  color: MoeTokens.titleText),
               onPressed: () => Navigator.pushNamed(context, '/notifications'),
             ),
             Consumer<NotificationProvider>(
@@ -557,7 +561,7 @@ class _HomePageState extends State<HomePage>
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: Colors.redAccent,
+                      color: MoeTokens.danger,
                       shape: BoxShape.circle,
                     ),
                     constraints:
@@ -580,7 +584,6 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeedSectionTitle(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final compact = MediaQuery.sizeOf(context).width < 430;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
@@ -595,7 +598,7 @@ class _HomePageState extends State<HomePage>
                   width: 4,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: scheme.primary,
+                    gradient: MoeTokens.gradientPrimary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -603,10 +606,10 @@ class _HomePageState extends State<HomePage>
                 Expanded(
                   child: Text(
                     _sectionTitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: scheme.onSurface,
+                      color: MoeTokens.titleText,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -618,7 +621,7 @@ class _HomePageState extends State<HomePage>
               children: [
                 Expanded(child: _buildFeedModeSwitcher(context)),
                 const SizedBox(width: 8),
-                _buildRefreshButton(scheme),
+                _buildRefreshButton(),
               ],
             ),
           ] else
@@ -629,7 +632,7 @@ class _HomePageState extends State<HomePage>
                   width: 4,
                   height: 22,
                   decoration: BoxDecoration(
-                    color: scheme.primary,
+                    gradient: MoeTokens.gradientPrimary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -637,10 +640,10 @@ class _HomePageState extends State<HomePage>
                 Expanded(
                   child: Text(
                     _sectionTitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: scheme.onSurface,
+                      color: MoeTokens.titleText,
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -648,7 +651,7 @@ class _HomePageState extends State<HomePage>
                 const SizedBox(width: 10),
                 _buildFeedModeSwitcher(context),
                 const SizedBox(width: 8),
-                _buildRefreshButton(scheme),
+                _buildRefreshButton(),
               ],
             ),
           const SizedBox(height: 8),
@@ -684,19 +687,21 @@ class _HomePageState extends State<HomePage>
     VoidCallback? onTap,
     Widget? trailing,
   }) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = accentColor ?? scheme.onSurfaceVariant;
+    final color = accentColor ?? MoeTokens.hintText;
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: (accentColor ?? scheme.surfaceContainerHighest)
-              .withValues(alpha: accentColor == null ? 0.55 : 0.14),
-          borderRadius: BorderRadius.circular(16),
+          color: accentColor != null
+              ? accentColor.withValues(alpha: 0.14)
+              : MoeTokens.surface1.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           border: Border.all(
-            color: color.withValues(alpha: 0.28),
+            color: accentColor != null
+                ? color.withValues(alpha: 0.28)
+                : MoeTokens.surfaceBorder,
           ),
         ),
         child: Row(
@@ -726,15 +731,13 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeedModeSwitcher(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.3),
-        ),
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -745,7 +748,7 @@ class _HomePageState extends State<HomePage>
           return Padding(
             padding: EdgeInsets.only(right: index == _tabs.length - 1 ? 0 : 4),
             child: InkWell(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
               onTap: () {
                 if (_tabController.index == index) return;
                 _tabController.animateTo(index);
@@ -756,10 +759,9 @@ class _HomePageState extends State<HomePage>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? scheme.primary.withValues(alpha: 0.14)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(999),
+                  gradient: isSelected ? MoeTokens.gradientPrimary : null,
+                  color: isSelected ? null : Colors.transparent,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -767,8 +769,7 @@ class _HomePageState extends State<HomePage>
                     Icon(
                       tab.icon,
                       size: 13,
-                      color:
-                          isSelected ? scheme.primary : scheme.onSurfaceVariant,
+                      color: isSelected ? Colors.white : MoeTokens.hintText,
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -777,9 +778,7 @@ class _HomePageState extends State<HomePage>
                         fontSize: 12,
                         fontWeight:
                             isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant,
+                        color: isSelected ? Colors.white : MoeTokens.hintText,
                       ),
                     ),
                   ],
@@ -792,13 +791,13 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildRefreshButton(ColorScheme scheme) {
+  Widget _buildRefreshButton() {
     return TextButton.icon(
       onPressed: _isLoading || _isRefreshing
           ? null
           : () => _fetchPosts(resetContent: false),
       style: TextButton.styleFrom(
-        foregroundColor: scheme.primary,
+        foregroundColor: MoeTokens.primary,
         textStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -824,16 +823,15 @@ class _HomePageState extends State<HomePage>
     required String message,
     required VoidCallback onRetry,
   }) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFB347).withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
+          color: MoeTokens.warning.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           border: Border.all(
-            color: const Color(0xFFFFB347).withValues(alpha: 0.35),
+            color: MoeTokens.warning.withValues(alpha: 0.30),
           ),
         ),
         child: Row(
@@ -841,7 +839,7 @@ class _HomePageState extends State<HomePage>
             const Icon(
               Icons.info_outline_rounded,
               size: 18,
-              color: Color(0xFFFFB347),
+              color: MoeTokens.warning,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -849,8 +847,8 @@ class _HomePageState extends State<HomePage>
                 message,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: scheme.onSurface,
+                style: const TextStyle(
+                  color: MoeTokens.titleText,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -896,7 +894,7 @@ class _HomePageState extends State<HomePage>
             icon: const Icon(Icons.forum_rounded, size: 20),
             label: const Text('\u53bb\u793e\u533a'),
             style: FilledButton.styleFrom(
-              backgroundColor: _moe.primary,
+              backgroundColor: MoeTokens.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -912,8 +910,8 @@ class _HomePageState extends State<HomePage>
             icon: const Icon(Icons.people_rounded, size: 20),
             label: const Text('\u627e\u597d\u53cb'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: _moe.primary,
-              side: BorderSide(color: _moe.primary),
+              foregroundColor: MoeTokens.primary,
+              side: BorderSide(color: MoeTokens.primary),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -936,7 +934,7 @@ class _HomePageState extends State<HomePage>
       subtitle: inTopic
           ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002'
           : '\u53d1\u4e00\u6761\u52a8\u6001\u8bb0\u5f55\u4eca\u5929\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\u3002',
-      accentColor: _moe.primary,
+      accentColor: MoeTokens.primary,
       action: SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
@@ -944,7 +942,7 @@ class _HomePageState extends State<HomePage>
           icon: const Icon(Icons.edit_rounded, size: 20),
           label: const Text('\u53d1\u5e03\u52a8\u6001'),
           style: FilledButton.styleFrom(
-            backgroundColor: _moe.primary,
+            backgroundColor: MoeTokens.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
@@ -960,8 +958,8 @@ class _HomePageState extends State<HomePage>
           icon: const Icon(Icons.people_rounded, size: 20),
           label: const Text('\u627e\u597d\u53cb'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: _moe.primary,
-            side: BorderSide(color: _moe.primary),
+            foregroundColor: MoeTokens.primary,
+            side: BorderSide(color: MoeTokens.primary),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
@@ -980,22 +978,16 @@ class _HomePageState extends State<HomePage>
     required Widget action,
     Widget? secondaryAction,
   }) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: _moe.primary.withValues(alpha: 0.1),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowCard(),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1003,28 +995,28 @@ class _HomePageState extends State<HomePage>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.12),
+                gradient: MoeTokens.gradientSoft,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: accentColor, size: 34),
+              child: Icon(icon, color: Colors.white, size: 34),
             ),
             const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
+                color: MoeTokens.titleText,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
-                color: scheme.onSurfaceVariant,
+                color: MoeTokens.hintText,
                 height: 1.4,
               ),
             ),
@@ -1108,26 +1100,21 @@ class _HomePageState extends State<HomePage>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
-                color: (_isLoadingMore || _isRefreshing)
-                    ? Colors.grey.withValues(alpha: 0.1)
-                    : _moe.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: (_isLoadingMore || _isRefreshing)
-                      ? Colors.grey.withValues(alpha: 0.2)
-                      : _moe.primary.withValues(alpha: 0.26),
-                ),
+                gradient: MoeTokens.gradientPrimary,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                border: Border.all(color: MoeTokens.surfaceBorder),
+                boxShadow: MoeTokens.shadowSm(),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.arrow_downward_rounded,
-                      color: _moe.primary, size: 18),
+                  const Icon(Icons.arrow_downward_rounded,
+                      color: Colors.white, size: 18),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     '\u70b9\u51fb\u52a0\u8f7d\u66f4\u591a',
                     style: TextStyle(
-                      color: _moe.primary,
+                      color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1148,14 +1135,13 @@ class _HomePageState extends State<HomePage>
     Color? accentColor,
     Widget? trailing,
   }) {
-    final scheme = Theme.of(context).colorScheme;
-    final accent = accentColor ?? _moe.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3)),
+        color: MoeTokens.surface1.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1164,8 +1150,8 @@ class _HomePageState extends State<HomePage>
           const SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(
-              color: scheme.onSurface,
+            style: const TextStyle(
+              color: MoeTokens.titleText,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),

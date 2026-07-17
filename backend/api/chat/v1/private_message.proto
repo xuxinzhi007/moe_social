@@ -136,6 +136,13 @@ service PushNotificationService {
   }
 }
 
+message ClearPrivateChatHistoryReq {
+  string viewer_id = 1;
+  string peer_id = 2;
+}
+
+message ClearPrivateChatHistoryResp {}
+
 service PrivateMessageService {
   rpc SendPrivateMessage(SendPrivateMessageRequest) returns (SendPrivateMessageReply) {
     option (google.api.http) = { post: "/api/private-messages" body: "*" };
@@ -145,5 +152,8 @@ service PrivateMessageService {
   }
   rpc ListPrivateConversations(ListPrivateConversationsRequest) returns (ListPrivateConversationsReply) {
     option (google.api.http) = { get: "/api/private-messages/conversations" };
+  }
+  rpc ClearPrivateChatHistory(ClearPrivateChatHistoryReq) returns (ClearPrivateChatHistoryResp) {
+    option (google.api.http) = { delete: "/api/private-messages/history" };
   }
 }
