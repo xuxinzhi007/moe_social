@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_tokens.dart';
 import 'motion/moe_motion.dart';
 
-/// 钀岀ぞ椋庢牸鍔犺浇鍔ㄧ敾
+/// 萌系风格加载动画 — 渐变心形 + 呼吸脉冲 + 光晕扩散。
 class MoeLoading extends StatefulWidget {
   final double size;
   final Color? color;
@@ -75,7 +76,6 @@ class _MoeLoadingState extends State<MoeLoading>
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = widget.color ?? const Color(0xFF7F7FD5);
     final reduceMotion = moeReduceMotion(context);
 
     return Center(
@@ -91,20 +91,14 @@ class _MoeLoadingState extends State<MoeLoading>
                 height: widget.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      themeColor.withValues(alpha: 0.6),
-                      themeColor,
-                    ],
-                  ),
+                  gradient: MoeTokens.gradientPrimary,
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          themeColor.withValues(alpha: reduceMotion ? 0.22 : 0.3),
+                      color: MoeTokens.primary.withValues(
+                          alpha: reduceMotion ? 0.22 : 0.3),
                       blurRadius: widget.size / 2,
-                      spreadRadius: reduceMotion ? 1 : _scaleAnimation.value * 2,
+                      spreadRadius:
+                          reduceMotion ? 1 : _scaleAnimation.value * 2,
                     ),
                   ],
                 ),
@@ -124,7 +118,7 @@ class _MoeLoadingState extends State<MoeLoading>
   }
 }
 
-/// 鏇夸唬榛樿 CircularProgressIndicator 鐨勪究鎹峰皬缁勪欢
+/// 替代默认 CircularProgressIndicator 的便捷小组件 — 渐变描边。
 class MoeSmallLoading extends StatelessWidget {
   final Color? color;
   final double size;
@@ -161,7 +155,6 @@ class MoeSmallLoading extends StatelessWidget {
       child: CircularProgressIndicator(
         strokeWidth: size <= 20 ? 2.2 : 2.5,
         strokeCap: StrokeCap.round,
-        color: themeColor,
         valueColor: AlwaysStoppedAnimation<Color>(themeColor),
         backgroundColor: themeColor.withValues(alpha: 0.1),
       ),

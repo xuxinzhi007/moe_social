@@ -210,35 +210,42 @@ class _ToastWidgetState extends State<_ToastWidget>
   Widget build(BuildContext context) {
     final toastBody = Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: widget.backgroundColor ?? Colors.black.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
+          color: (widget.backgroundColor ?? Colors.black.withValues(alpha: 0.82))
+              .withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          border: Border.all(
+            color: (widget.textColor ?? Colors.white).withValues(alpha: 0.10),
+            width: 1,
+          ),
+          boxShadow: MoeTokens.shadowElevated(),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (widget.icon != null) ...[
-              Icon(
-                widget.icon,
-                color: widget.textColor ?? Colors.white,
-                size: 20,
+            if (widget.icon != null) ...[  
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: (widget.textColor ?? Colors.white).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  widget.icon,
+                  color: widget.textColor ?? Colors.white,
+                  size: 16,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
             ],
             Flexible(
               child: Text(
                 widget.message,
                 style: TextStyle(
                   color: widget.textColor ?? Colors.white,
-                  fontSize: 14,
+                  fontSize: MoeTokens.textBase,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.3,
                 ),

@@ -10,12 +10,13 @@ import '../../widgets/motion/moe_reveal.dart';
 import 'package:provider/provider.dart';
 import '../../providers/loading_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../../widgets/app_message_widget.dart';
 import '../../widgets/moe_input_field.dart';
 import '../../widgets/auth_background.dart';
 import '../../widgets/email_completion_bubble.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
+import 'dart:ui';
+import '../../widgets/motion/moe_pressable.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -229,241 +230,335 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(height: 60), // 给返回按钮留出空间
                   MoeReveal(
                     duration: const Duration(milliseconds: 800),
-                    child: Column(
-                      children: [
-                        const Text(
-                          '创建账号',
-                          style: TextStyle(
-                            fontSize: MoeTokens.text3xl,
-                            fontWeight: FontWeight.w900,
-                            color: MoeTokens.titleText,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '开始你的萌系社交之旅',
-                          style: TextStyle(
-                            fontSize: MoeTokens.textMd,
-                            color: Colors.grey[500],
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildHeader(),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
 
                   MoeReveal(
                     delay: const Duration(milliseconds: 200),
                     duration: const Duration(milliseconds: 800),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          MoeInputField(
-                            controller: _usernameController,
-                            hintText: '用户名',
-                            icon: Icons.person_outline_rounded,
-                            validator: Validators.username,
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
-                            focusNode: _usernameFocus,
-                            textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (_) => FocusScope.of(context)
-                                .requestFocus(_emailFocus),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(
+                          sigmaX: MoeTokens.blurMedium,
+                          sigmaY: MoeTokens.blurMedium,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radius2xl),
+                            border: Border.all(
+                                color: MoeTokens.surfaceBorder, width: 1),
+                            boxShadow: MoeTokens.shadowCard(),
                           ),
-                          const SizedBox(height: 20),
-                          ValueListenableBuilder<List<String>>(
-                            valueListenable: _emailCompletions,
-                            builder: (_, completions, __) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  MoeInputField(
-                                    controller: _emailController,
-                                    focusNode: _emailFocus,
-                                    maxLines: 1,
-                                    hintText: '电子邮箱',
-                                    icon: Icons.email_outlined,
-                                    suffixIcon: _TempMailButton(
-                                      isLoading: _isGeneratingTempEmail,
-                                      onTap: _generateTempEmail,
-                                      accentColor: _primaryColor,
-                                    ),
-                                    validator: completions.isNotEmpty
-                                        ? (_) => null
-                                        : Validators.email,
-                                    keyboardType: TextInputType.emailAddress,
-                                    autovalidateMode:
-                                        AutovalidateMode.onUserInteraction,
-                                    textInputAction: TextInputAction.next,
-                                    onFieldSubmitted: (_) =>
-                                        FocusScope.of(context)
-                                            .requestFocus(_passwordFocus),
-                                  ),
-                                  EmailSuffixBar(
-                                    candidates: completions,
-                                    accentColor: _primaryColor,
-                                    onSelected: _pickEmailSuffix,
-                                  ),
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 220),
-                                    child: _hasGeneratedTempEmail
-                                        ? Container(
-                                            key: const ValueKey(
-                                                'temp-mail-hint'),
-                                            margin:
-                                                const EdgeInsets.only(top: 10),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 12,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _primaryColor.withValues(
-                                                  alpha: 0.08),
-                                              borderRadius:
-                                                  BorderRadius.circular(
-                                                MoeTokens.radiusLg,
-                                              ),
-                                              border: Border.all(
-                                                color: _primaryColor.withValues(
-                                                    alpha: 0.18),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Icon(
-                                                  Icons.mark_email_read_rounded,
-                                                  size: 18,
-                                                  color: _primaryColor,
-                                                ),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    '已为你填入临时邮箱。完成注册后请保存该邮箱，后续收验证码或回查会更方便。',
-                                                    style: TextStyle(
-                                                      fontSize:
-                                                          MoeTokens.textSm,
-                                                      height: 1.45,
-                                                      color: MoeTokens.bodyText,
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                MoeInputField(
+                                  controller: _usernameController,
+                                  hintText: '用户名',
+                                  icon: Icons.person_outline_rounded,
+                                  validator: Validators.username,
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
+                                  focusNode: _usernameFocus,
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context)
+                                          .requestFocus(_emailFocus),
+                                ),
+                                const SizedBox(height: 20),
+                                ValueListenableBuilder<List<String>>(
+                                  valueListenable: _emailCompletions,
+                                  builder: (_, completions, __) {
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        MoeInputField(
+                                          controller: _emailController,
+                                          focusNode: _emailFocus,
+                                          maxLines: 1,
+                                          hintText: '电子邮箱',
+                                          icon: Icons.email_outlined,
+                                          suffixIcon: _TempMailButton(
+                                            isLoading: _isGeneratingTempEmail,
+                                            onTap: _generateTempEmail,
+                                            accentColor: _primaryColor,
+                                          ),
+                                          validator: completions.isNotEmpty
+                                              ? (_) => null
+                                              : Validators.email,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
+                                          autovalidateMode: AutovalidateMode
+                                              .onUserInteraction,
+                                          textInputAction: TextInputAction.next,
+                                          onFieldSubmitted: (_) =>
+                                              FocusScope.of(context)
+                                                  .requestFocus(_passwordFocus),
+                                        ),
+                                        EmailSuffixBar(
+                                          candidates: completions,
+                                          accentColor: _primaryColor,
+                                          onSelected: _pickEmailSuffix,
+                                        ),
+                                        AnimatedSwitcher(
+                                          duration:
+                                              const Duration(milliseconds: 220),
+                                          child: _hasGeneratedTempEmail
+                                              ? Container(
+                                                  key: const ValueKey(
+                                                      'temp-mail-hint'),
+                                                  margin: const EdgeInsets.only(
+                                                      top: 10),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 12,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: _primaryColor
+                                                        .withValues(
+                                                            alpha: 0.08),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                      MoeTokens.radiusLg,
+                                                    ),
+                                                    border: Border.all(
+                                                      color: _primaryColor
+                                                          .withValues(
+                                                              alpha: 0.18),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
-                                  ),
-                                  SizedBox(
-                                      height: completions.isEmpty ? 20 : 12),
-                                ],
-                              );
-                            },
-                          ),
-                          MoeInputField(
-                            controller: _passwordController,
-                            hintText: '设置密码',
-                            icon: Icons.lock_outline_rounded,
-                            isPassword: true,
-                            validator: Validators.password,
-                            autovalidateMode: AutovalidateMode.disabled,
-                            focusNode: _passwordFocus,
-                            textInputAction: TextInputAction.next,
-                            onFieldSubmitted: (_) => FocusScope.of(context)
-                                .requestFocus(_confirmPasswordFocus),
-                          ),
-                          const SizedBox(height: 20),
-                          MoeInputField(
-                            controller: _confirmPasswordController,
-                            hintText: '确认密码',
-                            icon: Icons.lock_reset_rounded,
-                            isPassword: true,
-                            validator: (value) => Validators.confirmPassword(
-                                value, _passwordController.text),
-                            autovalidateMode: AutovalidateMode.disabled,
-                            focusNode: _confirmPasswordFocus,
-                            textInputAction: TextInputAction.done,
-                          ),
-                          const SizedBox(height: 40),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: LoadingButton(
-                              operationKey: LoadingKeys.register,
-                              onPressed: _register,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _primaryColor,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      MoeTokens.radiusButton),
+                                                  child: Row(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Icon(
+                                                        Icons
+                                                            .mark_email_read_rounded,
+                                                        size: 18,
+                                                        color: _primaryColor,
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Expanded(
+                                                        child: Text(
+                                                          '已为你填入临时邮箱。完成注册后请保存该邮箱，后续收验证码或回查会更方便。',
+                                                          style: TextStyle(
+                                                            fontSize: MoeTokens
+                                                                .textSm,
+                                                            height: 1.45,
+                                                            color: MoeTokens
+                                                                .bodyText,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              : const SizedBox.shrink(),
+                                        ),
+                                        SizedBox(
+                                            height:
+                                                completions.isEmpty ? 20 : 12),
+                                      ],
+                                    );
+                                  },
                                 ),
-                                elevation: 8,
-                                shadowColor:
-                                    _primaryColor.withValues(alpha: 0.4),
-                              ),
-                              child: const Text(
-                                '立即注册',
-                                style: TextStyle(
-                                  fontSize: MoeTokens.textLg,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
+                                MoeInputField(
+                                  controller: _passwordController,
+                                  hintText: '设置密码',
+                                  icon: Icons.lock_outline_rounded,
+                                  isPassword: true,
+                                  validator: Validators.password,
+                                  autovalidateMode: AutovalidateMode.disabled,
+                                  focusNode: _passwordFocus,
+                                  textInputAction: TextInputAction.next,
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context)
+                                          .requestFocus(_confirmPasswordFocus),
                                 ),
-                              ),
+                                const SizedBox(height: 20),
+                                MoeInputField(
+                                  controller: _confirmPasswordController,
+                                  hintText: '确认密码',
+                                  icon: Icons.lock_reset_rounded,
+                                  isPassword: true,
+                                  validator: (value) =>
+                                      Validators.confirmPassword(
+                                          value, _passwordController.text),
+                                  autovalidateMode: AutovalidateMode.disabled,
+                                  focusNode: _confirmPasswordFocus,
+                                  textInputAction: TextInputAction.done,
+                                ),
+                                const SizedBox(height: 20),
+                                _buildGradientRegisterButton(),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
 
                   MoeReveal(
                     delay: const Duration(milliseconds: 400),
                     duration: const Duration(milliseconds: 800),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '已有账户？',
-                          style: TextStyle(color: Colors.grey[500]),
-                        ),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius:
-                                BorderRadius.circular(MoeTokens.radiusMd),
-                            onTap: () => Navigator.pop(context),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                '直接登录',
-                                style: TextStyle(
-                                  color: _primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: _buildLoginPrompt(),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  // ─── 标题区域 — 渐变文字 ────────────────────────────────────────────
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        ShaderMask(
+          shaderCallback: (bounds) =>
+              MoeTokens.gradientText.createShader(bounds),
+          child: const Text(
+            '创建账号',
+            style: TextStyle(
+              fontSize: MoeTokens.text3xl,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              letterSpacing: 1,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ShaderMask(
+          shaderCallback: (bounds) =>
+              MoeTokens.gradientSoft.createShader(bounds),
+          child: Text(
+            '开始你的萌系社交之旅',
+            style: TextStyle(
+              fontSize: MoeTokens.textMd,
+              color: Colors.white,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── 渐变注册按钮 ────────────────────────────────────────────────
+  Widget _buildGradientRegisterButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: MoePressable(
+        onTap: _register,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+        child: Consumer<LoadingProvider>(
+          builder: (context, loadingProvider, _) {
+            final isLoading =
+                loadingProvider.isOperationLoading(LoadingKeys.register);
+            return Container(
+              decoration: BoxDecoration(
+                gradient: MoeTokens.gradientPrimary,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                boxShadow:
+                    isLoading ? null : MoeTokens.shadowGlow(_primaryColor),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: isLoading ? null : _register,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+                  child: Center(
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : const Text(
+                            '立即注册',
+                            style: TextStyle(
+                              fontSize: MoeTokens.textLg,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─── 底部登录引导 — 渐变分隔线 + 渐变文字 ──────────────────────────
+  Widget _buildLoginPrompt() {
+    return Column(
+      children: [
+        const _GradientDivider(),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '已有账户？',
+              style: TextStyle(
+                color: MoeTokens.hintText,
+                fontSize: MoeTokens.textBase,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                onTap: () => Navigator.pop(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  child: ShaderMask(
+                    shaderCallback: (bounds) =>
+                        MoeTokens.gradientPrimary.createShader(bounds),
+                    child: const Text(
+                      '直接登录',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: MoeTokens.textBase,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -482,6 +577,27 @@ class _RegisterPageState extends State<RegisterPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+}
+
+/// 渐变淡出分隔线 — 左透明 → 中间灰 → 右透明。
+class _GradientDivider extends StatelessWidget {
+  const _GradientDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            MoeTokens.hintText.withValues(alpha: 0.25),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
   }
 }
 

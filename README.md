@@ -1,4 +1,4 @@
-# Moe Social (萌社交)
+# Moe Social (萌社交) app 前端
 
 使用 **Flutter** 与 **Go / Kratos** 构建的复合型社交产品：萌系社交主线、AI 智能体 / 酒馆化能力、虚拟形象与 VIP 商业化、以及 AutoGLM 自动化实验能力。支持 Android、iOS、Web、Windows、macOS、Linux。
 

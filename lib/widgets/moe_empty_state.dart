@@ -74,7 +74,8 @@ class MoeEmptyState extends StatelessWidget {
           decoration: BoxDecoration(
             color: MoeTokens.cardBackground,
             borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            boxShadow: MoeTokens.shadowMd(),
+            border: Border.all(color: MoeTokens.surfaceBorder, width: 1),
+            boxShadow: MoeTokens.shadowCard(),
           ),
           child: _buildContent(moe, inCard: true),
         ),
@@ -129,14 +130,7 @@ class MoeEmptyState extends StatelessWidget {
       width: compact ? 64 : 88,
       height: compact ? 64 : 88,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            moe.primary.withValues(alpha: 0.12),
-            moe.secondary.withValues(alpha: 0.08),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: MoeTokens.gradientSoft,
         shape: BoxShape.circle,
       ),
       child: Icon(

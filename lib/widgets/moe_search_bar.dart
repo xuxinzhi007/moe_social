@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/moe_tokens.dart';
+
+/// 萌社交统一搜索栏 — 半透明背景 + 渐变图标容器 + 微阴影。
 class MoeSearchBar extends StatefulWidget {
   final String hintText;
   final Function(String) onSearch;
@@ -18,6 +21,7 @@ class MoeSearchBar extends StatefulWidget {
 
 class _MoeSearchBarState extends State<MoeSearchBar> {
   final TextEditingController _controller = TextEditingController();
+  bool _hasText = false;
 
   @override
   void dispose() {
@@ -29,14 +33,29 @@ class _MoeSearchBarState extends State<MoeSearchBar> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusInput),
+        border: Border.all(color: MoeTokens.surfaceBorder, width: 1),
+        boxShadow: MoeTokens.shadowSm(),
       ),
       child: Row(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(Icons.search, color: Colors.grey),
+          // 渐变圆形图标容器
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                gradient: MoeTokens.gradientSoft,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_rounded,
+                color: MoeTokens.primary,
+                size: 15,
+              ),
+            ),
           ),
           Expanded(
             child: TextField(
@@ -44,20 +63,36 @@ class _MoeSearchBarState extends State<MoeSearchBar> {
               decoration: InputDecoration(
                 hintText: widget.hintText,
                 border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: const TextStyle(
+                  color: MoeTokens.hintText,
+                  fontSize: MoeTokens.textBase,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onChanged: widget.onSearch,
+              style: const TextStyle(
+                fontSize: MoeTokens.textBase,
+                color: MoeTokens.titleText,
+              ),
+              onChanged: (text) {
+                setState(() => _hasText = text.isNotEmpty);
+                widget.onSearch(text);
+              },
             ),
           ),
-          if (_controller.text.isNotEmpty)
+          if (_hasText)
             IconButton(
               onPressed: () {
                 _controller.clear();
+                setState(() => _hasText = false);
                 widget.onClear();
               },
-              icon: const Icon(Icons.clear, color: Colors.grey),
+              icon: Icon(
+                Icons.cancel_rounded,
+                color: MoeTokens.hintText.withValues(alpha: 0.6),
+                size: 20,
+              ),
             ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
     );
