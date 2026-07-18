@@ -168,6 +168,9 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
             events: selected == null
                 ? const []
                 : provider.getEventsForEntity(selected.id).take(5).toList(),
+            summary: provider.summary,
+            tickCount: provider.tickCount,
+            connected: provider.connected,
             isInitialized: provider.isInitialized,
             isOffline: provider.isOfflineMode,
           );
@@ -201,6 +204,14 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
                   onStory: () => _openStory(selected),
                   isOpeningStory: _isOpeningStory,
                   onDetail: () => _openDetail(selected),
+                ),
+                const SizedBox(height: 18),
+                _CareInsightCard(entity: selected),
+                const SizedBox(height: 18),
+                _WorldPulseCard(
+                  summary: data.summary,
+                  tickCount: data.tickCount,
+                  connected: data.connected,
                 ),
                 const SizedBox(height: 18),
                 _SectionTitle(
@@ -248,6 +259,9 @@ class _CompanionPageData {
   final List<LifeEntity> entities;
   final LifeEntity? selected;
   final List<LifeEvent> events;
+  final LifeWorldSummary summary;
+  final int tickCount;
+  final bool connected;
   final bool isInitialized;
   final bool isOffline;
 
@@ -255,6 +269,9 @@ class _CompanionPageData {
     required this.entities,
     required this.selected,
     required this.events,
+    required this.summary,
+    required this.tickCount,
+    required this.connected,
     required this.isInitialized,
     required this.isOffline,
   });
@@ -265,6 +282,9 @@ class _CompanionPageData {
     return other is _CompanionPageData &&
         isInitialized == other.isInitialized &&
         isOffline == other.isOffline &&
+        tickCount == other.tickCount &&
+        connected == other.connected &&
+        _sameWorldSummary(summary, other.summary) &&
         _sameEntityState(selected, other.selected) &&
         _sameResidents(entities, other.entities) &&
         _sameLifeEvents(events, other.events);
@@ -277,9 +297,25 @@ class _CompanionPageData {
         selected?.id,
         selected?.action,
         selected == null ? 0 : _statusBucket(selected!.hunger),
+        _statusBucket(summary.avgHunger),
+        _statusBucket(summary.avgEnergy),
+        _statusBucket(summary.avgMood),
+        tickCount,
+        connected,
         entities.length,
         events.length,
       );
+}
+
+bool _sameWorldSummary(LifeWorldSummary left, LifeWorldSummary right) {
+  return left.aliveCount == right.aliveCount &&
+      left.birthCount == right.birthCount &&
+      left.deathCount == right.deathCount &&
+      _statusBucket(left.avgHunger) == _statusBucket(right.avgHunger) &&
+      _statusBucket(left.avgEnergy) == _statusBucket(right.avgEnergy) &&
+      _statusBucket(left.avgMood) == _statusBucket(right.avgMood) &&
+      left.totalFood == right.totalFood &&
+      left.dangerCells == right.dangerCells;
 }
 
 bool _sameEntityState(LifeEntity? left, LifeEntity? right) {
@@ -321,6 +357,294 @@ bool _sameLifeEvents(List<LifeEvent> left, List<LifeEvent> right) {
 }
 
 int _statusBucket(double value) => (value.clamp(0, 100) / 5).floor();
+
+class _CareInsightCard extends StatelessWidget {
+  final LifeEntity entity;
+
+  const _CareInsightCard({required this.entity});
+
+  @override
+  Widget build(BuildContext context) {
+    final insight = _careInsightFor(entity);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: insight.color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: insight.color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.86),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(insight.icon, color: insight.color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  insight.title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: insight.textColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  insight.message,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: Color(0xFF6D645E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CareInsight {
+  final String title;
+  final String message;
+  final IconData icon;
+  final Color color;
+  final Color textColor;
+
+  const _CareInsight({
+    required this.title,
+    required this.message,
+    required this.icon,
+    required this.color,
+    required this.textColor,
+  });
+}
+
+_CareInsight _careInsightFor(LifeEntity entity) {
+  if (entity.hunger < 30) {
+    return const _CareInsight(
+      title: '优先照料：需要进食',
+      message: '先喂食会更快稳定状态，饱腹恢复后它会更愿意探索。',
+      icon: Icons.restaurant_rounded,
+      color: Color(0xFFF59E42),
+      textColor: Color(0xFF8A4B09),
+    );
+  }
+  if (entity.energy < 30) {
+    return const _CareInsight(
+      title: '优先照料：需要休息',
+      message: '现在适合轻陪伴，避免连续操作，让它慢慢恢复精力。',
+      icon: Icons.bedtime_rounded,
+      color: Color(0xFF5B8DEF),
+      textColor: Color(0xFF2459A6),
+    );
+  }
+  if (entity.mood < 38) {
+    return const _CareInsight(
+      title: '优先照料：需要陪伴',
+      message: '陪伴能改善心情，也更容易触发有温度的共同事件。',
+      icon: Icons.favorite_rounded,
+      color: Color(0xFFE97891),
+      textColor: Color(0xFFA53B54),
+    );
+  }
+  return const _CareInsight(
+    title: '状态稳定：适合观察',
+    message: '它会按自己的节奏行动，可以看看最近事件或开启互动故事。',
+    icon: Icons.auto_awesome_rounded,
+    color: Color(0xFF37A779),
+    textColor: Color(0xFF247250),
+  );
+}
+
+class _WorldPulseCard extends StatelessWidget {
+  final LifeWorldSummary summary;
+  final int tickCount;
+  final bool connected;
+
+  const _WorldPulseCard({
+    required this.summary,
+    required this.tickCount,
+    required this.connected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: MoeTokens.shadowSm(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '小世界概况',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF312E2B),
+                  ),
+                ),
+              ),
+              _ConnectionPill(connected: connected),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _PulseMetric(
+                  label: '居民',
+                  value: '${summary.aliveCount}',
+                  subLabel: 'tick $tickCount',
+                  color: const Color(0xFF37A779),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PulseMetric(
+                  label: '平均状态',
+                  value: '${_averageStatus(summary).round()}',
+                  subLabel: _worldMoodLabel(summary),
+                  color: const Color(0xFFF59E42),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PulseMetric(
+                  label: '生态风险',
+                  value: '${summary.dangerCells}',
+                  subLabel: summary.dangerCells > 0 ? '需观察' : '平稳',
+                  color: summary.dangerCells > 0
+                      ? MoeTokens.warning
+                      : const Color(0xFF5B8DEF),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConnectionPill extends StatelessWidget {
+  final bool connected;
+
+  const _ConnectionPill({required this.connected});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = connected ? MoeTokens.success : MoeTokens.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            connected ? '实时' : '缓存',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PulseMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final String subLabel;
+  final Color color;
+
+  const _PulseMetric({
+    required this.label,
+    required this.value,
+    required this.subLabel,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF7B746E)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF8F8780)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+double _averageStatus(LifeWorldSummary summary) {
+  return (summary.avgHunger + summary.avgEnergy + summary.avgMood) / 3;
+}
+
+String _worldMoodLabel(LifeWorldSummary summary) {
+  final avg = _averageStatus(summary);
+  if (avg >= 72) return '活跃';
+  if (avg >= 45) return '普通';
+  return '低迷';
+}
 
 class _CompanionHero extends StatelessWidget {
   final LifeEntity entity;

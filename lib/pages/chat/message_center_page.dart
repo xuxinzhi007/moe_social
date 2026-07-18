@@ -11,7 +11,7 @@ import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
 import 'conversations_page.dart';
 
-/// 底部 Tab「好友」：私信会话 + 同好列表，定位清晰、风格与首页 Tab 对齐。
+/// 底部 Tab「好友」承载普通 IM：私信会话优先，好友列表作为找人入口。
 class MessageCenterPage extends StatefulWidget {
   const MessageCenterPage({super.key});
 
@@ -24,8 +24,8 @@ class _MessageCenterPageState extends State<MessageCenterPage>
   late TabController _tabController;
 
   static const _tabs = [
-    (label: '聊天', icon: Icons.chat_bubble_outline_rounded),
-    (label: '同好', icon: Icons.group_outlined),
+    (label: '私信', icon: Icons.chat_bubble_outline_rounded),
+    (label: '好友', icon: Icons.group_outlined),
   ];
 
   @override
@@ -76,7 +76,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
         backgroundColor: MoeTokens.pageBackground,
         appBar: AppBar(
           title: Text(
-            '好友',
+            '消息',
             style: TextStyle(
               fontWeight: MoeTokens.fontWeightTitle,
               fontSize: MoeTokens.textXl,
@@ -94,7 +94,7 @@ class _MessageCenterPageState extends State<MessageCenterPage>
           ),
           actions: [
             IconButton(
-              tooltip: '添加同好',
+              tooltip: '添加好友',
               onPressed: _showAddFriendSheet,
               icon: const Icon(Icons.person_add_rounded),
             ),
