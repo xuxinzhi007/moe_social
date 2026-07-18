@@ -64,6 +64,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Map<String, ({DateTime at, String rawPreview})> _serverThreadTails = {};
   bool _refreshingServerTails = false;
   DateTime? _lastServerTailRefreshAt;
+  Map<String, DateTime> _clearMarkers = {};
 
   @override
   void initState() {
@@ -209,6 +210,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         return;
       }
 
+      final clearMarkers = await _loadClearMarkers(uid);
       final friends = await UserService.getFriends(uid);
       List<PrivateConversationItem> serverConvs = [];
       try {
@@ -223,13 +225,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
           _friends = friends;
           _serverConversations = serverConvs;
           _notifs = [];
+          _clearMarkers = clearMarkers;
           _loading = false;
         });
         unawaited(_syncLocalThreadTails());
         return;
       }
 
-      // 兜底：服务端尚无会话索引时，用通知 + 本地缓存拼列表（仅拉一页）
+      // 兜底：服务端尚无会话索引时，通知只用于提供会话入口，不作为聊天正文来源。
       final batch =
           await NotificationService.getNotifications(page: 1, pageSize: 50);
       final allNotifs = List<NotificationModel>.from(batch);
@@ -239,6 +242,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         _friends = friends;
         _notifs = allNotifs;
         _serverConversations = [];
+        _clearMarkers = clearMarkers;
         _loading = false;
       });
 
@@ -297,6 +301,32 @@ class _ConversationsPageState extends State<ConversationsPage> {
     return out;
   }
 
+  Future<Map<String, DateTime>> _loadClearMarkers(String myId) async {
+    if (myId.isEmpty) return const {};
+    final prefs = await SharedPreferences.getInstance();
+    const prefix = 'direct_chat_cleared_';
+    final out = <String, DateTime>{};
+    for (final k in prefs.getKeys()) {
+      if (!k.startsWith(prefix)) continue;
+      final rest = k.substring(prefix.length);
+      final parts = rest.split('_');
+      if (parts.length != 2) continue;
+      final a = parts[0];
+      final b = parts[1];
+      final peerId = a == myId ? b : (b == myId ? a : '');
+      if (peerId.isEmpty || peerId == myId) continue;
+      final at = DateTime.tryParse(prefs.getString(k) ?? '');
+      if (at != null) out[peerId] = at;
+    }
+    return out;
+  }
+
+  bool _isAfterClearMarker(String peerId, DateTime time) {
+    final clearedAt = _clearMarkers[peerId];
+    if (clearedAt == null) return true;
+    return time.isAfter(clearedAt);
+  }
+
   Widget _buildBody(BuildContext context) {
     if (_loading) {
       return Center(child: MoeLoading(color: MoeTheme.of(context).primary));
@@ -333,7 +363,6 @@ class _ConversationsPageState extends State<ConversationsPage> {
           color: MoeTokens.surface1,
           borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           border: Border.all(color: MoeTokens.surfaceBorder),
-          boxShadow: MoeTokens.shadowCard(),
         ),
         child: TextField(
           controller: _searchController,
@@ -424,6 +453,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     if (_serverConversations.isNotEmpty) {
       final rows =
           List<PrivateConversationItem>.from(_serverConversations).where((c) {
+        final lastAt = DateTime.tryParse(c.lastMessage.createdAt) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        if (!_isAfterClearMarker(c.peerUserId.trim(), lastAt)) return false;
         if (query.isEmpty) return true;
         final peerId = c.peerUserId.trim().toLowerCase();
         final peerName = c.peerName.trim().toLowerCase();
@@ -447,7 +479,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           itemCount: rows.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (_, __) => const Divider(
+            height: 1,
+            indent: 76,
+            color: MoeTokens.surfaceBorder,
+          ),
           itemBuilder: (context, i) {
             final c = rows[i];
             final peerId = c.peerUserId.trim();
@@ -515,7 +551,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
         .where((n) =>
             n.type == NotificationModel.directMessage &&
             (n.senderId ?? '').isNotEmpty &&
-            n.senderId != myId)
+            n.senderId != myId &&
+            _isAfterClearMarker(n.senderId!, n.createdAt))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -618,7 +655,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         itemCount: filteredRows.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => const Divider(
+          height: 1,
+          indent: 76,
+          color: MoeTokens.surfaceBorder,
+        ),
         itemBuilder: (context, i) {
           final peerId = filteredRows[i];
           User? friend;
@@ -636,12 +677,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
           final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
           final lt = _localThreadTails[peerId];
           final st = _serverThreadTails[peerId];
-          final ntTime =
-              last?.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
           final previewRaw = () {
-            final fromNotif = (last?.content ?? '').trim();
-            var bestAt = ntTime;
-            var bestRaw = fromNotif;
+            var bestAt = DateTime.fromMillisecondsSinceEpoch(0);
+            var bestRaw = '';
             if (lt != null &&
                 lt.rawPreview.isNotEmpty &&
                 lt.at.isAfter(bestAt)) {
@@ -655,8 +693,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
             }
             return bestRaw;
           }();
-          final preview =
-              previewRaw.isEmpty ? '' : formatDmPreviewForUi(previewRaw);
+          final preview = previewRaw.isEmpty
+              ? (last == null ? '' : '收到一条新消息')
+              : formatDmPreviewForUi(previewRaw);
           final badge = pushUnread[peerId] ?? 0;
 
           return _buildConversationRow(
@@ -742,42 +781,32 @@ class _ConversationsPageState extends State<ConversationsPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         child: Ink(
           decoration: BoxDecoration(
             color: MoeTokens.surface1,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            border: Border.all(color: MoeTokens.surfaceBorder),
-            boxShadow: MoeTokens.shadowCard(),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: MoeTokens.spaceMd,
-              vertical: MoeTokens.spaceMd,
+              vertical: 12,
             ),
             child: Row(
               children: [
-                // 头像 + 渐变环
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: MoeTokens.gradientSoft,
-                  ),
-                  padding: const EdgeInsets.all(2),
-                  child: avatar.trim().isNotEmpty
-                      ? NetworkAvatarImage(
-                          imageUrl: avatar,
-                          radius: 24,
-                        )
-                      : ClipOval(
-                          child: Image.asset(
-                            'assets/chat/avatar_placeholder.png',
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.cover,
-                          ),
+                avatar.trim().isNotEmpty
+                    ? NetworkAvatarImage(
+                        imageUrl: avatar,
+                        radius: 24,
+                      )
+                    : ClipOval(
+                        child: Image.asset(
+                          'assets/chat/avatar_placeholder.png',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
                         ),
-                ),
+                      ),
                 SizedBox(width: MoeTokens.spaceMd),
                 Expanded(
                   child: Column(

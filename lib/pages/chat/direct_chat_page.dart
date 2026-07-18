@@ -16,9 +16,7 @@ import '../../providers/notification_provider.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_sync_bus.dart';
 import '../../services/presence_service.dart';
-import '../../services/notification_service.dart';
 import '../../theme/moe_tokens.dart';
-import '../../models/notification.dart';
 import '../../utils/media_url.dart';
 import '../../models/private_message_item.dart';
 import '../../widgets/moe_action_row.dart';
@@ -55,9 +53,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
   bool _loadingServerPage = false;
   String? _oldestServerCursorId;
   late final VoidCallback _scrollLoadOlderListener;
-  String _peerDisplayUserId = '';
-  String _peerMoeNo = '';
   double _sendBtnScale = 1.0;
+  bool _hasDraft = false;
+  DateTime? _clearedAt;
 
   @override
   void initState() {
@@ -71,7 +69,14 @@ class _DirectChatPageState extends State<DirectChatPage> {
       }
     };
     _scrollController.addListener(_scrollLoadOlderListener);
+    _controller.addListener(_handleDraftChanged);
     _initChat();
+  }
+
+  void _handleDraftChanged() {
+    final next = _controller.text.trim().isNotEmpty;
+    if (next == _hasDraft) return;
+    setState(() => _hasDraft = next);
   }
 
   @override
@@ -105,11 +110,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
       setState(() {
         _currentUserId = userId;
       });
-      unawaited(_loadPeerProfile());
-
+      _clearedAt = await _loadClearedAt(userId);
       await _loadMessages(userId);
-      // 先合并离线「通知中心」里的私信摘要，再拉 REST；避免仅依赖旧本地缓存时列表为空。
-      await _mergeDmNotificationsFromApi();
       await _fetchInitialServerHistory();
       _mergePendingWsMessages();
 
@@ -155,6 +157,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
         } else {
           time = DateTime.now();
         }
+        if (!_isAfterClearMarker(time)) continue;
 
         final hasSimilar = _messages.any((m) {
           if (m.senderId != from) return false;
@@ -186,73 +189,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
     } catch (_) {}
   }
 
-  /// 把通知中心里的私信（含已读）合并进当前会话，用于对端离线时走通知落库的场景。
-  /// 不在此处标记已读，由 [_initChat] 末尾统一处理。
-  Future<void> _mergeDmNotificationsFromApi() async {
-    try {
-      final all = <NotificationModel>[];
-      for (var p = 1; p <= 3; p++) {
-        final batch =
-            await NotificationService.getNotifications(page: p, pageSize: 50);
-        if (batch.isEmpty) break;
-        all.addAll(batch);
-      }
-
-      final dms = all.where((n) {
-        if (n.type != NotificationModel.directMessage) return false;
-        if ((n.senderId ?? '') != widget.userId) return false;
-        return n.content.trim().isNotEmpty;
-      }).toList();
-
-      if (dms.isEmpty) return;
-
-      dms.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-      var changed = false;
-      final existingKeys = <String>{};
-      for (final m in _messages) {
-        existingKeys
-            .add('${m.senderId}|${m.time.toIso8601String()}|${m.content}');
-      }
-
-      for (final n in dms) {
-        final time = n.createdAt;
-
-        final hasSimilar = _messages.any((m) {
-          if (m.senderId != widget.userId) return false;
-          if (m.content != n.content) return false;
-          final diff = m.time.difference(time).inMinutes.abs();
-          return diff <= 5;
-        });
-        if (hasSimilar) {
-          continue;
-        }
-
-        final key = '${widget.userId}|${time.toIso8601String()}|${n.content}';
-        if (existingKeys.contains(key)) {
-          continue;
-        }
-        existingKeys.add(key);
-        _messages.add(
-          _DirectMessage(
-            senderId: widget.userId,
-            content: n.content,
-            time: time,
-          ),
-        );
-        changed = true;
-      }
-
-      if (changed && mounted) {
-        setState(() {
-          _messages.sort((a, b) => a.time.compareTo(b.time));
-        });
-        await _saveMessages();
-        _scrollToBottom();
-      }
-    } catch (_) {}
-  }
-
   Future<void> _ensurePeerOnline() async {
     // Prefer push presence if available.
     final map = PresenceService.online.value;
@@ -266,17 +202,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
       return;
     }
     _startOnlinePolling();
-  }
-
-  Future<void> _loadPeerProfile() async {
-    try {
-      final user = await UserService.getUserInfo(widget.userId);
-      if (!mounted) return;
-      setState(() {
-        _peerDisplayUserId = user.displayUserId.trim();
-        _peerMoeNo = user.moeNo.trim();
-      });
-    } catch (_) {}
   }
 
   Future<void> _startVoiceCall() async {
@@ -306,6 +231,25 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final ids = [currentUserId, widget.userId];
     ids.sort();
     return 'direct_chat_${ids.join('_')}';
+  }
+
+  String _clearMarkerKey(String currentUserId) {
+    final ids = [currentUserId, widget.userId];
+    ids.sort();
+    return 'direct_chat_cleared_${ids.join('_')}';
+  }
+
+  Future<DateTime?> _loadClearedAt(String currentUserId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_clearMarkerKey(currentUserId));
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  bool _isAfterClearMarker(DateTime time) {
+    final clearedAt = _clearedAt;
+    if (clearedAt == null) return true;
+    return time.isAfter(clearedAt);
   }
 
   List<_DirectMessage> _expandServerItem(PrivateMessageItem m) {
@@ -375,6 +319,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       for (final m in page.items) {
         expanded.addAll(_expandServerItem(m));
       }
+      expanded.removeWhere((m) => !_isAfterClearMarker(m.time));
       final localCopy = List<_DirectMessage>.from(_messages);
       setState(() {
         _applyMergedLocalAndServer(localCopy, expanded);
@@ -413,6 +358,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       for (final m in page.items) {
         add.addAll(_expandServerItem(m));
       }
+      add.removeWhere((m) => !_isAfterClearMarker(m.time));
       final existing = <String>{};
       for (final x in _messages) {
         if (x.serverId != null) existing.add(x.serverId!);
@@ -456,16 +402,20 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final raw = prefs.getString(key);
     if (raw == null || raw.isEmpty) return;
     final list = json.decode(raw) as List<dynamic>;
-    final messages = list.map((item) {
-      final map = item as Map<String, dynamic>;
-      final sid = map['serverId']?.toString();
-      return _DirectMessage(
-        senderId: map['senderId'] as String,
-        content: map['content'] as String,
-        time: DateTime.tryParse(map['time'] as String? ?? '') ?? DateTime.now(),
-        serverId: sid != null && sid.isNotEmpty ? sid : null,
-      );
-    }).toList();
+    final messages = list
+        .map((item) {
+          final map = item as Map<String, dynamic>;
+          final sid = map['serverId']?.toString();
+          return _DirectMessage(
+            senderId: map['senderId'] as String,
+            content: map['content'] as String,
+            time: DateTime.tryParse(map['time'] as String? ?? '') ??
+                DateTime.now(),
+            serverId: sid != null && sid.isNotEmpty ? sid : null,
+          );
+        })
+        .where((m) => _isAfterClearMarker(m.time))
+        .toList();
     if (!mounted) return;
     setState(() {
       _messages
@@ -508,12 +458,16 @@ class _DirectChatPageState extends State<DirectChatPage> {
       );
       return;
     }
-    // 再清除本地缓存
+    // 再清除本地缓存，并记录水位线，避免通知兜底/旧 WS pending 重新回填。
     final key = _storageKey(currentUserId);
+    final markerKey = _clearMarkerKey(currentUserId);
+    final clearedAt = DateTime.now();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(key);
+    await prefs.setString(markerKey, clearedAt.toIso8601String());
     if (!mounted) return;
     setState(() {
+      _clearedAt = clearedAt;
       _messages.clear();
       _hasMoreServer = false;
       _oldestServerCursorId = null;
@@ -596,6 +550,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
       } else {
         time = DateTime.now();
       }
+      if (!_isAfterClearMarker(time)) return;
       final sid = _serverSlotFromWsId(map['server_message_id'], content);
       setState(() {
         _messages.add(
@@ -738,6 +693,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     if (text.isEmpty) return;
     final currentUserId = _currentUserId;
     if (currentUserId == null) return;
+    _controller.clear();
     setState(() {
       _isSending = true;
       _messages.add(
@@ -747,7 +703,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
           time: DateTime.now(),
         ),
       );
-      _controller.clear();
+      _hasDraft = false;
     });
     await _saveMessages();
     _scrollToBottom();
@@ -812,6 +768,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   @override
   void dispose() {
+    _controller.removeListener(_handleDraftChanged);
     _controller.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
@@ -912,23 +869,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        if (_peerDisplayUserId.isNotEmpty ||
-                            _peerMoeNo.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              _peerDisplayUserId.isNotEmpty
-                                  ? 'ID $_peerDisplayUserId'
-                                  : 'Moe $_peerMoeNo',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: MoeTokens.hintText,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ],
@@ -1000,6 +940,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             tightBottom: index > 0 &&
                                 reversedMessages[index - 1].senderId ==
                                     message.senderId,
+                            showSending: isMe && index == 0 && _isSending,
                           ),
                         ],
                       );
@@ -1020,38 +961,27 @@ class _DirectChatPageState extends State<DirectChatPage> {
   Widget _buildEmptyConversationState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: MoeTokens.space3xl),
+        padding: const EdgeInsets.symmetric(horizontal: MoeTokens.space2xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 空态插画
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: MoeTokens.shadowGlow(
-                  MoeTokens.primary.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Image.asset(
-                'assets/chat/empty_chat.png',
-                width: 180,
-                height: 180,
-                fit: BoxFit.contain,
-              ),
+            NetworkAvatarImage(
+              imageUrl: widget.avatar,
+              radius: 34,
+              placeholderIcon: Icons.person_rounded,
             ),
-            SizedBox(height: MoeTokens.space2xl),
+            SizedBox(height: MoeTokens.spaceLg),
             Text(
-              '和 ${widget.username} 开始聊天吧',
+              widget.username,
               style: TextStyle(
                 color: MoeTokens.titleText,
                 fontSize: MoeTokens.textLg,
                 fontWeight: MoeTokens.fontWeightTitle,
               ),
-              textAlign: TextAlign.center,
             ),
             SizedBox(height: MoeTokens.spaceSm),
             Text(
-              '发一条问候、分享图片，或者先看看对方主页。这里会保留你们的聊天节奏。',
+              '还没有消息，发一句问候开始聊天。',
               style: TextStyle(
                 color: MoeTokens.hintText,
                 fontSize: MoeTokens.textSm,
@@ -1059,68 +989,33 @@ class _DirectChatPageState extends State<DirectChatPage> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: MoeTokens.space2xl),
+            SizedBox(height: MoeTokens.spaceLg),
             Wrap(
-              spacing: MoeTokens.spaceMd,
-              runSpacing: MoeTokens.spaceMd,
+              spacing: MoeTokens.spaceSm,
+              runSpacing: MoeTokens.spaceSm,
               alignment: WrapAlignment.center,
               children: [
-                // 渐变按钮 1
-                GestureDetector(
-                  onTap: () {
+                OutlinedButton.icon(
+                  onPressed: () {
                     _controller.text = '嗨～';
                     _controller.selection = TextSelection.collapsed(
                       offset: _controller.text.length,
                     );
                     _inputFocusNode.requestFocus();
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: MoeTokens.gradientSoft,
-                      borderRadius: BorderRadius.circular(
-                        MoeTokens.radiusFull,
-                      ),
-                      border: Border.all(color: MoeTokens.surfaceBorder),
-                      boxShadow: MoeTokens.shadowSm(),
-                    ),
-                    child: Text(
-                      '发个招呼',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: MoeTokens.textBase,
-                        fontWeight: MoeTokens.fontWeightSubtitle,
-                      ),
-                    ),
+                  icon: const Icon(Icons.waving_hand_rounded, size: 18),
+                  label: const Text('发个招呼'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: MoeTokens.primary,
+                    side: const BorderSide(color: MoeTokens.surfaceBorder),
                   ),
                 ),
-                // 渐变按钮 2
-                GestureDetector(
-                  onTap: () => _openPeerProfile(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: MoeTokens.gradientSoft,
-                      borderRadius: BorderRadius.circular(
-                        MoeTokens.radiusFull,
-                      ),
-                      border: Border.all(color: MoeTokens.surfaceBorder),
-                      boxShadow: MoeTokens.shadowSm(),
-                    ),
-                    child: Text(
-                      '查看主页',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: MoeTokens.textBase,
-                        fontWeight: MoeTokens.fontWeightSubtitle,
-                      ),
-                    ),
+                TextButton.icon(
+                  onPressed: () => _openPeerProfile(context),
+                  icon: const Icon(Icons.person_rounded, size: 18),
+                  label: const Text('查看主页'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: MoeTokens.hintText,
                   ),
                 ),
               ],
@@ -1280,6 +1175,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     bool isMe, {
     required bool showPeerAvatar,
     required bool tightBottom,
+    required bool showSending,
   }) {
     final maxW = MediaQuery.sizeOf(context).width * 0.74;
     final bubbleBg = isMe ? MoeTokens.primary : MoeTokens.surface1;
@@ -1378,9 +1274,25 @@ class _DirectChatPageState extends State<DirectChatPage> {
               ),
               const SizedBox(width: 8),
             ],
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxW),
-              child: bubble,
+            Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxW),
+                  child: bubble,
+                ),
+                if (showSending) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    '发送中...',
+                    style: TextStyle(
+                      fontSize: MoeTokens.textXs,
+                      color: MoeTokens.hintText,
+                    ),
+                  ),
+                ],
+              ],
             ),
             if (isMe) const SizedBox(width: 8),
           ],
@@ -1390,6 +1302,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   }
 
   Widget _buildInputArea(BuildContext context) {
+    final canSend = _hasDraft && !_isSending;
     return Material(
       elevation: 0,
       color: MoeTokens.surface1,
@@ -1404,32 +1317,28 @@ class _DirectChatPageState extends State<DirectChatPage> {
           ),
           padding: const EdgeInsets.fromLTRB(
             MoeTokens.spaceSm,
-            MoeTokens.spaceMd,
             MoeTokens.spaceSm,
-            MoeTokens.spaceMd,
+            MoeTokens.spaceSm,
+            MoeTokens.spaceSm,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // 附件按钮：圆形背景 + 边框
-              GestureDetector(
-                onTap: _isSending ? null : _pickAndSendImage,
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: MoeTokens.surface0,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: MoeTokens.surfaceBorder),
+              IconButton(
+                tooltip: '发送图片',
+                onPressed: _isSending ? null : _pickAndSendImage,
+                style: IconButton.styleFrom(
+                  fixedSize: const Size(42, 42),
+                  backgroundColor: MoeTokens.surface0,
+                  foregroundColor: MoeTokens.hintText,
+                  disabledForegroundColor: MoeTokens.hintText.withValues(
+                    alpha: 0.45,
                   ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: MoeTokens.hintText,
-                    size: 22,
-                  ),
+                  side: const BorderSide(color: MoeTokens.surfaceBorder),
                 ),
+                icon: const Icon(Icons.add_rounded),
               ),
-              SizedBox(width: MoeTokens.spaceSm),
+              const SizedBox(width: 8),
               Expanded(
                 child: Container(
                   constraints: const BoxConstraints(maxHeight: 120),
@@ -1445,10 +1354,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     maxLines: 5,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) {
-                      if (!_isSending) _sendMessage();
+                      if (canSend) unawaited(_sendMessage());
                     },
                     decoration: const InputDecoration(
-                      hintText: '发消息…',
+                      hintText: '消息',
                       hintStyle: TextStyle(
                         color: MoeTokens.hintText,
                         fontSize: MoeTokens.textMd,
@@ -1467,37 +1376,42 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   ),
                 ),
               ),
-              SizedBox(width: MoeTokens.spaceSm),
-              // 发送按钮：渐变 + 光晕 + 按压缩放
+              const SizedBox(width: 8),
               GestureDetector(
-                onTap: _isSending ? null : _sendMessage,
-                onTapDown: (_) => _sendBtnScale = 0.92,
-                onTapUp: (_) => _sendBtnScale = 1.0,
-                onTapCancel: () => _sendBtnScale = 1.0,
+                onTap: canSend ? _sendMessage : null,
+                onTapDown: canSend
+                    ? (_) => setState(() => _sendBtnScale = 0.92)
+                    : null,
+                onTapUp:
+                    canSend ? (_) => setState(() => _sendBtnScale = 1.0) : null,
+                onTapCancel:
+                    canSend ? () => setState(() => _sendBtnScale = 1.0) : null,
                 child: AnimatedScale(
                   scale: _sendBtnScale,
                   duration: MoeTokens.motionFast,
                   child: Container(
-                    width: 48,
-                    height: 48,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      gradient: MoeTokens.gradientPrimary,
+                      color: canSend ? MoeTokens.primary : MoeTokens.surface0,
                       shape: BoxShape.circle,
-                      boxShadow: MoeTokens.shadowGlow(MoeTokens.primary),
+                      border: canSend
+                          ? null
+                          : Border.all(color: MoeTokens.surfaceBorder),
                     ),
                     child: _isSending
                         ? const SizedBox(
-                            width: 22,
-                            height: 22,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: MoeTokens.primary,
                             ),
                           )
-                        : const Icon(
-                            Icons.send_rounded,
-                            color: Colors.white,
-                            size: 22,
+                        : Icon(
+                            Icons.arrow_upward_rounded,
+                            color: canSend ? Colors.white : MoeTokens.hintText,
+                            size: 21,
                           ),
                   ),
                 ),
