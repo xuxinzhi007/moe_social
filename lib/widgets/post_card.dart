@@ -62,14 +62,15 @@ class PostCard extends StatefulWidget {
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
+class _PostCardState extends State<PostCard> {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
+    return RepaintBoundary(
+      child: _buildCard(context),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     final theme = Theme.of(context);
 
     return Container(

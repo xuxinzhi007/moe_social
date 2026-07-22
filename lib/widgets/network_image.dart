@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../utils/media_url.dart';
+import 'motion/moe_shimmer.dart';
 
 /// 统一的网络图片组件
 /// 自动处理加载状态、错误处理和占位图
@@ -50,21 +51,13 @@ class NetworkImageWidget extends StatelessWidget {
     return imageWidget;
   }
 
-  /// 默认占位图
+  /// 默认占位图 — Shimmer 骨架屏，避免滚动时 spinner 闪烁
   Widget _defaultPlaceholder() {
-    return Container(
-      width: width,
-      height: height,
-      color: Colors.grey[200],
-      child: Center(
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
-          ),
-        ),
+    return MoeShimmer(
+      child: Container(
+        width: width,
+        height: height,
+        color: Colors.white,
       ),
     );
   }
@@ -74,18 +67,14 @@ class NetworkImageWidget extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: Colors.grey[200],
+      color: const Color(0xFFF0F0F0),
       child: Icon(
-        Icons.broken_image,
-        color: Colors.grey[400],
+        Icons.broken_image_outlined,
+        color: Colors.grey[350],
         size: (width != null && height != null) 
-            ? (width! < height! ? width! * 0.4 : height! * 0.4)
-            : 40,
+            ? (width! < height! ? width! * 0.3 : height! * 0.3)
+            : 32,
       ),
     );
   }
 }
-
-
-
-

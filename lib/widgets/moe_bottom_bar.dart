@@ -65,8 +65,8 @@ class MoeBottomBar extends StatelessWidget {
 
                       return Expanded(
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutBack,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
                             gradient: isSelected
@@ -114,8 +114,8 @@ class MoeBottomBar extends StatelessWidget {
                                                 end: isSelected ? 1.12 : 1.0,
                                               ),
                                               duration:
-                                                  const Duration(milliseconds: 300),
-                                              curve: Curves.elasticOut,
+                                                  const Duration(milliseconds: 200),
+                                              curve: Curves.easeOut,
                                               builder: (context, scale, child) {
                                                 return Transform.scale(
                                                   scale: scale,
