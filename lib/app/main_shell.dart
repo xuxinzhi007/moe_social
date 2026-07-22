@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 
 import '../pages/ai/game_hub_page.dart';
@@ -35,6 +36,33 @@ class _MainPageState extends State<MainPage> {
     _mainNav = context.read<MainNavController>();
     _mainNav.addListener(_onMainNavRequested);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
+    // 首帧渲染后渐进式预加载其他 Tab 页，避免首次切换时卡顿
+    _schedulePreload();
+  }
+
+  /// 在空闲帧依次构建其余页面，每帧只构建一个，避免阻塞 UI。
+  void _schedulePreload() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _preloadNext(index: 1);
+    });
+  }
+
+  void _preloadNext({required int index}) {
+    if (!mounted) return;
+    if (index >= _pageBuilders.length) return;
+    // 用 Scheduler 在下一帧空闲时构建，不阻塞当前帧
+    SchedulerBinding.instance.scheduleTask(
+      () {
+        if (!mounted) return;
+        if (_loadedPages[index] == null) {
+          setState(() {
+            _loadedPages[index] = _pageBuilders[index]();
+          });
+        }
+        _preloadNext(index: index + 1);
+      },
+      Priority.animation - 10, // 低于动画优先级，不影响滚动/切换动效
+    );
   }
 
   @override
@@ -74,6 +102,7 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: MoeBottomBar(
         selectedIndex: _selectedIndex,
         onItemSelected: (int index) {
+          if (index == _selectedIndex) return; // 重复点击不重建
           setState(() {
             _loadedPages[index] ??= _pageBuilders[index]();
             _selectedIndex = index;

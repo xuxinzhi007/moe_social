@@ -195,12 +195,12 @@ class _HomePageState extends State<HomePage>
         _loadMoreErrorMessage = null;
         _hasMore = true;
         _currentPage = 1;
-        if (resetContent || !hasExistingPosts) {
+        if (!hasExistingPosts) {
+          // 首次加载：显示 skeleton
           _isLoading = true;
           _isRefreshing = false;
-          _allPosts = [];
-          _displayPosts = [];
         } else {
+          // 已有内容：静默刷新，保留旧内容直到新数据到达
           _isRefreshing = true;
           _isLoading = false;
         }

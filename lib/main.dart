@@ -146,9 +146,9 @@ class SplashScreenWrapper extends StatelessWidget {
 
   static Duration get _splashMinDuration {
     if (kIsWeb || kDebugMode) {
-      return const Duration(milliseconds: 400);
+      return const Duration(milliseconds: 300);
     }
-    return const Duration(milliseconds: 1200);
+    return const Duration(milliseconds: 600);
   }
 
   @override
