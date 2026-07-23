@@ -47,21 +47,38 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   Future<void> _loadInitialData() async {
     try {
       final snapshot = await CompanionService().getSnapshot();
+      List<CompanionChatLogData> history = const [];
+      try {
+        history = await CompanionService().listChatHistory(limit: 40);
+      } catch (_) {}
       if (!mounted) return;
+      final initialItems = history
+          .map(
+            (log) => _ChatItem(
+              role: log.role,
+              content: log.content,
+            ),
+          )
+          .toList(growable: true);
+      if (initialItems.isEmpty && snapshot.state.greeting.isNotEmpty) {
+        initialItems.add(
+          _ChatItem(
+            role: 'assistant',
+            content: snapshot.state.greeting,
+          ),
+        );
+      }
       setState(() {
         _profile = snapshot.profile;
         _state = snapshot.state;
+        _items
+          ..clear()
+          ..addAll(initialItems);
         _isLoading = false;
         _loadError = null;
       });
-      if (snapshot.state.greeting.isNotEmpty) {
-        setState(() {
-          _items.add(_ChatItem(
-            role: 'assistant',
-            content: snapshot.state.greeting,
-          ));
-        });
-      }
+      unawaited(CompanionService().markChatRead());
+      _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString().toLowerCase();
@@ -133,6 +150,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 isStreaming: false,
               );
             });
+            unawaited(CompanionService().markChatRead());
             break;
           case 'error':
             setState(() {

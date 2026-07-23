@@ -9,6 +9,8 @@ import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
 import '../../services/chat_service.dart';
+import '../../services/companion_chat_launcher.dart';
+import '../../services/companion_service.dart';
 import '../../services/user_service.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_local_reader.dart';
@@ -54,6 +56,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
   List<User> _friends = [];
   List<NotificationModel> _notifs = [];
   List<PrivateConversationItem> _serverConversations = [];
+  CompanionProfileData _companionProfile = const CompanionProfileData();
+  CompanionStateData _companionState = const CompanionStateData();
+  List<CompanionChatLogData> _companionHistory = const [];
+  DateTime? _companionReadAt;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -212,6 +218,21 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
       final clearMarkers = await _loadClearMarkers(uid);
       final friends = await UserService.getFriends(uid);
+      CompanionProfileData companionProfile = const CompanionProfileData();
+      CompanionStateData companionState = const CompanionStateData();
+      List<CompanionChatLogData> companionHistory = const [];
+      DateTime? companionReadAt;
+      try {
+        final snapshot = await CompanionService().getSnapshot();
+        companionProfile = snapshot.profile;
+        companionState = snapshot.state;
+      } catch (_) {}
+      try {
+        companionHistory = await CompanionService().listChatHistory(limit: 24);
+      } catch (_) {}
+      try {
+        companionReadAt = await CompanionService().loadChatReadAt();
+      } catch (_) {}
       List<PrivateConversationItem> serverConvs = [];
       try {
         final page =
@@ -226,6 +247,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
           _serverConversations = serverConvs;
           _notifs = [];
           _clearMarkers = clearMarkers;
+          _companionProfile = companionProfile;
+          _companionState = companionState;
+          _companionHistory = companionHistory;
+          _companionReadAt = companionReadAt;
           _loading = false;
         });
         unawaited(_syncLocalThreadTails());
@@ -243,6 +268,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
         _notifs = allNotifs;
         _serverConversations = [];
         _clearMarkers = clearMarkers;
+        _companionProfile = companionProfile;
+        _companionState = companionState;
+        _companionHistory = companionHistory;
+        _companionReadAt = companionReadAt;
         _loading = false;
       });
 
@@ -325,6 +354,45 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final clearedAt = _clearMarkers[peerId];
     if (clearedAt == null) return true;
     return time.isAfter(clearedAt);
+  }
+
+  DateTime? _companionLastActive() {
+    if (_companionHistory.isEmpty) return null;
+    return DateTime.tryParse(_companionHistory.last.createdAt);
+  }
+
+  String _companionPreview() {
+    for (final entry in _companionHistory.reversed) {
+      final content = entry.content.trim();
+      if (content.isNotEmpty) return content;
+    }
+    final greeting = _companionState.greeting.trim();
+    if (greeting.isNotEmpty) return greeting;
+    return '独立 AI 账户，点击开始聊天';
+  }
+
+  int _companionUnreadCount() {
+    final readAt = _companionReadAt;
+    if (_companionHistory.isEmpty) return 0;
+    return _companionHistory.where((entry) {
+      if (entry.role != 'assistant') return false;
+      final at = DateTime.tryParse(entry.createdAt);
+      if (at == null) return false;
+      return readAt == null || at.isAfter(readAt);
+    }).length;
+  }
+
+  bool _shouldShowCompanionRow(String query) {
+    if (query.isEmpty) return true;
+    final lowered = query.toLowerCase();
+    final name = _companionProfile.name.toLowerCase();
+    final persona = _companionProfile.persona.toLowerCase();
+    final greeting = _companionState.greeting.toLowerCase();
+    return lowered.contains('ai') ||
+        query.contains('伙伴') ||
+        name.contains(lowered) ||
+        persona.contains(lowered) ||
+        greeting.contains(lowered);
   }
 
   Widget _buildBody(BuildContext context) {
@@ -636,6 +704,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final myId = AuthService.currentUser ?? '';
     final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
     final query = _searchQuery.toLowerCase();
+    final showCompanion = _shouldShowCompanionRow(query);
 
     if (_serverConversations.isNotEmpty) {
       final rows =
@@ -658,21 +727,34 @@ class _ConversationsPageState extends State<ConversationsPage> {
             moeNo.contains(query);
       }).toList();
       if (rows.isEmpty) {
-        return _buildSearchEmptyState(context);
+        if (!showCompanion) return _buildSearchEmptyState(context);
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: _buildCompanionRow(context),
+            ),
+            Expanded(child: _buildSearchEmptyState(context)),
+          ],
+        );
       }
       return RefreshIndicator(
         onRefresh: _load,
         color: MoeTheme.of(context).primary,
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          itemCount: rows.length,
+          itemCount: rows.length + (showCompanion ? 1 : 0),
           separatorBuilder: (_, __) => const Divider(
             height: 1,
             indent: 76,
             color: MoeTokens.surfaceBorder,
           ),
           itemBuilder: (context, i) {
-            final c = rows[i];
+            if (showCompanion && i == 0) {
+              return _buildCompanionRow(context);
+            }
+            final rowIndex = i - (showCompanion ? 1 : 0);
+            final c = rows[rowIndex];
             final peerId = c.peerUserId.trim();
             if (peerId.isEmpty || peerId == myId) {
               return const SizedBox.shrink();
@@ -732,7 +814,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           },
         ),
       );
-    }
+      }
 
     final dmNotifs = _notifs
         .where((n) =>
@@ -760,34 +842,44 @@ class _ConversationsPageState extends State<ConversationsPage> {
     peerIds.removeWhere((e) => e.isEmpty);
 
     if (peerIds.isEmpty) {
-      return Center(
-        child: MoeEmptyState(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: '还没有聊天',
-          subtitle: '和同好打个招呼，或先在「同好」里添加好友',
-          primaryAction: MoeEmptyStateAction(
-            label: '去看同好',
-            icon: Icons.people_rounded,
-            onPressed: () {
-              if (widget.onEmptyFindFriends != null) {
-                widget.onEmptyFindFriends!();
-                return;
-              }
-              context.read<MainNavController>().requestTab(1);
-            },
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _buildCompanionRow(context),
           ),
-          secondaryAction: MoeEmptyStateAction(
-            label: widget.emptyExploreLabel ?? '回首页',
-            icon: widget.emptyExploreIcon ?? Icons.home_rounded,
-            onPressed: () {
-              if (widget.onEmptyExplore != null) {
-                widget.onEmptyExplore!();
-                return;
-              }
-              context.read<MainNavController>().requestTab(0);
-            },
+          Expanded(
+            child: Center(
+              child: MoeEmptyState(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: '还没有聊天',
+                subtitle: '和同好打个招呼，或先在「同好」里添加好友',
+                primaryAction: MoeEmptyStateAction(
+                  label: '去看同好',
+                  icon: Icons.people_rounded,
+                  onPressed: () {
+                    if (widget.onEmptyFindFriends != null) {
+                      widget.onEmptyFindFriends!();
+                      return;
+                    }
+                    context.read<MainNavController>().requestTab(1);
+                  },
+                ),
+                secondaryAction: MoeEmptyStateAction(
+                  label: widget.emptyExploreLabel ?? '回首页',
+                  icon: widget.emptyExploreIcon ?? Icons.home_rounded,
+                  onPressed: () {
+                    if (widget.onEmptyExplore != null) {
+                      widget.onEmptyExplore!();
+                      return;
+                    }
+                    context.read<MainNavController>().requestTab(0);
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
 
@@ -833,7 +925,16 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }).toList();
 
     if (filteredRows.isEmpty) {
-      return _buildSearchEmptyState(context);
+      if (!showCompanion) return _buildSearchEmptyState(context);
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            child: _buildCompanionRow(context),
+          ),
+          Expanded(child: _buildSearchEmptyState(context)),
+        ],
+      );
     }
 
     return RefreshIndicator(
@@ -841,14 +942,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
       color: MoeTheme.of(context).primary,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        itemCount: filteredRows.length,
+        itemCount: filteredRows.length + (showCompanion ? 1 : 0),
         separatorBuilder: (_, __) => const Divider(
           height: 1,
           indent: 76,
           color: MoeTokens.surfaceBorder,
         ),
         itemBuilder: (context, i) {
-          final peerId = filteredRows[i];
+          if (showCompanion && i == 0) {
+            return _buildCompanionRow(context);
+          }
+          final rowIndex = i - (showCompanion ? 1 : 0);
+          final peerId = filteredRows[rowIndex];
           User? friend;
           for (final u in _friends) {
             if (u.id == peerId) {
@@ -907,6 +1012,138 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCompanionRow(BuildContext context) {
+    final title = _companionProfile.name.trim().isNotEmpty
+        ? _companionProfile.name.trim()
+        : 'AI 伙伴';
+    final preview = _companionPreview();
+    final emoji = _companionProfile.emoji.trim().isNotEmpty
+        ? _companionProfile.emoji.trim()
+        : 'AI';
+    final badge = _companionUnreadCount();
+    final lastActive = _companionLastActive();
+    String? timeLabel;
+    if (lastActive != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final msgDate = DateTime(lastActive.year, lastActive.month, lastActive.day);
+      final hm =
+          '${lastActive.hour.toString().padLeft(2, '0')}:${lastActive.minute.toString().padLeft(2, '0')}';
+      if (msgDate == today) {
+        timeLabel = hm;
+      } else if (msgDate == today.subtract(const Duration(days: 1))) {
+        timeLabel = '昨天';
+      } else {
+        timeLabel = '${lastActive.month}/${lastActive.day}';
+      }
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          if (!context.mounted) return;
+          await CompanionChatLauncher.openChat(context);
+          if (mounted) await _load();
+        },
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: MoeTokens.surface1,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: MoeTokens.spaceMd,
+              vertical: 12,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: MoeTokens.primaryGradient,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    emoji,
+                    style: const TextStyle(fontSize: 22),
+                  ),
+                ),
+                const SizedBox(width: MoeTokens.spaceMd),
+                const Icon(Icons.auto_awesome_rounded, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: MoeTokens.fontWeightSubtitle,
+                                fontSize: MoeTokens.textMd,
+                                color: MoeTokens.titleText,
+                              ),
+                            ),
+                          ),
+                          if (timeLabel != null)
+                            Text(
+                              timeLabel,
+                              style: const TextStyle(
+                                color: MoeTokens.hintText,
+                                fontSize: MoeTokens.textXs,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        preview,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: MoeTokens.hintText,
+                          fontSize: MoeTokens.textSm,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: MoeTokens.spaceSm),
+                if (badge > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: MoeTokens.gradientPrimary,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                    ),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: MoeTokens.textSm,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  const Icon(Icons.chevron_right_rounded, color: MoeTokens.hintText),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

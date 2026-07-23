@@ -1,11 +1,11 @@
 package commentapp
 
 import (
-	"context"
-	"backend/internal/platform/socialhook"
-	"backend/pkg/achievement"
 	commentv1 "backend/api/comment/v1"
 	commentbiz "backend/internal/biz/comment"
+	"backend/internal/platform/socialhook"
+	"backend/pkg/achievement"
+	"context"
 )
 
 func (s *AppService) GetPostComments(ctx context.Context, in *commentv1.GetPostCommentsRequest) (*commentv1.GetPostCommentsReply, error) {
@@ -28,7 +28,10 @@ func (s *AppService) CreateComment(ctx context.Context, in *commentv1.CreateComm
 		return nil, err
 	}
 
-	achUnlocks := socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
+	var achUnlocks []achievement.UnlockResult
+	if !result.Comment.User.IsBot {
+		achUnlocks = socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
+	}
 
 	return &commentv1.CreateCommentReply{
 		Comment: commentbiz.BuildCommentV1(

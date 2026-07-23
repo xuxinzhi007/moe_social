@@ -11,9 +11,12 @@ class Comment {
   final int likes;
   final bool isLiked;
   final DateTime createdAt;
+
   /// 父评论 ID；空或 "0" 表示一级评论
   final String parentId;
   final String replyToUserName;
+  final bool authorIsBot;
+  final String authorBotAgentKey;
 
   Comment({
     required this.id,
@@ -27,6 +30,8 @@ class Comment {
     required this.createdAt,
     this.parentId = '',
     this.replyToUserName = '',
+    this.authorIsBot = false,
+    this.authorBotAgentKey = '',
   });
 
   bool get isTopLevel => parentId.isEmpty || parentId == '0';
@@ -43,6 +48,8 @@ class Comment {
     DateTime? createdAt,
     String? parentId,
     String? replyToUserName,
+    bool? authorIsBot,
+    String? authorBotAgentKey,
   }) {
     return Comment(
       id: id ?? this.id,
@@ -56,7 +63,19 @@ class Comment {
       createdAt: createdAt ?? this.createdAt,
       parentId: parentId ?? this.parentId,
       replyToUserName: replyToUserName ?? this.replyToUserName,
+      authorIsBot: authorIsBot ?? this.authorIsBot,
+      authorBotAgentKey: authorBotAgentKey ?? this.authorBotAgentKey,
     );
+  }
+
+  static bool _parseBool(dynamic raw) {
+    if (raw is bool) return raw;
+    if (raw is num) return raw != 0;
+    if (raw is String) {
+      final s = raw.toLowerCase();
+      return s == 'true' || s == '1';
+    }
+    return false;
   }
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -65,9 +84,7 @@ class Comment {
       final createdAt = parseApiDateTime(createdRaw?.toString());
 
       final rawParent = apiField(json, 'parent_id', 'parentId');
-      final parentId = rawParent == null
-          ? ''
-          : rawParent.toString().trim();
+      final parentId = rawParent == null ? '' : rawParent.toString().trim();
 
       final likesRaw = apiField(json, 'likes', 'likes');
       final isLikedRaw = apiField(json, 'is_liked', 'isLiked');
@@ -92,6 +109,9 @@ class Comment {
         parentId: parentId == '0' ? '' : parentId,
         replyToUserName:
             apiString(json, 'reply_to_user_name', 'replyToUserName'),
+        authorIsBot: _parseBool(apiField(json, 'author_is_bot', 'authorIsBot')),
+        authorBotAgentKey:
+            apiString(json, 'author_bot_agent_key', 'authorBotAgentKey'),
       );
     } catch (e, stackTrace) {
       print('❌ Comment.fromJson错误: $e');

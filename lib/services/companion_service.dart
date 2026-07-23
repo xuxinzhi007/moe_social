@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_response.dart';
 import 'api_service.dart';
@@ -137,6 +138,88 @@ class CompanionSnapshotData {
   const CompanionSnapshotData({required this.profile, required this.state});
 }
 
+class CompanionCommunityIdentityData {
+  final String userId;
+  final String userName;
+  final String userAvatar;
+  final String agentId;
+  final bool authorIsBot;
+  final String authorBotAgentKey;
+
+  const CompanionCommunityIdentityData({
+    this.userId = '',
+    this.userName = '',
+    this.userAvatar = '',
+    this.agentId = '',
+    this.authorIsBot = false,
+    this.authorBotAgentKey = '',
+  });
+
+  factory CompanionCommunityIdentityData.fromMap(Map<String, dynamic> m) {
+    return CompanionCommunityIdentityData(
+      userId: m['user_id']?.toString() ?? '',
+      userName: m['user_name']?.toString() ?? '',
+      userAvatar: m['user_avatar']?.toString() ?? '',
+      agentId: m['agent_id']?.toString() ?? '',
+      authorIsBot: m['author_is_bot'] is bool
+          ? m['author_is_bot'] as bool
+          : (m['author_is_bot'] as num?)?.toInt() == 1,
+      authorBotAgentKey: m['author_bot_agent_key']?.toString() ?? '',
+    );
+  }
+
+  bool get isValid => userId.isNotEmpty;
+}
+
+class CompanionMemoryData {
+  final int id;
+  final String memoryType;
+  final String content;
+  final int importance;
+  final String createdAt;
+
+  const CompanionMemoryData({
+    required this.id,
+    required this.memoryType,
+    required this.content,
+    required this.importance,
+    required this.createdAt,
+  });
+
+  factory CompanionMemoryData.fromMap(Map<String, dynamic> m) {
+    return CompanionMemoryData(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      memoryType: m['memory_type']?.toString() ?? '',
+      content: m['content']?.toString() ?? '',
+      importance: (m['importance'] as num?)?.toInt() ?? 0,
+      createdAt: m['created_at']?.toString() ?? '',
+    );
+  }
+}
+
+class CompanionChatLogData {
+  final int id;
+  final String role;
+  final String content;
+  final String createdAt;
+
+  const CompanionChatLogData({
+    required this.id,
+    required this.role,
+    required this.content,
+    required this.createdAt,
+  });
+
+  factory CompanionChatLogData.fromMap(Map<String, dynamic> m) {
+    return CompanionChatLogData(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      role: m['role']?.toString() ?? '',
+      content: m['content']?.toString() ?? '',
+      createdAt: m['created_at']?.toString() ?? '',
+    );
+  }
+}
+
 /// 伙伴聊天服务 —— 接入后端 SSE 流式聊天。
 class CompanionService {
   CompanionService._();
@@ -182,6 +265,14 @@ class CompanionService {
     );
   }
 
+  Future<CompanionCommunityIdentityData> getCommunityIdentity() async {
+    _requireUserId();
+    final result = await ApiService.get('/api/companion/community-identity');
+    return CompanionCommunityIdentityData.fromMap(
+      ApiResponse.object(result, keys: const ['identity']),
+    );
+  }
+
   Future<CompanionProfileData> updateProfile(
     CompanionProfileData profile,
   ) async {
@@ -192,6 +283,49 @@ class CompanionService {
     );
     return CompanionProfileData.fromMap(
       ApiResponse.object(result, keys: const ['profile']),
+    );
+  }
+
+  Future<List<CompanionMemoryData>> listMemories({int limit = 8}) async {
+    _requireUserId();
+    final result = await ApiService.get('/api/companion/memories?limit=$limit');
+    final items = ApiResponse.listOf(result, keys: const ['memories']);
+    return items
+        .whereType<Map>()
+        .map((item) =>
+            CompanionMemoryData.fromMap(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
+
+  Future<List<CompanionChatLogData>> listChatHistory({int limit = 12}) async {
+    _requireUserId();
+    final result =
+        await ApiService.get('/api/companion/chat/history?limit=$limit');
+    final items =
+        ApiResponse.listOf(result, keys: const ['messages', 'history']);
+    return items
+        .whereType<Map>()
+        .map((item) =>
+            CompanionChatLogData.fromMap(Map<String, dynamic>.from(item)))
+        .toList(growable: false);
+  }
+
+  String _readMarkerKey(String userId) => 'companion_chat_read_at_$userId';
+
+  Future<DateTime?> loadChatReadAt() async {
+    final userId = _requireUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_readMarkerKey(userId!));
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> markChatRead() async {
+    final userId = _requireUserId();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _readMarkerKey(userId!),
+      DateTime.now().toIso8601String(),
     );
   }
 

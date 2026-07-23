@@ -23,6 +23,15 @@ message CompanionProfileMsg {
   int32 life_entity_id = 10;
 }
 
+message CommunityIdentityMsg {
+  string user_id = 1;
+  string user_name = 2;
+  string user_avatar = 3;
+  string agent_id = 4;
+  bool author_is_bot = 5;
+  string author_bot_agent_key = 6;
+}
+
 message CompanionStateMsg {
   // 人格化表达（直接给前端展示）
   string mood_thought = 1;
@@ -63,6 +72,12 @@ message GetProfileRequest {}
 
 message GetProfileReply {
   CompanionProfileMsg profile = 1;
+}
+
+message GetCommunityIdentityRequest {}
+
+message GetCommunityIdentityReply {
+  CommunityIdentityMsg identity = 1;
 }
 
 message UpsertProfileRequest {
@@ -109,6 +124,9 @@ service Companion {
   // Profile
   rpc GetProfile(GetProfileRequest) returns (GetProfileReply) {
     option (google.api.http) = {get: "/api/companion/profile"};
+  }
+  rpc GetCommunityIdentity(GetCommunityIdentityRequest) returns (GetCommunityIdentityReply) {
+    option (google.api.http) = {get: "/api/companion/community-identity"};
   }
   rpc UpsertProfile(UpsertProfileRequest) returns (UpsertProfileReply) {
     option (google.api.http) = {

@@ -9,6 +9,7 @@ import 'package:rive/rive.dart';
 import '../auth_service.dart';
 import '../providers/notification_provider.dart';
 import '../providers/virtual_avatar_provider.dart';
+import '../services/companion_service.dart';
 import '../services/rive_bootstrap.dart';
 import '../theme/moe_tokens.dart';
 import 'moe_action_row.dart';
@@ -101,6 +102,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
   Future<void> _pushNamed(
     String routeName, {
     String? startMessage,
+    Object? arguments,
   }) async {
     if (_isRoutePushing) {
       _showBusyHint();
@@ -116,7 +118,7 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
       MoeToast.info(context, startMessage);
     }
     try {
-      await state.pushNamed(routeName);
+      await state.pushNamed(routeName, arguments: arguments);
     } finally {
       _isRoutePushing = false;
     }
@@ -205,7 +207,8 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                         spacing: 10,
                         runSpacing: 10,
                         children: [
-                          if (actions.contains(AvatarQuickActions.notifications))
+                          if (actions
+                              .contains(AvatarQuickActions.notifications))
                             _actionChip(
                               icon: Icons.notifications_active_rounded,
                               label: '通知中心',
@@ -224,10 +227,34 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                               label: '发布动态',
                               onTap: () async {
                                 if (!_ensureLoggedIn('发布动态')) return;
+                                CompanionCommunityIdentityData identity;
+                                try {
+                                  identity = await CompanionService()
+                                      .getCommunityIdentity();
+                                } catch (e) {
+                                  if (!mounted || !sheetContext.mounted) {
+                                    return;
+                                  }
+                                  MoeToast.error(
+                                    context,
+                                    e
+                                        .toString()
+                                        .replaceFirst('Exception: ', ''),
+                                  );
+                                  return;
+                                }
+                                if (!mounted || !sheetContext.mounted) return;
+                                if (!identity.isValid) {
+                                  MoeToast.error(context, 'AI 账号信息不完整');
+                                  return;
+                                }
                                 Navigator.pop(sheetContext);
                                 await _pushNamed(
                                   '/create-post',
                                   startMessage: '正在进入发布页',
+                                  arguments: {
+                                    'communityIdentity': identity,
+                                  },
                                 );
                               },
                             ),

@@ -4,11 +4,12 @@ import '../../models/comment.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
-import '../../services/post_service.dart';
 import '../../services/user_service.dart';
 import '../../auth_service.dart';
+import '../../services/companion_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/post_card.dart';
@@ -19,15 +20,19 @@ class CommentsPage extends StatefulWidget {
   /// 非空时：顶部展示完整动态（与首页 [PostCard] 一致，含手绘/多图），下方为评论区，用于社区详情闭环。
   final Post? embeddedPost;
 
+  /// 作为社区 AI 账号评论时使用。
+  final CompanionCommunityIdentityData? communityIdentity;
+
   /// 下拉刷新时先于拉评论执行（例如重新拉帖子详情）。
   final Future<void> Function()? onRefreshPreamble;
 
   const CommentsPage({
-    Key? key,
+    super.key,
     required this.postId,
     this.embeddedPost,
     this.onRefreshPreamble,
-  }) : super(key: key);
+    this.communityIdentity,
+  });
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -41,6 +46,7 @@ class _CommentsPageState extends State<CommentsPage> {
   bool _isSubmitting = false;
   String? _userName;
   String? _userAvatar;
+  String? _authorUserId;
 
   /// 正在回复的评论 ID（作为 parent_id 提交）
   String? _replyParentId;
@@ -66,12 +72,24 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   Future<void> _loadUserInfo() async {
+    final identity = widget.communityIdentity;
+    if (identity != null && identity.isValid) {
+      setState(() {
+        _authorUserId = identity.userId;
+        _userName = identity.userName.isNotEmpty ? identity.userName : 'AI 伙伴';
+        _userAvatar =
+            identity.userAvatar.isNotEmpty ? identity.userAvatar : null;
+      });
+      return;
+    }
+
     final userId = AuthService.currentUser;
     if (userId == null) return;
 
     try {
       final user = await UserService.getUserInfo(userId);
       setState(() {
+        _authorUserId = userId;
         _userName = user.username;
         _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
       });
@@ -91,6 +109,7 @@ class _CommentsPageState extends State<CommentsPage> {
         _comments = comments;
       });
     } catch (e) {
+      if (!mounted) return;
       print('Failed to fetch comments: $e');
       _showCustomSnackBar(context, '获取评论失败', isError: true);
     } finally {
@@ -106,7 +125,7 @@ class _CommentsPageState extends State<CommentsPage> {
       return;
     }
 
-    final userId = AuthService.currentUser;
+    final userId = _authorUserId ?? AuthService.currentUser;
     if (userId == null) {
       _showCustomSnackBar(context, '请先登录', isError: true);
       return;
@@ -151,6 +170,7 @@ class _CommentsPageState extends State<CommentsPage> {
       }
       _showCustomSnackBar(context, '评论成功', isError: false);
     } catch (e) {
+      if (!mounted) return;
       print('Failed to add comment: $e');
       _showCustomSnackBar(context, '评论失败，请重试', isError: true);
     } finally {
@@ -173,6 +193,7 @@ class _CommentsPageState extends State<CommentsPage> {
       await PostService.toggleCommentLike(commentId, userId);
       // 无需手动 setState 更新 _comments，因为 LikeButton 现在直接监听 LikeStateManager
     } catch (e) {
+      if (!mounted) return;
       print('Failed to toggle comment like: $e');
       _showCustomSnackBar(context, '操作失败', isError: true);
     }
@@ -744,8 +765,8 @@ class _CommentsPageState extends State<CommentsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RichText(
-                  text: TextSpan(
+                Text.rich(
+                  TextSpan(
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.45,
@@ -756,6 +777,17 @@ class _CommentsPageState extends State<CommentsPage> {
                         text: '${comment.userName} ',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
+                      if (comment.authorIsBot)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: AiBotBadge(
+                              compact: true,
+                              agentKey: comment.authorBotAgentKey,
+                            ),
+                          ),
+                        ),
                       if (replyName.isNotEmpty)
                         TextSpan(
                           text: '@$replyName ',
@@ -860,14 +892,31 @@ class _CommentsPageState extends State<CommentsPage> {
               Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      comment.userName,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: isReply ? 12 : 13,
-                        color: Colors.grey[800],
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: comment.userName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: isReply ? 12 : 13,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          if (comment.authorIsBot)
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 6),
+                                child: AiBotBadge(
+                                  compact: true,
+                                  agentKey: comment.authorBotAgentKey,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 8),
