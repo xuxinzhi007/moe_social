@@ -4,6 +4,7 @@ import '../../models/ai_lorebook.dart';
 import '../../models/ai_lorebook_entry.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
+import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_highlight_card.dart';
 import '../../widgets/ai/ai_list_tile_card.dart';
 import '../../widgets/ai/ai_scaffold.dart';
@@ -241,6 +242,7 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
     final isNew = widget.lorebook == null;
     return AiScaffold(
       title: isNew ? '新建世界书' : '编辑世界书',
+      subtitle: isNew ? '创建世界观设定' : widget.lorebook!.name,
       actions: [
         TextButton(
           onPressed: _saving ? null : _save,
@@ -255,6 +257,7 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
       ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEntryEditor(),
+        backgroundColor: AiBrandTokens.primary,
         icon: const Icon(Icons.note_add_outlined),
         label: const Text('新增条目'),
       ),
@@ -296,12 +299,53 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
                 child: Center(child: MoeLoading()),
               )
             else if (_entries.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  '还没有设定条目，先添加地点、角色关系、世界规则等内容。',
-                  textAlign: TextAlign.center,
-                  style: AiTheme.caption,
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AiBrandTokens.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.note_add_outlined,
+                        color: AiBrandTokens.primary,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '还没有设定条目',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AiBrandTokens.titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '点击下方「新增条目」添加地点、角色关系、世界规则等',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
@@ -318,7 +362,11 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
                           '${entry.enabled ? '' : ' · 已停用'}',
                       entry.content,
                     ].join('\n'),
-                    tags: entry.keywords.take(3).toList(),
+                    tags: [
+                      ...entry.keywords.take(3),
+                      if (entry.alwaysEnabled) '始终注入',
+                      if (!entry.enabled) '已停用',
+                    ],
                     trailing: PopupMenuButton<String>(
                       onSelected: (value) async {
                         if (value == 'edit') {

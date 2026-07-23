@@ -32,7 +32,8 @@ import '../../widgets/layout/adaptive_page_scaffold.dart';
 part 'tavern/agents_tab.part.dart';
 part 'tavern/providers_tab.part.dart';
 
-enum _TavernMenuAction { plaza, importCard, lorebooks, providers }
+// 精简菜单：仅保留不易被快捷入口覆盖的操作
+enum _TavernMenuAction { importCard, lorebooks }
 
 enum _AgentCardAction { edit, export, delete }
 
@@ -310,12 +311,6 @@ class _AgentListPageState extends State<AgentListPage>
 
   Future<void> _onTavernMenuSelected(_TavernMenuAction action) async {
     switch (action) {
-      case _TavernMenuAction.plaza:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CharacterCardPlazaPage()),
-        );
-        if (mounted) await _loadAgents();
       case _TavernMenuAction.importCard:
         await _showImportCharacterCardDialog();
       case _TavernMenuAction.lorebooks:
@@ -324,12 +319,6 @@ class _AgentListPageState extends State<AgentListPage>
           MaterialPageRoute(builder: (_) => const AiLorebooksPage()),
         );
         if (mounted) await _loadAgents();
-      case _TavernMenuAction.providers:
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AiProviderProfilesPage()),
-        );
-        if (mounted) await _reloadPageData();
     }
   }
 
@@ -381,30 +370,52 @@ class _AgentListPageState extends State<AgentListPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // ── 左侧：返回按钮 + 标题 ──
+                  Row(
                     children: [
-                      Text(
-                        'AI 酒馆',
-                        style: TextStyle(
-                          fontSize: MoeTokens.text3xl,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white.withValues(alpha: 0.95),
-                          height: 1.1,
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).maybePop(),
+                        child: Container(
+                          padding: const EdgeInsets.all(MoeTokens.spaceSm),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: MoeTokens.spaceSm),
-                      Text(
-                        '创造你的专属角色，开启奇妙对话',
-                        style: TextStyle(
-                          fontSize: MoeTokens.textBase,
-                          color: Colors.white.withValues(alpha: 0.8),
-                        ),
+                      const SizedBox(width: MoeTokens.spaceMd),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI 酒馆',
+                            style: TextStyle(
+                              fontSize: MoeTokens.text3xl,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white.withValues(alpha: 0.95),
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: MoeTokens.spaceSm),
+                          Text(
+                            '创造你的专属角色，开启奇妙对话',
+                            style: TextStyle(
+                              fontSize: MoeTokens.textBase,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+                  // ── 右侧：精简菜单 ──
                   PopupMenuButton<_TavernMenuAction>(
-                    tooltip: '酒馆菜单',
+                    tooltip: '更多功能',
                     icon: Container(
                       padding: const EdgeInsets.all(MoeTokens.spaceSm),
                       decoration: BoxDecoration(
@@ -420,13 +431,6 @@ class _AgentListPageState extends State<AgentListPage>
                     onSelected: _onTavernMenuSelected,
                     itemBuilder: (_) => [
                       PopupMenuItem(
-                        value: _TavernMenuAction.plaza,
-                        child: _buildTavernMenuItem(
-                          icon: Icons.storefront_rounded,
-                          title: '角色卡广场',
-                        ),
-                      ),
-                      PopupMenuItem(
                         value: _TavernMenuAction.importCard,
                         child: _buildTavernMenuItem(
                           icon: Icons.input_rounded,
@@ -438,13 +442,6 @@ class _AgentListPageState extends State<AgentListPage>
                         child: _buildTavernMenuItem(
                           icon: Icons.menu_book_rounded,
                           title: '世界书管理',
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: _TavernMenuAction.providers,
-                        child: _buildTavernMenuItem(
-                          icon: Icons.hub_rounded,
-                          title: '模型来源管理',
                         ),
                       ),
                     ],
