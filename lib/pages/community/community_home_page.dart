@@ -65,6 +65,7 @@ class _CommunityHomePageState extends State<CommunityHomePage>
     final scheme = Theme.of(context).colorScheme;
     final moe = MoeTheme.of(context);
     final onCirclesTab = _tabController.index == 0;
+    final canGoBack = Navigator.of(context).canPop();
 
     return Scaffold(
       backgroundColor: moe.pageBackground,
@@ -73,9 +74,27 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            MoeReveal(
-              duration: MoeTokens.motionFadeDuration,
-              child: _buildHeader(scheme),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 12, 0),
+              child: Row(
+                children: [
+                  if (canGoBack)
+                    IconButton(
+                      tooltip: '返回',
+                      onPressed: () => Navigator.maybePop(context),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    )
+                  else
+                    const SizedBox(width: 48),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: MoeReveal(
+                      duration: MoeTokens.motionFadeDuration,
+                      child: _buildHeader(scheme),
+                    ),
+                  ),
+                ],
+              ),
             ),
             MoeReveal(
               duration: MoeTokens.motionFadeDuration,
@@ -104,14 +123,14 @@ class _CommunityHomePageState extends State<CommunityHomePage>
 
   Widget _buildHeader(ColorScheme scheme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(4, 2, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '兴趣社区',
             style: TextStyle(
-              fontSize: MoeTokens.text2xl,
+              fontSize: MoeTokens.textXl,
               fontWeight: FontWeight.w900,
               color: scheme.onSurface,
               height: 1.1,
@@ -124,7 +143,7 @@ class _CommunityHomePageState extends State<CommunityHomePage>
               _subtitle,
               key: ValueKey<String>(_subtitle),
               style: TextStyle(
-                fontSize: MoeTokens.textBase,
+                fontSize: MoeTokens.textSm,
                 color: scheme.onSurfaceVariant,
                 height: 1.35,
               ),
