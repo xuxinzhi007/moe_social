@@ -31,7 +31,11 @@ func (s *Server) GetProfile(ctx context.Context, in *companionv1.GetProfileReque
 	if err != nil {
 		return nil, err
 	}
-	return app.GetProfile(ctx, in)
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.GetProfile(ctx, userID, in)
 }
 
 func (s *Server) UpsertProfile(ctx context.Context, in *companionv1.UpsertProfileRequest) (*companionv1.UpsertProfileReply, error) {
@@ -39,7 +43,11 @@ func (s *Server) UpsertProfile(ctx context.Context, in *companionv1.UpsertProfil
 	if err != nil {
 		return nil, err
 	}
-	return app.UpsertProfile(ctx, in)
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.UpsertProfile(ctx, userID, in)
 }
 
 func (s *Server) GetState(ctx context.Context, in *companionv1.GetStateRequest) (*companionv1.GetStateReply, error) {
@@ -47,7 +55,11 @@ func (s *Server) GetState(ctx context.Context, in *companionv1.GetStateRequest) 
 	if err != nil {
 		return nil, err
 	}
-	return app.GetState(ctx, in)
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.GetState(ctx, userID, in)
 }
 
 func (s *Server) ListMemories(ctx context.Context, in *companionv1.ListMemoriesRequest) (*companionv1.ListMemoriesReply, error) {
@@ -55,7 +67,11 @@ func (s *Server) ListMemories(ctx context.Context, in *companionv1.ListMemoriesR
 	if err != nil {
 		return nil, err
 	}
-	return app.ListMemories(ctx, in)
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListMemories(ctx, userID, in)
 }
 
 func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
@@ -63,5 +79,9 @@ func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHi
 	if err != nil {
 		return nil, err
 	}
-	return app.ListChatHistory(ctx, in)
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListChatHistory(ctx, userID, in)
 }

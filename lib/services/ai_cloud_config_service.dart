@@ -1,7 +1,34 @@
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 
 import 'api_response.dart';
 import 'api_service.dart';
+
+@visibleForTesting
+List<Map<String, dynamic>> parseAiResourceItems(
+  Map<String, dynamic> response,
+) {
+  return ApiResponse.listOf(response, keys: const ['items']).map((raw) {
+    if (raw is! Map) {
+      throw const FormatException('AI resource item must be an object');
+    }
+    final item = Map<String, dynamic>.from(raw);
+    final payloadJson = item['payload_json'] ?? item['payloadJson'];
+    if (payloadJson is! String) {
+      throw const FormatException('AI resource payload_json must be a string');
+    }
+    final decoded = jsonDecode(payloadJson);
+    if (decoded is! Map) {
+      throw const FormatException('AI resource payload_json must be an object');
+    }
+    final payload = Map<String, dynamic>.from(decoded);
+    final id = item['id'];
+    if (id != null) payload['id'] = id.toString();
+    return payload;
+  }).toList(growable: false);
+}
 
 class AiCloudConfigSnapshot {
   final List<Map<String, dynamic>> providerProfiles;
@@ -64,31 +91,26 @@ class AiCloudConfigService {
     try {
       final resp =
           await ApiService.get('/api/ai/providers').timeout(_readTimeout);
-      return ApiResponse.listOf(resp, keys: const ['providers', 'data'])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return parseAiResourceItems(resp);
     } catch (_) {
       return null;
     }
   }
 
   Future<void> upsertProvider(Map<String, dynamic> data) async {
-    await ApiService.put('/api/ai/providers', body: {'data': data})
-        .timeout(_writeTimeout);
+    await _upsertResource('/api/ai/providers', data);
   }
 
   Future<void> deleteProvider(String id) async {
-    await ApiService.delete('/api/ai/providers?id=$id').timeout(_writeTimeout);
+    await ApiService.delete(
+      '/api/ai/providers/${Uri.encodeComponent(id)}',
+    ).timeout(_writeTimeout);
   }
 
   Future<List<Map<String, dynamic>>?> fetchAgents() async {
     try {
       final resp = await ApiService.get('/api/ai/agents').timeout(_readTimeout);
-      return ApiResponse.listOf(resp, keys: const ['agents', 'data'])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return parseAiResourceItems(resp);
     } catch (_) {
       return null;
     }
@@ -101,32 +123,27 @@ class AiCloudConfigService {
       final resp = await ApiService.get(
         '/api/ai/agents/public?limit=$limit',
       ).timeout(_readTimeout);
-      return ApiResponse.listOf(resp, keys: const ['agents', 'data'])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return parseAiResourceItems(resp);
     } catch (_) {
       return null;
     }
   }
 
   Future<void> upsertAgent(Map<String, dynamic> data) async {
-    await ApiService.put('/api/ai/agents', body: {'data': data})
-        .timeout(_writeTimeout);
+    await _upsertResource('/api/ai/agents', data);
   }
 
   Future<void> deleteAgent(String id) async {
-    await ApiService.delete('/api/ai/agents?id=$id').timeout(_writeTimeout);
+    await ApiService.delete(
+      '/api/ai/agents/${Uri.encodeComponent(id)}',
+    ).timeout(_writeTimeout);
   }
 
   Future<List<Map<String, dynamic>>?> fetchLorebooks() async {
     try {
       final resp =
           await ApiService.get('/api/ai/lorebooks').timeout(_readTimeout);
-      return ApiResponse.listOf(resp, keys: const ['lorebooks', 'data'])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return parseAiResourceItems(resp);
     } catch (_) {
       return null;
     }
@@ -136,14 +153,14 @@ class AiCloudConfigService {
     Map<String, dynamic> data,
     List<Map<String, dynamic>> entries,
   ) async {
-    await ApiService.put(
-      '/api/ai/lorebooks',
-      body: {'data': data, 'entries': entries},
-    ).timeout(_writeTimeout);
+    final payload = Map<String, dynamic>.from(data)..['entries'] = entries;
+    await _upsertResource('/api/ai/lorebooks', payload);
   }
 
   Future<void> deleteLorebook(String id) async {
-    await ApiService.delete('/api/ai/lorebooks?id=$id').timeout(_writeTimeout);
+    await ApiService.delete(
+      '/api/ai/lorebooks/${Uri.encodeComponent(id)}',
+    ).timeout(_writeTimeout);
   }
 
   Future<void> saveUserPersona(String persona) async {
@@ -159,5 +176,18 @@ class AiCloudConfigService {
 
   Future<void> _put(Map<String, dynamic> body) async {
     await ApiService.put('/api/ai/config', body: body).timeout(_writeTimeout);
+  }
+
+  Future<void> _upsertResource(
+    String path,
+    Map<String, dynamic> payload,
+  ) async {
+    await ApiService.post(
+      path,
+      body: {
+        'id': payload['id']?.toString() ?? '',
+        'payload_json': jsonEncode(payload),
+      },
+    ).timeout(_writeTimeout);
   }
 }

@@ -31,9 +31,12 @@ class CompanionContext {
   });
 
   /// 从 [LifeProvider] 构建伙伴上下文。
-  factory CompanionContext.fromProvider(LifeProvider provider) {
+  factory CompanionContext.fromProvider(
+    LifeProvider provider, {
+    required int? entityId,
+  }) {
     final entities = provider.entities;
-    if (entities.isEmpty) {
+    if (entities.isEmpty || entityId == null) {
       return const CompanionContext(
         name: '',
         emoji: '🐣',
@@ -47,7 +50,26 @@ class CompanionContext {
       );
     }
 
-    final entity = entities.first;
+    LifeEntity? entity;
+    for (final candidate in entities) {
+      if (candidate.id == entityId) {
+        entity = candidate;
+        break;
+      }
+    }
+    if (entity == null) {
+      return const CompanionContext(
+        name: '',
+        emoji: '🐣',
+        moodLabel: '',
+        activityLabel: '',
+        mood: 0,
+        hunger: 0,
+        energy: 0,
+        moments: [],
+        hasCompanion: false,
+      );
+    }
     final events = provider.getEventsForEntity(entity.id);
 
     return CompanionContext(

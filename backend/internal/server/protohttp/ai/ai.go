@@ -2,9 +2,13 @@ package aihttp
 
 import (
 	"context"
+	"strconv"
 
 	aiv1 "backend/api/ai/v1"
+	"backend/internal/apilegacy/common"
 	aiapp "backend/internal/service/ai"
+
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 )
 
 // Server 实现 ai.v1.AiResources gRPC/HTTP。
@@ -25,7 +29,20 @@ func (s *Server) requireApp() (*aiapp.AppService, error) {
 	return s.app, nil
 }
 
+func actorUserID(ctx context.Context) (string, error) {
+	userID, err := common.UserIDUint(ctx)
+	if err != nil || userID == 0 {
+		return "", kerrors.Unauthorized("UNAUTHORIZED", "invalid authentication context")
+	}
+	return strconv.FormatUint(uint64(userID), 10), nil
+}
+
 func (s *Server) ListAiProviders(ctx context.Context, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -34,6 +51,11 @@ func (s *Server) ListAiProviders(ctx context.Context, in *aiv1.ListAiResourceReq
 }
 
 func (s *Server) UpsertAiProvider(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -42,6 +64,11 @@ func (s *Server) UpsertAiProvider(ctx context.Context, in *aiv1.UpsertAiResource
 }
 
 func (s *Server) DeleteAiProvider(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -50,6 +77,11 @@ func (s *Server) DeleteAiProvider(ctx context.Context, in *aiv1.DeleteAiResource
 }
 
 func (s *Server) ListAiAgents(ctx context.Context, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -66,6 +98,11 @@ func (s *Server) ListPublicAiAgents(ctx context.Context, in *aiv1.ListPublicAiAg
 }
 
 func (s *Server) UpsertAiAgent(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -74,6 +111,11 @@ func (s *Server) UpsertAiAgent(ctx context.Context, in *aiv1.UpsertAiResourceReq
 }
 
 func (s *Server) DeleteAiAgent(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -82,6 +124,11 @@ func (s *Server) DeleteAiAgent(ctx context.Context, in *aiv1.DeleteAiResourceReq
 }
 
 func (s *Server) ListAiLorebooks(ctx context.Context, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -90,6 +137,11 @@ func (s *Server) ListAiLorebooks(ctx context.Context, in *aiv1.ListAiResourceReq
 }
 
 func (s *Server) UpsertAiLorebook(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -98,6 +150,11 @@ func (s *Server) UpsertAiLorebook(ctx context.Context, in *aiv1.UpsertAiResource
 }
 
 func (s *Server) DeleteAiLorebook(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in.UserId = userID
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err

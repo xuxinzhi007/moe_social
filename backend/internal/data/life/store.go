@@ -114,6 +114,24 @@ func (s *gormStore) ListRecentEventLogs(ctx context.Context, worldID string, lim
 	return logs, err
 }
 
+func (s *gormStore) ListRecentEventLogsByEntity(
+	ctx context.Context,
+	worldID string,
+	entityID uint,
+	limit int,
+) ([]model.LifeEventLog, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	var logs []model.LifeEventLog
+	err := s.db.WithContext(ctx).
+		Where("world_id = ? AND entity_id = ?", worldID, entityID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&logs).Error
+	return logs, err
+}
+
 func (s *gormStore) CleanupOldEventLogs(ctx context.Context) (int64, error) {
 	now := time.Now()
 	// 普通事件 7 天 TTL
@@ -261,7 +279,7 @@ func (s *gormStore) GrantItem(ctx context.Context, userID string, itemID uint, q
 	}
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "user_id"}, {Name: "item_id"}},
+			Columns: []clause.Column{{Name: "user_id"}, {Name: "item_id"}},
 			DoUpdates: clause.Assignments(map[string]interface{}{
 				"quantity":   gorm.Expr("quantity + ?", qty),
 				"updated_at": time.Now(),

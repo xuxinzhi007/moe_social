@@ -4,9 +4,11 @@ import (
 	"context"
 
 	"backend/internal/adapter/moeconfig"
+	companionbiz "backend/internal/biz/companion"
 	lifebiz "backend/internal/biz/life"
-	lifeapp "backend/internal/service/life"
+	companiondata "backend/internal/data/companion"
 	companionapp "backend/internal/service/companion"
+	lifeapp "backend/internal/service/life"
 	"backend/pkg/llminference"
 	"backend/utils"
 )
@@ -38,8 +40,11 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 		lifeStore = lifeApp.Store()
 	}
 
-	return companionapp.New(db, companionapp.Deps{
-		Inference: inf,
-		Model:     model,
-	}, lifeStore), nil
+	store := companiondata.NewStore(db)
+	if store == nil {
+		return nil, nil
+	}
+	engine := companionbiz.NewEngine(store, lifeStore, inf, model)
+	hub := companionbiz.NewCompanionWSHub()
+	return companionapp.New(engine, hub), nil
 }

@@ -27,19 +27,29 @@ type DeleteOutcome struct {
 	DeletedItem map[string]interface{}
 }
 
+// ResourcesUsecase 管理用户 AI 资源。
+type ResourcesUsecase struct {
+	store AiStore
+}
+
+// NewResourcesUsecase 构造 AI 资源用例。
+func NewResourcesUsecase(store AiStore) *ResourcesUsecase {
+	return &ResourcesUsecase{store: store}
+}
+
 // List 列出用户 AI 资源。
-func List(ctx context.Context, store AiStore, field string, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
-	if store == nil {
+func (uc *ResourcesUsecase) List(ctx context.Context, field string, in *aiv1.ListAiResourceReq) (*aiv1.ListAiResourceResp, error) {
+	if uc == nil || uc.store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	store = store.WithContext(ctx)
+	store := uc.store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
 	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load AI resource config: %w", err)
 	}
 	var raw string
 	switch field {
@@ -68,11 +78,11 @@ func List(ctx context.Context, store AiStore, field string, in *aiv1.ListAiResou
 }
 
 // ListPublicAgents 列出公开 AI 角色。
-func ListPublicAgents(ctx context.Context, store AiStore, in *aiv1.ListPublicAiAgentsReq) (*aiv1.ListAiResourceResp, error) {
-	if store == nil {
+func (uc *ResourcesUsecase) ListPublicAgents(ctx context.Context, in *aiv1.ListPublicAiAgentsReq) (*aiv1.ListAiResourceResp, error) {
+	if uc == nil || uc.store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	store = store.WithContext(ctx)
+	store := uc.store.WithContext(ctx)
 	limit := int(in.GetLimit())
 	if limit <= 0 {
 		limit = 50
@@ -99,9 +109,7 @@ func ListPublicAgents(ctx context.Context, store AiStore, in *aiv1.ListPublicAiA
 			if !AgentIsPublic(item) {
 				continue
 			}
-			if _, ok := item["created_by_user_id"]; !ok {
-				item["created_by_user_id"] = fmt.Sprint(cfg.UserID)
-			}
+			item["created_by_user_id"] = fmt.Sprint(cfg.UserID)
 			if name := store.GetUserDisplayName(ctx, cfg.UserID); name != "" {
 				item["author_name"] = name
 			}
@@ -119,22 +127,22 @@ func ListPublicAgents(ctx context.Context, store AiStore, in *aiv1.ListPublicAiA
 }
 
 // Upsert 写入或更新 AI 资源。
-func Upsert(ctx context.Context, store AiStore, field string, in *aiv1.UpsertAiResourceReq) (*UpsertOutcome, error) {
-	if store == nil {
+func (uc *ResourcesUsecase) Upsert(ctx context.Context, field string, in *aiv1.UpsertAiResourceReq) (*UpsertOutcome, error) {
+	if uc == nil || uc.store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	store = store.WithContext(ctx)
+	store := uc.store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
 	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load AI resource config: %w", err)
 	}
 	item := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(in.GetPayloadJson()), &item); err != nil {
-		return nil, ErrInvalidPayload
+		return nil, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
 	}
 	items := DecodeJSONArray(selectField(cfg, field))
 	id := fmt.Sprint(item["id"])
@@ -155,7 +163,7 @@ func Upsert(ctx context.Context, store AiStore, field string, in *aiv1.UpsertAiR
 	}
 	setField(cfg, field, encoded)
 	if err := store.SaveConfig(ctx, cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("save AI resource config: %w", err)
 	}
 	return &UpsertOutcome{
 		Resp: &aiv1.UpsertAiResourceResp{
@@ -172,18 +180,18 @@ func Upsert(ctx context.Context, store AiStore, field string, in *aiv1.UpsertAiR
 }
 
 // Delete 删除 AI 资源。
-func Delete(ctx context.Context, store AiStore, field string, in *aiv1.DeleteAiResourceReq) (*DeleteOutcome, error) {
-	if store == nil {
+func (uc *ResourcesUsecase) Delete(ctx context.Context, field string, in *aiv1.DeleteAiResourceReq) (*DeleteOutcome, error) {
+	if uc == nil || uc.store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	store = store.WithContext(ctx)
+	store := uc.store.WithContext(ctx)
 	userID, err := ParseUserID(in.GetUserId())
 	if err != nil {
 		return nil, err
 	}
 	cfg, err := store.LoadOrCreateConfig(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load AI resource config: %w", err)
 	}
 	items := DecodeJSONArray(selectField(cfg, field))
 	var deletedItem map[string]interface{}
@@ -201,7 +209,7 @@ func Delete(ctx context.Context, store AiStore, field string, in *aiv1.DeleteAiR
 	}
 	setField(cfg, field, encoded)
 	if err := store.SaveConfig(ctx, cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("save AI resource config: %w", err)
 	}
 	return &DeleteOutcome{
 		Resp:        &aiv1.DeleteAiResourceResp{Ok: true},

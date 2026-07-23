@@ -1,10 +1,12 @@
 package transport
 
 import (
+	"backend/internal/apilegacy/common"
 	chatbiz "backend/internal/biz/chat"
 	companionapp "backend/internal/service/companion"
 	lifeapp "backend/internal/service/life"
 
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
@@ -63,7 +65,11 @@ func companionWSHandler(app *companionapp.AppService) func(khttp.Context) error 
 			kctx.Response().WriteHeader(501)
 			return nil
 		}
-		app.Hub().ServeHTTP(kctx.Response(), kctx.Request())
+		userID, err := common.UserIDUint(kctx.Request().Context())
+		if err != nil || userID == 0 {
+			return kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
+		}
+		app.Hub().ServeHTTP(kctx.Response(), kctx.Request(), userID)
 		return nil
 	}
 }

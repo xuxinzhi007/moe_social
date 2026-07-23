@@ -32,6 +32,9 @@ func (m *mockStore) BatchCreateEventLogs(_ context.Context, _ []*model.LifeEvent
 func (m *mockStore) ListRecentEventLogs(_ context.Context, _ string, _ int) ([]model.LifeEventLog, error) {
 	return nil, nil
 }
+func (m *mockStore) ListRecentEventLogsByEntity(_ context.Context, _ string, _ uint, _ int) ([]model.LifeEventLog, error) {
+	return nil, nil
+}
 func (m *mockStore) CleanupOldEventLogs(_ context.Context) (int64, error) { return 0, nil }
 func (m *mockStore) UpsertRelationship(_ context.Context, _ *model.LifeRelationship) error {
 	return nil
@@ -58,7 +61,7 @@ func (m *mockStore) GetInventory(_ context.Context, _ string) ([]*model.LifeInve
 	return nil, nil
 }
 func (m *mockStore) DecrementInventory(_ context.Context, _ string, _ uint) error { return nil }
-func (m *mockStore) GrantItem(_ context.Context, _ string, _ uint, _ int) error { return nil }
+func (m *mockStore) GrantItem(_ context.Context, _ string, _ uint, _ int) error   { return nil }
 
 // 确保 mockStore 实现了 Store 接口
 var _ Store = (*mockStore)(nil)
