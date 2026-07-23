@@ -38,6 +38,18 @@ func (s *Server) GetProfile(ctx context.Context, in *companionv1.GetProfileReque
 	return app.GetProfile(ctx, userID, in)
 }
 
+func (s *Server) GetCommunityIdentity(ctx context.Context, in *companionv1.GetCommunityIdentityRequest) (*companionv1.GetCommunityIdentityReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.GetCommunityIdentity(ctx, userID, in)
+}
+
 func (s *Server) UpsertProfile(ctx context.Context, in *companionv1.UpsertProfileRequest) (*companionv1.UpsertProfileReply, error) {
 	app, err := s.requireApp()
 	if err != nil {

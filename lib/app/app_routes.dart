@@ -8,6 +8,7 @@ import '../models/life_state.dart';
 import '../models/post.dart';
 import '../models/user.dart';
 import '../models/topic_tag.dart';
+import '../services/companion_service.dart';
 import '../pages/achievements/achievements_page.dart' deferred as achievements;
 import '../pages/auth/forgot_password_page.dart';
 import '../pages/auth/login_page.dart';
@@ -33,6 +34,7 @@ import '../pages/feed/create_post_page.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
+import '../pages/companion/companion_chat_page.dart';
 import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
 import '../pages/notifications/notification_center_page.dart';
@@ -92,18 +94,51 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       final args = ModalRoute.of(context)?.settings.arguments;
       Post? initialPost;
       String? groupId;
+      CompanionCommunityIdentityData? communityIdentity;
       if (args is Map) {
         if (args['initialPost'] is Post) {
           initialPost = args['initialPost'] as Post;
         }
         groupId = args['groupId'] as String?;
+        final identityArg = args['communityIdentity'];
+        if (identityArg is CompanionCommunityIdentityData) {
+          communityIdentity = identityArg;
+        } else if (identityArg is Map) {
+          communityIdentity = CompanionCommunityIdentityData.fromMap(
+            Map<String, dynamic>.from(identityArg),
+          );
+        }
       } else if (args is Post) {
         initialPost = args;
       }
-      return CreatePostPage(initialPost: initialPost, groupId: groupId);
+      return CreatePostPage(
+        initialPost: initialPost,
+        groupId: groupId,
+        communityIdentity: communityIdentity,
+      );
     },
     '/comments': (context) => CommentsPage(
-          postId: ModalRoute.of(context)!.settings.arguments as String,
+          postId: (() {
+            final args = ModalRoute.of(context)!.settings.arguments;
+            if (args is String) return args;
+            if (args is Map) return args['postId']?.toString() ?? '';
+            return '';
+          })(),
+          communityIdentity: (() {
+            final args = ModalRoute.of(context)!.settings.arguments;
+            if (args is Map) {
+              final identityArg = args['communityIdentity'];
+              if (identityArg is CompanionCommunityIdentityData) {
+                return identityArg;
+              }
+              if (identityArg is Map) {
+                return CompanionCommunityIdentityData.fromMap(
+                  Map<String, dynamic>.from(identityArg),
+                );
+              }
+            }
+            return null;
+          })(),
         ),
     '/edit-profile': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
@@ -221,6 +256,7 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return CommunityPostDetailPage(postId: postId, initialPost: initial);
     },
     '/messages': (context) => const MessageCenterPage(),
+    '/ai-chat': (context) => const CompanionChatPage(),
     '/direct-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {

@@ -7,7 +7,6 @@ import (
 
 	commentv1 "backend/api/comment/v1"
 	"backend/model"
-	"backend/utils"
 
 	"gorm.io/gorm"
 )
@@ -107,31 +106,7 @@ func ListByPost(ctx context.Context, st CommentStore, f ListFilter) ([]*commentv
 
 	out := make([]*commentv1.Comment, 0, len(comments))
 	for _, comment := range comments {
-		username := "未知用户"
-		avatar := "https://picsum.photos/150"
-		if user, ok := userMap[comment.UserID]; ok {
-			if user.Username != "" {
-				username = user.Username
-			} else if user.Email != "" {
-				username = user.Email
-			}
-			if user.Avatar != "" {
-				avatar = user.Avatar
-			}
-		}
-		out = append(out, &commentv1.Comment{
-			Id:              strconv.FormatUint(uint64(comment.ID), 10),
-			PostId:          strconv.FormatUint(uint64(comment.PostID), 10),
-			UserId:          strconv.FormatUint(uint64(comment.UserID), 10),
-			UserName:        username,
-			UserAvatar:      avatar,
-			Content:         comment.Content,
-			Likes:           int32(comment.Likes),
-			IsLiked:         likedComments[comment.ID],
-			CreatedAt:       utils.FormatAPIDateTime(comment.CreatedAt),
-			ParentId:        strconv.FormatUint(uint64(comment.ParentID), 10),
-			ReplyToUserName: parentNameMap[comment.ParentID],
-		})
+		out = append(out, BuildCommentV1(comment, userMap[comment.UserID], likedComments[comment.ID], parentNameMap[comment.ParentID]))
 	}
 	return out, int32(total), nil
 }

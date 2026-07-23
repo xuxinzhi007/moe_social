@@ -468,6 +468,7 @@ func defaultProfile(userID uint) *Profile {
 		PersonalityTraits: []string{"温暖", "好奇", "幽默"},
 		GreetingStyle:     "warm",
 		RelationshipLevel: 1,
+		AgentID:           fmt.Sprintf("companion-%d", userID),
 	}
 }
 

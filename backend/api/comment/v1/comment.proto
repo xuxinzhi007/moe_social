@@ -21,6 +21,8 @@ message Comment {
   string created_at = 9;
   string parent_id = 10;
   string reply_to_user_name = 11;
+  bool author_is_bot = 12;
+  string author_bot_agent_key = 13;
 }
 
 message AchievementUnlock {

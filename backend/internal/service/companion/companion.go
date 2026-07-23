@@ -4,16 +4,18 @@ import (
 	"context"
 
 	companionbiz "backend/internal/biz/companion"
+	"gorm.io/gorm"
 )
 
 // AppService Companion 应用服务层。
 type AppService struct {
 	engine *companionbiz.Engine
 	hub    *companionbiz.CompanionWSHub
+	db     *gorm.DB
 }
 
 // New creates a Companion application service from injected business dependencies.
-func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub) *AppService {
+func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm.DB) *AppService {
 	if engine == nil {
 		return &AppService{}
 	}
@@ -30,7 +32,7 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub) *AppServ
 		}
 	}
 
-	return &AppService{engine: engine, hub: hub}
+	return &AppService{engine: engine, hub: hub, db: db}
 }
 
 // Hub 暴露 WebSocket Hub（供 transport 层注册路由）。

@@ -2,6 +2,7 @@ package commentbiz
 
 import (
 	"strconv"
+	"strings"
 
 	commentv1 "backend/api/comment/v1"
 	"backend/model"
@@ -23,17 +24,19 @@ func BuildCommentV1(c model.Comment, user model.User, isLiked bool, replyToUserN
 		}
 	}
 	return &commentv1.Comment{
-		Id:              strconv.FormatUint(uint64(c.ID), 10),
-		PostId:          strconv.FormatUint(uint64(c.PostID), 10),
-		UserId:          strconv.FormatUint(uint64(c.UserID), 10),
-		UserName:        username,
-		UserAvatar:      avatar,
-		Content:         c.Content,
-		Likes:           int32(c.Likes),
-		IsLiked:         isLiked,
-		CreatedAt:       utils.FormatAPIDateTime(c.CreatedAt),
-		ParentId:        strconv.FormatUint(uint64(c.ParentID), 10),
-		ReplyToUserName: replyToUserName,
+		Id:                strconv.FormatUint(uint64(c.ID), 10),
+		PostId:            strconv.FormatUint(uint64(c.PostID), 10),
+		UserId:            strconv.FormatUint(uint64(c.UserID), 10),
+		UserName:          username,
+		UserAvatar:        avatar,
+		Content:           c.Content,
+		Likes:             int32(c.Likes),
+		IsLiked:           isLiked,
+		CreatedAt:         utils.FormatAPIDateTime(c.CreatedAt),
+		ParentId:          strconv.FormatUint(uint64(c.ParentID), 10),
+		ReplyToUserName:   replyToUserName,
+		AuthorIsBot:       user.IsBot,
+		AuthorBotAgentKey: strings.TrimSpace(user.BotAgentKey),
 	}
 }
 

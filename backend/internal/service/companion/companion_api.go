@@ -3,11 +3,13 @@ package companionapp
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
+	"backend/model"
 	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -162,6 +164,55 @@ func toProtoProfile(p *companionbiz.Profile) *companionv1.CompanionProfileMsg {
 		AgentId:              p.AgentID,
 		LifeEntityId:         int32(p.LifeEntityID),
 	}
+}
+
+func (s *AppService) GetCommunityIdentity(ctx context.Context, userID uint, in *companionv1.GetCommunityIdentityRequest) (*companionv1.GetCommunityIdentityReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	if s.db == nil {
+		return nil, kerrors.ServiceUnavailable("COMPANION_IDENTITY_UNAVAILABLE", "伙伴社区身份暂不可用")
+	}
+
+	profile, err := engine.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	agentID := strings.TrimSpace(profile.AgentID)
+	if agentID == "" {
+		return nil, kerrors.NotFound("COMPANION_IDENTITY_NOT_FOUND", "伙伴社区身份不存在")
+	}
+
+	var botUser model.User
+	if err := s.db.WithContext(ctx).
+		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
+		First(&botUser).Error; err != nil {
+		return nil, kerrors.NotFound("COMPANION_IDENTITY_NOT_FOUND", "伙伴社区身份不存在")
+	}
+
+	userName := strings.TrimSpace(botUser.Username)
+	if userName == "" {
+		userName = strings.TrimSpace(botUser.Email)
+	}
+	if userName == "" {
+		userName = profile.Name
+	}
+	userAvatar := strings.TrimSpace(botUser.Avatar)
+	if userAvatar == "" {
+		userAvatar = "https://picsum.photos/150"
+	}
+
+	return &companionv1.GetCommunityIdentityReply{
+		Identity: &companionv1.CommunityIdentityMsg{
+			UserId:            strconv.FormatUint(uint64(botUser.ID), 10),
+			UserName:          userName,
+			UserAvatar:        userAvatar,
+			AgentId:           agentID,
+			AuthorIsBot:       true,
+			AuthorBotAgentKey: strings.TrimSpace(botUser.BotAgentKey),
+		},
+	}, nil
 }
 
 func toProtoState(s *companionbiz.State) *companionv1.CompanionStateMsg {

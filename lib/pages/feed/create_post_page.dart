@@ -9,8 +9,8 @@ import '../../auth_service.dart';
 import '../../models/achievement_unlock.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
-import '../../services/api_client.dart';
-import '../../services/api_client.dart' show ApiException;
+import '../../services/api_client.dart' show ApiClient, ApiException;
+import '../../services/companion_service.dart';
 import '../../services/community_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
@@ -36,7 +36,15 @@ class CreatePostPage extends StatefulWidget {
   /// 发帖成功后关联到该群组（需先发布动态再 link）。
   final String? groupId;
 
-  const CreatePostPage({super.key, this.initialPost, this.groupId});
+  /// 作为社区 AI 账号发布时使用。
+  final CompanionCommunityIdentityData? communityIdentity;
+
+  const CreatePostPage({
+    super.key,
+    this.initialPost,
+    this.groupId,
+    this.communityIdentity,
+  });
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
@@ -50,6 +58,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final ImagePicker _picker = ImagePicker();
   String? _userName;
   String? _userAvatar;
+  String? _authorUserId;
   List<TopicTag> _selectedTopicTags = [];
   HandDrawCardData? _handDrawCard;
   String? _selectedMoodTag;
@@ -206,7 +215,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
         setState(() => _hasUnsavedChanges = true);
       }
     });
-    _loadUserInfo();
+    if (widget.communityIdentity != null &&
+        widget.communityIdentity!.isValid &&
+        !_isEditMode) {
+      final identity = widget.communityIdentity!;
+      _authorUserId = identity.userId;
+      _userName = identity.userName.isNotEmpty ? identity.userName : 'AI 伙伴';
+      _userAvatar = identity.userAvatar.isNotEmpty ? identity.userAvatar : null;
+    } else {
+      _loadUserInfo();
+    }
     if (_isGroupPost) {
       _loadGroupPostPermission();
     }
@@ -238,6 +256,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       final user = await UserService.getUserInfo(userId);
       if (!mounted) return;
       setState(() {
+        _authorUserId = userId;
         _userName = user.username;
         _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
       });
@@ -297,6 +316,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
       }
     }
 
+    if (!mounted) return;
+
     final loadingProvider = context.read<LoadingProvider>();
     var pendingUnlocks = const <AchievementUnlock>[];
     await loadingProvider.executeOperation<Post>(
@@ -313,8 +334,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
         // 直接添加从云端图库选择的网络图片URL
         imageUrls.addAll(_selectedImageUrls);
 
-        final userId = AuthService.currentUser;
-        if (userId == null) {
+        final userId = _authorUserId ?? AuthService.currentUser;
+        if (userId == null || userId.isEmpty) {
           throw ApiException('请先登录', 401);
         }
 

@@ -46,5 +46,5 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 	}
 	engine := companionbiz.NewEngine(store, lifeStore, inf, model)
 	hub := companionbiz.NewCompanionWSHub()
-	return companionapp.New(engine, hub), nil
+	return companionapp.New(engine, hub, db), nil
 }
