@@ -9,6 +9,7 @@ import (
 	checkinv1 "backend/api/checkin/v1"
 	commentv1 "backend/api/comment/v1"
 	communityv1 "backend/api/community/v1"
+	companionv1 "backend/api/companion/v1"
 	contentv1 "backend/api/content/v1"
 	gamev1 "backend/api/game/v1"
 	giftv1 "backend/api/gift/v1"
@@ -31,6 +32,7 @@ import (
 	checkinhttp "backend/internal/server/protohttp/checkin"
 	commenthttp "backend/internal/server/protohttp/comment"
 	communityhttp "backend/internal/server/protohttp/community"
+	companionhttp "backend/internal/server/protohttp/companion"
 	contenthttp "backend/internal/server/protohttp/content"
 	gamehttp "backend/internal/server/protohttp/game"
 	gifthttp "backend/internal/server/protohttp/gift"
@@ -54,6 +56,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	commentapp "backend/internal/service/comment"
 	communityapp "backend/internal/service/community"
+	companionapp "backend/internal/service/companion"
 	contentapp "backend/internal/service/content"
 	gameapp "backend/internal/service/game"
 	giftapp "backend/internal/service/gift"
@@ -79,6 +82,7 @@ type ProtoHTTPDeps struct {
 	GiftApp            *giftapp.AppService
 	GameApp            *gameapp.AppService
 	LifeApp            *lifeapp.AppService
+	CompanionApp       *companionapp.AppService
 	UserApp            *userapp.AppService
 	CommentApp         *commentapp.AppService
 	CommunityApp       *communityapp.AppService
@@ -122,6 +126,10 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	if d.LifeApp != nil {
 		lifev1.RegisterLifeHTTPServer(srv, lifehttp.New(d.LifeApp))
 		lifehttp.RegisterItemRoutes(srv, d.LifeApp)
+	}
+	if d.CompanionApp != nil {
+		companionv1.RegisterCompanionHTTPServer(srv, companionhttp.New(d.CompanionApp))
+		companionhttp.RegisterChatStreamRoute(srv, d.CompanionApp)
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

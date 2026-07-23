@@ -121,7 +121,7 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5F2),
       appBar: AppBar(
-        title: const Text('AI 伙伴'),
+        title: const Text('伙伴详情'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: MoeTokens.titleText,
