@@ -81,8 +81,32 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!_hasChanges) return;
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('未保存的更改'),
+            content: const Text('您有未保存的配置更改，确定要退出吗？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('退出', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+        if (result == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
       child: Scaffold(
         backgroundColor: MoeTokens.pageBackground,
         appBar: AppBar(
@@ -581,29 +605,6 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     );
   }
 
-  Future<bool> _onWillPop() async {
-    if (!_hasChanges) return true;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('未保存的更改'),
-        content: const Text('您有未保存的配置更改，确定要退出吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('退出', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    return result ?? false;
-  }
 
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;

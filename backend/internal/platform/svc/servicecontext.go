@@ -10,6 +10,7 @@ import (
 	checkinapp "backend/internal/service/checkin"
 	commentapp "backend/internal/service/comment"
 	communityapp "backend/internal/service/community"
+	companionapp "backend/internal/service/companion"
 	gameapp "backend/internal/service/game"
 	giftapp "backend/internal/service/gift"
 	lifeapp "backend/internal/service/life"
@@ -57,6 +58,10 @@ type LifeServices struct {
 	LifeApp *lifeapp.AppService
 }
 
+type CompanionServices struct {
+	CompanionApp *companionapp.AppService
+}
+
 type PlatformServices struct {
 	MediaApp *mediaapp.AppService
 }
@@ -67,6 +72,7 @@ type ServiceDomains struct {
 	AI        AIServices
 	Game      GameServices
 	Life      LifeServices
+	Companion CompanionServices
 	Platform  PlatformServices
 }
 
@@ -86,6 +92,7 @@ type ServiceContext struct {
 	GiftApp        *giftapp.AppService
 	GameApp        *gameapp.AppService
 	LifeApp        *lifeapp.AppService
+	CompanionApp   *companionapp.AppService
 	LLMApp         *llmapp.AppService
 	MediaApp       *mediaapp.AppService
 	ChatApp        *chatapp.AppService
@@ -132,5 +139,6 @@ func (c *ServiceContext) SyncDomains() {
 	}
 	c.Domains.Game = GameServices{GameApp: c.GameApp}
 	c.Domains.Life = LifeServices{LifeApp: c.LifeApp}
+	c.Domains.Companion = CompanionServices{CompanionApp: c.CompanionApp}
 	c.Domains.Platform = PlatformServices{MediaApp: c.MediaApp}
 }

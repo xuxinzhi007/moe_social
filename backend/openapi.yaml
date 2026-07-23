@@ -3287,6 +3287,87 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/community.v1.CreateGroupPostReply'
+    /api/companion/chat/history:
+        get:
+            tags:
+                - Companion
+            description: Chat History
+            operationId: Companion_ListChatHistory
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListChatHistoryReply'
+    /api/companion/memories:
+        get:
+            tags:
+                - Companion
+            description: Memory
+            operationId: Companion_ListMemories
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListMemoriesReply'
+    /api/companion/profile:
+        get:
+            tags:
+                - Companion
+            description: Profile
+            operationId: Companion_GetProfile
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.GetProfileReply'
+        post:
+            tags:
+                - Companion
+            operationId: Companion_UpsertProfile
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.UpsertProfileRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.UpsertProfileReply'
+    /api/companion/state:
+        get:
+            tags:
+                - Companion
+            description: State（当前状态，含人格化表达 + 动态）
+            operationId: Companion_GetState
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.GetStateReply'
     /api/content/generate:
         post:
             tags:
@@ -3517,6 +3598,83 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/landing.v1.SubmitLandingFeedbackReply'
+    /api/life/action:
+        post:
+            tags:
+                - Life
+            operationId: Life_ApplyAction
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/life.v1.ApplyLifeActionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/life.v1.ApplyLifeActionReply'
+    /api/life/entities:
+        get:
+            tags:
+                - Life
+            operationId: Life_ListEntities
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/life.v1.ListLifeEntitiesReply'
+    /api/life/events:
+        get:
+            tags:
+                - Life
+            operationId: Life_ListEvents
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/life.v1.ListLifeEventsReply'
+    /api/life/relationships:
+        get:
+            tags:
+                - Life
+            operationId: Life_ListRelationships
+            parameters:
+                - name: world
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/life.v1.ListLifeRelationshipsReply'
+    /api/life/world:
+        get:
+            tags:
+                - Life
+            operationId: Life_GetWorld
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/life.v1.GetLifeWorldReply'
     /api/llm/agents:
         post:
             tags:
@@ -4220,6 +4378,27 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/chat.v1.ListPrivateConversationsReply'
+    /api/private-messages/history:
+        delete:
+            tags:
+                - PrivateMessageService
+            operationId: PrivateMessageService_ClearPrivateChatHistory
+            parameters:
+                - name: viewerId
+                  in: query
+                  schema:
+                    type: string
+                - name: peerId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/chat.v1.ClearPrivateChatHistoryResp'
     /api/public/client-config:
         get:
             tags:
@@ -4422,6 +4601,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.ResetPasswordResp'
+    /api/user/temp-mail/generate:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_GenerateTempEmail
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1.GenerateTempEmailReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1.GenerateTempEmailResp'
+    /api/user/temp-mail/latest-code:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_GetTempEmailLatestCode
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/user.v1.GetTempEmailLatestCodeReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/user.v1.GetTempEmailLatestCodeResp'
     /api/user/{followerId}/follow/{followingId}/check:
         get:
             tags:
@@ -5176,6 +5391,166 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.GetFriendRelationResp'
+    /api/user/{userId}/game/act:
+        post:
+            tags:
+                - Game
+            operationId: Game_Act
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/game.v1.ActRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.ActReply'
+    /api/user/{userId}/game/init:
+        post:
+            tags:
+                - Game
+            operationId: Game_InitGameSession
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/game.v1.InitGameSessionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.InitGameSessionReply'
+    /api/user/{userId}/game/load:
+        post:
+            tags:
+                - Game
+            operationId: Game_LoadGame
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/game.v1.LoadGameRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.LoadGameReply'
+    /api/user/{userId}/game/save:
+        post:
+            tags:
+                - Game
+            operationId: Game_SaveGame
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/game.v1.SaveGameRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.SaveGameReply'
+    /api/user/{userId}/game/slots:
+        get:
+            tags:
+                - Game
+            operationId: Game_ListSaveSlots
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.ListSaveSlotsReply'
+    /api/user/{userId}/game/slots/{slotIndex}:
+        delete:
+            tags:
+                - Game
+            operationId: Game_DeleteSaveSlot
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: slotIndex
+                  in: path
+                  required: true
+                  schema:
+                    type: integer
+                    format: uint32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.DeleteSaveSlotReply'
+    /api/user/{userId}/game/state:
+        get:
+            tags:
+                - Game
+            operationId: Game_GetGameState
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: sessionId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/game.v1.GetGameStateReply'
     /api/user/{userId}/gifts/purchase:
         post:
             tags:
@@ -8033,6 +8408,9 @@ components:
         chat.v1.BroadcastPushNotificationResp:
             type: object
             properties: {}
+        chat.v1.ClearPrivateChatHistoryResp:
+            type: object
+            properties: {}
         chat.v1.GetChatOnlineBatchResp:
             type: object
             properties:
@@ -8616,6 +8994,146 @@ components:
                     type: string
                 isPublic:
                     type: boolean
+        companion.v1.CompanionChatLogMsg:
+            type: object
+            properties:
+                id:
+                    type: string
+                role:
+                    type: string
+                content:
+                    type: string
+                createdAt:
+                    type: string
+        companion.v1.CompanionMemoryMsg:
+            type: object
+            properties:
+                id:
+                    type: string
+                memoryType:
+                    type: string
+                content:
+                    type: string
+                importance:
+                    type: integer
+                    format: int32
+                createdAt:
+                    type: string
+        companion.v1.CompanionMomentMsg:
+            type: object
+            properties:
+                text:
+                    type: string
+                icon:
+                    type: string
+                timeLabel:
+                    type: string
+        companion.v1.CompanionProfileMsg:
+            type: object
+            properties:
+                name:
+                    type: string
+                emoji:
+                    type: string
+                persona:
+                    type: string
+                personalityTraits:
+                    type: array
+                    items:
+                        type: string
+                greetingStyle:
+                    type: string
+                relationshipLevel:
+                    type: integer
+                    format: int32
+                intimacyScore:
+                    type: number
+                    format: double
+                systemPromptOverride:
+                    type: string
+                agentId:
+                    type: string
+                lifeEntityId:
+                    type: integer
+                    format: int32
+        companion.v1.CompanionStateMsg:
+            type: object
+            properties:
+                moodThought:
+                    type: string
+                    description: 人格化表达（直接给前端展示）
+                activityLabel:
+                    type: string
+                greeting:
+                    type: string
+                moments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionMomentMsg'
+                    description: 动态（类朋友圈）
+                mood:
+                    type: number
+                    description: 原始数值（高级展示用）
+                    format: double
+                hunger:
+                    type: number
+                    format: double
+                energy:
+                    type: number
+                    format: double
+        companion.v1.GetProfileReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/companion.v1.CompanionProfileMsg'
+        companion.v1.GetStateReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/companion.v1.CompanionStateMsg'
+                profile:
+                    $ref: '#/components/schemas/companion.v1.CompanionProfileMsg'
+        companion.v1.ListChatHistoryReply:
+            type: object
+            properties:
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionChatLogMsg'
+        companion.v1.ListMemoriesReply:
+            type: object
+            properties:
+                memories:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionMemoryMsg'
+        companion.v1.UpsertProfileReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/companion.v1.CompanionProfileMsg'
+        companion.v1.UpsertProfileRequest:
+            type: object
+            properties:
+                name:
+                    type: string
+                emoji:
+                    type: string
+                persona:
+                    type: string
+                personalityTraits:
+                    type: array
+                    items:
+                        type: string
+                greetingStyle:
+                    type: string
+                systemPromptOverride:
+                    type: string
+                agentId:
+                    type: string
+                lifeEntityId:
+                    type: integer
+                    format: int32
         content.v1.GenerateContentData:
             type: object
             properties:
@@ -8645,6 +9163,233 @@ components:
             properties:
                 data:
                     $ref: '#/components/schemas/content.v1.GenerateContentData'
+        game.v1.ActReply:
+            type: object
+            properties:
+                narrative:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNarrativeLine'
+                location:
+                    type: string
+                gameTime:
+                    type: string
+                overallFavorability:
+                    type: integer
+                    format: int32
+                playerFocus:
+                    type: string
+                narrativeSource:
+                    type: string
+                llmOnline:
+                    type: boolean
+                suggestedActions:
+                    type: array
+                    items:
+                        type: string
+                inventory:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameItem'
+                npcs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNpc'
+        game.v1.ActRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                sessionId:
+                    type: string
+                action:
+                    type: string
+        game.v1.DeleteSaveSlotReply:
+            type: object
+            properties:
+                success:
+                    type: boolean
+        game.v1.GameItem:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                inInventory:
+                    type: boolean
+        game.v1.GameNarrativeLine:
+            type: object
+            properties:
+                type:
+                    type: string
+                content:
+                    type: string
+                name:
+                    type: string
+        game.v1.GameNpc:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                persona:
+                    type: string
+                favorability:
+                    type: integer
+                    format: int32
+        game.v1.GameScene:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                exits:
+                    type: array
+                    items:
+                        type: string
+        game.v1.GetGameStateReply:
+            type: object
+            properties:
+                sessionId:
+                    type: string
+                scene:
+                    $ref: '#/components/schemas/game.v1.GameScene'
+                npcs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNpc'
+                gameTime:
+                    type: string
+                overallFavorability:
+                    type: integer
+                    format: int32
+                flagsJson:
+                    type: string
+                playerFocus:
+                    type: string
+                inventory:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameItem'
+                visitedScenes:
+                    type: array
+                    items:
+                        type: string
+                storyArcTitles:
+                    type: array
+                    items:
+                        type: string
+        game.v1.InitGameSessionReply:
+            type: object
+            properties:
+                sessionId:
+                    type: string
+                scene:
+                    $ref: '#/components/schemas/game.v1.GameScene'
+                npcs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNpc'
+                opening:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNarrativeLine'
+                gameTime:
+                    type: string
+                overallFavorability:
+                    type: integer
+                    format: int32
+                history:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameNarrativeLine'
+                playerFocus:
+                    type: string
+                llmOnline:
+                    type: boolean
+                inventory:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.GameItem'
+                visitedScenes:
+                    type: array
+                    items:
+                        type: string
+        game.v1.InitGameSessionRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                forceNew:
+                    type: boolean
+        game.v1.ListSaveSlotsReply:
+            type: object
+            properties:
+                slots:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/game.v1.SaveSlotInfo'
+        game.v1.LoadGameReply:
+            type: object
+            properties:
+                sessionId:
+                    type: string
+                sceneName:
+                    type: string
+                turnCount:
+                    type: integer
+                    format: int32
+                label:
+                    type: string
+        game.v1.LoadGameRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                slotIndex:
+                    type: integer
+                    format: uint32
+        game.v1.SaveGameReply:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                slot:
+                    $ref: '#/components/schemas/game.v1.SaveSlotInfo'
+        game.v1.SaveGameRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                sessionId:
+                    type: string
+                slotIndex:
+                    type: integer
+                    format: uint32
+                label:
+                    type: string
+        game.v1.SaveSlotInfo:
+            type: object
+            properties:
+                slotIndex:
+                    type: integer
+                    format: uint32
+                label:
+                    type: string
+                turnCount:
+                    type: integer
+                    format: int32
+                sceneName:
+                    type: string
+                updatedAt:
+                    type: string
         gift.v1.AchievementUnlock:
             type: object
             properties:
@@ -8888,6 +9633,205 @@ components:
                     type: string
                 userAgent:
                     type: string
+        life.v1.ApplyLifeActionReply:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                entity:
+                    $ref: '#/components/schemas/life.v1.LifeEntity'
+                cooldown:
+                    type: boolean
+                retryAfter:
+                    type: number
+                    format: double
+        life.v1.ApplyLifeActionRequest:
+            type: object
+            properties:
+                action:
+                    type: string
+                entityId:
+                    type: string
+                params:
+                    type: object
+                    additionalProperties:
+                        type: string
+        life.v1.GetLifeWorldReply:
+            type: object
+            properties:
+                world:
+                    $ref: '#/components/schemas/life.v1.LifeWorld'
+                tickCount:
+                    type: string
+                entityCount:
+                    type: integer
+                    format: int32
+                summary:
+                    $ref: '#/components/schemas/life.v1.LifeWorldSummary'
+        life.v1.LifeEntity:
+            type: object
+            properties:
+                id:
+                    type: string
+                worldId:
+                    type: string
+                name:
+                    type: string
+                emoji:
+                    type: string
+                hunger:
+                    type: number
+                    format: double
+                energy:
+                    type: number
+                    format: double
+                mood:
+                    type: number
+                    format: double
+                currentAction:
+                    type: string
+                positionX:
+                    type: number
+                    format: double
+                positionY:
+                    type: number
+                    format: double
+                targetEntityId:
+                    type: string
+                age:
+                    type: integer
+                    format: int32
+                growthStage:
+                    type: string
+                experience:
+                    type: number
+                    format: double
+                isAlive:
+                    type: boolean
+                lastActionAt:
+                    type: string
+                updatedAt:
+                    type: string
+                createdAt:
+                    type: string
+        life.v1.LifeEventLog:
+            type: object
+            properties:
+                id:
+                    type: string
+                worldId:
+                    type: string
+                entityId:
+                    type: string
+                entityType:
+                    type: string
+                eventType:
+                    type: string
+                description:
+                    type: string
+                positionX:
+                    type: number
+                    format: double
+                positionY:
+                    type: number
+                    format: double
+                createdAt:
+                    type: string
+        life.v1.LifeRelationship:
+            type: object
+            properties:
+                id:
+                    type: string
+                worldId:
+                    type: string
+                entityId:
+                    type: string
+                targetId:
+                    type: string
+                relationType:
+                    type: string
+                affinity:
+                    type: number
+                    format: double
+                lastInteractionAt:
+                    type: string
+                createdAt:
+                    type: string
+                updatedAt:
+                    type: string
+        life.v1.LifeWorld:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                tickCount:
+                    type: string
+                isRunning:
+                    type: boolean
+                gridData:
+                    type: string
+                updatedAt:
+                    type: string
+                createdAt:
+                    type: string
+        life.v1.LifeWorldSummary:
+            type: object
+            properties:
+                entityCount:
+                    type: integer
+                    format: int32
+                aliveCount:
+                    type: integer
+                    format: int32
+                birthCount:
+                    type: integer
+                    format: int32
+                deathCount:
+                    type: integer
+                    format: int32
+                avgHunger:
+                    type: number
+                    format: double
+                avgEnergy:
+                    type: number
+                    format: double
+                avgMood:
+                    type: number
+                    format: double
+                totalFood:
+                    type: number
+                    format: double
+                habitableCells:
+                    type: integer
+                    format: int32
+                dangerCells:
+                    type: integer
+                    format: int32
+        life.v1.ListLifeEntitiesReply:
+            type: object
+            properties:
+                entities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/life.v1.LifeEntity'
+        life.v1.ListLifeEventsReply:
+            type: object
+            properties:
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/life.v1.LifeEventLog'
+        life.v1.ListLifeRelationshipsReply:
+            type: object
+            properties:
+                relationships:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/life.v1.LifeRelationship'
         llm.v1.DeleteUserMemoryResp:
             type: object
             properties: {}
@@ -10929,6 +11873,18 @@ components:
                     type: string
                 createdAt:
                     type: string
+        user.v1.GenerateTempEmailReq:
+            type: object
+            properties: {}
+        user.v1.GenerateTempEmailResp:
+            type: object
+            properties:
+                email:
+                    type: string
+                localPart:
+                    type: string
+                domain:
+                    type: string
         user.v1.GetAvatarOutfitResp:
             type: object
             properties:
@@ -10983,6 +11939,24 @@ components:
             type: object
             properties:
                 relation:
+                    type: string
+        user.v1.GetTempEmailLatestCodeReq:
+            type: object
+            properties:
+                email:
+                    type: string
+        user.v1.GetTempEmailLatestCodeResp:
+            type: object
+            properties:
+                code:
+                    type: string
+                matched:
+                    type: boolean
+                messageId:
+                    type: string
+                subject:
+                    type: string
+                receivedAt:
                     type: string
         user.v1.GetTransactionResp:
             type: object
@@ -11764,9 +12738,12 @@ tags:
     - name: Checkin
     - name: CommentService
     - name: Community
+    - name: Companion
     - name: ContentService
+    - name: Game
     - name: GiftService
     - name: Landing
+    - name: Life
     - name: LlmChat
     - name: Media
     - name: MoeAdmin

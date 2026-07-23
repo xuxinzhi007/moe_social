@@ -28,10 +28,8 @@ import '../pages/commerce/wallet_page.dart' deferred as wallet;
 import '../pages/community/community_home_page.dart';
 import '../pages/community/community_post_detail_page.dart';
 import '../pages/community/interest_group_detail_page.dart';
-import '../pages/discover/explore_match_redirect_page.dart';
 import '../pages/feed/comments_page.dart';
 import '../pages/feed/create_post_page.dart';
-import '../pages/feed/home_redesign_demo.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
@@ -68,7 +66,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/login': (context) => const LoginPage(),
     '/register': (context) => const RegisterPage(),
     '/home': (context) => const MainPage(),
-    '/home-redesign-demo': (context) => const HomeRedesignDemo(),
     '/profile': (context) => const ProfilePage(),
     '/achievements': (context) => _deferred(
           achievements.loadLibrary,
@@ -223,7 +220,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       final initial = args['post'] is Post ? args['post'] as Post : null;
       return CommunityPostDetailPage(postId: postId, initialPost: initial);
     },
-    '/match': (context) => const ExploreMatchRedirectPage(),
     '/messages': (context) => const MessageCenterPage(),
     '/direct-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
@@ -242,7 +238,6 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           message: '正在加载扫码模块…',
         ),
     '/user-qr-code': (context) => const UserQrCodePage(),
-    '/interaction': (context) => const FriendsPage(),
     '/life/world': (context) => const LifeWorldPage(),
     '/life/detail': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;

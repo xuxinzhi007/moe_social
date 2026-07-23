@@ -21,9 +21,10 @@ func HTTPServerDepsFromServiceContext(s *svc.ServiceContext) HTTPServerDeps {
 	deps.Ops.AdminApp = s.Domains.Access.AdminApp
 	deps.Proto = ProtoHTTPDepsFromServiceContext(s)
 	deps.Transport = transport.Deps{
-		MoeAdmin: s.Domains.Access.MoeAdmin,
-		ChatWS:   chatdelivery.ChatWSDepsFrom(s),
-		LifeApp:  s.Domains.Life.LifeApp,
+		MoeAdmin:     s.Domains.Access.MoeAdmin,
+		ChatWS:       chatdelivery.ChatWSDepsFrom(s),
+		LifeApp:      s.Domains.Life.LifeApp,
+		CompanionApp: s.Domains.Companion.CompanionApp,
 	}
 	deps.Docs = DefaultDocsHTTPDeps()
 	return deps
@@ -41,6 +42,7 @@ func ProtoHTTPDepsFromServiceContext(s *svc.ServiceContext) ProtoHTTPDeps {
 	out.GiftApp = s.Domains.Community.GiftApp
 	out.GameApp = s.Domains.Game.GameApp
 	out.LifeApp = s.Domains.Life.LifeApp
+	out.CompanionApp = s.Domains.Companion.CompanionApp
 	out.UserApp = s.Domains.Access.UserApp
 	out.CommentApp = s.Domains.Community.CommentApp
 	out.CommunityApp = s.Domains.Community.CommunityApp

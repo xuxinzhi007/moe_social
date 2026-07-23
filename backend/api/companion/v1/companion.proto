@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package companion.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/companion/v1;companionv1";
+
+// Companion — AI 伙伴 HTTP 契约（灵魂层后端 API）。
+
+// ── 公共 message ──
+
+message CompanionProfileMsg {
+  string name = 1;
+  string emoji = 2;
+  string persona = 3;
+  repeated string personality_traits = 4;
+  string greeting_style = 5;
+  int32 relationship_level = 6;
+  double intimacy_score = 7;
+  string system_prompt_override = 8;
+  string agent_id = 9;
+  int32 life_entity_id = 10;
+}
+
+message CompanionStateMsg {
+  // 人格化表达（直接给前端展示）
+  string mood_thought = 1;
+  string activity_label = 2;
+  string greeting = 3;
+  // 动态（类朋友圈）
+  repeated CompanionMomentMsg moments = 4;
+  // 原始数值（高级展示用）
+  double mood = 10;
+  double hunger = 11;
+  double energy = 12;
+}
+
+message CompanionMomentMsg {
+  string text = 1;
+  string icon = 2;
+  string time_label = 3;
+}
+
+message CompanionMemoryMsg {
+  uint64 id = 1;
+  string memory_type = 2;
+  string content = 3;
+  int32 importance = 4;
+  string created_at = 5;
+}
+
+message CompanionChatLogMsg {
+  uint64 id = 1;
+  string role = 2;
+  string content = 3;
+  string created_at = 4;
+}
+
+// ── Request / Reply ──
+
+message GetProfileRequest {}
+
+message GetProfileReply {
+  CompanionProfileMsg profile = 1;
+}
+
+message UpsertProfileRequest {
+  string name = 1;
+  string emoji = 2;
+  string persona = 3;
+  repeated string personality_traits = 4;
+  string greeting_style = 5;
+  string system_prompt_override = 6;
+  string agent_id = 7;
+  int32 life_entity_id = 8;
+}
+
+message UpsertProfileReply {
+  CompanionProfileMsg profile = 1;
+}
+
+message GetStateRequest {}
+
+message GetStateReply {
+  CompanionStateMsg state = 1;
+  CompanionProfileMsg profile = 2;
+}
+
+message ListMemoriesRequest {
+  int32 limit = 1;
+}
+
+message ListMemoriesReply {
+  repeated CompanionMemoryMsg memories = 1;
+}
+
+message ListChatHistoryRequest {
+  int32 limit = 1;
+}
+
+message ListChatHistoryReply {
+  repeated CompanionChatLogMsg messages = 1;
+}
+
+// ── Service ──
+
+service Companion {
+  // Profile
+  rpc GetProfile(GetProfileRequest) returns (GetProfileReply) {
+    option (google.api.http) = {get: "/api/companion/profile"};
+  }
+  rpc UpsertProfile(UpsertProfileRequest) returns (UpsertProfileReply) {
+    option (google.api.http) = {
+      post: "/api/companion/profile"
+      body: "*"
+    };
+  }
+
+  // State（当前状态，含人格化表达 + 动态）
+  rpc GetState(GetStateRequest) returns (GetStateReply) {
+    option (google.api.http) = {get: "/api/companion/state"};
+  }
+
+  // Memory
+  rpc ListMemories(ListMemoriesRequest) returns (ListMemoriesReply) {
+    option (google.api.http) = {get: "/api/companion/memories"};
+  }
+
+  // Chat History
+  rpc ListChatHistory(ListChatHistoryRequest) returns (ListChatHistoryReply) {
+    option (google.api.http) = {get: "/api/companion/chat/history"};
+  }
+
+  // 注意：Chat SSE 流式端点通过 RegisterChatStreamRoute 手工注册（参照 game 模块）
+}
