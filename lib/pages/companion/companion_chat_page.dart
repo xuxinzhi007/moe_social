@@ -25,7 +25,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   CompanionProfileData _profile = const CompanionProfileData();
   CompanionStateData _state = const CompanionStateData();
-  String? _error; // 最近一次错误
+
+  /// 'not_ready' | 'network' | null
+  String? _loadError;
 
   @override
   void initState() {
@@ -51,8 +53,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         _profile = profile;
         _state = state;
         _isLoading = false;
+        _loadError = null;
       });
-      // 如果有问候语，作为第一条消息展示
       if (state.greeting.isNotEmpty) {
         setState(() {
           _items.add(_ChatItem(
@@ -63,10 +65,30 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = '加载失败: $e';
-      });
+      final msg = e.toString().toLowerCase();
+      // 区分错误类型：表不存在 / 网络问题 / 其他
+      if (msg.contains("doesn't exist") ||
+          msg.contains('no such table') ||
+          msg.contains('1146')) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'not_ready';
+        });
+      } else if (msg.contains('timeout') ||
+          msg.contains('connection') ||
+          msg.contains('network') ||
+          msg.contains('socket')) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'network';
+        });
+      } else {
+        // 未知错误，也走友好降级
+        setState(() {
+          _isLoading = false;
+          _loadError = 'not_ready';
+        });
+      }
     }
   }
 
@@ -78,7 +100,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     setState(() {
       _items.add(_ChatItem(role: 'user', content: text));
       _isSending = true;
-      _error = null;
     });
     _scrollToBottom();
 
@@ -105,7 +126,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             _scrollToBottom();
             break;
           case 'done':
-            // 最终文本可能通过 done 事件的 text 字段获取
             final finalText =
                 event.text.isNotEmpty ? event.text : fullText;
             setState(() {
@@ -120,10 +140,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
-                content: '抱歉，出了点问题，请重试。',
+                content: '抱歉，我走神了一下，再跟我说一次？',
                 isError: true,
               );
-              _error = event.text;
             });
             break;
         }
@@ -131,7 +150,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        // 移除空的助手消息
         if (_items.isNotEmpty &&
             _items.last.role == 'assistant' &&
             _items.last.content.isEmpty) {
@@ -139,10 +157,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         }
         _items.add(_ChatItem(
           role: 'assistant',
-          content: '网络错误，请检查连接后重试。',
+          content: '网络好像断开了，检查一下连接再找我聊天吧~',
           isError: true,
         ));
-        _error = e.toString();
       });
     } finally {
       if (mounted) {
@@ -165,7 +182,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: _buildAppBarTitle(),
@@ -175,8 +191,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       body: AiChatBackground(
         child: Column(
           children: [
-            Expanded(child: _buildMessageList(theme)),
-            _buildComposer(theme),
+            Expanded(child: _buildContent()),
+            _buildComposer(),
           ],
         ),
       ),
@@ -197,12 +213,14 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
           children: [
             Text(
               _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600),
             ),
             if (_state.activityLabel.isNotEmpty)
               Text(
                 _state.activityLabel,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                style: TextStyle(
+                    fontSize: 11, color: Colors.grey.shade400),
               ),
           ],
         ),
@@ -210,96 +228,210 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     );
   }
 
-  Widget _buildMessageList(ThemeData theme) {
-    return Column(
-      children: [
-        if (_error != null && !_isLoading)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            color: Colors.red.withValues(alpha: 0.1),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, size: 16, color: Colors.red),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 14),
-                  onPressed: () => setState(() => _error = null),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                ),
-              ],
-            ),
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // ── 错误降级：友好提示卡片 ──
+    if (_loadError != null) {
+      return _buildFallbackCard();
+    }
+
+    // ── 空态：首次进入欢迎卡 ──
+    if (_items.isEmpty) {
+      return _buildWelcomeCard();
+    }
+
+    // ── 消息列表 ──
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: _items.length,
+      itemBuilder: (context, index) {
+        final item = _items[index];
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: AiMessageBubble(
+            content: item.content,
+            contentType: MessageContentType.text,
+            isUser: item.role == 'user',
+            isLoading: item.isStreaming,
+            agentLabel:
+                item.role == 'assistant' ? _profile.name : null,
           ),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _items.isEmpty
-                  ? _buildEmptyState(theme)
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        final item = _items[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: AiMessageBubble(
-                            content: item.content,
-                            contentType: MessageContentType.text,
-                            isUser: item.role == 'user',
-                            isLoading: item.isStreaming,
-                            agentLabel: item.role == 'assistant'
-                                ? _profile.name
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  // ── 友好错误降级卡片 ─────────────────────────────────────────────
+  Widget _buildFallbackCard() {
+    final isNotReady = _loadError == 'not_ready';
+    final emoji = isNotReady ? '🐾' : '📡';
+    final title = isNotReady ? '伙伴正在准备中' : '网络好像断开了';
+    final subtitle = isNotReady
+        ? '后台正在部署伙伴的记忆系统\n马上就能聊天啦~'
+        : '检查一下网络连接\n然后再来找我吧';
+    final buttonText = isNotReady ? '稍后再试' : '重新连接';
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_profile.emoji, style: const TextStyle(fontSize: 48)),
-            const SizedBox(height: 16),
-            Text(
-              _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
-              style: theme.textTheme.titleLarge,
+        padding: const EdgeInsets.all(28),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFEDE7F6),
+                Color(0xFFF3E5F5),
+                Color(0xFFFCE4EC),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _profile.persona.isNotEmpty
-                  ? _profile.persona
-                  : '你的 AI 好朋友，随时陪你聊天',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade500,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0x128A2387),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AiBrandTokens.titleColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: AiBrandTokens.titleColor.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _loadError = null;
+                  });
+                  _loadInitialData();
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(buttonText),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AiBrandTokens.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildComposer(ThemeData theme) {
+  // ── 首次进入欢迎卡片 ─────────────────────────────────────────────
+  Widget _buildWelcomeCard() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFEDE7F6),
+                Color(0xFFF3E5F5),
+                Color(0xFFFCE4EC),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0x128A2387),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 88,
+                height: 88,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _profile.emoji.isNotEmpty ? _profile.emoji : '🐾',
+                  style: const TextStyle(fontSize: 44),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: AiBrandTokens.titleColor,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _profile.persona.isNotEmpty
+                    ? _profile.persona
+                    : '你的 AI 好朋友，随时陪你聊天\n说点什么开始吧~',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: AiBrandTokens.titleColor.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComposer() {
+    final theme = Theme.of(context);
+    final hasError = _loadError != null;
     return Container(
       padding: EdgeInsets.fromLTRB(
         12,
@@ -310,7 +442,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
+          top: BorderSide(
+              color: theme.dividerColor.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -323,7 +456,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
               maxLines: 4,
               minLines: 1,
               decoration: InputDecoration(
-                hintText: _isSending ? '思考中...' : '说点什么...',
+                hintText: hasError
+                    ? '暂时无法发送消息'
+                    : _isSending
+                        ? '思考中...'
+                        : '说点什么...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -337,21 +474,23 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 ),
               ),
               onSubmitted: (_) => _sendMessage(),
-              enabled: !_isSending,
+              enabled: !_isSending && !hasError,
             ),
           ),
           const SizedBox(width: 8),
           Container(
             decoration: BoxDecoration(
-              color: _isSending
+              color: (_isSending || hasError)
                   ? Colors.grey.shade300
                   : AiBrandTokens.gradientPink,
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              onPressed: _isSending ? null : _sendMessage,
+              onPressed: (_isSending || hasError) ? null : _sendMessage,
               icon: Icon(
-                _isSending ? Icons.hourglass_empty : Icons.send_rounded,
+                _isSending
+                    ? Icons.hourglass_empty
+                    : Icons.send_rounded,
                 color: Colors.white,
                 size: 20,
               ),
@@ -364,7 +503,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 }
 
 class _ChatItem {
-  final String role; // user / assistant
+  final String role;
   final String content;
   final bool isStreaming;
   final bool isError;
