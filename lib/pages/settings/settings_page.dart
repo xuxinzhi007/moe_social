@@ -14,7 +14,6 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/settings/settings_search_bar.dart';
 import '../../providers/virtual_avatar_provider.dart';
 import 'modules/device_storage_module.dart';
-import 'modules/appearance_module.dart';
 import 'modules/account_security_module.dart';
 import 'modules/about_module.dart';
 import 'message_retention_settings_page.dart';
@@ -240,17 +239,17 @@ class _SettingsPageState extends State<SettingsPage> {
         'description': '管理社区 AI 账号与悬浮助手入口',
         'icon': Icons.smart_toy_rounded,
         'color': Colors.deepPurple,
-        'module': '外观与体验',
+        'module': 'AI 与助手',
         'keywords': ['ai', '助手', '社区ai', 'bot', '标签', '悬浮'],
         'action': 'scroll',
-        'target': '外观与体验',
+        'target': 'AI 与助手',
       },
       {
         'title': '社区 AI 设置',
         'description': '统一管理 AI 账号、悬浮入口与社区互动形态',
         'icon': Icons.tune_rounded,
         'color': Colors.deepPurpleAccent,
-        'module': '外观与体验',
+        'module': 'AI 与助手',
         'keywords': ['社区ai', 'bot', '动态', '评论', '发帖', '设置'],
         'action': 'route',
         'target': '/virtual-avatar-settings',
@@ -272,16 +271,6 @@ class _SettingsPageState extends State<SettingsPage> {
         'color': Colors.blueGrey,
         'module': '设备与数据',
         'keywords': ['设备', '系统', '版本', '网络', 'ID'],
-        'action': 'scroll',
-        'target': '设备与数据',
-      },
-      {
-        'title': '已登录设备',
-        'description': '查看账号在各设备上的登录记录',
-        'icon': Icons.devices_other_rounded,
-        'color': Colors.cyan,
-        'module': '设备与数据',
-        'keywords': ['设备', '登录', '远程'],
         'action': 'scroll',
         'target': '设备与数据',
       },
@@ -316,26 +305,6 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '高级选项',
       },
       {
-        'title': '主题模式',
-        'description': '切换浅色/深色/跟随系统',
-        'icon': Icons.color_lens_rounded,
-        'color': Colors.purple,
-        'module': '外观与体验',
-        'keywords': ['主题', '深色', '浅色', '模式'],
-        'action': 'scroll',
-        'target': '外观与体验',
-      },
-      {
-        'title': '主题颜色',
-        'description': '自定义应用主色调',
-        'icon': Icons.palette_rounded,
-        'color': Colors.pink,
-        'module': '外观与体验',
-        'keywords': ['颜色', '主题色', '皮肤'],
-        'action': 'scroll',
-        'target': '外观与体验',
-      },
-      {
         'title': '修改密码',
         'description': '修改账户登录密码',
         'icon': Icons.lock_rounded,
@@ -367,11 +336,11 @@ class _SettingsPageState extends State<SettingsPage> {
       },
       {
         'title': '账号安全',
-        'description': '查看登录历史与两步验证',
+        'description': '查看登录记录与密码管理',
         'icon': Icons.shield_rounded,
         'color': Colors.red,
         'module': '账号与隐私',
-        'keywords': ['账号', '安全', '登录历史'],
+        'keywords': ['账号', '安全', '登录记录', '密码'],
         'action': 'scroll',
         'target': '账号与隐私',
       },
@@ -467,7 +436,7 @@ class _SettingsPageState extends State<SettingsPage> {
   // 模块滚动位置映射
   final Map<String, GlobalKey> _moduleKeys = {
     '账号与隐私': GlobalKey(),
-    '外观与体验': GlobalKey(),
+    'AI 与助手': GlobalKey(),
     '设备与数据': GlobalKey(),
     '高级选项': GlobalKey(),
     '关于与支持': GlobalKey(),
@@ -563,8 +532,7 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('外观与体验', key: _moduleKeys['外观与体验']),
-            const AppearanceModule(),
+            _buildSectionTitle('AI 与助手', key: _moduleKeys['AI 与助手']),
             MoeMenuCard(
               items: [
                 MoeMenuItem(

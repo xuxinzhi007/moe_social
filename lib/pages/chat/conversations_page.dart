@@ -348,6 +348,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
         return Column(
           children: [
             _buildSearchBar(context),
+            const SizedBox(height: 8),
+            _buildConversationOverview(context),
+            const SizedBox(height: 12),
             Expanded(child: _buildList(context, localPeers)),
           ],
         );
@@ -387,6 +390,190 @@ class _ConversationsPageState extends State<ConversationsPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildConversationOverview(BuildContext context) {
+    final unreadMap = context.watch<NotificationProvider>().unreadDmBySender;
+    final unreadCount =
+        unreadMap.values.fold<int>(0, (sum, value) => sum + value);
+    final conversationCount = _serverConversations.isNotEmpty
+        ? _serverConversations.length
+        : (_friends.isEmpty ? _notifs.length : _friends.length);
+    final quickFriends = _friends.take(6).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowCard(),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatTile(
+                      label: '会话',
+                      value: '$conversationCount',
+                      icon: Icons.forum_rounded,
+                      tint: MoeTokens.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatTile(
+                      label: '未读',
+                      value: '$unreadCount',
+                      icon: Icons.mark_chat_unread_rounded,
+                      tint: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildStatTile(
+                      label: '好友',
+                      value: '${_friends.length}',
+                      icon: Icons.people_rounded,
+                      tint: Colors.teal,
+                    ),
+                  ),
+                ],
+              ),
+              if (quickFriends.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '最近联系人',
+                        style: TextStyle(
+                          color: MoeTokens.titleText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () =>
+                          context.read<MainNavController>().requestTab(1),
+                      icon:
+                          const Icon(Icons.person_add_alt_1_rounded, size: 16),
+                      label: const Text('找好友'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: MoeTokens.primary,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 84,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: quickFriends.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final friend = quickFriends[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          await Navigator.pushNamed(
+                            context,
+                            '/direct-chat',
+                            arguments: {
+                              'userId': friend.id,
+                              'username': friend.username,
+                              'avatar': friend.avatar,
+                            },
+                          );
+                          if (mounted) await _load();
+                        },
+                        child: Container(
+                          width: 68,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Column(
+                            children: [
+                              NetworkAvatarImage(
+                                  imageUrl: friend.avatar, radius: 24),
+                              const SizedBox(height: 8),
+                              Text(
+                                friend.username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: MoeTokens.titleText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color tint,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: tint.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: tint),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: MoeTokens.titleText,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

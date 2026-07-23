@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../../auth_service.dart';
+import '../../../providers/device_info_provider.dart';
+import '../../../services/device_service.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
-import '../../../widgets/moe_error_state.dart';
 import '../../../widgets/moe_toast.dart';
-import '../../../utils/moe_error_copy.dart';
 import '../../../widgets/dialogs/confirm_dialog.dart';
-import '../../../theme/moe_theme_extension.dart';
-import '../../../widgets/layout/adaptive_dialog_content.dart';
 import '../privacy_settings_page.dart';
 
 class AccountSecurityModule extends StatelessWidget {
-  const AccountSecurityModule({Key? key}) : super(key: key);
+  const AccountSecurityModule({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,11 +41,11 @@ class AccountSecurityModule extends StatelessWidget {
           },
         ),
         MoeMenuItem(
-          icon: Icons.shield_rounded,
-          title: '账号安全',
-          subtitle: '查看登录历史、两步验证',
-          color: Colors.red,
-          onTap: () => _showAccountSecuritySheet(context),
+          icon: Icons.devices_other_rounded,
+          title: '登录记录',
+          subtitle: '查看当前设备与最近登录记录',
+          color: Colors.cyan,
+          onTap: () => _showLoggedInDevicesSheet(context),
         ),
         MoeMenuItem(
           icon: Icons.person_off_rounded,
@@ -253,14 +251,14 @@ class AccountSecurityModule extends StatelessWidget {
     );
   }
 
-  void _showAccountSecuritySheet(BuildContext context) {
+  void _showLoggedInDevicesSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          height: MediaQuery.of(context).size.height * 0.6,
+          height: MediaQuery.of(context).size.height * 0.74,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -279,79 +277,13 @@ class AccountSecurityModule extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  '账号安全',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: MoeMenuCard(
-                    items: [
-                      MoeMenuItem(
-                        icon: Icons.history_rounded,
-                        title: '登录历史',
-                        subtitle: '查看最近的登录记录',
-                        color: Colors.blue,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showLoginHistory(context);
-                        },
-                      ),
-                      MoeMenuItem(
-                        icon: Icons.security_rounded,
-                        title: '两步验证',
-                        subtitle: '开启两步验证提高账号安全性',
-                        color: Colors.orange,
-                        onTap: () {
-                          Navigator.pop(context);
-                          _showTwoFactorAuthDialog(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showLoginHistory(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  '登录历史',
+                  '登录记录',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
               Expanded(
                 child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _fetchLoginHistory(),
+                  future: _loadLoggedInDevices(context),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
@@ -361,125 +293,193 @@ class AccountSecurityModule extends StatelessWidget {
                     }
 
                     if (snapshot.hasError) {
-                      return MoeErrorState.fromError(
-                        snapshot.error!,
-                        scene: MoeErrorScene.profile,
-                        onRetry: () {
-                          Navigator.pop(context);
-                          _showLoginHistory(context);
-                        },
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            '加载失败: ${snapshot.error}',
+                            style: TextStyle(color: Colors.red[400]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       );
                     }
 
-                    final loginHistory = snapshot.data ?? [];
-                    if (loginHistory.isEmpty) {
+                    final devices = snapshot.data ?? const [];
+                    if (devices.isEmpty) {
                       return const Center(
-                        child: Text(
-                          '暂无登录历史记录',
-                          style: TextStyle(color: Colors.grey),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24),
+                          child: Text(
+                            '暂无登录记录。登录后会自动同步本机设备信息。',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ),
                       );
                     }
 
                     return ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: loginHistory.length,
-                      separatorBuilder: (_, __) => const Divider(),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      itemCount: devices.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final item = loginHistory[index];
+                        final device = devices[index];
+                        final name = device['name'] as String? ?? '未知设备';
+                        final platform = device['platform'] as String? ?? '';
+                        final osVersion = device['os_version'] as String? ?? '';
+                        final appVersion =
+                            device['app_version'] as String? ?? '';
+                        final lastSeen = device['last_seen'] as DateTime? ??
+                            DateTime.fromMillisecondsSinceEpoch(0);
+                        final deviceId = device['device_id'] as String? ?? '';
+                        final isCurrentDevice =
+                            device['is_current_device'] as bool? ?? false;
+                        final statusText =
+                            DateTime.now().difference(lastSeen).inMinutes < 60
+                                ? '最近活跃'
+                                : '离线';
+                        final statusColor =
+                            DateTime.now().difference(lastSeen).inMinutes < 60
+                                ? Colors.green
+                                : Colors.grey;
+
+                        final subtitle = StringBuffer();
+                        if (platform.isNotEmpty) subtitle.write(platform);
+                        if (osVersion.isNotEmpty) {
+                          if (subtitle.isNotEmpty) subtitle.write(' · ');
+                          subtitle.write(osVersion);
+                        }
+                        if (appVersion.isNotEmpty) {
+                          if (subtitle.isNotEmpty) subtitle.write(' · ');
+                          subtitle.write('v$appVersion');
+                        }
+
                         return Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Column(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: MoeTokens.pageBackground,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: MoeTokens.surfaceBorder),
+                          ),
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    item['device_name'] as String? ?? '未知设备',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  if (item['is_current'] as bool? ?? false)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: MoeTokens.primary
-                                            .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        '当前设备',
-                                        style: TextStyle(
-                                          color: MoeTokens.primary,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item['platform'] as String? ?? '未知平台',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 13,
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color:
+                                      MoeTokens.primary.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _deviceIcon(platform),
+                                  color: MoeTokens.primary,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(Icons.access_time_rounded,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    item['login_time'] as String? ?? '未知时间',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 13,
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: MoeTokens.titleText,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isCurrentDevice)
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: MoeTokens.primary
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: const Text(
+                                              '本机',
+                                              style: TextStyle(
+                                                color: MoeTokens.primary,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.location_on_rounded,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      item['location'] as String? ?? '未知位置',
+                                    if (subtitle.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        subtitle.toString(),
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '设备 ID: ${deviceId.isEmpty ? '未同步' : deviceId}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: Colors.grey[600],
-                                        fontSize: 13,
+                                        fontSize: 12,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(Icons.public_rounded,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    item['ip_address'] as String? ?? '未知IP',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 13,
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 14,
+                                          color: Colors.grey[500],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _formatRelativeTime(lastSeen),
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: statusColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          statusText,
+                                          style: TextStyle(
+                                            color: statusColor,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -496,333 +496,86 @@ class AccountSecurityModule extends StatelessWidget {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _fetchLoginHistory() async {
-    final userId = await AuthService.getUserId();
-    return UserService.getLoginHistory(userId);
+  Future<List<Map<String, dynamic>>> _loadLoggedInDevices(
+    BuildContext context,
+  ) async {
+    final userId = AuthService.currentUser;
+    if (userId == null || userId.isEmpty) return const [];
+
+    final currentDeviceId = context.read<DeviceInfoProvider>().deviceId;
+    final records = await DeviceService.listUserDevices(userId);
+    final devices = <Map<String, dynamic>>[];
+
+    for (final record in records) {
+      final payload = DeviceService.payloadFromRecord(record);
+      final deviceId =
+          (payload['device_id'] ?? record['device_id'] ?? '').toString();
+      final platform =
+          (payload['platform'] ?? record['platform'] ?? '').toString();
+      final osVersion =
+          (payload['os_version'] ?? record['os_version'] ?? '').toString();
+      final appVersion =
+          (payload['app_version'] ?? record['app_version'] ?? '').toString();
+      final deviceName = (payload['device_name'] ?? record['device_name'] ?? '')
+          .toString()
+          .trim();
+      final lastSeenRaw =
+          (payload['last_seen'] ?? record['last_seen'] ?? '').toString();
+      final lastSeen = DateTime.tryParse(lastSeenRaw)?.toLocal() ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+
+      devices.add({
+        'device_id': deviceId,
+        'name': deviceName.isNotEmpty
+            ? deviceName
+            : _buildDeviceName(platform, deviceId),
+        'platform': platform,
+        'os_version': osVersion,
+        'app_version': appVersion,
+        'last_seen': lastSeen,
+        'is_current_device': deviceId.isNotEmpty && deviceId == currentDeviceId,
+      });
+    }
+
+    devices.sort((a, b) {
+      final at =
+          a['last_seen'] as DateTime? ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bt =
+          b['last_seen'] as DateTime? ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bt.compareTo(at);
+    });
+    return devices;
   }
 
-  void _showTwoFactorAuthDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          bool isLoading = false;
-          bool isEnabled = false;
-          String? statusMessage;
-
-          // 加载两步验证状态
-          Future<void> loadStatus() async {
-            setState(() => isLoading = true);
-            try {
-              final userId = await AuthService.getUserId();
-              final status = await UserService.getTwoFactorStatus(userId);
-              setState(() {
-                isEnabled = status['enabled'] as bool? ?? false;
-                statusMessage = isEnabled ? '两步验证已开启' : '两步验证未开启';
-              });
-            } catch (e) {
-              setState(() {
-                statusMessage = '加载失败: ${e.toString()}';
-              });
-            } finally {
-              setState(() => isLoading = false);
-            }
-          }
-
-          // 初始加载状态
-          loadStatus();
-
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('两步验证设置'),
-            content: AdaptiveDialogContent(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isLoading)
-                    const Center(
-                        child:
-                            CircularProgressIndicator(color: MoeTokens.primary))
-                  else
-                    Column(
-                      children: [
-                        if (statusMessage != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Text(
-                              statusMessage!,
-                              style: TextStyle(
-                                color: isEnabled ? Colors.green : Colors.grey,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        MoeMenuCard(
-                          items: [
-                            MoeMenuItem(
-                              icon: Icons.security_rounded,
-                              title: '开启两步验证',
-                              subtitle: '使用验证码应用生成验证码',
-                              color: Colors.orange,
-                              trailing: Switch.adaptive(
-                                value: isEnabled,
-                                activeThumbColor: MoeTheme.of(context).primary,
-                                onChanged: (value) async {
-                                  if (value) {
-                                    _enableTwoFactorAuth(context);
-                                  } else {
-                                    _disableTwoFactorAuth(context);
-                                  }
-                                },
-                              ),
-                              onTap: () async {
-                                if (isEnabled) {
-                                  _disableTwoFactorAuth(context);
-                                } else {
-                                  _enableTwoFactorAuth(context);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('关闭', style: TextStyle(color: Colors.grey)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  String _buildDeviceName(String platform, String deviceId) {
+    if (platform.isNotEmpty) {
+      return '$platform 设备';
+    }
+    if (deviceId.isNotEmpty) {
+      return '设备 $deviceId';
+    }
+    return '未知设备';
   }
 
-  void _enableTwoFactorAuth(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          bool isLoading = false;
-          String? qrCodeUrl;
-          String? secretKey;
-          String code = '';
-          String? errorMessage;
-
-          // 生成两步验证密钥
-          Future<void> generateKey() async {
-            setState(() => isLoading = true);
-            try {
-              final userId = await AuthService.getUserId();
-              final result = await UserService.enableTwoFactorAuth(userId);
-              setState(() {
-                qrCodeUrl = result['qr_code'] as String?;
-                secretKey = result['secret'] as String?;
-                errorMessage = null;
-              });
-            } catch (e) {
-              setState(() {
-                errorMessage = '生成密钥失败: ${e.toString()}';
-              });
-            } finally {
-              setState(() => isLoading = false);
-            }
-          }
-
-          // 验证验证码
-          Future<void> verifyCode() async {
-            if (code.isEmpty) {
-              setState(() => errorMessage = '请输入验证码');
-              return;
-            }
-
-            setState(() => isLoading = true);
-            try {
-              final userId = await AuthService.getUserId();
-              await UserService.verifyTwoFactorCode(userId, code);
-              Navigator.pop(context);
-              Navigator.pop(context); // 关闭设置对话框
-              MoeToast.success(context, '两步验证已成功开启');
-            } catch (e) {
-              setState(() {
-                errorMessage = '验证码错误，请重试';
-              });
-            } finally {
-              setState(() => isLoading = false);
-            }
-          }
-
-          // 初始生成密钥
-          generateKey();
-
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('开启两步验证'),
-            content: AdaptiveDialogContent(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isLoading)
-                    const Center(
-                        child:
-                            CircularProgressIndicator(color: MoeTokens.primary))
-                  else if (errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    )
-                  else if (qrCodeUrl != null && secretKey != null)
-                    Column(
-                      children: [
-                        const Text('请使用验证码应用扫描二维码或手动输入密钥'),
-                        const SizedBox(height: 16),
-                        // 这里应该显示二维码图片
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade200),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            secretKey!,
-                            style: const TextStyle(
-                              fontFamily: 'Courier',
-                              letterSpacing: 2,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          onChanged: (value) => setState(() => code = value),
-                          decoration: const InputDecoration(
-                            labelText: '验证码',
-                            hintText: '请输入6位验证码',
-                            border: OutlineInputBorder(),
-                          ),
-                          keyboardType: TextInputType.number,
-                          maxLength: 6,
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('取消', style: TextStyle(color: Colors.grey)),
-              ),
-              ElevatedButton(
-                onPressed: qrCodeUrl != null ? verifyCode : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MoeTokens.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('确认'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  IconData _deviceIcon(String platform) {
+    final lower = platform.toLowerCase();
+    if (lower.contains('android')) return Icons.android_rounded;
+    if (lower.contains('ios') || lower.contains('iphone')) {
+      return Icons.phone_iphone_rounded;
+    }
+    if (lower.contains('windows')) return Icons.desktop_windows_rounded;
+    if (lower.contains('mac')) return Icons.laptop_mac_rounded;
+    if (lower.contains('linux')) return Icons.computer_rounded;
+    if (lower.contains('web')) return Icons.public_rounded;
+    return Icons.devices_other_rounded;
   }
 
-  void _disableTwoFactorAuth(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          String code = '';
-          bool isLoading = false;
-          String? errorMessage;
-
-          Future<void> disableAuth() async {
-            if (code.isEmpty) {
-              setState(() => errorMessage = '请输入验证码');
-              return;
-            }
-
-            setState(() => isLoading = true);
-            try {
-              final userId = await AuthService.getUserId();
-              await UserService.disableTwoFactorAuth(userId, code);
-              Navigator.pop(context);
-              Navigator.pop(context); // 关闭设置对话框
-              MoeToast.success(context, '两步验证已成功关闭');
-            } catch (e) {
-              setState(() {
-                errorMessage = '验证码错误，请重试';
-              });
-            } finally {
-              setState(() => isLoading = false);
-            }
-          }
-
-          return AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('关闭两步验证'),
-            content: AdaptiveDialogContent(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('请输入验证码以确认关闭两步验证'),
-                  const SizedBox(height: 16),
-                  if (errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  TextField(
-                    onChanged: (value) => setState(() => code = value),
-                    decoration: const InputDecoration(
-                      labelText: '验证码',
-                      hintText: '请输入6位验证码',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('取消', style: TextStyle(color: Colors.grey)),
-              ),
-              ElevatedButton(
-                onPressed: disableAuth,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: MoeTokens.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: isLoading
-                    ? const CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2)
-                    : const Text('确认'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  String _formatRelativeTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inSeconds < 60) return '刚刚';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} 分钟前';
+    if (diff.inHours < 24) return '${diff.inHours} 小时前';
+    return '${diff.inDays} 天前';
   }
 }
