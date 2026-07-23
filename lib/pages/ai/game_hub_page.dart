@@ -5,11 +5,9 @@ import '../../constants/feature_flags.dart';
 import '../../providers/life_provider.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_context.dart';
+import '../../services/companion_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/moe_toast.dart';
-import 'agent_list_page.dart';
-import 'ai_lorebooks_page.dart';
-import 'ai_provider_profiles_page.dart';
 import 'game_play_page.dart';
 import '../../services/game_service.dart';
 import '../../auth_service.dart';
@@ -30,15 +28,38 @@ class GameHubPage extends StatefulWidget {
 class _GameHubPageState extends State<GameHubPage> {
   late final LifeProvider _provider;
   bool _isChatLoading = false;
+  int? _companionEntityId;
 
   @override
   void initState() {
     super.initState();
     _provider = context.read<LifeProvider>();
     _provider.startListening();
+    _loadCompanionBinding();
   }
 
   // ── 操作 ─────────────────────────────────────────────────────────────
+
+  Future<void> _loadCompanionBinding() async {
+    try {
+      final profile = await CompanionService().getProfile();
+      if (!mounted) return;
+      setState(() => _companionEntityId = profile.lifeEntityId);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _companionEntityId = null);
+    }
+  }
+
+  Future<void> _openLifeWorld() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LifeWorldPage()),
+    );
+    if (mounted) {
+      _provider.startListening();
+      await _loadCompanionBinding();
+    }
+  }
 
   Future<void> _openChat() async {
     if (_isChatLoading) return;
@@ -47,8 +68,7 @@ class _GameHubPageState extends State<GameHubPage> {
       await CompanionChatLauncher.openChat(context);
     } catch (e) {
       if (mounted) {
-        MoeToast.error(
-            context, e.toString().replaceFirst('Exception: ', ''));
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isChatLoading = false);
@@ -64,8 +84,10 @@ class _GameHubPageState extends State<GameHubPage> {
     try {
       final state = await GameService().initSession(forceNew: false);
       if (!mounted) return;
-      final entity =
-          _provider.entities.isNotEmpty ? _provider.entities.first : null;
+      final entityId = _companionEntityId;
+      final matches =
+          _provider.entities.where((item) => item.id == entityId).toList();
+      final entity = matches.isEmpty ? null : matches.first;
       await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => GamePlayPage(
@@ -77,78 +99,11 @@ class _GameHubPageState extends State<GameHubPage> {
       );
     } catch (e) {
       if (mounted) {
-        MoeToast.error(
-            context, e.toString().replaceFirst('Exception: ', ''));
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isChatLoading = false);
     }
-  }
-
-  void _openConfigSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'AI 伙伴设置',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '角色设定、世界设定和模型来源。',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 12),
-              _ConfigTile(
-                icon: Icons.face_retouching_natural_rounded,
-                title: '角色设定',
-                subtitle: '管理角色人格与说话方式',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const AgentListPage()),
-                  );
-                },
-              ),
-              _ConfigTile(
-                icon: Icons.auto_stories_rounded,
-                title: '世界设定',
-                subtitle: '管理世界书和故事背景',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const AiLorebooksPage()),
-                  );
-                },
-              ),
-              _ConfigTile(
-                icon: Icons.memory_rounded,
-                title: '模型来源',
-                subtitle: '选择 AI 模型服务（本地 / 云端）',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AiProviderProfilesPage(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   // ── Build ────────────────────────────────────────────────────────────
@@ -165,16 +120,16 @@ class _GameHubPageState extends State<GameHubPage> {
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: '设置',
-            icon: const Icon(Icons.tune_rounded),
-            onPressed: _openConfigSheet,
+            tooltip: '选择伙伴',
+            icon: const Icon(Icons.pets_rounded),
+            onPressed: _openLifeWorld,
           ),
         ],
       ),
       body: Stack(
         children: [
           Selector<LifeProvider, _HubData>(
-            selector: (_, p) => _HubData.fromProvider(p),
+            selector: (_, p) => _HubData.fromProvider(p, _companionEntityId),
             builder: (context, data, _) {
               final ctx = data.companionCtx;
 
@@ -184,11 +139,7 @@ class _GameHubPageState extends State<GameHubPage> {
                   if (!FeatureFlags.showLifeEngine || !ctx.hasCompanion) ...[
                     // ── 无伙伴 ──
                     _NoCompanionCard(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const LifeWorldPage(),
-                        ),
-                      ),
+                      onTap: _openLifeWorld,
                     ),
                   ] else ...[
                     // ── 伙伴头部 ──
@@ -211,11 +162,7 @@ class _GameHubPageState extends State<GameHubPage> {
 
                     // ── 次级入口 ──
                     _SecondaryActions(
-                      onDetail: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const LifeWorldPage(),
-                        ),
-                      ),
+                      onDetail: _openLifeWorld,
                       onStory: _openStory,
                     ),
                   ],
@@ -247,9 +194,9 @@ class _HubData {
     required this.isInitialized,
   });
 
-  factory _HubData.fromProvider(LifeProvider p) {
+  factory _HubData.fromProvider(LifeProvider p, int? entityId) {
     return _HubData(
-      companionCtx: CompanionContext.fromProvider(p),
+      companionCtx: CompanionContext.fromProvider(p, entityId: entityId),
       isInitialized: p.isInitialized,
     );
   }
@@ -337,8 +284,7 @@ class _CompanionHeroCard extends StatelessWidget {
 
           // 在做什么
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(20),
@@ -425,13 +371,11 @@ class _MomentsCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color:
-                          AiBrandTokens.primary.withValues(alpha: 0.06),
+                      color: AiBrandTokens.primary.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
-                    child: Text(m.icon,
-                        style: const TextStyle(fontSize: 18)),
+                    child: Text(m.icon, style: const TextStyle(fontSize: 18)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -632,34 +576,6 @@ class _NoCompanionCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── 配置项 ─────────────────────────────────────────────────────────────
-
-class _ConfigTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _ConfigTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: AiBrandTokens.primary),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
     );
   }
 }

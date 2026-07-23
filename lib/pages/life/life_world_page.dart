@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
 import '../../services/game_service.dart';
+import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_tile.dart';
 import '../../widgets/moe_toast.dart';
@@ -28,6 +31,9 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   int? _selectedEntityId;
   bool _isActing = false;
   bool _isOpeningStory = false;
+  bool _isBindingCompanion = false;
+  bool _bindingLoaded = false;
+  CompanionProfileData? _companionProfile;
   String? _response;
 
   @override
@@ -35,6 +41,7 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     super.initState();
     _provider = context.read<LifeProvider>();
     _provider.startListening();
+    _loadCompanionBinding();
   }
 
   @override
@@ -44,11 +51,58 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   }
 
   LifeEntity? _selectedEntity(List<LifeEntity> entities) {
-    if (entities.isEmpty) return null;
+    if (entities.isEmpty || !_bindingLoaded) return null;
     for (final entity in entities) {
       if (entity.id == _selectedEntityId) return entity;
     }
     return entities.first;
+  }
+
+  Future<void> _loadCompanionBinding() async {
+    try {
+      final profile = await CompanionService().getProfile();
+      if (!mounted) return;
+      setState(() {
+        _companionProfile = profile;
+        _selectedEntityId =
+            profile.lifeEntityId == 0 ? null : profile.lifeEntityId;
+        _bindingLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _bindingLoaded = true);
+    }
+  }
+
+  Future<void> _selectCompanion(LifeEntity entity) async {
+    if (_isBindingCompanion || entity.id == _selectedEntityId) return;
+    setState(() => _isBindingCompanion = true);
+    try {
+      final current =
+          _companionProfile ?? await CompanionService().getProfile();
+      final saved = await CompanionService().updateProfile(
+        current.copyWith(
+          name: entity.name,
+          emoji: entity.emoji,
+          lifeEntityId: entity.id,
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _companionProfile = saved;
+        _selectedEntityId = saved.lifeEntityId;
+        _response = null;
+      });
+    } catch (error) {
+      if (mounted) {
+        MoeToast.error(
+          context,
+          error.toString().replaceFirst('Exception: ', ''),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBindingCompanion = false);
+    }
   }
 
   Future<void> _performAction(String action, LifeEntity entity) async {
@@ -176,14 +230,18 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
           );
         },
         builder: (context, data, _) {
-          if (!data.isInitialized && data.entities.isEmpty) {
+          if ((!data.isInitialized && data.entities.isEmpty) ||
+              !_bindingLoaded) {
             return const _LoadingState();
           }
           if (data.entities.isEmpty) {
             return _EmptyState(isOffline: data.isOffline);
           }
 
-          final selected = data.selected!;
+          final selected = data.selected;
+          if (selected == null) return const _LoadingState();
+          final bindingNeedsRepair =
+              _selectedEntityId != null && selected.id != _selectedEntityId;
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -195,6 +253,16 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
               children: [
                 if (data.isOffline) const _OfflineBanner(),
+                if (bindingNeedsRepair) ...[
+                  OutlinedButton.icon(
+                    onPressed: _isBindingCompanion
+                        ? null
+                        : () => unawaited(_selectCompanion(selected)),
+                    icon: const Icon(Icons.link_rounded),
+                    label: Text('将 ${selected.name} 设为我的伙伴'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _CompanionHero(
                   entity: selected,
                   response: _response,
@@ -231,12 +299,7 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
                   _ResidentList(
                     entities: data.entities,
                     selectedId: selected.id,
-                    onSelected: (entity) {
-                      setState(() {
-                        _selectedEntityId = entity.id;
-                        _response = null;
-                      });
-                    },
+                    onSelected: (entity) => unawaited(_selectCompanion(entity)),
                   ),
                 ],
                 const SizedBox(height: 22),

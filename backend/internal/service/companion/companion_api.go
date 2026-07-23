@@ -2,25 +2,35 @@ package companionapp
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"strings"
+	"unicode/utf8"
 
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
+	"backend/pkg/llminference"
+
+	kerrors "github.com/go-kratos/kratos/v2/errors"
+)
+
+const (
+	maxCompanionMessageRunes = 4000
+	maxCompanionListLimit    = 100
 )
 
 func (s *AppService) requireEngine() (*companionbiz.Engine, error) {
 	if s == nil || s.engine == nil {
-		return nil, fmt.Errorf("companion service unavailable")
+		return nil, kerrors.ServiceUnavailable("COMPANION_UNAVAILABLE", "伙伴服务暂不可用")
 	}
 	return s.engine, nil
 }
 
-func (s *AppService) GetProfile(ctx context.Context, in *companionv1.GetProfileRequest) (*companionv1.GetProfileReply, error) {
+func (s *AppService) GetProfile(ctx context.Context, userID uint, in *companionv1.GetProfileRequest) (*companionv1.GetProfileReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return nil, err
 	}
-	profile, err := engine.GetProfile(ctx, 1) // TODO: 从 JWT 提取 userID
+	profile, err := engine.GetProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +42,7 @@ func (s *AppService) GetProfile(ctx context.Context, in *companionv1.GetProfileR
 	}, nil
 }
 
-func (s *AppService) UpsertProfile(ctx context.Context, in *companionv1.UpsertProfileRequest) (*companionv1.UpsertProfileReply, error) {
+func (s *AppService) UpsertProfile(ctx context.Context, userID uint, in *companionv1.UpsertProfileRequest) (*companionv1.UpsertProfileReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return nil, err
@@ -47,8 +57,11 @@ func (s *AppService) UpsertProfile(ctx context.Context, in *companionv1.UpsertPr
 		AgentID:              in.GetAgentId(),
 		LifeEntityID:         int(in.GetLifeEntityId()),
 	}
-	saved, err := engine.UpsertProfile(ctx, 1, p) // TODO: 从 JWT 提取 userID
+	saved, err := engine.UpsertProfile(ctx, userID, p)
 	if err != nil {
+		if errors.Is(err, companionbiz.ErrLifeEntityNotFound) {
+			return nil, kerrors.BadRequest("LIFE_ENTITY_NOT_FOUND", "选择的伙伴不存在或已离开")
+		}
 		return nil, err
 	}
 	return &companionv1.UpsertProfileReply{
@@ -56,12 +69,12 @@ func (s *AppService) UpsertProfile(ctx context.Context, in *companionv1.UpsertPr
 	}, nil
 }
 
-func (s *AppService) GetState(ctx context.Context, in *companionv1.GetStateRequest) (*companionv1.GetStateReply, error) {
+func (s *AppService) GetState(ctx context.Context, userID uint, in *companionv1.GetStateRequest) (*companionv1.GetStateReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return nil, err
 	}
-	state, profile, err := engine.GetState(ctx, 1) // TODO: 从 JWT 提取 userID
+	state, profile, err := engine.GetState(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,12 +84,12 @@ func (s *AppService) GetState(ctx context.Context, in *companionv1.GetStateReque
 	}, nil
 }
 
-func (s *AppService) ListMemories(ctx context.Context, in *companionv1.ListMemoriesRequest) (*companionv1.ListMemoriesReply, error) {
+func (s *AppService) ListMemories(ctx context.Context, userID uint, in *companionv1.ListMemoriesRequest) (*companionv1.ListMemoriesReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return nil, err
 	}
-	memories, err := engine.ListMemories(ctx, 1, int(in.GetLimit())) // TODO: 从 JWT 提取 userID
+	memories, err := engine.ListMemories(ctx, userID, clampLimit(in.GetLimit()))
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +98,50 @@ func (s *AppService) ListMemories(ctx context.Context, in *companionv1.ListMemor
 	}, nil
 }
 
-func (s *AppService) ListChatHistory(ctx context.Context, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
+func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return nil, err
 	}
-	history, err := engine.ListChatHistory(ctx, 1, int(in.GetLimit())) // TODO: 从 JWT 提取 userID
+	history, err := engine.ListChatHistory(ctx, userID, clampLimit(in.GetLimit()))
 	if err != nil {
 		return nil, err
 	}
 	return &companionv1.ListChatHistoryReply{
 		Messages: toProtoChatLogs(history),
 	}, nil
+}
+
+// ChatStream streams one authenticated user's companion response.
+func (s *AppService) ChatStream(
+	ctx context.Context,
+	userID uint,
+	message string,
+	onChunk llminference.StreamHandler,
+) (string, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return "", err
+	}
+	message = strings.TrimSpace(message)
+	if message == "" {
+		return "", kerrors.BadRequest("MESSAGE_REQUIRED", "消息不能为空")
+	}
+	if utf8.RuneCountInString(message) > maxCompanionMessageRunes {
+		return "", kerrors.BadRequest("MESSAGE_TOO_LONG", "消息长度不能超过 4000 个字符")
+	}
+	return engine.ChatStream(ctx, userID, message, onChunk)
+}
+
+func clampLimit(raw int32) int {
+	limit := int(raw)
+	if limit <= 0 {
+		return 0
+	}
+	if limit > maxCompanionListLimit {
+		return maxCompanionListLimit
+	}
+	return limit
 }
 
 // ── Proto 转换函数 ──

@@ -59,6 +59,24 @@ func TestFilterMigrateEntries(t *testing.T) {
 	}
 }
 
+func TestMigrateRegistryIncludesCompanionTables(t *testing.T) {
+	want := map[string]bool{
+		"companion_profiles":  false,
+		"companion_memories":  false,
+		"companion_chat_logs": false,
+	}
+	for _, entry := range MigrateModelRegistry() {
+		if _, ok := want[entry.Key]; ok {
+			want[entry.Key] = true
+		}
+	}
+	for key, found := range want {
+		if !found {
+			t.Errorf("MigrateModelRegistry() missing %q", key)
+		}
+	}
+}
+
 func testNamingDB() *gorm.DB {
 	return &gorm.DB{
 		Config: &gorm.Config{

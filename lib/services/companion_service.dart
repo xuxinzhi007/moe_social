@@ -28,6 +28,10 @@ class CompanionProfileData {
   final String greetingStyle;
   final int relationshipLevel;
   final double intimacyScore;
+  final List<String> personalityTraits;
+  final String systemPromptOverride;
+  final String agentId;
+  final int lifeEntityId;
 
   const CompanionProfileData({
     this.name = '',
@@ -36,6 +40,10 @@ class CompanionProfileData {
     this.greetingStyle = 'warm',
     this.relationshipLevel = 1,
     this.intimacyScore = 0,
+    this.personalityTraits = const [],
+    this.systemPromptOverride = '',
+    this.agentId = '',
+    this.lifeEntityId = 0,
   });
 
   factory CompanionProfileData.fromMap(Map<String, dynamic> m) {
@@ -46,8 +54,50 @@ class CompanionProfileData {
       greetingStyle: m['greeting_style']?.toString() ?? 'warm',
       relationshipLevel: (m['relationship_level'] as num?)?.toInt() ?? 1,
       intimacyScore: (m['intimacy_score'] as num?)?.toDouble() ?? 0,
+      personalityTraits: (m['personality_traits'] as List?)
+              ?.map((item) => item.toString())
+              .toList(growable: false) ??
+          const [],
+      systemPromptOverride: m['system_prompt_override']?.toString() ?? '',
+      agentId: m['agent_id']?.toString() ?? '',
+      lifeEntityId: (m['life_entity_id'] as num?)?.toInt() ?? 0,
     );
   }
+
+  CompanionProfileData copyWith({
+    String? name,
+    String? emoji,
+    String? persona,
+    String? greetingStyle,
+    List<String>? personalityTraits,
+    String? systemPromptOverride,
+    String? agentId,
+    int? lifeEntityId,
+  }) {
+    return CompanionProfileData(
+      name: name ?? this.name,
+      emoji: emoji ?? this.emoji,
+      persona: persona ?? this.persona,
+      greetingStyle: greetingStyle ?? this.greetingStyle,
+      relationshipLevel: relationshipLevel,
+      intimacyScore: intimacyScore,
+      personalityTraits: personalityTraits ?? this.personalityTraits,
+      systemPromptOverride: systemPromptOverride ?? this.systemPromptOverride,
+      agentId: agentId ?? this.agentId,
+      lifeEntityId: lifeEntityId ?? this.lifeEntityId,
+    );
+  }
+
+  Map<String, dynamic> toRequestMap() => {
+        'name': name,
+        'emoji': emoji,
+        'persona': persona,
+        'personality_traits': personalityTraits,
+        'greeting_style': greetingStyle,
+        'system_prompt_override': systemPromptOverride,
+        'agent_id': agentId,
+        'life_entity_id': lifeEntityId,
+      };
 }
 
 /// 伙伴状态（从后端获取）。
@@ -80,6 +130,13 @@ class CompanionStateData {
   }
 }
 
+class CompanionSnapshotData {
+  final CompanionProfileData profile;
+  final CompanionStateData state;
+
+  const CompanionSnapshotData({required this.profile, required this.state});
+}
+
 /// 伙伴聊天服务 —— 接入后端 SSE 流式聊天。
 class CompanionService {
   CompanionService._();
@@ -106,21 +163,42 @@ class CompanionService {
   Future<CompanionProfileData> getProfile() async {
     _requireUserId();
     final result = await ApiService.get('/api/companion/profile');
-    return CompanionProfileData.fromMap(ApiResponse.payload(result));
+    return CompanionProfileData.fromMap(
+      ApiResponse.object(result, keys: const ['profile']),
+    );
   }
 
-  /// 获取伙伴状态。
-  Future<CompanionStateData> getState() async {
+  /// 获取同一后端快照中的伙伴身份与状态。
+  Future<CompanionSnapshotData> getSnapshot() async {
     _requireUserId();
     final result = await ApiService.get('/api/companion/state');
-    return CompanionStateData.fromMap(ApiResponse.payload(result));
+    return CompanionSnapshotData(
+      profile: CompanionProfileData.fromMap(
+        ApiResponse.object(result, keys: const ['profile']),
+      ),
+      state: CompanionStateData.fromMap(
+        ApiResponse.object(result, keys: const ['state']),
+      ),
+    );
+  }
+
+  Future<CompanionProfileData> updateProfile(
+    CompanionProfileData profile,
+  ) async {
+    _requireUserId();
+    final result = await ApiService.post(
+      '/api/companion/profile',
+      body: profile.toRequestMap(),
+    );
+    return CompanionProfileData.fromMap(
+      ApiResponse.object(result, keys: const ['profile']),
+    );
   }
 
   /// SSE 流式聊天。
   Stream<CompanionChatEvent> chatStream(String message) async* {
     _requireUserId();
-    final uri =
-        Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
+    final uri = Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
@@ -188,9 +266,8 @@ class CompanionService {
     } catch (_) {
       payload = {'raw': raw};
     }
-    final text = payload?['text']?.toString() ??
-        payload?['content']?.toString() ??
-        '';
+    final text =
+        payload?['text']?.toString() ?? payload?['content']?.toString() ?? '';
     return CompanionChatEvent(type: eventName, text: text, payload: payload);
   }
 }

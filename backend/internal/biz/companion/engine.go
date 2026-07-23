@@ -3,12 +3,13 @@ package companionbiz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
-	lifebiz "backend/internal/biz/life"
 	"backend/model"
 	"backend/pkg/llminference"
 )
@@ -16,7 +17,7 @@ import (
 // Engine Companion 核心引擎：整合 Profile / State / Memory / Chat / LLM。
 type Engine struct {
 	store     Store
-	lifeStore lifebiz.Store // 读取 LifeEntity 状态（可为 nil）
+	lifeStore LifeStore // 读取 LifeEntity 状态（可为 nil）
 	llmCfg    llminference.Config
 	model     string
 
@@ -34,7 +35,7 @@ type Engine struct {
 }
 
 // NewEngine 创建 Companion 引擎。lifeStore 可为 nil（无数字生命数据时退化）。
-func NewEngine(store Store, lifeStore lifebiz.Store, llmCfg llminference.Config, model string) *Engine {
+func NewEngine(store Store, lifeStore LifeStore, llmCfg llminference.Config, model string) *Engine {
 	return &Engine{
 		store:           store,
 		lifeStore:       lifeStore,
@@ -91,12 +92,20 @@ func (e *Engine) pushGreeting() {
 	if e.OnGreeting == nil {
 		return
 	}
-	userID := uint(1) // TODO: 从 JWT 提取
-	state, _, err := e.GetState(context.Background(), userID)
-	if err != nil || state == nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	userIDs, err := e.store.ListProfileUserIDs(ctx)
+	if err != nil {
+		log.Printf("[companion] list greeting users: %v", err)
 		return
 	}
-	e.OnGreeting(userID, state.Greeting)
+	for _, userID := range userIDs {
+		state, _, err := e.GetState(ctx, userID)
+		if err != nil || state == nil {
+			continue
+		}
+		e.OnGreeting(userID, state.Greeting)
+	}
 }
 
 // StartCleanup 启动定时记忆清理任务。
@@ -146,23 +155,56 @@ func (e *Engine) runCleanup() {
 func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) {
 	row, err := e.store.GetProfileByUserID(ctx, userID)
 	if err != nil {
+		return nil, fmt.Errorf("get companion profile for user %d: %w", userID, err)
+	}
+	if row != nil {
+		profile := modelToProfile(row)
+		if e.lifeStore != nil {
+			previousEntityID := profile.LifeEntityID
+			if err := e.bindLifeEntity(ctx, profile); err != nil {
+				if errors.Is(err, ErrLifeEntityNotFound) {
+					return profile, nil
+				}
+				return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
+			}
+			if previousEntityID == 0 && profile.LifeEntityID > 0 {
+				if err := e.store.UpsertProfile(ctx, profileToModel(userID, profile)); err != nil {
+					return nil, fmt.Errorf("persist Life binding for companion user %d: %w", userID, err)
+				}
+			}
+		}
+		return profile, nil
+	}
+
+	profile, err := e.defaultBoundProfile(ctx, userID)
+	if err != nil {
 		return nil, err
 	}
-	if row == nil {
-		return nil, nil
+	if err := e.store.UpsertProfile(ctx, profileToModel(userID, profile)); err != nil {
+		return nil, fmt.Errorf("create default companion profile for user %d: %w", userID, err)
+	}
+	row, err = e.store.GetProfileByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("reload companion profile for user %d: %w", userID, err)
 	}
 	return modelToProfile(row), nil
 }
 
 func (e *Engine) UpsertProfile(ctx context.Context, userID uint, p *Profile) (*Profile, error) {
+	if p == nil {
+		return nil, fmt.Errorf("upsert companion profile: profile is nil")
+	}
+	if err := e.bindLifeEntity(ctx, p); err != nil {
+		return nil, err
+	}
 	row := profileToModel(userID, p)
 	if err := e.store.UpsertProfile(ctx, row); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("upsert companion profile for user %d: %w", userID, err)
 	}
 	// 重新读取
 	saved, err := e.store.GetProfileByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reload companion profile for user %d: %w", userID, err)
 	}
 	return modelToProfile(saved), nil
 }
@@ -174,10 +216,6 @@ func (e *Engine) GetState(ctx context.Context, userID uint) (*State, *Profile, e
 	if err != nil {
 		return nil, nil, err
 	}
-	if profile == nil {
-		profile = defaultProfile(userID)
-	}
-
 	// 尝试读取关联的 LifeEntity
 	var entity *model.LifeEntity
 	var events []model.LifeEventLog
@@ -272,6 +310,14 @@ func (e *Engine) ChatStream(
 
 	fullReply, err := streamChat(ctx, e.llmCfg, e.model, msgs, onChunk)
 	if err != nil {
+		if strings.TrimSpace(fullReply) != "" {
+			_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
+				UserID:  userID,
+				Role:    "assistant",
+				Content: fullReply,
+			})
+			return fullReply, nil
+		}
 		// LLM 调用失败，返回兜底
 		fallback := fallbackReply(profile, state)
 		_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
@@ -279,6 +325,9 @@ func (e *Engine) ChatStream(
 			Role:    "assistant",
 			Content: fallback,
 		})
+		if onChunk != nil {
+			_ = onChunk(fallback)
+		}
 		return fallback, nil
 	}
 
@@ -353,22 +402,60 @@ func (e *Engine) fetchLifeData(ctx context.Context, entityID int) (*model.LifeEn
 			break
 		}
 	}
-	if entity == nil && len(entities) > 0 {
-		// 回退：取第一个活着的实体
-		for i := range entities {
-			if entities[i].IsAlive {
-				entity = &entities[i]
-				break
-			}
-		}
-	}
-
 	var events []model.LifeEventLog
 	if entity != nil {
-		events, _ = e.lifeStore.ListRecentEventLogs(ctx, worldID, 5)
+		events, _ = e.lifeStore.ListRecentEventLogsByEntity(ctx, worldID, entity.ID, 5)
 	}
 
 	return entity, events
+}
+
+func (e *Engine) defaultBoundProfile(ctx context.Context, userID uint) (*Profile, error) {
+	profile := defaultProfile(userID)
+	if e.lifeStore == nil {
+		return profile, nil
+	}
+	entities, err := e.lifeStore.ListEntities(ctx, "default")
+	if err != nil {
+		return nil, fmt.Errorf("list Life entities for companion user %d: %w", userID, err)
+	}
+	if len(entities) == 0 {
+		return profile, nil
+	}
+	sort.Slice(entities, func(i, j int) bool { return entities[i].ID < entities[j].ID })
+	profile.LifeEntityID = int(entities[0].ID)
+	profile.Name = entities[0].Name
+	profile.Emoji = entities[0].Emoji
+	return profile, nil
+}
+
+func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
+	if e.lifeStore == nil {
+		if profile.LifeEntityID != 0 {
+			return ErrLifeEntityNotFound
+		}
+		return nil
+	}
+	entities, err := e.lifeStore.ListEntities(ctx, "default")
+	if err != nil {
+		return fmt.Errorf("list Life entities for companion binding: %w", err)
+	}
+	if profile.LifeEntityID == 0 {
+		if len(entities) == 0 {
+			return nil
+		}
+		sort.Slice(entities, func(i, j int) bool { return entities[i].ID < entities[j].ID })
+		profile.LifeEntityID = int(entities[0].ID)
+	}
+	for i := range entities {
+		if entities[i].ID != uint(profile.LifeEntityID) {
+			continue
+		}
+		profile.Name = entities[i].Name
+		profile.Emoji = entities[i].Emoji
+		return nil
+	}
+	return ErrLifeEntityNotFound
 }
 
 // defaultProfile 无 profile 时的默认伙伴。
@@ -422,16 +509,18 @@ func profileToModel(userID uint, p *Profile) *model.CompanionProfile {
 		style = "warm"
 	}
 	return &model.CompanionProfile{
-		UserID:               userID,
-		Name:                 p.Name,
-		Emoji:                p.Emoji,
-		Persona:              p.Persona,
+		UserID:                userID,
+		Name:                  p.Name,
+		Emoji:                 p.Emoji,
+		Persona:               p.Persona,
 		PersonalityTraitsJSON: string(traitsJSON),
-		GreetingStyle:        style,
-		SystemPromptOverride: p.SystemPromptOverride,
-		AgentID:              p.AgentID,
-		LifeEntityID:         p.LifeEntityID,
-		UpdatedAt:            time.Now(),
+		GreetingStyle:         style,
+		RelationshipLevel:     p.RelationshipLevel,
+		IntimacyScore:         p.IntimacyScore,
+		SystemPromptOverride:  p.SystemPromptOverride,
+		AgentID:               p.AgentID,
+		LifeEntityID:          p.LifeEntityID,
+		UpdatedAt:             time.Now(),
 	}
 }
 

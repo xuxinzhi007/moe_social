@@ -68,8 +68,12 @@ func (h *CompanionWSHub) SetEngine(e *Engine) {
 	h.engine = e
 }
 
-// ServeHTTP 处理 WebSocket 升级和连接。
-func (h *CompanionWSHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP handles an authenticated WebSocket connection.
+func (h *CompanionWSHub) ServeHTTP(w http.ResponseWriter, r *http.Request, userID uint) {
+	if userID == 0 {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 	conn, err := companionUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		moelog.Errorf("companion ws upgrade: %v", err)
@@ -77,7 +81,7 @@ func (h *CompanionWSHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := fmt.Sprintf("companion-%d", time.Now().UnixNano())
-	member := &companionMember{conn: conn, done: make(chan struct{})}
+	member := &companionMember{conn: conn, done: make(chan struct{}), userID: userID}
 
 	h.mu.Lock()
 	h.members[id] = member
@@ -113,10 +117,6 @@ func (h *CompanionWSHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		switch msgType {
 		case "subscribe":
-			userID := uint(1) // TODO: 从 JWT 提取
-			h.mu.Lock()
-			member.userID = userID
-			h.mu.Unlock()
 			moelog.Infof("companion ws: client id=%s subscribed user=%d", id, userID)
 
 		case "ping":
@@ -132,20 +132,20 @@ func (h *CompanionWSHub) sendGreeting(m *companionMember) {
 	if h.engine == nil {
 		return
 	}
-	state, _, err := h.engine.GetState(context.Background(), 1) // TODO: userID from JWT
+	state, _, err := h.engine.GetState(context.Background(), m.userID)
 	if err != nil || state == nil {
 		return
 	}
 	m.writeJSON(map[string]interface{}{
-		"type":    "state_snapshot",
-		"mood":    state.MoodThought,
+		"type":     "state_snapshot",
+		"mood":     state.MoodThought,
 		"activity": state.ActivityLabel,
 		"greeting": state.Greeting,
 	})
 }
 
-// Broadcast 广播事件到所有已连接的客户端。
-func (h *CompanionWSHub) Broadcast(eventType string, data map[string]interface{}) {
+// Broadcast sends an event only to connections owned by userID.
+func (h *CompanionWSHub) Broadcast(userID uint, eventType string, data map[string]interface{}) {
 	payload := map[string]interface{}{"type": eventType}
 	for k, v := range data {
 		payload[k] = v
@@ -160,7 +160,9 @@ func (h *CompanionWSHub) Broadcast(eventType string, data map[string]interface{}
 	h.mu.RLock()
 	members := make([]*companionMember, 0, len(h.members))
 	for _, m := range h.members {
-		members = append(members, m)
+		if m.userID == userID {
+			members = append(members, m)
+		}
 	}
 	h.mu.RUnlock()
 
@@ -171,9 +173,9 @@ func (h *CompanionWSHub) Broadcast(eventType string, data map[string]interface{}
 	}
 }
 
-// BroadcastGreeting 广播伙伴问候消息。
-func (h *CompanionWSHub) BroadcastGreeting(greeting, moodThought, activityLabel string) {
-	h.Broadcast("greeting", map[string]interface{}{
+// BroadcastGreeting sends a companion greeting to one user.
+func (h *CompanionWSHub) BroadcastGreeting(userID uint, greeting, moodThought, activityLabel string) {
+	h.Broadcast(userID, "greeting", map[string]interface{}{
 		"greeting": greeting,
 		"mood":     moodThought,
 		"activity": activityLabel,

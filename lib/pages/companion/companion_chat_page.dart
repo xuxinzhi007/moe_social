@@ -46,20 +46,19 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   Future<void> _loadInitialData() async {
     try {
-      final profile = await CompanionService().getProfile();
-      final state = await CompanionService().getState();
+      final snapshot = await CompanionService().getSnapshot();
       if (!mounted) return;
       setState(() {
-        _profile = profile;
-        _state = state;
+        _profile = snapshot.profile;
+        _state = snapshot.state;
         _isLoading = false;
         _loadError = null;
       });
-      if (state.greeting.isNotEmpty) {
+      if (snapshot.state.greeting.isNotEmpty) {
         setState(() {
           _items.add(_ChatItem(
             role: 'assistant',
-            content: state.greeting,
+            content: snapshot.state.greeting,
           ));
         });
       }
@@ -126,8 +125,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             _scrollToBottom();
             break;
           case 'done':
-            final finalText =
-                event.text.isNotEmpty ? event.text : fullText;
+            final finalText = event.text.isNotEmpty ? event.text : fullText;
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
@@ -213,14 +211,12 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
           children: [
             Text(
               _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             if (_state.activityLabel.isNotEmpty)
               Text(
                 _state.activityLabel,
-                style: TextStyle(
-                    fontSize: 11, color: Colors.grey.shade400),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
               ),
           ],
         ),
@@ -257,8 +253,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             contentType: MessageContentType.text,
             isUser: item.role == 'user',
             isLoading: item.isStreaming,
-            agentLabel:
-                item.role == 'assistant' ? _profile.name : null,
+            agentLabel: item.role == 'assistant' ? _profile.name : null,
           ),
         );
       },
@@ -270,17 +265,15 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     final isNotReady = _loadError == 'not_ready';
     final emoji = isNotReady ? '🐾' : '📡';
     final title = isNotReady ? '伙伴正在准备中' : '网络好像断开了';
-    final subtitle = isNotReady
-        ? '后台正在部署伙伴的记忆系统\n马上就能聊天啦~'
-        : '检查一下网络连接\n然后再来找我吧';
+    final subtitle =
+        isNotReady ? '后台正在部署伙伴的记忆系统\n马上就能聊天啦~' : '检查一下网络连接\n然后再来找我吧';
     final buttonText = isNotReady ? '稍后再试' : '重新连接';
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -356,8 +349,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -442,8 +434,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         border: Border(
-          top: BorderSide(
-              color: theme.dividerColor.withValues(alpha: 0.3)),
+          top: BorderSide(color: theme.dividerColor.withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
@@ -488,9 +479,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             child: IconButton(
               onPressed: (_isSending || hasError) ? null : _sendMessage,
               icon: Icon(
-                _isSending
-                    ? Icons.hourglass_empty
-                    : Icons.send_rounded,
+                _isSending ? Icons.hourglass_empty : Icons.send_rounded,
                 color: Colors.white,
                 size: 20,
               ),

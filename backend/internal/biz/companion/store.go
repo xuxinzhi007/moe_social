@@ -11,6 +11,7 @@ type Store interface {
 	// Profile
 	GetProfileByUserID(ctx context.Context, userID uint) (*model.CompanionProfile, error)
 	UpsertProfile(ctx context.Context, p *model.CompanionProfile) error
+	ListProfileUserIDs(ctx context.Context) ([]uint, error)
 
 	// Memory
 	CreateMemory(ctx context.Context, m *model.CompanionMemory) error
@@ -20,4 +21,10 @@ type Store interface {
 	// Chat Log
 	AppendChatLog(ctx context.Context, log *model.CompanionChatLog) error
 	ListRecentChatLogs(ctx context.Context, userID uint, limit int) ([]model.CompanionChatLog, error)
+}
+
+// LifeStore defines the Life data needed by the Companion domain.
+type LifeStore interface {
+	ListEntities(ctx context.Context, worldID string) ([]model.LifeEntity, error)
+	ListRecentEventLogsByEntity(ctx context.Context, worldID string, entityID uint, limit int) ([]model.LifeEventLog, error)
 }

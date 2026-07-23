@@ -50,6 +50,15 @@ func (s *store) UpsertProfile(ctx context.Context, p *model.CompanionProfile) er
 		Create(p).Error
 }
 
+func (s *store) ListProfileUserIDs(ctx context.Context) ([]uint, error) {
+	var userIDs []uint
+	err := s.db.WithContext(ctx).
+		Model(&model.CompanionProfile{}).
+		Order("user_id ASC").
+		Pluck("user_id", &userIDs).Error
+	return userIDs, err
+}
+
 // ── Memory ──
 
 func (s *store) CreateMemory(ctx context.Context, m *model.CompanionMemory) error {

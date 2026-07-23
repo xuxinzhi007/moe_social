@@ -1,13 +1,12 @@
 package aiapp
 
 import (
-	"context"
 	aiv1 "backend/api/ai/v1"
-	aibiz "backend/internal/biz/ai"
+	"context"
 )
 
 func (s *AppService) UpsertAiProvider(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.store, "providers", in)
+	out, err := s.resources.Upsert(ctx, "providers", in)
 	if err != nil {
 		return nil, err
 	}
@@ -15,7 +14,7 @@ func (s *AppService) UpsertAiProvider(ctx context.Context, in *aiv1.UpsertAiReso
 }
 
 func (s *AppService) UpsertAiAgent(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.store, "agents", in)
+	out, err := s.resources.Upsert(ctx, "agents", in)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +22,7 @@ func (s *AppService) UpsertAiAgent(ctx context.Context, in *aiv1.UpsertAiResourc
 }
 
 func (s *AppService) UpsertAiLorebook(ctx context.Context, in *aiv1.UpsertAiResourceReq) (*aiv1.UpsertAiResourceResp, error) {
-	out, err := aibiz.Upsert(ctx, s.store, "lorebooks", in)
+	out, err := s.resources.Upsert(ctx, "lorebooks", in)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +30,7 @@ func (s *AppService) UpsertAiLorebook(ctx context.Context, in *aiv1.UpsertAiReso
 }
 
 func (s *AppService) DeleteAiProvider(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.store, "providers", in)
+	out, err := s.resources.Delete(ctx, "providers", in)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +38,7 @@ func (s *AppService) DeleteAiProvider(ctx context.Context, in *aiv1.DeleteAiReso
 }
 
 func (s *AppService) DeleteAiAgent(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.store, "agents", in)
+	out, err := s.resources.Delete(ctx, "agents", in)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (s *AppService) DeleteAiAgent(ctx context.Context, in *aiv1.DeleteAiResourc
 }
 
 func (s *AppService) DeleteAiLorebook(ctx context.Context, in *aiv1.DeleteAiResourceReq) (*aiv1.DeleteAiResourceResp, error) {
-	out, err := aibiz.Delete(ctx, s.store, "lorebooks", in)
+	out, err := s.resources.Delete(ctx, "lorebooks", in)
 	if err != nil {
 		return nil, err
 	}

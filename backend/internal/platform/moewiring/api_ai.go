@@ -1,6 +1,10 @@
 package moewiring
 
 import (
+	"fmt"
+
+	aibiz "backend/internal/biz/ai"
+	aidata "backend/internal/data/ai"
 	aiapp "backend/internal/service/ai"
 	"backend/utils"
 )
@@ -16,11 +20,13 @@ func NewAPIAIService() (*aiapp.AppService, error) {
 		return nil, nil
 	}
 	if err := utils.EnsureDB(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ensure AI resources database: %w", err)
 	}
 	db := utils.GetDB()
 	if db == nil {
 		return nil, nil
 	}
-	return aiapp.New(db), nil
+	store := aidata.NewStore(db)
+	resources := aibiz.NewResourcesUsecase(store)
+	return aiapp.New(resources), nil
 }

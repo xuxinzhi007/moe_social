@@ -25,6 +25,7 @@ type Store interface {
 	CreateEventLog(ctx context.Context, log *model.LifeEventLog) error
 	BatchCreateEventLogs(ctx context.Context, logs []*model.LifeEventLog) error
 	ListRecentEventLogs(ctx context.Context, worldID string, limit int) ([]model.LifeEventLog, error)
+	ListRecentEventLogsByEntity(ctx context.Context, worldID string, entityID uint, limit int) ([]model.LifeEventLog, error)
 	CleanupOldEventLogs(ctx context.Context) (int64, error)
 
 	// 社交关系
