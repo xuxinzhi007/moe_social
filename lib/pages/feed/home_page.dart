@@ -6,12 +6,14 @@ import '../../models/topic_tag.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
+import '../../services/companion_service.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/main_nav_controller.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
@@ -19,6 +21,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
@@ -47,6 +50,8 @@ class _HomePageState extends State<HomePage>
   bool _shouldReloadAfterCurrent = false;
   bool _queuedResetContent = false;
   bool _isLoadMoreRequestInFlight = false;
+  CompanionSnapshotData? _companionSnapshot;
+  CompanionCommunityIdentityData? _communityIdentity;
 
   _HomeFeedMode _mode = _HomeFeedMode.hot;
   TopicTag? _activeTopic;
@@ -106,6 +111,7 @@ class _HomePageState extends State<HomePage>
     _scrollController.addListener(_scrollListener);
     _availableTags = TopicTag.officialTags.take(12).toList();
     _fetchPosts();
+    unawaited(_loadCompanionPresence());
   }
 
   @override
@@ -141,6 +147,29 @@ class _HomePageState extends State<HomePage>
     final isNearBottom = currentScroll >= threshold ||
         (maxScroll > 0 && currentScroll >= maxScroll - 50);
     if (isNearBottom) _scheduleLoadMore();
+  }
+
+  Future<void> _loadCompanionPresence() async {
+    try {
+      final snapshot = await CompanionService().getSnapshot();
+      CompanionCommunityIdentityData? identity;
+      if (snapshot.profile.agentId.trim().isNotEmpty) {
+        try {
+          identity = await CompanionService().getCommunityIdentity();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        _companionSnapshot = snapshot;
+        _communityIdentity = identity;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _companionSnapshot = null;
+        _communityIdentity = null;
+      });
+    }
   }
 
   void _scheduleLoadMore() {
@@ -435,6 +464,9 @@ class _HomePageState extends State<HomePage>
               child:
                   HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
             ),
+            SliverToBoxAdapter(
+              child: _buildCompanionPresenceCard(context),
+            ),
             // Topic tags row 闂?plain SliverToBoxAdapter, no dynamic-extent issues
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
             if (_feedError != null && _displayPosts.isNotEmpty)
@@ -553,8 +585,9 @@ class _HomePageState extends State<HomePage>
             ),
             Consumer<NotificationProvider>(
               builder: (context, provider, _) {
-                if (provider.activityUnreadCount == 0)
+                if (provider.activityUnreadCount == 0) {
                   return const SizedBox.shrink();
+                }
                 return Positioned(
                   top: 8,
                   right: 8,
@@ -676,6 +709,163 @@ class _HomePageState extends State<HomePage>
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompanionPresenceCard(BuildContext context) {
+    final snapshot = _companionSnapshot;
+    if (snapshot == null) return const SizedBox.shrink();
+    final profile = snapshot.profile;
+    final state = snapshot.state;
+    final identity = _communityIdentity;
+    final agentKey = identity != null && identity.authorBotAgentKey.isNotEmpty
+        ? identity.authorBotAgentKey
+        : identity?.agentId;
+    final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
+    final avatar =
+        profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
+    final greeting =
+        state.greeting.trim().isNotEmpty ? state.greeting.trim() : '今天也在社区里活动。';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F5FB),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    avatar,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: MoeTokens.titleText,
+                              ),
+                            ),
+                          ),
+                          AiBotBadge(
+                            compact: true,
+                            agentKey: agentKey,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        greeting,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildCompanionChip(
+                  icon: Icons.chat_bubble_rounded,
+                  label: '聊天',
+                  onTap: () => Navigator.pushNamed(context, '/ai-chat'),
+                ),
+                _buildCompanionChip(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI 主页',
+                  onTap: () => context.read<MainNavController>().requestTab(2),
+                ),
+                if (identity?.isValid == true)
+                  _buildCompanionChip(
+                    icon: Icons.edit_note_rounded,
+                    label: '发动态',
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/create-post',
+                      arguments: {'communityIdentity': identity},
+                    ),
+                  ),
+                _buildCompanionChip(
+                  icon: Icons.groups_rounded,
+                  label: '社区',
+                  onTap: () => Navigator.pushNamed(context, '/community'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanionChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F7FC),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: MoeTokens.primary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: MoeTokens.titleText,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -812,11 +1002,12 @@ class _HomePageState extends State<HomePage>
   String _lastUpdatedText() {
     if (_isRefreshing) return '\u6b63\u5728\u5237\u65b0\u5185\u5bb9...';
     final updatedAt = _lastUpdatedAt;
-    if (updatedAt == null)
+    if (updatedAt == null) {
       return '\u5c1a\u672a\u52a0\u8f7d\u6700\u65b0\u52a8\u6001';
+    }
     final hour = updatedAt.hour.toString().padLeft(2, '0');
     final minute = updatedAt.minute.toString().padLeft(2, '0');
-    return '\u6700\u540e\u66f4\u65b0 ' + hour + ':' + minute;
+    return '\u6700\u540e\u66f4\u65b0 $hour:$minute';
   }
 
   Widget _buildInlineErrorBanner({
@@ -927,9 +1118,7 @@ class _HomePageState extends State<HomePage>
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
       title: inTopic
-          ? '#' +
-              (topicName ?? '') +
-              ' \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001'
+          ? '#${topicName ?? ''} \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001'
           : '\u8fd9\u91cc\u8fd8\u662f\u7a7a\u7684',
       subtitle: inTopic
           ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002'
@@ -1235,9 +1424,10 @@ class _HomePageState extends State<HomePage>
                 });
                 _likeManager.evictPost(post.id);
               } catch (e) {
-                if (mounted)
+                if (mounted) {
                   ErrorHandler.showError(context,
                       '闂傚倸鍊搁崐椋庣矆娓氣偓楠炲鏁嶉崟顒佹闂佺粯鍔曢顓犵不妤ｅ啯鐓冪憸婊堝礈濮樿鲸宕叉繛鎴欏灩瀹告繃銇勯幘璺哄壉闁告柨顦甸幃妤呭垂椤愶絿鍑￠柣搴㈠嚬閸樺ジ鈥﹂崶顏嗙杸婵炴垼椴搁弲婵嬫⒑闂堟侗妲归柛鏃€鐗曠叅闁绘梻鍘ч拑?e');
+                }
               }
             }
           : null,

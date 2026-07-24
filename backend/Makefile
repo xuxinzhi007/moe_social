@@ -137,10 +137,10 @@ moe-social:
 
 	go run ./cmd/moe-social
 
-# 开发：moe-social + deploy-agent (:19010)
+# 开发：moe-social（默认不带 deploy-agent）
 moe-social-dev:
 
-	go run ./cmd/moe-social-stack
+	go run ./cmd/moe-social-stack -agent=false
 
 # 释放 8080/8888/19010/19011/19012（Ctrl+C 未完全退出时用）
 moe-social-stop:
@@ -333,7 +333,7 @@ help:
 	@echo ""
 	@echo --- 生产 / 开发 ---
 	@echo make moe-social         - Kratos HTTP :8888（生产入口）
-	@echo make moe-social-dev     - 同上 + deploy-agent :19010
+	@echo make moe-social-dev     - 同上（默认不带 deploy-agent）
 	@echo make moe-social-stop    - 释放开发端口
 	@echo make db-migrate         - 数据库 schema 迁移
 	@echo make deploy-agent       - 部署调试代理 :19010

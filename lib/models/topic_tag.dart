@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import 'package:flutter/material.dart';
 
 /// 话题标签模型 - 支持用户自定义创建
@@ -161,10 +160,7 @@ class TopicTag {
       } catch (_) {
         try {
           return DateTime.parse('${s.replaceAll(' ', 'T')}Z');
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('TopicTag.fromJson: 日期解析失败: $e, raw=$raw');
-          }
+        } catch (_) {
           return _unknownCreatedAt;
         }
       }
@@ -182,20 +178,12 @@ class TopicTag {
       }
       return DateTime.fromMillisecondsSinceEpoch(v, isUtc: true);
     }
-    if (kDebugMode) {
-      debugPrint(
-          'TopicTag.fromJson: 未支持的日期类型 ${raw.runtimeType}, raw=$raw');
-    }
     return _unknownCreatedAt;
   }
 
   /// 从JSON创建实例
   factory TopicTag.fromJson(Map<String, dynamic> json) {
     try {
-      if (kDebugMode) {
-        debugPrint('TopicTag.fromJson: $json');
-      }
-
       // 解析颜色，支持十六进制字符串和整数
       Color color;
       final colorValue = json['color'];
@@ -205,11 +193,7 @@ class TopicTag {
           final hexString = colorValue.replaceAll('#', '');
           final colorInt = int.parse(hexString, radix: 16);
           color = Color(colorInt | 0xFF000000); // 添加alpha通道
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('TopicTag.fromJson: 颜色解析失败: $e，使用默认颜色');
-          }
-          // 如果解析失败，使用默认颜色
+        } catch (_) {
           color = const Color(0xFF42A5F5);
         }
       } else if (colorValue is int) {
@@ -233,12 +217,6 @@ class TopicTag {
       final idValue = json['id'];
       final id = idValue?.toString() ?? '';
       final name = json['name']?.toString() ?? '';
-      
-      if (kDebugMode) {
-        debugPrint(
-            'TopicTag.fromJson: id=$idValue (${idValue.runtimeType}) -> "$id", name="$name"');
-      }
-
       if (id.isEmpty || name.isEmpty) {
         throw Exception('话题标签缺少必要字段: id=$id, name=$name');
       }
@@ -256,10 +234,7 @@ class TopicTag {
       );
 
       return tag;
-    } catch (e, stackTrace) {
-      debugPrint('TopicTag.fromJson 错误: $e');
-      debugPrint('TopicTag.fromJson JSON: $json');
-      debugPrint('TopicTag.fromJson 堆栈: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }
@@ -272,7 +247,7 @@ class TopicTag {
       'createdBy': createdBy,
       'createdAt': createdAt.toIso8601String(),
       'usageCount': usageCount,
-      'color': '#${color.value.toRadixString(16).substring(2).padLeft(6, '0')}', // 转换为十六进制颜色字符串
+      'color': '#${color.toARGB32().toRadixString(16).substring(2).padLeft(6, '0')}', // 转换为十六进制颜色字符串
       'description': description,
       'isOfficial': isOfficial,
       'relatedTags': relatedTags,

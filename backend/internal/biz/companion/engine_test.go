@@ -2,7 +2,6 @@ package companionbiz
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"backend/model"
@@ -34,7 +33,7 @@ func TestGetProfileCreatesStableLifeBinding(t *testing.T) {
 	}
 }
 
-func TestUpsertProfileRejectsMissingLifeBinding(t *testing.T) {
+func TestUpsertProfileClearsMissingLifeBinding(t *testing.T) {
 	engine := NewEngine(
 		newFakeStore(),
 		&fakeLifeStore{entities: []model.LifeEntity{{ID: 2, IsAlive: true}}},
@@ -42,9 +41,12 @@ func TestUpsertProfileRejectsMissingLifeBinding(t *testing.T) {
 		"",
 	)
 
-	_, err := engine.UpsertProfile(context.Background(), 7, &Profile{LifeEntityID: 99})
-	if !errors.Is(err, ErrLifeEntityNotFound) {
-		t.Fatalf("UpsertProfile() error = %v, want ErrLifeEntityNotFound", err)
+	saved, err := engine.UpsertProfile(context.Background(), 7, &Profile{LifeEntityID: 99})
+	if err != nil {
+		t.Fatalf("UpsertProfile() error = %v, want nil", err)
+	}
+	if saved.LifeEntityID != 0 {
+		t.Fatalf("UpsertProfile() binding = %d, want 0", saved.LifeEntityID)
 	}
 }
 
@@ -62,7 +64,7 @@ func TestFetchLifeDataDoesNotFallbackToAnotherEntity(t *testing.T) {
 	}
 }
 
-func TestGetProfileBindsWhenLifeEntityAppearsLater(t *testing.T) {
+func TestGetProfileKeepsExistingProfileUnboundUntilExplicitlyBound(t *testing.T) {
 	store := newFakeStore()
 	life := &fakeLifeStore{}
 	engine := NewEngine(store, life, llminference.Config{}, "")
@@ -80,11 +82,11 @@ func TestGetProfileBindsWhenLifeEntityAppearsLater(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile() after Life startup error = %v", err)
 	}
-	if bound.LifeEntityID != 3 {
-		t.Fatalf("GetProfile() binding = %d, want 3", bound.LifeEntityID)
+	if bound.LifeEntityID != 0 {
+		t.Fatalf("GetProfile() binding = %d, want 0", bound.LifeEntityID)
 	}
-	if store.profiles[7].LifeEntityID != 3 {
-		t.Fatalf("persisted binding = %d, want 3", store.profiles[7].LifeEntityID)
+	if store.profiles[7].LifeEntityID != 0 {
+		t.Fatalf("persisted binding = %d, want 0", store.profiles[7].LifeEntityID)
 	}
 }
 
@@ -98,8 +100,8 @@ func TestDeadLifeBindingCanBeReplaced(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetProfile() stale binding error = %v", err)
 	}
-	if stale.LifeEntityID != 2 {
-		t.Fatalf("GetProfile() stale binding = %d, want 2", stale.LifeEntityID)
+	if stale.LifeEntityID != 0 {
+		t.Fatalf("GetProfile() stale binding = %d, want 0", stale.LifeEntityID)
 	}
 
 	rebound, err := engine.UpsertProfile(context.Background(), 7, &Profile{LifeEntityID: 3})

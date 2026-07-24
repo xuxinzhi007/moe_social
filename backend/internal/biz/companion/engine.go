@@ -3,7 +3,6 @@ package companionbiz
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -162,12 +161,9 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 		if e.lifeStore != nil {
 			previousEntityID := profile.LifeEntityID
 			if err := e.bindLifeEntity(ctx, profile); err != nil {
-				if errors.Is(err, ErrLifeEntityNotFound) {
-					return profile, nil
-				}
 				return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
 			}
-			if previousEntityID == 0 && profile.LifeEntityID > 0 {
+			if previousEntityID != profile.LifeEntityID {
 				if err := e.store.UpsertProfile(ctx, profileToModel(userID, profile)); err != nil {
 					return nil, fmt.Errorf("persist Life binding for companion user %d: %w", userID, err)
 				}
@@ -432,7 +428,7 @@ func (e *Engine) defaultBoundProfile(ctx context.Context, userID uint) (*Profile
 func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
 	if e.lifeStore == nil {
 		if profile.LifeEntityID != 0 {
-			return ErrLifeEntityNotFound
+			profile.LifeEntityID = 0
 		}
 		return nil
 	}
@@ -441,11 +437,7 @@ func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
 		return fmt.Errorf("list Life entities for companion binding: %w", err)
 	}
 	if profile.LifeEntityID == 0 {
-		if len(entities) == 0 {
-			return nil
-		}
-		sort.Slice(entities, func(i, j int) bool { return entities[i].ID < entities[j].ID })
-		profile.LifeEntityID = int(entities[0].ID)
+		return nil
 	}
 	for i := range entities {
 		if entities[i].ID != uint(profile.LifeEntityID) {
@@ -455,7 +447,8 @@ func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
 		profile.Emoji = entities[i].Emoji
 		return nil
 	}
-	return ErrLifeEntityNotFound
+	profile.LifeEntityID = 0
+	return nil
 }
 
 // defaultProfile 无 profile 时的默认伙伴。

@@ -16,7 +16,7 @@ import '../pages/auth/register_page.dart';
 import '../pages/auth/reset_password_page.dart';
 import '../pages/auth/verify_code_page.dart';
 import '../pages/chat/direct_chat_page.dart';
-import '../pages/chat/message_center_page.dart';
+import '../pages/chat/message_center_page.dart' deferred as message_center;
 import '../pages/checkin/checkin_page.dart';
 import '../pages/commerce/gacha_page.dart' deferred as gacha;
 import '../pages/commerce/order_center_page.dart' deferred as order_center;
@@ -26,7 +26,7 @@ import '../pages/commerce/vip_history_page.dart' deferred as vip_history;
 import '../pages/commerce/vip_orders_page.dart' deferred as vip_orders;
 import '../pages/commerce/vip_purchase_page.dart' deferred as vip_purchase;
 import '../pages/commerce/wallet_page.dart' deferred as wallet;
-import '../pages/community/community_home_page.dart';
+import '../pages/community/community_home_page.dart' deferred as community_home;
 import '../pages/community/community_post_detail_page.dart';
 import '../pages/community/interest_group_detail_page.dart';
 import '../pages/feed/comments_page.dart';
@@ -34,13 +34,13 @@ import '../pages/feed/create_post_page.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
-import '../pages/companion/companion_chat_page.dart';
+import '../pages/companion/companion_chat_page.dart' deferred as companion_chat;
 import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
-import '../pages/notifications/notification_center_page.dart';
+import '../pages/notifications/notification_center_page.dart' deferred as notification_center;
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friends_page.dart';
-import '../pages/profile/profile_page.dart';
+import '../pages/profile/profile_page.dart' deferred as profile_page;
 import '../pages/profile/user_profile_page.dart';
 import '../pages/profile/user_qr_code_page.dart';
 import '../pages/scan/scan_page.dart' deferred as scan;
@@ -68,7 +68,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/login': (context) => const LoginPage(),
     '/register': (context) => const RegisterPage(),
     '/home': (context) => const MainPage(),
-    '/profile': (context) => const ProfilePage(),
+    '/profile': (context) => _deferred(
+          profile_page.loadLibrary,
+          () => profile_page.ProfilePage(),
+        ),
     '/achievements': (context) => _deferred(
           achievements.loadLibrary,
           () => achievements.AchievementsPage(),
@@ -176,7 +179,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         code: args['code'] as String,
       );
     },
-    '/notifications': (context) => const NotificationCenterPage(),
+    '/notifications': (context) => _deferred(
+          notification_center.loadLibrary,
+          () => notification_center.NotificationCenterPage(),
+        ),
     '/announcements': (context) => const AnnouncementsPage(),
     '/wallet': (context) => _deferred(
           wallet.loadLibrary,
@@ -221,7 +227,10 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return TopicPostsPage(topicTag: tag);
     },
     '/friends': (context) => const FriendsPage(),
-    '/community': (context) => const CommunityHomePage(),
+    '/community': (context) => _deferred(
+          community_home.loadLibrary,
+          () => community_home.CommunityHomePage(),
+        ),
     '/community/group': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map) {
@@ -255,8 +264,14 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       final initial = args['post'] is Post ? args['post'] as Post : null;
       return CommunityPostDetailPage(postId: postId, initialPost: initial);
     },
-    '/messages': (context) => const MessageCenterPage(),
-    '/ai-chat': (context) => const CompanionChatPage(),
+    '/messages': (context) => _deferred(
+          message_center.loadLibrary,
+          () => message_center.MessageCenterPage(),
+        ),
+    '/ai-chat': (context) => _deferred(
+          companion_chat.loadLibrary,
+          () => companion_chat.CompanionChatPage(),
+        ),
     '/direct-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {

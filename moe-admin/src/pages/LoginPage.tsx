@@ -1,12 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAdminAuth } from '../context/AdminAuthContext'
-import { usePlatform } from '../context/PlatformContext'
-import type { ApiTarget } from '../lib/apiTarget'
 
 export function LoginPage() {
   const { token, login, loggingIn, bootstrapped } = useAdminAuth()
-  const { apiTarget, setApiTarget, apiTargetLabel } = usePlatform()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -46,35 +43,23 @@ export function LoginPage() {
           <h2>Moe Admin</h2>
           <p>Moe Social 专属管理后台</p>
           <ul className="login-aside-list">
-            <li>App 用户与官网反馈</li>
+            <li>App 用户与内容运营</li>
             <li>本机 / 云端 API 切换</li>
-            <li>构建发布与 RPC 监控</li>
+            <li>构建发布与运维监控</li>
           </ul>
         </div>
 
         <div className="login-card">
           <div className="login-brand">
             <h1>登录</h1>
-            <p>使用管理员账号（admin_accounts）</p>
+            <p>直接连接管理后台 API</p>
           </div>
 
           <p className="login-hint muted">
-            开发模式：仅需 RPC + API 即可登录；运维功能需另开{' '}
-            <code>make deploy-agent</code>（:19010）。
+            仅需要管理后台 API 可达，Deploy Agent 不影响登录。
           </p>
 
           <form className="login-form" onSubmit={(e) => void onSubmit(e)}>
-            <label>
-              <span>数据环境</span>
-              <select
-                value={apiTarget}
-                onChange={(e) => setApiTarget(e.target.value as ApiTarget)}
-              >
-                <option value="local">本机 API（{apiTargetLabel}）</option>
-                <option value="cloud">云端 API</option>
-              </select>
-            </label>
-
             <label>
               <span>用户名</span>
               <input

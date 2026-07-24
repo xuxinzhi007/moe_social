@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../auth_service.dart';
@@ -18,7 +18,7 @@ class StartupUpdateService {
   /// 在首帧之后延迟调用；内部吞掉异常，不影响主流程。
   static Future<void> tryLaunchUpdateCheck() async {
     if (kIsWeb) return;
-    if (!Platform.isAndroid) return;
+    if (defaultTargetPlatform != TargetPlatform.android) return;
 
     try {
       if (!await StartupUpdatePreferences.getAutoCheckOnLaunch()) return;

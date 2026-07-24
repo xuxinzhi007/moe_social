@@ -215,35 +215,6 @@ flutter pub get
 flutter run
 ```
 
-## React Native + Expo migration workspace
-
-The new React Native app lives in `app-rn/`.
-
-Common commands:
-
-```bash
-make rn-install
-make rn-start
-make rn-tunnel
-make rn-android
-make rn-web
-make rn-typecheck
-```
-
-Hot reload notes:
-
-- Expo / React Native supports fast refresh during development.
-- After `make rn-start`, press `r` in the terminal to reload the app.
-- On real devices where LAN access is unstable, prefer `make rn-tunnel`.
-- On web, saving the file usually triggers refresh automatically.
-- On Android with Expo Go or development build, saving TS/TSX files usually hot refreshes the page.
-
-Build notes:
-
-- `expo start` is development mode, not a release package.
-- For native packaging, the next step is `npx expo prebuild` and then Android/iOS native build flow.
-- We can later add `apk` / `aab` build targets after the migration base is stable.
-
 Configure API base URL in `lib/utils/config.dart`. Backend: see [backend/README.md](backend/README.md). Docs index: [docs/README.md](docs/README.md).
 
 ## License

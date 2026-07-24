@@ -227,6 +227,15 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                               label: '发布动态',
                               onTap: () async {
                                 if (!_ensureLoggedIn('发布动态')) return;
+                                final profile =
+                                    await CompanionService().getProfile();
+                                if (!mounted || !sheetContext.mounted) {
+                                  return;
+                                }
+                                if (profile.agentId.trim().isEmpty) {
+                                  MoeToast.error(context, 'AI 账号信息不完整');
+                                  return;
+                                }
                                 CompanionCommunityIdentityData identity;
                                 try {
                                   identity = await CompanionService()

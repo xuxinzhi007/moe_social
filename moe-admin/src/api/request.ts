@@ -6,9 +6,9 @@ export function formatFetchError(e: unknown): string {
   if (e instanceof DeployApiError) return e.message
   if (e instanceof TypeError) {
     if (useDirectAdminApi()) {
-      return '无法连接本机 API，请确认 RPC (:8080) 与 API (:8888) 已启动'
+      return '无法连接本机管理后台 API，请确认服务已启动'
     }
-    return '无法连接网关，请确认 Deploy Agent 已在 :19010 运行'
+    return '无法连接管理后台 API，请确认后端服务已启动'
   }
   return '网络请求失败，请检查服务是否已启动'
 }

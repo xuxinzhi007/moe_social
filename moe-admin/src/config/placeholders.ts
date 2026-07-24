@@ -99,13 +99,6 @@ export const PLACEHOLDER_PAGES: Record<string, PlaceholderMeta> = {
     summary: 'CRUD 管理员、改密、角色 super_admin / admin。',
     apis: ['已有登录；待增 /api/admin/accounts/*'],
   },
-  'system/menus': {
-    title: '侧栏菜单配置',
-    phase: 'P1',
-    appDomain: 'Moe Admin 侧栏（非 App Tab）',
-    summary: '库表驱动菜单排序与按角色可见；v1 可先半动态。',
-    apis: ['待新增 GET /api/admin/menus'],
-  },
   'system/audit': {
     title: '操作日志',
     phase: 'P1',

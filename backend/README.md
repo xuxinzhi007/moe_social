@@ -7,7 +7,7 @@ Moe Social 后端：**单进程 Kratos HTTP**（`make moe-social` → `:8888`）
 ```bash
 cd backend
 make moe-social          # 生产 / 本地
-make moe-social-dev      # + deploy-agent :19010
+make moe-social-dev      # 默认不带 deploy-agent
 make gen                 # proto + conf + 路由计数
 make check               # 编译 + 单测
 ```

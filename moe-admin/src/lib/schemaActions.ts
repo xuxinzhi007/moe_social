@@ -21,14 +21,13 @@ const KEY_ACTIONS: Record<string, SchemaQuickAction[]> = {
   cloud_media_files: [{ label: '平台治理 · 图库', to: '/system/platform?tab=media' }],
   user_memories: [{ label: '平台治理 · 记忆', to: '/system/platform?tab=memory' }],
   user_memory_feedbacks: [{ label: '平台治理 · 记忆', to: '/system/platform?tab=memory' }],
-  user_memory_embeddings: [{ label: '平台治理 · 记忆', to: '/system/platform?tab=memory' }],  admin_announcements: [{ label: '公告管理', to: '/app/announcements' }],
+  user_memory_embeddings: [{ label: '平台治理 · 记忆', to: '/system/platform?tab=memory' }],
+  admin_announcements: [{ label: '公告管理', to: '/app/announcements' }],
   notifications: [{ label: '通知推送', to: '/app/notify' }],
   ai_user_configs: [{ label: 'AI 角色', to: '/app/ai' }],
   follows: [{ label: '好友与关注', to: '/app/social' }],
   friend_requests: [{ label: '好友与关注', to: '/app/social' }],
-  landing_feedbacks: [{ label: '官网反馈', to: '/feedback' }],
   admin_accounts: [{ label: '管理员账号', to: '/system/admins' }],
-  admin_menus: [{ label: '侧栏菜单', to: '/system/menus' }],
   admin_audit_logs: [{ label: '操作日志', to: '/system/audit' }],
 }
 

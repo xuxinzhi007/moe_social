@@ -23,7 +23,7 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin 
 
 ## 功能模块
 
-- **业务**：工作台、App 用户、官网反馈（`X-Admin-Token`）
+- **业务**：工作台、App 用户、内容运营（`X-Admin-Token`）
 - **运维**：构建 / Docker / 发布 / 任务 / RPC（Deploy Token）
 
 文档：

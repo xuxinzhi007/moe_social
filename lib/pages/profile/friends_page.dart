@@ -752,6 +752,14 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     final favoriteCount =
         _friends.where((f) => _favoriteFriends.contains(f.id)).length;
 
+    if (widget.contactsOnly) {
+      return _buildEmbeddedContactsPanel(
+        filteredFriends: filteredFriends,
+        onlineCount: onlineCount,
+        favoriteCount: favoriteCount,
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -799,6 +807,70 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmbeddedContactsPanel({
+    required List<User> filteredFriends,
+    required int onlineCount,
+    required int favoriteCount,
+  }) {
+    return RefreshIndicator(
+      onRefresh: _loadFriends,
+      color: _moe.primary,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
+              child: _buildContactsPanelSummary(
+                onlineCount: onlineCount,
+                favoriteCount: favoriteCount,
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+              child: _buildContactsPanelActions(),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+              child: _buildContactsPanelSearch(),
+            ),
+          ),
+          SliverToBoxAdapter(child: _buildCompactGroupTabs()),
+          filteredFriends.isEmpty
+              ? SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 28),
+                    child: _buildContactsPanelBlankState(
+                      icon: Icons.search_off_rounded,
+                      title: '没有匹配联系人',
+                      subtitle: '换个关键词或切换分组看看',
+                    ),
+                  ),
+                )
+              : SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(18, 2, 18, 28),
+                  sliver: SliverList.separated(
+                    itemCount: filteredFriends.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      return _buildCompactFriendRow(
+                        filteredFriends[index],
+                        index,
+                      );
+                    },
+                  ),
+                ),
+        ],
+      ),
     );
   }
 

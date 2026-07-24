@@ -11,7 +11,6 @@
 | **已移除** | 独立向量/图记忆系统（`pkg/memory/`、Flutter `memory_service`、管理台 LearningWorkbench / RpcPage、Chrome `integration_test` 栈） |
 | **AI 推理** | 统一走 `biz/llm/platform_*` + `pkg/llminference`；`llm_inference.api_key` / `MOE_LLM_API_KEY` |
 | **认证** | App JWT 中间件（`internal/server/auth.go`）+ Flutter 主动 refresh（`jwt_exp.dart`） |
-| **设计资源** | `moe-social-app-design/`（HTML 原型）、`moe-social-ui-design/`（早期 mock） |
 | **演示入口** | `lib/demo_main.dart` → 首页改版对比 `home_redesign_demo.dart` |
 
 ---
@@ -99,8 +98,6 @@ moe_social/
 ├── backend/                     # Go/Kratos 后端
 ├── moe-admin/                   # React 管理台
 ├── docs/                        # 文档 SSOT
-├── moe-social-app-design/       # UI 设计 HTML 原型（2026）
-├── moe-social-ui-design/        # 早期 UI mock HTML
 ├── assets/                      # Flutter 静态资源
 ├── test/                        # Flutter 单元测试
 ├── website/                     # 产品官网静态页
@@ -457,10 +454,7 @@ Flutter 3.x · Go 1.25+ · MySQL 8 · Node 18+（管理台）
 
 ### B. 设计原型
 
-| 目录 | 说明 |
-|------|------|
-| [moe-social-app-design/](moe-social-app-design/) | 2026 HTML 页面原型（login、home、tavern、settings 等） |
-| [moe-social-ui-design/](moe-social-ui-design/) | 早期 UI mock |
+历史设计原型已清理，不再单独保留目录索引。
 
 ---
 

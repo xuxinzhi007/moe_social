@@ -3,7 +3,7 @@
 | 命令 | 说明 |
 |------|------|
 | `make moe-social` | 生产主程序（Kratos HTTP :8888） |
-| `make moe-social-dev` | 同上 + deploy-agent :19010 |
+| `make moe-social-dev` | 同上（默认不带 deploy-agent） |
 | `make db-migrate` | 数据库迁移 |
 | `make deploy-agent` | 部署调试代理 |
 | `make temp-mail-password EMAIL=foo@web-library.net` | 计算临时邮箱对应密码 |

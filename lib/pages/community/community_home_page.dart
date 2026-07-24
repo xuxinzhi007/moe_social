@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
+import '../../providers/main_nav_controller.dart';
+import '../../services/companion_service.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -21,6 +27,8 @@ class _CommunityHomePageState extends State<CommunityHomePage>
   late TabController _tabController;
   final GlobalKey<InterestGroupsPageState> _groupsKey =
       GlobalKey<InterestGroupsPageState>();
+  CompanionSnapshotData? _companionSnapshot;
+  CompanionCommunityIdentityData? _communityIdentity;
 
   @override
   void initState() {
@@ -30,12 +38,36 @@ class _CommunityHomePageState extends State<CommunityHomePage>
       if (_tabController.indexIsChanging) return;
       setState(() {});
     });
+    unawaited(_loadCompanionPresence());
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCompanionPresence() async {
+    try {
+      final snapshot = await CompanionService().getSnapshot();
+      CompanionCommunityIdentityData? identity;
+      if (snapshot.profile.agentId.trim().isNotEmpty) {
+        try {
+          identity = await CompanionService().getCommunityIdentity();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() {
+        _companionSnapshot = snapshot;
+        _communityIdentity = identity;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _companionSnapshot = null;
+        _communityIdentity = null;
+      });
+    }
   }
 
   String get _subtitle {
@@ -100,6 +132,11 @@ class _CommunityHomePageState extends State<CommunityHomePage>
               duration: MoeTokens.motionFadeDuration,
               delay: MoeTokens.motionStaggerStep,
               child: _buildSegmented(scheme),
+            ),
+            MoeReveal(
+              duration: MoeTokens.motionFadeDuration,
+              delay: const Duration(milliseconds: 120),
+              child: _buildCompanionPanel(),
             ),
             Expanded(
               child: TabBarView(
@@ -192,6 +229,149 @@ class _CommunityHomePageState extends State<CommunityHomePage>
           tabs: const [
             Tab(text: '圈子'),
             Tab(text: '讨论'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanionPanel() {
+    final snapshot = _companionSnapshot;
+    if (snapshot == null) return const SizedBox.shrink();
+    final profile = snapshot.profile;
+    final state = snapshot.state;
+    final identity = _communityIdentity;
+    final agentKey = identity != null && identity.authorBotAgentKey.isNotEmpty
+        ? identity.authorBotAgentKey
+        : identity?.agentId;
+    final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
+    final emoji = profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
+    final status = state.greeting.trim().isNotEmpty
+        ? state.greeting.trim()
+        : '当前已接入社区身份，可直接参与互动。';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
+          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AiBotBadge(
+                  compact: true,
+                  agentKey: agentKey,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _companionAction(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI 主页',
+                  onTap: () => context.read<MainNavController>().requestTab(2),
+                ),
+                _companionAction(
+                  icon: Icons.chat_bubble_rounded,
+                  label: '聊天',
+                  onTap: () => Navigator.pushNamed(context, '/ai-chat'),
+                ),
+                if (identity?.isValid == true)
+                  _companionAction(
+                    icon: Icons.edit_note_rounded,
+                    label: '发动态',
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/create-post',
+                      arguments: {'communityIdentity': identity},
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _companionAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F7FC),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: MoeTokens.primary),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: MoeTokens.titleText,
+              ),
+            ),
           ],
         ),
       ),

@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { SidebarNav } from '../components/SidebarNav'
 import { SettingsDrawer } from '../components/SettingsDrawer'
-import { READY_ROUTES } from '../config/menu'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { usePlatform } from '../context/PlatformContext'
@@ -12,18 +11,8 @@ export function AppShell() {
   const { agentOnline, authOk, toast, agentMeta } = useDeploy()
   const { user, logout } = useAdminAuth()
   const navigate = useNavigate()
-  const { apiTarget, setApiTarget, apiTargetLabel, health } = usePlatform()
+  const { apiTarget, setApiTarget, health } = usePlatform()
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const location = useLocation()
-  const isRpc = location.pathname === '/rpc' || location.pathname.endsWith('/rpc')
-
-  // 切换页面时关闭设置抽屉，避免半透明蒙版挡住工作台却无法察觉侧栏已打开。
-  useEffect(() => {
-    setSettingsOpen(false)
-  }, [location.pathname])
-
-  const path = location.pathname.replace(/\/$/, '') || '/'
-  const isReadyHome = READY_ROUTES.has(path)
 
   const agentChip = agentMeta?.pid
     ? `Agent · PID ${agentMeta.pid}`
@@ -113,14 +102,8 @@ export function AppShell() {
           </button>
         </header>
 
-        <div className={`content${isRpc ? ' content-rpc' : ''}`}>
-          {!isRpc && !isReadyHome ? (
-            <div className="legacy-banner">
-              部署类操作需有效 Deploy Token；业务数据使用顶栏{' '}
-              <strong>{apiTargetLabel}</strong>。
-            </div>
-          ) : null}
-          <div className={isRpc ? undefined : 'admin-page'}>
+        <div className="content">
+          <div className="admin-page">
             <Outlet />
           </div>
         </div>
