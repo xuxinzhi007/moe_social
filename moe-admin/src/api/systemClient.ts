@@ -27,7 +27,6 @@ export function createSystemMethods(api: AdminApiFn) {
     dashboard: () =>
       api<
         BaseResp<{
-          landing_feedback_total: number
           user_total: number
           server_time: string
           feishu_enabled: boolean
@@ -81,43 +80,6 @@ export function createSystemMethods(api: AdminApiFn) {
 
     deleteAccount: (id: string) =>
       api<BaseResp<unknown>>(adminApiPath(`/accounts/${id}`), { method: 'DELETE' }),
-
-    // ── 菜单配置 ─────────────────────────────────────────
-    listMenus: () =>
-      api<
-        BaseResp<{
-          items: Array<{
-            id: string
-            key: string
-            kind: string
-            parent_key: string
-            path: string
-            label: string
-            icon: string
-            caption: string
-            status: string
-            sort_order: number
-            enabled: boolean
-          }>
-        }>
-      >(adminApiPath('/menus')),
-
-    upsertMenu: (body: Record<string, unknown>) =>
-      api<BaseResp<Record<string, unknown>>>(adminApiPath('/menus'), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
-
-    deleteMenu: (menuKey: string) =>
-      api<BaseResp<unknown>>(adminApiPath(`/menus/${encodeURIComponent(menuKey)}`), {
-        method: 'DELETE',
-      }),
-
-    bootstrapMenus: () =>
-      api<BaseResp<{ created: number }>>(adminApiPath('/menus/bootstrap'), {
-        method: 'POST',
-      }),
 
     // ── 审计日志 ─────────────────────────────────────────
     listAuditLogs: (params: {

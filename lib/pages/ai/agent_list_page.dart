@@ -23,7 +23,6 @@ import '../../widgets/ai/ai_empty_state.dart';
 import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_action_row.dart';
-import 'tavern/tavern_hero_card.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_search_bar.dart';
@@ -816,29 +815,6 @@ class _AgentListPageState extends State<AgentListPage>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHeroCard() {
-    return TavernHeroCard(
-      agentCount: _agents.length,
-      providerCount: _providerProfiles.length,
-      onOpenProvidersTab: () => _tabController.animateTo(1),
-    );
-  }
-
-  Widget _buildTemplateChipRow() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: ActionChip(
-          avatar: Icon(Icons.auto_awesome_rounded,
-              size: 18, color: AiBrandTokens.primary),
-          label: const Text('套用角色模板'),
-          onPressed: _createFromStarterTemplate,
-        ),
-      ),
     );
   }
 

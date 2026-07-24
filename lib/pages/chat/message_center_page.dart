@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
-import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
+import '../../services/user_service.dart';
 import 'conversations_page.dart';
 
 /// 底部 Tab「好友」承载普通 IM：私信会话优先，好友列表作为找人入口。
@@ -148,15 +148,21 @@ class _MessageCenterPageState extends State<MessageCenterPage>
             ),
           ),
         ),
-        body: TabBarView(
-          controller: _tabController,
+        body: Column(
           children: [
-            ConversationsPage(
-              embedded: true,
-              showEmbeddedToolbar: false,
-              onEmptyFindFriends: () => _tabController.animateTo(1),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  ConversationsPage(
+                    embedded: true,
+                    showEmbeddedToolbar: false,
+                    onEmptyFindFriends: () => _tabController.animateTo(1),
+                  ),
+                  const FriendsPage(contactsOnly: true),
+                ],
+              ),
             ),
-            const FriendsPage(contactsOnly: true),
           ],
         ),
       ),

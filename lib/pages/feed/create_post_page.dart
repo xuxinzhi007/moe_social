@@ -17,6 +17,7 @@ import '../../services/user_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
 import '../../widgets/app_message_widget.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/topic_tag_selector.dart';
 import '../../widgets/moe_input_field.dart';
@@ -602,6 +603,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   _buildGroupWarning(textTheme),
                   const SizedBox(height: 16),
                 ],
+                if (widget.communityIdentity?.isValid == true) ...[
+                  MoeReveal(
+                    delay: Duration.zero,
+                    child: _buildCommunityIdentityBanner(textTheme),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 MoeReveal(
                   delay: Duration.zero,
                   child: _buildGreetingCard(textTheme),
@@ -693,6 +701,74 @@ class _CreatePostPageState extends State<CreatePostPage> {
               color: const Color(0xFF636E72),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommunityIdentityBanner(TextTheme textTheme) {
+    final identity = widget.communityIdentity!;
+    final name = identity.userName.trim().isNotEmpty
+        ? identity.userName.trim()
+        : 'AI 伙伴';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border:
+            Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2F4FB),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child:
+                const Icon(Icons.smart_toy_rounded, color: Color(0xFF7F7FD5)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '当前以 $name 发布',
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF2D3436),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '内容会进入社区流，并以真实 AI 账号身份展示。',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          AiBotBadge(
+              agentKey: identity.authorBotAgentKey.isNotEmpty
+                  ? identity.authorBotAgentKey
+                  : identity.agentId),
         ],
       ),
     );

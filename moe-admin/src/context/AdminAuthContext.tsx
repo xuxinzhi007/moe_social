@@ -13,8 +13,6 @@ import {
   type AdminClient,
 } from '../api/adminClient'
 import { DeployApiError } from '../api/deployClient'
-import { useDeploy } from './DeployContext'
-import { usePlatform } from './PlatformContext'
 import {
   clearAdminSession,
   loadAdminToken,
@@ -22,6 +20,7 @@ import {
   saveAdminSession,
   type StoredAdminUser,
 } from '../lib/adminStorage'
+import { resolveAdminBaseUrl } from '../lib/adminBaseUrl'
 import { redirectToAdminLogin } from '../lib/adminSession'
 
 type AdminAuthContextValue = {
@@ -38,8 +37,6 @@ type AdminAuthContextValue = {
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const { baseUrl } = useDeploy()
-  const { apiTarget, health } = usePlatform()
   const [token, setToken] = useState(() => loadAdminToken())
   const [user, setUser] = useState<StoredAdminUser | null>(() => loadAdminUser())
   const [bootstrapped, setBootstrapped] = useState(false)
@@ -55,13 +52,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const client = useMemo(
     () =>
       createAdminClient({
-        baseUrl,
+        baseUrl: resolveAdminBaseUrl(),
         token,
-        apiTarget,
-        cloudApiBaseUrl: health?.cloud_api?.base_url,
+        apiTarget: 'local',
         onUnauthorized: handleUnauthorized,
       }),
-    [apiTarget, baseUrl, handleUnauthorized, health?.cloud_api?.base_url, token],
+    [handleUnauthorized, token],
   )
 
   const refreshMe = useCallback(async () => {

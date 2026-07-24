@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, kDebugMode, debugPrint, defaultTargetPlatform, TargetPlatform;
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'dart:ui';
 import 'app/app_routes.dart';
 import 'services/achievement_hooks.dart';
@@ -10,6 +10,7 @@ import 'auth_service.dart';
 import 'services/api_service.dart';
 import 'services/behavior_analytics_service.dart';
 import 'utils/behavior_route_observer.dart';
+import 'utils/console_output_filter.dart';
 import 'utils/config.dart' as moe_launch_config;
 import 'widgets/app_message_widget.dart';
 import 'widgets/floating_virtual_avatar_host.dart';
@@ -19,7 +20,6 @@ import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/push_notification_service.dart';
-import 'services/rive_bootstrap.dart';
 import 'services/startup_update_service.dart';
 import 'services/daily_growth_service.dart';
 import 'providers/theme_provider.dart';
@@ -36,6 +36,24 @@ import 'utils/webview_platform_init.dart';
 import 'services/wechat_sdk_service.dart';
 import 'widgets/splash_screen.dart';
 
+String _platformLabel() {
+  if (kIsWeb) return 'web';
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.android:
+      return 'android';
+    case TargetPlatform.iOS:
+      return 'ios';
+    case TargetPlatform.macOS:
+      return 'macos';
+    case TargetPlatform.windows:
+      return 'windows';
+    case TargetPlatform.linux:
+      return 'linux';
+    case TargetPlatform.fuchsia:
+      return 'fuchsia';
+  }
+}
+
 void main() {
   // ensureInitialized 与 runApp 必须在同一 Zone（与 runZonedGuarded 一致），否则 Web 上会报 Zone mismatch。
   runZonedGuarded(() {
@@ -43,14 +61,18 @@ void main() {
     ensureWebViewPlatformInitialized();
     _setupErrorHandlers();
     runApp(const SplashScreenWrapper());
-    unawaited(RiveBootstrap.ensureInitialized());
   }, (error, stack) {
     debugPrint('═══════════════════════════════════════');
     debugPrint('Uncaught Error:');
     debugPrint('Error: $error');
     debugPrint('Stack: $stack');
     debugPrint('═══════════════════════════════════════');
-  });
+  }, zoneSpecification: ZoneSpecification(
+    print: (self, parent, zone, line) {
+      if (shouldSuppressConsoleLine(line)) return;
+      parent.print(zone, line);
+    },
+  ));
 }
 
 void _setupErrorHandlers() {
@@ -232,7 +254,7 @@ class SplashScreenWrapper extends StatelessWidget {
     ChatPushService.initialize(AuthService.navigatorKey);
 
     debugPrint('🚀 App starting...');
-    debugPrint('📱 Platform: ${kIsWeb ? "web" : Platform.operatingSystem}');
+    debugPrint('📱 Platform: ${_platformLabel()}');
     debugPrint('🧭 API Environment: ${ApiService.runtimeEnvironment} '
         '(isProduction=${moe_launch_config.AppConfig.isProduction})');
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');

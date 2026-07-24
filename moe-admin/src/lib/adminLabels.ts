@@ -67,20 +67,6 @@ export function friendRequestTag(status?: string): TagSpec {
   return { label: status || '—', tone: 'neutral' }
 }
 
-export function menuStatusTag(status?: string): TagSpec {
-  const s = (status || '').toLowerCase()
-  if (s === 'ready') return { label: '已就绪', tone: 'ok' }
-  if (s === 'planned') return { label: '规划中', tone: 'pending' }
-  return { label: status || '—', tone: 'neutral' }
-}
-
-export function menuKindTag(kind?: string): TagSpec {
-  const s = (kind || '').toLowerCase()
-  if (s === 'group') return { label: '分组', tone: 'purple' }
-  if (s === 'item') return { label: '菜单项', tone: 'info' }
-  return { label: kind || '—', tone: 'neutral' }
-}
-
 export function rarityTag(rarity?: string): TagSpec {
   const s = (rarity || '').toLowerCase()
   if (s === 'legendary') return { label: '传说', tone: 'vip' }
@@ -117,12 +103,6 @@ export function auditResourceTag(resource?: string): TagSpec {
   if (s.includes('post') || s.includes('comment')) return { label: resource || '—', tone: 'info' }
   if (s.includes('vip') || s.includes('gift')) return { label: resource || '—', tone: 'vip' }
   return { label: resource || '—', tone: 'run' }
-}
-
-export function feedbackCategoryTag(cat?: string): TagSpec {
-  if (cat === 'feature') return { label: '功能建议', tone: 'purple' }
-  if (cat === 'bug') return { label: '问题反馈', tone: 'fail' }
-  return { label: '其他', tone: 'mint' }
 }
 
 export function reportReasonTag(reason?: string): TagSpec {

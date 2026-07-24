@@ -169,41 +169,11 @@ export function createDeployClient(opts: DeployClientOptions) {
         success: boolean
         message?: string
         data?: {
-          landing_feedback_total: number
           user_total: number
           server_time: string
           feishu_enabled: boolean
         }
       }>(`/api/deploy/admin/dashboard?target=${encodeURIComponent(target)}`),
-
-    listLandingFeedback: (
-      target: string,
-      params: { page?: number; page_size?: number; category?: string } = {},
-    ) => {
-      const q = new URLSearchParams()
-      q.set('target', target)
-      if (params.page) q.set('page', String(params.page))
-      if (params.page_size) q.set('page_size', String(params.page_size))
-      if (params.category) q.set('category', params.category)
-      return api<{
-        success: boolean
-        code?: number
-        message?: string
-        data?: {
-          items: Array<{
-            id: number
-            email: string
-            category: string
-            content: string
-            source: string
-            client_ip?: string
-            user_agent?: string
-            created_at: string
-          }>
-          total: number
-        }
-      }>(`/api/deploy/ops/landing-feedback?${q.toString()}`)
-    },
 
     cleanBuildCache: (removeBinaries = false) =>
       api<{

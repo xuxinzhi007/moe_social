@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../utils/main_tab_navigation.dart';
+import '../services/companion_chat_launcher.dart';
 import '../utils/responsive.dart';
 import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
@@ -52,9 +52,9 @@ class QuickActionsGrid extends StatelessWidget {
       {
         'icon': Icons.auto_awesome_rounded,
         'label': 'AI 伙伴',
-        'hint': '陪伴与故事',
+        'hint': '直接聊天',
         'color': const Color(0xFFFFB347),
-        'onTap': () => openMainTab(context, 2),
+        'onTap': () => CompanionChatLauncher.openChat(context),
       },
       {
         'icon': Icons.settings_rounded,

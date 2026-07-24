@@ -7,6 +7,7 @@ import '../../pages/life/life_world_page.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../services/game_service.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -28,6 +29,7 @@ class _GameHubPageState extends State<GameHubPage> {
   String? _loadError;
   CompanionProfileData _profile = const CompanionProfileData();
   CompanionStateData _state = const CompanionStateData();
+  CompanionCommunityIdentityData? _communityIdentity;
   List<CompanionMemoryData> _memories = const [];
   List<CompanionChatLogData> _chatHistory = const [];
 
@@ -58,10 +60,18 @@ class _GameHubPageState extends State<GameHubPage> {
         history = await CompanionService().listChatHistory(limit: 8);
       } catch (_) {}
 
+      CompanionCommunityIdentityData? identity;
+      if (snapshot.profile.agentId.trim().isNotEmpty) {
+        try {
+          identity = await CompanionService().getCommunityIdentity();
+        } catch (_) {}
+      }
+
       if (!mounted) return;
       setState(() {
         _profile = snapshot.profile;
         _state = snapshot.state;
+        _communityIdentity = identity;
         _memories = memories;
         _chatHistory = history;
         _isLoading = false;
@@ -123,6 +133,22 @@ class _GameHubPageState extends State<GameHubPage> {
     }
   }
 
+  Future<void> _openCommunityFeed() async {
+    await Navigator.of(context).pushNamed('/community');
+  }
+
+  Future<void> _openCommunityComposer() async {
+    final identity = _communityIdentity;
+    if (identity == null || !identity.isValid) {
+      MoeToast.error(context, '社区账号信息未就绪');
+      return;
+    }
+    await Navigator.of(context).pushNamed(
+      '/create-post',
+      arguments: {'communityIdentity': identity},
+    );
+  }
+
   Future<void> _editProfile() async {
     final saved = await _showProfileEditor();
     if (saved == null) return;
@@ -158,9 +184,8 @@ class _GameHubPageState extends State<GameHubPage> {
     final systemPromptController = TextEditingController(
       text: current.systemPromptOverride,
     );
-    var greetingStyle = current.greetingStyle.isNotEmpty
-        ? current.greetingStyle
-        : 'warm';
+    var greetingStyle =
+        current.greetingStyle.isNotEmpty ? current.greetingStyle : 'warm';
 
     try {
       return await showModalBottomSheet<CompanionProfileData>(
@@ -175,7 +200,8 @@ class _GameHubPageState extends State<GameHubPage> {
                 child: Container(
                   decoration: const BoxDecoration(
                     color: AiBrandTokens.pageBackground,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   padding: EdgeInsets.fromLTRB(
                     16,
@@ -250,7 +276,8 @@ class _GameHubPageState extends State<GameHubPage> {
                           decoration: _profileFieldDecoration('问候风格'),
                           items: const [
                             DropdownMenuItem(value: 'warm', child: Text('温暖')),
-                            DropdownMenuItem(value: 'playful', child: Text('俏皮')),
+                            DropdownMenuItem(
+                                value: 'playful', child: Text('俏皮')),
                             DropdownMenuItem(value: 'calm', child: Text('沉静')),
                           ],
                           onChanged: (value) {
@@ -361,6 +388,12 @@ class _GameHubPageState extends State<GameHubPage> {
                   ),
                   const SizedBox(height: 16),
                   _StateCard(profile: _profile, state: _state),
+                  const SizedBox(height: 16),
+                  _CommunityCard(
+                    identity: _communityIdentity,
+                    onOpenFeed: _openCommunityFeed,
+                    onCreatePost: _openCommunityComposer,
+                  ),
                   const SizedBox(height: 16),
                   _SectionCard(
                     title: '最近记忆',
@@ -488,11 +521,12 @@ class _HeroCard extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-          children: [
+            children: [
               _MiniChip('关系', 'Lv.${profile.relationshipLevel}'),
               _MiniChip('亲密', '${profile.intimacyScore.round()}%'),
               _MiniChip('问候', profile.greetingStyle),
-              _MiniChip('Agent', profile.agentId.isNotEmpty ? profile.agentId : '默认'),
+              _MiniChip(
+                  'Agent', profile.agentId.isNotEmpty ? profile.agentId : '默认'),
               _MiniChip(
                 '绑定',
                 profile.lifeEntityId > 0 ? '已绑定' : '未绑定',
@@ -612,6 +646,152 @@ class _StateCard extends StatelessWidget {
   }
 }
 
+class _CommunityCard extends StatelessWidget {
+  const _CommunityCard({
+    required this.identity,
+    required this.onOpenFeed,
+    required this.onCreatePost,
+  });
+
+  final CompanionCommunityIdentityData? identity;
+  final VoidCallback onOpenFeed;
+  final VoidCallback onCreatePost;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = identity;
+    var name = '社区 AI 账号';
+    var avatar = '';
+    String? agentKey;
+    if (data != null) {
+      name = data.userName.trim().isNotEmpty ? data.userName.trim() : name;
+      avatar = data.userAvatar.trim();
+      agentKey = data.authorBotAgentKey.isNotEmpty
+          ? data.authorBotAgentKey
+          : data.agentId;
+    }
+    final communityChips = _communityIdentityChips(data, agentKey);
+
+    return _SectionCard(
+      title: '社区账号',
+      icon: Icons.groups_rounded,
+      emptyText: '社区账号未就绪',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F5FB),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: avatar.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          avatar,
+                          width: 52,
+                          height: 52,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.smart_toy_rounded,
+                            color: AiBrandTokens.primary,
+                          ),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.smart_toy_rounded,
+                        color: AiBrandTokens.primary,
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AiBrandTokens.titleColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      communityChips.isNotEmpty
+                          ? '作为真实社区账号进入发帖与评论链路'
+                          : '等待绑定到可发帖的社区身份',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (communityChips.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: communityChips,
+            ),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: communityChips.isNotEmpty ? onCreatePost : null,
+                  icon: const Icon(Icons.edit_note_rounded),
+                  label: const Text('发动态'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    backgroundColor: AiBrandTokens.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onOpenFeed,
+                  icon: const Icon(Icons.explore_rounded),
+                  label: const Text('进社区'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: AiBrandTokens.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _communityIdentityChips(
+    CompanionCommunityIdentityData? data,
+    String? agentKey,
+  ) {
+    if (data == null || !data.isValid) return const [];
+    return [
+      AiBotBadge(agentKey: agentKey),
+      _MiniChip('用户ID', data.userId),
+      _MiniChip('Agent', data.agentId.isNotEmpty ? data.agentId : '默认'),
+    ];
+  }
+}
+
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
     required this.title,
@@ -659,13 +839,16 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          if (hasContent) child else Text(
-            emptyText,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
+          if (hasContent)
+            child
+          else
+            Text(
+              emptyText,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade500,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -810,7 +993,8 @@ class _MiniChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.84),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AiBrandTokens.primary.withValues(alpha: 0.14)),
+        border:
+            Border.all(color: AiBrandTokens.primary.withValues(alpha: 0.14)),
       ),
       child: Text(
         '$label · $value',

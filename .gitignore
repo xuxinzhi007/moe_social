@@ -146,9 +146,4 @@ backend/rpc/.../
 .compound-engineering/*.local.yaml
 --css
 backend/.codex-tmp/
-app-rn/android/
-app-rn/node_modules/
-app-rn/.expo/
-app-rn/.expo-shared/
-app-rn/dist/
-app-rn/web-build/
+moe_social_mcp_server/

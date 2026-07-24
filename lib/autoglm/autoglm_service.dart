@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class AutoGLMService {
@@ -16,12 +17,16 @@ class AutoGLMService {
   // 停止任务回调（由悬浮窗触发）
   static Function? onStopRequested;
 
+  static void _logError(String message, Object error) {
+    debugPrint('$message: $error');
+  }
+
   /// 保存当前输入法（用于后续恢复）
   static Future<void> saveCurrentIme() async {
     try {
       await platform.invokeMethod('saveCurrentIme');
     } catch (e) {
-      print("Error saving current ime: $e");
+      _logError('Error saving current ime', e);
     }
   }
 
@@ -30,7 +35,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('enableInputMode');
     } catch (e) {
-      print("Error enabling input mode: $e");
+      _logError('Error enabling input mode', e);
     }
   }
 
@@ -39,7 +44,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('disableInputMode');
     } catch (e) {
-      print("Error disabling input mode: $e");
+      _logError('Error disabling input mode', e);
     }
   }
 
@@ -58,7 +63,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('openAccessibilitySettings');
     } catch (e) {
-      print("Error opening settings: $e");
+      _logError('Error opening settings', e);
     }
   }
 
@@ -68,7 +73,7 @@ class AutoGLMService {
       final String? result = await platform.invokeMethod('getScreenshot');
       return result;
     } catch (e) {
-      print("Error getting screenshot: $e");
+      _logError('Error getting screenshot', e);
       return null;
     }
   }
@@ -79,7 +84,7 @@ class AutoGLMService {
       await platform.invokeMethod('launchApp', {'appName': appName});
       return true;
     } catch (e) {
-      print("Error launching app $appName: $e");
+      _logError('Error launching app $appName', e);
       return false;
     }
   }
@@ -93,7 +98,7 @@ class AutoGLMService {
       }
       return {};
     } catch (e) {
-      print("Error getting installed apps: $e");
+      _logError('Error getting installed apps', e);
       return {};
     }
   }
@@ -103,7 +108,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('performType', {'text': text});
     } catch (e) {
-      print("Error performing type: $e");
+      _logError('Error performing type', e);
     }
   }
 
@@ -112,7 +117,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('performClick', {'x': x, 'y': y});
     } catch (e) {
-      print("Error performing click: $e");
+      _logError('Error performing click', e);
     }
   }
 
@@ -127,7 +132,7 @@ class AutoGLMService {
         'duration': duration,
       });
     } catch (e) {
-      print("Error performing swipe: $e");
+      _logError('Error performing swipe', e);
     }
   }
 
@@ -136,7 +141,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('performBack');
     } catch (e) {
-      print("Error performing back: $e");
+      _logError('Error performing back', e);
     }
   }
 
@@ -145,7 +150,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('performHome');
     } catch (e) {
-      print("Error performing home: $e");
+      _logError('Error performing home', e);
     }
   }
 
@@ -154,7 +159,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('showOverlay');
     } catch (e) {
-      print("Error showing overlay: $e");
+      _logError('Error showing overlay', e);
     }
   }
 
@@ -163,7 +168,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('updateOverlayLog', {'log': log});
     } catch (e) {
-      print("Error updating overlay: $e");
+      _logError('Error updating overlay', e);
     }
   }
 
@@ -172,7 +177,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('removeOverlay');
     } catch (e) {
-      print("Error removing overlay: $e");
+      _logError('Error removing overlay', e);
     }
   }
   
@@ -184,7 +189,7 @@ class AutoGLMService {
         'isRunning': isRunning,
       });
     } catch (e) {
-      print("Error updating overlay status: $e");
+      _logError('Error updating overlay status', e);
     }
   }
   
@@ -196,7 +201,7 @@ class AutoGLMService {
         'total': total,
       });
     } catch (e) {
-      print("Error updating overlay progress: $e");
+      _logError('Error updating overlay progress', e);
     }
   }
   
@@ -211,7 +216,7 @@ class AutoGLMService {
       final bool hasPermission = await platform.invokeMethod('checkOverlayPermission');
       return hasPermission;
     } catch (e) {
-      print("Error checking overlay permission: $e");
+      _logError('Error checking overlay permission', e);
       return false;
     }
   }
@@ -221,7 +226,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('requestOverlayPermission');
     } catch (e) {
-      print("Error requesting overlay permission: $e");
+      _logError('Error requesting overlay permission', e);
     }
   }
 
@@ -233,7 +238,7 @@ class AutoGLMService {
     try {
       await platform.invokeMethod('showInputMethodPicker', {"mode": mode});
     } catch (e) {
-      print("Error showing input method picker: $e");
+      _logError('Error showing input method picker', e);
     }
   }
 
@@ -243,7 +248,7 @@ class AutoGLMService {
       final bool result = await platform.invokeMethod('isAdbKeyboardEnabled');
       return result;
     } catch (e) {
-      print("Error checking if ADB keyboard is enabled: $e");
+      _logError('Error checking if ADB keyboard is enabled', e);
       return false;
     }
   }
@@ -254,9 +259,8 @@ class AutoGLMService {
       final bool result = await platform.invokeMethod('isAdbKeyboardSelected');
       return result;
     } catch (e) {
-      print("Error checking if ADB keyboard is selected: $e");
+      _logError('Error checking if ADB keyboard is selected', e);
       return false;
     }
   }
 }
-

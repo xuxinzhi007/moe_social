@@ -22,7 +22,7 @@ var (
 	configFile = flag.String("f", "config/config.yaml", "Unified config (SSOT)")
 	apiConfig  = flag.String("f-api", "", "Optional override: API struct fragment YAML")
 	migrate    = flag.Bool("migrate", false, "run schema migrate before starting")
-	withAgent  = flag.Bool("agent", true, "start deploy-agent on :19010 (devtools / deploy proxy)")
+	withAgent  = flag.Bool("agent", false, "start deploy-agent on :19010 (optional devtools / deploy proxy)")
 )
 
 func main() {

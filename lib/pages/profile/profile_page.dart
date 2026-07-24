@@ -14,13 +14,14 @@ import '../../services/commerce_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
+import '../../widgets/ai_bot_badge.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
-import '../../utils/main_tab_navigation.dart';
+import '../../services/companion_chat_launcher.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -432,11 +433,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         _MenuItem(
                             icon: Icons.smart_toy_rounded,
                             title: 'AI 伙伴',
-                            subtitle: '智能体对话，增强社交互动',
+                            subtitle: '直接聊天，连接伙伴状态',
                             color: const Color(0xFFFFB347),
+                            trailing: const AiBotBadge(
+                              compact: true,
+                              agentKey: 'moe_guide',
+                            ),
                             onTap: () {
                               HapticFeedback.lightImpact();
-                              openMainTab(context, 2);
+                              unawaited(
+                                  CompanionChatLauncher.openChat(context));
                             }),
                         _MenuItem(
                             icon: Icons.settings_outlined,

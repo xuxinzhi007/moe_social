@@ -10,7 +10,6 @@ export function DashboardPage() {
   const { apiTarget, apiTargetLabel, health, healthLoading, refreshHealth } =
     usePlatform()
   const [stats, setStats] = useState<{
-    landing_feedback_total: number
     user_total: number
     feishu_enabled: boolean
     server_time: string
@@ -103,12 +102,6 @@ export function DashboardPage() {
           </span>
         </div>
         <div className="metric">
-          <span className="label">官网反馈</span>
-          <span className="value">
-            {stats ? `${stats.landing_feedback_total} 条` : statsErr || '—'}
-          </span>
-        </div>
-        <div className="metric">
           <span className="label">注册用户</span>
           <span className="value">{stats ? `${stats.user_total}` : '—'}</span>
         </div>
@@ -146,21 +139,21 @@ export function DashboardPage() {
             <strong>App 用户</strong>
             <span>列表 · 角色 · VIP</span>
           </Link>
-          <Link to="/feedback" className="quick-card">
-            <strong>官网反馈</strong>
-            <span>落地页留言</span>
-          </Link>
           <Link to="/app/announcements" className="quick-card">
             <strong>公告管理</strong>
             <span>运营公告发布</span>
+          </Link>
+          <Link to="/system/platform" className="quick-card">
+            <strong>平台治理</strong>
+            <span>连接 · 图库 · 数据地图</span>
           </Link>
           <Link to="/deploy" className="quick-card">
             <strong>运维部署</strong>
             <span>构建 · 发布 · Docker</span>
           </Link>
-          <Link to="/rpc" className="quick-card">
-            <strong>RPC 监控</strong>
-            <span>调试与指标</span>
+          <Link to="/app/ai" className="quick-card">
+            <strong>AI 角色酒馆</strong>
+            <span>角色 · 配置 · 审核</span>
           </Link>
           <Link to="/content/posts" className="quick-card">
             <strong>动态审核</strong>

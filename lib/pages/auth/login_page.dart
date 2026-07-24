@@ -19,19 +19,13 @@ import '../../widgets/moe_input_field.dart';
 import '../../widgets/auth_background.dart';
 import '../../widgets/email_completion_bubble.dart';
 import '../../widgets/feishu_enterprise_invite_banner.dart';
-import '../../utils/feishu_app_launcher.dart';
-import '../../utils/feishu_oauth_helper.dart';
+import '../../utils/oauth_app_launcher.dart';
+import '../../utils/oauth_flow_helper.dart';
+import '../../utils/oauth_web_history.dart';
 import 'feishu_login_page.dart';
 import 'feishu_login_result.dart';
-import '../../utils/feishu_web_history.dart';
-import '../../utils/feishu_web_redirect.dart';
-import '../../utils/wechat_app_launcher.dart';
-import '../../utils/wechat_oauth_helper.dart';
-import '../../utils/wechat_web_history.dart';
-import '../../utils/wechat_web_redirect.dart';
 import '../../services/daily_growth_service.dart';
 import '../../services/wechat_sdk_service.dart';
-import '../../utils/wechat_config.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
 
@@ -63,13 +57,21 @@ class _LoginPageState extends State<LoginPage> {
     _emailFocus.addListener(_onEmailFocusChanged);
     _prefillLastAccount();
     if (!kIsWeb) {
-      _feishuLinkSub = FeishuAppLauncher.uriLinkStream.listen((uri) {
-        if (!FeishuAppLauncher.isFeishuOAuthReturnUri(uri)) return;
-        unawaited(_completeFeishuLoginWithCode(readFeishuCodeFromUri(uri)));
+      _feishuLinkSub = OAuthAppLauncher.uriLinkStream.listen((uri) {
+        if (!isFeishuOAuthReturnUri(uri)) return;
+        unawaited(
+          _completeFeishuLoginWithCode(
+            readOAuthCodeFromUri(uri, feishuCodeParameter),
+          ),
+        );
       });
-      _wechatLinkSub = WechatAppLauncher.uriLinkStream.listen((uri) {
-        if (!WechatAppLauncher.isWechatOAuthReturnUri(uri)) return;
-        unawaited(_completeWechatLoginWithCode(readWechatCodeFromUri(uri)));
+      _wechatLinkSub = OAuthAppLauncher.uriLinkStream.listen((uri) {
+        if (!isWechatOAuthReturnUri(uri)) return;
+        unawaited(
+          _completeWechatLoginWithCode(
+            readOAuthCodeFromUri(uri, wechatCodeParameter),
+          ),
+        );
       });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,17 +87,17 @@ class _LoginPageState extends State<LoginPage> {
   /// Web：服务端 302 到 `/?feishu_code=` 后在此页 loading 并完成登录。
   Future<void> _tryResumeFeishuOAuthFromUrl() async {
     if (!kIsWeb) return;
-    final code = readFeishuCodeFromCurrentUrl();
+    final code = readOAuthCodeFromCurrentUrl(feishuCodeParameter);
     if (code == null || code.isEmpty) return;
-    clearFeishuCodeFromBrowserUrl();
+    clearOAuthCodeFromBrowserUrl();
     await _completeFeishuLoginWithCode(code);
   }
 
   /// App：飞书授权后 302 到 `moesocial://feishu/oauth?feishu_code=`。
   Future<void> _tryResumeFeishuOAuthFromDeepLink() async {
     if (kIsWeb) return;
-    final uri = await FeishuAppLauncher.getInitialOAuthUri();
-    final code = readFeishuCodeFromUri(uri);
+    final uri = await OAuthAppLauncher.getInitialOAuthUri(isFeishuOAuthReturnUri);
+    final code = readOAuthCodeFromUri(uri, feishuCodeParameter);
     if (code == null || code.isEmpty) return;
     await _completeFeishuLoginWithCode(code);
   }
@@ -185,12 +187,16 @@ class _LoginPageState extends State<LoginPage> {
         final url = await AuthFlowService.getFeishuAuthorizeUrl(
           state: buildFeishuOAuthState(),
         );
-        final hint = feishuRedirectConfigMismatchHint(url, ApiClient.baseUrl);
+        final hint = oauthRedirectConfigMismatchHint(
+          'Feishu',
+          url,
+          ApiClient.baseUrl,
+        );
         if (hint != null && mounted) {
           MoeToast.error(context, hint);
           return;
         }
-        navigateBrowserToFeishuAuthorize(url);
+        await OAuthAppLauncher.navigateBrowserToOAuthAuthorize(url);
       } catch (e) {
         if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
       }
@@ -201,18 +207,22 @@ class _LoginPageState extends State<LoginPage> {
       final url = await AuthFlowService.getFeishuAuthorizeUrl(
         state: buildFeishuOAuthState(),
       );
-      final hint = feishuRedirectConfigMismatchHint(url, ApiClient.baseUrl);
+      final hint = oauthRedirectConfigMismatchHint(
+        'Feishu',
+        url,
+        ApiClient.baseUrl,
+      );
       if (!mounted) return;
       if (hint != null) {
         MoeToast.error(context, hint);
         return;
       }
 
-      final installed = await FeishuAppLauncher.isFeishuInstalled();
+      final installed = await OAuthAppLauncher.isFeishuInstalled();
       if (!mounted) return;
 
       if (installed) {
-        final opened = await FeishuAppLauncher.openOAuthAuthorize(url);
+        final opened = await OAuthAppLauncher.openOAuthAuthorize(url);
         if (!mounted) return;
         if (opened) {
           MoeToast.info(
@@ -245,18 +255,18 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _tryResumeWechatOAuthFromUrl() async {
     if (!kIsWeb) return;
-    final code = readWechatCodeFromCurrentUrl();
+    final code = readOAuthCodeFromCurrentUrl(wechatCodeParameter);
     if (code == null || code.isEmpty) return;
-    clearWechatCodeFromBrowserUrl();
+    clearOAuthCodeFromBrowserUrl();
     await _completeWechatLoginWithCode(code, flow: defaultWechatOAuthFlow());
   }
 
   Future<void> _tryResumeWechatOAuthFromDeepLink() async {
     if (kIsWeb) return;
-    final uri = await WechatAppLauncher.getInitialOAuthUri();
-    final code = readWechatCodeFromUri(uri);
+    final uri = await OAuthAppLauncher.getInitialOAuthUri(isWechatOAuthReturnUri);
+    final code = readOAuthCodeFromUri(uri, wechatCodeParameter);
     if (code == null || code.isEmpty) return;
-    await _completeWechatLoginWithCode(code, flow: WechatConfig.oauthFlow);
+    await _completeWechatLoginWithCode(code, flow: defaultWechatOAuthFlow());
   }
 
   Future<void> _completeWechatLoginWithCode(
@@ -292,9 +302,9 @@ class _LoginPageState extends State<LoginPage> {
       try {
         final url = await AuthFlowService.getWechatAuthorizeUrl(
           state: buildWechatOAuthState(),
-          flow: 'website',
+          flow: defaultWechatOAuthFlow(),
         );
-        navigateBrowserToWechatAuthorize(url);
+        await OAuthAppLauncher.navigateBrowserToWechatAuthorize(url);
       } catch (e) {
         if (mounted) MoeToast.error(context, '无法打开微信扫码登录：$e');
       }
@@ -306,8 +316,10 @@ class _LoginPageState extends State<LoginPage> {
       operation: () async {
         try {
           final code = await WechatSdkService.instance.requestAuthCode();
-          return AuthService.loginWithWechat(code,
-              flow: WechatConfig.oauthFlow);
+          return AuthService.loginWithWechat(
+            code,
+            flow: defaultWechatOAuthFlow(),
+          );
         } on StateError catch (e) {
           return AuthResult.failure(e.message);
         }

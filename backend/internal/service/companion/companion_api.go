@@ -2,7 +2,6 @@ package companionapp
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -61,9 +60,6 @@ func (s *AppService) UpsertProfile(ctx context.Context, userID uint, in *compani
 	}
 	saved, err := engine.UpsertProfile(ctx, userID, p)
 	if err != nil {
-		if errors.Is(err, companionbiz.ErrLifeEntityNotFound) {
-			return nil, kerrors.BadRequest("LIFE_ENTITY_NOT_FOUND", "选择的伙伴不存在或已离开")
-		}
 		return nil, err
 	}
 	return &companionv1.UpsertProfileReply{
@@ -181,14 +177,14 @@ func (s *AppService) GetCommunityIdentity(ctx context.Context, userID uint, in *
 	}
 	agentID := strings.TrimSpace(profile.AgentID)
 	if agentID == "" {
-		return nil, kerrors.NotFound("COMPANION_IDENTITY_NOT_FOUND", "伙伴社区身份不存在")
+		return &companionv1.GetCommunityIdentityReply{}, nil
 	}
 
 	var botUser model.User
 	if err := s.db.WithContext(ctx).
 		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
 		First(&botUser).Error; err != nil {
-		return nil, kerrors.NotFound("COMPANION_IDENTITY_NOT_FOUND", "伙伴社区身份不存在")
+		return &companionv1.GetCommunityIdentityReply{}, nil
 	}
 
 	userName := strings.TrimSpace(botUser.Username)

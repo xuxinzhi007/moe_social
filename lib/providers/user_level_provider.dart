@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/user_level.dart';
 import '../services/api_service.dart';
@@ -52,11 +51,9 @@ class UserLevelProvider extends ChangeNotifier {
       if (_userLevel != null && levelInfo.level > _userLevel!.level) {
         _previousLevel = _userLevel!.level;
         _isLevelingUp = true;
-        debugPrint('🎉 用户升级: Lv.${_previousLevel} → Lv.${levelInfo.level}');
       }
 
       _userLevel = levelInfo;
-      debugPrint('✅ 用户等级信息加载成功: Lv.${levelInfo.level} (${levelInfo.experience}/${levelInfo.nextLevelExp})');
     } catch (e) {
       final message = e is ApiException ? e.message : '获取用户等级信息失败: $e';
       _setError(message);
@@ -87,7 +84,6 @@ class UserLevelProvider extends ChangeNotifier {
       if (newLevel > currentLevel) {
         _previousLevel = currentLevel;
         _isLevelingUp = true;
-        debugPrint('🎉 本地检测到等级提升: Lv.$currentLevel → Lv.$newLevel');
       }
       nextLevelExp = _calculateNextLevelExp(newLevel);
     }

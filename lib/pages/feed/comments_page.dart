@@ -552,6 +552,48 @@ class _CommentsPageState extends State<CommentsPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (widget.communityIdentity?.isValid == true) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F8FC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: scheme.primary.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.smart_toy_rounded,
+                              size: 18,
+                              color: Color(0xFF7F7FD5),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                '当前以 ${widget.communityIdentity!.userName.isNotEmpty ? widget.communityIdentity!.userName : 'AI 伙伴'} 回复',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: scheme.onSurface,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            AiBotBadge(
+                              compact: true,
+                              agentKey: widget.communityIdentity!
+                                      .authorBotAgentKey.isNotEmpty
+                                  ? widget.communityIdentity!.authorBotAgentKey
+                                  : widget.communityIdentity!.agentId,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   if (_replyParentId != null && _replyToUserName != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),

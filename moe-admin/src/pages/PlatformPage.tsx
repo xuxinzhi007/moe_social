@@ -68,7 +68,7 @@ export function PlatformPage() {
   const [clientConfigPreview, setClientConfigPreview] = useState('')
   const [clientConfigOk, setClientConfigOk] = useState<boolean | null>(null)
 
-  const [dashboard, setDashboard] = useState<{ user_total: number; landing_feedback_total: number } | null>(null)
+  const [dashboard, setDashboard] = useState<{ user_total: number; server_time: string } | null>(null)
   const [catalog, setCatalog] = useState<{ summary: Record<string, number>; items: CatalogRow[] } | null>(null)
 
   const [mediaItems, setMediaItems] = useState<Array<{ filename: string; url: string; size: number }>>([])
@@ -133,7 +133,7 @@ export function PlatformPage() {
       if (dashRes.success && dashRes.data) {
         setDashboard({
           user_total: dashRes.data.user_total,
-          landing_feedback_total: dashRes.data.landing_feedback_total,
+          server_time: dashRes.data.server_time,
         })
       }
       if (catRes.success && catRes.data) {
@@ -253,9 +253,9 @@ export function PlatformPage() {
               <p className="muted">注册用户</p>
             </div>
             <div className="platform-health-card">
-              <div className="label">官网反馈</div>
-              <div className="value">{dashboard?.landing_feedback_total ?? 0}</div>
-              <p className="muted">累计提交</p>
+              <div className="label">服务时间</div>
+              <div className="value">{dashboard?.server_time ? '已返回' : '—'}</div>
+              <p className="muted">API 时间：{dashboard?.server_time || '—'}</p>
             </div>
           </div>
           <section className="panel platform-panel">

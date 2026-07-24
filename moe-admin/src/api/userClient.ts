@@ -122,32 +122,6 @@ export function createUserMethods(api: AdminApiFn) {
     getUserProfile: (userId: string | number) =>
       api<BaseResp<AdminUserProfileData>>(adminApiPath(`/users/${userId}/profile`)),
 
-    listLandingFeedback: (params: {
-      page?: number
-      page_size?: number
-      category?: string
-    } = {}) => {
-      const q = new URLSearchParams()
-      if (params.page) q.set('page', String(params.page))
-      if (params.page_size) q.set('page_size', String(params.page_size))
-      if (params.category) q.set('category', params.category)
-      const qs = q.toString()
-      return api<
-        BaseResp<{
-          items: Array<{
-            id: number
-            email: string
-            category: string
-            content: string
-            source: string
-            client_ip?: string
-            created_at: string
-          }>
-          total: number
-        }>
-      >(`${adminApiPath('/landing/feedback')}${qs ? `?${qs}` : ''}`)
-    },
-
     listFollows: (params: {
       page?: number
       page_size?: number
