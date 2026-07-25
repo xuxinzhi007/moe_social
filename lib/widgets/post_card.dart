@@ -349,24 +349,32 @@ class _PostCardState extends State<PostCard> {
                 // 话题标签
                 if (widget.post.topicTags.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: widget.post.topicTags
-                        .map((tag) => TopicTagDisplay(
-                              tag: tag,
-                              fontSize: 12,
-                              showUsageCount: false,
-                              onTap: () {
-                                // 跳转到话题动态列表页面
-                                Navigator.pushNamed(
-                                  context,
-                                  '/topic-posts',
-                                  arguments: tag,
-                                );
-                              },
-                            ))
-                        .toList(),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: widget.post.topicTags
+                          .map(
+                            (tag) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: TopicTagDisplay(
+                                tag: tag,
+                                fontSize: 11,
+                                compact: true,
+                                showUsageCount: false,
+                                onTap: () {
+                                  // 跳转到话题动态列表页面
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/topic-posts',
+                                    arguments: tag,
+                                  );
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
                   ),
                 ],
 
@@ -738,14 +746,18 @@ $link''';
         alignment: PlaceholderAlignment.middle,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
-          child: CachedNetworkImage(
-            imageUrl: emojiUrl,
-            width: 24,
-            height: 24,
-            fit: BoxFit.cover,
+            child: CachedNetworkImage(
+              imageUrl: emojiUrl,
+              width: 24,
+              height: 24,
+              fit: BoxFit.cover,
+              memCacheWidth: 48,
+              memCacheHeight: 48,
+              maxWidthDiskCache: 48,
+              maxHeightDiskCache: 48,
+            ),
           ),
-        ),
-      ));
+        ));
 
       lastIndex = match.end;
     }
@@ -793,6 +805,10 @@ class _HandDrawThumbnail extends StatelessWidget {
                 CachedNetworkImage(
                   imageUrl: resolveMediaUrl(post.handDrawThumbUrl),
                   fit: BoxFit.cover,
+                  memCacheWidth: 960,
+                  memCacheHeight: 1280,
+                  maxWidthDiskCache: 960,
+                  maxHeightDiskCache: 1280,
                   placeholder: (_, __) =>
                       Container(color: Colors.grey.shade100),
                   errorWidget: (_, __, ___) => Container(
@@ -939,6 +955,10 @@ Future<void> _openHandDrawViewerImpl(BuildContext context, Post post) async {
                 child: CachedNetworkImage(
                   imageUrl: thumbResolved,
                   fit: BoxFit.contain,
+                  memCacheWidth: 1280,
+                  memCacheHeight: 1280,
+                  maxWidthDiskCache: 1280,
+                  maxHeightDiskCache: 1280,
                   placeholder: (_, __) => const SizedBox(
                     width: 200,
                     height: 280,

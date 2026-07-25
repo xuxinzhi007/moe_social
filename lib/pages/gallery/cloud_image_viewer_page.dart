@@ -4,20 +4,20 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
+import '../../utils/public_download_directory.dart';
 
 class CloudImageViewerPage extends StatefulWidget {
   const CloudImageViewerPage({
-    Key? key,
+    super.key,
     required this.images,
     required this.initialIndex,
-  }) : super(key: key);
+  });
 
   final List<dynamic> images; // expects {url, filename, size}
   final int initialIndex;
@@ -75,7 +75,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
 
     setState(() => _downloading = true);
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await resolvePublicDownloadDirectory();
       final safeName = filename.replaceAll('/', '_').replaceAll('\\', '_');
       final path = '${dir.path}${Platform.pathSeparator}$safeName';
 
@@ -141,7 +141,11 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
 
                 return PhotoViewGalleryPageOptions(
                   heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                  imageProvider: CachedNetworkImageProvider(displayUrl),
+                  imageProvider: CachedNetworkImageProvider(
+                    displayUrl,
+                    maxWidth: 1600,
+                    maxHeight: 1600,
+                  ),
                   minScale: PhotoViewComputedScale.contained,
                   maxScale: PhotoViewComputedScale.covered * 4.0,
                   errorBuilder: (context, error, stackTrace) {

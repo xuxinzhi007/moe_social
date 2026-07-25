@@ -22,6 +22,10 @@ class NetworkAvatarImage extends StatelessWidget {
     this.placeholderColor,
   });
 
+  int _cacheDimension() {
+    return ((radius * 2) * 2).ceil().clamp(64, 512);
+  }
+
   @override
   Widget build(BuildContext context) {
     // 如果URL为空，显示占位图
@@ -47,6 +51,10 @@ class NetworkAvatarImage extends StatelessWidget {
         width: radius * 2,
         height: radius * 2,
         fit: BoxFit.cover,
+        memCacheWidth: _cacheDimension(),
+        memCacheHeight: _cacheDimension(),
+        maxWidthDiskCache: _cacheDimension(),
+        maxHeightDiskCache: _cacheDimension(),
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) => _buildPlaceholder(),
       ),

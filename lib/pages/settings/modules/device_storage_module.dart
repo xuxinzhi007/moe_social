@@ -26,6 +26,7 @@ class DeviceStorageModule extends StatefulWidget {
 class _DeviceStorageModuleState extends State<DeviceStorageModule> {
   String _cacheSubtitle = '正在计算…';
   bool _clearingCache = false;
+  bool _clearingGeneratedData = false;
 
   @override
   void initState() {
@@ -88,6 +89,39 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
     }
   }
 
+  Future<void> _confirmAndClearGeneratedData(BuildContext context) async {
+    if (kIsWeb) {
+      MoeToast.info(context, '网页版无需清理本地导出文件');
+      return;
+    }
+
+    final ok = await showConfirmDialog(
+      context,
+      title: '清理本地数据',
+      message: '将删除本地日志和字符卡导出文件，不会影响登录状态。',
+    );
+    if (!ok || !mounted) {
+      return;
+    }
+
+    setState(() => _clearingGeneratedData = true);
+    try {
+      await AppStorageService.clearGeneratedData();
+      if (!mounted) {
+        return;
+      }
+      MoeToast.success(context, '本地数据已清理');
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '清理失败，请稍后重试');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _clearingGeneratedData = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWeb = kIsWeb;
@@ -122,6 +156,23 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
             onTap:
                 _clearingCache ? () {} : () => _confirmAndClearCache(context),
             trailing: _clearingCache
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : null,
+          ),
+        if (!isWeb)
+          MoeMenuItem(
+            icon: Icons.folder_delete_rounded,
+            title: '清理本地数据',
+            subtitle: '删除日志和字符卡导出等可再生成文件',
+            color: Colors.deepOrange,
+            onTap: _clearingGeneratedData
+                ? () {}
+                : () => _confirmAndClearGeneratedData(context),
+            trailing: _clearingGeneratedData
                 ? const SizedBox(
                     width: 22,
                     height: 22,

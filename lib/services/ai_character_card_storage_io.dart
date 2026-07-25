@@ -2,16 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+
+import '../utils/public_download_directory.dart';
 
 const _exportSubdir = 'character_cards';
 
 Future<String?> characterCardExportDirectory() async {
-  final docs = await getApplicationDocumentsDirectory();
-  final dir = Directory(p.join(docs.path, _exportSubdir));
-  if (!await dir.exists()) {
-    await dir.create(recursive: true);
-  }
+  final dir = await resolvePublicDownloadDirectory(
+    subdir: p.join('MoeSocial', _exportSubdir),
+  );
   return dir.path;
 }
 

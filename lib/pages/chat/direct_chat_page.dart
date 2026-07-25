@@ -1190,6 +1190,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
               fit: BoxFit.cover,
               width: 200,
               height: 200,
+              memCacheWidth: 400,
+              memCacheHeight: 400,
+              maxWidthDiskCache: 400,
+              maxHeightDiskCache: 400,
               placeholder: (context, url) => SizedBox(
                 width: 200,
                 height: 200,

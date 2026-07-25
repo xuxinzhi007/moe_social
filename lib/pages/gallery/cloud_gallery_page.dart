@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/api_response.dart';
@@ -14,13 +13,13 @@ import '../../auth_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
+import '../../utils/public_download_directory.dart';
 import '../../widgets/moe_action_row.dart';
 import 'cloud_image_viewer_page.dart';
 
 class CloudGalleryPage extends StatefulWidget {
   const CloudGalleryPage(
-      {Key? key, this.onImageSelected, this.isSelectMode = false})
-      : super(key: key);
+      {super.key, this.onImageSelected, this.isSelectMode = false});
 
   final Function(String)? onImageSelected;
   final bool isSelectMode;
@@ -257,7 +256,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
     setState(() => _isMutating = true);
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await resolvePublicDownloadDirectory();
       final dio = Dio();
       final indices = _selected.toList()..sort();
 
@@ -885,10 +884,12 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                       ],
                                     ),
                                     clipBehavior: Clip.antiAlias,
-                                    child: CachedNetworkImage(
+                                      child: CachedNetworkImage(
                                       imageUrl: displayUrl,
                                       fit: BoxFit.cover,
                                       memCacheWidth: 400,
+                                      maxWidthDiskCache: 800,
+                                      maxHeightDiskCache: 800,
                                       placeholder: (context, _) =>
                                           Shimmer.fromColors(
                                         baseColor: Colors.grey[200]!,
