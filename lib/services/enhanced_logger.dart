@@ -127,6 +127,9 @@ class EnhancedLogger {
     _initDatabase();
   }
 
+  static const int _maxPersistedLogs = 3000;
+  static const Duration _logRetention = Duration(days: 14);
+
   final StreamController<LogEntry> _logStream = StreamController.broadcast();
   final List<LogEntry> _logBuffer = [];
   final int _maxBufferSize = 1000;
@@ -169,6 +172,7 @@ class EnhancedLogger {
           await db.execute('CREATE INDEX idx_traceId ON logs(traceId)');
         },
       );
+      await _pruneLogs();
     } catch (e) {
       debugPrint('Failed to initialize log database: $e');
     }
@@ -274,8 +278,37 @@ class EnhancedLogger {
   Future<void> _persistLog(LogEntry entry) async {
     try {
       await _database?.insert('logs', entry.toJson());
+      await _pruneLogs();
     } catch (e) {
       debugPrint('Failed to persist log: $e');
+    }
+  }
+
+  Future<void> _pruneLogs() async {
+    final db = _database;
+    if (db == null) return;
+
+    try {
+      final cutoff = DateTime.now().subtract(_logRetention).toIso8601String();
+      await db.delete(
+        'logs',
+        where: 'timestamp < ?',
+        whereArgs: [cutoff],
+      );
+
+      final countResult = await db.rawQuery('SELECT COUNT(*) AS c FROM logs');
+      final count = Sqflite.firstIntValue(countResult) ?? 0;
+      final overflow = count - _maxPersistedLogs;
+      if (overflow > 0) {
+        await db.rawDelete(
+          'DELETE FROM logs WHERE id IN ('
+          'SELECT id FROM logs ORDER BY timestamp ASC LIMIT ?'
+          ')',
+          [overflow],
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to prune logs: $e');
     }
   }
 

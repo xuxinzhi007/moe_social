@@ -136,13 +136,13 @@ class _PersonalizedCardState extends State<PersonalizedCard>
     return Consumer2<DeviceInfoProvider, UserLevelProvider>(
       builder: (context, deviceInfo, levelProvider, _) {
         final size = MediaQuery.sizeOf(context);
-        final compact = size.width < 430 || size.height < 760;
+        final compact = size.width < 480 || size.height < 820;
         return Container(
           padding: EdgeInsets.fromLTRB(
-            compact ? 18 : 20,
             compact ? 16 : 18,
-            compact ? 18 : 20,
-            compact ? 12 : 14,
+            compact ? 14 : 16,
+            compact ? 16 : 18,
+            compact ? 10 : 12,
           ),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -182,7 +182,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildHeader(deviceInfo, levelProvider, compact: compact),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   _buildMoodStrip(),
                 ],
               ),
@@ -473,12 +473,12 @@ class _PersonalizedCardState extends State<PersonalizedCard>
       },
       child: Container(
         constraints: BoxConstraints(
-          minHeight: compact ? 56 : 64,
-          minWidth: compact ? 74 : 92,
+          minHeight: compact ? 52 : 60,
+          minWidth: compact ? 70 : 88,
         ),
         padding: EdgeInsets.symmetric(
-          horizontal: compact ? 8 : 12,
-          vertical: compact ? 8 : 8,
+          horizontal: compact ? 8 : 10,
+          vertical: compact ? 7 : 8,
         ),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.12),
@@ -489,8 +489,8 @@ class _PersonalizedCardState extends State<PersonalizedCard>
         ),
         child: _isLoadingWeather
             ? SizedBox(
-                width: compact ? 74 : 92,
-                height: compact ? 40 : 48,
+                width: compact ? 70 : 88,
+                height: compact ? 36 : 44,
                 child: Center(
                   child: MoeSmallLoading(color: Colors.white, size: 14),
                 ),
@@ -500,8 +500,8 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: compact ? 34 : 40,
-                    height: compact ? 34 : 40,
+                    width: compact ? 32 : 38,
+                    height: compact ? 32 : 38,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(14),
@@ -522,7 +522,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                         _weatherData != null ? '${_weatherData!.temp}°' : '26°',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: compact ? 12 : 15,
+                          fontSize: compact ? 11 : 14,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -533,7 +533,7 @@ class _PersonalizedCardState extends State<PersonalizedCard>
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.74),
-                          fontSize: compact ? 9 : 10,
+                          fontSize: compact ? 8 : 9,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -548,10 +548,10 @@ class _PersonalizedCardState extends State<PersonalizedCard>
   Widget _buildMoodStrip() {
     return Container(
       width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.12),
         ),
@@ -559,23 +559,24 @@ class _PersonalizedCardState extends State<PersonalizedCard>
       child: Row(
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: 24,
+            height: 24,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.wb_sunny_outlined,
-              size: 16,
+              size: 14,
               color: Colors.white.withValues(alpha: 0.88),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: DailyQuoteWidget(
               textColor: Colors.white.withValues(alpha: 0.96),
               embedded: true,
+              maxLines: 1,
             ),
           ),
         ],

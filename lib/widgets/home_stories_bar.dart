@@ -65,7 +65,7 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final visibleUsers = _followings.take(8).toList();
+    final visibleUsers = _followings.take(6).toList();
 
     if (!_isLoading && visibleUsers.isEmpty) {
       return Padding(
@@ -77,9 +77,9 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
     final itemCount = _isLoading ? 5 : visibleUsers.length;
 
     return Container(
-      height: 94,
+      height: 82,
       margin: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(22),
@@ -193,7 +193,7 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
 
   Widget _buildCreateItem(BuildContext context, ColorScheme scheme, {bool compact = false}) {
     return Padding(
-      padding: const EdgeInsets.only(right: 14),
+      padding: const EdgeInsets.only(right: 10),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -205,13 +205,13 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
             }
           },
           child: SizedBox(
-            width: compact ? 68 : 72,
+            width: compact ? 64 : 68,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: compact ? 48 : 54,
-                  height: compact ? 48 : 54,
+                  width: compact ? 44 : 50,
+                  height: compact ? 44 : 50,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
@@ -230,14 +230,14 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
                   child: const Icon(
                     Icons.add_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   '发动态',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -270,40 +270,40 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
             },
           ),
           child: SizedBox(
-            width: 66,
+            width: 62,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                     gradient: LinearGradient(
                       colors: gradient,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                   ),
-                  padding: const EdgeInsets.all(2.5),
+                  padding: const EdgeInsets.all(2),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       color: scheme.surface,
                     ),
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(1.5),
                     child: NetworkAvatarImage(
                       imageUrl: user.avatar,
-                      radius: 20,
+                      radius: 18,
                       backgroundColor: scheme.surfaceContainerHighest,
                     ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   user.username,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurfaceVariant,
                   ),
@@ -321,24 +321,24 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
 
   Widget _buildSkeletonItem(ColorScheme scheme) {
     return Padding(
-      padding: const EdgeInsets.only(right: 14),
+      padding: const EdgeInsets.only(right: 10),
       child: SizedBox(
-        width: 66,
+        width: 62,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Container(
-              width: 40,
-              height: 9,
+              width: 36,
+              height: 8,
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(4),

@@ -438,6 +438,7 @@ class TopicTagDisplay extends StatelessWidget {
   final TopicTag tag;
   final double fontSize;
   final bool showUsageCount;
+  final bool compact;
   final VoidCallback? onTap;
 
   const TopicTagDisplay({
@@ -445,6 +446,7 @@ class TopicTagDisplay extends StatelessWidget {
     required this.tag,
     this.fontSize = 12,
     this.showUsageCount = false,
+    this.compact = false,
     this.onTap,
   });
 
@@ -456,13 +458,13 @@ class TopicTagDisplay extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 12 : 16,
+            vertical: compact ? 6 : 8,
           ),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(compact ? 16 : 20),
             border: Border.all(
               color: Colors.red,
               width: 1.5,
@@ -478,19 +480,19 @@ class TopicTagDisplay extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 '+ ',
                 style: TextStyle(
                   color: Colors.red,
-                  fontSize: 14,
+                  fontSize: fontSize + 1,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
                 tag.name,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.black87,
-                  fontSize: 14,
+                  fontSize: fontSize,
                   fontWeight: FontWeight.w600,
                 ),
               ),

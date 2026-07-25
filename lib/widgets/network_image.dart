@@ -26,6 +26,11 @@ class NetworkImageWidget extends StatelessWidget {
     this.errorWidget,
   });
 
+  int? _cacheDimension(double? value) {
+    if (value == null || !value.isFinite || value <= 0) return null;
+    return (value * 2).ceil().clamp(1, 2048);
+  }
+
   @override
   Widget build(BuildContext context) {
     final resolved =
@@ -36,6 +41,10 @@ class NetworkImageWidget extends StatelessWidget {
       width: width,
       height: height,
       fit: fit,
+      memCacheWidth: _cacheDimension(width),
+      memCacheHeight: _cacheDimension(height),
+      maxWidthDiskCache: _cacheDimension(width),
+      maxHeightDiskCache: _cacheDimension(height),
       placeholder: (context, url) => placeholder ?? _defaultPlaceholder(),
       errorWidget: (context, url, error) => errorWidget ?? _defaultErrorWidget(),
     );

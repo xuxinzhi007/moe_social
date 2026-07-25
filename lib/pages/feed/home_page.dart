@@ -729,12 +729,12 @@ class _HomePageState extends State<HomePage>
         state.greeting.trim().isNotEmpty ? state.greeting.trim() : '今天也在社区里活动。';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
@@ -750,19 +750,19 @@ class _HomePageState extends State<HomePage>
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF3F5FB),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     avatar,
-                    style: const TextStyle(fontSize: 24),
+                    style: const TextStyle(fontSize: 20),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -773,7 +773,7 @@ class _HomePageState extends State<HomePage>
                             child: Text(
                               name,
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w800,
                                 color: MoeTokens.titleText,
                               ),
@@ -789,8 +789,8 @@ class _HomePageState extends State<HomePage>
                       Text(
                         greeting,
                         style: TextStyle(
-                          fontSize: 13,
-                          height: 1.35,
+                          fontSize: 12,
+                          height: 1.25,
                           color: Colors.grey.shade700,
                         ),
                       ),
@@ -799,37 +799,43 @@ class _HomePageState extends State<HomePage>
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildCompanionChip(
-                  icon: Icons.chat_bubble_rounded,
-                  label: '聊天',
-                  onTap: () => Navigator.pushNamed(context, '/ai-chat'),
-                ),
-                _buildCompanionChip(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'AI 主页',
-                  onTap: () => context.read<MainNavController>().requestTab(2),
-                ),
-                if (identity?.isValid == true)
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
                   _buildCompanionChip(
-                    icon: Icons.edit_note_rounded,
-                    label: '发动态',
-                    onTap: () => Navigator.pushNamed(
-                      context,
-                      '/create-post',
-                      arguments: {'communityIdentity': identity},
-                    ),
+                    icon: Icons.chat_bubble_rounded,
+                    label: '聊天',
+                    onTap: () => Navigator.pushNamed(context, '/ai-chat'),
                   ),
-                _buildCompanionChip(
-                  icon: Icons.groups_rounded,
-                  label: '社区',
-                  onTap: () => Navigator.pushNamed(context, '/community'),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  _buildCompanionChip(
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'AI 主页',
+                    onTap: () => context.read<MainNavController>().requestTab(2),
+                  ),
+                  if (identity?.isValid == true) ...[
+                    const SizedBox(width: 8),
+                    _buildCompanionChip(
+                      icon: Icons.edit_note_rounded,
+                      label: '发动态',
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        '/create-post',
+                        arguments: {'communityIdentity': identity},
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  _buildCompanionChip(
+                    icon: Icons.groups_rounded,
+                    label: '社区',
+                    onTap: () => Navigator.pushNamed(context, '/community'),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -846,7 +852,7 @@ class _HomePageState extends State<HomePage>
       borderRadius: BorderRadius.circular(999),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0xFFF6F7FC),
           borderRadius: BorderRadius.circular(999),
@@ -854,12 +860,12 @@ class _HomePageState extends State<HomePage>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: MoeTokens.primary),
-            const SizedBox(width: 6),
+            Icon(icon, size: 15, color: MoeTokens.primary),
+            const SizedBox(width: 5),
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: MoeTokens.titleText,
               ),

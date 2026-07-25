@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 /// 本应用可测量的存储占用（缓存 + 本地数据目录）。
@@ -77,6 +78,29 @@ class AppStorageService {
           entity.deleteSync();
         } else if (entity is Directory) {
           entity.deleteSync(recursive: true);
+        }
+      } catch (_) {}
+    }
+  }
+
+  /// 清理可再生成的本地产物，例如日志数据库和字符卡导出。
+  static Future<void> clearGeneratedData() async {
+    if (kIsWeb) {
+      return;
+    }
+
+    final docsDir = await getApplicationDocumentsDirectory();
+    final targets = <FileSystemEntity>[
+      File(p.join(docsDir.path, 'autoglm_logs.db')),
+      Directory(p.join(docsDir.path, 'character_cards')),
+    ];
+
+    for (final entity in targets) {
+      try {
+        if (entity is File && await entity.exists()) {
+          await entity.delete();
+        } else if (entity is Directory && await entity.exists()) {
+          await entity.delete(recursive: true);
         }
       } catch (_) {}
     }
