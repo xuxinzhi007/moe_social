@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/topic_tag.dart';
 import 'community_posts_feed.dart';
 
-/// 讨论 Tab：话题 Chip + 形态筛选 + 广场帖子流（与首页分工：此处偏「逛广场」）。
+/// 讨论 Tab：话题 Chip + 形态筛选 + 广场帖子流（整页一体滚动，配合外层 NestedScrollView）。
 class CommunityDiscussionsTab extends StatefulWidget {
   const CommunityDiscussionsTab({super.key});
 
@@ -20,30 +20,24 @@ class _CommunityDiscussionsTabState extends State<CommunityDiscussionsTab> {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: scheme.surfaceContainerLowest,
-      child: Column(
-        children: [
-          _buildTopicChips(scheme),
-          Expanded(
-            child: CommunityPostsFeed(
-              key: ValueKey<String?>(_selectedTopic?.id),
-              topicTagId: _selectedTopic?.id,
-              showTextSearch: true,
-              showVisualKindRow: true,
-              emptyTitle: '广场还没有内容',
-              emptySubtitle: '选一个话题标签，或发第一条动态',
-            ),
-          ),
-        ],
+      child: CommunityPostsFeed(
+        key: ValueKey<String?>(_selectedTopic?.id),
+        topicTagId: _selectedTopic?.id,
+        showTextSearch: true,
+        showVisualKindRow: true,
+        emptyTitle: '广场还没有内容',
+        emptySubtitle: '选一个话题标签，或发第一条动态',
+        topBar: _buildTopicChips(scheme),
       ),
     );
   }
 
   Widget _buildTopicChips(ColorScheme scheme) {
     return SizedBox(
-      height: 52,
+      height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
         itemCount: TopicTag.officialTags.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {

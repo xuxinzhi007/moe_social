@@ -206,8 +206,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (!mounted || widget.initialPost != null) return;
     final draftCaption = await _vm.restoreDraft();
     if (!mounted || draftCaption == null) return;
+    final hasRestored = draftCaption.isNotEmpty ||
+        _vm.selectedImageUrls.isNotEmpty ||
+        _vm.selectedTopicTags.isNotEmpty ||
+        _vm.selectedMoodTag != null ||
+        _vm.handDrawCard != null;
+    if (!hasRestored) return;
     if (draftCaption.isNotEmpty && _contentController.text.isEmpty) {
       _contentController.text = draftCaption;
+    }
+    if (mounted) {
+      MoeToast.info(context, '已恢复未发布的草稿');
     }
   }
 
@@ -650,12 +659,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
           label: '云端图库',
           color: MoeTokens.pastelBlue,
           onTap: _openCloudGallery,
-        ),
-        _formActionChip(
-          icon: Icons.tag_rounded,
-          label: '话题',
-          color: MoeTokens.pastelPink,
-          onTap: _openTopicTagSelector,
         ),
       ],
     );

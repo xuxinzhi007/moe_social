@@ -165,119 +165,124 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
     final blocking = _loading && _groups.isEmpty && _loadError == null;
     final showListProgress = _loading && _groups.isNotEmpty;
 
+    if (_loadError != null && _groups.isEmpty) {
+      return Center(
+        child: MoeErrorState.fromError(
+          _loadError,
+          scene: MoeErrorScene.community,
+          variant: MoeErrorVariant.plain,
+          onRetry: () => _load(),
+        ),
+      );
+    }
+    if (blocking) {
+      return const Center(child: MoeLoading());
+    }
+
     return Material(
       color: moe.pageBackground,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_myGroups.isNotEmpty || _loadingMyGroups)
-            _buildMyGroupsRow(scheme),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: MoeSearchBar(
-              hintText: '搜索群组名称或简介',
-              onSearch: _scheduleSearch,
-              onClear: () {
-                _keyword = '';
-                _load();
-              },
-            ),
+      child: RefreshIndicator(
+        color: moe.primary,
+        onRefresh: () => _load(keyword: _keyword.isEmpty ? null : _keyword),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-          if (showListProgress)
-            LinearProgressIndicator(
-              minHeight: 2,
-              color: moe.primary,
-              backgroundColor: Colors.transparent,
+          slivers: [
+            if (_myGroups.isNotEmpty || _loadingMyGroups)
+              SliverToBoxAdapter(child: _buildMyGroupsRow(scheme)),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: MoeSearchBar(
+                  hintText: '搜索群组名称或简介',
+                  onSearch: _scheduleSearch,
+                  onClear: () {
+                    _keyword = '';
+                    _load();
+                  },
+                ),
+              ),
             ),
-          Expanded(
-            child: _loadError != null
-                ? Center(
-                    child: MoeErrorState.fromError(
-                      _loadError,
-                      scene: MoeErrorScene.community,
-                      variant: MoeErrorVariant.plain,
-                      onRetry: () => _load(),
+            if (showListProgress)
+              SliverToBoxAdapter(
+                child: LinearProgressIndicator(
+                  minHeight: 2,
+                  color: moe.primary,
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+            if (_groups.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.group_add_rounded,
+                          size: 56,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          '还没有群组',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: MoeTokens.textMd,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '试试换个关键词，或者新建一个兴趣群组。',
+                          style: TextStyle(color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: _showCreateGroup,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text('新建群组'),
+                        ),
+                      ],
                     ),
-                  )
-                : blocking
-                    ? const Center(child: MoeLoading())
-                    : RefreshIndicator(
-                        color: moe.primary,
-                        onRefresh: () =>
-                            _load(keyword: _keyword.isEmpty ? null : _keyword),
-                        child: _groups.isEmpty
-                            ? ListView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.sizeOf(context).height * 0.3,
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.group_add_rounded,
-                                            size: 56,
-                                            color: Colors.grey.shade400,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          const Text(
-                                            '还没有群组',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: MoeTokens.textMd,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            '试试换个关键词，或者新建一个兴趣群组。',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          FilledButton.icon(
-                                            onPressed: _showCreateGroup,
-                                            icon: const Icon(Icons.add_rounded),
-                                            label: const Text('新建群组'),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : ListView.builder(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                                itemCount: _groups.length + 1,
-                                itemBuilder: (context, i) {
-                                  if (i == 0) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Text(
-                                        '发现圈子',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: MoeTokens.textMd,
-                                          color: scheme.onSurface,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  final group = _groups[i - 1];
-                                  return _GroupCard(
-                                    group: group,
-                                    onTap: () => _openGroupDetail(group),
-                                    onJoin: () => _toggleJoin(group),
-                                  );
-                                },
-                              ),
-                      ),
-          ),
-        ],
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 88),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) {
+                      if (i == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '发现圈子',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: MoeTokens.textMd,
+                              color: scheme.onSurface,
+                            ),
+                          ),
+                        );
+                      }
+                      final group = _groups[i - 1];
+                      return _GroupCard(
+                        group: group,
+                        onTap: () => _openGroupDetail(group),
+                        onJoin: () => _toggleJoin(group),
+                      );
+                    },
+                    childCount: _groups.length + 1,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -14,14 +14,12 @@ import '../../services/commerce_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
 import '../../widgets/achievement_badge_display.dart';
-import '../../widgets/ai_bot_badge.dart';
 import '../achievements/achievements_page.dart';
 import '../../widgets/dynamic_avatar.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
-import '../../services/companion_chat_launcher.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -368,16 +366,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       delay: const Duration(milliseconds: 65),
                       child: _menuSection('常用功能', [
                         _MenuItem(
-                          icon: Icons.contacts_rounded,
-                          title: '同好与联系人',
-                          subtitle: '好友、会话与添加申请',
-                          color: const Color(0xFFFF6B6B),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.pushNamed(context, '/friends');
-                          },
-                        ),
-                        _MenuItem(
                           icon: Icons.forum_rounded,
                           title: '兴趣社区',
                           subtitle: '话题、帖子与同好交流',
@@ -426,24 +414,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ]),
                     ),
                     const SizedBox(height: 20),
-                    // Lab & System
+                    // System（AI 伙伴入口仅底栏 Tab，对齐 §0.6）
                     MoeReveal(
                       delay: const Duration(milliseconds: 140),
-                      child: _menuSection('AI 与设置', [
-                        _MenuItem(
-                            icon: Icons.smart_toy_rounded,
-                            title: 'AI 伙伴',
-                            subtitle: '直接聊天，连接伙伴状态',
-                            color: const Color(0xFFFFB347),
-                            trailing: const AiBotBadge(
-                              compact: true,
-                              agentKey: 'moe_guide',
-                            ),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              unawaited(
-                                  CompanionChatLauncher.openChat(context));
-                            }),
+                      child: _menuSection('设置', [
                         _MenuItem(
                             icon: Icons.settings_outlined,
                             title: '通用设置',
@@ -1216,9 +1190,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
-                            item.trailing ??
-                                Icon(Icons.arrow_forward_ios_rounded,
-                                    color: Colors.grey[300], size: 15),
+                            Icon(Icons.arrow_forward_ios_rounded,
+                                color: Colors.grey[300], size: 15),
                           ],
                         ),
                       ),
@@ -1284,13 +1257,11 @@ class _MenuItem {
   final Color color;
   final VoidCallback onTap;
   final bool isDestructive;
-  final Widget? trailing;
   _MenuItem(
       {required this.icon,
       required this.title,
       this.subtitle,
       required this.color,
       required this.onTap,
-      this.isDestructive = false,
-      this.trailing});
+      this.isDestructive = false});
 }
