@@ -13,6 +13,8 @@ import '../../widgets/post_card.dart';
 import '../../utils/post_navigation.dart';
 
 /// 社区内「话题讨论 / 内容广场」共用的帖子流：走 [PostService.getPosts]，点赞与评论与首页闭环一致。
+///
+/// 使用 [CustomScrollView]，筛选条与帖子同一滚动，避免「只有底部一小块能滑」。
 class CommunityPostsFeed extends StatefulWidget {
   const CommunityPostsFeed({
     super.key,
@@ -21,6 +23,7 @@ class CommunityPostsFeed extends StatefulWidget {
     required this.emptySubtitle,
     this.showTextSearch = false,
     this.showVisualKindRow = false,
+    this.topBar,
   });
 
   /// 传入官方话题 id（与动态话题一致）时只拉该话题下帖子；为 null 表示全站最新。
@@ -31,6 +34,9 @@ class CommunityPostsFeed extends StatefulWidget {
 
   /// 为 true 时展示「全部 / 带图 / 手绘 / 文字」筛选（仅客户端过滤已拉取的列表）。
   final bool showVisualKindRow;
+
+  /// 可选顶部条（如话题 Chip），与列表一体滚动。
+  final Widget? topBar;
 
   @override
   State<CommunityPostsFeed> createState() => _CommunityPostsFeedState();
@@ -152,99 +158,102 @@ class _CommunityPostsFeedState extends State<CommunityPostsFeed> {
 
     final list = _filtered;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (widget.showTextSearch)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: MoeSearchBar(
-              hintText: '搜索正文、昵称或话题',
-              onSearch: (s) => setState(() => _searchQuery = s),
-              onClear: () => setState(() => _searchQuery = ''),
+    return RefreshIndicator(
+      color: moe.primary,
+      onRefresh: _load,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        slivers: [
+          if (widget.topBar != null)
+            SliverToBoxAdapter(child: widget.topBar),
+          if (widget.showTextSearch)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: MoeSearchBar(
+                  hintText: '搜索正文、昵称或话题',
+                  onSearch: (s) => setState(() => _searchQuery = s),
+                  onClear: () => setState(() => _searchQuery = ''),
+                ),
+              ),
             ),
-          ),
-        if (widget.showVisualKindRow) _buildVisualRow(),
-        Expanded(
-          child: RefreshIndicator(
-            color: moe.primary,
-            onRefresh: _load,
-            child: list.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
+          if (widget.showVisualKindRow)
+            SliverToBoxAdapter(child: _buildVisualRow()),
+          if (list.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        height: MediaQuery.sizeOf(context).height * 0.35,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.forum_outlined,
-                                    size: 56, color: Colors.grey.shade400),
-                                const SizedBox(height: 16),
-                                Text(
-                                  widget.emptyTitle,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: MoeTokens.textLg,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  widget.emptySubtitle,
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    height: 1.4,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                      Icon(Icons.forum_outlined,
+                          size: 56, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.emptyTitle,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: MoeTokens.textLg,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.emptySubtitle,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 88),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) {
+                    final post = list[i];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        PostCard(
+                          post: post,
+                          heroTagPrefix: 'cfeed_',
+                          onComment: () => _openPostDetail(post),
+                          onLike: () {
+                            if (mounted) _load();
+                          },
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12, bottom: 4),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => _openPostDetail(post),
+                              icon: const Icon(Icons.open_in_new_rounded,
+                                  size: 18),
+                              label: const Text('查看全文与评论'),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: list.length,
-                    itemBuilder: (context, i) {
-                      final post = list[i];
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          PostCard(
-                            post: post,
-                            heroTagPrefix: 'cfeed_',
-                            onComment: () => _openPostDetail(post),
-                            onLike: () {
-                              if (mounted) _load();
-                            },
-                          ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(right: 12, bottom: 4),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton.icon(
-                                onPressed: () => _openPostDetail(post),
-                                icon: const Icon(Icons.open_in_new_rounded,
-                                    size: 18),
-                                label: const Text('查看全文与评论'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-        ),
-      ],
+                      ],
+                    );
+                  },
+                  childCount: list.length,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

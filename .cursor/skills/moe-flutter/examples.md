@@ -18,6 +18,29 @@ ChatPushService.connectionLive  # reconnect banner
 DirectChatViewModel.sendText    # optimistic + visible failure
 ```
 
+## Good · Empty / motion reuse
+
+```dart
+// Prefer shared empty (animate default on) over custom panels
+MoeEmptyState(
+  title: '这里还是空的',
+  primaryAction: MoeEmptyStateAction(label: '发布动态', onPressed: openCreate),
+);
+
+// List entrance — already in repo
+MoeStaggerReveal(index: i, itemKey: id, revealedKeys: keys, child: row);
+
+// Press feedback
+MoePressable(onTap: onTap, child: row);
+```
+
+## Good · Make silent wins visible
+
+```dart
+// Draft restore must toast — otherwise users think nothing changed
+MoeToast.info(context, '已恢复未发布的草稿');
+```
+
 ## Bad · Kitchen sink
 
 ```dart

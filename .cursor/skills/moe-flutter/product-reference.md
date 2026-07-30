@@ -88,3 +88,8 @@ Page (UI + nav)
 - Growing `ApiService` with page one-offs instead of domain methods
 - External placeholder avatars (`picsum` etc.) — use `''` and local UI placeholder
 - Extracting a ViewModel for a form with only 1–2 fields and no async list state
+- Fixed-width `Row` children that overflow on SE-sized phones — use `Flexible`/`Wrap`/`ellipsis`
+- Whole-page `Transform.scale` to "fix" overflow instead of fixing constraints
+- Duplicate nav: bottom-tab capability also listed under Profile「常用功能」
+- Same action twice on one screen (toolbar chip + dedicated section)
+- Decorative chips that look tappable but do nothing

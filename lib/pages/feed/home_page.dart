@@ -16,7 +16,9 @@ import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_empty_state.dart';
 import '../../widgets/motion/moe_stagger.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
 import '../../widgets/ai_bot_badge.dart';
@@ -483,8 +485,9 @@ class _HomePageState extends State<HomePage>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F5FB),
-                    borderRadius: BorderRadius.circular(14),
+                    color: MoeTokens.surface0,
+                    borderRadius:
+                        BorderRadius.circular(MoeTokens.radiusIconBg),
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -578,14 +581,13 @@ class _HomePageState extends State<HomePage>
     required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
+    return MoePressable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFF6F7FC),
-          borderRadius: BorderRadius.circular(999),
+          color: MoeTokens.surface0,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -808,151 +810,40 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildFeedEmptyState() {
     if (_feed.mode == HomeFeedMode.following) {
-      return _buildUnifiedStatePanel(
+      return MoeEmptyState(
         icon: Icons.star_border_rounded,
-        title: '\u5173\u6ce8\u7684\u4eba\u8fd8\u6ca1\u6709\u53d1\u52a8\u6001',
-        subtitle:
-            '\u5148\u53bb\u793e\u533a\u901b\u901b\u8bdd\u9898\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\uff0c\u8ba9\u9996\u9875\u6162\u6162\u70ed\u95f9\u8d77\u6765\u3002',
-        accentColor: const Color(0xFFFFB347),
-        action: SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/community'),
-            icon: const Icon(Icons.forum_rounded, size: 20),
-            label: const Text('\u53bb\u793e\u533a'),
-            style: FilledButton.styleFrom(
-              backgroundColor: MoeTokens.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-          ),
+        title: '关注的人还没有发动态',
+        subtitle: '先去社区逛逛话题，或者去好友页认识新朋友，让首页慢慢热闹起来。',
+        primaryAction: MoeEmptyStateAction(
+          label: '去社区',
+          icon: Icons.forum_rounded,
+          onPressed: () => Navigator.pushNamed(context, '/community'),
         ),
-        secondaryAction: SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/friends'),
-            icon: const Icon(Icons.people_rounded, size: 20),
-            label: const Text('\u627e\u597d\u53cb'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: MoeTokens.primary,
-              side: BorderSide(color: MoeTokens.primary),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-          ),
+        secondaryAction: MoeEmptyStateAction(
+          label: '找好友',
+          icon: Icons.people_rounded,
+          onPressed: () => Navigator.pushNamed(context, '/friends'),
         ),
       );
     }
 
     final topicName = _feed.activeTopic?.name;
     final inTopic = _feed.activeTopic != null;
-    return _buildUnifiedStatePanel(
+    return MoeEmptyState(
       icon: Icons.auto_awesome_rounded,
-      title: inTopic
-          ? '#${topicName ?? ''} \u4e0b\u6682\u65f6\u8fd8\u6ca1\u6709\u52a8\u6001'
-          : '\u8fd9\u91cc\u8fd8\u662f\u7a7a\u7684',
+      title: inTopic ? '#${topicName ?? ''} 下暂时还没有动态' : '这里还是空的',
       subtitle: inTopic
-          ? '\u6362\u4e2a\u8bdd\u9898\u770b\u770b\uff0c\u6216\u8005\u81ea\u5df1\u53d1\u4e00\u6761\u5e26\u4e0a\u8fd9\u4e2a\u6807\u7b7e\u7684\u52a8\u6001\u5427\u3002'
-          : '\u53d1\u4e00\u6761\u52a8\u6001\u8bb0\u5f55\u4eca\u5929\uff0c\u6216\u8005\u53bb\u597d\u53cb\u9875\u8ba4\u8bc6\u65b0\u670b\u53cb\u3002',
-      accentColor: MoeTokens.primary,
-      action: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: _openCreatePost,
-          icon: const Icon(Icons.edit_rounded, size: 20),
-          label: const Text('\u53d1\u5e03\u52a8\u6001'),
-          style: FilledButton.styleFrom(
-            backgroundColor: MoeTokens.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-        ),
+          ? '换个话题看看，或者自己发一条带上这个标签的动态吧。'
+          : '发一条动态记录今天，或者去好友页认识新朋友。',
+      primaryAction: MoeEmptyStateAction(
+        label: '发布动态',
+        icon: Icons.edit_rounded,
+        onPressed: _openCreatePost,
       ),
-      secondaryAction: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () => Navigator.pushNamed(context, '/friends'),
-          icon: const Icon(Icons.people_rounded, size: 20),
-          label: const Text('\u627e\u597d\u53cb'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: MoeTokens.primary,
-            side: BorderSide(color: MoeTokens.primary),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnifiedStatePanel({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color accentColor,
-    required Widget action,
-    Widget? secondaryAction,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-          border: Border.all(color: MoeTokens.surfaceBorder),
-          boxShadow: MoeTokens.shadowCard(),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: MoeTokens.gradientSoft,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: Colors.white, size: 34),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: MoeTokens.titleText,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: MoeTokens.hintText,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 18),
-            action,
-            if (secondaryAction != null) ...[
-              const SizedBox(height: 12),
-              secondaryAction,
-            ],
-          ],
-        ),
+      secondaryAction: MoeEmptyStateAction(
+        label: '找好友',
+        icon: Icons.people_rounded,
+        onPressed: () => Navigator.pushNamed(context, '/friends'),
       ),
     );
   }
@@ -977,14 +868,14 @@ class _HomePageState extends State<HomePage>
           child: _buildBottomStateCapsule(
             icon: const Icon(
               Icons.error_outline_rounded,
-              color: Color(0xFFFFB347),
+              color: MoeTokens.pastelOrange,
               size: 18,
             ),
-            label: '\u52a0\u8f7d\u66f4\u591a\u5931\u8d25',
-            accentColor: const Color(0xFFFFB347),
+            label: '加载更多失败',
+            accentColor: MoeTokens.pastelOrange,
             trailing: TextButton(
               onPressed: _feed.isLoadingMore ? null : _loadMorePosts,
-              child: const Text('\u91cd\u8bd5'),
+              child: const Text('重试'),
             ),
           ),
         ),
@@ -996,7 +887,7 @@ class _HomePageState extends State<HomePage>
           child: _buildBottomStateCapsule(
             icon: Icon(
               Icons.check_circle_outline_rounded,
-              color: Colors.grey[500],
+              color: MoeTokens.hintText,
               size: 18,
             ),
             label: '已经到底啦 ~',

@@ -19,6 +19,8 @@ import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/avatar_image.dart';
+import '../../widgets/motion/moe_pressable.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import 'conversations_viewmodel.dart';
 
 /// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
@@ -47,6 +49,7 @@ class ConversationsPage extends StatefulWidget {
 class _ConversationsPageState extends State<ConversationsPage> {
   late final ConversationsViewModel _vm;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _revealedConversationKeys = <String>{};
 
   @override
   void initState() {
@@ -452,26 +455,31 @@ class _ConversationsPageState extends State<ConversationsPage> {
               : formatDmPreviewForUi(previewRaw);
           final badge = pushUnread[peerId] ?? 0;
 
-          return _buildConversationRow(
-            context,
-            avatar: avatar,
-            title: title,
-            preview: preview.isEmpty ? '点击开始聊天' : preview,
-            badge: badge,
-            lastActive: lastActivity(peerId),
-            onTap: () async {
-              if (!context.mounted) return;
-              await Navigator.pushNamed(
-                context,
-                '/direct-chat',
-                arguments: {
-                  'userId': peerId,
-                  'username': title,
-                  'avatar': avatar,
-                },
-              );
-              if (mounted) await _vm.load();
-            },
+          return MoeStaggerReveal(
+            index: i,
+            itemKey: 'conv_$peerId',
+            revealedKeys: _revealedConversationKeys,
+            child: _buildConversationRow(
+              context,
+              avatar: avatar,
+              title: title,
+              preview: preview.isEmpty ? '点击开始聊天' : preview,
+              badge: badge,
+              lastActive: lastActivity(peerId),
+              onTap: () async {
+                if (!context.mounted) return;
+                await Navigator.pushNamed(
+                  context,
+                  '/direct-chat',
+                  arguments: {
+                    'userId': peerId,
+                    'username': title,
+                    'avatar': avatar,
+                  },
+                );
+                if (mounted) await _vm.load();
+              },
+            ),
           );
         },
       ),
@@ -533,10 +541,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: MoePressable(
         onTap: onTap,
         borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        child: Ink(
+        child: Container(
           decoration: BoxDecoration(
             color: MoeTokens.surface1,
             borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
@@ -625,7 +633,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                         child: Text(
                           badge > 99 ? '99+' : '$badge',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: MoeTokens.surface1,
                             fontSize: MoeTokens.textSm,
                             fontWeight: FontWeight.w600,
                           ),

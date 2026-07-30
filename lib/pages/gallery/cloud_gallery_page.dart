@@ -598,128 +598,103 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   Widget _buildEmptyState() {
     final compact = _isCompactLayout(context);
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(12, 6, 12, compact ? 16 : 24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 760),
-          padding: EdgeInsets.all(compact ? 18 : 30),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(compact ? 22 : 30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: compact ? 68 : 100,
-                height: compact ? 68 : 100,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(12, 6, 12, compact ? 16 : 24),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 760),
+                padding: EdgeInsets.all(compact ? 16 : 28),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      MoeTokens.primary.withValues(alpha: 0.16),
-                      const Color(0xFF9BD8FF).withValues(alpha: 0.22),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: Colors.white.withValues(alpha: 0.88),
                   borderRadius: BorderRadius.circular(compact ? 22 : 30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  Icons.add_photo_alternate_rounded,
-                  size: compact ? 32 : 48,
-                  color: MoeTokens.primary,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: compact ? 56 : 88,
+                      height: compact ? 56 : 88,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            MoeTokens.primary.withValues(alpha: 0.16),
+                            const Color(0xFF9BD8FF).withValues(alpha: 0.22),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius:
+                            BorderRadius.circular(compact ? 18 : 28),
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_rounded,
+                        size: compact ? 28 : 42,
+                        color: MoeTokens.primary,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 12 : 16),
+                    Text(
+                      '你的云图库还在等待第一批灵感',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: compact ? 17 : 22,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF2A2C3E),
+                      ),
+                    ),
+                    SizedBox(height: compact ? 8 : 10),
+                    Text(
+                      '上传头像素材或创作参考图，发帖时可直接从这里选用。',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: compact ? 13 : 14,
+                        height: 1.45,
+                        color: const Color(0xFF737B93),
+                      ),
+                    ),
+                    SizedBox(height: compact ? 16 : 22),
+                    FilledButton.icon(
+                      onPressed: _busy ? null : _pickAndUpload,
+                      icon: const Icon(Icons.cloud_upload_rounded),
+                      label: Text(
+                        widget.isSelectMode ? '上传并选用' : '上传第一张图片',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: MoeTokens.primary,
+                        foregroundColor: Colors.white,
+                        minimumSize:
+                            Size(double.infinity, compact ? 46 : 52),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: compact ? 20 : 28,
+                          vertical: compact ? 12 : 14,
+                        ),
+                        textStyle: TextStyle(
+                          fontSize: compact ? 14 : 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: compact ? 14 : 18),
-              Text(
-                '你的云图库还在等待第一批灵感',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: compact ? 18 : 24,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF2A2C3E),
-                ),
-              ),
-              SizedBox(height: compact ? 8 : 10),
-              Text(
-                '上传头像素材、创作参考图或日常收藏图，让它们在这里被整齐保存，也方便后续发帖时直接取用。',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: compact ? 13 : 14,
-                  height: compact ? 1.45 : 1.6,
-                  color: const Color(0xFF737B93),
-                ),
-              ),
-              SizedBox(height: compact ? 14 : 18),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildFeatureTag(Icons.bolt_rounded, '上传后立即可用'),
-                  _buildFeatureTag(Icons.folder_copy_outlined, '统一整理常用图片'),
-                  _buildFeatureTag(Icons.phone_iphone_rounded, '移动端也更顺手'),
-                ],
-              ),
-              SizedBox(height: compact ? 18 : 24),
-              FilledButton.icon(
-                onPressed: _busy ? null : _pickAndUpload,
-                icon: const Icon(Icons.cloud_upload_rounded),
-                label: const Text('上传第一张图片'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: MoeTokens.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, compact ? 48 : 54),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 22 : 28,
-                    vertical: compact ? 14 : 16,
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: compact ? 14 : 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureTag(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF6F7FB),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: MoeTokens.primary),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF5B627A),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

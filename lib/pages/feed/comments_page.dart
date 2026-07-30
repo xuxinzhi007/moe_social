@@ -15,6 +15,7 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/post_card.dart';
+import '../../widgets/motion/moe_stagger.dart';
 import '../../theme/moe_tokens.dart';
 import 'comments_viewmodel.dart';
 
@@ -52,6 +53,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
   /// 已展开楼中楼的一级评论 id
   final Set<String> _expandedReplyThreads = {};
+  final Set<String> _revealedCommentKeys = <String>{};
   static const int _initialReplyVisible = 5;
   static const int _replyLoadStep = 10;
 
@@ -394,10 +396,9 @@ class _CommentsPageState extends State<CommentsPage> {
                           child: Center(
                             child: MoeEmptyState(
                               icon: Icons.chat_bubble_outline_rounded,
-                              title: '暂无评论，下拉可刷新',
+                              title: '暂无评论',
                               subtitle: '快来抢沙发吧～',
                               showCard: false,
-                              animate: false,
                             ),
                           ),
                         )
@@ -411,7 +412,12 @@ class _CommentsPageState extends State<CommentsPage> {
                                 final comment = _topLevelComments[index];
                                 return KeyedSubtree(
                                   key: ValueKey('comment_${comment.id}'),
-                                  child: _buildTopLevelThread(comment),
+                                  child: MoeStaggerReveal(
+                                    index: index,
+                                    itemKey: 'cmt_${comment.id}',
+                                    revealedKeys: _revealedCommentKeys,
+                                    child: _buildTopLevelThread(comment),
+                                  ),
                                 );
                               },
                               childCount: _topLevelComments.length,
