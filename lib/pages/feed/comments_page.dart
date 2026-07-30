@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:async';
 import '../../models/comment.dart';
 import '../../models/post.dart';
-import '../../services/post_service.dart';
 import '../../services/achievement_hooks.dart';
-import '../../services/user_service.dart';
 import '../../auth_service.dart';
 import '../../services/companion_service.dart';
 import '../../services/like_state_manager.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/post_card.dart';
+import '../../theme/moe_tokens.dart';
+import 'comments_viewmodel.dart';
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -39,18 +43,9 @@ class CommentsPage extends StatefulWidget {
 }
 
 class _CommentsPageState extends State<CommentsPage> {
+  late final CommentsViewModel _vm;
   final TextEditingController _commentController = TextEditingController();
   final FocusNode _commentFocus = FocusNode();
-  List<Comment> _comments = [];
-  bool _isLoading = false;
-  bool _isSubmitting = false;
-  String? _userName;
-  String? _userAvatar;
-  String? _authorUserId;
-
-  /// 正在回复的评论 ID（作为 parent_id 提交）
-  String? _replyParentId;
-  String? _replyToUserName;
 
   /// 每条一级评论下已展开的回复条数（楼中楼展开后分页）
   final Map<String, int> _visibleReplyCount = {};
@@ -60,142 +55,61 @@ class _CommentsPageState extends State<CommentsPage> {
   static const int _initialReplyVisible = 5;
   static const int _replyLoadStep = 10;
 
-  // Moe 风格颜色
-  final Color _primaryColor = const Color(0xFF7F7FD5);
-  final Color _accentColor = const Color(0xFF86A8E7);
+  void _onVmChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
-    _fetchComments();
-  }
-
-  Future<void> _loadUserInfo() async {
-    final identity = widget.communityIdentity;
-    if (identity != null && identity.isValid) {
-      setState(() {
-        _authorUserId = identity.userId;
-        _userName = identity.userName.isNotEmpty ? identity.userName : 'AI 伙伴';
-        _userAvatar =
-            identity.userAvatar.isNotEmpty ? identity.userAvatar : null;
-      });
-      return;
-    }
-
-    final userId = AuthService.currentUser;
-    if (userId == null) return;
-
-    try {
-      final user = await UserService.getUserInfo(userId);
-      setState(() {
-        _authorUserId = userId;
-        _userName = user.username;
-        _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
-      });
-    } catch (e) {
-      print('加载用户信息失败: $e');
-    }
-  }
-
-  Future<void> _fetchComments() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final comments = await PostService.getComments(widget.postId);
-      setState(() {
-        _comments = comments;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      print('Failed to fetch comments: $e');
-      _showCustomSnackBar(context, '获取评论失败', isError: true);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    _vm = CommentsViewModel(
+      postId: widget.postId,
+      communityIdentity: widget.communityIdentity,
+    );
+    _vm.addListener(_onVmChanged);
+    unawaited(_vm.bootstrap());
   }
 
   Future<void> _addComment() async {
-    if (_commentController.text.trim().isEmpty) {
-      _showCustomSnackBar(context, '请输入评论内容', isError: true);
-      return;
-    }
-
-    final userId = _authorUserId ?? AuthService.currentUser;
-    if (userId == null) {
-      _showCustomSnackBar(context, '请先登录', isError: true);
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
     try {
-      final comment = Comment(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        postId: widget.postId,
-        userId: userId,
-        userName: _userName ?? '用户',
-        userAvatar: _userAvatar ?? 'https://picsum.photos/150',
-        content: _commentController.text.trim(),
-        likes: 0,
-        isLiked: false,
-        createdAt: DateTime.now(),
-        parentId: _replyParentId ?? '',
-        replyToUserName: _replyToUserName ?? '',
-      );
-
-      final result = await PostService.addCommentWithUnlocks(comment);
-      final unlocked = result.newAchievements;
-
-      final expandRootId = _replyThreadRootIdForParent(_replyParentId);
+      final expandRootId = _replyThreadRootIdForParent(_vm.replyParentId);
+      final unlocks = await _vm.submitComment(_commentController.text);
       _commentController.clear();
-      setState(() {
-        if (expandRootId != null) {
-          _expandedReplyThreads.add(expandRootId);
-        }
-        _replyParentId = null;
-        _replyToUserName = null;
-      });
-      await _fetchComments();
-
+      if (expandRootId != null) {
+        _expandedReplyThreads.add(expandRootId);
+      }
       if (!mounted) return;
-      if (unlocked.isNotEmpty) {
-        AchievementHooks.scheduleServerUnlocks(userId, unlocked);
+      final userId = _vm.authorUserId ?? AuthService.currentUser;
+      if (userId != null && unlocks.isNotEmpty) {
+        AchievementHooks.scheduleServerUnlocks(userId, unlocks);
       }
       _showCustomSnackBar(context, '评论成功', isError: false);
+    } on StateError catch (e) {
+      if (!mounted) return;
+      _showCustomSnackBar(context, e.message, isError: true);
     } catch (e) {
       if (!mounted) return;
-      print('Failed to add comment: $e');
-      _showCustomSnackBar(context, '评论失败，请重试', isError: true);
-    } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+      _showCustomSnackBar(
+        context,
+        MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
+        isError: true,
+      );
     }
   }
 
   Future<void> _toggleCommentLike(String commentId) async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      _showCustomSnackBar(context, '请先登录', isError: true);
-      return;
-    }
-
-    // 乐观更新：LikeStateManager 会自动处理状态变化，UI 通过 ValueListenableBuilder 监听更新
-    // 这里只需要调用 Service 方法即可
     try {
-      await PostService.toggleCommentLike(commentId, userId);
-      // 无需手动 setState 更新 _comments，因为 LikeButton 现在直接监听 LikeStateManager
+      await _vm.toggleCommentLike(commentId);
+    } on StateError catch (e) {
+      if (!mounted) return;
+      _showCustomSnackBar(context, e.message, isError: true);
     } catch (e) {
       if (!mounted) return;
-      print('Failed to toggle comment like: $e');
-      _showCustomSnackBar(context, '操作失败', isError: true);
+      _showCustomSnackBar(
+        context,
+        MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
+        isError: true,
+      );
     }
   }
 
@@ -210,7 +124,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
   /// 兼容旧版仅 @昵称、未写 parent_id 的回复
   List<Comment> get _normalizedComments {
-    return _comments.map(_normalizeCommentParent).toList();
+    return _vm.comments.map(_normalizeCommentParent).toList();
   }
 
   Comment _normalizeCommentParent(Comment c) {
@@ -218,7 +132,7 @@ class _CommentsPageState extends State<CommentsPage> {
     final inferredParentId = _inferParentForOrphanReply(c);
     if (inferredParentId == null) return c;
     Comment? parent;
-    for (final x in _comments) {
+    for (final x in _vm.comments) {
       if (x.id == inferredParentId) {
         parent = x;
         break;
@@ -238,7 +152,7 @@ class _CommentsPageState extends State<CommentsPage> {
     final targetName = match.group(1)!;
 
     Comment? best;
-    for (final other in _comments) {
+    for (final other in _vm.comments) {
       if (other.id == c.id || other.userName != targetName) continue;
       if (other.createdAt.isAfter(c.createdAt)) continue;
       if (best == null || other.createdAt.isAfter(best.createdAt)) {
@@ -286,19 +200,13 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   void _startReply(Comment comment) {
-    setState(() {
-      _replyParentId = comment.id;
-      _replyToUserName = comment.userName;
-    });
+    _vm.beginReply(parentId: comment.id, toUserName: comment.userName);
     _commentController.clear();
     _commentFocus.requestFocus();
   }
 
   void _cancelReply() {
-    setState(() {
-      _replyParentId = null;
-      _replyToUserName = null;
-    });
+    _vm.cancelReply();
   }
 
   int _visibleCountForParent(String parentId, int totalReplies) {
@@ -352,6 +260,8 @@ class _CommentsPageState extends State<CommentsPage> {
 
   @override
   void dispose() {
+    _vm.removeListener(_onVmChanged);
+    _vm.dispose();
     _commentFocus.dispose();
     _commentController.dispose();
     super.dispose();
@@ -364,7 +274,7 @@ class _CommentsPageState extends State<CommentsPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        Navigator.of(context).pop(_comments.length);
+        Navigator.of(context).pop(_vm.commentCount);
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -373,13 +283,13 @@ class _CommentsPageState extends State<CommentsPage> {
           child: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [_primaryColor, _accentColor],
+                colors: [MoeTokens.primary, MoeTokens.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: _primaryColor.withValues(alpha: 0.2),
+                  color: MoeTokens.primary.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -392,7 +302,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 title: Text(
                   widget.embeddedPost != null
                       ? '动态详情'
-                      : '评论 (${_comments.length})',
+                      : '评论 (${_vm.commentCount})',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
@@ -403,7 +313,7 @@ class _CommentsPageState extends State<CommentsPage> {
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new_rounded,
                       color: Colors.white, size: 20),
-                  onPressed: () => Navigator.pop(context, _comments.length),
+                  onPressed: () => Navigator.pop(context, _vm.commentCount),
                 ),
               ),
             ),
@@ -413,12 +323,12 @@ class _CommentsPageState extends State<CommentsPage> {
           children: [
             Expanded(
               child: RefreshIndicator(
-                color: _primaryColor,
+                color: MoeTokens.primary,
                 onRefresh: () async {
                   if (widget.onRefreshPreamble != null) {
                     await widget.onRefreshPreamble!();
                   }
-                  await _fetchComments();
+                  await _vm.fetchComments();
                 },
                 child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(
@@ -440,11 +350,20 @@ class _CommentsPageState extends State<CommentsPage> {
                           ),
                         ),
                       ),
-                    if (_isLoading)
+                    if (_vm.isLoading)
                       SliverToBoxAdapter(
                         child: SizedBox(
                           height: widget.embeddedPost != null ? 140 : 400,
                           child: const Center(child: MoeLoading()),
+                        ),
+                      )
+                    else if (_vm.loadError != null && _vm.comments.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: MoeErrorState.fromError(
+                          _vm.loadError,
+                          scene: MoeErrorScene.feed,
+                          onRetry: _vm.fetchComments,
                         ),
                       )
                     else ...[
@@ -458,7 +377,7 @@ class _CommentsPageState extends State<CommentsPage> {
                                     size: 18, color: scheme.primary),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '全部评论 · ${_comments.length} 条',
+                                  '全部评论 · ${_vm.commentCount} 条',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
@@ -469,42 +388,16 @@ class _CommentsPageState extends State<CommentsPage> {
                             ),
                           ),
                         ),
-                      if (_comments.isEmpty)
-                        SliverFillRemaining(
+                      if (_vm.isEmpty)
+                        const SliverFillRemaining(
                           hasScrollBody: false,
                           child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: _primaryColor.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                      Icons.chat_bubble_outline_rounded,
-                                      size: 48,
-                                      color: Color(0xFF7F7FD5)),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  '暂无评论，下拉可刷新',
-                                  style: TextStyle(
-                                    color: scheme.onSurfaceVariant,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '快来抢沙发吧～',
-                                  style: TextStyle(
-                                    color: scheme.onSurfaceVariant
-                                        .withValues(alpha: 0.85),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                            child: MoeEmptyState(
+                              icon: Icons.chat_bubble_outline_rounded,
+                              title: '暂无评论，下拉可刷新',
+                              subtitle: '快来抢沙发吧～',
+                              showCard: false,
+                              animate: false,
                             ),
                           ),
                         )
@@ -569,7 +462,7 @@ class _CommentsPageState extends State<CommentsPage> {
                             const Icon(
                               Icons.smart_toy_rounded,
                               size: 18,
-                              color: Color(0xFF7F7FD5),
+                              color: MoeTokens.primary,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -594,14 +487,14 @@ class _CommentsPageState extends State<CommentsPage> {
                       ),
                     ),
                   ],
-                  if (_replyParentId != null && _replyToUserName != null)
+                  if (_vm.replyParentId != null && _vm.replyToUserName != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
-                              '回复 @$_replyToUserName',
+                              '回复 @${_vm.replyToUserName}',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: scheme.primary,
@@ -631,12 +524,11 @@ class _CommentsPageState extends State<CommentsPage> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: const Color(0xFF7F7FD5)
-                                  .withValues(alpha: 0.3),
+                              color: MoeTokens.primary.withValues(alpha: 0.3),
                               width: 1.5),
                         ),
                         child: NetworkAvatarImage(
-                          imageUrl: _userAvatar,
+                          imageUrl: _vm.userAvatar,
                           radius: 16,
                           placeholderIcon: Icons.person,
                         ),
@@ -645,7 +537,7 @@ class _CommentsPageState extends State<CommentsPage> {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F7FA),
+                            color: MoeTokens.pageBackground,
                             borderRadius: BorderRadius.circular(24),
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -653,8 +545,8 @@ class _CommentsPageState extends State<CommentsPage> {
                             controller: _commentController,
                             focusNode: _commentFocus,
                             decoration: InputDecoration(
-                              hintText: _replyToUserName != null
-                                  ? '回复 @$_replyToUserName'
+                              hintText: _vm.replyToUserName != null
+                                  ? '回复 @${_vm.replyToUserName}'
                                   : '写下你的想法...',
                               border: InputBorder.none,
                               isDense: true,
@@ -669,7 +561,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      _isSubmitting
+                      _vm.isSubmitting
                           ? const Padding(
                               padding: EdgeInsets.all(4),
                               child: MoeSmallLoading(size: 22),
@@ -682,8 +574,8 @@ class _CommentsPageState extends State<CommentsPage> {
                                 decoration: const BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFF7F7FD5),
-                                      Color(0xFF86A8E7)
+                                      MoeTokens.primary,
+                                      MoeTokens.secondary
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -718,14 +610,14 @@ class _CommentsPageState extends State<CommentsPage> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: _primaryColor),
+            Icon(icon, size: 16, color: MoeTokens.primary),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: _primaryColor,
+                color: MoeTokens.primary,
               ),
             ),
           ],
@@ -834,7 +726,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         TextSpan(
                           text: '@$replyName ',
                           style: TextStyle(
-                            color: _primaryColor,
+                            color: MoeTokens.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -990,8 +882,7 @@ class _CommentsPageState extends State<CommentsPage> {
                       ? null
                       : [
                           BoxShadow(
-                            color:
-                                const Color(0xFF7F7FD5).withValues(alpha: 0.05),
+                            color: MoeTokens.primary.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(2, 4),
                           ),

@@ -7,7 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/post.dart';
 import '../models/hand_draw_card.dart';
 import '../auth_service.dart';
-import '../services/api_service.dart';
+import '../services/post_service.dart';
 import '../services/like_state_manager.dart';
 import '../widgets/avatar_image.dart';
 import '../widgets/network_image.dart';
@@ -567,7 +567,7 @@ $link''';
       return;
     }
     try {
-      await ApiService.reportPost(
+      await PostService.reportPost(
         postId: post.id,
         reporterUserId: uid,
         reason: reason,
@@ -883,7 +883,7 @@ Future<void> _openHandDrawViewerImpl(BuildContext context, Post post) async {
     try {
       final viewerId =
           AuthService.isLoggedIn ? (AuthService.currentUser ?? '') : '';
-      final loaded = await ApiService.getPostHandDraw(
+      final loaded = await PostService.getPostHandDraw(
         post.id,
         viewerUserId: viewerId,
       );

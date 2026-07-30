@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../auth_service.dart';
 import '../models/gift.dart';
 import '../services/achievement_hooks.dart';
-import '../services/api_service.dart';
+import '../services/commerce_service.dart';
 import '../services/gift_catalog_service.dart';
 import '../utils/error_handler.dart';
 import 'motion/moe_sheet.dart';
@@ -90,7 +90,7 @@ class _GiftSelectorState extends State<GiftSelector>
     final userId = AuthService.currentUser;
     if (userId == null) return;
     try {
-      final user = await ApiService.getUserInfo(userId);
+      final user = await CommerceService.getUserInfo(userId);
       if (mounted) setState(() => _userBalance = user.balance);
     } catch (_) {}
   }
@@ -165,7 +165,7 @@ class _GiftSelectorState extends State<GiftSelector>
     });
 
     try {
-      final unlocks = await ApiService.sendGiftWithUnlocks(
+      final unlocks = await CommerceService.sendGiftWithUnlocks(
         fromUserId: userId,
         toUserId: widget.receiverId,
         giftId: gift.id,
@@ -174,7 +174,7 @@ class _GiftSelectorState extends State<GiftSelector>
       AchievementHooks.scheduleServerUnlocks(userId, unlocks);
       await GiftHapticFeedback.forGiftSuccess(gift);
 
-      final refreshed = await ApiService.getUserInfo(userId);
+      final refreshed = await CommerceService.getUserInfo(userId);
       if (mounted) setState(() => _userBalance = refreshed.balance);
       await _loadGiftCatalog();
       if (mounted) {

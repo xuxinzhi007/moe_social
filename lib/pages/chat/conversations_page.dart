@@ -2,18 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth_service.dart';
 import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
-import '../../services/chat_service.dart';
-import '../../services/user_service.dart';
 import '../../services/chat_push_service.dart';
-import '../../services/direct_chat_local_reader.dart';
 import '../../services/direct_chat_sync_bus.dart';
-import '../../services/notification_service.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../providers/notification_provider.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -24,6 +19,7 @@ import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/avatar_image.dart';
+import 'conversations_viewmodel.dart';
 
 /// 会话列表。`embedded: true` 时无 Scaffold，用于嵌在 [FriendsPage] 的 Tab 里。
 class ConversationsPage extends StatefulWidget {
@@ -49,34 +45,24 @@ class ConversationsPage extends StatefulWidget {
 }
 
 class _ConversationsPageState extends State<ConversationsPage> {
-  bool _loading = true;
-  Object? _loadError;
-  List<User> _friends = [];
-  List<NotificationModel> _notifs = [];
-  List<PrivateConversationItem> _serverConversations = [];
+  late final ConversationsViewModel _vm;
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  /// 与 [DirectChatPage] 本地缓存对齐的最后一条（用于在线聊天未进通知时的预览）
-  Map<String, ({DateTime at, String rawPreview})> _localThreadTails = {};
-
-  /// 服务端历史兜底的最后一条（避免仅靠通知/本地缓存导致预览缺失或过旧）。
-  Map<String, ({DateTime at, String rawPreview})> _serverThreadTails = {};
-  bool _refreshingServerTails = false;
-  DateTime? _lastServerTailRefreshAt;
-  Map<String, DateTime> _clearMarkers = {};
 
   @override
   void initState() {
     super.initState();
+    _vm = ConversationsViewModel();
+    _vm.addListener(_onVmChanged);
     _searchController.addListener(_handleSearchChanged);
     ChatPushService.unreadBySender.addListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
-    unawaited(_load());
+    unawaited(_vm.load());
   }
 
   @override
   void dispose() {
+    _vm.removeListener(_onVmChanged);
+    _vm.dispose();
     _searchController.removeListener(_handleSearchChanged);
     _searchController.dispose();
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
@@ -84,275 +70,42 @@ class _ConversationsPageState extends State<ConversationsPage> {
     super.dispose();
   }
 
+  void _onVmChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _handleSearchChanged() {
-    final next = _searchController.text.trim();
-    if (next == _searchQuery) return;
-    setState(() => _searchQuery = next);
+    _vm.updateSearchQuery(_searchController.text);
   }
 
   void _onPushUnread() {
-    if (mounted) setState(() {});
-    unawaited(_syncLocalThreadTails());
-    unawaited(_refreshServerConversations());
-    if (_serverConversations.isEmpty) {
-      unawaited(_refreshServerThreadTails());
-    }
+    _vm.onPushUnread();
   }
 
   void _onLocalThreadsTick() {
-    unawaited(_syncLocalThreadTails());
-  }
-
-  Future<void> _syncLocalThreadTails() async {
-    final myId = await AuthService.getUserId();
-    if (myId.isEmpty) return;
-    final next = await DirectChatLocalReader.readThreadTails(myId);
-    if (!mounted) return;
-    setState(() => _localThreadTails = next);
-  }
-
-  Set<String> _collectPeerIdsForServerTail(String myId) {
-    final out = <String>{};
-    for (final f in _friends) {
-      if (f.id.isNotEmpty) out.add(f.id);
-    }
-    for (final sender in ChatPushService.unreadBySender.value.keys) {
-      if (sender.isNotEmpty) out.add(sender);
-    }
-    for (final n in _notifs) {
-      if (n.type != NotificationModel.directMessage) continue;
-      final sid = (n.senderId ?? '').trim();
-      if (sid.isEmpty) continue;
-      out.add(sid);
-    }
-    out.remove(myId);
-    out.removeWhere((e) => e.trim().isEmpty);
-    return out;
-  }
-
-  Future<void> _refreshServerThreadTails({bool force = false}) async {
-    final myId = await AuthService.getUserId();
-    if (myId.isEmpty) return;
-    if (_refreshingServerTails) return;
-    final lastAt = _lastServerTailRefreshAt;
-    if (!force &&
-        lastAt != null &&
-        DateTime.now().difference(lastAt) < const Duration(seconds: 25)) {
-      return;
-    }
-
-    final peers = _collectPeerIdsForServerTail(myId).toList();
-    if (peers.isEmpty) return;
-    if (peers.length > 24) {
-      peers.sort();
-      peers.removeRange(24, peers.length);
-    }
-
-    _refreshingServerTails = true;
-    try {
-      final next = Map<String, ({DateTime at, String rawPreview})>.from(
-        _serverThreadTails,
-      );
-      for (final peerId in peers) {
-        try {
-          final page = await ChatService.listPrivateMessages(
-            peerUserId: peerId,
-            limit: 1,
-          );
-          if (page.items.isEmpty) continue;
-          final item = page.items.first;
-          final at = DateTime.tryParse(item.createdAt) ??
-              DateTime.fromMillisecondsSinceEpoch(0);
-          var rawPreview = item.body.trim();
-          if (rawPreview.isEmpty && item.imagePaths.isNotEmpty) {
-            rawPreview = '[IMG]';
-          }
-          if (rawPreview.isEmpty) continue;
-          final prev = next[peerId];
-          if (prev == null || at.isAfter(prev.at)) {
-            next[peerId] = (at: at, rawPreview: rawPreview);
-          }
-        } catch (_) {}
-      }
-      if (!mounted) return;
-      setState(() {
-        _serverThreadTails = next;
-        _lastServerTailRefreshAt = DateTime.now();
-      });
-    } finally {
-      _refreshingServerTails = false;
-    }
-  }
-
-  Future<void> _refreshServerConversations() async {
-    try {
-      final page =
-          await ChatService.listPrivateConversations(limit: 120, offset: 0);
-      if (!mounted) return;
-      setState(() {
-        _serverConversations = page.items;
-      });
-    } catch (_) {}
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _loadError = null;
-    });
-    try {
-      final uid = await AuthService.getUserId();
-      if (uid.isEmpty) {
-        setState(() {
-          _loading = false;
-          _loadError = '请先登录';
-        });
-        return;
-      }
-
-      final clearMarkers = await _loadClearMarkers(uid);
-      final friends = await UserService.getFriends(uid);
-      List<PrivateConversationItem> serverConvs = [];
-      try {
-        final page =
-            await ChatService.listPrivateConversations(limit: 120, offset: 0);
-        serverConvs = page.items;
-      } catch (_) {}
-
-      if (serverConvs.isNotEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _friends = friends;
-          _serverConversations = serverConvs;
-          _notifs = [];
-          _clearMarkers = clearMarkers;
-          _loading = false;
-        });
-        unawaited(_syncLocalThreadTails());
-        return;
-      }
-
-      // 兜底：服务端尚无会话索引时，通知只用于提供会话入口，不作为聊天正文来源。
-      final batch =
-          await NotificationService.getNotifications(page: 1, pageSize: 50);
-      final allNotifs = List<NotificationModel>.from(batch);
-
-      if (!mounted) return;
-      setState(() {
-        _friends = friends;
-        _notifs = allNotifs;
-        _serverConversations = [];
-        _clearMarkers = clearMarkers;
-        _loading = false;
-      });
-
-      final dmForWarm = allNotifs
-          .where((n) =>
-              n.type == NotificationModel.directMessage &&
-              (n.senderId ?? '').isNotEmpty &&
-              n.senderId != uid)
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final lastBySid = <String, NotificationModel>{};
-      for (final n in dmForWarm) {
-        final sid = n.senderId!;
-        lastBySid.putIfAbsent(sid, () => n);
-      }
-      for (final e in lastBySid.entries) {
-        final sid = e.key;
-        final n = e.value;
-        final hasFriend = friends.any((f) => f.id == sid);
-        if (!hasFriend && looksLikeMoeNoOrWeakSenderLabel(n.senderName ?? '')) {
-          unawaited(ChatPushService.prefetchSenderDisplayName(sid).then((_) {
-            if (mounted) setState(() {});
-          }));
-        }
-      }
-
-      unawaited(_syncLocalThreadTails());
-      unawaited(_refreshServerThreadTails(force: true));
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _loadError = e;
-        });
-      }
-    }
-  }
-
-  Future<Set<String>> _localChatPeerIds(String myId) async {
-    final prefs = await SharedPreferences.getInstance();
-    const prefix = 'direct_chat_';
-    final out = <String>{};
-    for (final k in prefs.getKeys()) {
-      if (!k.startsWith(prefix)) continue;
-      final rest = k.substring(prefix.length);
-      final parts = rest.split('_');
-      if (parts.length != 2) continue;
-      final a = parts[0];
-      final b = parts[1];
-      if (a == myId) {
-        out.add(b);
-      } else if (b == myId) {
-        out.add(a);
-      }
-    }
-    return out;
-  }
-
-  Future<Map<String, DateTime>> _loadClearMarkers(String myId) async {
-    if (myId.isEmpty) return const {};
-    final prefs = await SharedPreferences.getInstance();
-    const prefix = 'direct_chat_cleared_';
-    final out = <String, DateTime>{};
-    for (final k in prefs.getKeys()) {
-      if (!k.startsWith(prefix)) continue;
-      final rest = k.substring(prefix.length);
-      final parts = rest.split('_');
-      if (parts.length != 2) continue;
-      final a = parts[0];
-      final b = parts[1];
-      final peerId = a == myId ? b : (b == myId ? a : '');
-      if (peerId.isEmpty || peerId == myId) continue;
-      final at = DateTime.tryParse(prefs.getString(k) ?? '');
-      if (at != null) out[peerId] = at;
-    }
-    return out;
-  }
-
-  bool _isAfterClearMarker(String peerId, DateTime time) {
-    final clearedAt = _clearMarkers[peerId];
-    if (clearedAt == null) return true;
-    return time.isAfter(clearedAt);
+    _vm.onLocalThreadsTick();
   }
 
   Widget _buildBody(BuildContext context) {
-    if (_loading) {
+    if (_vm.loading) {
       return Center(child: MoeLoading(color: MoeTheme.of(context).primary));
     }
-    if (_loadError != null) {
+    if (_vm.loadError != null) {
       return Center(
         child: MoeErrorState.fromError(
-          _loadError,
+          _vm.loadError,
           scene: MoeErrorScene.messages,
           variant: MoeErrorVariant.plain,
-          onRetry: () => unawaited(_load()),
+          onRetry: () => unawaited(_vm.load()),
         ),
       );
     }
-    return FutureBuilder<Set<String>>(
-      future: _localChatPeerIds(AuthService.currentUser ?? ''),
-      builder: (context, snap) {
-        final localPeers = snap.data ?? {};
-        return Column(
-          children: [
-            _buildSearchBar(context),
-            const SizedBox(height: 8),
-            Expanded(child: _buildList(context, localPeers)),
-          ],
-        );
-      },
+    return Column(
+      children: [
+        _buildSearchBar(context),
+        const SizedBox(height: 8),
+        Expanded(child: _buildList(context, _vm.localPeers)),
+      ],
     );
   }
 
@@ -374,7 +127,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
               Icons.search_rounded,
               color: MoeTokens.hintText,
             ),
-            suffixIcon: _searchQuery.isEmpty
+            suffixIcon: _vm.searchQuery.isEmpty
                 ? null
                 : IconButton(
                     tooltip: '清空搜索',
@@ -404,7 +157,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             child: Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: _loading ? null : () => unawaited(_load()),
+                onPressed: _vm.loading ? null : () => unawaited(_vm.load()),
                 icon: const Icon(Icons.refresh_rounded, size: 18),
                 label: const Text('刷新'),
               ),
@@ -433,7 +186,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         actions: [
           IconButton(
             tooltip: '刷新',
-            onPressed: _loading ? null : () => unawaited(_load()),
+            onPressed: _vm.loading ? null : () => unawaited(_vm.load()),
             icon: const Icon(
               Icons.refresh_rounded,
               color: MoeTokens.hintText,
@@ -449,18 +202,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget _buildList(BuildContext context, Set<String> localPeers) {
     final myId = AuthService.currentUser ?? '';
     final pushUnread = context.watch<NotificationProvider>().unreadDmBySender;
-    final query = _searchQuery.toLowerCase();
+    final query = _vm.searchQuery.toLowerCase();
 
-    if (_serverConversations.isNotEmpty) {
+    if (_vm.serverConversations.isNotEmpty) {
       final rows =
-          List<PrivateConversationItem>.from(_serverConversations).where((c) {
+          List<PrivateConversationItem>.from(_vm.serverConversations).where((c) {
         final lastAt = DateTime.tryParse(c.lastMessage.createdAt) ??
             DateTime.fromMillisecondsSinceEpoch(0);
-        if (!_isAfterClearMarker(c.peerUserId.trim(), lastAt)) return false;
+        if (!_vm.isAfterClearMarker(c.peerUserId.trim(), lastAt)) return false;
         if (query.isEmpty) return true;
         final peerId = c.peerUserId.trim().toLowerCase();
         final peerName = c.peerName.trim().toLowerCase();
-        final friend = _friends.cast<User?>().firstWhere(
+        final friend = _vm.friends.cast<User?>().firstWhere(
               (u) => u?.id == c.peerUserId.trim(),
               orElse: () => null,
             );
@@ -475,7 +228,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         return _buildSearchEmptyState(context);
       }
       return RefreshIndicator(
-        onRefresh: _load,
+        onRefresh: _vm.load,
         color: MoeTheme.of(context).primary,
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -492,7 +245,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
               return const SizedBox.shrink();
             }
             User? friend;
-            for (final u in _friends) {
+            for (final u in _vm.friends) {
               if (u.id == peerId) {
                 friend = u;
                 break;
@@ -540,7 +293,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     'avatar': avatar,
                   },
                 );
-                if (mounted) await _load();
+                if (mounted) await _vm.load();
               },
             );
           },
@@ -548,12 +301,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
       );
     }
 
-    final dmNotifs = _notifs
+    final dmNotifs = _vm.notifs
         .where((n) =>
             n.type == NotificationModel.directMessage &&
             (n.senderId ?? '').isNotEmpty &&
             n.senderId != myId &&
-            _isAfterClearMarker(n.senderId!, n.createdAt))
+            _vm.isAfterClearMarker(n.senderId!, n.createdAt))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -564,7 +317,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
 
     final peerIds = <String>{};
-    for (final f in _friends) {
+    for (final f in _vm.friends) {
       peerIds.add(f.id);
     }
     peerIds.addAll(pushUnread.keys);
@@ -608,9 +361,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     DateTime lastActivity(String peerId) {
       final nt = lastBySender[peerId]?.createdAt ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final lt = _localThreadTails[peerId]?.at ??
+      final lt = _vm.localThreadTails[peerId]?.at ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final st = _serverThreadTails[peerId]?.at ??
+      final st = _vm.serverThreadTails[peerId]?.at ??
           DateTime.fromMillisecondsSinceEpoch(0);
       var latest = nt;
       if (lt.isAfter(latest)) latest = lt;
@@ -629,7 +382,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final filteredRows = rows.where((peerId) {
       if (query.isEmpty) return true;
       User? friend;
-      for (final u in _friends) {
+      for (final u in _vm.friends) {
         if (u.id == peerId) {
           friend = u;
           break;
@@ -651,7 +404,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }
 
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _vm.load,
       color: MoeTheme.of(context).primary,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -664,7 +417,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         itemBuilder: (context, i) {
           final peerId = filteredRows[i];
           User? friend;
-          for (final u in _friends) {
+          for (final u in _vm.friends) {
             if (u.id == peerId) {
               friend = u;
               break;
@@ -676,8 +429,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
               last?.senderName ??
               '用户';
           final avatar = friend?.avatar ?? last?.senderAvatar ?? '';
-          final lt = _localThreadTails[peerId];
-          final st = _serverThreadTails[peerId];
+          final lt = _vm.localThreadTails[peerId];
+          final st = _vm.serverThreadTails[peerId];
           final previewRaw = () {
             var bestAt = DateTime.fromMillisecondsSinceEpoch(0);
             var bestRaw = '';
@@ -717,7 +470,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   'avatar': avatar,
                 },
               );
-              if (mounted) await _load();
+              if (mounted) await _vm.load();
             },
           );
         },

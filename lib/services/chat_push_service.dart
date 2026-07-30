@@ -41,6 +41,9 @@ class ChatPushService {
   static final ValueNotifier<Map<String, int>> unreadBySender =
       ValueNotifier<Map<String, int>>(<String, int>{});
 
+  /// WS 是否处于已连接（断线后自动重连；UI 可据此提示）。
+  static final ValueNotifier<bool> connectionLive = ValueNotifier<bool>(false);
+
   static final StreamController<Map<String, dynamic>> _incomingController =
       StreamController<Map<String, dynamic>>.broadcast();
 
@@ -102,6 +105,7 @@ class ChatPushService {
     _subscription = null;
     _channel?.sink.close();
     _channel = null;
+    connectionLive.value = false;
     _connecting = false;
     _reconnectAttempts = 0;
     // 不清空 _pendingBySender：避免 stop/restart 导致未消费消息丢失
@@ -189,6 +193,7 @@ class ChatPushService {
 
       final ch = connectMoeWebSocket(wsUri, headers: headers);
       _channel = ch;
+      connectionLive.value = true;
       _heartbeatTimer?.cancel();
       _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
         ping();
@@ -226,6 +231,7 @@ class ChatPushService {
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
+    connectionLive.value = false;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
 

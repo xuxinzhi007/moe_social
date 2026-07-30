@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../auth_service.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
+import '../services/user_service.dart';
 import 'avatar_image.dart';
 
 class HomeStoriesBar extends StatefulWidget {
@@ -45,7 +45,7 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
       return;
     }
     try {
-      final result = await ApiService.getFollowings(
+      final result = await UserService.getFollowings(
         userId,
         page: 1,
         pageSize: 12,

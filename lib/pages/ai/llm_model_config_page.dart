@@ -1,11 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import '../../theme/moe_tokens.dart';
-import 'package:http/http.dart' as http;
 
-import '../../services/api_response.dart';
-import '../../services/api_client.dart';
+import '../../services/llm_api_service.dart';
 import '../../services/llm_endpoint_config.dart';
 
 class LlmModelConfigPage extends StatefulWidget {
@@ -36,32 +32,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
     });
     try {
       final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-      final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/config');
-      ApiClient.logDirectHttp('GET', uri);
-      final response = await http
-          .get(
-            uri,
-            headers: ApiClient.mergeTunnelHeaders(
-              uri,
-              headers: {
-                if (ApiClient.token case final t?) 'Authorization': 'Bearer $t',
-              },
-            ),
-          )
-          .timeout(const Duration(seconds: 8));
-
-      if (response.statusCode != 200) {
-        throw Exception('请求失败: ${response.statusCode}');
-      }
-
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map<String, dynamic>) {
-        throw Exception('响应格式异常');
-      }
-      final data = ApiResponse.nestedPayload(decoded);
-      if (data.isEmpty) {
-        throw Exception('配置数据为空');
-      }
+      final data = await LlmApiService.getConfig();
 
       final inference = data['llm_inference'] ?? data['ollama'];
       final memoryBudget = data['memory_budget'];

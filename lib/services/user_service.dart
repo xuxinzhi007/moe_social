@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import '../models/user.dart';
+import 'api_client.dart';
 import 'api_service.dart';
 
 class UserService {
   static Future<User> getUserInfo(String userId) =>
       ApiService.getUserInfo(userId);
+
+  /// 头像等用户资料图片上传（经域服务，不在页面直调 ApiClient）。
+  static Future<String> uploadImage(File image) => ApiClient.uploadImage(image);
 
   static Future<User> updateUserInfo(
     String userId, {

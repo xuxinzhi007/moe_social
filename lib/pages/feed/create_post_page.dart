@@ -2,18 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import '../../providers/user_level_provider.dart';
 import '../../auth_service.dart';
-import '../../models/achievement_unlock.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
-import '../../services/api_client.dart' show ApiClient, ApiException;
 import '../../services/companion_service.dart';
-import '../../services/community_service.dart';
-import '../../services/post_service.dart';
-import '../../services/user_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../providers/loading_provider.dart';
 import '../../widgets/app_message_widget.dart';
@@ -25,9 +19,9 @@ import '../../widgets/motion/moe_reveal.dart';
 import '../../theme/moe_tokens.dart';
 import '../gallery/cloud_gallery_page.dart';
 import '../../models/hand_draw_card.dart';
+import 'create_post_viewmodel.dart';
 import 'hand_draw_editor_page.dart';
 import '../../widgets/hand_draw/hand_draw_card_view.dart';
-import '../../utils/hand_draw_raster.dart';
 import '../../utils/media_url.dart';
 
 class CreatePostPage extends StatefulWidget {
@@ -52,28 +46,14 @@ class CreatePostPage extends StatefulWidget {
 }
 
 class _CreatePostPageState extends State<CreatePostPage> {
+  late final CreatePostViewModel _vm;
   final TextEditingController _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final List<File> _selectedImages = [];
-  final List<String> _selectedImageUrls = [];
   final ImagePicker _picker = ImagePicker();
-  String? _userName;
-  String? _userAvatar;
-  String? _authorUserId;
-  List<TopicTag> _selectedTopicTags = [];
-  HandDrawCardData? _handDrawCard;
-  String? _selectedMoodTag;
-  bool _hasUnsavedChanges = false;
 
-  /// 发到群组时：null=校验中，true=已加入，false=未加入
-  bool? _canPostToGroup;
-
-  bool get _isEditMode => widget.initialPost != null;
-
-  bool get _isGroupPost =>
-      !_isEditMode &&
-      widget.groupId != null &&
-      widget.groupId!.trim().isNotEmpty;
+  void _onVmChanged() {
+    if (mounted) setState(() {});
+  }
 
   void _showExitConfirmation() {
     showDialog(
@@ -101,13 +81,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
       MaterialPageRoute(builder: (_) => const HandDrawEditorPage()),
     );
     if (data != null && mounted) {
-      setState(() => _handDrawCard = data);
+      _vm.setHandDraw(data);
       context.read<LoadingProvider>().setSuccess('手绘卡片已添加 ✨');
     }
   }
 
   void _removeHandDraw() {
-    setState(() => _handDrawCard = null);
+    _vm.setHandDraw(null);
   }
 
   Future<void> _addImage() async {
@@ -118,9 +98,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
 
     if (pickedFile != null) {
-      setState(() {
-        _selectedImages.add(File(pickedFile.path));
-      });
+      _vm.addLocalImage(File(pickedFile.path));
     }
   }
 
@@ -131,10 +109,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         builder: (context) => CloudGalleryPage(
           isSelectMode: true,
           onImageSelected: (imageUrl) {
-            // 将选择的图片URL添加到列表中
-            setState(() {
-              _selectedImageUrls.add(imageUrl);
-            });
+            _vm.addCloudImageUrl(imageUrl);
             context.read<LoadingProvider>().setSuccess('图片已添加');
           },
         ),
@@ -143,14 +118,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   void _removeImage(int index) {
-    setState(() {
-      if (index < _selectedImages.length) {
-        _selectedImages.removeAt(index);
-      } else {
-        final urlIndex = index - _selectedImages.length;
-        _selectedImageUrls.removeAt(urlIndex);
-      }
-    });
+    if (index < _vm.selectedImages.length) {
+      _vm.removeLocalImageAt(index);
+    } else {
+      final urlIndex = index - _vm.selectedImages.length;
+      _vm.removeCloudImageUrl(_vm.selectedImageUrls[urlIndex]);
+    }
   }
 
   void _openTopicTagSelector() {
@@ -192,11 +165,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
             const SizedBox(height: 8),
             Expanded(
               child: TopicTagSelector(
-                selectedTags: _selectedTopicTags,
+                selectedTags: _vm.selectedTopicTags,
                 onTagsChanged: (tags) {
-                  setState(() {
-                    _selectedTopicTags = List<TopicTag>.from(tags);
-                  });
+                  _vm.setTopicTags(List<TopicTag>.from(tags));
                 },
                 userId: AuthService.currentUser ?? 'guest',
                 maxTags: 5,
@@ -211,105 +182,49 @@ class _CreatePostPageState extends State<CreatePostPage> {
   @override
   void initState() {
     super.initState();
+    _vm = CreatePostViewModel(
+      initialPost: widget.initialPost,
+      groupId: widget.groupId,
+      communityIdentity: widget.communityIdentity,
+    );
+    _vm.addListener(_onVmChanged);
     _contentController.addListener(() {
-      if (!_hasUnsavedChanges) {
-        setState(() => _hasUnsavedChanges = true);
+      if (!_vm.hasUnsavedChanges) {
+        _vm.markDirty();
       }
     });
-    if (widget.communityIdentity != null &&
-        widget.communityIdentity!.isValid &&
-        !_isEditMode) {
-      final identity = widget.communityIdentity!;
-      _authorUserId = identity.userId;
-      _userName = identity.userName.isNotEmpty ? identity.userName : 'AI 伙伴';
-      _userAvatar = identity.userAvatar.isNotEmpty ? identity.userAvatar : null;
-    } else {
-      _loadUserInfo();
-    }
-    if (_isGroupPost) {
-      _loadGroupPostPermission();
-    }
-    // 编辑模式：预填原帖内容
     final init = widget.initialPost;
     if (init != null) {
-      _contentController.text = init.displayCaption;
-      _selectedImageUrls.addAll(init.images);
-      _selectedTopicTags = List.from(init.topicTags);
-      // 恢复手绘卡片
-      if (init.handDrawCardJson.isNotEmpty) {
-        try {
-          final decoded = jsonDecode(init.handDrawCardJson);
-          if (decoded is Map<String, dynamic>) {
-            _handDrawCard = HandDrawCardData.fromJson(decoded);
-          }
-        } catch (_) {}
-      }
+      _vm.seedFromInitialPost(init);
+      _contentController.text = init.content;
     }
+    unawaited(_bootstrapPage());
   }
 
-  Future<void> _loadUserInfo() async {
-    final userId = AuthService.currentUser;
-    if (userId == null) {
-      return;
-    }
-
-    try {
-      final user = await UserService.getUserInfo(userId);
-      if (!mounted) return;
-      setState(() {
-        _authorUserId = userId;
-        _userName = user.username;
-        _userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
-      });
-    } catch (e) {
-      debugPrint('加载用户信息失败: $e');
-    }
-  }
-
-  Future<void> _loadGroupPostPermission() async {
-    final gid = widget.groupId?.trim();
-    if (gid == null || gid.isEmpty) return;
-    final uid = AuthService.currentUser;
-    if (uid == null) {
-      if (mounted) setState(() => _canPostToGroup = false);
-      return;
-    }
-    try {
-      final group =
-          await CommunityService.getCommunityGroup(groupId: gid, userId: uid);
-      if (!mounted) return;
-      setState(() => _canPostToGroup = group.isJoined);
-    } catch (e) {
-      debugPrint('校验群成员资格失败: $e');
-      if (mounted) setState(() => _canPostToGroup = false);
+  Future<void> _bootstrapPage() async {
+    await _vm.bootstrap();
+    if (!mounted || widget.initialPost != null) return;
+    final draftCaption = await _vm.restoreDraft();
+    if (!mounted || draftCaption == null) return;
+    if (draftCaption.isNotEmpty && _contentController.text.isEmpty) {
+      _contentController.text = draftCaption;
     }
   }
 
   Future<void> _publishPost() async {
     final caption = _contentController.text.trim();
-    final hasLocalImages = _selectedImages.isNotEmpty;
-    final hasCloudImages = _selectedImageUrls.isNotEmpty;
-    if (caption.isEmpty &&
-        _handDrawCard == null &&
-        !hasLocalImages &&
-        !hasCloudImages) {
+    final validationError = _vm.validateContent(caption);
+    if (validationError != null) {
       _formKey.currentState?.validate();
-      context.read<LoadingProvider>().setError(
-            '写点文字、选几张图，或画一张手绘卡片再发布吧',
-          );
+      context.read<LoadingProvider>().setError(validationError);
       return;
     }
 
-    if (_isEditMode) {
-      await _saveEdit(caption);
-      return;
-    }
-
-    if (_isGroupPost) {
-      if (_canPostToGroup == null) {
-        await _loadGroupPostPermission();
+    if (_vm.isGroupPost && _vm.canPostToGroup != true) {
+      if (_vm.canPostToGroup == null) {
+        await _vm.loadGroupPostPermission();
       }
-      if (_canPostToGroup != true) {
+      if (_vm.canPostToGroup != true) {
         if (mounted) {
           MoeToast.info(context, '请先加入该群组再发帖');
         }
@@ -320,165 +235,36 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (!mounted) return;
 
     final loadingProvider = context.read<LoadingProvider>();
-    var pendingUnlocks = const <AchievementUnlock>[];
-    await loadingProvider.executeOperation<Post>(
+    await loadingProvider.executeOperation<CreatePostPublishResult>(
       key: LoadingKeys.createPost,
-      operation: () async {
-        final List<String> imageUrls = [];
-
-        // 上传本地选择的图片
-        for (final image in _selectedImages) {
-          final imageUrl = await ApiClient.uploadImage(image);
-          imageUrls.add(imageUrl);
-        }
-
-        // 直接添加从云端图库选择的网络图片URL
-        imageUrls.addAll(_selectedImageUrls);
-
-        final userId = _authorUserId ?? AuthService.currentUser;
-        if (userId == null || userId.isEmpty) {
-          throw ApiException('请先登录', 401);
-        }
-
-        String handJson = '';
-        String thumbUrl = '';
-        if (_handDrawCard != null) {
-          handJson = jsonEncode(_handDrawCard!.toJson());
-          try {
-            final png = await handDrawCardToPngBytes(_handDrawCard!);
-            if (png != null && png.isNotEmpty) {
-              thumbUrl = await ApiClient.uploadImageBytes(
-                png,
-                filename: 'hand_draw_thumb.png',
-              );
-            }
-          } catch (e) {
-            // 缩略图上传失败不应阻断主流程；保留 hand_draw_card 让动态可正常发布。
-            debugPrint('手绘缩略图上传失败，继续发布: $e');
-          }
-        }
-
-        final newPost = Post(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          userId: userId,
-          userName: _userName ?? '用户',
-          userAvatar: _userAvatar ?? 'https://picsum.photos/150',
-          content: caption,
-          images: imageUrls,
-          likes: 0,
-          comments: 0,
-          isLiked: false,
-          createdAt: DateTime.now(),
-          topicTags: _selectedTopicTags,
-          handDrawCardJson: handJson,
-          handDrawThumbUrl: thumbUrl,
-          moodTag: _selectedMoodTag ?? '',
-        );
-
-        final created = await PostService.createPostWithUnlocks(
-          newPost,
-          groupId: widget.groupId,
-        );
-        pendingUnlocks = created.newAchievements;
-        final apiPost = created.post;
-        // 接口有时不回手绘字段，合并本地已上传数据，避免列表里回放组件布局异常。
-        return apiPost.copyWith(
-          handDrawCardJson: apiPost.handDrawCardJson.isNotEmpty
-              ? apiPost.handDrawCardJson
-              : handJson,
-          handDrawThumbUrl: apiPost.handDrawThumbUrl.isNotEmpty
-              ? apiPost.handDrawThumbUrl
-              : thumbUrl,
-        );
-      },
-      onSuccess: (createdPost) {
+      operation: () => _vm.publish(caption),
+      onSuccess: (result) {
         if (!mounted) return;
-        _hasUnsavedChanges = false;
         loadingProvider.clearMessages();
-        final msg = widget.groupId != null && widget.groupId!.isNotEmpty
-            ? '已发布并同步到群组 ~(≧∇≦)/~'
-            : '帖子发布成功！(≧∇≦)/';
         final uid = AuthService.currentUser;
-        final unlocks = pendingUnlocks;
-        Navigator.pop(context, createdPost);
+        final unlocks = result.newAchievements;
+        final softWarning = result.softWarning;
+        Navigator.pop(context, result.post);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (uid != null && unlocks.isNotEmpty) {
             AchievementHooks.scheduleServerUnlocks(uid, unlocks);
           }
           final rootCtx = AuthService.navigatorKey.currentContext;
           if (rootCtx != null) {
-            MoeToast.success(rootCtx, msg);
+            MoeToast.success(rootCtx, result.successMessage);
+            if (softWarning != null && softWarning.isNotEmpty) {
+              MoeToast.info(rootCtx, softWarning);
+            }
             if (uid != null) {
               unawaited(rootCtx.read<UserLevelProvider>().loadUserLevel(uid));
             }
           }
         });
       },
-      onError: (_) {
-        // 错误已由 LoadingProvider 统一显示
-      },
-    );
-  }
-
-  Future<void> _saveEdit(String caption) async {
-    final loadingProvider = context.read<LoadingProvider>();
-    final init = widget.initialPost!;
-    await loadingProvider.executeOperation<Post>(
-      key: LoadingKeys.createPost,
-      operation: () async {
-        final List<String> imageUrls = [];
-        for (final image in _selectedImages) {
-          imageUrls.add(await ApiClient.uploadImage(image));
-        }
-        imageUrls.addAll(_selectedImageUrls);
-
-        String? handJson;
-        String? thumbUrl;
-        if (_handDrawCard != null) {
-          handJson = jsonEncode(_handDrawCard!.toJson());
-          // 只有手绘内容有变化时才重新上传缩略图
-          if (handJson != init.handDrawCardJson) {
-            try {
-              final png = await handDrawCardToPngBytes(_handDrawCard!);
-              if (png != null && png.isNotEmpty) {
-                thumbUrl = await ApiClient.uploadImageBytes(
-                  png,
-                  filename: 'hand_draw_thumb.png',
-                );
-              }
-            } catch (e) {
-              // 编辑态同样容错：缩略图失败保留原图或空，不阻断保存。
-              debugPrint('编辑动态时手绘缩略图上传失败，继续保存: $e');
-              thumbUrl = init.handDrawThumbUrl;
-            }
-          } else {
-            thumbUrl = init.handDrawThumbUrl;
-          }
-        }
-
-        return await PostService.updatePost(
-          init.id,
-          content: caption,
-          images: imageUrls,
-          topicTags: _selectedTopicTags
-              .map((t) => {'name': t.name, 'color': t.color})
-              .toList(),
-          handDrawCard: handJson,
-          handDrawThumbUrl: thumbUrl,
-        );
-      },
-      onSuccess: (updated) {
+      onError: (msg) {
         if (!mounted) return;
-        _hasUnsavedChanges = false;
-        Navigator.pop(context, updated);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final rootCtx = AuthService.navigatorKey.currentContext;
-          if (rootCtx != null) {
-            MoeToast.success(rootCtx, '动态已更新 ✨');
-          }
-        });
+        MoeToast.error(context, msg);
       },
-      onError: (_) {},
     );
   }
 
@@ -494,10 +280,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String get _weatherText => '晴朗';
 
   static const Map<String, Color> _moodColors = {
-    'happy': Color(0xFFFFB347),
-    'calm': Color(0xFF4ECDC4),
-    'sad': Color(0xFF74b9ff),
-    'excited': Color(0xFFFD79A8),
+    'happy': MoeTokens.pastelOrange,
+    'calm': MoeTokens.pastelTeal,
+    'sad': MoeTokens.pastelBlue,
+    'excited': MoeTokens.pastelPink,
   };
 
   static const Map<String, IconData> _moodIcons = {
@@ -521,18 +307,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final primaryColor = theme.primaryColor;
 
     return PopScope(
-      canPop: !_hasUnsavedChanges,
+      canPop: !_vm.hasUnsavedChanges,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && _hasUnsavedChanges) {
+        if (!didPop && _vm.hasUnsavedChanges) {
           _showExitConfirmation();
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFFAF8FF),
+        backgroundColor: MoeTokens.softLavenderBg,
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(
-            _isEditMode ? '编辑动态' : (_isGroupPost ? '发到本群' : '记录心情'),
+            _vm.isEditMode ? '编辑动态' : (_vm.isGroupPost ? '发到本群' : '记录心情'),
           ),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -552,9 +338,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
             ),
             child: IconButton(
               icon: const Icon(Icons.close_rounded,
-                  color: Color(0xFF636E72), size: 20),
+                  color: MoeTokens.inkMuted, size: 20),
               onPressed: () {
-                if (_hasUnsavedChanges) {
+                if (_vm.hasUnsavedChanges) {
                   _showExitConfirmation();
                 } else {
                   Navigator.pop(context);
@@ -572,7 +358,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 width: 76,
                 child: LoadingButton(
                   operationKey: LoadingKeys.createPost,
-                  onPressed: _isGroupPost && _canPostToGroup != true
+                  onPressed: _vm.isGroupPost && _vm.canPostToGroup != true
                       ? null
                       : _publishPost,
                   style: ElevatedButton.styleFrom(
@@ -585,7 +371,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     ),
                     padding: EdgeInsets.zero,
                   ),
-                  child: Text(_isEditMode ? '保存' : '发布'),
+                  child: Text(_vm.isEditMode ? '保存' : '发布'),
                 ),
               ),
             ),
@@ -599,7 +385,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_isGroupPost && _canPostToGroup == false) ...[
+                if (_vm.isGroupPost && _vm.canPostToGroup == false) ...[
                   _buildGroupWarning(textTheme),
                   const SizedBox(height: 16),
                 ],
@@ -637,15 +423,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFA8EDEA), Color(0xFFFED6E3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
+        gradient: MoeTokens.gradientMintBlush,
+        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFA8EDEA).withValues(alpha: 0.4),
+            color: MoeTokens.mintSoft.withValues(alpha: 0.4),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -661,10 +443,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '$_greeting，${_userName ?? '萌友'}',
+                  '$_greeting，${_vm.userName ?? '萌友'}',
                   style: textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF2D3436),
+                    color: MoeTokens.inkDark,
                   ),
                 ),
               ),
@@ -685,7 +467,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       _weatherText,
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF636E72),
+                        color: MoeTokens.inkMuted,
                       ),
                     ),
                   ],
@@ -698,7 +480,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             '$month月$day日 星期$weekday',
             style: textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF636E72),
+              color: MoeTokens.inkMuted,
             ),
           ),
         ],
@@ -718,8 +500,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: const Color(0xFF7F7FD5).withValues(alpha: 0.14)),
+        border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.14)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -734,12 +515,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F4FB),
+              color: MoeTokens.softChipBg,
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
             child:
-                const Icon(Icons.smart_toy_rounded, color: Color(0xFF7F7FD5)),
+                const Icon(Icons.smart_toy_rounded, color: MoeTokens.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -750,7 +531,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   '当前以 $name 发布',
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF2D3436),
+                    color: MoeTokens.inkDark,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -775,9 +556,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Widget _buildInputCard(TextTheme textTheme) {
-    final hasAttachments = _handDrawCard != null ||
-        _selectedImages.isNotEmpty ||
-        _selectedImageUrls.isNotEmpty;
+    final hasAttachments = _vm.handDrawCard != null ||
+        _vm.selectedImages.isNotEmpty ||
+        _vm.selectedImageUrls.isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -787,7 +568,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
+            color: MoeTokens.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -808,9 +589,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
               keyboardType: TextInputType.multiline,
               validator: (v) {
                 if ((v ?? '').trim().isEmpty &&
-                    _handDrawCard == null &&
-                    _selectedImages.isEmpty &&
-                    _selectedImageUrls.isEmpty) {
+                    _vm.handDrawCard == null &&
+                    _vm.selectedImages.isEmpty &&
+                    _vm.selectedImageUrls.isEmpty) {
                   return '写点文字、选几张图，或画一张手绘卡片再发布吧';
                 }
                 return null;
@@ -825,7 +606,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             const SizedBox(height: 12),
             _buildAttachments(textTheme),
           ],
-          if (!_isEditMode) ...[
+          if (!_vm.isEditMode) ...[
             const SizedBox(height: 16),
             _buildDivider(),
             const SizedBox(height: 14),
@@ -838,7 +619,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           const SizedBox(height: 14),
           _buildSectionTitle(textTheme, Icons.tag_rounded, '话题标签'),
           const SizedBox(height: 10),
-          if (_selectedTopicTags.isNotEmpty)
+          if (_vm.selectedTopicTags.isNotEmpty)
             _buildTopicTags(textTheme)
           else
             _buildTopicPlaceholder(textTheme),
@@ -855,25 +636,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
         _formActionChip(
           icon: Icons.brush_rounded,
           label: '手绘',
-          color: const Color(0xFF7F7FD5),
+          color: MoeTokens.primary,
           onTap: _openHandDrawEditor,
         ),
         _formActionChip(
           icon: Icons.image_rounded,
           label: '相册',
-          color: const Color(0xFF4ECDC4),
+          color: MoeTokens.pastelTeal,
           onTap: _addImage,
         ),
         _formActionChip(
           icon: Icons.cloud_upload_rounded,
           label: '云端图库',
-          color: const Color(0xFF74b9ff),
+          color: MoeTokens.pastelBlue,
           onTap: _openCloudGallery,
         ),
         _formActionChip(
           icon: Icons.tag_rounded,
           label: '话题',
-          color: const Color(0xFFFD79A8),
+          color: MoeTokens.pastelPink,
           onTap: _openTopicTagSelector,
         ),
       ],
@@ -929,18 +710,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFFDFE6E9),
+              color: MoeTokens.lineSoft,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded, size: 18, color: const Color(0xFFFD79A8)),
+              Icon(Icons.add_rounded, size: 18, color: MoeTokens.pastelPink),
               const SizedBox(width: 6),
               Text(
                 '点击添加话题，最多 5 个',
                 style: textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF636E72),
+                  color: MoeTokens.inkMuted,
                 ),
               ),
             ],
@@ -957,7 +738,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         gradient: LinearGradient(
           colors: [
             Colors.transparent,
-            const Color(0xFFDFE6E9),
+            MoeTokens.lineSoft,
             Colors.transparent,
           ],
         ),
@@ -972,12 +753,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
   ) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF7F7FD5)),
+        Icon(icon, size: 16, color: MoeTokens.primary),
         const SizedBox(width: 6),
         Text(
           title,
           style: textTheme.titleSmall?.copyWith(
-            color: const Color(0xFF2D3436),
+            color: MoeTokens.inkDark,
           ),
         ),
       ],
@@ -1027,26 +808,26 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_handDrawCard != null) ...[
+        if (_vm.handDrawCard != null) ...[
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.12),
+                  color: MoeTokens.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.brush_rounded,
-                        size: 14, color: const Color(0xFF7F7FD5)),
+                        size: 14, color: MoeTokens.primary),
                     const SizedBox(width: 4),
                     Text(
                       '手绘卡片',
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF7F7FD5),
+                        color: MoeTokens.primary,
                       ),
                     ),
                   ],
@@ -1059,7 +840,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   '改画',
                   style: textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF7F7FD5),
+                    color: MoeTokens.primary,
                   ),
                 ),
               ),
@@ -1080,33 +861,34 @@ class _CreatePostPageState extends State<CreatePostPage> {
             child: SizedBox(
               height: 160,
               width: double.infinity,
-              child: HandDrawCardStatic(data: _handDrawCard!),
+              child: HandDrawCardStatic(data: _vm.handDrawCard!),
             ),
           ),
         ],
-        if (_handDrawCard != null &&
-            (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty))
+        if (_vm.handDrawCard != null &&
+            (_vm.selectedImages.isNotEmpty || _vm.selectedImageUrls.isNotEmpty))
           const SizedBox(height: 12),
-        if (_selectedImages.isNotEmpty || _selectedImageUrls.isNotEmpty) ...[
+        if (_vm.selectedImages.isNotEmpty ||
+            _vm.selectedImageUrls.isNotEmpty) ...[
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4ECDC4).withValues(alpha: 0.12),
+                  color: MoeTokens.pastelTeal.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.image_rounded,
-                        size: 14, color: const Color(0xFF4ECDC4)),
+                        size: 14, color: MoeTokens.pastelTeal),
                     const SizedBox(width: 4),
                     Text(
                       '图片',
                       style: textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF4ECDC4),
+                        color: MoeTokens.pastelTeal,
                       ),
                     ),
                   ],
@@ -1114,10 +896,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
               ),
               const Spacer(),
               Text(
-                '${_selectedImages.length + _selectedImageUrls.length} 张',
+                '${_vm.selectedImages.length + _vm.selectedImageUrls.length} 张',
                 style: textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFFB2BEC3),
+                  color: MoeTokens.greyDisabled,
                 ),
               ),
             ],
@@ -1127,17 +909,17 @@ class _CreatePostPageState extends State<CreatePostPage> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              ...List.generate(_selectedImages.length, (index) {
+              ...List.generate(_vm.selectedImages.length, (index) {
                 return _buildImageThumb(
-                  imageProvider: FileImage(_selectedImages[index]),
+                  imageProvider: FileImage(_vm.selectedImages[index]),
                   onRemove: () => _removeImage(index),
                 );
               }),
-              ...List.generate(_selectedImageUrls.length, (index) {
-                final urlIndex = index + _selectedImages.length;
+              ...List.generate(_vm.selectedImageUrls.length, (index) {
+                final urlIndex = index + _vm.selectedImages.length;
                 return _buildImageThumb(
                   imageProvider: NetworkImage(
-                    resolveMediaUrl(_selectedImageUrls[index]),
+                    resolveMediaUrl(_vm.selectedImageUrls[index]),
                   ),
                   onRemove: () => _removeImage(urlIndex),
                 );
@@ -1150,7 +932,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Widget _moodChip(String mood, TextTheme textTheme) {
-    final selected = _selectedMoodTag == mood;
+    final selected = _vm.selectedMoodTag == mood;
     final color = _moodColors[mood]!;
     final icon = _moodIcons[mood]!;
     final label = _moodLabels[mood]!;
@@ -1160,9 +942,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          setState(() {
-            _selectedMoodTag = selected ? null : mood;
-          });
+          _vm.setMoodTag(selected ? null : mood);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -1171,9 +951,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
             color: selected ? color.withValues(alpha: 0.18) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected
-                  ? color.withValues(alpha: 0.5)
-                  : const Color(0xFFDFE6E9),
+              color:
+                  selected ? color.withValues(alpha: 0.5) : MoeTokens.lineSoft,
             ),
             boxShadow: selected
                 ? [
@@ -1188,13 +967,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             children: [
               Icon(icon,
-                  size: 26, color: selected ? color : const Color(0xFF636E72)),
+                  size: 26, color: selected ? color : MoeTokens.inkMuted),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: selected ? color : const Color(0xFF636E72),
+                  color: selected ? color : MoeTokens.inkMuted,
                 ),
               ),
             ],
@@ -1208,7 +987,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _selectedTopicTags.map((tag) {
+      children: _vm.selectedTopicTags.map((tag) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -1226,9 +1005,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
               const SizedBox(width: 6),
               GestureDetector(
                 onTap: () {
-                  setState(() {
-                    _selectedTopicTags.remove(tag);
-                  });
+                  _vm.setTopicTags(
+                    _vm.selectedTopicTags.where((t) => t != tag).toList(),
+                  );
                 },
                 child: Icon(Icons.close_rounded, size: 14, color: tag.color),
               ),
@@ -1265,7 +1044,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: const BoxDecoration(
-                color: Color(0xFFFF6B6B),
+                color: MoeTokens.danger,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -1286,6 +1065,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   void dispose() {
+    if (!_vm.isEditMode && !_vm.isGroupPost) {
+      unawaited(_vm.saveDraft(_contentController.text));
+    }
+    _vm.removeListener(_onVmChanged);
+    _vm.dispose();
     _contentController.dispose();
     super.dispose();
   }

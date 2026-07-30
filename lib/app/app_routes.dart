@@ -289,8 +289,20 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           message: '正在加载扫码模块…',
         ),
     '/user-qr-code': (context) => const UserQrCodePage(),
-    '/life/world': (context) => const LifeWorldPage(),
+    '/life/world': (context) {
+      if (!FeatureFlags.showLifeEngine) {
+        return const Scaffold(
+          body: Center(child: Text('该功能已下线')),
+        );
+      }
+      return const LifeWorldPage();
+    },
     '/life/detail': (context) {
+      if (!FeatureFlags.showLifeEngine) {
+        return const Scaffold(
+          body: Center(child: Text('该功能已下线')),
+        );
+      }
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! LifeEntity) {
         return const Scaffold(

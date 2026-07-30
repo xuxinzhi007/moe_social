@@ -9,6 +9,14 @@ abstract final class MoeTokens {
   static const Color secondary = Color(0xFF86A8E7);
   static const Color accent = Color(0xFF91EAE4);
   static const Color pastelOrange = Color(0xFFFFB347);
+  static const Color pastelTeal = Color(0xFF4ECDC4);
+  static const Color pastelBlue = Color(0xFF74B9FF);
+  static const Color pastelPink = Color(0xFFFD79A8);
+  static const Color inkDark = Color(0xFF2D3436);
+  static const Color inkMuted = Color(0xFF636E72);
+  static const Color lineSoft = Color(0xFFDFE6E9);
+  static const Color softLavenderBg = Color(0xFFFAF8FF);
+  static const Color softChipBg = Color(0xFFF2F4FB);
   static const Color pageBackground = Color(0xFFF5F7FA);
   static const Color cardBackground = Colors.white;
   static const Color titleText = Color(0xFF333333);
@@ -138,6 +146,16 @@ abstract final class MoeTokens {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  /// 发帖问候卡 — 薄荷→浅粉。
+  static const LinearGradient gradientMintBlush = LinearGradient(
+    colors: [Color(0xFFA8EDEA), Color(0xFFFED6E3)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const Color mintSoft = Color(0xFFA8EDEA);
+  static const Color greyDisabled = Color(0xFFB2BEC3);
 
   /// 页面背景微渐变。
   static const LinearGradient gradientPageBg = LinearGradient(

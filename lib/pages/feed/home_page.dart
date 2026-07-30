@@ -5,8 +5,6 @@ import '../../auth_service.dart';
 import '../../models/topic_tag.dart';
 import '../../models/post.dart';
 import '../../services/post_service.dart';
-import '../../services/like_state_manager.dart';
-import '../../services/companion_service.dart';
 import '../../widgets/post_skeleton.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/moe_error_copy.dart';
@@ -25,6 +23,7 @@ import '../../widgets/ai_bot_badge.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
+import 'home_feed_viewmodel.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,35 +34,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
-  List<Post> _allPosts = [];
-  List<Post> _displayPosts = [];
-  bool _isLoading = false;
-  bool _isRefreshing = false;
-  bool _isLoadingMore = false;
-  int _currentPage = 1;
-  bool _hasMore = true;
-  static const int _pageSize = 10;
-  Object? _feedError;
-  String? _loadMoreErrorMessage;
-  DateTime? _lastUpdatedAt;
-  bool _isPrimaryRequestInFlight = false;
-  bool _shouldReloadAfterCurrent = false;
-  bool _queuedResetContent = false;
-  bool _isLoadMoreRequestInFlight = false;
-  CompanionSnapshotData? _companionSnapshot;
-  CompanionCommunityIdentityData? _communityIdentity;
-
-  _HomeFeedMode _mode = _HomeFeedMode.hot;
-  TopicTag? _activeTopic;
+  late final HomeFeedViewModel _feed;
 
   late TabController _tabController;
 
-  // Available topic tags collected from loaded posts + official tags
-  List<TopicTag> _availableTags = [];
-
   final ScrollController _scrollController = ScrollController();
   Timer? _loadMoreTimer;
-  final LikeStateManager _likeManager = LikeStateManager();
 
   /// Feed 入场动效去重：按「模式 + 话题 + 帖子 id」分桶，下拉刷新不重播。
   final Set<String> _revealedFeedKeys = {};
@@ -72,50 +48,41 @@ class _HomePageState extends State<HomePage>
     (
       label: '\u70ed\u95e8',
       icon: Icons.whatshot_rounded,
-      mode: _HomeFeedMode.hot
+      mode: HomeFeedMode.hot
     ),
     (
       label: '\u6700\u65b0',
       icon: Icons.new_releases_rounded,
-      mode: _HomeFeedMode.latest
+      mode: HomeFeedMode.latest
     ),
     (
       label: '\u5173\u6ce8',
       icon: Icons.star_rounded,
-      mode: _HomeFeedMode.following
+      mode: HomeFeedMode.following
     ),
   ];
 
-  String _feedRevealKey(String postId) =>
-      '${_mode.name}_${_activeTopic?.id ?? 'all'}_$postId';
-
-  String get _sectionTitle {
-    if (_activeTopic != null) return '#${_activeTopic!.name}';
-    switch (_mode) {
-      case _HomeFeedMode.hot:
-        return '\u70ed\u95e8\u52a8\u6001';
-      case _HomeFeedMode.latest:
-        return '\u6700\u65b0\u52a8\u6001';
-      case _HomeFeedMode.following:
-        return '\u5173\u6ce8\u52a8\u6001';
-      case _HomeFeedMode.topic:
-        return '\u5206\u7c7b\u52a8\u6001';
-    }
-  }
+  String get _sectionTitle => _feed.sectionTitle();
 
   @override
   void initState() {
     super.initState();
+    _feed = HomeFeedViewModel();
+    _feed.addListener(_onFeedChanged);
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_scrollListener);
-    _availableTags = TopicTag.officialTags.take(12).toList();
-    _fetchPosts();
-    unawaited(_loadCompanionPresence());
+    unawaited(_feed.bootstrap());
+  }
+
+  void _onFeedChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _feed.removeListener(_onFeedChanged);
+    _feed.dispose();
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _scrollController.removeListener(_scrollListener);
@@ -127,19 +94,12 @@ class _HomePageState extends State<HomePage>
   void _onTabChanged() {
     if (_tabController.indexIsChanging) return;
     final newMode = _tabs[_tabController.index].mode;
-    if (_mode == newMode && _activeTopic == null) return;
-    setState(() {
-      _mode = newMode;
-      _activeTopic = null; // Clear topic filter on tab change
-    });
-    _fetchPosts(resetContent: true);
-    // Rebuild topic tags after resetting
-    _refreshAvailableTags();
+    _feed.setMode(newMode);
   }
 
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
-    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    if (_feed.isLoading || _feed.isLoadingMore || !_feed.hasMore) return;
     final position = _scrollController.position;
     final maxScroll = position.maxScrollExtent;
     final currentScroll = position.pixels;
@@ -149,34 +109,14 @@ class _HomePageState extends State<HomePage>
     if (isNearBottom) _scheduleLoadMore();
   }
 
-  Future<void> _loadCompanionPresence() async {
-    try {
-      final snapshot = await CompanionService().getSnapshot();
-      CompanionCommunityIdentityData? identity;
-      if (snapshot.profile.agentId.trim().isNotEmpty) {
-        try {
-          identity = await CompanionService().getCommunityIdentity();
-        } catch (_) {}
-      }
-      if (!mounted) return;
-      setState(() {
-        _companionSnapshot = snapshot;
-        _communityIdentity = identity;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _companionSnapshot = null;
-        _communityIdentity = null;
-      });
-    }
-  }
-
   void _scheduleLoadMore() {
     _loadMoreTimer?.cancel();
     _loadMoreTimer = Timer(const Duration(milliseconds: 200), () {
-      if (mounted && !_isLoading && !_isLoadingMore && _hasMore) {
-        _loadMorePosts();
+      if (mounted &&
+          !_feed.isLoading &&
+          !_feed.isLoadingMore &&
+          _feed.hasMore) {
+        unawaited(_loadMorePosts());
       }
     });
   }
@@ -189,167 +129,25 @@ class _HomePageState extends State<HomePage>
   Future<void> _handleCreatePostResult(dynamic result) async {
     if (!mounted || result == null) return;
     if (result is Post) {
-      _insertCreatedPost(result);
+      _feed.insertCreatedPost(result);
     }
-    // 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柣鎴ｅГ閸ゅ嫰鏌涢锝嗙缂佹劖顨堥埀顒€绠嶉崕鍗灻洪妸鈺佺婵鍩栭悡娆戠磽娴ｉ潧鐏╅柡瀣〒缁辨帡鍩€椤掑嫬绀冩い蹇庣娴滅偓顨ラ悙鑼虎闁告梹纰嶆穱濠囶敃閿濆孩鐤佸銈冨灪閹告悂鍩㈡惔銊ョ閻庣數顭堥獮鍫熺節閻㈤潧浠滄俊顐ｇ懇瀹曟繂螖娴ｈ鐝烽悷婊冪箳濡叉劙骞掑Δ鈧猾宥夋煃瑜滈崜娆撯€﹂崶褉鏋庨柟鎯х－閸樻椽鏌熼崗鑲╂殬闁告柨鐭傞幃锟犳晸閻樺磭鍘卞┑鐐村灥瀹曨剟鎮橀敐鍡愪簻闁挎棁顕ч弸銈囩磼鏉堛劌绗х紒杈ㄥ浮婵偓闁绘ɑ褰冮婊堟⒒娴ｅ憡鎲稿┑顕€娼х叅婵犲﹤鐗嗙粻鏌ユ煏韫囨洖顎屾繛灏栨櫊閺屻倝骞栨担瑙勯敪闂侀€炲苯澧扮紒顕呭灦婵＄敻宕熼姘鳖啋闂佸憡顨堥崑鐔哥妤ｅ啯鈷?闂傚倸鍊搁崐鐑芥嚄閸洍鈧箓宕奸姀鈥冲簥濠德板€愰崑鎾绘煃鐠囪尙效鐎殿喗鎸虫慨鈧柣妯虹－閳ь剦鍓熷铏圭磼濡搫顫庨梺杞扮閹诧繝濡靛▎鎾崇鐎瑰壊鍠氶崬鐢告煟閻樼儤銆冮悹鈧敃鍌氱？闁归偊鍠氱壕濂告煟濡櫣锛嶆繛鍙夋尦閺岋紕浠﹂崜褎鍒涢悗娈垮櫘閸ｏ綁鐛鈧畷婊勭瑹婵犲嫬鎯炴繝纰夌磿閸嬫垿宕愰弴鐏荤懓顫濈捄铏诡槶闂佺粯妫侀崑鎰暤娓氣偓閺岀喖鎮滃鍡樼暥缂備胶濮垫繛濠囧蓟閻旇　鍋撻悽娈跨劸閸熺顪冮妶蹇曞埌鐎殿喖澧庨幑銏犫槈閵忕姷顓洪梺缁樺姈濞兼瑧鍠婂澶嬬厽閹兼番鍨婚埢鎾绘煛閸涱喚娲撮柡浣稿暣婵偓闁炽儲鍓氶崵銈夋⒑閸濆嫷妲归柛銊ㄦ硾閻ｉ潧顓奸崱鏇犵畾濡炪倖鍔х€靛矂寮抽幒妤佺厾闁告劘灏欓崺锝嗐亜閵忊剝顥堥柡灞芥椤撳ジ宕卞▎蹇撶闂傚倸鍊风粈渚€鎮樺┑瀣垫晞闁搞儺鍓欏Ч鍙夋叏濡炶浜鹃梺?    await _fetchPosts(resetContent: false);
-  }
-
-  void _insertCreatedPost(Post post) {
-    if (_activeTopic != null) {
-      final matchesTopic = post.topicTags.any((t) => t.id == _activeTopic!.id);
-      if (!matchesTopic) return;
-    }
-    if (_mode == _HomeFeedMode.following) return;
-    final exists = _allPosts.any((p) => p.id == post.id);
-    if (exists) return;
-    setState(() {
-      _allPosts = [post, ..._allPosts];
-      _displayPosts = List<Post>.from(_allPosts);
-      _lastUpdatedAt = DateTime.now();
-    });
-    _refreshAvailableTags();
+    await _fetchPosts(resetContent: false);
   }
 
   Future<void> _fetchPosts({bool resetContent = true}) async {
-    if (_isPrimaryRequestInFlight) {
-      _shouldReloadAfterCurrent = true;
-      _queuedResetContent = _queuedResetContent || resetContent;
-      return;
-    }
-    _isPrimaryRequestInFlight = true;
-    final hasExistingPosts = _displayPosts.isNotEmpty;
-    if (mounted) {
-      setState(() {
-        _feedError = null;
-        _loadMoreErrorMessage = null;
-        _hasMore = true;
-        _currentPage = 1;
-        if (!hasExistingPosts) {
-          // 首次加载：显示 skeleton
-          _isLoading = true;
-          _isRefreshing = false;
-        } else {
-          // 已有内容：静默刷新，保留旧内容直到新数据到达
-          _isRefreshing = true;
-          _isLoading = false;
-        }
-      });
-    }
     try {
-      final result = await _fetchPostsForMode(page: 1);
-      if (!mounted) return;
-      setState(() {
-        _allPosts = result.posts;
-        _displayPosts = List<Post>.from(result.posts);
-        _currentPage = 1;
-        _hasMore = _mode.supportsPagination
-            ? result.posts.length < result.total
-            : false;
-        _feedError = null;
-        _lastUpdatedAt = DateTime.now();
-      });
-      _refreshAvailableTags();
+      await _feed.fetchPosts(resetContent: resetContent);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _feedError = e;
-          _hasMore = false;
-        });
-      }
       _handleError(e);
-    } finally {
-      final shouldReload = _shouldReloadAfterCurrent;
-      final queuedReset = _queuedResetContent;
-      _isPrimaryRequestInFlight = false;
-      _shouldReloadAfterCurrent = false;
-      _queuedResetContent = false;
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isRefreshing = false;
-        });
-      }
-      if (shouldReload) {
-        unawaited(_fetchPosts(resetContent: queuedReset));
-      }
     }
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoading ||
-        _isRefreshing ||
-        _isLoadingMore ||
-        _isLoadMoreRequestInFlight ||
-        !_hasMore) {
-      return;
-    }
-    _isLoadMoreRequestInFlight = true;
-    setState(() {
-      _isLoadingMore = true;
-      _loadMoreErrorMessage = null;
-    });
     try {
-      final nextPage = _currentPage + 1;
-      final result = await _fetchPostsForMode(page: nextPage);
-      if (!mounted) return;
-      if (result.posts.isEmpty) {
-        setState(() {
-          _hasMore = false;
-          _isLoadingMore = false;
-        });
-        return;
-      }
-      setState(() {
-        _allPosts.addAll(result.posts);
-        _displayPosts = List<Post>.from(_allPosts);
-        _currentPage = nextPage;
-        _hasMore =
-            _mode.supportsPagination ? _allPosts.length < result.total : false;
-        _loadMoreErrorMessage = null;
-        _lastUpdatedAt = DateTime.now();
-      });
-      _refreshAvailableTags();
+      await _feed.loadMorePosts();
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loadMoreErrorMessage =
-              MoeErrorCopy.resolve(e, scene: MoeErrorScene.feed).subtitle;
-        });
-      }
       _handleError(e);
-    } finally {
-      _isLoadMoreRequestInFlight = false;
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = false;
-        });
-      }
     }
-  }
-
-  void _refreshAvailableTags() {
-    final byId = <String, TopicTag>{};
-    for (final tag in TopicTag.officialTags) {
-      byId[tag.id] = tag;
-    }
-    for (final p in _allPosts) {
-      for (final tag in p.topicTags) {
-        byId[tag.id] = tag;
-      }
-    }
-    final tags = byId.values.toList();
-    tags.sort((a, b) => b.usageCount.compareTo(a.usageCount));
-    final nextTags = tags.take(15).toList();
-    if (_isSameTagSequence(_availableTags, nextTags)) return;
-    if (mounted) setState(() => _availableTags = nextTags);
-  }
-
-  bool _isSameTagSequence(List<TopicTag> a, List<TopicTag> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i].id != b[i].id) return false;
-    }
-    return true;
   }
 
   void _handleError(dynamic error) {
@@ -364,79 +162,11 @@ class _HomePageState extends State<HomePage>
   }
 
   void _toggleLike(String postId) {
-    final isLiked = _likeManager.getStatusNotifier(postId).value;
-    final likeCount = _likeManager.getCountNotifier(postId).value;
-    _updateLikeSnapshot(postId: postId, isLiked: isLiked, likeCount: likeCount);
-  }
-
-  // 婵犵數濮烽弫鎼佸磻濞戙埄鏁嬫い鎾跺枑閸欏繘鏌熺紒銏犳灈缂佺姷濞€楠炴牕菐椤掆偓婵¤偐绱掗悩宕囧⒌闁哄瞼鍠栭幃娆擃敆閳ь剚鏅堕娑氱闂傚倹娼欏畵鍡涙煛鐏炵偓绀冪€垫澘瀚板畷鐓庘攽閸℃娼涢梻鍌欐祰濡椼劎绮堟笟鈧幃銉︾附缁嬭法鐣哄┑掳鍊愰崑鎾绘煃閽樺妲搁柍璇茬Ч椤㈡顦遍梺顓у灡椤ㄣ儵鎮欑€涙ê纾抽梺绯曟櫔缁绘繂鐣烽妸鈺婃晩闂傚倸顕弳妤呮⒑閼姐倕鏋戠紒顔肩Ф閹广垽宕熼瀣剁秮楠炲洭顢栭懞銉︽澑闂備焦鎮堕崕顕€寮笟鈧鎼佸冀椤撶喎鈧灚顨ラ悙鑼虎闁告梹宀搁弻锝夊棘閹稿寒妫﹂悗娈垮枟閹歌櫕鎱ㄩ埀顒勬煟濡吋鏆╅柛姗嗗墴濮婄粯鎷呴悜妯烘畬濡炪倖娲﹂崣鍐ㄧ暦閹达附鍊锋繛鏉戭儐閻忎線鏌ｉ悩鍙夋悙婵☆垰锕ら妴?rebuild闂傚倸鍊搁崐鐑芥倿閿旈敮鍋撶粭娑樻噽閻瑩鏌熺€涙绠伴柤鐗堝閵囧嫰鏁愰崨顖滎槬eButton 闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡纰嶉梺?ValueListenable 闂傚倸鍊峰ù鍥敋瑜忛幑銏ゅ箳濡も偓绾惧鏌熼悧鍫熺凡缁炬儳顭烽弻鐔煎礈瑜忕敮娑㈡煃闁垮鐏﹂柕鍥у瀵剟骞愭惔銏犲壍濠电姷顣介埀顒傚仺閸嬨垽鏌＄仦鍓ф创闁糕晪绻濆畷鎺戭煥閸曨偄鐏￠梺璇插椤旀牠宕抽鈧畷婊冣槈閵忕姵鐎銈嗘磵閸嬫挻銇勯姀锛勬噰鐎规洘绮忛¨浣逛繆?
-  void _updateLikeSnapshot({
-    required String postId,
-    required bool isLiked,
-    required int likeCount,
-  }) {
-    final allIndex = _allPosts.indexWhere((p) => p.id == postId);
-    if (allIndex != -1) {
-      _allPosts[allIndex] = _allPosts[allIndex].copyWith(
-        isLiked: isLiked,
-        likes: likeCount,
-      );
-    }
-    final displayIndex = _displayPosts.indexWhere((p) => p.id == postId);
-    if (displayIndex != -1) {
-      _displayPosts[displayIndex] = _displayPosts[displayIndex].copyWith(
-        isLiked: isLiked,
-        likes: likeCount,
-      );
-    }
-  }
-
-  String _apiFeedMode() {
-    switch (_mode) {
-      case _HomeFeedMode.hot:
-        return 'hot';
-      case _HomeFeedMode.latest:
-        return 'latest';
-      case _HomeFeedMode.following:
-        return 'following';
-      case _HomeFeedMode.topic:
-        return 'latest';
-    }
-  }
-
-  String? _apiTopicTagId() {
-    if (_activeTopic != null) return _activeTopic!.id;
-    return null;
-  }
-
-  Future<_PostPageResult> _fetchPostsForMode({required int page}) async {
-    final result = await PostService.getPosts(
-      page: page,
-      pageSize: _pageSize,
-      feedMode: _apiFeedMode(),
-      topicTagId: _apiTopicTagId(),
-    );
-    final posts = result['posts'] as List<Post>;
-    final totalRaw = result['total'];
-    final total =
-        totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
-    return _PostPageResult(posts: posts, total: total);
+    _feed.toggleLikeLocal(postId);
   }
 
   void _onTopicSelected(TopicTag? tag) {
-    if (tag?.id == _activeTopic?.id) {
-      // Deselect
-      setState(() {
-        _activeTopic = null;
-        _mode = _tabs[_tabController.index].mode;
-      });
-    } else {
-      setState(() {
-        _activeTopic = tag;
-        if (tag != null) _mode = _HomeFeedMode.topic;
-      });
-    }
-    _fetchPosts(resetContent: true);
+    _feed.selectTopic(tag, fallbackMode: _tabs[_tabController.index].mode);
   }
 
   @override
@@ -469,38 +199,38 @@ class _HomePageState extends State<HomePage>
             ),
             // Topic tags row 闂?plain SliverToBoxAdapter, no dynamic-extent issues
             SliverToBoxAdapter(child: _buildFeedSectionTitle(context)),
-            if (_feedError != null && _displayPosts.isNotEmpty)
+            if (_feed.feedError != null && _feed.displayPosts.isNotEmpty)
               SliverToBoxAdapter(
                 child: _buildInlineErrorBanner(
-                  message: MoeErrorCopy.resolve(_feedError,
+                  message: MoeErrorCopy.resolve(_feed.feedError,
                           scene: MoeErrorScene.feed)
                       .subtitle,
                   onRetry: () => _fetchPosts(resetContent: false),
                 ),
               ),
-            if (_isLoading && _displayPosts.isEmpty)
+            if (_feed.isLoading && _feed.displayPosts.isEmpty)
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => const PostSkeleton(),
                   childCount: 6,
                 ),
               )
-            else if (_feedError != null && _displayPosts.isEmpty)
+            else if (_feed.feedError != null && _feed.displayPosts.isEmpty)
               SliverToBoxAdapter(
                 child: _buildFeedErrorState(),
               )
-            else if (!_isLoading && _displayPosts.isEmpty)
+            else if (!_feed.isLoading && _feed.displayPosts.isEmpty)
               SliverToBoxAdapter(child: _buildFeedEmptyState())
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => MoeStaggerReveal(
                     index: index,
-                    itemKey: _feedRevealKey(_displayPosts[index].id),
+                    itemKey: _feed.feedRevealKey(_feed.displayPosts[index].id),
                     revealedKeys: _revealedFeedKeys,
-                    child: _buildPostCard(_displayPosts[index]),
+                    child: _buildPostCard(_feed.displayPosts[index]),
                   ),
-                  childCount: _displayPosts.length,
+                  childCount: _feed.displayPosts.length,
                 ),
               ),
             SliverToBoxAdapter(child: _buildBottomIndicator()),
@@ -695,14 +425,14 @@ class _HomePageState extends State<HomePage>
             children: [
               _buildMetaChip(
                 icon:
-                    _isRefreshing ? Icons.sync_rounded : Icons.schedule_rounded,
+                    _feed.isRefreshing ? Icons.sync_rounded : Icons.schedule_rounded,
                 text: _lastUpdatedText(),
               ),
-              if (_activeTopic != null)
+              if (_feed.activeTopic != null)
                 _buildMetaChip(
                   icon: Icons.filter_alt_rounded,
-                  text: '#${_activeTopic!.name}',
-                  accentColor: _activeTopic!.color,
+                  text: '#${_feed.activeTopic!.name}',
+                  accentColor: _feed.activeTopic!.color,
                   onTap: () => _onTopicSelected(null),
                   trailing: const Icon(Icons.close_rounded, size: 14),
                 ),
@@ -714,11 +444,11 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildCompanionPresenceCard(BuildContext context) {
-    final snapshot = _companionSnapshot;
+    final snapshot = _feed.companionSnapshot;
     if (snapshot == null) return const SizedBox.shrink();
     final profile = snapshot.profile;
     final state = snapshot.state;
-    final identity = _communityIdentity;
+    final identity = _feed.communityIdentity;
     final agentKey = identity != null && identity.authorBotAgentKey.isNotEmpty
         ? identity.authorBotAgentKey
         : identity?.agentId;
@@ -940,7 +670,7 @@ class _HomePageState extends State<HomePage>
         children: _tabs.asMap().entries.map((entry) {
           final index = entry.key;
           final tab = entry.value;
-          final isSelected = _mode == tab.mode;
+          final isSelected = _feed.mode == tab.mode;
           return Padding(
             padding: EdgeInsets.only(right: index == _tabs.length - 1 ? 0 : 4),
             child: InkWell(
@@ -989,7 +719,7 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildRefreshButton() {
     return TextButton.icon(
-      onPressed: _isLoading || _isRefreshing
+      onPressed: _feed.isLoading || _feed.isRefreshing
           ? null
           : () => _fetchPosts(resetContent: false),
       style: TextButton.styleFrom(
@@ -1001,13 +731,13 @@ class _HomePageState extends State<HomePage>
         visualDensity: VisualDensity.compact,
       ),
       icon: const Icon(Icons.refresh_rounded, size: 16),
-      label: Text(_isRefreshing ? '\u5237\u65b0\u4e2d' : '\u5237\u65b0'),
+      label: Text(_feed.isRefreshing ? '\u5237\u65b0\u4e2d' : '\u5237\u65b0'),
     );
   }
 
   String _lastUpdatedText() {
-    if (_isRefreshing) return '\u6b63\u5728\u5237\u65b0\u5185\u5bb9...';
-    final updatedAt = _lastUpdatedAt;
+    if (_feed.isRefreshing) return '\u6b63\u5728\u5237\u65b0\u5185\u5bb9...';
+    final updatedAt = _feed.lastUpdatedAt;
     if (updatedAt == null) {
       return '\u5c1a\u672a\u52a0\u8f7d\u6700\u65b0\u52a8\u6001';
     }
@@ -1053,7 +783,7 @@ class _HomePageState extends State<HomePage>
             ),
             const SizedBox(width: 8),
             TextButton(
-              onPressed: _isLoading || _isRefreshing ? null : onRetry,
+              onPressed: _feed.isLoading || _feed.isRefreshing ? null : onRetry,
               child: const Text('\u91cd\u8bd5'),
             ),
           ],
@@ -1066,10 +796,10 @@ class _HomePageState extends State<HomePage>
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: MoeErrorState.fromError(
-        _feedError,
+        _feed.feedError,
         scene: MoeErrorScene.feed,
         onRetry: () {
-          if (_isLoading) return;
+          if (_feed.isLoading) return;
           _fetchPosts(resetContent: true);
         },
       ),
@@ -1077,7 +807,7 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeedEmptyState() {
-    if (_mode == _HomeFeedMode.following) {
+    if (_feed.mode == HomeFeedMode.following) {
       return _buildUnifiedStatePanel(
         icon: Icons.star_border_rounded,
         title: '\u5173\u6ce8\u7684\u4eba\u8fd8\u6ca1\u6709\u53d1\u52a8\u6001',
@@ -1119,8 +849,8 @@ class _HomePageState extends State<HomePage>
       );
     }
 
-    final topicName = _activeTopic?.name;
-    final inTopic = _activeTopic != null;
+    final topicName = _feed.activeTopic?.name;
+    final inTopic = _feed.activeTopic != null;
     return _buildUnifiedStatePanel(
       icon: Icons.auto_awesome_rounded,
       title: inTopic
@@ -1228,20 +958,19 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildBottomIndicator() {
-    if (_isLoadingMore) {
+    if (_feed.isLoadingMore) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: Center(
           child: _buildBottomStateCapsule(
             icon: const MoeSmallLoading(),
-            label:
-                '濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞瀹曟煡鏌熼柇锕€鏋涚紒韬插€濋弻锕€螣娓氼垱顎嗛梺鑲╁鐎笛囧Φ閸曨喚鐤€闁规崘娉涢。铏圭磽娴ｆ彃浜炬繝銏ｅ煐閸旀牠鎮￠悢闀愮箚妞ゆ牗绮岀敮鍫曟煕閺傛鍎戠紒杈ㄥ笚閹峰懎鐣￠弶璺ㄣ偖闂備礁鎼惌澶屾崲濠靛棛鏆﹂柛顐ｆ礀鎯熼梺鎸庢煥婢т粙鍩㈣箛鏂剧箚?..',
+            label: '加载更多中...',
           ),
         ),
       );
-    } else if (_loadMoreErrorMessage != null &&
-        _displayPosts.isNotEmpty &&
-        !_isLoading) {
+    } else if (_feed.loadMoreErrorMessage != null &&
+        _feed.displayPosts.isNotEmpty &&
+        !_feed.isLoading) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: Center(
@@ -1254,13 +983,13 @@ class _HomePageState extends State<HomePage>
             label: '\u52a0\u8f7d\u66f4\u591a\u5931\u8d25',
             accentColor: const Color(0xFFFFB347),
             trailing: TextButton(
-              onPressed: _isLoadingMore ? null : _loadMorePosts,
+              onPressed: _feed.isLoadingMore ? null : _loadMorePosts,
               child: const Text('\u91cd\u8bd5'),
             ),
           ),
         ),
       );
-    } else if (!_hasMore && _displayPosts.isNotEmpty) {
+    } else if (!_feed.hasMore && _feed.displayPosts.isNotEmpty) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Center(
@@ -1270,25 +999,24 @@ class _HomePageState extends State<HomePage>
               color: Colors.grey[500],
               size: 18,
             ),
-            label:
-                '闂傚倷娴囬褍顫濋敃鍌︾稏濠㈣埖鍔栭崑銈夋煛閸モ晛小闁绘帒锕ョ换娑㈠幢濡櫣浠撮梺鎼炲妽缁诲牓寮婚妸鈺傚亜闁告繂瀚呴姀銏㈢＜闁逞屽墴瀹曞崬鈽夊▎鎴濆箰濠电姰鍨煎▔娑氣偓娑掓櫇濞戠數鎹勯崨闈涢叄瀹曞爼濡搁敂杞拌檸闂?~',
+            label: '已经到底啦 ~',
           ),
         ),
       );
-    } else if (_hasMore && !_isLoading && !_isRefreshing) {
+    } else if (_feed.hasMore && !_feed.isLoading && !_feed.isRefreshing) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: (_isLoadingMore || _isRefreshing)
+            onTap: (_feed.isLoadingMore || _feed.isRefreshing)
                 ? null
                 : () {
-                    if (!_isLoading &&
-                        !_isRefreshing &&
-                        !_isLoadingMore &&
-                        _hasMore) {
+                    if (!_feed.isLoading &&
+                        !_feed.isRefreshing &&
+                        !_feed.isLoadingMore &&
+                        _feed.hasMore) {
                       _loadMorePosts();
                     }
                   },
@@ -1364,15 +1092,7 @@ class _HomePageState extends State<HomePage>
     Future<void> openDetail() async {
       final result = await openPostDetail(context, post);
       if (!mounted || result == null) return;
-      setState(() {
-        final allIndex = _allPosts.indexWhere((p) => p.id == post.id);
-        if (allIndex != -1) {
-          final updated = _allPosts[allIndex].copyWith(comments: result);
-          _allPosts[allIndex] = updated;
-          final displayIndex = _displayPosts.indexWhere((p) => p.id == post.id);
-          if (displayIndex != -1) _displayPosts[displayIndex] = updated;
-        }
-      });
+      _feed.updatePostComments(post.id, result);
     }
 
     return PostCard(
@@ -1398,24 +1118,7 @@ class _HomePageState extends State<HomePage>
                 ),
               );
               if (updated != null && mounted) {
-                setState(() {
-                  final merged = updated.copyWith(
-                    likes: post.likes,
-                    comments: post.comments,
-                    isLiked: post.isLiked,
-                    userName: updated.userName.isNotEmpty
-                        ? updated.userName
-                        : post.userName,
-                    userAvatar: updated.userAvatar.isNotEmpty
-                        ? updated.userAvatar
-                        : post.userAvatar,
-                  );
-                  final ai = _allPosts.indexWhere((p) => p.id == updated.id);
-                  if (ai != -1) _allPosts[ai] = merged;
-                  final di =
-                      _displayPosts.indexWhere((p) => p.id == updated.id);
-                  if (di != -1) _displayPosts[di] = merged;
-                });
+                _feed.mergeUpdatedPost(updated, post);
               }
             }
           : null,
@@ -1424,35 +1127,14 @@ class _HomePageState extends State<HomePage>
               try {
                 await PostService.deletePost(post.id);
                 if (!mounted) return;
-                setState(() {
-                  _allPosts.removeWhere((p) => p.id == post.id);
-                  _displayPosts.removeWhere((p) => p.id == post.id);
-                });
-                _likeManager.evictPost(post.id);
+                _feed.removePost(post.id);
               } catch (e) {
                 if (mounted) {
-                  ErrorHandler.showError(context,
-                      '闂傚倸鍊搁崐椋庣矆娓氣偓楠炲鏁嶉崟顒佹闂佺粯鍔曢顓犵不妤ｅ啯鐓冪憸婊堝礈濮樿鲸宕叉繛鎴欏灩瀹告繃銇勯幘璺哄壉闁告柨顦甸幃妤呭垂椤愶絿鍑￠柣搴㈠嚬閸樺ジ鈥﹂崶顏嗙杸婵炴垼椴搁弲婵嬫⒑闂堟侗妲归柛鏃€鐗曠叅闁绘梻鍘ч拑?e');
+                  ErrorHandler.showError(context, '删除失败，请稍后重试');
                 }
               }
             }
           : null,
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Enums & helpers
-// ---------------------------------------------------------------------------
-
-enum _HomeFeedMode { hot, latest, following, topic }
-
-extension on _HomeFeedMode {
-  bool get supportsPagination => true;
-}
-
-class _PostPageResult {
-  final List<Post> posts;
-  final int total;
-  const _PostPageResult({required this.posts, required this.total});
 }

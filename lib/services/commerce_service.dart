@@ -62,4 +62,17 @@ class CommerceService {
 
   static Future<User> getUserInfo(String userId) =>
       UserService.getUserInfo(userId);
+
+  static Future<List<AchievementUnlock>> sendGiftWithUnlocks({
+    required String fromUserId,
+    required String toUserId,
+    required String giftId,
+    int quantity = 1,
+  }) =>
+      ApiService.sendGiftWithUnlocks(
+        fromUserId: fromUserId,
+        toUserId: toUserId,
+        giftId: giftId,
+        quantity: quantity,
+      );
 }

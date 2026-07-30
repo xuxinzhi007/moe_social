@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import '../models/achievement_unlock.dart';
@@ -166,11 +167,32 @@ class PostService {
     );
   }
 
+  static Future<String> uploadImage(File image) =>
+      ApiClient.uploadImage(image);
+
   static Future<String> uploadImageBytes(
     Uint8List bytes, {
     String filename = 'upload.png',
   }) =>
       ApiClient.uploadImageBytes(bytes, filename: filename);
+
+  static Future<void> reportPost({
+    required String postId,
+    required String reporterUserId,
+    required String reason,
+  }) =>
+      ApiService.reportPost(
+        postId: postId,
+        reporterUserId: reporterUserId,
+        reason: reason,
+      );
+
+  static Future<({String handDrawCard, String handDrawThumbUrl})>
+      getPostHandDraw(
+    String postId, {
+    String? viewerUserId,
+  }) =>
+      ApiService.getPostHandDraw(postId, viewerUserId: viewerUserId);
 
   // 点赞/取消点赞评论
   static Future<Comment> toggleCommentLike(

@@ -19,7 +19,8 @@ class AppConfigDefaults {
 
   static const String apiUrl =
       'https://api-inference.modelscope.cn/v1/chat/completions';
-  static const String apiKey = 'ms-fa33637f-6572-4170-82b1-95f458fe9e7b';
+  /// 默认空：密钥只允许写在安全存储 / 设置页，禁止进仓库。
+  static const String apiKey = '';
   static const String modelName = 'ZhipuAI/AutoGLM-Phone-9B';
   static const int maxSteps = 20;
   static const int stepTimeoutSeconds = 30;
