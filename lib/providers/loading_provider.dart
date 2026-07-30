@@ -1,5 +1,6 @@
-import 'package:flutter/foundation.dart' show ChangeNotifier, kDebugMode;
+import 'package:flutter/foundation.dart' show ChangeNotifier;
 import '../services/api_service.dart';
+import '../utils/moe_error_copy.dart';
 
 /// 统一加载状态管理Provider
 /// 管理全局和局部加载状态，并提供统一的错误处理
@@ -100,7 +101,7 @@ class LoadingProvider extends ChangeNotifier {
 
       return result;
     } on ApiException catch (e) {
-      final errorMsg = e.message;
+      final errorMsg = MoeErrorCopy.toast(e, scene: MoeErrorScene.generic);
       setError(errorMsg);
 
       if (onError != null) {
@@ -109,7 +110,7 @@ class LoadingProvider extends ChangeNotifier {
 
       return null;
     } catch (e) {
-      final errorMsg = kDebugMode ? '操作失败: $e' : '操作失败，请稍后重试';
+      final errorMsg = MoeErrorCopy.toast(e, scene: MoeErrorScene.generic);
       setError(errorMsg);
 
       if (onError != null) {

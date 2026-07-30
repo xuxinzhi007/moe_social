@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../theme/moe_tokens.dart';
 import '../../providers/user_level_provider.dart';
 import '../../providers/checkin_provider.dart';
-import '../../services/api_client.dart';
+import '../../services/auth_flow_service.dart';
 import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../widgets/motion/moe_reveal.dart';
@@ -221,7 +221,7 @@ class _UserLevelPageState extends State<UserLevelPage>
     if (path == null || path.isEmpty) return null;
     final t = path.trim();
     if (t.startsWith('http://') || t.startsWith('https://')) return t;
-    final base = ApiClient.baseUrl.replaceAll(RegExp(r'/$'), '');
+    final base = AuthFlowService.apiBaseUrl.replaceAll(RegExp(r'/$'), '');
     final p = t.startsWith('/') ? t : '/$t';
     return '$base$p';
   }
@@ -262,7 +262,7 @@ class _UserLevelPageState extends State<UserLevelPage>
             ? Image.network(
                 imageUrl,
                 fit: BoxFit.cover,
-                headers: ApiClient.tunnelBypassHeadersForUrl(imageUrl),
+                headers: AuthFlowService.tunnelBypassHeadersForUrl(imageUrl),
                 errorBuilder: (_, __, ___) => _levelBadgeFallback(),
               )
             : _levelBadgeFallback(),

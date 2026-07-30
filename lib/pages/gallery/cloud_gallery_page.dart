@@ -8,7 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../services/api_response.dart';
-import '../../services/api_client.dart';
+import '../../services/gallery_service.dart';
 import '../../auth_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
@@ -93,8 +93,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
 
   Future<void> _loadQuota() async {
     try {
-      final result = await ApiClient.get('/api/images/quota');
-      final data = ApiResponse.object(result, keys: const ['quota']);
+      final data = await GalleryService.getQuota();
       if (data.isNotEmpty) {
         final used = data['used_bytes'];
         final max = data['max_bytes'];
@@ -115,8 +114,10 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     });
 
     try {
-      final result = await ApiClient.get(
-          '/api/images?page=$_currentPage&page_size=$_pageSize');
+      final result = await GalleryService.listImages(
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
       if (ApiResponse.isSuccess(result)) {
         final images =
             ApiResponse.listOf(result, keys: const ['images', 'data']);
@@ -233,7 +234,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         final image = _images[i] as Map;
         final filename = image['filename']?.toString() ?? '';
         if (filename.isEmpty) continue;
-        await ApiClient.delete('/api/images/$filename');
+        await GalleryService.deleteImage(filename);
       }
 
       await _refreshAll(exitSelect: true);
@@ -369,7 +370,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         _isMutating = true;
       });
 
-      final imageInfo = await ApiClient.uploadImageInfo(File(picked.path));
+      final imageInfo = await GalleryService.uploadImageInfo(File(picked.path));
 
       if (!mounted) return;
       final key = imageInfo['filename']?.toString() ??

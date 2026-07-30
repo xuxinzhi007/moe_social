@@ -11,6 +11,7 @@ Use this skill when changing `lib/pages/life/`, `lib/widgets/life/`, `lib/provid
 
 ## Frontend Rules
 
+- General Flutter bar: follow unified skill [moe-flutter](../moe-flutter/SKILL.md).
 - Preserve the current REST + WebSocket boundary: `LifeProvider` owns state, `LifeService` wraps REST, `LifeWsService` handles realtime updates.
 - Prefer read-only UX improvements before protocol changes: care insight, world pulse, event grouping, resident selection, empty/offline states.
 - Keep action buttons sparse and high intent: feed, companion/pet, detail, story. Avoid adding many low-value buttons.

@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../services/api_client.dart';
 import '../../services/auth_flow_service.dart';
 import '../../utils/oauth_flow_helper.dart';
 import '../../utils/webview_platform_init.dart';
@@ -87,7 +86,7 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
 
   String _friendlyInitError(Object e) {
     final msg = e.toString();
-    final api = ApiClient.baseUrl;
+    final api = AuthFlowService.apiBaseUrl;
     if (!kIsWeb && msg.contains('127.0.0.1')) {
       return '飞书回调地址须与 App 访问的 API 一致。\n'
           '请将 config 中 feishu.redirect_uri 设为：\n'

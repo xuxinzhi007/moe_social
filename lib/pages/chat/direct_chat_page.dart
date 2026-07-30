@@ -1,25 +1,23 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../auth_service.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../services/chat_service.dart';
-import '../../services/api_client.dart' show ApiException;
 import '../../services/user_service.dart';
 import '../../widgets/avatar_image.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/chat_push_service.dart';
-import '../../services/direct_chat_sync_bus.dart';
 import '../../services/presence_service.dart';
 import '../../theme/moe_tokens.dart';
-import '../../utils/media_url.dart';
-import '../../models/private_message_item.dart';
 import '../../widgets/moe_action_row.dart';
+import 'direct_chat_viewmodel.dart';
 import 'voice_call_launcher.dart';
 
 class DirectChatPage extends StatefulWidget {
@@ -39,38 +37,39 @@ class DirectChatPage extends StatefulWidget {
 }
 
 class _DirectChatPageState extends State<DirectChatPage> {
-  final List<_DirectMessage> _messages = [];
+  late final DirectChatViewModel _chat;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
-  bool _isSending = false;
-  String? _currentUserId;
   StreamSubscription<Map<String, dynamic>>? _incomingSub;
   bool _peerOnline = false;
   Timer? _onlineTimer;
   bool _presenceListening = false;
-  bool _hasMoreServer = false;
-  bool _loadingServerPage = false;
-  String? _oldestServerCursorId;
   late final VoidCallback _scrollLoadOlderListener;
   double _sendBtnScale = 1.0;
   bool _hasDraft = false;
-  DateTime? _clearedAt;
 
   @override
   void initState() {
     super.initState();
+    _chat = DirectChatViewModel(peerUserId: widget.userId);
+    _chat.addListener(_onChatChanged);
+    _chat.onScrollToBottom = _scrollToBottom;
     _scrollLoadOlderListener = () {
       if (!_scrollController.hasClients) return;
-      if (!_hasMoreServer || _loadingServerPage) return;
+      if (!_chat.hasMoreServer || _chat.loadingServerPage) return;
       final pos = _scrollController.position;
       if (pos.pixels >= pos.maxScrollExtent - 100) {
-        unawaited(_loadOlderServerPage());
+        unawaited(_chat.loadOlderServerPage());
       }
     };
     _scrollController.addListener(_scrollLoadOlderListener);
     _controller.addListener(_handleDraftChanged);
     _initChat();
+  }
+
+  void _onChatChanged() {
+    if (mounted) setState(() {});
   }
 
   void _handleDraftChanged() {
@@ -104,89 +103,26 @@ class _DirectChatPageState extends State<DirectChatPage> {
   }
 
   Future<void> _initChat() async {
+    await _chat.bootstrap();
+    if (!mounted) return;
+    final warning = _chat.historySyncWarning;
+    if (warning != null) {
+      MoeToast.show(
+        context,
+        warning,
+        duration: const Duration(seconds: 5),
+        icon: Icons.cloud_off_outlined,
+      );
+      _chat.consumeHistorySyncWarning();
+    }
     try {
-      final userId = await AuthService.getUserId();
-      if (!mounted) return;
-      setState(() {
-        _currentUserId = userId;
-      });
-      _clearedAt = await _loadClearedAt(userId);
-      await _loadMessages(userId);
-      await _fetchInitialServerHistory();
-      _mergePendingWsMessages();
-
-      // Now that we merged offline messages, mark them as read.
-      if (!mounted) return;
-      try {
-        await context
-            .read<NotificationProvider>()
-            .markDirectMessagesAsRead(widget.userId);
-      } catch (_) {}
-      ChatPushService.markSenderRead(widget.userId);
-
-      await _connectWebSocket();
-      await _ensurePeerOnline();
+      await context
+          .read<NotificationProvider>()
+          .markDirectMessagesAsRead(widget.userId);
     } catch (_) {}
-  }
-
-  void _mergePendingWsMessages() {
-    try {
-      final currentUserId = _currentUserId;
-      if (currentUserId == null) return;
-
-      final pending = ChatPushService.takePendingMessages(widget.userId);
-      if (pending.isEmpty) return;
-
-      final existingKeys = <String>{};
-      for (final m in _messages) {
-        existingKeys
-            .add('${m.senderId}|${m.time.toIso8601String()}|${m.content}');
-      }
-
-      var changed = false;
-      for (final map in pending) {
-        final from = map['from']?.toString();
-        final content = map['content']?.toString();
-        final ts = map['timestamp'];
-        if (from == null || from.isEmpty || content == null) continue;
-        if (from != widget.userId) continue;
-
-        DateTime time;
-        if (ts is int) {
-          time = DateTime.fromMillisecondsSinceEpoch(ts);
-        } else {
-          time = DateTime.now();
-        }
-        if (!_isAfterClearMarker(time)) continue;
-
-        final hasSimilar = _messages.any((m) {
-          if (m.senderId != from) return false;
-          if (m.content != content) return false;
-          final diff = m.time.difference(time).inMinutes.abs();
-          return diff <= 5;
-        });
-        if (hasSimilar) continue;
-
-        final key = '$from|${time.toIso8601String()}|$content';
-        if (existingKeys.contains(key)) continue;
-        existingKeys.add(key);
-        _messages.add(
-          _DirectMessage(senderId: from, content: content, time: time),
-        );
-        changed = true;
-      }
-
-      if (changed && mounted) {
-        setState(() {
-          _messages.sort((a, b) => a.time.compareTo(b.time));
-        });
-        _saveMessages();
-        _scrollToBottom();
-      }
-
-      // 进入会话后，不应继续对该发送者累计未读
-      ChatPushService.markSenderRead(widget.userId);
-    } catch (_) {}
+    ChatPushService.markSenderRead(widget.userId);
+    await _connectWebSocket();
+    await _ensurePeerOnline();
   }
 
   Future<void> _ensurePeerOnline() async {
@@ -205,7 +141,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   }
 
   Future<void> _startVoiceCall() async {
-    final currentUserId = _currentUserId;
+    final currentUserId = _chat.currentUserId;
     if (currentUserId == null || currentUserId.isEmpty) return;
     try {
       final callData = await ChatService.voiceCall(widget.userId);
@@ -227,253 +163,14 @@ class _DirectChatPageState extends State<DirectChatPage> {
     }
   }
 
-  String _storageKey(String currentUserId) {
-    final ids = [currentUserId, widget.userId];
-    ids.sort();
-    return 'direct_chat_${ids.join('_')}';
-  }
-
-  String _clearMarkerKey(String currentUserId) {
-    final ids = [currentUserId, widget.userId];
-    ids.sort();
-    return 'direct_chat_cleared_${ids.join('_')}';
-  }
-
-  Future<DateTime?> _loadClearedAt(String currentUserId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_clearMarkerKey(currentUserId));
-    if (raw == null || raw.isEmpty) return null;
-    return DateTime.tryParse(raw);
-  }
-
-  bool _isAfterClearMarker(DateTime time) {
-    final clearedAt = _clearedAt;
-    if (clearedAt == null) return true;
-    return time.isAfter(clearedAt);
-  }
-
-  List<_DirectMessage> _expandServerItem(PrivateMessageItem m) {
-    final t = DateTime.tryParse(m.createdAt) ?? DateTime.now();
-    final out = <_DirectMessage>[];
-    final body = m.body.trim();
-    if (body.isNotEmpty) {
-      out.add(_DirectMessage(
-        senderId: m.senderId,
-        content: body,
-        time: t,
-        serverId: '${m.id}#t',
-      ));
-    }
-    for (var i = 0; i < m.imagePaths.length; i++) {
-      final name = m.imagePaths[i].trim();
-      if (name.isEmpty) continue;
-      final url = resolveMediaUrl('/api/images/$name');
-      out.add(_DirectMessage(
-        senderId: m.senderId,
-        content: '$_imgPrefix$url',
-        time: t,
-        serverId: '${m.id}#i$i',
-      ));
-    }
-    return out;
-  }
-
-  void _applyMergedLocalAndServer(
-    List<_DirectMessage> local,
-    List<_DirectMessage> serverExpanded,
-  ) {
-    final merged = <_DirectMessage>[];
-    final seen = <String>{};
-    for (final s in serverExpanded) {
-      merged.add(s);
-      if (s.serverId != null) seen.add(s.serverId!);
-    }
-    for (final l in local) {
-      if (l.serverId != null) {
-        if (seen.contains(l.serverId!)) continue;
-        seen.add(l.serverId!);
-        merged.add(l);
-        continue;
-      }
-      final dup = serverExpanded.any((s) =>
-          s.senderId == l.senderId &&
-          s.content == l.content &&
-          s.time.difference(l.time).inSeconds.abs() < 120);
-      if (dup) continue;
-      merged.add(l);
-    }
-    merged.sort((a, b) => a.time.compareTo(b.time));
-    _messages
-      ..clear()
-      ..addAll(merged);
-  }
-
-  Future<void> _fetchInitialServerHistory() async {
-    try {
-      final page = await ChatService.listPrivateMessages(
-        peerUserId: widget.userId,
-        limit: 40,
-      );
-      if (!mounted) return;
-      final expanded = <_DirectMessage>[];
-      for (final m in page.items) {
-        expanded.addAll(_expandServerItem(m));
-      }
-      expanded.removeWhere((m) => !_isAfterClearMarker(m.time));
-      final localCopy = List<_DirectMessage>.from(_messages);
-      setState(() {
-        _applyMergedLocalAndServer(localCopy, expanded);
-        _hasMoreServer = page.hasMore;
-        _oldestServerCursorId =
-            page.items.isNotEmpty ? page.items.first.id : null;
-      });
-      await _saveMessages();
-      _scrollToBottom();
-    } catch (e) {
-      if (!mounted) return;
-      if (e is ApiException) {
-        MoeToast.show(
-          context,
-          '服务端聊天记录同步失败：${e.message}\n若刚升级后端，请确认已部署 /api/private-messages 并执行迁移。',
-          duration: const Duration(seconds: 5),
-          icon: Icons.cloud_off_outlined,
-        );
-      }
-    }
-  }
-
-  Future<void> _loadOlderServerPage() async {
-    final cursor = _oldestServerCursorId;
-    if (cursor == null || cursor.isEmpty || !_hasMoreServer) return;
-    if (_loadingServerPage) return;
-    setState(() => _loadingServerPage = true);
-    try {
-      final page = await ChatService.listPrivateMessages(
-        peerUserId: widget.userId,
-        beforeId: cursor,
-        limit: 30,
-      );
-      if (!mounted) return;
-      final add = <_DirectMessage>[];
-      for (final m in page.items) {
-        add.addAll(_expandServerItem(m));
-      }
-      add.removeWhere((m) => !_isAfterClearMarker(m.time));
-      final existing = <String>{};
-      for (final x in _messages) {
-        if (x.serverId != null) existing.add(x.serverId!);
-      }
-      final novel = <_DirectMessage>[];
-      for (final x in add) {
-        if (x.serverId != null && existing.contains(x.serverId!)) continue;
-        if (x.serverId != null) existing.add(x.serverId!);
-        novel.add(x);
-      }
-      setState(() {
-        _messages.insertAll(0, novel);
-        _messages.sort((a, b) => a.time.compareTo(b.time));
-        _hasMoreServer = page.hasMore;
-        if (page.items.isNotEmpty) {
-          _oldestServerCursorId = page.items.first.id;
-        }
-        _loadingServerPage = false;
-      });
-      await _saveMessages();
-    } catch (_) {
-      if (mounted) setState(() => _loadingServerPage = false);
-    } finally {
-      if (mounted && _loadingServerPage) {
-        setState(() => _loadingServerPage = false);
-      }
-    }
-  }
-
-  String? _serverSlotFromWsId(dynamic rawId, String content) {
-    if (rawId == null) return null;
-    final id = rawId.toString();
-    if (id.isEmpty) return null;
-    if (content.startsWith(_imgPrefix)) return '$id#i0';
-    return '$id#t';
-  }
-
-  Future<void> _loadMessages(String currentUserId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(currentUserId);
-    final raw = prefs.getString(key);
-    if (raw == null || raw.isEmpty) return;
-    final list = json.decode(raw) as List<dynamic>;
-    final messages = list
-        .map((item) {
-          final map = item as Map<String, dynamic>;
-          final sid = map['serverId']?.toString();
-          return _DirectMessage(
-            senderId: map['senderId'] as String,
-            content: map['content'] as String,
-            time: DateTime.tryParse(map['time'] as String? ?? '') ??
-                DateTime.now(),
-            serverId: sid != null && sid.isNotEmpty ? sid : null,
-          );
-        })
-        .where((m) => _isAfterClearMarker(m.time))
-        .toList();
-    if (!mounted) return;
-    setState(() {
-      _messages
-        ..clear()
-        ..addAll(messages);
-    });
-    _scrollToBottom();
-  }
-
-  Future<void> _saveMessages() async {
-    final currentUserId = _currentUserId;
-    if (currentUserId == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final key = _storageKey(currentUserId);
-    final list = _messages
-        .map((m) => {
-              'senderId': m.senderId,
-              'content': m.content,
-              'time': m.time.toIso8601String(),
-              if (m.serverId != null) 'serverId': m.serverId,
-            })
-        .toList();
-    await prefs.setString(key, json.encode(list));
-    DirectChatSyncBus.bump();
-  }
-
   Future<void> _clearLocalChatHistory() async {
-    final currentUserId = _currentUserId;
-    if (currentUserId == null || currentUserId.isEmpty) return;
-    try {
-      // 先调用服务端删除（双向清除双方聊天记录）
-      await ChatService.clearPrivateChatHistory(peerUserId: widget.userId);
-    } catch (e) {
-      if (!mounted) return;
-      MoeToast.show(
-        context,
-        '服务端清除失败：$e',
-        duration: const Duration(seconds: 3),
-        icon: Icons.cloud_off_outlined,
-      );
+    final err = await _chat.clearLocalChatHistory();
+    if (!mounted) return;
+    ChatPushService.markSenderRead(widget.userId);
+    if (err != null) {
+      MoeToast.error(context, err);
       return;
     }
-    // 再清除本地缓存，并记录水位线，避免通知兜底/旧 WS pending 重新回填。
-    final key = _storageKey(currentUserId);
-    final markerKey = _clearMarkerKey(currentUserId);
-    final clearedAt = DateTime.now();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(key);
-    await prefs.setString(markerKey, clearedAt.toIso8601String());
-    if (!mounted) return;
-    setState(() {
-      _clearedAt = clearedAt;
-      _messages.clear();
-      _hasMoreServer = false;
-      _oldestServerCursorId = null;
-    });
-    DirectChatSyncBus.bump();
-    ChatPushService.markSenderRead(widget.userId);
     MoeToast.success(context, '聊天记录已清空');
   }
 
@@ -525,65 +222,12 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   void _handleIncomingMap(Map<String, dynamic> map) {
     if (!mounted) return;
-    try {
-      // 与 ChatPushService 一致：from/content 可能是 JSON 数字，强转 String? 会失败并被 catch 吞掉。
-      final from = map['from']?.toString();
-      final content = map['content']?.toString();
-      final timestamp = map['timestamp'];
-      if (from == null || from.isEmpty || content == null) {
-        return;
-      }
-      final currentUserId = _currentUserId;
-      if (currentUserId == null) {
-        return;
-      }
-      if (from != widget.userId) {
-        return;
-      }
-      DateTime time;
-      if (timestamp is int) {
-        time = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      } else if (timestamp is num) {
-        time = DateTime.fromMillisecondsSinceEpoch(timestamp.round());
-      } else if (map['time'] is String) {
-        time = DateTime.tryParse(map['time'] as String) ?? DateTime.now();
-      } else {
-        time = DateTime.now();
-      }
-      if (!_isAfterClearMarker(time)) return;
-      final sid = _serverSlotFromWsId(map['server_message_id'], content);
-      setState(() {
-        _messages.add(
-          _DirectMessage(
-            senderId: from,
-            content: content,
-            time: time,
-            serverId: sid,
-          ),
-        );
-      });
-      _saveMessages();
-      _scrollToBottom();
-
-      // When chat is open, don't count messages from this peer as unread.
-      ChatPushService.markSenderRead(widget.userId);
-    } catch (_) {}
+    _chat.handleIncomingMap(map);
   }
 
-  /// 图片消息前缀，用于区分文本与图片
-  static const String _imgPrefix = '[IMG]';
-
-  bool _isImageContent(String content) =>
-      content.startsWith(_imgPrefix) && content.length > _imgPrefix.length;
-
-  String _getImageUrl(String content) => resolveMediaUrl(
-        content.substring(_imgPrefix.length).trim(),
-      );
-
   Future<void> _pickAndSendImage() async {
-    if (_isSending) return;
-    final currentUserId = _currentUserId;
-    if (currentUserId == null) return;
+    if (_chat.isSending) return;
+    if (_chat.currentUserId == null) return;
 
     try {
       final picker = ImagePicker();
@@ -602,180 +246,59 @@ class _DirectChatPageState extends State<DirectChatPage> {
         return;
       }
 
-      setState(() => _isSending = true);
-
       final file = File(path);
-      if (!await file.exists()) return;
-      final url = await ChatService.uploadImage(file);
-      final content = '$_imgPrefix$url';
-
+      final err = await _chat.sendImageFile(file);
       if (!mounted) return;
-      setState(() {
-        _messages.add(
-          _DirectMessage(
-            senderId: currentUserId,
-            content: content,
-            time: DateTime.now(),
-          ),
-        );
-        _isSending = false;
-      });
-      await _saveMessages();
-      _scrollToBottom();
-
-      final optimisticIdx = _messages.length - 1;
-      try {
-        final saved = await ChatService.sendPrivateMessage(
-          receiverId: widget.userId,
-          body: content,
-        );
-        if (!mounted) return;
-        setState(() {
-          if (optimisticIdx < _messages.length &&
-              _messages[optimisticIdx].senderId == currentUserId &&
-              _messages[optimisticIdx].content == content) {
-            _messages[optimisticIdx] = _DirectMessage(
-              senderId: currentUserId,
-              content: content,
-              time: _messages[optimisticIdx].time,
-              serverId: _serverSlotFromWsId(saved.id, content),
-            );
-          }
-        });
-        await _saveMessages();
-      } on ApiException catch (e) {
-        if (!mounted) return;
-        setState(() {
-          if (optimisticIdx < _messages.length &&
-              _messages[optimisticIdx].senderId == currentUserId &&
-              _messages[optimisticIdx].content == content) {
-            _messages.removeAt(optimisticIdx);
-          }
-        });
-        await _saveMessages();
-        if (!mounted) return;
+      if (err != null) {
         MoeToast.show(
           context,
-          '图片发送失败：${e.message}',
+          err,
           duration: const Duration(seconds: 4),
           icon: Icons.cloud_off_outlined,
         );
-        return;
-      } catch (_) {
-        if (!mounted) return;
-        setState(() {
-          if (optimisticIdx < _messages.length &&
-              _messages[optimisticIdx].senderId == currentUserId &&
-              _messages[optimisticIdx].content == content) {
-            _messages.removeAt(optimisticIdx);
-          }
-        });
-        await _saveMessages();
-        if (!mounted) return;
-        MoeToast.error(context, '图片发送失败，请检查网络');
-        return;
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         MoeToast.error(context, '发送图片失败，请重试');
       }
     } finally {
       if (mounted) {
-        setState(() => _isSending = false);
         _inputFocusNode.requestFocus();
       }
     }
   }
 
   Future<void> _sendMessage() async {
-    if (_isSending) return;
+    if (_chat.isSending) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final currentUserId = _currentUserId;
-    if (currentUserId == null) return;
     _controller.clear();
-    setState(() {
-      _isSending = true;
-      _messages.add(
-        _DirectMessage(
-          senderId: currentUserId,
-          content: text,
-          time: DateTime.now(),
-        ),
-      );
-      _hasDraft = false;
-    });
-    await _saveMessages();
-    _scrollToBottom();
-    final optimisticIdx = _messages.length - 1;
-    try {
-      final saved = await ChatService.sendPrivateMessage(
-        receiverId: widget.userId,
-        body: text,
-      );
-      if (!mounted) return;
-      setState(() {
-        if (optimisticIdx < _messages.length &&
-            _messages[optimisticIdx].senderId == currentUserId &&
-            _messages[optimisticIdx].content == text) {
-          _messages[optimisticIdx] = _DirectMessage(
-            senderId: currentUserId,
-            content: text,
-            time: _messages[optimisticIdx].time,
-            serverId: _serverSlotFromWsId(saved.id, text),
-          );
-        }
-        _isSending = false;
-      });
-      await _saveMessages();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        if (optimisticIdx < _messages.length &&
-            _messages[optimisticIdx].senderId == currentUserId &&
-            _messages[optimisticIdx].content == text) {
-          _messages.removeAt(optimisticIdx);
-        }
-        _isSending = false;
-      });
-      await _saveMessages();
-      if (!mounted) return;
+    setState(() => _hasDraft = false);
+    final err = await _chat.sendText(text);
+    if (!mounted) return;
+    if (err != null) {
       MoeToast.show(
         context,
-        '发送失败：${e.message}',
+        err,
         duration: const Duration(seconds: 4),
         icon: Icons.cloud_off_outlined,
       );
-      return;
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        if (optimisticIdx < _messages.length &&
-            _messages[optimisticIdx].senderId == currentUserId &&
-            _messages[optimisticIdx].content == text) {
-          _messages.removeAt(optimisticIdx);
-        }
-        _isSending = false;
-      });
-      await _saveMessages();
-      if (!mounted) return;
-      MoeToast.error(context, '发送失败，请检查网络');
-      return;
     }
-    if (!mounted) return;
     _inputFocusNode.requestFocus();
   }
 
   @override
   void dispose() {
+    _chat.removeListener(_onChatChanged);
+    _chat.dispose();
     _controller.removeListener(_handleDraftChanged);
     _controller.dispose();
+    _scrollController.removeListener(_scrollLoadOlderListener);
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _onlineTimer?.cancel();
     _incomingSub?.cancel();
     _incomingSub = null;
-    _scrollController.removeListener(_scrollLoadOlderListener);
     if (_presenceListening) {
       PresenceService.online.removeListener(_onPresenceUpdate);
     }
@@ -784,8 +307,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = _currentUserId;
-    final reversedMessages = List<_DirectMessage>.from(_messages.reversed);
+    final currentUserId = _chat.currentUserId;
+    final reversedMessages =
+        List<DirectChatMessage>.from(_chat.messages.reversed);
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Scaffold(
@@ -891,61 +415,131 @@ class _DirectChatPageState extends State<DirectChatPage> {
       ),
       body: Column(
         children: [
-          if (_loadingServerPage)
+          ValueListenableBuilder<bool>(
+            valueListenable: ChatPushService.connectionLive,
+            builder: (context, live, _) {
+              if (live) return const SizedBox.shrink();
+              return Material(
+                color: MoeTokens.warning.withValues(alpha: 0.12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi_off_rounded,
+                          size: 16, color: MoeTokens.warning),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '连接中断，正在重连…',
+                          style: TextStyle(
+                            fontSize: MoeTokens.textSm,
+                            color: MoeTokens.titleText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          if (_chat.historySyncWarning != null)
+            Material(
+              color: MoeTokens.danger.withValues(alpha: 0.08),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded,
+                        size: 16, color: MoeTokens.danger),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _chat.historySyncWarning!,
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textSm,
+                          color: MoeTokens.titleText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (_chat.loadingServerPage)
             LinearProgressIndicator(
               minHeight: 2,
               backgroundColor: MoeTokens.surface0,
             ),
           Expanded(
-            child: reversedMessages.isEmpty
-                ? _buildEmptyConversationState(context)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    reverse: true,
-                    itemCount: reversedMessages.length,
-                    itemBuilder: (context, index) {
-                      final message = reversedMessages[index];
-                      final isMe = currentUserId != null &&
-                          message.senderId == currentUserId;
+            child: _chat.isBootstrapping && _chat.isEmpty
+                ? const Center(child: MoeLoading())
+                : _chat.bootstrapError != null && _chat.isEmpty
+                    ? MoeErrorState.fromError(
+                        _chat.bootstrapError,
+                        scene: MoeErrorScene.messages,
+                        onRetry: () => _chat.bootstrap(),
+                      )
+                    : !_chat.isBootstrapping && _chat.isEmpty
+                        ? const Center(
+                            child: MoeEmptyState(
+                              icon: Icons.chat_bubble_outline_rounded,
+                              title: '还没有消息',
+                              subtitle: '打个招呼吧',
+                              showCard: false,
+                              animate: false,
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            reverse: true,
+                            itemCount: reversedMessages.length,
+                            itemBuilder: (context, index) {
+                              final message = reversedMessages[index];
+                              final isMe = currentUserId != null &&
+                                  message.senderId == currentUserId;
 
-                      final showPeerAvatar = !isMe &&
-                          (index == 0 ||
-                              reversedMessages[index - 1].senderId !=
-                                  message.senderId);
+                              final showPeerAvatar = !isMe &&
+                                  (index == 0 ||
+                                      reversedMessages[index - 1].senderId !=
+                                          message.senderId);
 
-                      var showTime = false;
-                      if (index == reversedMessages.length - 1) {
-                        showTime = true;
-                      } else {
-                        final nextMessage = reversedMessages[index + 1];
-                        final diff = message.time
-                            .difference(nextMessage.time)
-                            .inMinutes
-                            .abs();
-                        if (diff > 5) showTime = true;
-                      }
+                              var showTime = false;
+                              if (index == reversedMessages.length - 1) {
+                                showTime = true;
+                              } else {
+                                final nextMessage = reversedMessages[index + 1];
+                                final diff = message.time
+                                    .difference(nextMessage.time)
+                                    .inMinutes
+                                    .abs();
+                                if (diff > 5) showTime = true;
+                              }
 
-                      return Column(
-                        children: [
-                          if (showTime) _buildTimeTag(context, message.time),
-                          _buildMessageBubble(
-                            context,
-                            message,
-                            isMe,
-                            showPeerAvatar: showPeerAvatar,
-                            tightBottom: index > 0 &&
-                                reversedMessages[index - 1].senderId ==
-                                    message.senderId,
-                            showSending: isMe && index == 0 && _isSending,
+                              return Column(
+                                children: [
+                                  if (showTime)
+                                    _buildTimeTag(context, message.time),
+                                  _buildMessageBubble(
+                                    context,
+                                    message,
+                                    isMe,
+                                    showPeerAvatar: showPeerAvatar,
+                                    tightBottom: index > 0 &&
+                                        reversedMessages[index - 1].senderId ==
+                                            message.senderId,
+                                    showSending:
+                                        isMe && index == 0 && _chat.isSending,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                        ],
-                      );
-                    },
-                  ),
           ),
           AnimatedPadding(
             duration: const Duration(milliseconds: 180),
@@ -954,74 +548,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
             child: _buildInputArea(context),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyConversationState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: MoeTokens.space2xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            NetworkAvatarImage(
-              imageUrl: widget.avatar,
-              radius: 34,
-              placeholderIcon: Icons.person_rounded,
-            ),
-            SizedBox(height: MoeTokens.spaceLg),
-            Text(
-              widget.username,
-              style: TextStyle(
-                color: MoeTokens.titleText,
-                fontSize: MoeTokens.textLg,
-                fontWeight: MoeTokens.fontWeightTitle,
-              ),
-            ),
-            SizedBox(height: MoeTokens.spaceSm),
-            Text(
-              '还没有消息，发一句问候开始聊天。',
-              style: TextStyle(
-                color: MoeTokens.hintText,
-                fontSize: MoeTokens.textSm,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: MoeTokens.spaceLg),
-            Wrap(
-              spacing: MoeTokens.spaceSm,
-              runSpacing: MoeTokens.spaceSm,
-              alignment: WrapAlignment.center,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () {
-                    _controller.text = '嗨～';
-                    _controller.selection = TextSelection.collapsed(
-                      offset: _controller.text.length,
-                    );
-                    _inputFocusNode.requestFocus();
-                  },
-                  icon: const Icon(Icons.waving_hand_rounded, size: 18),
-                  label: const Text('发个招呼'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: MoeTokens.primary,
-                    side: const BorderSide(color: MoeTokens.surfaceBorder),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => _openPeerProfile(context),
-                  icon: const Icon(Icons.person_rounded, size: 18),
-                  label: const Text('查看主页'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: MoeTokens.hintText,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1171,7 +697,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Widget _buildMessageBubble(
     BuildContext context,
-    _DirectMessage message,
+    DirectChatMessage message,
     bool isMe, {
     required bool showPeerAvatar,
     required bool tightBottom,
@@ -1182,11 +708,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final textColor = isMe ? Colors.white : MoeTokens.titleText;
     const avatarCol = 36.0;
 
-    Widget bubbleChild = _isImageContent(message.content)
+    Widget bubbleChild = _chat.isImageContent(message.content)
         ? ClipRRect(
             borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             child: CachedNetworkImage(
-              imageUrl: _getImageUrl(message.content),
+              imageUrl: _chat.imageUrlOf(message.content),
               fit: BoxFit.cover,
               width: 200,
               height: 200,
@@ -1198,8 +724,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 width: 200,
                 height: 200,
                 child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                  child: MoeSmallLoading(
+                    size: 24,
                     color: MoeTokens.primary,
                   ),
                 ),
@@ -1306,7 +832,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   }
 
   Widget _buildInputArea(BuildContext context) {
-    final canSend = _hasDraft && !_isSending;
+    final canSend = _hasDraft && !_chat.isSending;
     return Material(
       elevation: 0,
       color: MoeTokens.surface1,
@@ -1330,7 +856,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
             children: [
               IconButton(
                 tooltip: '发送图片',
-                onPressed: _isSending ? null : _pickAndSendImage,
+                onPressed: _chat.isSending ? null : _pickAndSendImage,
                 style: IconButton.styleFrom(
                   fixedSize: const Size(42, 42),
                   backgroundColor: MoeTokens.surface0,
@@ -1403,14 +929,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
                           ? null
                           : Border.all(color: MoeTokens.surfaceBorder),
                     ),
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: MoeTokens.primary,
-                            ),
+                    child: _chat.isSending
+                        ? const MoeSmallLoading(
+                            size: 18,
+                            color: MoeTokens.primary,
                           )
                         : Icon(
                             Icons.arrow_upward_rounded,
@@ -1426,20 +948,4 @@ class _DirectChatPageState extends State<DirectChatPage> {
       ),
     );
   }
-}
-
-class _DirectMessage {
-  final String senderId;
-  final String content;
-  final DateTime time;
-
-  /// 与服务端行对应的去重键（REST 展开为 `id#t` / `id#i0` 等；WS 对齐同规则）。
-  final String? serverId;
-
-  _DirectMessage({
-    required this.senderId,
-    required this.content,
-    required this.time,
-    this.serverId,
-  });
 }

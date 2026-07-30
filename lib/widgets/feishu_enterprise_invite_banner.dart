@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/feishu_public_config.dart';
-import '../services/api_service.dart';
+import '../services/auth_flow_service.dart';
 import 'moe_toast.dart';
 
 /// 可选：说明机器人仅企业内可用，并提供「申请加入企业」链接。
@@ -31,7 +31,7 @@ class _FeishuEnterpriseInviteBannerState
 
   Future<void> _load() async {
     try {
-      final cfg = await ApiService.getFeishuPublicConfig();
+      final cfg = await AuthFlowService.getFeishuPublicConfig();
       if (mounted) setState(() => _config = cfg);
     } catch (_) {
       // 配置拉取失败则不展示，不阻断登录

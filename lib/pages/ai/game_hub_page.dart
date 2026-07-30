@@ -3,14 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../auth_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../pages/life/life_world_page.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../services/game_service.dart';
+import 'companion_hub_viewmodel.dart';
 import '../../widgets/ai_bot_badge.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../utils/moe_error_copy.dart';
 import 'game_play_page.dart';
 
 /// AI 伙伴主页 - 独立 AI 账户中心。
@@ -22,67 +26,27 @@ class GameHubPage extends StatefulWidget {
 }
 
 class _GameHubPageState extends State<GameHubPage> {
-  bool _isLoading = true;
+  late final CompanionHubViewModel _hub;
   bool _isChatLoading = false;
   bool _isSavingProfile = false;
-
-  String? _loadError;
-  CompanionProfileData _profile = const CompanionProfileData();
-  CompanionStateData _state = const CompanionStateData();
-  CompanionCommunityIdentityData? _communityIdentity;
-  List<CompanionMemoryData> _memories = const [];
-  List<CompanionChatLogData> _chatHistory = const [];
 
   @override
   void initState() {
     super.initState();
-    unawaited(_loadDashboard());
+    _hub = CompanionHubViewModel();
+    _hub.addListener(_onHubChanged);
+    unawaited(_hub.loadDashboard());
   }
 
-  Future<void> _loadDashboard() async {
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-        _loadError = null;
-      });
-    }
+  void _onHubChanged() {
+    if (mounted) setState(() {});
+  }
 
-    try {
-      final snapshot = await CompanionService().getSnapshot();
-      List<CompanionMemoryData> memories = const [];
-      List<CompanionChatLogData> history = const [];
-
-      try {
-        memories = await CompanionService().listMemories(limit: 6);
-      } catch (_) {}
-
-      try {
-        history = await CompanionService().listChatHistory(limit: 8);
-      } catch (_) {}
-
-      CompanionCommunityIdentityData? identity;
-      if (snapshot.profile.agentId.trim().isNotEmpty) {
-        try {
-          identity = await CompanionService().getCommunityIdentity();
-        } catch (_) {}
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _profile = snapshot.profile;
-        _state = snapshot.state;
-        _communityIdentity = identity;
-        _memories = memories;
-        _chatHistory = history;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loadError = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _hub.removeListener(_onHubChanged);
+    _hub.dispose();
+    super.dispose();
   }
 
   Future<void> _openChat() async {
@@ -100,13 +64,21 @@ class _GameHubPageState extends State<GameHubPage> {
   }
 
   Future<void> _openLifeWorld() async {
+    if (!FeatureFlags.showLifeEngine) {
+      MoeToast.info(context, '数字生命暂未开放');
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const LifeWorldPage()),
     );
-    if (mounted) unawaited(_loadDashboard());
+    if (mounted) unawaited(_hub.loadDashboard());
   }
 
   Future<void> _openStory() async {
+    if (!FeatureFlags.showGameFeatures) {
+      MoeToast.info(context, '互动故事暂未开放');
+      return;
+    }
     if (!AuthService.isLoggedIn) {
       MoeToast.info(context, '请先登录后再进入互动故事');
       return;
@@ -119,8 +91,9 @@ class _GameHubPageState extends State<GameHubPage> {
         MaterialPageRoute(
           builder: (_) => GamePlayPage(
             initialState: state,
-            companionName: _profile.name.isNotEmpty ? _profile.name : 'AI 伙伴',
-            companionEmoji: _profile.emoji,
+            companionName:
+                _hub.profile.name.isNotEmpty ? _hub.profile.name : 'AI 伙伴',
+            companionEmoji: _hub.profile.emoji,
           ),
         ),
       );
@@ -138,7 +111,7 @@ class _GameHubPageState extends State<GameHubPage> {
   }
 
   Future<void> _openCommunityComposer() async {
-    final identity = _communityIdentity;
+    final identity = _hub.communityIdentity;
     if (identity == null || !identity.isValid) {
       MoeToast.error(context, '社区账号信息未就绪');
       return;
@@ -156,13 +129,9 @@ class _GameHubPageState extends State<GameHubPage> {
 
     setState(() => _isSavingProfile = true);
     try {
-      final result = await CompanionService().updateProfile(saved);
+      await _hub.applyUpdatedProfile(saved);
       if (!mounted) return;
-      setState(() {
-        _profile = result;
-      });
       MoeToast.success(context, 'AI 账户已更新');
-      await _loadDashboard();
     } catch (e) {
       if (mounted) {
         MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
@@ -173,7 +142,7 @@ class _GameHubPageState extends State<GameHubPage> {
   }
 
   Future<CompanionProfileData?> _showProfileEditor() async {
-    final current = _profile;
+    final current = _hub.profile;
     final nameController = TextEditingController(text: current.name);
     final emojiController = TextEditingController(text: current.emoji);
     final personaController = TextEditingController(text: current.persona);
@@ -353,44 +322,48 @@ class _GameHubPageState extends State<GameHubPage> {
           IconButton(
             tooltip: '刷新',
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: _isLoading ? null : _loadDashboard,
+            onPressed: _hub.isLoading ? null : _hub.loadDashboard,
           ),
-          IconButton(
-            tooltip: '管理绑定',
-            icon: const Icon(Icons.link_rounded),
-            onPressed: _openLifeWorld,
-          ),
+          if (FeatureFlags.showLifeEngine)
+            IconButton(
+              tooltip: '数字生命',
+              icon: const Icon(Icons.link_rounded),
+              onPressed: _openLifeWorld,
+            ),
         ],
       ),
       body: Stack(
         children: [
-          if (_loadError != null)
-            _FallbackCard(
-              errorText: _loadError!,
-              onRetry: _loadDashboard,
+          if (_hub.loadError != null)
+            MoeErrorState.fromError(
+              _hub.loadError,
+              scene: MoeErrorScene.generic,
+              onRetry: _hub.loadDashboard,
             )
-          else if (_isLoading)
+          else if (_hub.isLoading)
             const Center(child: MoeLoading())
           else
             RefreshIndicator(
-              onRefresh: _loadDashboard,
+              onRefresh: _hub.loadDashboard,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
                   _HeroCard(
-                    profile: _profile,
-                    state: _state,
+                    profile: _hub.profile,
+                    state: _hub.state,
                     onChat: _openChat,
                     onEdit: _editProfile,
-                    onStory: _openStory,
-                    onBind: _openLifeWorld,
+                    onStory:
+                        FeatureFlags.showGameFeatures ? _openStory : null,
+                    onBind:
+                        FeatureFlags.showLifeEngine ? _openLifeWorld : null,
                   ),
                   const SizedBox(height: 16),
-                  _StateCard(profile: _profile, state: _state),
+                  _StateCard(profile: _hub.profile, state: _hub.state),
                   const SizedBox(height: 16),
                   _CommunityCard(
-                    identity: _communityIdentity,
+                    identity: _hub.communityIdentity,
                     onOpenFeed: _openCommunityFeed,
                     onCreatePost: _openCommunityComposer,
                   ),
@@ -400,9 +373,9 @@ class _GameHubPageState extends State<GameHubPage> {
                     icon: Icons.psychology_alt_rounded,
                     emptyText: '还没有记忆',
                     child: Column(
-                      children: _memories.isEmpty
+                      children: _hub.memories.isEmpty
                           ? const []
-                          : _memories
+                          : _hub.memories
                               .map((item) => _MemoryTile(memory: item))
                               .toList(growable: false),
                     ),
@@ -413,9 +386,9 @@ class _GameHubPageState extends State<GameHubPage> {
                     icon: Icons.chat_bubble_outline_rounded,
                     emptyText: '还没有聊天记录',
                     child: Column(
-                      children: _chatHistory.isEmpty
+                      children: _hub.chatHistory.isEmpty
                           ? const []
-                          : _chatHistory
+                          : _hub.chatHistory
                               .map((item) => _ChatLogTile(log: item))
                               .toList(growable: false),
                     ),
@@ -442,16 +415,16 @@ class _HeroCard extends StatelessWidget {
     required this.state,
     required this.onChat,
     required this.onEdit,
-    required this.onStory,
-    required this.onBind,
+    this.onStory,
+    this.onBind,
   });
 
   final CompanionProfileData profile;
   final CompanionStateData state;
   final VoidCallback onChat;
   final VoidCallback onEdit;
-  final VoidCallback onStory;
-  final VoidCallback onBind;
+  final VoidCallback? onStory;
+  final VoidCallback? onBind;
 
   @override
   Widget build(BuildContext context) {
@@ -459,6 +432,7 @@ class _HeroCard extends StatelessWidget {
     final persona = profile.persona.trim().isNotEmpty
         ? profile.persona.trim()
         : '独立 AI 账户，记忆、状态和聊天都在这里。';
+    final showSecondary = onBind != null || onStory != null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -563,24 +537,29 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: onBind,
-                  icon: const Icon(Icons.link_rounded),
-                  label: const Text('管理绑定'),
-                ),
-              ),
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: onStory,
-                  icon: const Icon(Icons.auto_stories_rounded),
-                  label: const Text('互动故事'),
-                ),
-              ),
-            ],
-          ),
+          if (showSecondary)
+            Row(
+              children: [
+                if (onBind != null)
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onBind,
+                      icon: const Icon(Icons.pets_rounded),
+                      label: const Text('数字生命'),
+                    ),
+                  ),
+                if (onBind != null && onStory != null)
+                  const SizedBox(width: 8),
+                if (onStory != null)
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: onStory,
+                      icon: const Icon(Icons.auto_stories_rounded),
+                      label: const Text('互动故事'),
+                    ),
+                  ),
+              ],
+            ),
         ],
       ),
     );
@@ -1049,66 +1028,4 @@ InputDecoration _profileFieldDecoration(String label) {
     filled: true,
     fillColor: Colors.white,
   );
-}
-
-class _FallbackCard extends StatelessWidget {
-  const _FallbackCard({required this.errorText, required this.onRetry});
-
-  final String errorText;
-  final Future<void> Function() onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFEFE7FF), Color(0xFFFBE8F0), Color(0xFFF8F3E7)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('📡', style: TextStyle(fontSize: 44)),
-              const SizedBox(height: 12),
-              const Text(
-                'AI 账户暂时不可用',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AiBrandTokens.titleColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                errorText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 18),
-              FilledButton.icon(
-                onPressed: () => onRetry(),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('重试'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AiBrandTokens.primary,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

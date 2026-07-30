@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
-import '../../services/api_client.dart';
 import '../../services/auth_flow_service.dart';
 import '../../services/achievement_hooks.dart';
 import '../../utils/validators.dart';
@@ -28,6 +27,7 @@ import '../../services/daily_growth_service.dart';
 import '../../services/wechat_sdk_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
+import '../../utils/moe_error_copy.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -190,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
         final hint = oauthRedirectConfigMismatchHint(
           'Feishu',
           url,
-          ApiClient.baseUrl,
+          AuthFlowService.apiBaseUrl,
         );
         if (hint != null && mounted) {
           MoeToast.error(context, hint);
@@ -210,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
       final hint = oauthRedirectConfigMismatchHint(
         'Feishu',
         url,
-        ApiClient.baseUrl,
+        AuthFlowService.apiBaseUrl,
       );
       if (!mounted) return;
       if (hint != null) {
@@ -388,7 +388,16 @@ class _LoginPageState extends State<LoginPage> {
       onSuccess: (result) {
         if (!mounted) return;
         if (!result.success) {
-          MoeToast.error(context, result.errorMessage ?? '登录失败，请稍后重试');
+          final msg = result.errorMessage?.trim();
+          MoeToast.error(
+            context,
+            (msg != null && msg.isNotEmpty)
+                ? msg
+                : MoeErrorCopy.toast(
+                    StateError('登录失败'),
+                    scene: MoeErrorScene.generic,
+                  ),
+          );
           return;
         }
         try {
@@ -402,9 +411,17 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacementNamed(context, '/home');
         DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
       },
-      onError: (_) {
+      onError: (msg) {
         if (!mounted) return;
-        MoeToast.error(context, '登录异常，请稍后重试');
+        MoeToast.error(
+          context,
+          msg.isNotEmpty
+              ? msg
+              : MoeErrorCopy.toast(
+                  StateError('登录异常'),
+                  scene: MoeErrorScene.generic,
+                ),
+        );
       },
     );
   }

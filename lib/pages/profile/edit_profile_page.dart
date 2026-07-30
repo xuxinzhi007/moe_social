@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../auth_service.dart';
-import '../../services/api_client.dart';
 import '../../services/user_service.dart';
 import '../../models/user.dart';
 import '../../utils/validators.dart';
@@ -146,7 +145,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
-          final imageUrl = await ApiClient.uploadImage(file);
+          final imageUrl = await UserService.uploadImage(file);
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
@@ -184,7 +183,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
-          final imageUrl = await ApiClient.uploadImage(file);
+          final imageUrl = await UserService.uploadImage(file);
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';

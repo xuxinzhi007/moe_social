@@ -3,13 +3,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/api_client.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
+import '../../services/llm_api_service.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_context_builder.dart';
@@ -841,66 +840,15 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _syncPromptToServerModel(String prompt) async {
     final baseModel = await _resolveBaseModelFromModel();
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/agents');
-    final token = ApiClient.token;
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
-    final body = jsonEncode({
-      'name': widget.agent.modelName,
-      'base_model': baseModel,
-      'system_prompt': prompt,
-    });
-    final resp = await http
-        .post(uri, headers: headers, body: body)
-        .timeout(const Duration(seconds: 45));
-    if (resp.statusCode != 200) {
-      throw Exception('HTTP ${resp.statusCode}');
-    }
-    final data = jsonDecode(utf8.decode(resp.bodyBytes));
-    final success = data is Map && data['success'] == true;
-    if (!success) {
-      final msg = data is Map && data['message'] is String
-          ? data['message'] as String
-          : '未知错误';
-      throw Exception(msg);
-    }
+    await LlmApiService.upsertAgentPrompt(
+      name: widget.agent.modelName,
+      baseModel: baseModel,
+      systemPrompt: prompt,
+    );
   }
 
-  Future<String> _resolveBaseModelFromModel() async {
-    try {
-      final uri = LlmEndpointConfig.showUri();
-      final token = ApiClient.token;
-      final headers = ApiClient.mergeTunnelHeaders(uri, headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      });
-      final resp = await http
-          .post(
-            uri,
-            headers: headers,
-            body: jsonEncode({'name': widget.agent.modelName}),
-          )
-          .timeout(const Duration(seconds: 12));
-      if (resp.statusCode != 200) return widget.agent.modelName;
-      final data = jsonDecode(utf8.decode(resp.bodyBytes));
-      if (data is! Map) return widget.agent.modelName;
-      final modelfile = data['modelfile'];
-      if (modelfile is! String || modelfile.trim().isEmpty) {
-        return widget.agent.modelName;
-      }
-      final fromMatch = RegExp(r'^\s*FROM\s+([^\s#]+)', multiLine: true)
-          .firstMatch(modelfile);
-      final fromModel = fromMatch?.group(1)?.trim();
-      if (fromModel != null && fromModel.isNotEmpty) {
-        return fromModel;
-      }
-      return widget.agent.modelName;
-    } catch (_) {
-      return widget.agent.modelName;
-    }
-  }
+  Future<String> _resolveBaseModelFromModel() =>
+      LlmApiService.resolveBaseModelFromShow(widget.agent.modelName);
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;

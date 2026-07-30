@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,8 @@ import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../providers/theme_provider.dart';
 import '../../autoglm/autoglm_service.dart';
+import '../../config/app_config.dart';
+import '../../constants/feature_flags.dart';
 
 class AutoGLMPage extends StatefulWidget {
   const AutoGLMPage({super.key});
@@ -35,11 +38,11 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   int _stepCount = 0;
   final int _maxSteps = 20;
 
-  // 配置信息
-  final String _baseUrl =
-      "https://api-inference.modelscope.cn/v1/chat/completions";
-  final String _apiKey = "ms-fa33637f-6572-4170-82b1-95f458fe9e7b"; // 您的 Key
-  final String _model = "ZhipuAI/AutoGLM-Phone-9B";
+  // 配置信息（安全存储；禁止硬编码密钥）
+  String _baseUrl = AppConfig.defaultApiUrl;
+  String _apiKey = '';
+  String _model = AppConfig.defaultModelName;
+  bool _configReady = false;
 
   // 动态生成 System Prompt（包含已安装应用列表）
   String _generateSystemPrompt(List<String> installedApps) {
@@ -163,6 +166,7 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadRemoteConfig());
     _checkStatus();
 
     // 监听原生日志
@@ -182,8 +186,29 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> _loadRemoteConfig() async {
+    final url = await AppConfig.getApiUrl();
+    final key = await AppConfig.getApiKey();
+    final model = await AppConfig.getModelName();
+    if (!mounted) return;
+    setState(() {
+      _baseUrl = url;
+      _apiKey = key;
+      _model = model;
+      _configReady = true;
+    });
+  }
+
   // 核心逻辑：执行任务
   Future<void> _startTask() async {
+    if (!FeatureFlags.showAutoGlm) {
+      _addLog("❌ 错误: AutoGLM 未启用");
+      return;
+    }
+    if (!_configReady || _apiKey.trim().isEmpty) {
+      _addLog("❌ 错误: 请先在 AutoGLM 设置中配置 API Key");
+      return;
+    }
     if (!_isServiceEnabled) {
       _addLog("❌ 错误: 请先开启无障碍服务");
       _checkStatus();

@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_lorebook.dart';
@@ -12,10 +10,9 @@ import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_service.dart';
 import '../../services/ai_starter_templates.dart';
-import '../../services/api_client.dart';
 import '../../services/ai_agent_draft_factory.dart';
 import '../../services/ai_prompt_defaults.dart';
-import '../../services/llm_endpoint_config.dart';
+import '../../services/llm_api_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chip.dart';
@@ -283,43 +280,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   }
 
   /// 从 Ollama /api/show 获取模型实际系统提示词
-  Future<String> _fetchOllamaSystemPrompt(String modelName) async {
-    try {
-      final uri = LlmEndpointConfig.showUri();
-      ApiClient.logDirectHttp('POST', uri);
-      final token = ApiClient.token;
-      final headers = ApiClient.mergeTunnelHeaders(uri, headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      });
-      final response = await http
-          .post(uri, headers: headers, body: jsonEncode({'name': modelName}))
-          .timeout(const Duration(seconds: 15));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        // 新版 Ollama 直接返回 system 字段
-        if (data is Map &&
-            data['system'] is String &&
-            (data['system'] as String).isNotEmpty) {
-          return data['system'] as String;
-        }
-        // 旧版从 modelfile 解析 SYSTEM 指令
-        if (data is Map && data['modelfile'] is String) {
-          final mf = data['modelfile'] as String;
-          final tripleMatch =
-              RegExp(r'SYSTEM\s+"""([\s\S]*?)"""', multiLine: true)
-                  .firstMatch(mf);
-          if (tripleMatch != null) return tripleMatch.group(1)?.trim() ?? '';
-          final singleMatch = RegExp(r'SYSTEM\s+"(.*?)"').firstMatch(mf);
-          if (singleMatch != null) return singleMatch.group(1)?.trim() ?? '';
-        }
-        return '';
-      }
-      return '（读取失败：HTTP ${response.statusCode}）';
-    } catch (e) {
-      return '（读取失败：$e）';
-    }
-  }
+  Future<String> _fetchOllamaSystemPrompt(String modelName) =>
+      LlmApiService.fetchOllamaSystemPrompt(modelName);
 
   Widget _buildPromptPreview(String localPrompt, String modelName) {
     return Container(
@@ -586,103 +548,23 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     required String baseModel,
     required String prompt,
   }) async {
-    final uri = Uri.parse('${ApiClient.baseUrl}/api/llm/agents');
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
-    final token = ApiClient.token;
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    final body = jsonEncode({
-      'name': modelName,
-      'base_model': baseModel,
-      'system_prompt': prompt,
-    });
-
-    http.Response response;
     try {
-      response = await http
-          .post(uri, headers: headers, body: body)
-          .timeout(const Duration(seconds: 45));
+      await LlmApiService.upsertAgentPrompt(
+        name: modelName,
+        baseModel: baseModel,
+        systemPrompt: prompt,
+      );
     } on TimeoutException {
       throw Exception('创建 Ollama 模型超时（45 秒），通常是首次拉取基础模型较慢，请稍后重试');
-    }
-
-    if (response.statusCode != 200) {
-      throw Exception('创建/更新 Ollama 模型失败: ${response.statusCode}');
-    }
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    final success = data is Map && (data['success'] == true);
-    if (!success) {
-      final msg = data is Map && data['message'] is String
-          ? data['message'] as String
-          : '创建/更新 Ollama 模型失败';
-      throw Exception(msg);
     }
   }
 
   Future<void> _refreshPromptFromBackend(String modelName) async {
-    final prompt = await _fetchSystemPromptFromBackend(modelName);
-    if (!mounted || prompt == null || prompt.trim().isEmpty) return;
+    final prompt = await LlmApiService.fetchOllamaSystemPrompt(modelName);
+    if (!mounted || prompt.trim().isEmpty || prompt.startsWith('（读取失败')) {
+      return;
+    }
     _promptController.text = prompt.trim();
-  }
-
-  Future<String?> _fetchSystemPromptFromBackend(String modelName) async {
-    try {
-      final uri = LlmEndpointConfig.showUri();
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-        ...ApiClient.mergeTunnelHeaders(uri),
-      };
-      final token = ApiClient.token;
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-
-      final resp = await http
-          .post(
-            uri,
-            headers: headers,
-            body: jsonEncode({'name': modelName}),
-          )
-          .timeout(const Duration(seconds: 12));
-      if (resp.statusCode != 200) return null;
-
-      final data = jsonDecode(utf8.decode(resp.bodyBytes));
-      if (data is! Map) return null;
-      final directSystem = data['system'];
-      if (directSystem is String && directSystem.trim().isNotEmpty) {
-        return directSystem;
-      }
-      final modelfile = data['modelfile'];
-      if (modelfile is! String || modelfile.trim().isEmpty) return null;
-      return _extractSystemPromptFromModelfile(modelfile);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? _extractSystemPromptFromModelfile(String modelfile) {
-    final triple = RegExp(
-      r'SYSTEM\s+"""([\s\S]*?)"""',
-      caseSensitive: false,
-      multiLine: true,
-    ).firstMatch(modelfile);
-    if (triple != null) {
-      return triple.group(1)?.trim();
-    }
-    final single = RegExp(
-      r'^SYSTEM\s+"(.*)"$',
-      caseSensitive: false,
-      multiLine: true,
-    ).firstMatch(modelfile);
-    if (single != null) {
-      return single.group(1)?.trim();
-    }
-    return null;
   }
 
   Widget _buildModelChips() {

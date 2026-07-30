@@ -98,7 +98,7 @@ class Comment {
           json,
           'user_avatar',
           'userAvatar',
-          fallback: 'https://picsum.photos/150',
+          fallback: '',
         ),
         content: (json['content'] ?? '').toString(),
         likes: (likesRaw as num?)?.toInt() ?? 0,

@@ -11,6 +11,7 @@ import 'services/api_service.dart';
 import 'services/behavior_analytics_service.dart';
 import 'utils/behavior_route_observer.dart';
 import 'utils/console_output_filter.dart';
+import 'utils/crash_report_buffer.dart';
 import 'utils/config.dart' as moe_launch_config;
 import 'widgets/app_message_widget.dart';
 import 'widgets/floating_virtual_avatar_host.dart';
@@ -62,11 +63,7 @@ void main() {
     _setupErrorHandlers();
     runApp(const SplashScreenWrapper());
   }, (error, stack) {
-    debugPrint('═══════════════════════════════════════');
-    debugPrint('Uncaught Error:');
-    debugPrint('Error: $error');
-    debugPrint('Stack: $stack');
-    debugPrint('═══════════════════════════════════════');
+    CrashReportBuffer.record(error, stack, source: 'zone');
   }, zoneSpecification: ZoneSpecification(
     print: (self, parent, zone, line) {
       if (shouldSuppressConsoleLine(line)) return;
@@ -90,12 +87,11 @@ void _setupErrorHandlers() {
       return;
     }
     errorCount = 0;
-    debugPrint('═══════════════════════════════════════');
-    debugPrint('Flutter Error:');
-    debugPrint('Exception: $errorString');
-    debugPrint('Stack: ${details.stack}');
-    debugPrint('Library: ${details.library}');
-    debugPrint('═══════════════════════════════════════');
+    CrashReportBuffer.record(
+      details.exception,
+      details.stack,
+      source: 'flutter:${details.library ?? "ui"}',
+    );
   };
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -154,11 +150,7 @@ void _setupErrorHandlers() {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('═══════════════════════════════════════');
-    debugPrint('Platform Error:');
-    debugPrint('Error: $error');
-    debugPrint('Stack: $stack');
-    debugPrint('═══════════════════════════════════════');
+    CrashReportBuffer.record(error, stack, source: 'platform');
     return true;
   };
 }

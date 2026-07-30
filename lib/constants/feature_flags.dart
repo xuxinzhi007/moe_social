@@ -4,7 +4,7 @@ class FeatureFlags {
 
   // ── 产品定性（2026-06）：社交为主 ─────────────────────────────────────
 
-  /// 小游戏、游戏大厅、扫雷等玩法入口。
+  /// 小游戏、互动故事（GamePlay）等玩法入口。默认关闭。
   static const bool showGameFeatures = false;
 
   /// 抽卡 / gacha 演示页。
@@ -19,6 +19,7 @@ class FeatureFlags {
 
   static const bool showLocalModelSettings = showExperimentalFeatures;
 
-  /// AI 伙伴 — 用户的陪伴角色与持续状态（增强型功能 P1）
+  /// AI 伙伴 — 数字生命个人小世界（P1）。主 Tab「AI伙伴」始终可见；
+  /// 本开关只控制数字生命入口，不隐藏 Companion 聊天。
   static const bool showLifeEngine = true;
 }

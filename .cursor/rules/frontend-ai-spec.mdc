@@ -32,6 +32,7 @@ alwaysApply: false
 - 接口变更先对齐 `backend/` 契约，再改 models/services/pages
 - 充值等用户保留的演示功能不要顺手改真实链路
 - `dart format` + `flutter analyze`；加载/成功/失败三态自测
+- Agent 实现/审核：统一 skill **`moe-flutter`**（`.cursor/skills/moe-flutter/SKILL.md`）；支持 `audit` 只评不改
 
 ## 性能（已约定）
 

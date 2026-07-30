@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../services/achievement_hooks.dart';
-import '../../services/api_service.dart';
+import '../../services/api_service.dart' show ApiException;
+import '../../services/auth_flow_service.dart';
 import '../../utils/validators.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import 'package:provider/provider.dart';
@@ -112,7 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
       _generatedTempEmail = null;
     });
     try {
-      final email = await ApiService.generateTempEmail();
+      final email = await AuthFlowService.generateTempEmail();
       if (!mounted) return;
       _emailController.value = TextEditingValue(
         text: email,

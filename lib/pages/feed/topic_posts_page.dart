@@ -5,6 +5,9 @@ import '../../services/post_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_empty_state.dart';
+import '../../widgets/moe_error_state.dart';
+import '../../utils/moe_error_copy.dart';
 import '../../auth_service.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
@@ -28,6 +31,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  Object? _error;
   int _totalPosts = 0;
   int _currentPage = 1;
   static const int _pageSize = 10;
@@ -75,6 +79,7 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       _hasMore = true;
       _currentPage = 1;
       _posts = [];
+      _error = null;
     });
 
     try {
@@ -93,9 +98,11 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
         _posts = posts;
         _totalPosts = total;
         _hasMore = posts.length < total;
+        _error = null;
       });
     } catch (e) {
       if (mounted) {
+        setState(() => _error = e);
         ErrorHandler.handleException(context, e as Exception);
       }
     } finally {
@@ -210,25 +217,23 @@ class _TopicPostsPageState extends State<TopicPostsPage> {
       ),
       body: _isLoading && _posts.isEmpty
           ? const Center(child: MoeLoading())
-          : _posts.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.tag_outlined,
-                          size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        '还没有相关动态呢 ~',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
+          : _error != null && _posts.isEmpty
+              ? MoeErrorState.fromError(
+                  _error,
+                  scene: MoeErrorScene.feed,
+                  onRetry: _fetchPosts,
                 )
-              : RefreshIndicator(
+              : _posts.isEmpty
+                  ? const Center(
+                      child: MoeEmptyState(
+                        icon: Icons.tag_outlined,
+                        title: '还没有相关动态呢 ~',
+                        subtitle: '换个话题看看，或者发一条带这个标签的动态吧。',
+                        showCard: false,
+                        animate: false,
+                      ),
+                    )
+                  : RefreshIndicator(
                   onRefresh: _fetchPosts,
                   color: Theme.of(context).primaryColor,
                   child: ListView.builder(
