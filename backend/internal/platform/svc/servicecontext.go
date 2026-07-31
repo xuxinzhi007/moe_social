@@ -15,6 +15,7 @@ import (
 	giftapp "backend/internal/service/gift"
 	lifeapp "backend/internal/service/life"
 	landingapp "backend/internal/service/landing"
+	petapp "backend/internal/service/pet"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
@@ -93,6 +94,7 @@ type ServiceContext struct {
 	GameApp        *gameapp.AppService
 	LifeApp        *lifeapp.AppService
 	CompanionApp   *companionapp.AppService
+	PetApp         *petapp.AppService
 	LLMApp         *llmapp.AppService
 	MediaApp       *mediaapp.AppService
 	ChatApp        *chatapp.AppService

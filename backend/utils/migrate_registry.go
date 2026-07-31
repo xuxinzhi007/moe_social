@@ -89,6 +89,8 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "life_items", Model: &model.LifeItem{}},
 		{Key: "life_inventory", Model: &model.LifeInventory{}},
 		{Key: "life_daily_claim", Model: &model.LifeDailyClaim{}},
+		{Key: "pet_profiles", Model: &model.PetProfile{}},
+		{Key: "pet_friendships", Model: &model.PetFriendship{}},
 		{Key: "companion_profiles", Model: &model.CompanionProfile{}},
 		{Key: "companion_memories", Model: &model.CompanionMemory{}},
 		{Key: "companion_chat_logs", Model: &model.CompanionChatLog{}},

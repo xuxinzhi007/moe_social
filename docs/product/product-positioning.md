@@ -17,7 +17,7 @@
 | 层级 | 范围 | 说明 |
 |------|------|------|
 | **核心（P0）** | 动态流、发帖、评论点赞、话题、关注/好友、私信、社区群组、个人页 | 对外叙事与主 Tab 只服务这一条线 |
-| **增强（P1）** | **长期 AI 陪伴（Companion）**、**数字生命世界（Life，陪伴延伸）**、云相册、签到成就、通知 | 提升互动与留存，入口弱于社交主路径；决策 SSOT：`docs/dev/ai-companion-formal-decisions.md` |
+| **增强（P1）** | **长期 AI 陪伴（Companion）**、**数字生命世界（Life，陪伴延伸）**、**养成游戏域（Pet Life Sim，Flag）**、云相册、签到成就、通知 | 提升互动与留存，入口弱于社交主路径；决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`；养成见 `docs/dev/pet-life-sim-roadmap.md` |
 | **已退役入口（默认不可见）** | AI 酒馆大厅（多卡选角） | 代码可暂留；**不是**多角色陪伴方案；正式路径只走 Companion |
 | **商业（P2）** | 钱包、VIP、礼物 | 结构保留，不做主视觉重心 |
 | **实验（隐藏）** | AutoGLM 自动化 | 开发者自用；默认关闭，仅「设置 → 高级选项」 |
@@ -33,7 +33,18 @@
 | **入口** | 自「AI伙伴」关系页弱/中等入口进入；首页仅轻存在感跳转，不复制整套 AI 面板 |
 | **Feature Flag** | `FeatureFlags.showLifeEngine = true` |
 | **是** | 生态沙盒（规则驱动、地形演化、食物链）+ 轻量互动（喂食/道具/观察） |
-| **不是** | 不是社交功能、不是宠物养成游戏、不是 AI 聊天工具 |
+| **不是** | 不是社交主路径、不是 AI 聊天工具；**完整宠物养成**见独立 Flag 域「Pet Life Sim」，不与本模块混为一谈 |
+
+### 2.2 养成游戏域（Pet Life Sim）
+
+> 嵌在 Moe 内的《宠我一生》级养成（Flutter + Flame）。Flag 开启后可完整体验小家/生涯/社交/轻冒险；**不替代** Feed / 私信 / Companion 关系首页。
+
+| 维度 | 说明 |
+|------|------|
+| **层级** | Flag 可开启增强线（`FeatureFlags.petLifeSim`） |
+| **入口** | Companion Hub「TA 的小家」等；无新主 Tab |
+| **SSOT** | `docs/dev/pet-life-sim-roadmap.md` |
+| **引擎** | Flutter + Flame；不拆 Godot/Unity |
 
 **设计原则**：
 - 涌现而非编排 — 不预设剧本，让规则驱动行为，让行为涌现故事
@@ -70,7 +81,7 @@
 ## 5. 明确不做（当前阶段）
 
 - 不以游戏、抽卡作为产品卖点或首页入口
-- 数字生命不是社交功能、不是宠物养成、不是 AI 聊天工具
+- 数字生命（Life）不是社交主路径、不是 AI 聊天工具；完整宠物养成走 Pet Life Sim Flag 域，不与 Life 沙盘混用
 - 不把 AutoGLM 暴露给普通用户
 - 不新增与社交无关的主 Tab
 

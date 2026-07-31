@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package pet.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/pet/v1;petv1";
+
+// Pet — 完整养成域 HTTP 契约（与 /api/pet/* 对齐）。
+// 实现可走 hand-written protohttp/pet 或生成 HTTP Server；消息为 SSOT。
+
+message PetFurniture {
+  string id = 1;
+  double x = 2;
+  double y = 3;
+  string scene = 4;
+}
+
+message PetProfile {
+  uint64 id = 1;
+  string user_id = 2;
+  string name = 3;
+  string species = 4;
+  double hunger = 5;
+  double energy = 6;
+  double mood = 7;
+  int32 coins = 8;
+  int32 age_years = 9;
+  int32 virtue = 10;
+  int32 intel = 11;
+  int32 sport = 12;
+  int32 art = 13;
+  int32 labor = 14;
+  string hat_id = 15;
+  string top_id = 16;
+  string bottom_id = 17;
+  string shoes_id = 18;
+  string scene_id = 19;
+  repeated PetFurniture furniture = 20;
+  string spouse_user_id = 21;
+  bool has_baby = 22;
+  repeated string friends = 23;
+  string updated_at = 24;
+  string created_at = 25;
+}
+
+message GetPetStateRequest {}
+message GetPetStateReply {
+  PetProfile profile = 1;
+}
+
+message EmptyPetRequest {}
+message PetProfileReply {
+  PetProfile profile = 1;
+}
+
+message SetSceneRequest {
+  string scene_id = 1;
+}
+message DressRequest {
+  string hat_id = 1;
+  string top_id = 2;
+  string bottom_id = 3;
+  string shoes_id = 4;
+}
+message PlaceFurnitureRequest {
+  PetFurniture item = 1;
+}
+message StudyRequest {
+  string subject = 1; // virtue|intel|sport|art|labor
+}
+message StudyReply {
+  PetProfile profile = 1;
+  string message = 2;
+}
+message WorkReply {
+  PetProfile profile = 1;
+  string message = 2;
+}
+message FriendRequest {
+  string friend_id = 1;
+}
+message MarryRequest {
+  string spouse_id = 1;
+}
+message AdventureReply {
+  PetProfile profile = 1;
+  string message = 2;
+  bool win = 3;
+}
+message BuyRequest {
+  string item_id = 1;
+}
+
+// PetLifeSim 养成完整域服务。
+service PetLifeSim {
+  rpc GetState(GetPetStateRequest) returns (GetPetStateReply) {
+    option (google.api.http) = { get: "/api/pet/state" };
+  }
+  rpc Feed(EmptyPetRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/feed" body: "*" };
+  }
+  rpc Care(EmptyPetRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/care" body: "*" };
+  }
+  rpc Dress(DressRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/dress" body: "*" };
+  }
+  rpc SetScene(SetSceneRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/scene" body: "*" };
+  }
+  rpc PlaceFurniture(PlaceFurnitureRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/furniture" body: "*" };
+  }
+  rpc Study(StudyRequest) returns (StudyReply) {
+    option (google.api.http) = { post: "/api/pet/study" body: "*" };
+  }
+  rpc Work(EmptyPetRequest) returns (WorkReply) {
+    option (google.api.http) = { post: "/api/pet/work" body: "*" };
+  }
+  rpc AgeUp(EmptyPetRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/age-up" body: "*" };
+  }
+  rpc AddFriend(FriendRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/friend" body: "*" };
+  }
+  rpc Marry(MarryRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/marry" body: "*" };
+  }
+  rpc HaveBaby(EmptyPetRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/baby" body: "*" };
+  }
+  rpc Adventure(EmptyPetRequest) returns (AdventureReply) {
+    option (google.api.http) = { post: "/api/pet/adventure" body: "*" };
+  }
+  rpc BuySoft(BuyRequest) returns (PetProfileReply) {
+    option (google.api.http) = { post: "/api/pet/shop/buy" body: "*" };
+  }
+  rpc VerifyIap(IapVerifyRequest) returns (IapVerifyReply) {
+    option (google.api.http) = { post: "/api/pet/iap/verify" body: "*" };
+  }
+}
+
+message IapVerifyRequest {
+  string product_id = 1;
+  string receipt = 2;
+}
+
+message IapVerifyReply {
+  PetProfile profile = 1;
+  bool verified = 2;
+  bool placeholder = 3;
+  string message = 4;
+}

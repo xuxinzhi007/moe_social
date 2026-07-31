@@ -24,6 +24,7 @@
 | AI 陪伴正式化决策 | `docs/dev/ai-companion-formal-decisions.md` |
 | AI 互动闭环迭代 | `docs/dev/ai-companion-interaction-loop.md` |
 | Flame 小世界引擎 | `.cursor/skills/flame-life-world/SKILL.md` |
+| 养成 Pet Life Sim | `docs/dev/pet-life-sim-roadmap.md` |
 | Code Review | `code_review.md` |
 
 ## 交付

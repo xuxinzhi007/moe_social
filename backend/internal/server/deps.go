@@ -40,7 +40,7 @@ func (d HTTPServerDeps) Valid() bool {
 }
 
 func protoHTTPDepsValid(d ProtoHTTPDeps) bool {
-	return d.LandingApp != nil || d.CheckinApp != nil || d.AchievementApp != nil || d.PostApp != nil || d.GiftApp != nil || d.GameApp != nil || d.LifeApp != nil || d.CompanionApp != nil || d.UserApp != nil || d.CommentApp != nil || d.CommunityApp != nil || d.ChatApp != nil || d.NotifyApp != nil || d.BehaviorApp != nil || d.AIApp != nil || d.LLMApp != nil || d.MediaApp != nil || d.VipAdmin != nil || d.MoeAdmin != nil || d.AdminApp != nil || d.MoeInferenceConfig.BaseUrl != "" || adminAppDepsValid(d.AdminAppDeps) || platformDepsValid(d.PlatformDeps)
+	return d.LandingApp != nil || d.CheckinApp != nil || d.AchievementApp != nil || d.PostApp != nil || d.GiftApp != nil || d.GameApp != nil || d.LifeApp != nil || d.CompanionApp != nil || d.PetApp != nil || d.UserApp != nil || d.CommentApp != nil || d.CommunityApp != nil || d.ChatApp != nil || d.NotifyApp != nil || d.BehaviorApp != nil || d.AIApp != nil || d.LLMApp != nil || d.MediaApp != nil || d.VipAdmin != nil || d.MoeAdmin != nil || d.AdminApp != nil || d.MoeInferenceConfig.BaseUrl != "" || adminAppDepsValid(d.AdminAppDeps) || platformDepsValid(d.PlatformDeps)
 }
 
 func adminAppDepsValid(d adminapphttp.Deps) bool {

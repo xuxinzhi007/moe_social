@@ -43,6 +43,7 @@ func ProtoHTTPDepsFromServiceContext(s *svc.ServiceContext) ProtoHTTPDeps {
 	out.GameApp = s.Domains.Game.GameApp
 	out.LifeApp = s.Domains.Life.LifeApp
 	out.CompanionApp = s.Domains.Companion.CompanionApp
+	out.PetApp = s.PetApp
 	out.UserApp = s.Domains.Access.UserApp
 	out.CommentApp = s.Domains.Community.CommentApp
 	out.CommunityApp = s.Domains.Community.CommunityApp

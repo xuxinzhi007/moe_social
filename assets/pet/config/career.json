@@ -1,0 +1,19 @@
+{
+  "min_school_age": 3,
+  "min_work_age": 3,
+  "min_marry_age": 22,
+  "energy_study_cost": 12,
+  "energy_work_cost": 18,
+  "subjects": [
+    { "id": "virtue", "name": "德育", "stat": "virtue", "gain": 3 },
+    { "id": "intel", "name": "智育", "stat": "intel", "gain": 3 },
+    { "id": "sport", "name": "体育", "stat": "sport", "gain": 3 },
+    { "id": "art", "name": "美育", "stat": "art", "gain": 3 },
+    { "id": "labor", "name": "劳育", "stat": "labor", "gain": 3 }
+  ],
+  "jobs": [
+    { "id": "clerk", "name": "店员", "min_avg_stat": 15, "base_pay": 20 },
+    { "id": "designer", "name": "设计师", "min_avg_stat": 25, "base_pay": 35 },
+    { "id": "athlete", "name": "运动员", "min_avg_stat": 30, "base_pay": 40 }
+  ]
+}

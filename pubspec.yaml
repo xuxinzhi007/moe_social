@@ -134,6 +134,14 @@ flutter:
     - assets/branding/
     - assets/frames/
     - assets/lottie/gifts/
+    - assets/pet/
+    - assets/pet/room/
+    - assets/pet/config/
+    - assets/pet/ui/
+    - assets/pet/character/
+    - assets/pet/clothes/
+    - assets/pet/furniture/
+    - assets/pet/adventure/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
