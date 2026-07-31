@@ -4,10 +4,12 @@ import { AdminTag } from './AdminTag'
 
 type Props = {
   note?: string
+  /** 已在平台治理页时关掉自指链接，默认 true */
+  showPlatformLink?: boolean
 }
 
 /** 展示当前业务 API 环境 */
-export function DataEnvBar({ note }: Props) {
+export function DataEnvBar({ note, showPlatformLink = true }: Props) {
   const { apiTarget, apiTargetLabel, health } = usePlatform()
   const api = apiTarget === 'cloud' ? health?.cloud_api : health?.local_api
   const online = api?.online
@@ -23,9 +25,11 @@ export function DataEnvBar({ note }: Props) {
         <span className="muted">API 地址探测中…</span>
       )}
       {note ? <span className="data-env-note">{note}</span> : null}
-      <Link className="data-env-link btn btn-ghost btn-sm" to="/system/platform?tab=config">
-        平台治理
-      </Link>
+      {showPlatformLink ? (
+        <Link className="data-env-link btn btn-ghost btn-sm" to="/infra/platform?tab=config">
+          平台治理
+        </Link>
+      ) : null}
     </div>
   )
 }

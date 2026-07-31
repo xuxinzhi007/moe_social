@@ -1,6 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminTag, TagRow } from '../components/AdminTag'
+import { resolveAdminPath } from '../config/workspaceNav'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { MonitorPageLayout } from '../ui'
 import { capabilityTag, schemaCoverageTag } from '../lib/adminLabels'
@@ -254,7 +255,7 @@ export function DataCatalogPage() {
                 <h4>快捷操作</h4>
                 <div className="btn-row catalog-action-row">
                   {selectedRow.admin_route ? (
-                    <Link className="btn btn-primary" to={selectedRow.admin_route}>
+                    <Link className="btn btn-primary" to={resolveAdminPath(selectedRow.admin_route)}>
                       进入管理页
                     </Link>
                   ) : null}
@@ -264,7 +265,7 @@ export function DataCatalogPage() {
                     </Link>
                   ))}
                   {(selectedRow.key === 'users' || selectedRow.domain === '用户与会员') && (
-                    <Link className="btn btn-ghost" to="/system/app-config">
+                    <Link className="btn btn-ghost" to="/infra/platform?tab=config">
                       图库 URL 配置
                     </Link>
                   )}

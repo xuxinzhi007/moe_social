@@ -32,7 +32,11 @@ protohttp -> service -> biz <- data
 - AI 伙伴首页和 Life 伙伴选择页。
 - 数据库迁移新增 Companion 三张既有模型表。
 
-旧 AI 酒馆的客户端 Provider、角色卡聊天和世界书功能继续独立存在，不再作为 Companion 已支持的设置展示。后续如需接入，必须通过后端 biz 端口读取角色与世界书，不把 Provider 密钥上传到 Companion。
+旧 AI 酒馆（AgentList / 本地 ChatPage / providers）按产品决策**退役向**：不进正式导航，也不是二期多角色载体。  
+正式陪伴决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`。  
+若复用人设/lore，必须迁入 Companion 契约与 biz 端口，禁止再开双栈大厅；不把 Provider 密钥上传到 Companion。
+
+**多伙伴（未实现）**：一期 `user_id` 唯一对应一条 profile；二期若扩展，在 Companion 域演进（活跃 bond），勿写死「产品永远只能一个」之外的额外全局单例。
 
 ## 迁移步骤
 

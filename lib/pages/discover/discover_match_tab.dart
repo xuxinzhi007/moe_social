@@ -617,35 +617,36 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
         ),
       );
     }
+    // 通讯录式列表：与好友 Tab 同好行一致，点行打招呼、点头像看资料
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      sliver: SliverToBoxAdapter(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '找到 ${_candidates.length} 位可能感兴趣的人',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: AiBrandTokens.titleColor,
-              ),
-            ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: _candidates.length,
-              itemBuilder: (_, i) =>
-                  _MatchCandidateCard(candidate: _candidates[i]),
-            ),
-          ],
+      padding: EdgeInsets.fromLTRB(
+        widget.compact ? 18 : 16,
+        16,
+        widget.compact ? 18 : 16,
+        8,
+      ),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, i) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '找到 ${_candidates.length} 位可能感兴趣的人',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AiBrandTokens.titleColor,
+                  ),
+                ),
+              );
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _MatchCandidateRow(candidate: _candidates[i - 1]),
+            );
+          },
+          childCount: _candidates.length + 1,
         ),
       ),
     );
@@ -812,129 +813,110 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
   }
 }
 
-class _MatchCandidateCard extends StatelessWidget {
-  const _MatchCandidateCard({required this.candidate});
+class _MatchCandidateRow extends StatelessWidget {
+  const _MatchCandidateRow({required this.candidate});
 
   final MatchCandidate candidate;
+
+  void _openProfile(BuildContext context) {
+    Navigator.pushNamed(context, '/user-profile', arguments: {
+      'userId': candidate.userId,
+      'userName': candidate.username,
+      'userAvatar': candidate.userAvatar,
+      'heroTag': 'match_${candidate.userId}',
+    });
+  }
+
+  void _openChat(BuildContext context) {
+    HapticFeedback.lightImpact();
+    Navigator.pushNamed(
+      context,
+      '/direct-chat',
+      arguments: {
+        'userId': candidate.userId,
+        'username': candidate.username,
+        'avatar': candidate.userAvatar,
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final tags = candidate.matchedTagNames.take(2).toList();
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/user-profile', arguments: {
-        'userId': candidate.userId,
-        'userName': candidate.username,
-        'userAvatar': candidate.userAvatar,
-        'heroTag': 'match_${candidate.userId}',
-      }),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Material(
+      color: MoeTokens.cardBackground,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () => _openChat(context),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+          ),
+          child: Row(
             children: [
-              Hero(
-                tag: 'match_${candidate.userId}',
-                child: NetworkAvatarImage(
-                  imageUrl: candidate.userAvatar,
-                  radius: 26,
+              GestureDetector(
+                onTap: () => _openProfile(context),
+                child: Hero(
+                  tag: 'match_${candidate.userId}',
+                  child: NetworkAvatarImage(
+                    imageUrl: candidate.userAvatar,
+                    radius: 23,
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                candidate.username,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AiBrandTokens.titleColor,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (tags.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 3,
-                  runSpacing: 3,
-                  children: tags
-                      .map(
-                        (name) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AiBrandTokens.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '#$name',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AiBrandTokens.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      candidate.username,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: MoeTokens.titleText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    if (tags.isNotEmpty)
+                      Text(
+                        tags.map((n) => '#$n').join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: MoeTokens.hintText,
+                          fontSize: MoeTokens.textSm,
+                          fontWeight: FontWeight.w600,
                         ),
                       )
-                      .toList(),
-                ),
-              ],
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/direct-chat',
-                  arguments: {
-                    'userId': candidate.userId,
-                    'username': candidate.username,
-                    'avatar': candidate.userAvatar,
-                  },
-                ),
-                child: Container(
-                  height: 28,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AiBrandTokens.primary,
-                        AiBrandTokens.secondary,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.chat_bubble_outline_rounded,
-                            color: Colors.white, size: 11),
-                        SizedBox(width: 3),
-                        Text(
-                          '打招呼',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
+                    else
+                      const Text(
+                        '可能合得来的同好',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: MoeTokens.hintText,
+                          fontSize: MoeTokens.textSm,
+                          fontWeight: FontWeight.w600,
                         ),
-                      ],
-                    ),
-                  ),
+                      ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonal(
+                onPressed: () => _openChat(context),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: AiBrandTokens.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text('打招呼'),
               ),
             ],
           ),

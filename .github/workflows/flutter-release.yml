@@ -22,6 +22,8 @@ jobs:
     steps:
       # 1. 拉取代码
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.ref }}
 
       # 2. 配置 Java 环境 (Android 构建需要)
       - uses: actions/setup-java@v4
@@ -36,44 +38,163 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 4. 拉取依赖
+      # 4. 解析版本元数据（后续构建 / Release / 回写后端共用）
+      - name: Resolve version metadata
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            REF="${{ github.event.inputs.ref }}"
+          else
+            REF="${GITHUB_REF_NAME}"
+          fi
+          VERSION_NAME="${REF#v}"
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+          # tag 推送用 ref；手动跑若不是 v* tag，则用 v{VERSION_NAME}+run 作为 Release 标签
+          case "$REF" in
+            v*) RELEASE_TAG="$REF" ;;
+            *) RELEASE_TAG="v${VERSION_NAME}" ;;
+          esac
+          {
+            echo "version_name=${VERSION_NAME}"
+            echo "version_code=${BUILD_NUMBER}"
+            echo "release_tag=${RELEASE_TAG}"
+          } >> "$GITHUB_OUTPUT"
+          echo "VERSION_NAME=${VERSION_NAME}"
+          echo "VERSION_CODE=${BUILD_NUMBER}"
+          echo "RELEASE_TAG=${RELEASE_TAG}"
+
+      # 5. 拉取依赖
       - name: Get Dependencies
         run: flutter pub get
 
-      # 5. 解码签名密钥
+      # 6. 解码签名密钥
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
 
-      # 6. 构建 APK (Release 模式)
+      # 7. 构建 APK (Release 模式)
       - name: Build APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            REF="${{ github.event.inputs.ref }}"
-            VERSION_NAME="${REF#v}"
-          else
-            VERSION_NAME="${GITHUB_REF_NAME#v}"
-          fi
-          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
           flutter build apk --release --no-tree-shake-icons \
-            --build-name "$VERSION_NAME" \
-            --build-number "$BUILD_NUMBER"
+            --build-name "${{ steps.meta.outputs.version_name }}" \
+            --build-number "${{ steps.meta.outputs.version_code }}"
 
-      # 6. 发布到 GitHub Releases
+      # 8. 发布到 GitHub Releases
       - name: Create Release and Upload APK
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/flutter-apk/app-release.apk"
-          token: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动生成的 Token，无需您手动配置
-          name: Release ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.meta.outputs.release_tag }}
+          name: Release ${{ steps.meta.outputs.release_tag }}
           body: |
-            自动构建发布版本: ${{ github.ref_name }}
-            
+            自动构建发布版本: ${{ steps.meta.outputs.release_tag }}
+
+            - versionName: ${{ steps.meta.outputs.version_name }}
+            - versionCode: ${{ steps.meta.outputs.version_code }}
+
             更新日志：
             (请在 GitHub Releases 页面手动编辑此部分)
           allowUpdates: true
           replacesArtifacts: true
 
+      # 9. 回写后端 app_releases（方案 A；失败不阻断发版）
+      - name: Sync App Release to Backend
+        continue-on-error: true
+        env:
+          API_BASE: ${{ secrets.MOE_ADMIN_API_BASE }}
+          ADMIN_USER: ${{ secrets.MOE_ADMIN_USERNAME }}
+          ADMIN_PASS: ${{ secrets.MOE_ADMIN_PASSWORD }}
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+          VERSION_CODE: ${{ steps.meta.outputs.version_code }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${API_BASE:-}" ] || [ -z "${ADMIN_USER:-}" ] || [ -z "${ADMIN_PASS:-}" ]; then
+            echo "Skip sync: set Secrets MOE_ADMIN_API_BASE / MOE_ADMIN_USERNAME / MOE_ADMIN_PASSWORD"
+            exit 0
+          fi
+
+          # 地址来自 Secret MOE_ADMIN_API_BASE（无仓库内写死 IP）
+          API_BASE="${API_BASE%/}"
+          APK_URL="https://github.com/${REPO}/releases/download/${RELEASE_TAG}/app-release.apk"
+          CHANGELOG="CI release ${RELEASE_TAG} (versionCode ${VERSION_CODE})"
+
+          echo "Login admin API at ${API_BASE}"
+          LOGIN_JSON=$(curl -sS --connect-timeout 10 --max-time 30 \
+            -X POST "${API_BASE}/api/admin/login" \
+            -H 'Content-Type: application/json' \
+            -d "{\"username\":$(jq -cn --arg u "$ADMIN_USER" '$u'),\"password\":$(jq -cn --arg p "$ADMIN_PASS" '$p')}")
+
+          TOKEN=$(echo "$LOGIN_JSON" | jq -r '.data.token // .token // empty')
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Admin login failed (backend offline or bad credentials):"
+            echo "$LOGIN_JSON" | jq . || echo "$LOGIN_JSON"
+            exit 1
+          fi
+
+          # 保留管理台已配置的 force_update；未配置时默认 false
+          EXISTING=$(curl -sS --connect-timeout 10 --max-time 30 \
+            "${API_BASE}/api/admin/app-release?platform=android" \
+            -H "Authorization: Bearer ${TOKEN}" || true)
+          FORCE=$(echo "$EXISTING" | jq -r '
+            .data.release.force_update
+            // .data.release.forceUpdate
+            // .release.force_update
+            // .release.forceUpdate
+            // false
+          ')
+          case "$FORCE" in
+            true|false) ;;
+            *) FORCE=false ;;
+          esac
+
+          BODY=$(jq -cn \
+            --arg platform "android" \
+            --arg version_name "$VERSION_NAME" \
+            --argjson version_code "$VERSION_CODE" \
+            --arg apk_url "$APK_URL" \
+            --arg changelog "$CHANGELOG" \
+            --argjson force_update "$FORCE" \
+            --argjson enabled true \
+            '{
+              platform: $platform,
+              version_name: $version_name,
+              version_code: $version_code,
+              apk_url: $apk_url,
+              changelog: $changelog,
+              force_update: $force_update,
+              enabled: $enabled
+            }')
+
+          echo "Upsert app release: version_name=${VERSION_NAME} version_code=${VERSION_CODE}"
+          echo "apk_url=${APK_URL}"
+          RESP=$(curl -sS --connect-timeout 10 --max-time 30 \
+            -X PUT "${API_BASE}/api/admin/app-release" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "$BODY")
+
+          OK=$(echo "$RESP" | jq -r '
+            if .success == false then "no"
+            elif (.code != null and .code != 0 and .code != 200) then "no"
+            else "yes"
+            end
+          ')
+          if [ "$OK" != "yes" ]; then
+            echo "Upsert failed:"
+            echo "$RESP" | jq . || echo "$RESP"
+            exit 1
+          fi
+          echo "Synced OK:"
+          echo "$RESP" | jq '{
+            version_name: (.data.release.version_name // .data.version_name // .release.version_name),
+            version_code: (.data.release.version_code // .data.version_code // .release.version_code),
+            apk_url: (.data.release.apk_url // .data.apk_url // .release.apk_url),
+            enabled: (.data.release.enabled // .data.enabled // .release.enabled),
+            force_update: (.data.release.force_update // .data.force_update // .release.force_update)
+          }' || echo "$RESP"

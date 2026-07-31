@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../services/companion_chat_launcher.dart';
 import '../utils/responsive.dart';
 import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
@@ -15,6 +14,7 @@ class QuickActionsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // AI 伙伴已有底栏主入口，快捷区不再重复挂入口。
     final actions = <Map<String, Object>>[
       {
         'icon': Icons.edit_note_rounded,
@@ -48,13 +48,6 @@ class QuickActionsGrid extends StatelessWidget {
         'hint': '翻照片',
         'color': const Color(0xFF4ECDC4),
         'onTap': () => Navigator.pushNamed(context, '/cloud-gallery'),
-      },
-      {
-        'icon': Icons.auto_awesome_rounded,
-        'label': 'AI 伙伴',
-        'hint': '直接聊天',
-        'color': const Color(0xFFFFB347),
-        'onTap': () => CompanionChatLauncher.openChat(context),
       },
       {
         'icon': Icons.settings_rounded,

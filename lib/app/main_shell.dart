@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'deferred_route.dart';
 import '../pages/feed/home_page.dart';
-import '../pages/ai/game_hub_page.dart' deferred as game_hub;
+import '../pages/ai/companion_hub_page.dart' deferred as companion_hub;
 import '../pages/chat/message_center_page.dart' deferred as message_center;
 import '../pages/profile/profile_page.dart' deferred as profile;
 import '../providers/main_nav_controller.dart';
 import '../providers/notification_provider.dart';
 import '../services/chat_push_service.dart';
+import '../services/startup_update_service.dart';
 import '../widgets/moe_bottom_bar.dart';
 
 class MainPage extends StatefulWidget {
@@ -29,8 +32,8 @@ class _MainPageState extends State<MainPage> {
           message: '正在加载消息…',
         ),
     () => DeferredRoute(
-          loadLibrary: game_hub.loadLibrary,
-          builder: () => game_hub.GameHubPage(),
+          loadLibrary: companion_hub.loadLibrary,
+          builder: () => companion_hub.CompanionHubPage(),
           message: '正在加载 AI 伙伴…',
         ),
     () => DeferredRoute(
@@ -48,6 +51,13 @@ class _MainPageState extends State<MainPage> {
     _mainNav = context.read<MainNavController>();
     _mainNav.addListener(_onMainNavRequested);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
+    // 主界面就绪后再静默检查更新（软更新可稍后；强制更新会拦截）。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 800), () {
+        if (!mounted) return;
+        unawaited(StartupUpdateService.tryLaunchUpdateCheck());
+      });
+    });
   }
 
   @override

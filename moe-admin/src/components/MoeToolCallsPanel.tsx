@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { AdminFilterInput } from './AdminFilterInput'
+import { AdminFilterPills } from './AdminFilterPills'
 import { AdminTag } from './AdminTag'
 import { IdCell } from './IdCell'
 import {
@@ -90,63 +92,66 @@ export function MoeToolCallsPanel({
       </header>
 
       <form
-        className="moe-calls-filters platform-config-block"
+        className="moe-calls-filters admin-filter-grid"
         onSubmit={(e) => {
           e.preventDefault()
           onApply()
         }}
       >
-        <select
-          value={filters.tool}
-          onChange={(e) => onFiltersChange({ ...filters, tool: e.target.value })}
-          aria-label="工具"
-        >
-          <option value="">全部工具</option>
-          {toolOptions.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <input
-          placeholder="agent_key"
+        <label className="admin-filter-input">
+          <span className="admin-filter-input-label">工具</span>
+          <select
+            value={filters.tool}
+            onChange={(e) => onFiltersChange({ ...filters, tool: e.target.value })}
+            aria-label="工具"
+          >
+            <option value="">全部</option>
+            {toolOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <AdminFilterInput
+          label="Agent"
           value={filters.agentKey}
-          onChange={(e) => onFiltersChange({ ...filters, agentKey: e.target.value })}
+          onChange={(v) => onFiltersChange({ ...filters, agentKey: v })}
+          placeholder="agent_key"
         />
-        <select
+        <AdminFilterPills
+          ariaLabel="来源"
           value={filters.source}
-          onChange={(e) => onFiltersChange({ ...filters, source: e.target.value })}
-          aria-label="来源"
-        >
-          <option value="">全部来源</option>
-          <option value="api">App / API</option>
-          <option value="runtime">Bot 调度</option>
-        </select>
-        <select
+          onChange={(v) => onFiltersChange({ ...filters, source: v })}
+          options={[
+            { value: '', label: '全部来源' },
+            { value: 'api', label: 'API' },
+            { value: 'runtime', label: 'Bot' },
+          ]}
+        />
+        <AdminFilterPills
+          ariaLabel="结果"
           value={filters.result}
-          onChange={(e) =>
+          onChange={(v) =>
             onFiltersChange({
               ...filters,
-              result: e.target.value as MoeCallsFilters['result'],
+              result: v as MoeCallsFilters['result'],
             })
           }
-          aria-label="结果"
-        >
-          <option value="">全部结果</option>
-          <option value="ok">仅成功</option>
-          <option value="fail">仅失败</option>
-        </select>
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          筛选
-        </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={loading}
-          onClick={onReset}
-        >
-          重置
-        </button>
+          options={[
+            { value: '', label: '全部' },
+            { value: 'ok', label: '成功' },
+            { value: 'fail', label: '失败' },
+          ]}
+        />
+        <div className="admin-filter-actions">
+          <button type="submit" className="btn btn-ghost btn-sm" disabled={loading}>
+            筛选
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={onReset}>
+            重置
+          </button>
+        </div>
       </form>
 
       <div className="moe-calls-list">

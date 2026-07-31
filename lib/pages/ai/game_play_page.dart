@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/feature_flags.dart';
 import '../../models/game_state.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
@@ -192,15 +193,17 @@ class _GamePlayPageState extends State<GamePlayPage> {
             ),
             onPressed: _showInventory,
           ),
-          IconButton(
-            tooltip: 'AI 配置',
-            icon: const Icon(Icons.tune_rounded),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AgentListPage()),
-              );
-            },
-          ),
+          // 酒馆 AgentList：仅实验 Flag 开启时可达（正式产品主路径不进酒馆）。
+          if (FeatureFlags.showGameFeatures)
+            IconButton(
+              tooltip: 'AI 配置',
+              icon: const Icon(Icons.tune_rounded),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AgentListPage()),
+                );
+              },
+            ),
         ],
       ),
       extendBodyBehindAppBar: true,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AdminFilterInput } from '../components/AdminFilterInput'
 import { AdminTable, AdminToolbar, AdminPanel, TabbedPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 import { useAdminAuth } from '../context/AdminAuthContext'
@@ -116,26 +117,25 @@ export function WalletOrdersPage() {
     >
       <AdminPanel>
         <AdminToolbar
+          search={{
+            value: keyword,
+            onChange: setKeyword,
+            onSubmit: () => {
+              setPage(1)
+              setFilterUser(userId.trim())
+              setFilterKw(keyword.trim())
+            },
+            placeholder: '订单号 / 礼物名',
+            submitLabel: '筛选',
+          }}
           filters={
-            <>
-              <input placeholder="用户 ID" value={userId} onChange={(e) => setUserId(e.target.value)} />
-              <input
-                placeholder="订单号 / 礼物名"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  setPage(1)
-                  setFilterUser(userId.trim())
-                  setFilterKw(keyword.trim())
-                }}
-              >
-                筛选
-              </button>
-            </>
+            <AdminFilterInput
+              label="用户"
+              value={userId}
+              onChange={setUserId}
+              placeholder="用户 ID"
+              ariaLabel="按用户 ID 筛选"
+            />
           }
         />
         {error ? <p className="text-danger">{error}</p> : null}

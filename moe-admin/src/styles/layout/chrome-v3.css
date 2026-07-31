@@ -173,6 +173,52 @@
   backdrop-filter: blur(10px);
 }
 
+/* 工作区切换：运营 | AI | 运维 */
+.ws-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  margin-right: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid var(--hairline);
+  flex-shrink: 0;
+}
+
+.ws-switch-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.ws-switch-btn:hover {
+  color: var(--brand-violet-deep);
+  background: rgba(107, 95, 193, 0.08);
+}
+
+.ws-switch-btn.is-active {
+  color: var(--brand-violet-deep);
+  background: rgba(107, 95, 193, 0.14);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(107, 95, 193, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-switch-btn {
+    transition: none;
+  }
+}
+
 body {
   background: var(--canvas);
 }

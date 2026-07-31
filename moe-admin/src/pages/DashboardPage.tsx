@@ -135,27 +135,27 @@ export function DashboardPage() {
           <h3>快捷入口</h3>
         </div>
         <div className="panel-body admin-quick-grid">
-          <Link to="/users" className="quick-card">
+          <Link to="/biz/users" className="quick-card">
             <strong>App 用户</strong>
             <span>列表 · 角色 · VIP</span>
           </Link>
-          <Link to="/app/announcements" className="quick-card">
+          <Link to="/biz/announcements" className="quick-card">
             <strong>公告管理</strong>
             <span>运营公告发布</span>
           </Link>
-          <Link to="/system/platform" className="quick-card">
+          <Link to="/infra/platform" className="quick-card">
             <strong>平台治理</strong>
             <span>连接 · 图库 · 数据地图</span>
           </Link>
-          <Link to="/deploy" className="quick-card">
+          <Link to="/infra/deploy" className="quick-card">
             <strong>运维部署</strong>
             <span>构建 · 发布 · Docker</span>
           </Link>
-          <Link to="/app/ai" className="quick-card">
+          <Link to="/ai/agents" className="quick-card">
             <strong>AI 角色酒馆</strong>
             <span>角色 · 配置 · 审核</span>
           </Link>
-          <Link to="/content/posts" className="quick-card">
+          <Link to="/biz/content/posts" className="quick-card">
             <strong>动态审核</strong>
             <span>列表 · 筛选 · 下架</span>
           </Link>

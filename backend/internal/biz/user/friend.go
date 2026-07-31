@@ -172,40 +172,43 @@ func loadOwnedPendingRequest(ctx context.Context, store UserStore, me uint, requ
 	return &fr, nil
 }
 
-// AcceptFriendRequest 同意申请。
-func AcceptFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) error {
+// AcceptFriendRequest 同意申请；成功时返回已更新的申请记录（供推送）。
+func AcceptFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) (*model.FriendRequest, error) {
 	if actorID == 0 {
-		return ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
 	fr, err := loadOwnedPendingRequest(ctx, store, actorID, requestID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrFriendRequestNotFound
+			return nil, ErrFriendRequestNotFound
 		}
-		return err
+		return nil, err
 	}
 	fr.Status = "accepted"
 	if err := store.SaveFriendRequest(ctx, fr); err != nil {
-		return err
+		return nil, err
 	}
 	ensureMutualFollow(ctx, store, fr.FromUserID, fr.ToUserID)
-	return nil
+	return fr, nil
 }
 
-// RejectFriendRequest 拒绝申请。
-func RejectFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) error {
+// RejectFriendRequest 拒绝申请；成功时返回已更新的申请记录（供推送）。
+func RejectFriendRequest(ctx context.Context, store UserStore, actorID uint, requestID string) (*model.FriendRequest, error) {
 	if actorID == 0 {
-		return ErrUnauthorized
+		return nil, ErrUnauthorized
 	}
 	fr, err := loadOwnedPendingRequest(ctx, store, actorID, requestID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ErrFriendRequestNotFound
+			return nil, ErrFriendRequestNotFound
 		}
-		return err
+		return nil, err
 	}
 	fr.Status = "rejected"
-	return store.SaveFriendRequest(ctx, fr)
+	if err := store.SaveFriendRequest(ctx, fr); err != nil {
+		return nil, err
+	}
+	return fr, nil
 }
 
 // ListFriends 好友列表。

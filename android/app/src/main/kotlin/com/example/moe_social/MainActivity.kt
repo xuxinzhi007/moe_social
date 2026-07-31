@@ -15,6 +15,7 @@ import android.net.Uri
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.Signature
+import androidx.core.content.FileProvider
 import java.security.MessageDigest
 import java.io.File
 
@@ -67,6 +68,18 @@ class MainActivity : FlutterActivity() {
                     }
                     try {
                         result.success(openContainingFolder(path))
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
+                }
+                "installApk" -> {
+                    val path = call.argument<String>("apkPath")
+                    if (path.isNullOrBlank()) {
+                        result.error("INVALID", "apkPath required", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        result.success(installApkFile(path))
                     } catch (e: Exception) {
                         result.error("ERROR", e.message, null)
                     }
@@ -174,6 +187,46 @@ class MainActivity : FlutterActivity() {
             @Suppress("DEPRECATION")
             pi.versionCode.toLong()
         }
+    }
+
+    /**
+     * 用 FileProvider + ACTION_VIEW 唤起系统安装界面。
+     * 返回值：
+     * - true：已启动安装界面
+     * - false：已引导去「安装未知应用」设置，或无法解析安装器
+     */
+    private fun installApkFile(apkPath: String): Boolean {
+        val file = File(apkPath)
+        if (!file.exists() || !file.canRead()) {
+            throw IllegalArgumentException("apk_missing")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!packageManager.canRequestPackageInstalls()) {
+                val settings = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:$packageName")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                startActivity(settings)
+                return false
+            }
+        }
+
+        val uri = FileProvider.getUriForFile(
+            this,
+            "$packageName.fileprovider",
+            file,
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (intent.resolveActivity(packageManager) == null) {
+            throw IllegalStateException("no_installer")
+        }
+        startActivity(intent)
+        return true
     }
 
     private fun openContainingFolder(apkPath: String): Boolean {

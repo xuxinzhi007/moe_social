@@ -253,7 +253,7 @@ export function MediaGalleryPage() {
         { label: '当前匹配', value: loading ? '…' : total },
       ]}
       headActions={
-        <Link to="/system/platform?tab=config" className="btn btn-ghost">
+        <Link to="/infra/platform?tab=config" className="btn btn-ghost">
           图库配置
         </Link>
       }
@@ -334,7 +334,7 @@ export function MediaGalleryPage() {
               {activeOwner?.user_id ? (
                 <>
                   {' '}
-                  · <Link to={`/users/${activeOwner.user_id}`}>打开用户详情</Link>
+                  · <Link to="/biz/users">打开用户详情</Link>
                 </>
               ) : null}
             </p>

@@ -6,6 +6,7 @@ import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
 import { UserCell } from '../components/UserCell'
 import { UserProfileCard, type UserProfile } from '../components/UserProfileCard'
+import { resolveAdminPath } from '../config/workspaceNav'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { botTag, roleTag, vipTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
@@ -275,7 +276,11 @@ export function UsersPage() {
             {profile.links.length > 0 ? (
               <div className="inline-form" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
                 {profile.links.map((link) => (
-                  <Link key={link.admin_route} to={link.admin_route} className="btn btn-ghost btn-sm">
+                  <Link
+                    key={link.admin_route}
+                    to={resolveAdminPath(link.admin_route)}
+                    className="btn btn-ghost btn-sm"
+                  >
                     {link.label}
                   </Link>
                 ))}

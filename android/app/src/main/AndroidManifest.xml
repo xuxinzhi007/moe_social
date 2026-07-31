@@ -80,7 +80,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
         
-        <!-- FileProvider for App Update -->
+        <!-- FileProvider for App Update（authority 与 MainActivity installApk 一致） -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -103,6 +103,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11+：允许解析系统包安装器，否则 OpenFilex/ACTION_VIEW 安装 APK 会无效果 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="application/vnd.android.package-archive"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.INSTALL_PACKAGE"/>
         </intent>
         <!-- 声明要启动的应用包 (Android 11+ 包可见性要求) -->
         <intent>

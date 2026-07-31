@@ -22,4 +22,16 @@ class FeatureFlags {
   /// AI 伙伴 — 数字生命个人小世界（P1）。主 Tab「AI伙伴」始终可见；
   /// 本开关只控制数字生命入口，不隐藏 Companion 聊天。
   static const bool showLifeEngine = true;
+
+  /// Flame 小世界实验渲染（「TA 的世界」全屏 GameWidget）。
+  /// true = 走 Flame；false = 回退 CustomPaint [LifeWorldMap]。
+  /// 见 `.cursor/skills/flame-life-world/SKILL.md`。
+  static const bool useFlameLifeWorld = true;
+
+  // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
+
+  /// 一期：每用户一个「当前活跃」伙伴（后端 profile 按 user 取）。
+  /// 二期多角色未定形态前，禁止据此做「永远只能一个」的 UI/死逻辑扩展；
+  /// 多角色应在 Companion 域演进，不要复活酒馆大厅。
+  static const bool companionSingleActiveBondPhase1 = true;
 }

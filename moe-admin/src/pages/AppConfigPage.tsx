@@ -193,10 +193,10 @@ export function AppConfigPage() {
               <code className="id-cell id-cell-mono">{data.config_file || '—'}</code>
             </p>
             <div className="btn-row" style={{ marginTop: 12 }}>
-              <Link className="btn btn-ghost btn-sm" to="/users">
+              <Link className="btn btn-ghost btn-sm" to="/biz/users">
                 管理用户头像
               </Link>
-              <Link className="btn btn-ghost btn-sm" to="/system/data">
+              <Link className="btn btn-ghost btn-sm" to="/infra/platform?tab=data">
                 数据目录
               </Link>
             </div>

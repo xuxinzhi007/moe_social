@@ -19,7 +19,7 @@ class FriendsLoggedOutBody extends StatelessWidget {
             Icon(Icons.lock_outline_rounded, size: 56, color: scheme.outline),
             const SizedBox(height: 18),
             Text(
-              '登录后管理私信、同好与好友申请',
+              '登录后就能聊天、加同好、处理好友申请',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: scheme.onSurfaceVariant,

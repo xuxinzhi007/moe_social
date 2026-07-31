@@ -3,6 +3,10 @@ package model
 import "time"
 
 // CompanionProfile AI 伙伴身份（独立于 LifeEntity，持久化到 DB）。
+//
+// 一期：UserID 唯一索引 → 每用户一条「当前活跃」profile（产品：单主伙伴）。
+// 二期多角色：勿在业务层再加「全局永远一个」死逻辑；演进时应扩展 Companion 域
+// （例如多行 + 活跃标记），见 docs/dev/ai-companion-formal-decisions.md。
 type CompanionProfile struct {
 	ID                   uint      `gorm:"primarykey" json:"id"`
 	UserID               uint      `gorm:"uniqueIndex;not null" json:"user_id"`

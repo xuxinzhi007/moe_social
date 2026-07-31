@@ -140,6 +140,55 @@ export function createSystemMethods(api: AdminApiFn) {
         }>
       >(adminApiPath('/schema/catalog')),
 
+    getAppRelease: (platform = 'android') => {
+      const q = new URLSearchParams({ platform })
+      return api<
+        BaseResp<{
+          configured: boolean
+          release?: {
+            platform: string
+            version_name: string
+            version_code: number
+            apk_url: string
+            changelog: string
+            force_update: boolean
+            enabled: boolean
+            updated_at: string
+            updated_by: string
+          }
+        }>
+      >(`${adminApiPath('/app-release')}?${q}`)
+    },
+
+    upsertAppRelease: (body: {
+      platform: string
+      version_name: string
+      version_code: number
+      apk_url: string
+      changelog: string
+      force_update: boolean
+      enabled: boolean
+    }) =>
+      api<
+        BaseResp<{
+          release: {
+            platform: string
+            version_name: string
+            version_code: number
+            apk_url: string
+            changelog: string
+            force_update: boolean
+            enabled: boolean
+            updated_at: string
+            updated_by: string
+          }
+        }>
+      >(adminApiPath('/app-release'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+
     getRuntimeConfig: () =>
       api<
         BaseResp<{

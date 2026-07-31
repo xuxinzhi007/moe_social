@@ -13,7 +13,7 @@ export function PlaceholderPage() {
         <div className="panel-body">
           <h2>页面未配置</h2>
           <p className="muted">路径：{location.pathname}</p>
-          <Link to="/">返回工作台</Link>
+          <Link to="/biz">返回工作台</Link>
         </div>
       </div>
     )
@@ -48,10 +48,10 @@ export function PlaceholderPage() {
             <code>docs/dev/moe-admin-platform-design.md</code>。
           </p>
           <div className="btn-row" style={{ marginTop: 16 }}>
-            <Link to="/" className="btn btn-primary">
+            <Link to="/biz" className="btn btn-primary">
               返回工作台
             </Link>
-            <Link to="/users" className="btn btn-ghost">
+            <Link to="/biz/users" className="btn btn-ghost">
               先去用户列表
             </Link>
           </div>

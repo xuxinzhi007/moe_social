@@ -6,6 +6,7 @@ import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { AdminPanel, AdminTable, AdminToolbar, TabbedPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
@@ -397,17 +398,19 @@ export function TagsCenterPage() {
             }}
             filters={
               tab === 'dictionary' ? (
-                <select
+                <AdminFilterPills
+                  ariaLabel="策略标签分类"
                   value={dictCategory}
-                  onChange={(e) => {
-                    setDictCategory(e.target.value)
+                  onChange={(next) => {
+                    setDictCategory(next)
                     setPage(1)
                   }}
-                >
-                  <option value="">全部</option>
-                  <option value="bot_forbidden">禁止 (bot_forbidden)</option>
-                  <option value="bot_preferred">偏好 (bot_preferred)</option>
-                </select>
+                  options={[
+                    { value: '', label: '全部' },
+                    { value: 'bot_forbidden', label: '禁止' },
+                    { value: 'bot_preferred', label: '偏好' },
+                  ]}
+                />
               ) : null
             }
           />

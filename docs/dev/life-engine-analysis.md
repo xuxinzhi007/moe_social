@@ -33,14 +33,14 @@
 
 ### 2.2 前端分层
 
-> 2026-07-18 更新：当前 `life_world_page.dart` 已从早期地图/Tab 主页收束为「AI 伙伴」陪伴首页。地图、Canvas 和面板组件仍保留为可复用/历史能力，但默认体验优先展示单个生命、照料建议、小世界概况、状态条、居民切换和最近事件。
+> 2026-07-31 更新：正式产品壳层方案 2 — 底栏「AI伙伴」= 关系首页；`life_world_page` 从「伙伴详情」改回 **2D 地图优先**（`LifeWorldMap` → `LifeWorldCanvas`），点选居民后下方照料/详情。
 
 | 层级 | 文件 | 职责 |
 |------|------|------|
-| **Pages** | `life_world_page.dart` | AI 伙伴陪伴首页（照料建议、小世界概况、状态、居民切换、最近事件） |
+| **Pages** | `life_world_page.dart` | TA 的世界（2D 地图 + 点选照料 + 概况/事件） |
 | | `life_entity_detail.dart` | 实体详情页 |
 | | `life_relationship_page.dart` | 蛛网式关系可视化页面 |
-| **Widgets** | `life_world_map.dart` | 2D 世界地图渲染（保留能力，非当前默认首页） |
+| **Widgets** | `life_world_map.dart` | 2D 世界地图壳（内嵌 Canvas） |
 | | `life_entity_sprite.dart` | AnimatedPositioned 精灵渲染 |
 | | `life_event_feed.dart` | 事件流（带动画入场） |
 | **Provider** | `life_provider.dart` | ChangeNotifier 状态管理，维护实体 Map + 事件列表 |

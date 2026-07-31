@@ -21,7 +21,6 @@ import 'services/remote_control_service.dart';
 import 'services/presence_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/push_notification_service.dart';
-import 'services/startup_update_service.dart';
 import 'services/daily_growth_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
@@ -278,9 +277,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 650), () {
-        unawaited(StartupUpdateService.tryLaunchUpdateCheck());
-      });
+      // 版本检查改到主界面 MainPage 就绪后，避免抢登录/闪屏注意力。
       if (AuthService.isLoggedIn) {
         unawaited(DailyGrowthService.instance.runAutoCheckIn(context));
       }

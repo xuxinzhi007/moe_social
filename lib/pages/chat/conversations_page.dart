@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
@@ -9,6 +10,7 @@ import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/direct_chat_sync_bus.dart';
+import '../../services/presence_service.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../providers/notification_provider.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -59,6 +61,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
     _searchController.addListener(_handleSearchChanged);
     ChatPushService.unreadBySender.addListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.addListener(_onLocalThreadsTick);
+    PresenceService.start();
+    PresenceService.online.addListener(_onPresenceChanged);
     unawaited(_vm.load());
   }
 
@@ -70,7 +74,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
     _searchController.dispose();
     ChatPushService.unreadBySender.removeListener(_onPushUnread);
     DirectChatSyncBus.threadsTick.removeListener(_onLocalThreadsTick);
+    PresenceService.online.removeListener(_onPresenceChanged);
     super.dispose();
+  }
+
+  void _onPresenceChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onVmChanged() {
@@ -106,8 +115,61 @@ class _ConversationsPageState extends State<ConversationsPage> {
     return Column(
       children: [
         _buildSearchBar(context),
-        const SizedBox(height: 8),
+        _buildOnlineFriendsStrip(context),
+        const SizedBox(height: 4),
         Expanded(child: _buildList(context, _vm.localPeers)),
+      ],
+    );
+  }
+
+  Widget _buildOnlineFriendsStrip(BuildContext context) {
+    final onlineFriends = _vm.friends
+        .where((f) => PresenceService.isUserOnline(f.id))
+        .take(16)
+        .toList();
+    if (onlineFriends.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 16, 8),
+          child: Text(
+            '在线同好 · ${onlineFriends.length}',
+            style: const TextStyle(
+              fontSize: MoeTokens.textSm,
+              fontWeight: MoeTokens.fontWeightSubtitle,
+              color: MoeTokens.hintText,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 78,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            itemCount: onlineFriends.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, i) {
+              final user = onlineFriends[i];
+              return _OnlineFriendChip(
+                user: user,
+                onTap: () async {
+                  await Navigator.pushNamed(
+                    context,
+                    '/direct-chat',
+                    arguments: {
+                      'userId': user.id,
+                      'username': user.username,
+                      'avatar': user.avatar,
+                    },
+                  );
+                  if (mounted) await _vm.load();
+                },
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -278,26 +340,30 @@ class _ConversationsPageState extends State<ConversationsPage> {
             try {
               lastActive = DateTime.parse(c.lastMessage.createdAt);
             } catch (_) {}
-            return _buildConversationRow(
-              context,
-              avatar: avatar,
-              title: title,
-              preview: preview,
-              badge: badge,
-              lastActive: lastActive,
-              onTap: () async {
-                if (!context.mounted) return;
-                await Navigator.pushNamed(
-                  context,
-                  '/direct-chat',
-                  arguments: {
-                    'userId': peerId,
-                    'username': title,
-                    'avatar': avatar,
-                  },
-                );
-                if (mounted) await _vm.load();
-              },
+            return _dismissibleConversation(
+              peerId: peerId,
+              child: _buildConversationRow(
+                context,
+                avatar: avatar,
+                title: title,
+                preview: preview,
+                badge: badge,
+                lastActive: lastActive,
+                isOnline: PresenceService.isUserOnline(peerId),
+                onTap: () async {
+                  if (!context.mounted) return;
+                  await Navigator.pushNamed(
+                    context,
+                    '/direct-chat',
+                    arguments: {
+                      'userId': peerId,
+                      'username': title,
+                      'avatar': avatar,
+                    },
+                  );
+                  if (mounted) await _vm.load();
+                },
+              ),
             );
           },
         ),
@@ -333,10 +399,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
       return Center(
         child: MoeEmptyState(
           icon: Icons.chat_bubble_outline_rounded,
-          title: '还没有聊天',
-          subtitle: '先添加好友，或者通过搜索找到要聊天的人',
+          title: '还没有开始聊天',
+          subtitle: '先认识一位同好，私信会在这里长出来',
           primaryAction: MoeEmptyStateAction(
-            label: '去找好友',
+            label: '去通讯录',
             icon: Icons.people_rounded,
             onPressed: () {
               if (widget.onEmptyFindFriends != null) {
@@ -347,14 +413,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
             },
           ),
           secondaryAction: MoeEmptyStateAction(
-            label: widget.emptyExploreLabel ?? '回首页',
-            icon: widget.emptyExploreIcon ?? Icons.home_rounded,
+            label: widget.emptyExploreLabel ?? '添加好友',
+            icon: widget.emptyExploreIcon ?? Icons.person_add_rounded,
             onPressed: () {
               if (widget.onEmptyExplore != null) {
                 widget.onEmptyExplore!();
                 return;
               }
-              context.read<MainNavController>().requestTab(0);
+              context.read<MainNavController>().requestTab(1);
             },
           ),
         ),
@@ -459,26 +525,30 @@ class _ConversationsPageState extends State<ConversationsPage> {
             index: i,
             itemKey: 'conv_$peerId',
             revealedKeys: _revealedConversationKeys,
-            child: _buildConversationRow(
-              context,
-              avatar: avatar,
-              title: title,
-              preview: preview.isEmpty ? '点击开始聊天' : preview,
-              badge: badge,
-              lastActive: lastActivity(peerId),
-              onTap: () async {
-                if (!context.mounted) return;
-                await Navigator.pushNamed(
-                  context,
-                  '/direct-chat',
-                  arguments: {
-                    'userId': peerId,
-                    'username': title,
-                    'avatar': avatar,
-                  },
-                );
-                if (mounted) await _vm.load();
-              },
+            child: _dismissibleConversation(
+              peerId: peerId,
+              child: _buildConversationRow(
+                context,
+                avatar: avatar,
+                title: title,
+                preview: preview.isEmpty ? '点击开始聊天' : preview,
+                badge: badge,
+                lastActive: lastActivity(peerId),
+                isOnline: PresenceService.isUserOnline(peerId),
+                onTap: () async {
+                  if (!context.mounted) return;
+                  await Navigator.pushNamed(
+                    context,
+                    '/direct-chat',
+                    arguments: {
+                      'userId': peerId,
+                      'username': title,
+                      'avatar': avatar,
+                    },
+                  );
+                  if (mounted) await _vm.load();
+                },
+              ),
             ),
           );
         },
@@ -512,6 +582,64 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
+  Widget _dismissibleConversation({
+    required String peerId,
+    required Widget child,
+  }) {
+    return Dismissible(
+      key: ValueKey('hide_conv_$peerId'),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 22),
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: MoeTokens.danger.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Icon(Icons.visibility_off_outlined, color: MoeTokens.danger, size: 20),
+            SizedBox(width: 6),
+            Text(
+              '不显示',
+              style: TextStyle(
+                color: MoeTokens.danger,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) async {
+        HapticFeedback.lightImpact();
+        await _vm.hideConversation(peerId);
+        if (!mounted) return true;
+        unawaited(
+          context.read<NotificationProvider>().markDirectMessagesAsRead(peerId),
+        );
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.clearSnackBars();
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text('已从会话列表隐藏'),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '撤销',
+              onPressed: () {
+                unawaited(_vm.unhideConversation(peerId));
+              },
+            ),
+          ),
+        );
+        return true;
+      },
+      child: child,
+    );
+  }
+
   Widget _buildConversationRow(
     BuildContext context, {
     required String avatar,
@@ -520,6 +648,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     required int badge,
     required VoidCallback onTap,
     DateTime? lastActive,
+    bool isOnline = false,
   }) {
     // 格式化时间戳
     String? timeLabel;
@@ -556,19 +685,41 @@ class _ConversationsPageState extends State<ConversationsPage> {
             ),
             child: Row(
               children: [
-                avatar.trim().isNotEmpty
-                    ? NetworkAvatarImage(
-                        imageUrl: avatar,
-                        radius: 24,
-                      )
-                    : ClipOval(
-                        child: Image.asset(
-                          'assets/chat/avatar_placeholder.png',
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    avatar.trim().isNotEmpty
+                        ? NetworkAvatarImage(
+                            imageUrl: avatar,
+                            radius: 24,
+                          )
+                        : ClipOval(
+                            child: Image.asset(
+                              'assets/chat/avatar_placeholder.png',
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                    if (isOnline)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: MoeTokens.pastelTeal,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: MoeTokens.surface1,
+                              width: 2,
+                            ),
+                          ),
                         ),
                       ),
+                  ],
+                ),
                 SizedBox(width: MoeTokens.spaceMd),
                 Expanded(
                   child: Column(
@@ -644,6 +795,71 @@ class _ConversationsPageState extends State<ConversationsPage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OnlineFriendChip extends StatelessWidget {
+  const _OnlineFriendChip({
+    required this.user,
+    required this.onTap,
+  });
+
+  final User user;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return MoePressable(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+      child: SizedBox(
+        width: 64,
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                user.avatar.trim().isNotEmpty
+                    ? NetworkAvatarImage(imageUrl: user.avatar, radius: 24)
+                    : ClipOval(
+                        child: Image.asset(
+                          'assets/chat/avatar_placeholder.png',
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: MoeTokens.pastelTeal,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: MoeTokens.surface1, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              user.username,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: MoeTokens.textXs,
+                fontWeight: FontWeight.w600,
+                color: MoeTokens.titleText,
+              ),
+            ),
+          ],
         ),
       ),
     );

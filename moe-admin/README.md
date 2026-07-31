@@ -21,10 +21,17 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin 
 
 由原 `ops-console/` 演进并重命名。若仓库中仍存在 `ops-console/`，可停掉占用进程后删除，统一使用本目录。
 
-## 功能模块
+## 功能模块（工作区）
 
-- **业务**：工作台、App 用户、内容运营（`X-Admin-Token`）
-- **运维**：构建 / Docker / 发布 / 任务 / RPC（Deploy Token）
+顶栏切换 **运营 | AI | 运维**（默认运营）：
+
+| 工作区 | URL 前缀 | 内容 |
+|--------|----------|------|
+| 运营 | `/ops/biz/...` | 用户、内容、公告、分析、云图库… |
+| AI | `/ops/ai/...` | 酒馆、Bot、大脑、编排、工具… |
+| 运维 | `/ops/infra/...` | 平台治理、发布、Docker、审计… |
+
+菜单 SSOT：`src/config/workspaceNav.ts` · 方案：`docs/dev/moe-admin-workspaces.md`
 
 文档：
 
