@@ -22,9 +22,13 @@ class CompanionChatEvent {
 }
 
 /// 伙伴 Profile（从后端获取）。
+///
+/// 双层身份：name/emoji/avatarUrl/persona = 关系层（用户自定义）；
+/// lifeEntityId = 世界层绑定，不反向覆盖关系层形象。
 class CompanionProfileData {
   final String name;
   final String emoji;
+  final String avatarUrl;
   final String persona;
   final String greetingStyle;
   final int relationshipLevel;
@@ -37,6 +41,7 @@ class CompanionProfileData {
   const CompanionProfileData({
     this.name = '',
     this.emoji = '🐾',
+    this.avatarUrl = '',
     this.persona = '',
     this.greetingStyle = 'warm',
     this.relationshipLevel = 1,
@@ -51,6 +56,7 @@ class CompanionProfileData {
     return CompanionProfileData(
       name: m['name']?.toString() ?? '',
       emoji: m['emoji']?.toString() ?? '🐾',
+      avatarUrl: m['avatar_url']?.toString() ?? m['avatarUrl']?.toString() ?? '',
       persona: m['persona']?.toString() ?? '',
       greetingStyle: m['greeting_style']?.toString() ?? 'warm',
       relationshipLevel: (m['relationship_level'] as num?)?.toInt() ?? 1,
@@ -68,6 +74,7 @@ class CompanionProfileData {
   CompanionProfileData copyWith({
     String? name,
     String? emoji,
+    String? avatarUrl,
     String? persona,
     String? greetingStyle,
     List<String>? personalityTraits,
@@ -78,6 +85,7 @@ class CompanionProfileData {
     return CompanionProfileData(
       name: name ?? this.name,
       emoji: emoji ?? this.emoji,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       persona: persona ?? this.persona,
       greetingStyle: greetingStyle ?? this.greetingStyle,
       relationshipLevel: relationshipLevel,
@@ -92,6 +100,7 @@ class CompanionProfileData {
   Map<String, dynamic> toRequestMap() => {
         'name': name,
         'emoji': emoji,
+        'avatar_url': avatarUrl,
         'persona': persona,
         'personality_traits': personalityTraits,
         'greeting_style': greetingStyle,
@@ -101,11 +110,34 @@ class CompanionProfileData {
       };
 }
 
+/// 伙伴动态卡片（后端 `state.moments`）。
+class CompanionMomentData {
+  final String text;
+  final String icon;
+  final String timeLabel;
+
+  const CompanionMomentData({
+    this.text = '',
+    this.icon = '',
+    this.timeLabel = '',
+  });
+
+  factory CompanionMomentData.fromMap(Map<String, dynamic> m) {
+    return CompanionMomentData(
+      text: m['text']?.toString() ?? '',
+      icon: m['icon']?.toString() ?? '',
+      timeLabel:
+          m['time_label']?.toString() ?? m['timeLabel']?.toString() ?? '',
+    );
+  }
+}
+
 /// 伙伴状态（从后端获取）。
 class CompanionStateData {
   final String moodThought;
   final String activityLabel;
   final String greeting;
+  final List<CompanionMomentData> moments;
   final double mood;
   final double hunger;
   final double energy;
@@ -114,16 +146,51 @@ class CompanionStateData {
     this.moodThought = '',
     this.activityLabel = '',
     this.greeting = '',
+    this.moments = const [],
     this.mood = 0.5,
     this.hunger = 0.5,
     this.energy = 0.5,
   });
 
+  CompanionStateData copyWith({
+    String? moodThought,
+    String? activityLabel,
+    String? greeting,
+    List<CompanionMomentData>? moments,
+    double? mood,
+    double? hunger,
+    double? energy,
+  }) {
+    return CompanionStateData(
+      moodThought: moodThought ?? this.moodThought,
+      activityLabel: activityLabel ?? this.activityLabel,
+      greeting: greeting ?? this.greeting,
+      moments: moments ?? this.moments,
+      mood: mood ?? this.mood,
+      hunger: hunger ?? this.hunger,
+      energy: energy ?? this.energy,
+    );
+  }
+
   factory CompanionStateData.fromMap(Map<String, dynamic> m) {
+    final rawMoments = m['moments'];
+    final moments = <CompanionMomentData>[];
+    if (rawMoments is List) {
+      for (final item in rawMoments) {
+        if (item is Map<String, dynamic>) {
+          moments.add(CompanionMomentData.fromMap(item));
+        } else if (item is Map) {
+          moments.add(
+            CompanionMomentData.fromMap(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
+    }
     return CompanionStateData(
       moodThought: m['mood_thought']?.toString() ?? '',
       activityLabel: m['activity_label']?.toString() ?? '',
       greeting: m['greeting']?.toString() ?? '',
+      moments: List<CompanionMomentData>.unmodifiable(moments),
       mood: (m['mood'] as num?)?.toDouble() ?? 0.5,
       hunger: (m['hunger'] as num?)?.toDouble() ?? 0.5,
       energy: (m['energy'] as num?)?.toDouble() ?? 0.5,
@@ -177,6 +244,7 @@ class CompanionMemoryData {
   final String content;
   final int importance;
   final String createdAt;
+  final bool pinned;
 
   const CompanionMemoryData({
     required this.id,
@@ -184,6 +252,7 @@ class CompanionMemoryData {
     required this.content,
     required this.importance,
     required this.createdAt,
+    this.pinned = false,
   });
 
   factory CompanionMemoryData.fromMap(Map<String, dynamic> m) {
@@ -193,6 +262,21 @@ class CompanionMemoryData {
       content: m['content']?.toString() ?? '',
       importance: (m['importance'] as num?)?.toInt() ?? 0,
       createdAt: m['created_at']?.toString() ?? '',
+      pinned: m['pinned'] == true,
+    );
+  }
+
+  CompanionMemoryData copyWith({
+    int? importance,
+    bool? pinned,
+  }) {
+    return CompanionMemoryData(
+      id: id,
+      memoryType: memoryType,
+      content: content,
+      importance: importance ?? this.importance,
+      createdAt: createdAt,
+      pinned: pinned ?? this.pinned,
     );
   }
 }
@@ -277,6 +361,15 @@ class CompanionService {
     );
   }
 
+  /// 照料等互动后亲密度微增（聊天由后端 ChatStream 内建处理）。
+  Future<void> bumpIntimacy({String reason = 'care'}) async {
+    _requireUserId();
+    await ApiService.post(
+      '/api/companion/intimacy/bump',
+      body: {'reason': reason},
+    );
+  }
+
   Future<CompanionProfileData> updateProfile(
     CompanionProfileData profile,
   ) async {
@@ -299,6 +392,31 @@ class CompanionService {
         .map((item) =>
             CompanionMemoryData.fromMap(Map<String, dynamic>.from(item)))
         .toList(growable: false);
+  }
+
+  Future<void> deleteMemory(int memoryId) async {
+    _requireUserId();
+    if (memoryId <= 0) {
+      throw Exception('无效的记忆');
+    }
+    await ApiService.delete('/api/companion/memories/$memoryId');
+  }
+
+  Future<CompanionMemoryData> setMemoryPinned({
+    required int memoryId,
+    required bool pinned,
+  }) async {
+    _requireUserId();
+    if (memoryId <= 0) {
+      throw Exception('无效的记忆');
+    }
+    final result = await ApiService.post(
+      '/api/companion/memories/$memoryId/pin',
+      body: {'pinned': pinned},
+    );
+    return CompanionMemoryData.fromMap(
+      ApiResponse.object(result, keys: const ['memory']),
+    );
   }
 
   Future<List<CompanionChatLogData>> listChatHistory({int limit = 12}) async {
@@ -374,6 +492,14 @@ class CompanionService {
           }
         }
         dataBuffer = StringBuffer()..write(buffer);
+      }
+      // 流结束时刷掉未以 \n\n 结尾的尾包，避免丢掉最后一截 delta/done。
+      final trailing = dataBuffer.toString().trim();
+      if (trailing.isNotEmpty) {
+        final event = _parseSseBlock(trailing);
+        if (event != null) {
+          yield event;
+        }
       }
     } finally {
       client.close();

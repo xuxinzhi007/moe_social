@@ -66,6 +66,9 @@ func (s *Server) AdminLogin(ctx context.Context, in *adminv1.AdminLoginReq) (*ad
 }
 
 func (s *Server) AdminListAccounts(ctx context.Context, in *adminv1.AdminListAccountsReq) (*adminv1.AdminListAccountsResp, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -74,6 +77,9 @@ func (s *Server) AdminListAccounts(ctx context.Context, in *adminv1.AdminListAcc
 }
 
 func (s *Server) AdminCreateAccount(ctx context.Context, in *adminv1.AdminCreateAccountReq) (*adminv1.AdminCreateAccountResp, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -82,6 +88,9 @@ func (s *Server) AdminCreateAccount(ctx context.Context, in *adminv1.AdminCreate
 }
 
 func (s *Server) AdminUpdateAccount(ctx context.Context, in *adminv1.AdminUpdateAccountReq) (*adminv1.AdminUpdateAccountResp, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err
@@ -90,6 +99,9 @@ func (s *Server) AdminUpdateAccount(ctx context.Context, in *adminv1.AdminUpdate
 }
 
 func (s *Server) AdminDeleteAccount(ctx context.Context, in *adminv1.AdminDeleteAccountReq) (*adminv1.AdminDeleteAccountResp, error) {
+	if err := requireSuperAdmin(ctx); err != nil {
+		return nil, err
+	}
 	app, err := s.requireApp()
 	if err != nil {
 		return nil, err

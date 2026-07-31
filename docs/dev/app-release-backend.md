@@ -1,5 +1,7 @@
 # App 版本发布（后端管理台）
 
+> **速查备忘（推荐先看）**：[app-release-cheatsheet.md](./app-release-cheatsheet.md)
+
 # 背景
 
 客户端检查更新**不再读 GitHub Releases**，改为读后端公开接口。管理台只配置「版本元数据 + APK 下载 URL」，**不上传安装包文件**。

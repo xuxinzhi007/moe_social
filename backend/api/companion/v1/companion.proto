@@ -21,6 +21,8 @@ message CompanionProfileMsg {
   string system_prompt_override = 8;
   string agent_id = 9;
   int32 life_entity_id = 10;
+  // 关系层头像 URL（用户自定义）；空则前端回退 emoji。与世界居民形象分离。
+  string avatar_url = 11;
 }
 
 message CommunityIdentityMsg {
@@ -57,6 +59,8 @@ message CompanionMemoryMsg {
   string content = 3;
   int32 importance = 4;
   string created_at = 5;
+  // 置顶：列表靠前；置顶时服务端会取消过期（永久保留）。
+  bool pinned = 6;
 }
 
 message CompanionChatLogMsg {
@@ -89,6 +93,7 @@ message UpsertProfileRequest {
   string system_prompt_override = 6;
   string agent_id = 7;
   int32 life_entity_id = 8;
+  string avatar_url = 9;
 }
 
 message UpsertProfileReply {
@@ -108,6 +113,21 @@ message ListMemoriesRequest {
 
 message ListMemoriesReply {
   repeated CompanionMemoryMsg memories = 1;
+}
+
+message DeleteMemoryRequest {
+  uint64 memory_id = 1;
+}
+
+message DeleteMemoryReply {}
+
+message SetMemoryPinnedRequest {
+  uint64 memory_id = 1;
+  bool pinned = 2;
+}
+
+message SetMemoryPinnedReply {
+  CompanionMemoryMsg memory = 1;
 }
 
 message ListChatHistoryRequest {
@@ -143,6 +163,15 @@ service Companion {
   // Memory
   rpc ListMemories(ListMemoriesRequest) returns (ListMemoriesReply) {
     option (google.api.http) = {get: "/api/companion/memories"};
+  }
+  rpc DeleteMemory(DeleteMemoryRequest) returns (DeleteMemoryReply) {
+    option (google.api.http) = {delete: "/api/companion/memories/{memory_id}"};
+  }
+  rpc SetMemoryPinned(SetMemoryPinnedRequest) returns (SetMemoryPinnedReply) {
+    option (google.api.http) = {
+      post: "/api/companion/memories/{memory_id}/pin"
+      body: "*"
+    };
   }
 
   // Chat History

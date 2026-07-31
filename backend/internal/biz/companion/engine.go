@@ -3,6 +3,7 @@ package companionbiz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -11,6 +12,8 @@ import (
 
 	"backend/model"
 	"backend/pkg/llminference"
+
+	"gorm.io/gorm"
 )
 
 // Engine Companion 核心引擎：整合 Profile / State / Memory / Chat / LLM。
@@ -240,6 +243,59 @@ func (e *Engine) ListMemories(ctx context.Context, userID uint, limit int) ([]Me
 	return out, nil
 }
 
+// ErrMemoryNotFound 记忆不存在或不属于当前用户。
+var ErrMemoryNotFound = fmt.Errorf("companion memory not found")
+
+// DeleteMemory 删除当前用户的一条记忆。
+func (e *Engine) DeleteMemory(ctx context.Context, userID, memoryID uint) error {
+	if memoryID == 0 {
+		return fmt.Errorf("delete memory: invalid id")
+	}
+	if err := e.store.DeleteMemory(ctx, userID, memoryID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrMemoryNotFound
+		}
+		return fmt.Errorf("delete memory %d user %d: %w", memoryID, userID, err)
+	}
+	return nil
+}
+
+// SetMemoryPinned 置顶/取消置顶。置顶时提升为永久记忆（importance=2, expires_at=nil）。
+func (e *Engine) SetMemoryPinned(ctx context.Context, userID, memoryID uint, pinned bool) (*Memory, error) {
+	if memoryID == 0 {
+		return nil, fmt.Errorf("pin memory: invalid id")
+	}
+	row, err := e.store.GetMemoryByID(ctx, userID, memoryID)
+	if err != nil {
+		return nil, fmt.Errorf("pin memory get %d: %w", memoryID, err)
+	}
+	if row == nil {
+		return nil, ErrMemoryNotFound
+	}
+
+	importance := row.Importance
+	expiresAt := row.ExpiresAt
+	if pinned {
+		if importance < 2 {
+			importance = 2
+		}
+		expiresAt = nil
+	}
+
+	if err := e.store.UpdateMemoryPinned(ctx, userID, memoryID, pinned, importance, expiresAt); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrMemoryNotFound
+		}
+		return nil, fmt.Errorf("pin memory update %d: %w", memoryID, err)
+	}
+
+	row.Pinned = pinned
+	row.Importance = importance
+	row.ExpiresAt = expiresAt
+	out := modelToMemory(row)
+	return &out, nil
+}
+
 // ── Chat History ──
 
 func (e *Engine) ListChatHistory(ctx context.Context, userID uint, limit int) ([]ChatLog, error) {
@@ -301,6 +357,9 @@ func (e *Engine) ChatStream(
 		if onChunk != nil {
 			_ = onChunk(fallback)
 		}
+		if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
+			log.Printf("[companion] bump intimacy after fallback chat user=%d: %v", userID, err)
+		}
 		return fallback, nil
 	}
 
@@ -324,6 +383,9 @@ func (e *Engine) ChatStream(
 		if onChunk != nil {
 			_ = onChunk(fallback)
 		}
+		if bumpErr := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); bumpErr != nil {
+			log.Printf("[companion] bump intimacy after error fallback user=%d: %v", userID, bumpErr)
+		}
 		return fallback, nil
 	}
 
@@ -337,7 +399,37 @@ func (e *Engine) ChatStream(
 	// 7. 异步提取记忆（不阻塞响应）
 	go e.asyncExtractMemory(userID, userMessage, fullReply, profile)
 
+	// 8. 聊天成功 → 亲密度微增（失败仅打日志，不影响回复）
+	if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
+		log.Printf("[companion] bump intimacy after chat user=%d: %v", userID, err)
+	}
+
 	return fullReply, nil
+}
+
+// BumpIntimacy 按增量提升亲密度与关系等级。
+func (e *Engine) BumpIntimacy(ctx context.Context, userID uint, delta float64) error {
+	if e == nil || e.store == nil || userID == 0 || delta == 0 {
+		return nil
+	}
+	row, err := e.store.GetProfileByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("bump intimacy get profile user %d: %w", userID, err)
+	}
+	if row == nil {
+		if _, err := e.GetProfile(ctx, userID); err != nil {
+			return fmt.Errorf("bump intimacy ensure profile user %d: %w", userID, err)
+		}
+		row, err = e.store.GetProfileByUserID(ctx, userID)
+		if err != nil || row == nil {
+			return fmt.Errorf("bump intimacy reload profile user %d: %w", userID, err)
+		}
+	}
+	score, level := ApplyIntimacyDelta(row.IntimacyScore, delta)
+	if err := e.store.UpdateIntimacy(ctx, userID, score, level); err != nil {
+		return fmt.Errorf("bump intimacy persist user %d: %w", userID, err)
+	}
+	return nil
 }
 
 // asyncExtractMemory 异步从对话中提取记忆并持久化。
@@ -425,6 +517,8 @@ func (e *Engine) defaultBoundProfile(ctx context.Context, userID uint) (*Profile
 	return profile, nil
 }
 
+// bindLifeEntity 仅校验/清理世界绑定 ID。
+// 双层身份：不覆盖 Name/Emoji/AvatarURL（关系层由用户自定义；世界层是居民舞台）。
 func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
 	if e.lifeStore == nil {
 		if profile.LifeEntityID != 0 {
@@ -440,12 +534,9 @@ func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
 		return nil
 	}
 	for i := range entities {
-		if entities[i].ID != uint(profile.LifeEntityID) {
-			continue
+		if entities[i].ID == uint(profile.LifeEntityID) {
+			return nil
 		}
-		profile.Name = entities[i].Name
-		profile.Emoji = entities[i].Emoji
-		return nil
 	}
 	profile.LifeEntityID = 0
 	return nil
@@ -485,6 +576,7 @@ func modelToProfile(m *model.CompanionProfile) *Profile {
 		UserID:               m.UserID,
 		Name:                 m.Name,
 		Emoji:                m.Emoji,
+		AvatarURL:            m.AvatarURL,
 		Persona:              m.Persona,
 		PersonalityTraits:    traits,
 		GreetingStyle:        m.GreetingStyle,
@@ -506,6 +598,7 @@ func profileToModel(userID uint, p *Profile) *model.CompanionProfile {
 		UserID:                userID,
 		Name:                  p.Name,
 		Emoji:                 p.Emoji,
+		AvatarURL:             strings.TrimSpace(p.AvatarURL),
 		Persona:               p.Persona,
 		PersonalityTraitsJSON: string(traitsJSON),
 		GreetingStyle:         style,
@@ -525,6 +618,7 @@ func modelToMemory(m *model.CompanionMemory) Memory {
 		MemoryType:      m.MemoryType,
 		Content:         m.Content,
 		Importance:      m.Importance,
+		Pinned:          m.Pinned,
 		SourceChatLogID: m.SourceChatLogID,
 		ExpiresAt:       m.ExpiresAt,
 		CreatedAt:       m.CreatedAt,

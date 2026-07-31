@@ -35,6 +35,8 @@ import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
 import '../pages/companion/companion_chat_page.dart' deferred as companion_chat;
+import '../pages/companion/companion_memories_page.dart'
+    deferred as companion_memories;
 import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
 import '../pages/notifications/notification_center_page.dart' deferred as notification_center;
@@ -272,6 +274,24 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           companion_chat.loadLibrary,
           () => companion_chat.CompanionChatPage(),
         ),
+    '/ai-memories': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      int? focusId;
+      if (args is Map) {
+        final raw = args['focusMemoryId'];
+        if (raw is int) {
+          focusId = raw;
+        } else if (raw is num) {
+          focusId = raw.toInt();
+        }
+      }
+      return _deferred(
+        companion_memories.loadLibrary,
+        () => companion_memories.CompanionMemoriesPage(
+          focusMemoryId: focusId,
+        ),
+      );
+    },
     '/direct-chat': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is! Map<String, dynamic>) {

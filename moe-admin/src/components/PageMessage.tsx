@@ -16,14 +16,9 @@ export function PageMessage({ message, tone = 'ok', onClose }: Props) {
         : 'admin-hint admin-hint-ok'
   return (
     <div className={cls} role="status">
-      {message}
+      <span>{message}</span>
       {onClose ? (
-        <button
-          type="button"
-          className="btn btn-ghost"
-          style={{ marginLeft: 8, padding: '2px 8px' }}
-          onClick={onClose}
-        >
+        <button type="button" className="btn btn-ghost admin-hint-dismiss" onClick={onClose}>
           关闭
         </button>
       ) : null}

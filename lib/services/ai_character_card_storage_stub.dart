@@ -12,3 +12,7 @@ String? desktopPickerInitialDirectory(String? exportDir) => null;
 Future<String> readFileAtPath(String path) async {
   throw UnsupportedError('文件读取仅支持移动端与桌面端');
 }
+
+Future<List<int>> readBytesAtPath(String path) async {
+  throw UnsupportedError('文件读取仅支持移动端与桌面端');
+}

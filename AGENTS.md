@@ -20,8 +20,9 @@ Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-ap
 
 ## Skills（`.cursor/skills/`）
 
-**Flutter 统一入口：** `moe-flutter`（产品边界 · 正式架构 · UI · audit） 
-Go：`golang-style` · `effective-go` · `implementation-guardrails` · `golang-gin-database` · `git-commit` · `digital-life` · `flame-life-world`（Flame 小世界实验）
+**Flutter 统一入口：** `moe-flutter`（产品边界 · 正式架构 · UI · audit）  
+Life：`digital-life` · Flame 舞台：`flame-life-world`（`lib/game/life/` / 拖地图 / 镜头）  
+Go：`golang-style` · `effective-go` · `implementation-guardrails` · `golang-gin-database` · `git-commit`
 
 
 # backend目录内执行，生成cover.out

@@ -1,8 +1,8 @@
 # AI 陪伴正式化决策记录（SSOT）
 
 > **日期**：2026-07-31  
-> **状态**：已确认 · 一期已落地 · **二期-A（日常流聊天高光）已落地**（2026-07-31）  
-
+> **状态**：已确认 · 一期已落地 · 二期-A 已落地 · **互动闭环 Slice-1/2 已落地**（2026-07-31）  
+> **迭代方案**：`docs/dev/ai-companion-interaction-loop.md`
 
 > **相关**：`docs/product/product-positioning.md` · `docs/dev/ai-companion-backend-boundary.md` · `lib/constants/feature_flags.dart`
 
@@ -38,6 +38,8 @@
 | 9 | 二期多角色形态 | **暂不定（C）**：一期单伙伴；协议/数据勿写死到「永远只能一个」 |
 | 10 | 二期壳层（多居民世界） | **方案 2**：关系首页仍第一眼；2D 地图只在「TA 的世界」；点地图居民照料/详情（非酒馆选卡） |
 | 11 | 小世界渲染实验 | **Flame**（`useFlameLifeWorld`）；可关 Flag 回退 CustomPaint；见 `docs/dev/flame-life-world-experiment.md` |
+| 12 | 身份分层 | **双层**：关系层 = 名字/头像/人设（用户自定义）；世界层 = `life_entity_id` 居民舞台。绑定不覆盖关系层形象 |
+| 13 | 自定义角色一期 | **轻量**：头像图 + 名字 + 人设；不做 Live2D/角色卡大厅；多 bond 仍延后 |
 
 ---
 
@@ -99,11 +101,18 @@
 - [x] 酒馆无主导航入口（仅经已隐藏的 GamePlay 可达；`showGameFeatures=false`）
 - [x] 决策落档 + 多角色方案 C 预留注释（本文 · `FeatureFlags.companionSingleActiveBondPhase1`）
 
-### 二期进度（顺序 D = A → 可选轻量 C → B）
+### 二期进度（顺序 D = A → 可选轻量 C → B；并行互动闭环）
 
 - [x] **A. 日常流**：并入聊天高光（`chat`）+ 记忆碎片（`memory`）；聊天条可点进会话
 - [x] **C. 工程收口（轻量）**：`GameHubPage` → `CompanionHubPage`；GamePlay→酒馆入口受 `showGameFeatures` 门控；酒馆页加退役注释
-- [x] **壳层方案 2**：`LifeWorldPage` = 2D 地图优先（`LifeWorldMap`→`LifeWorldCanvas`）；详情/照料在地图点选后；底栏仍是关系首页
-- [ ] **B. 多角色（Companion 多 bond）**：各自记忆/会话未开工；勿把 Life 地图点选误当成多会话已完成
+- [x] **壳层方案 2**：`LifeWorldPage` = 2D 地图优先；Flame 实验见决策 11
+- [x] **互动闭环 Slice-1**：照料语气 + moments + 日常深链 + 世界「去聊天」+ Hub 返程刷新
+- [x] **Slice-2**：Companion WS + 「TA 想你了」角标/横幅 + 首页轻卡实时问候
+- [x] **轻量自定义 + 双层身份**：`avatar_url`；绑定不覆盖人设；Hub 可上传头像
+- [x] **Slice-3**：聊天/照料亲密度微增；社区 bot 自动创建；删除死代码 `companion_context`
+- [x] **Slice-4**：记忆专页 `/ai-memories`；日常流 memory 深链 + 进聊天 CTA
+- [x] **Slice-5**：角色卡轻量导入（ST JSON/PNG → 关系层人设；不复活酒馆）
+- [x] **Slice-6**：记忆删除/置顶 + Companion 轻量语音（STT/TTS；仍不做 Live2D）
+- [ ] **B. 多角色（Companion 多 bond）**：未开工；勿把 Life 地图点选误当成多会话已完成
 
-仍勿误开工：Companion 多 profile 表结构、酒馆大厅复活。
+仍勿误开工：Companion 多 profile 表结构、酒馆大厅复活、Live2D 大厅。

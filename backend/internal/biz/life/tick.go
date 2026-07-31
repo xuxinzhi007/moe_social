@@ -34,6 +34,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	}
 	if len(oldSnap.Entities) == 0 {
 		seedEmptyWorld(ctx, engine, oldSnap)
+		// 若 DB 里仍有存活实体（异步软删除未完成），已回填到 cache，勿继续空跑 tick。
 	}
 
 	// 构建新的实体副本（避免并发读写竞争）
@@ -179,9 +180,12 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 			continue
 		}
 
-		// 老年自然死亡概率
+		// 老年自然死亡概率（收紧：更慢、更稀）
 		if entity.GrowthStage == StageElderly {
-			deathChance := 0.005 + float64(entity.Age-800)*0.00001
+			deathChance := 0.001 + float64(entity.Age-800)*0.000004
+			if deathChance > 0.02 {
+				deathChance = 0.02
+			}
 			if deathChance > 0 && rand.Float64() < deathChance {
 				entity.CurrentAction = string(ActionDying)
 				evt := &model.LifeEventLog{
@@ -448,10 +452,26 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 }
 
 func seedEmptyWorld(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot) {
-	seeds := createSeedEntities(engine.config.WorldName)
 	if snap.Entities == nil {
-		snap.Entities = make(map[uint]*model.LifeEntity, len(seeds))
+		snap.Entities = make(map[uint]*model.LifeEntity)
 	}
+	// 缓存空 ≠ DB 空：异步软删除未落库时再 INSERT 会造出重复「啾啾」等种子。
+	if engine.store != nil {
+		alive, err := engine.store.ListEntities(ctx, engine.config.WorldName)
+		if err != nil {
+			moelog.Errorf("life: list entities before reseed: %v", err)
+		} else if len(alive) > 0 {
+			for i := range alive {
+				e := alive[i]
+				cp := e
+				snap.Entities[cp.ID] = &cp
+			}
+			dedupeAliveEntitiesByName(ctx, engine, snap)
+			moelog.Infof("life: restored %d alive entities from DB into empty cache (skip reseed)", len(snap.Entities))
+			return
+		}
+	}
+	seeds := createSeedEntities(engine.config.WorldName)
 	for _, seed := range seeds {
 		if seed == nil {
 			continue
@@ -463,6 +483,44 @@ func seedEmptyWorld(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot
 		snap.Entities[seed.ID] = seed
 	}
 	moelog.Infof("life: reseeded empty world %q with %d entities", engine.config.WorldName, len(snap.Entities))
+}
+
+// dedupeAliveEntitiesByName 清理同名重复居民（历史 reseed 竞态产物），保留最小 ID。
+func dedupeAliveEntitiesByName(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot) {
+	if snap == nil || len(snap.Entities) == 0 {
+		return
+	}
+	byName := make(map[string][]uint, len(snap.Entities))
+	for id, e := range snap.Entities {
+		if e == nil {
+			continue
+		}
+		name := strings.TrimSpace(e.Name)
+		if name == "" {
+			continue
+		}
+		byName[name] = append(byName[name], id)
+	}
+	for name, ids := range byName {
+		if len(ids) < 2 {
+			continue
+		}
+		keep := ids[0]
+		for _, id := range ids[1:] {
+			if id < keep {
+				keep = id
+			}
+		}
+		for _, id := range ids {
+			if id == keep {
+				continue
+			}
+			engine.persistence.EnqueueDeleteEntity(id)
+			delete(snap.Entities, id)
+			moelog.Infof("life: dedupe removed duplicate %q id=%d (keep=%d)", name, id, keep)
+		}
+		_ = ctx
+	}
 }
 
 // buildFinalRelationships 构建 tick 后的完整关系列表
@@ -612,6 +670,10 @@ func (e *LifeEngine) initWorld(ctx context.Context) *WorldSnapshot {
 			}
 			entityMap[s.ID] = s
 		}
+	} else {
+		snap := &WorldSnapshot{Entities: entityMap}
+		dedupeAliveEntitiesByName(ctx, e, snap)
+		entityMap = snap.Entities
 	}
 
 	// Bug3: 尝试从 DB 恢复生态网格，若无则重新生成

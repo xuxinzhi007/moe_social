@@ -51,7 +51,7 @@ var defaultAdminMenus = []adminMenuSeed{
 	{Key: "deploy", Kind: "item", ParentKey: "devops", Path: "/deploy", Label: "运维总览", Status: "ready", AppDomain: "—", SortOrder: 61},
 	{Key: "docker", Kind: "item", ParentKey: "devops", Path: "/docker", Label: "云 Docker", Status: "ready", SortOrder: 62},
 	{Key: "build", Kind: "item", ParentKey: "devops", Path: "/build", Label: "构建流水线", Status: "ready", SortOrder: 63},
-	{Key: "release", Kind: "item", ParentKey: "devops", Path: "/release", Label: "应用发布", Status: "ready", SortOrder: 64},
+	{Key: "release", Kind: "item", ParentKey: "devops", Path: "/release", Label: "GitHub APK 构建", Status: "ready", SortOrder: 64},
 	{Key: "jobs", Kind: "item", ParentKey: "devops", Path: "/jobs", Label: "任务审计", Status: "ready", SortOrder: 65},
 	{Key: "rpc", Kind: "item", ParentKey: "devops", Path: "/rpc", Label: "RPC 监控", Status: "ready", AppDomain: "—", SortOrder: 66},
 }

@@ -66,10 +66,44 @@
 
 .nav-group-chevron {
   color: var(--chrome-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-group-chevron .admin-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.nav-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.nav-item-icon .admin-icon,
+.nav-group-icon .admin-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .nav-group-icon {
   background: rgba(107, 95, 193, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .nav-group.has-active .nav-group-icon {

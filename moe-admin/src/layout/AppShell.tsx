@@ -7,10 +7,11 @@ import { detectWorkspace, workspaceMeta } from '../config/workspaceNav'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { usePlatform } from '../context/PlatformContext'
+import { isSuperAdmin } from '../lib/adminAccess'
 import type { ApiTarget } from '../lib/apiTarget'
 
 export function AppShell() {
-  const { agentOnline, authOk, toast, agentMeta } = useDeploy()
+  const { agentOnline, toast, agentMeta } = useDeploy()
   const { user, logout } = useAdminAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -18,6 +19,7 @@ export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const workspace = detectWorkspace(location.pathname)
   const wsMeta = workspaceMeta(workspace)
+  const showDeployChrome = isSuperAdmin(user?.role)
 
   const agentChip = agentMeta?.pid
     ? `Agent · PID ${agentMeta.pid}`
@@ -49,12 +51,14 @@ export function AppShell() {
         <header className="topbar">
           <WorkspaceSwitcher active={workspace} />
 
-          <div className="conn-pill">
-            <span
-              className={`dot ${agentOnline ? 'ok' : agentOnline === false ? 'err' : ''}`}
-            />
-            <span>{agentOnline ? '网关在线' : '网关离线'}</span>
-          </div>
+          {showDeployChrome ? (
+            <div className="conn-pill">
+              <span
+                className={`dot ${agentOnline ? 'ok' : agentOnline === false ? 'err' : ''}`}
+              />
+              <span>{agentOnline ? '网关在线' : '网关离线'}</span>
+            </div>
+          ) : null}
 
           <label className="env-switch" title="切换业务 API 数据源">
             <span className="env-switch-label">数据环境</span>
@@ -74,23 +78,17 @@ export function AppShell() {
             </span>
           </label>
 
-          <span className="agent-chip" title="Deploy Agent">
-            {agentChip}
-          </span>
-          {user ? (
-            <span className="tag tag-ok" style={{ fontSize: 11 }} title={user.role}>
-              {user.username}
+          {showDeployChrome ? (
+            <span className="agent-chip" title="Deploy Agent">
+              {agentChip}
             </span>
           ) : null}
-          {authOk === true ? (
-            <span className="tag tag-ok" style={{ fontSize: 11 }}>
-              部署 Token
+          {user ? (
+            <span className="tag tag-ok topbar-user-tag" title={user.role}>
+              {user.username}
+              {user.role ? ` · ${user.role}` : ''}
             </span>
-          ) : (
-            <span className="tag tag-pending" style={{ fontSize: 11 }}>
-              部署未授权
-            </span>
-          )}
+          ) : null}
           <button
             type="button"
             className="btn btn-ghost"
@@ -112,7 +110,7 @@ export function AppShell() {
         </header>
 
         <div className="content">
-          <div className="admin-page">
+          <div key={location.pathname} className="admin-page admin-page-enter">
             <Outlet />
           </div>
         </div>

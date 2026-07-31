@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { PageHead } from '../ui'
+import { AdminPanel, MonitorPageLayout } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 const CONFIG_FILES = [
@@ -7,7 +7,7 @@ const CONFIG_FILES = [
   'docker-compose.yml',
   'config.yaml',
   'config/config.yaml',
-  'api/etc/super.yaml',
+  'api/etc/moe.yaml',
 ] as const
 
 export function DockerPage() {
@@ -77,20 +77,26 @@ export function DockerPage() {
   }
 
   return (
-    <>
-      <PageHead title="云服务器 · Docker" description="SSH 管理 compose 与 moe-social 容器" />
-
-      <div className="panel">
-        <div className="panel-head">
-          <h3>云平台路径巡检</h3>
+    <MonitorPageLayout
+      title="云服务器 · Docker"
+      description="SSH 管理 compose 与 moe-social 容器"
+      envNote="云目标 VPS · compose 服务名 moe-social · 配置白名单见远程配置下拉"
+      headActions={
+        <button type="button" className="btn btn-ghost" onClick={() => void refreshDocker()}>
+          刷新状态
+        </button>
+      }
+    >
+      <AdminPanel
+        title="云平台路径巡检"
+        actions={
           <button type="button" className="btn btn-mint" onClick={() => void runRemotePathCheck()}>
             检查 backend_dir
           </button>
-        </div>
-        <div className="panel-body">
-          <pre className="log-pre">{checkOut}</pre>
-        </div>
-      </div>
+        }
+      >
+        <pre className="log-pre">{checkOut}</pre>
+      </AdminPanel>
 
       <div className="panel remote-config-panel">
         <div className="panel-head">
@@ -129,7 +135,9 @@ export function DockerPage() {
           />
           <p className="config-editor-meta">
             当前文件：{configFile}
-            {editor.length > 0 ? ` · ${editor.split(/\r?\n/).length} 行 · ${editor.length} 字符` : ''}
+            {editor.length > 0
+              ? ` · ${editor.split(/\r?\n/).length} 行 · ${editor.length} 字符`
+              : ''}
             {configFile.includes('config.yaml')
               ? ' · 改 feishu/wechat 后请重启 moe-social 容器'
               : ''}
@@ -137,9 +145,9 @@ export function DockerPage() {
         </div>
       </div>
 
-      <div className="panel">
-        <div className="panel-head">
-          <h3>docker-compose.binary.yml</h3>
+      <AdminPanel
+        title="docker-compose.binary.yml"
+        actions={
           <div className="btn-row">
             <button type="button" className="btn btn-ghost" onClick={() => void runJob('docker_ps')}>
               状态
@@ -157,32 +165,26 @@ export function DockerPage() {
             <button
               type="button"
               className="btn btn-danger"
-              onClick={() =>
-                confirmRunJob('docker_down', '确认 down 全部容器？')
-              }
+              onClick={() => confirmRunJob('docker_down', '确认 down 全部容器？')}
             >
               Down
             </button>
-            <button type="button" className="btn btn-ghost" onClick={() => void refreshDocker()}>
-              刷新输出
-            </button>
           </div>
+        }
+      >
+        <div className="btn-row" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => void runJob('docker_logs', { service: 'moe-social', tail: '120' })}
+          >
+            服务日志
+          </button>
         </div>
-        <div className="panel-body">
-          <div className="btn-row" style={{ marginBottom: 12 }}>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => void runJob('docker_logs', { service: 'moe-social', tail: '120' })}
-            >
-              服务日志
-            </button>
-          </div>
-          <pre className="log-pre" style={{ maxHeight: 360 }}>
-            {dockerOut}
-          </pre>
-        </div>
-      </div>
-    </>
+        <pre className="log-pre" style={{ maxHeight: 360 }}>
+          {dockerOut}
+        </pre>
+      </AdminPanel>
+    </MonitorPageLayout>
   )
 }

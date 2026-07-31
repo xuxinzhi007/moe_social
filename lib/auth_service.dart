@@ -11,6 +11,7 @@ import 'services/chat_push_service.dart';
 import 'services/daily_growth_service.dart';
 import 'services/friend_request_sync.dart';
 import 'services/presence_service.dart';
+import 'providers/companion_presence_provider.dart';
 import 'widgets/moe_toast.dart';
 
 // 认证结果类，包含成功状态和错误信息
@@ -124,6 +125,7 @@ class AuthService {
         ApiService.setToken(_token);
         PresenceService.start();
         ChatPushService.start();
+        CompanionPresenceProvider.instance.start();
         BehaviorAnalyticsService.instance.start();
 
         return AuthResult.success();
@@ -178,6 +180,7 @@ class AuthService {
       ApiService.setToken(_token);
       PresenceService.start();
       ChatPushService.start();
+      CompanionPresenceProvider.instance.start();
       return AuthResult.success();
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
@@ -213,6 +216,7 @@ class AuthService {
       ApiService.setToken(_token);
       PresenceService.start();
       ChatPushService.start();
+      CompanionPresenceProvider.instance.start();
       return AuthResult.success();
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
@@ -251,6 +255,7 @@ class AuthService {
       ApiService.setToken(_token);
       PresenceService.start();
       ChatPushService.start();
+      CompanionPresenceProvider.instance.start();
 
       final moe = userData['moe_no'] as String?;
       return AuthResult.success(moeNo: moe);
@@ -276,6 +281,7 @@ class AuthService {
     // Stop websocket-based services to avoid reconnect loops.
     PresenceService.stop();
     ChatPushService.stop();
+    CompanionPresenceProvider.instance.stop();
     FriendRequestSync.clear();
 
     // 跳转到登录页
@@ -405,5 +411,6 @@ class AuthService {
     // Ensure websocket services can recover after token refresh.
     PresenceService.start();
     ChatPushService.start();
+    CompanionPresenceProvider.instance.start();
   }
 }

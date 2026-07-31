@@ -1,10 +1,18 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+import '../../constants/feature_flags.dart';
+import '../../providers/companion_presence_provider.dart';
+import '../../services/ai_tts_helper.dart';
 import '../../services/companion_service.dart';
-import '../../widgets/ai/message_bubble.dart';
-import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
+import '../../widgets/ai/ai_chat_background.dart';
+import '../../widgets/ai/companion_avatar.dart';
+import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_toast.dart';
 
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
@@ -29,19 +37,73 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   /// 'not_ready' | 'network' | null
   String? _loadError;
 
+  // AIRI 向轻量语音（本机 STT/TTS；非 Live2D）
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  final FlutterTts _tts = FlutterTts();
+  late final AiTtsHelper _ttsHelper;
+  bool _speechAvailable = false;
+  bool _listening = false;
+  bool _autoSpeak = false;
+  bool _isSpeaking = false;
+  int? _speakingIndex;
+
+  bool get _voiceEnabled => FeatureFlags.companionVoicePresence;
+
   @override
   void initState() {
     super.initState();
+    _ttsHelper = AiTtsHelper(_tts);
+    if (_voiceEnabled) {
+      unawaited(_initVoice());
+    }
     _loadInitialData();
+  }
+
+  Future<void> _initVoice() async {
+    try {
+      _speechAvailable = await _speech.initialize();
+    } catch (_) {
+      _speechAvailable = false;
+    }
+    await _ttsHelper.initialize();
+    _ttsHelper.bindHandlers(
+      onComplete: () {
+        if (!mounted) return;
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      },
+    );
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
     CompanionService().cancelStream();
+    if (_voiceEnabled) {
+      unawaited(_speech.stop());
+      unawaited(_tts.stop());
+    }
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshPresenceState() async {
+    try {
+      final snapshot = await CompanionService().getSnapshot();
+      if (!mounted) return;
+      setState(() => _state = snapshot.state);
+    } catch (_) {}
   }
 
   Future<void> _loadInitialData() async {
@@ -77,7 +139,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         _isLoading = false;
         _loadError = null;
       });
-      unawaited(CompanionService().markChatRead());
+      unawaited(CompanionPresenceProvider.instance.markCompanionChatSeen());
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
@@ -122,7 +184,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     try {
       var fullText = '';
       setState(() {
-        _items.add(_ChatItem(role: 'assistant', content: ''));
+        _items.add(
+          const _ChatItem(role: 'assistant', content: '', isStreaming: true),
+        );
       });
 
       await for (final event in CompanionService().chatStream(text)) {
@@ -142,15 +206,25 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             _scrollToBottom();
             break;
           case 'done':
-            final finalText = event.text.isNotEmpty ? event.text : fullText;
+            final finalText = event.text.trim().isNotEmpty
+                ? event.text.trim()
+                : fullText.trim();
+            final spoken = finalText.isNotEmpty
+                ? finalText
+                : '我在呢～刚才走神了一下，再说一次好吗？';
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
-                content: finalText,
+                content: spoken,
                 isStreaming: false,
               );
             });
-            unawaited(CompanionService().markChatRead());
+            unawaited(
+                CompanionPresenceProvider.instance.markCompanionChatSeen());
+            unawaited(_refreshPresenceState());
+            if (_voiceEnabled && _autoSpeak) {
+              unawaited(_speakAt(_items.length - 1, spoken));
+            }
             break;
           case 'error':
             setState(() {
@@ -196,6 +270,72 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     });
   }
 
+  Future<void> _toggleListen() async {
+    if (!_voiceEnabled || _isSending) return;
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    if (!_speechAvailable) {
+      await _initVoice();
+      if (!_speechAvailable) {
+        if (mounted) {
+          MoeToast.error(context, '当前设备不支持语音输入');
+        }
+        return;
+      }
+    }
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        if (!mounted) return;
+        _controller.text = result.recognizedWords;
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: _controller.text.length),
+        );
+        if (result.finalResult) {
+          setState(() => _listening = false);
+        }
+      },
+      localeId: 'zh_CN',
+      listenOptions: stt.SpeechListenOptions(
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: stt.ListenMode.confirmation,
+      ),
+    );
+  }
+
+  Future<void> _speakAt(int index, String text) async {
+    if (!_voiceEnabled || text.trim().isEmpty) return;
+    if (_isSpeaking && _speakingIndex == index) {
+      await _ttsHelper.stop();
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      }
+      return;
+    }
+    try {
+      setState(() {
+        _isSpeaking = true;
+        _speakingIndex = index;
+      });
+      await _ttsHelper.speak(text);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -203,6 +343,24 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         title: _buildAppBarTitle(),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          if (_voiceEnabled)
+            IconButton(
+              tooltip: _autoSpeak ? '关闭自动朗读' : '开启自动朗读',
+              onPressed: () {
+                setState(() => _autoSpeak = !_autoSpeak);
+                MoeToast.success(
+                  context,
+                  _autoSpeak ? '已开启：TA 说完会朗读' : '已关闭自动朗读',
+                );
+              },
+              icon: Icon(
+                _autoSpeak
+                    ? Icons.record_voice_over_rounded
+                    : Icons.voice_over_off_rounded,
+              ),
+            ),
+        ],
       ),
       body: AiChatBackground(
         child: Column(
@@ -222,7 +380,12 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(_profile.emoji, style: const TextStyle(fontSize: 20)),
+        CompanionAvatar(
+          emoji: _profile.emoji,
+          avatarUrl: _profile.avatarUrl,
+          size: 28,
+          borderRadius: BorderRadius.circular(10),
+        ),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,14 +427,48 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       itemCount: _items.length,
       itemBuilder: (context, index) {
         final item = _items[index];
+        final isAssistant = item.role == 'assistant';
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: AiMessageBubble(
-            content: item.content,
-            contentType: MessageContentType.text,
-            isUser: item.role == 'user',
-            isLoading: item.isStreaming,
-            agentLabel: item.role == 'assistant' ? _profile.name : null,
+          child: Column(
+            crossAxisAlignment: isAssistant
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.end,
+            children: [
+              AiMessageBubble(
+                content: item.content,
+                contentType: MessageContentType.text,
+                isUser: item.role == 'user',
+                isLoading: item.isStreaming,
+                agentLabel: isAssistant ? _profile.name : null,
+              ),
+              if (_voiceEnabled &&
+                  isAssistant &&
+                  !item.isStreaming &&
+                  !item.isError &&
+                  item.content.trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 2),
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: _isSpeaking && _speakingIndex == index
+                        ? '停止朗读'
+                        : '朗读',
+                    onPressed: () => unawaited(
+                      _speakAt(index, item.content),
+                    ),
+                    icon: Icon(
+                      _isSpeaking && _speakingIndex == index
+                          ? Icons.stop_circle_outlined
+                          : Icons.volume_up_rounded,
+                      size: 18,
+                      color: _isSpeaking && _speakingIndex == index
+                          ? AiBrandTokens.primary
+                          : Colors.grey.shade500,
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -457,6 +654,20 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       ),
       child: Row(
         children: [
+          if (_voiceEnabled) ...[
+            IconButton(
+              tooltip: _listening ? '停止听写' : '语音输入',
+              onPressed: (_isSending || hasError)
+                  ? null
+                  : () => unawaited(_toggleListen()),
+              icon: Icon(
+                _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                color: _listening
+                    ? AiBrandTokens.primary
+                    : Colors.grey.shade600,
+              ),
+            ),
+          ],
           Expanded(
             child: TextField(
               controller: _controller,
@@ -467,9 +678,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
               decoration: InputDecoration(
                 hintText: hasError
                     ? '暂时无法发送消息'
-                    : _isSending
-                        ? '思考中...'
-                        : '说点什么...',
+                    : _listening
+                        ? '正在听…'
+                        : _isSending
+                            ? '思考中...'
+                            : '说点什么...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,

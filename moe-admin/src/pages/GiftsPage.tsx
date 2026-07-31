@@ -3,6 +3,7 @@ import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
 import { EmojiIconField } from '../components/EmojiIconField'
 import { FormField } from '../components/FormField'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import { GIFT_CATEGORIES, giftCategoryLabel } from '../lib/giftCategories'
@@ -34,6 +35,7 @@ export function GiftsPage() {
   const [page, setPage] = useState(1)
   const [keyword, setKeyword] = useState('')
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -48,7 +50,12 @@ export function GiftsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await client.listGifts({ page, page_size: pageSize, keyword: search || undefined })
+      const res = await client.listGifts({
+        page,
+        page_size: pageSize,
+        keyword: search || undefined,
+        category: category || undefined,
+      })
       if (!res.success || !res.data) {
         setError(res.message || '加载失败')
         setItems([])
@@ -62,7 +69,7 @@ export function GiftsPage() {
     } finally {
       setLoading(false)
     }
-  }, [client, page, search])
+  }, [client, page, search, category])
 
   useEffect(() => {
     void load()
@@ -221,6 +228,20 @@ export function GiftsPage() {
               },
               placeholder: '搜索名称 / 说明',
             }}
+            filters={
+              <AdminFilterPills
+                ariaLabel="礼物分类"
+                value={category}
+                onChange={(next) => {
+                  setCategory(next)
+                  setPage(1)
+                }}
+                options={[
+                  { value: '', label: '全部' },
+                  ...GIFT_CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
+                ]}
+              />
+            }
           />
         }
         error={error}

@@ -276,73 +276,77 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxBubbleWidth),
               child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    gradient: isUser
-                        ? const LinearGradient(
-                            colors: [
-                              AiBrandTokens.primary,
-                              AiBrandTokens.secondary,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                    color: isUser
-                        ? null
-                        : widget.contentType == MessageContentType.code
-                            ? const Color(0xFF1E1E1E)
-                            : Colors.white.withValues(alpha: 0.96),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: isUser
-                          ? const Radius.circular(20)
-                          : const Radius.circular(4),
-                      bottomRight: isUser
-                          ? const Radius.circular(4)
-                          : const Radius.circular(20),
-                    ),
-                    border: !isUser &&
-                            widget.contentType != MessageContentType.code
-                        ? Border.all(
-                            color:
-                                AiBrandTokens.primary.withValues(alpha: 0.08),
-                          )
-                        : null,
-                    boxShadow:
-                        isUser || widget.contentType == MessageContentType.code
-                            ? [
-                                BoxShadow(
-                                  color: (isUser
-                                          ? AiBrandTokens.primary
-                                          : Colors.black)
-                                      .withValues(alpha: 0.12),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ]
-                            : [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
+                crossAxisAlignment:
+                    isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: isUser
+                          ? const LinearGradient(
+                              colors: [
+                                AiBrandTokens.primary,
+                                AiBrandTokens.secondary,
                               ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: isUser
+                          ? null
+                          : widget.contentType == MessageContentType.code
+                              ? const Color(0xFF1E1E1E)
+                              : Colors.white.withValues(alpha: 0.96),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: isUser
+                            ? const Radius.circular(20)
+                            : const Radius.circular(4),
+                        bottomRight: isUser
+                            ? const Radius.circular(4)
+                            : const Radius.circular(20),
+                      ),
+                      border: !isUser &&
+                              widget.contentType != MessageContentType.code
+                          ? Border.all(
+                              color:
+                                  AiBrandTokens.primary.withValues(alpha: 0.08),
+                            )
+                          : null,
+                      boxShadow: isUser ||
+                              widget.contentType == MessageContentType.code
+                          ? [
+                              BoxShadow(
+                                color: (isUser
+                                        ? AiBrandTokens.primary
+                                        : Colors.black)
+                                    .withValues(alpha: 0.12),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                    ),
+                    child: (!widget.isUser &&
+                            widget.isLoading &&
+                            widget.content.trim().isEmpty)
+                        ? _renderThinkingContent()
+                        : widget.contentType == MessageContentType.text
+                            ? _renderTextContent()
+                            : widget.contentType == MessageContentType.thinking
+                                ? _renderThinkingContent()
+                                : _renderCodeContent(),
                   ),
-                  child: widget.contentType == MessageContentType.text
-                      ? _renderTextContent()
-                      : widget.contentType == MessageContentType.thinking
-                          ? _renderThinkingContent()
-                          : _renderCodeContent(),
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           ),
           if (isUser && !widget.hideAvatar) ...[

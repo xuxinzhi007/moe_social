@@ -3,6 +3,7 @@ package adminapphttp
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"backend/common/errorcode"
 	"backend/internal/apilegacy/common"
@@ -55,4 +56,16 @@ func requireAdminContext(ctx context.Context) (context.Context, error) {
 		return ctx, errors.New("admin actor missing")
 	}
 	return actx, nil
+}
+
+// requireSuperAdmin 要求已登录且角色为 super_admin（jwtAuthFilter 注入 admin_role）。
+func requireSuperAdmin(ctx context.Context) error {
+	if _, err := requireAdminContext(ctx); err != nil {
+		return err
+	}
+	role, _ := ctx.Value("admin_role").(string)
+	if strings.EqualFold(strings.TrimSpace(role), "super_admin") {
+		return nil
+	}
+	return status.Error(codes.PermissionDenied, "需要 super_admin 权限")
 }

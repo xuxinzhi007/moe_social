@@ -270,27 +270,30 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final query = _vm.searchQuery.toLowerCase();
 
     if (_vm.serverConversations.isNotEmpty) {
-      final rows =
-          List<PrivateConversationItem>.from(_vm.serverConversations).where((c) {
+      final rows = List<PrivateConversationItem>.from(_vm.serverConversations)
+          .where((c) {
+        final peerId = c.peerUserId.trim();
         final lastAt = DateTime.tryParse(c.lastMessage.createdAt) ??
             DateTime.fromMillisecondsSinceEpoch(0);
-        if (!_vm.isAfterClearMarker(c.peerUserId.trim(), lastAt)) return false;
+        if (!_vm.isPeerVisibleInConversationList(peerId, lastAt)) {
+          return false;
+        }
         if (query.isEmpty) return true;
-        final peerId = c.peerUserId.trim().toLowerCase();
+        final peerIdQ = peerId.toLowerCase();
         final peerName = c.peerName.trim().toLowerCase();
         final friend = _vm.friends.cast<User?>().firstWhere(
-              (u) => u?.id == c.peerUserId.trim(),
+              (u) => u?.id == peerId,
               orElse: () => null,
             );
         final friendName = (friend?.username ?? '').trim().toLowerCase();
         final moeNo = (friend?.moeNo ?? '').trim().toLowerCase();
-        return peerId.contains(query) ||
+        return peerIdQ.contains(query) ||
             peerName.contains(query) ||
             friendName.contains(query) ||
             moeNo.contains(query);
       }).toList();
       if (rows.isEmpty) {
-        return _buildSearchEmptyState(context);
+        return _buildListEmptyState(context, searching: query.isNotEmpty);
       }
       return RefreshIndicator(
         onRefresh: _vm.load,
@@ -396,35 +399,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     peerIds.removeWhere((e) => e.isEmpty);
 
     if (peerIds.isEmpty) {
-      return Center(
-        child: MoeEmptyState(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: '还没有开始聊天',
-          subtitle: '先认识一位同好，私信会在这里长出来',
-          primaryAction: MoeEmptyStateAction(
-            label: '去通讯录',
-            icon: Icons.people_rounded,
-            onPressed: () {
-              if (widget.onEmptyFindFriends != null) {
-                widget.onEmptyFindFriends!();
-                return;
-              }
-              context.read<MainNavController>().requestTab(1);
-            },
-          ),
-          secondaryAction: MoeEmptyStateAction(
-            label: widget.emptyExploreLabel ?? '添加好友',
-            icon: widget.emptyExploreIcon ?? Icons.person_add_rounded,
-            onPressed: () {
-              if (widget.onEmptyExplore != null) {
-                widget.onEmptyExplore!();
-                return;
-              }
-              context.read<MainNavController>().requestTab(1);
-            },
-          ),
-        ),
-      );
+      return _buildListEmptyState(context, searching: false);
     }
 
     DateTime lastActivity(String peerId) {
@@ -449,6 +424,12 @@ class _ConversationsPageState extends State<ConversationsPage> {
     });
 
     final filteredRows = rows.where((peerId) {
+      if (!_vm.isPeerVisibleInConversationList(
+        peerId,
+        lastActivity(peerId),
+      )) {
+        return false;
+      }
       if (query.isEmpty) return true;
       User? friend;
       for (final u in _vm.friends) {
@@ -469,7 +450,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     }).toList();
 
     if (filteredRows.isEmpty) {
-      return _buildSearchEmptyState(context);
+      return _buildListEmptyState(context, searching: query.isNotEmpty);
     }
 
     return RefreshIndicator(
@@ -556,28 +537,76 @@ class _ConversationsPageState extends State<ConversationsPage> {
     );
   }
 
-  Widget _buildSearchEmptyState(BuildContext context) {
-    return Center(
-      child: MoeEmptyState(
-        icon: Icons.search_off_rounded,
-        title: '没有找到匹配的会话',
-        subtitle: '试试搜索好友昵称、用户 ID，或者先去添加新的好友。',
-        primaryAction: MoeEmptyStateAction(
-          label: '清空搜索',
-          icon: Icons.refresh_rounded,
-          onPressed: () => _searchController.clear(),
-        ),
-        secondaryAction: MoeEmptyStateAction(
-          label: '找好友',
-          icon: Icons.people_rounded,
-          onPressed: () {
-            if (widget.onEmptyFindFriends != null) {
-              widget.onEmptyFindFriends!();
-              return;
-            }
-            context.read<MainNavController>().requestTab(1);
-          },
-        ),
+  /// 列表空态：有搜索词 → 搜索无结果；否则 → 暂无会话（含全部隐藏）。
+  Widget _buildListEmptyState(
+    BuildContext context, {
+    required bool searching,
+  }) {
+    final empty = searching
+        ? MoeEmptyState(
+            icon: Icons.search_off_rounded,
+            title: '没有找到匹配的会话',
+            subtitle: '试试搜索好友昵称、用户 ID，或者先去添加新的好友。',
+            compact: true,
+            primaryAction: MoeEmptyStateAction(
+              label: '清空搜索',
+              icon: Icons.refresh_rounded,
+              onPressed: () => _searchController.clear(),
+            ),
+            secondaryAction: MoeEmptyStateAction(
+              label: '找好友',
+              icon: Icons.people_rounded,
+              onPressed: () {
+                if (widget.onEmptyFindFriends != null) {
+                  widget.onEmptyFindFriends!();
+                  return;
+                }
+                context.read<MainNavController>().requestTab(1);
+              },
+            ),
+          )
+        : MoeEmptyState(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: '暂时没有会话',
+            subtitle: '左滑可隐藏会话；有新消息时会再出现在这里',
+            compact: true,
+            primaryAction: MoeEmptyStateAction(
+              label: '去通讯录',
+              icon: Icons.people_rounded,
+              onPressed: () {
+                if (widget.onEmptyFindFriends != null) {
+                  widget.onEmptyFindFriends!();
+                  return;
+                }
+                context.read<MainNavController>().requestTab(1);
+              },
+            ),
+            secondaryAction: MoeEmptyStateAction(
+              label: widget.emptyExploreLabel ?? '添加好友',
+              icon: widget.emptyExploreIcon ?? Icons.person_add_rounded,
+              onPressed: () {
+                if (widget.onEmptyExplore != null) {
+                  widget.onEmptyExplore!();
+                  return;
+                }
+                context.read<MainNavController>().requestTab(1);
+              },
+            ),
+          );
+
+    return RefreshIndicator(
+      onRefresh: _vm.load,
+      color: MoeTheme.of(context).primary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(child: empty),
+            ),
+          );
+        },
       ),
     );
   }
@@ -600,7 +629,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Icon(Icons.visibility_off_outlined, color: MoeTokens.danger, size: 20),
+            Icon(Icons.visibility_off_outlined,
+                color: MoeTokens.danger, size: 20),
             SizedBox(width: 6),
             Text(
               '不显示',
@@ -615,25 +645,14 @@ class _ConversationsPageState extends State<ConversationsPage> {
       ),
       confirmDismiss: (_) async {
         HapticFeedback.lightImpact();
+        // 先清未读，避免隐藏后列表刷新仍凭旧未读/活动把会话加回来。
+        await context
+            .read<NotificationProvider>()
+            .markDirectMessagesAsRead(peerId);
+        if (!mounted) return true;
         await _vm.hideConversation(peerId);
         if (!mounted) return true;
-        unawaited(
-          context.read<NotificationProvider>().markDirectMessagesAsRead(peerId),
-        );
-        final messenger = ScaffoldMessenger.of(context);
-        messenger.clearSnackBars();
-        messenger.showSnackBar(
-          SnackBar(
-            content: const Text('已从会话列表隐藏'),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: '撤销',
-              onPressed: () {
-                unawaited(_vm.unhideConversation(peerId));
-              },
-            ),
-          ),
-        );
+        _showHideConversationSnackBar(peerId);
         return true;
       },
       child: child,
@@ -799,6 +818,33 @@ class _ConversationsPageState extends State<ConversationsPage> {
       ),
     );
   }
+
+  /// 隐藏会话后的可撤销提示：带倒计时，到期自动消失。
+  void _showHideConversationSnackBar(String peerId) {
+    const undoSeconds = 5;
+    final messenger = ScaffoldMessenger.of(context);
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: _CountdownSnackLabel(
+          prefix: '已隐藏',
+          seconds: undoSeconds,
+        ),
+        duration: const Duration(seconds: undoSeconds),
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.down,
+        // 避开底部 Tab，避免与导航叠挤导致溢出条。
+        margin: EdgeInsets.fromLTRB(16, 0, 16, 72 + bottomInset),
+        action: SnackBarAction(
+          label: '撤销',
+          onPressed: () {
+            unawaited(_vm.unhideConversation(peerId));
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _OnlineFriendChip extends StatelessWidget {
@@ -862,6 +908,59 @@ class _OnlineFriendChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// SnackBar 文案：`前缀 · Ns`，每秒刷新。
+class _CountdownSnackLabel extends StatefulWidget {
+  const _CountdownSnackLabel({
+    required this.prefix,
+    required this.seconds,
+  });
+
+  final String prefix;
+  final int seconds;
+
+  @override
+  State<_CountdownSnackLabel> createState() => _CountdownSnackLabelState();
+}
+
+class _CountdownSnackLabelState extends State<_CountdownSnackLabel> {
+  late int _left;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _left = widget.seconds;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_left <= 1) {
+        timer.cancel();
+        setState(() => _left = 0);
+        return;
+      }
+      setState(() => _left -= 1);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final suffix = _left > 0 ? ' · ${_left}s' : '';
+    return Text(
+      '${widget.prefix}$suffix',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

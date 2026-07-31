@@ -1,12 +1,30 @@
+/**
+ * Moe Admin styles — 唯一入口（main.tsx 只 import 此文件）。
+ * 新样式写入 tokens / layout / components / pages；禁止往 legacy 单体追加。
+ * Sprint A：单体迁入 legacy/，import 顺序对齐 css-architecture-v3。
+ */
+
+/* tokens */
 @import './tokens/colors.css';
+@import './tokens/typography.css';
 @import './tokens/spacing.css';
+@import './tokens/motion.css';
+
+/* base */
+@import './base/utilities.css';
+
+/* layout (V3 chrome overrides) */
+@import './layout/chrome-v3.css';
+
+/* components (modular) */
 @import './components/toolbar.css';
 @import './components/admin-filters.css';
 @import './components/gift-catalog.css';
-@import './moe-admin-theme.css';
-@import './layout/chrome-v3.css';
 @import './components/platform-page.css';
 @import './components/list-table.css';
 @import './components/soft-particles.css';
 @import './components/bot-flow.css';
 @import './components/brain-rpg.css';
+
+/* legacy monolith — 逐段搬空后删除（P4） */
+@import './legacy/moe-admin-theme.css';

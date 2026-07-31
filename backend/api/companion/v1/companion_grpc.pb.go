@@ -24,6 +24,8 @@ const (
 	Companion_UpsertProfile_FullMethodName        = "/companion.v1.Companion/UpsertProfile"
 	Companion_GetState_FullMethodName             = "/companion.v1.Companion/GetState"
 	Companion_ListMemories_FullMethodName         = "/companion.v1.Companion/ListMemories"
+	Companion_DeleteMemory_FullMethodName         = "/companion.v1.Companion/DeleteMemory"
+	Companion_SetMemoryPinned_FullMethodName      = "/companion.v1.Companion/SetMemoryPinned"
 	Companion_ListChatHistory_FullMethodName      = "/companion.v1.Companion/ListChatHistory"
 )
 
@@ -39,6 +41,8 @@ type CompanionClient interface {
 	GetState(ctx context.Context, in *GetStateRequest, opts ...grpc.CallOption) (*GetStateReply, error)
 	// Memory
 	ListMemories(ctx context.Context, in *ListMemoriesRequest, opts ...grpc.CallOption) (*ListMemoriesReply, error)
+	DeleteMemory(ctx context.Context, in *DeleteMemoryRequest, opts ...grpc.CallOption) (*DeleteMemoryReply, error)
+	SetMemoryPinned(ctx context.Context, in *SetMemoryPinnedRequest, opts ...grpc.CallOption) (*SetMemoryPinnedReply, error)
 	// Chat History
 	ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error)
 }
@@ -101,6 +105,26 @@ func (c *companionClient) ListMemories(ctx context.Context, in *ListMemoriesRequ
 	return out, nil
 }
 
+func (c *companionClient) DeleteMemory(ctx context.Context, in *DeleteMemoryRequest, opts ...grpc.CallOption) (*DeleteMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteMemoryReply)
+	err := c.cc.Invoke(ctx, Companion_DeleteMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) SetMemoryPinned(ctx context.Context, in *SetMemoryPinnedRequest, opts ...grpc.CallOption) (*SetMemoryPinnedReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetMemoryPinnedReply)
+	err := c.cc.Invoke(ctx, Companion_SetMemoryPinned_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListChatHistoryReply)
@@ -123,6 +147,8 @@ type CompanionServer interface {
 	GetState(context.Context, *GetStateRequest) (*GetStateReply, error)
 	// Memory
 	ListMemories(context.Context, *ListMemoriesRequest) (*ListMemoriesReply, error)
+	DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error)
+	SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error)
 	// Chat History
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
 	mustEmbedUnimplementedCompanionServer()
@@ -149,6 +175,12 @@ func (UnimplementedCompanionServer) GetState(context.Context, *GetStateRequest) 
 }
 func (UnimplementedCompanionServer) ListMemories(context.Context, *ListMemoriesRequest) (*ListMemoriesReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMemories not implemented")
+}
+func (UnimplementedCompanionServer) DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteMemory not implemented")
+}
+func (UnimplementedCompanionServer) SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetMemoryPinned not implemented")
 }
 func (UnimplementedCompanionServer) ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListChatHistory not implemented")
@@ -264,6 +296,42 @@ func _Companion_ListMemories_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_DeleteMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).DeleteMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_DeleteMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).DeleteMemory(ctx, req.(*DeleteMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_SetMemoryPinned_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetMemoryPinnedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).SetMemoryPinned(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_SetMemoryPinned_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).SetMemoryPinned(ctx, req.(*SetMemoryPinnedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_ListChatHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListChatHistoryRequest)
 	if err := dec(in); err != nil {
@@ -308,6 +376,14 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMemories",
 			Handler:    _Companion_ListMemories_Handler,
+		},
+		{
+			MethodName: "DeleteMemory",
+			Handler:    _Companion_DeleteMemory_Handler,
+		},
+		{
+			MethodName: "SetMemoryPinned",
+			Handler:    _Companion_SetMemoryPinned_Handler,
 		},
 		{
 			MethodName: "ListChatHistory",

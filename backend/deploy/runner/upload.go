@@ -81,7 +81,7 @@ func (reg *Registry) RunBackendUpload(
 
 	if stopBefore.enabled {
 		if sink != nil {
-			sink("【2/6】停止 api / rpc 容器（释放二进制占用）…\n")
+			sink("【2/6】停止 moe-social 容器（释放二进制占用）…\n")
 		}
 		stopScript := rp.composeScript(cf, append([]string{"stop"}, stopBefore.services...)...)
 		if sink != nil {
@@ -100,7 +100,7 @@ func (reg *Registry) RunBackendUpload(
 	}
 
 	if sink != nil {
-		sink("【4/6】并行上传 api + rpc（各用独立 SFTP 连接）…\n")
+		sink("【4/6】上传 bin/moe-social（SFTP）…\n")
 	}
 	if err := uploadBinariesParallel(ctx, *rp.sshConfig(), localBE, remoteBE, sink); err != nil {
 		if sink != nil {
@@ -170,16 +170,19 @@ type composeStepOption struct {
 	services []string // empty = all services in compose file
 }
 
+// defaultComposeService 与 docker-compose.binary.yml 的 service 名一致。
+const defaultComposeService = "moe-social"
+
 func parseStopBeforeParam(params map[string]string) composeStepOption {
 	if params == nil {
-		return composeStepOption{enabled: true, services: []string{"api", "rpc"}}
+		return composeStepOption{enabled: true, services: []string{defaultComposeService}}
 	}
 	v := strings.TrimSpace(strings.ToLower(params["stop_before"]))
 	switch v {
 	case "0", "false", "no", "off":
 		return composeStepOption{enabled: false}
 	case "", "1", "true", "yes", "all":
-		return composeStepOption{enabled: true, services: []string{"api", "rpc"}}
+		return composeStepOption{enabled: true, services: []string{defaultComposeService}}
 	default:
 		return composeStepOption{enabled: true, services: splitCSV(v)}
 	}
@@ -187,12 +190,12 @@ func parseStopBeforeParam(params map[string]string) composeStepOption {
 
 func parseRestartParam(params map[string]string) composeStepOption {
 	if params == nil {
-		return composeStepOption{enabled: true, services: []string{"api", "rpc"}}
+		return composeStepOption{enabled: true, services: []string{defaultComposeService}}
 	}
 	v := strings.TrimSpace(strings.ToLower(params["restart"]))
 	switch v {
 	case "", "1", "true", "yes", "all":
-		return composeStepOption{enabled: true, services: []string{"api", "rpc"}}
+		return composeStepOption{enabled: true, services: []string{defaultComposeService}}
 	case "0", "false", "no", "off":
 		return composeStepOption{enabled: false}
 	default:

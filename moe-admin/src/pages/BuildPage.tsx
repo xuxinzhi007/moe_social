@@ -1,5 +1,5 @@
 import { BuildCacheActions } from '../components/BuildCacheActions'
-import { PageHead } from '../ui'
+import { AdminPanel, MonitorPageLayout } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 export function BuildPage() {
@@ -18,15 +18,21 @@ export function BuildPage() {
       : '选择任务后在此显示日志'
 
   return (
-    <>
-      <PageHead title="构建流水线" description="本机交叉编译与 Flutter 调试（较慢）" />
-
+    <MonitorPageLayout
+      title="构建流水线"
+      description="本机交叉编译后端 bin/moe-social · Flutter 区仅调试用"
+      envNote="Deploy Agent 本机任务 · 正式 APK 走 GitHub tag / 运维「GitHub APK 构建」"
+      metrics={[
+        {
+          label: '进行中',
+          value: activeJob ? activeJob.type : '无',
+          hint: activeJob ? activeJob.status : '空闲',
+        },
+      ]}
+    >
       <div className="split">
-        <div className="panel">
-          <div className="panel-head">
-            <h3>后端</h3>
-          </div>
-          <div className="panel-body btn-row">
+        <AdminPanel title="后端">
+          <div className="btn-row">
             <button
               type="button"
               className="btn btn-primary"
@@ -41,32 +47,20 @@ export function BuildPage() {
             >
               本机构建
             </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => run('env_inspect')}
-            >
+            <button type="button" className="btn btn-ghost" onClick={() => run('env_inspect')}>
               环境巡检
             </button>
           </div>
-        </div>
-        <div className="panel">
-          <div className="panel-head">
-            <h3>Flutter</h3>
-          </div>
-          <div className="panel-body btn-row">
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => run('flutter_doctor')}
-            >
+        </AdminPanel>
+        <AdminPanel title="Flutter（本机调试）">
+          <p className="muted config-hint" style={{ marginTop: 0 }}>
+            正式 APK 走 GitHub tag / 侧栏「GitHub APK 构建」，不要用本机 build apk 当发版。
+          </p>
+          <div className="btn-row">
+            <button type="button" className="btn btn-ghost" onClick={() => run('flutter_doctor')}>
               flutter doctor
             </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={() => run('flutter_pub_get')}
-            >
+            <button type="button" className="btn btn-ghost" onClick={() => run('flutter_pub_get')}>
               pub get
             </button>
             <button
@@ -74,24 +68,19 @@ export function BuildPage() {
               className="btn btn-ghost"
               onClick={() => run('flutter_build_apk')}
             >
-              build apk
+              build apk（调试）
             </button>
           </div>
-        </div>
+        </AdminPanel>
       </div>
 
       <BuildCacheActions />
 
-      <div className="panel">
-        <div className="panel-head">
-          <h3>构建日志</h3>
-        </div>
-        <div className="panel-body">
-          <pre className="log-pre" style={{ maxHeight: 420 }}>
-            {displayLog || '—'}
-          </pre>
-        </div>
-      </div>
-    </>
+      <AdminPanel title="构建日志">
+        <pre className="log-pre" style={{ maxHeight: 420 }}>
+          {displayLog || '—'}
+        </pre>
+      </AdminPanel>
+    </MonitorPageLayout>
   )
 }

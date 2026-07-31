@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { RequireAdmin } from './components/RequireAdmin'
+import { RequireWorkspace } from './components/RequireWorkspace'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import { DeployProvider } from './context/DeployContext'
 import { PlatformProvider } from './context/PlatformContext'
@@ -66,7 +67,9 @@ export default function App() {
                 element={
                   <DeployProvider>
                     <PlatformProvider>
-                      <AppShell />
+                      <RequireWorkspace>
+                        <AppShell />
+                      </RequireWorkspace>
                     </PlatformProvider>
                   </DeployProvider>
                 }

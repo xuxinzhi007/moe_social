@@ -28,6 +28,7 @@ export function createSystemMethods(api: AdminApiFn) {
       api<
         BaseResp<{
           user_total: number
+          landing_feedback_total?: number
           server_time: string
           feishu_enabled: boolean
         }>

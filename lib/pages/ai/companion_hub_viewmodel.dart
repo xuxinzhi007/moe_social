@@ -14,13 +14,25 @@ class CompanionDailyItem {
     required this.title,
     required this.body,
     this.at,
+    this.postId,
+    this.fullBody,
+    this.memoryId,
   });
 
-  /// `world` | `post` | `chat` | `memory`
+  /// `world` | `moment` | `post` | `chat` | `memory`
   final String kind;
   final String title;
   final String body;
   final DateTime? at;
+
+  /// `post` 深链用。
+  final String? postId;
+
+  /// `memory` 全文（body 可能截断）。
+  final String? fullBody;
+
+  /// `memory` 深链到记忆专页。
+  final int? memoryId;
 }
 
 /// AI 伙伴关系首页状态（陪伴为主，世界/动态为日常流）。
@@ -36,6 +48,7 @@ class CompanionHubViewModel extends ChangeNotifier {
   CompanionStateData _state = const CompanionStateData();
   List<CompanionDailyItem> _dailyItems = const [];
   String _worldSummaryLine = '';
+  bool _worldBound = false;
   bool _disposed = false;
 
   bool get isLoading => _isLoading;
@@ -44,6 +57,9 @@ class CompanionHubViewModel extends ChangeNotifier {
   CompanionStateData get state => _state;
   List<CompanionDailyItem> get dailyItems => _dailyItems;
   String get worldSummaryLine => _worldSummaryLine;
+
+  /// 是否已绑定世界居民（以 profile.life_entity_id > 0 为准）。
+  bool get worldBound => _worldBound;
 
   Future<void> loadDashboard() async {
     _isLoading = true;
@@ -62,13 +78,36 @@ class CompanionHubViewModel extends ChangeNotifier {
 
       final daily = <CompanionDailyItem>[];
       var worldLine = '';
+      var worldBound = snapshot.profile.lifeEntityId > 0;
+
+      // 后端 moments 优先（与 state SSOT 对齐）；无则回退 Life 事件。
+      final momentItems = _momentDailyItems(snapshot.state.moments);
+      if (momentItems.isNotEmpty) {
+        daily.addAll(momentItems);
+      }
 
       if (FeatureFlags.showLifeEngine) {
         try {
           final life = await LifeService.getInitialState();
-          worldLine = _buildWorldSummaryLine(life, snapshot.profile.lifeEntityId);
-          daily.addAll(_worldDailyItems(life, snapshot.profile.lifeEntityId));
-        } catch (_) {}
+          // 绑定 SSOT = profile.life_entity_id；勿因 Life 列表短暂为空/未同步而降级为「未绑定」。
+          worldBound = snapshot.profile.lifeEntityId > 0;
+          worldLine = _buildWorldSummaryLine(
+            life,
+            snapshot.profile.lifeEntityId,
+            profileName: snapshot.profile.name,
+            profileEmoji: snapshot.profile.emoji,
+          );
+          if (momentItems.isEmpty) {
+            daily.addAll(_worldDailyItems(life, snapshot.profile.lifeEntityId));
+          }
+        } catch (_) {
+          if (worldBound) {
+            final who = snapshot.profile.name.trim().isNotEmpty
+                ? snapshot.profile.name.trim()
+                : 'TA';
+            worldLine = '$who 已绑定 · 点进世界看看';
+          }
+        }
       }
 
       if (identity != null && identity.isValid) {
@@ -93,13 +132,13 @@ class CompanionHubViewModel extends ChangeNotifier {
                 title: '发了动态',
                 body: text,
                 at: post.createdAt,
+                postId: post.id,
               ),
             );
           }
         } catch (_) {}
       }
 
-      // 二期：聊天高光 + 记忆碎片并入日常流（不再单独铺记忆列表）。
       try {
         final history = await _companion.listChatHistory(limit: 12);
         daily.addAll(_chatHighlightItems(history));
@@ -121,6 +160,7 @@ class CompanionHubViewModel extends ChangeNotifier {
       _state = snapshot.state;
       _dailyItems = daily.take(16).toList(growable: false);
       _worldSummaryLine = worldLine;
+      _worldBound = worldBound;
       _isLoading = false;
       _notify();
     } catch (e) {
@@ -139,24 +179,83 @@ class CompanionHubViewModel extends ChangeNotifier {
     await loadDashboard();
   }
 
-  static String _buildWorldSummaryLine(LifeInitialState life, int lifeEntityId) {
-    LifeEntity? bound;
+  /// WS 实时问候/状态补丁（不全量刷新日常流）。
+  void applyLivePresence({
+    String? greeting,
+    String? moodThought,
+    String? activityLabel,
+  }) {
+    if (_disposed) return;
+    final next = _state.copyWith(
+      greeting: (greeting != null && greeting.trim().isNotEmpty)
+          ? greeting.trim()
+          : null,
+      moodThought: (moodThought != null && moodThought.trim().isNotEmpty)
+          ? moodThought.trim()
+          : null,
+      activityLabel: (activityLabel != null && activityLabel.trim().isNotEmpty)
+          ? activityLabel.trim()
+          : null,
+    );
+    if (identical(next, _state) ||
+        (next.greeting == _state.greeting &&
+            next.moodThought == _state.moodThought &&
+            next.activityLabel == _state.activityLabel)) {
+      return;
+    }
+    _state = next;
+    _notify();
+  }
+
+  static LifeEntity? _findBoundEntity(LifeInitialState life, int lifeEntityId) {
+    if (lifeEntityId <= 0) return null;
+    for (final e in life.entities) {
+      if (e.id == lifeEntityId) return e;
+    }
+    return null;
+  }
+
+  static String _buildWorldSummaryLine(
+    LifeInitialState life,
+    int lifeEntityId, {
+    String profileName = '',
+    String profileEmoji = '',
+  }) {
+    final bound = _findBoundEntity(life, lifeEntityId);
+    if (bound != null) {
+      final action = bound.action.trim().isEmpty ? '发呆' : bound.action.trim();
+      return '${bound.emoji} ${bound.name} · $action · ${bound.growthStageLabel}';
+    }
+    final who = profileName.trim().isNotEmpty ? profileName.trim() : 'TA';
+    final emoji = profileEmoji.trim();
+    // 已绑定但本轮 Life 列表未带回实体（冷启动/同步中）仍视为已绑定。
     if (lifeEntityId > 0) {
-      for (final e in life.entities) {
-        if (e.id == lifeEntityId) {
-          bound = e;
-          break;
-        }
+      final head = emoji.isNotEmpty ? '$emoji $who' : who;
+      if (life.entities.isEmpty) {
+        return '$head 已绑定 · 世界同步中';
       }
+      return '$head 已绑定 · 点地图可切换居民';
     }
-    bound ??= life.entities.isNotEmpty ? life.entities.first : null;
-    if (bound == null) {
-      return life.summary.entityCount > 0
-          ? '世界里有 ${life.summary.entityCount} 位生命在活动'
-          : '世界还很安静';
+    if (life.entities.isEmpty) {
+      return '世界还很安静';
     }
-    final action = bound.action.trim().isEmpty ? '发呆' : bound.action.trim();
-    return '${bound.emoji} ${bound.name} 正在$action · ${bound.growthStageLabel}';
+    return '点进世界，选一位居民设为$who的伙伴';
+  }
+
+  static List<CompanionDailyItem> _momentDailyItems(
+    List<CompanionMomentData> moments,
+  ) {
+    return moments
+        .where((m) => m.text.trim().isNotEmpty)
+        .take(6)
+        .map(
+          (m) => CompanionDailyItem(
+            kind: 'moment',
+            title: m.timeLabel.trim().isNotEmpty ? m.timeLabel.trim() : '近况',
+            body: m.text.trim(),
+          ),
+        )
+        .toList(growable: false);
   }
 
   static List<CompanionDailyItem> _worldDailyItems(
@@ -204,6 +303,7 @@ class CompanionHubViewModel extends ChangeNotifier {
         title: isUser ? '你说过' : '和你聊过',
         body: _clip(e.content.trim(), 96),
         at: DateTime.tryParse(e.createdAt),
+        fullBody: e.content.trim(),
       );
     }).toList(growable: false);
   }
@@ -211,18 +311,19 @@ class CompanionHubViewModel extends ChangeNotifier {
   static List<CompanionDailyItem> _memoryDailyItems(
     List<CompanionMemoryData> memories,
   ) {
-    return memories
-        .where((m) => m.content.trim().isNotEmpty)
-        .take(3)
-        .map(
-          (m) => CompanionDailyItem(
-            kind: 'memory',
-            title: '记得的事',
-            body: _clip(m.content.trim(), 96),
-            at: DateTime.tryParse(m.createdAt),
-          ),
-        )
-        .toList(growable: false);
+    return memories.where((m) => m.content.trim().isNotEmpty).take(3).map(
+      (m) {
+        final text = m.content.trim();
+        return CompanionDailyItem(
+          kind: 'memory',
+          title: '记得的事',
+          body: _clip(text, 96),
+          at: DateTime.tryParse(m.createdAt),
+          fullBody: text,
+          memoryId: m.id > 0 ? m.id : null,
+        );
+      },
+    ).toList(growable: false);
   }
 
   static String _clip(String text, int maxChars) {

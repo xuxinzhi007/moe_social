@@ -46,3 +46,7 @@ String? desktopPickerInitialDirectory(String? exportDir) {
 Future<String> readFileAtPath(String path) async {
   return File(path).readAsString();
 }
+
+Future<List<int>> readBytesAtPath(String path) async {
+  return File(path).readAsBytes();
+}

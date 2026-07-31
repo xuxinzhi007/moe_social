@@ -172,7 +172,11 @@ func (e *LifeEngine) ApplyUserAction(worldName string, entityID uint, action str
 		CreatedAt:   now,
 	}
 	evt.Importance = eventImportance(evt.EventType)
-	e.persistence.EnqueueEvent(evt)
+	// 用户照料事件同步落库，避免杀进程后「做过的事」消失。
+	if err := e.store.CreateEventLog(context.Background(), evt); err != nil {
+		moelog.Errorf("life: sync persist user action event: %v", err)
+		e.persistence.EnqueueEvent(evt)
+	}
 
 	return ActionResult{
 		Success: true,
