@@ -23,6 +23,8 @@ message CompanionProfileMsg {
   int32 life_entity_id = 10;
   // 关系层头像 URL（用户自定义）；空则前端回退 emoji。与世界居民形象分离。
   string avatar_url = 11;
+  // 世界绑定状态：unbound | bound_ok | bound_missing（已绑定但居民不在舞台，不解绑）。
+  string world_bind_status = 12;
 }
 
 message CommunityIdentityMsg {
@@ -45,6 +47,10 @@ message CompanionStateMsg {
   double mood = 10;
   double hunger = 11;
   double energy = 12;
+  // 绑定居民是否在舞台上存活；false 时 moments 仍可来自历史事件日志。
+  bool entity_alive = 13;
+  // 与 Profile.world_bind_status 对齐，便于 state 单接口刷新 UI。
+  string world_bind_status = 14;
 }
 
 message CompanionMomentMsg {
@@ -130,6 +136,15 @@ message SetMemoryPinnedReply {
   CompanionMemoryMsg memory = 1;
 }
 
+message UpdateMemoryRequest {
+  uint64 memory_id = 1;
+  string content = 2;
+}
+
+message UpdateMemoryReply {
+  CompanionMemoryMsg memory = 1;
+}
+
 message ListChatHistoryRequest {
   int32 limit = 1;
 }
@@ -170,6 +185,12 @@ service Companion {
   rpc SetMemoryPinned(SetMemoryPinnedRequest) returns (SetMemoryPinnedReply) {
     option (google.api.http) = {
       post: "/api/companion/memories/{memory_id}/pin"
+      body: "*"
+    };
+  }
+  rpc UpdateMemory(UpdateMemoryRequest) returns (UpdateMemoryReply) {
+    option (google.api.http) = {
+      put: "/api/companion/memories/{memory_id}"
       body: "*"
     };
   }

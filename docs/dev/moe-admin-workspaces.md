@@ -43,7 +43,19 @@
 
 1. 列表筛选：公告状态 / 礼物分类 / 审计资源 → `AdminFilterPills`  
 2. 后端：`/api/admin/accounts*` 写读要求 `super_admin`（`requireSuperAdmin`）  
-3. 设置抽屉：非超管隐藏 Deploy Token；删除未挂路由死页（Placeholder / AppConfig / DataCatalog） 
+3. 设置抽屉：非超管隐藏 Deploy Token；删除未挂路由死页（Placeholder / AppConfig / DataCatalog）  
+
+## Sprint D（2026-08）「CSS 模块化」
+
+1. 从 legacy 抽出：`base/reset.css`、`components/{buttons,panels,tags,drawers}.css`  
+2. 脚本：`moe-admin/scripts/extract-legacy-css.mjs`（已执行；勿重复跑除非改 ranges）  
+3. VIP 套餐 / 举报页补 pills；legacy 约减 ~500 行  
+
+## Sprint E（2026-08）「CSS 域拆分」
+
+1. 抽出：`feature/brain.css`、`feature/data-domain-map.css`、`pages/{login,landing-feedback,analytics}.css`（勿用目录名 `domains`，Vite 会 ENOENT）  
+2. 脚本：`scripts/extract-legacy-css-sprint-e.mjs`（已执行）  
+3. legacy ≈4171→**3032** 行；剩余 shell / platform / 数据目录 / moe-tools 
 
 ## 回滚
 

@@ -365,7 +365,8 @@ class LifeProvider extends ChangeNotifier {
       // 回滚乐观更新
       _entities[entityId] = previousEntity;
       _entitiesList = List.unmodifiable(_entities.values);
-      _lastActionError = '稍等一下，${e.retryAfter}秒后再试试吧~';
+      // 文案留给页面用角色气泡展示；此处仅保留标记与秒数语义。
+      _lastActionError = 'care_cooldown:${e.retryAfter}';
       _lastActionIsCooldown = true;
       notifyListeners();
       return false;

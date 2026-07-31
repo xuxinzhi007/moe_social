@@ -85,6 +85,54 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
     }
   }
 
+  Future<void> _editContent(CompanionMemoryData memory) async {
+    final controller = TextEditingController(text: memory.content);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('编辑这段记忆'),
+          content: TextField(
+            controller: controller,
+            maxLines: 6,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: '写下更准确的说法',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+    if (next == null || !mounted) return;
+    if (next.isEmpty) {
+      MoeToast.error(context, '记忆内容不能为空');
+      return;
+    }
+    if (next == memory.content.trim()) return;
+    try {
+      await _vm.updateContent(memory, next);
+      if (!mounted) return;
+      MoeToast.success(context, '记忆已更新');
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+  }
+
   Future<void> _confirmDelete(CompanionMemoryData memory) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -199,6 +247,17 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(48),
                   ),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _vm.isMutating
+                      ? null
+                      : () {
+                          Navigator.of(sheetContext).pop();
+                          unawaited(_editContent(memory));
+                        },
+                  icon: const Icon(Icons.edit_rounded),
+                  label: const Text('编辑这段记忆'),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(

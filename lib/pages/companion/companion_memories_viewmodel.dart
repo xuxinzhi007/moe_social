@@ -71,17 +71,7 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
         pinned: !memory.pinned,
       );
       if (_disposed) return updated;
-      _items = _items
-          .map((m) => m.id == updated.id ? updated : m)
-          .toList(growable: true)
-        ..sort((a, b) {
-          if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
-          if (a.importance != b.importance) {
-            return b.importance.compareTo(a.importance);
-          }
-          return b.createdAt.compareTo(a.createdAt);
-        });
-      _items = List<CompanionMemoryData>.unmodifiable(_items);
+      _replaceAndSort(updated);
       return updated;
     } finally {
       if (!_disposed) {
@@ -89,6 +79,45 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
         _notify();
       }
     }
+  }
+
+  Future<CompanionMemoryData> updateContent(
+    CompanionMemoryData memory,
+    String content,
+  ) async {
+    if (_mutating || memory.id <= 0) {
+      return memory;
+    }
+    _mutating = true;
+    _notify();
+    try {
+      final updated = await _companion.updateMemoryContent(
+        memoryId: memory.id,
+        content: content,
+      );
+      if (_disposed) return updated;
+      _replaceAndSort(updated);
+      return updated;
+    } finally {
+      if (!_disposed) {
+        _mutating = false;
+        _notify();
+      }
+    }
+  }
+
+  void _replaceAndSort(CompanionMemoryData updated) {
+    _items = _items
+        .map((m) => m.id == updated.id ? updated : m)
+        .toList(growable: true)
+      ..sort((a, b) {
+        if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
+        if (a.importance != b.importance) {
+          return b.importance.compareTo(a.importance);
+        }
+        return b.createdAt.compareTo(a.createdAt);
+      });
+    _items = List<CompanionMemoryData>.unmodifiable(_items);
   }
 
   void _notify() {

@@ -220,3 +220,5 @@
 | **P3 样板页** | Dashboard / Platform / Analytics | 视觉验收 |
 | **P4 扫尾** | 其余页面 + 删 monolith | `legacy/moe-admin-theme.css` 清空删除 |
 | **Sprint A（2026-08）** | 像控制台 | 单体迁 `styles/legacy/`；侧栏 `AdminIcon`；运维 4 页 `MonitorPageLayout` |
+| **Sprint D（2026-08）** | CSS 模块化 | 抽出 `reset/buttons/panels/tags/drawers`；legacy ≈4666→4171 行 |
+| **Sprint E（2026-08）** | CSS 域拆分 | brain / data-map / login / landing / analytics；legacy →≈3032 行 |

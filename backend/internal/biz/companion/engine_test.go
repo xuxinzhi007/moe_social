@@ -120,26 +120,55 @@ func TestBindLifeEntityDoesNotOverwriteCustomIdentity(t *testing.T) {
 	}
 }
 
-func TestDeadLifeBindingCanBeReplaced(t *testing.T) {
+func TestDeadLifeBindingKeptWithMissingStatus(t *testing.T) {
 	store := newFakeStore()
 	store.profiles[7] = profileToModel(7, &Profile{LifeEntityID: 2, Name: "Old"})
-	life := &fakeLifeStore{entities: []model.LifeEntity{{ID: 3, Name: "Three", Emoji: "3", IsAlive: true}}}
+	life := &fakeLifeStore{
+		entities: []model.LifeEntity{
+			{ID: 2, Name: "Old", Emoji: "2", IsAlive: false},
+			{ID: 3, Name: "Three", Emoji: "3", IsAlive: true},
+		},
+	}
 	engine := NewEngine(store, life, llminference.Config{}, "")
 
 	stale, err := engine.GetProfile(context.Background(), 7)
 	if err != nil {
 		t.Fatalf("GetProfile() stale binding error = %v", err)
 	}
-	if stale.LifeEntityID != 0 {
-		t.Fatalf("GetProfile() stale binding = %d, want 0", stale.LifeEntityID)
+	if stale.LifeEntityID != 2 {
+		t.Fatalf("GetProfile() binding = %d, want 2 (keep)", stale.LifeEntityID)
+	}
+	if stale.WorldBindStatus != WorldBindMissing {
+		t.Fatalf("WorldBindStatus = %q, want %q", stale.WorldBindStatus, WorldBindMissing)
 	}
 
 	rebound, err := engine.UpsertProfile(context.Background(), 7, &Profile{LifeEntityID: 3})
 	if err != nil {
 		t.Fatalf("UpsertProfile() rebound error = %v", err)
 	}
-	if rebound.LifeEntityID != 3 {
-		t.Fatalf("UpsertProfile() binding = %d, want 3", rebound.LifeEntityID)
+	if rebound.LifeEntityID != 3 || rebound.WorldBindStatus != WorldBindOK {
+		t.Fatalf("UpsertProfile() = (%d, %q), want (3, bound_ok)", rebound.LifeEntityID, rebound.WorldBindStatus)
+	}
+}
+
+func TestFetchLifeDataLoadsEventsWhenEntityDead(t *testing.T) {
+	life := &fakeLifeStore{
+		entities: []model.LifeEntity{{ID: 2, Name: "Two", IsAlive: false}},
+		events: []model.LifeEventLog{
+			{EntityID: 2, Description: "吃了点东西", EventType: "eat", CreatedAt: time.Now()},
+		},
+	}
+	engine := NewEngine(newFakeStore(), life, llminference.Config{}, "")
+	entity, events := engine.fetchLifeData(context.Background(), 2)
+	if entity == nil || entity.IsAlive {
+		t.Fatalf("entity = %v, want dead entity", entity)
+	}
+	if len(events) != 1 {
+		t.Fatalf("events len = %d, want 1", len(events))
+	}
+	state := computeState(&Profile{LifeEntityID: 2, WorldBindStatus: WorldBindMissing}, entity, events)
+	if state.EntityAlive || len(state.Moments) != 1 {
+		t.Fatalf("state alive=%v moments=%d", state.EntityAlive, len(state.Moments))
 	}
 }
 
@@ -163,6 +192,14 @@ func TestDeleteAndPinMemory(t *testing.T) {
 	}
 	if !pinned.Pinned || pinned.Importance < 2 || pinned.ExpiresAt != nil {
 		t.Fatalf("pin result = %+v", pinned)
+	}
+
+	edited, err := engine.UpdateMemoryContent(context.Background(), 7, 1, "其实更喜欢狗")
+	if err != nil {
+		t.Fatalf("UpdateMemoryContent: %v", err)
+	}
+	if edited.Content != "其实更喜欢狗" {
+		t.Fatalf("content = %q", edited.Content)
 	}
 
 	if err := engine.DeleteMemory(context.Background(), 7, 1); err != nil {
@@ -274,6 +311,16 @@ func (s *fakeStore) UpdateMemoryPinned(
 	return gorm.ErrRecordNotFound
 }
 
+func (s *fakeStore) UpdateMemoryContent(_ context.Context, userID, memoryID uint, content string) error {
+	for i := range s.memories {
+		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
+			s.memories[i].Content = content
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
 func (s *fakeStore) CleanupExpiredMemories(_ context.Context) (int64, error) {
 	return 0, nil
 }
@@ -293,7 +340,23 @@ type fakeLifeStore struct {
 }
 
 func (s *fakeLifeStore) ListEntities(_ context.Context, worldID string) ([]model.LifeEntity, error) {
-	return append([]model.LifeEntity(nil), s.entities...), nil
+	out := make([]model.LifeEntity, 0, len(s.entities))
+	for _, e := range s.entities {
+		if e.IsAlive {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+func (s *fakeLifeStore) GetEntityByID(_ context.Context, entityID uint) (*model.LifeEntity, error) {
+	for i := range s.entities {
+		if s.entities[i].ID == entityID {
+			cp := s.entities[i]
+			return &cp, nil
+		}
+	}
+	return nil, nil
 }
 
 func (s *fakeLifeStore) ListRecentEventLogsByEntity(
@@ -302,5 +365,14 @@ func (s *fakeLifeStore) ListRecentEventLogsByEntity(
 	entityID uint,
 	limit int,
 ) ([]model.LifeEventLog, error) {
-	return append([]model.LifeEventLog(nil), s.events...), nil
+	out := make([]model.LifeEventLog, 0, len(s.events))
+	for _, e := range s.events {
+		if e.EntityID == entityID {
+			out = append(out, e)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }

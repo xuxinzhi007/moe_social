@@ -128,6 +128,27 @@ func (s *AppService) SetMemoryPinned(ctx context.Context, userID uint, in *compa
 	}, nil
 }
 
+func (s *AppService) UpdateMemory(ctx context.Context, userID uint, in *companionv1.UpdateMemoryRequest) (*companionv1.UpdateMemoryReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	content := strings.TrimSpace(in.GetContent())
+	if content == "" {
+		return nil, kerrors.BadRequest("COMPANION_MEMORY_EMPTY", "记忆内容不能为空")
+	}
+	memory, err := engine.UpdateMemoryContent(ctx, userID, uint(in.GetMemoryId()), content)
+	if err != nil {
+		if errors.Is(err, companionbiz.ErrMemoryNotFound) {
+			return nil, kerrors.NotFound("COMPANION_MEMORY_NOT_FOUND", "记忆不存在")
+		}
+		return nil, err
+	}
+	return &companionv1.UpdateMemoryReply{
+		Memory: toProtoMemory(*memory),
+	}, nil
+}
+
 func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
@@ -192,6 +213,7 @@ func toProtoProfile(p *companionbiz.Profile) *companionv1.CompanionProfileMsg {
 		AgentId:              p.AgentID,
 		LifeEntityId:         int32(p.LifeEntityID),
 		AvatarUrl:            p.AvatarURL,
+		WorldBindStatus:      p.WorldBindStatus,
 	}
 }
 
@@ -273,13 +295,15 @@ func toProtoState(s *companionbiz.State) *companionv1.CompanionStateMsg {
 		})
 	}
 	return &companionv1.CompanionStateMsg{
-		MoodThought:   s.MoodThought,
-		ActivityLabel: s.ActivityLabel,
-		Greeting:      s.Greeting,
-		Moments:       moments,
-		Mood:          s.Mood,
-		Hunger:        s.Hunger,
-		Energy:        s.Energy,
+		MoodThought:     s.MoodThought,
+		ActivityLabel:   s.ActivityLabel,
+		Greeting:        s.Greeting,
+		Moments:         moments,
+		Mood:            s.Mood,
+		Hunger:          s.Hunger,
+		Energy:          s.Energy,
+		EntityAlive:     s.EntityAlive,
+		WorldBindStatus: s.WorldBindStatus,
 	}
 }
 

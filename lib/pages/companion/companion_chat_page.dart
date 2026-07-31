@@ -281,30 +281,49 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       await _initVoice();
       if (!_speechAvailable) {
         if (mounted) {
-          MoeToast.error(context, '当前设备不支持语音输入');
+          MoeToast.error(
+            context,
+            '语音输入不可用：请确认已授予麦克风权限，或设备支持系统听写',
+          );
         }
         return;
       }
     }
     setState(() => _listening = true);
-    await _speech.listen(
-      onResult: (result) {
-        if (!mounted) return;
-        _controller.text = result.recognizedWords;
-        _controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: _controller.text.length),
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          if (!mounted) return;
+          _controller.text = result.recognizedWords;
+          _controller.selection = TextSelection.fromPosition(
+            TextPosition(offset: _controller.text.length),
+          );
+          if (result.finalResult) {
+            setState(() => _listening = false);
+          }
+        },
+        localeId: 'zh_CN',
+        listenOptions: stt.SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: true,
+          listenMode: stt.ListenMode.confirmation,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _listening = false);
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('permission') ||
+          msg.contains('denied') ||
+          msg.contains('not authorized')) {
+        MoeToast.error(context, '需要麦克风权限才能语音输入，请到系统设置开启');
+      } else {
+        MoeToast.error(
+          context,
+          '语音听写失败，可改用键盘输入：${e.toString().replaceFirst('Exception: ', '')}',
         );
-        if (result.finalResult) {
-          setState(() => _listening = false);
-        }
-      },
-      localeId: 'zh_CN',
-      listenOptions: stt.SpeechListenOptions(
-        partialResults: true,
-        cancelOnError: true,
-        listenMode: stt.ListenMode.confirmation,
-      ),
-    );
+      }
+    }
   }
 
   Future<void> _speakAt(int index, String text) async {

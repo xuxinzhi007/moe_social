@@ -161,16 +161,8 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 	}
 	if row != nil {
 		profile := modelToProfile(row)
-		if e.lifeStore != nil {
-			previousEntityID := profile.LifeEntityID
-			if err := e.bindLifeEntity(ctx, profile); err != nil {
-				return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
-			}
-			if previousEntityID != profile.LifeEntityID {
-				if err := e.store.UpsertProfile(ctx, profileToModel(userID, profile)); err != nil {
-					return nil, fmt.Errorf("persist Life binding for companion user %d: %w", userID, err)
-				}
-			}
+		if err := e.resolveWorldBind(ctx, profile); err != nil {
+			return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
 		}
 		return profile, nil
 	}
@@ -186,14 +178,19 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 	if err != nil {
 		return nil, fmt.Errorf("reload companion profile for user %d: %w", userID, err)
 	}
-	return modelToProfile(row), nil
+	created := modelToProfile(row)
+	if err := e.resolveWorldBind(ctx, created); err != nil {
+		return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
+	}
+	return created, nil
 }
 
 func (e *Engine) UpsertProfile(ctx context.Context, userID uint, p *Profile) (*Profile, error) {
 	if p == nil {
 		return nil, fmt.Errorf("upsert companion profile: profile is nil")
 	}
-	if err := e.bindLifeEntity(ctx, p); err != nil {
+	// 显式绑定到不存在的 ID → 清空；已存在（含软删除）则保留。
+	if err := e.resolveWorldBindOnUpsert(ctx, p); err != nil {
 		return nil, err
 	}
 	row := profileToModel(userID, p)
@@ -205,7 +202,11 @@ func (e *Engine) UpsertProfile(ctx context.Context, userID uint, p *Profile) (*P
 	if err != nil {
 		return nil, fmt.Errorf("reload companion profile for user %d: %w", userID, err)
 	}
-	return modelToProfile(saved), nil
+	out := modelToProfile(saved)
+	if err := e.resolveWorldBind(ctx, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // ── State ──
@@ -223,6 +224,7 @@ func (e *Engine) GetState(ctx context.Context, userID uint) (*State, *Profile, e
 	}
 
 	state := computeState(profile, entity, events)
+	state.WorldBindStatus = profile.WorldBindStatus
 	return state, profile, nil
 }
 
@@ -292,6 +294,40 @@ func (e *Engine) SetMemoryPinned(ctx context.Context, userID, memoryID uint, pin
 	row.Pinned = pinned
 	row.Importance = importance
 	row.ExpiresAt = expiresAt
+	out := modelToMemory(row)
+	return &out, nil
+}
+
+const maxMemoryContentRunes = 2000
+
+// UpdateMemoryContent 编辑记忆正文（用户修正 TA 记错的内容）。
+func (e *Engine) UpdateMemoryContent(ctx context.Context, userID, memoryID uint, content string) (*Memory, error) {
+	if memoryID == 0 {
+		return nil, fmt.Errorf("update memory: invalid id")
+	}
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil, fmt.Errorf("update memory: content empty")
+	}
+	runes := []rune(content)
+	if len(runes) > maxMemoryContentRunes {
+		content = string(runes[:maxMemoryContentRunes])
+	}
+
+	row, err := e.store.GetMemoryByID(ctx, userID, memoryID)
+	if err != nil {
+		return nil, fmt.Errorf("update memory get %d: %w", memoryID, err)
+	}
+	if row == nil {
+		return nil, ErrMemoryNotFound
+	}
+	if err := e.store.UpdateMemoryContent(ctx, userID, memoryID, content); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrMemoryNotFound
+		}
+		return nil, fmt.Errorf("update memory content %d: %w", memoryID, err)
+	}
+	row.Content = content
 	out := modelToMemory(row)
 	return &out, nil
 }
@@ -474,27 +510,17 @@ func (e *Engine) asyncExtractMemory(userID uint, userMsg, assistantReply string,
 // ── 内部方法 ──
 
 // fetchLifeData 从 life store 获取实体数据和事件日志。
+// 实体可已软删除；事件按 entity_id 读取，不依赖存活列表（日常时间线 SSOT）。
 func (e *Engine) fetchLifeData(ctx context.Context, entityID int) (*model.LifeEntity, []model.LifeEventLog) {
-	// 默认世界
 	worldID := "default"
-
-	entities, err := e.lifeStore.ListEntities(ctx, worldID)
-	if err != nil || len(entities) == 0 {
+	if entityID <= 0 {
 		return nil, nil
 	}
-
-	var entity *model.LifeEntity
-	for i := range entities {
-		if entities[i].ID == uint(entityID) {
-			entity = &entities[i]
-			break
-		}
+	entity, err := e.lifeStore.GetEntityByID(ctx, uint(entityID))
+	if err != nil {
+		return nil, nil
 	}
-	var events []model.LifeEventLog
-	if entity != nil {
-		events, _ = e.lifeStore.ListRecentEventLogsByEntity(ctx, worldID, entity.ID, 5)
-	}
-
+	events, _ := e.lifeStore.ListRecentEventLogsByEntity(ctx, worldID, uint(entityID), 12)
 	return entity, events
 }
 
@@ -517,28 +543,62 @@ func (e *Engine) defaultBoundProfile(ctx context.Context, userID uint) (*Profile
 	return profile, nil
 }
 
-// bindLifeEntity 仅校验/清理世界绑定 ID。
+// resolveWorldBind 解析世界绑定状态；已绑定 ID 永不因失踪/死亡被静默清空。
 // 双层身份：不覆盖 Name/Emoji/AvatarURL（关系层由用户自定义；世界层是居民舞台）。
-func (e *Engine) bindLifeEntity(ctx context.Context, profile *Profile) error {
+func (e *Engine) resolveWorldBind(ctx context.Context, profile *Profile) error {
+	if profile == nil {
+		return nil
+	}
+	if profile.LifeEntityID <= 0 {
+		profile.LifeEntityID = 0
+		profile.WorldBindStatus = WorldBindUnbound
+		return nil
+	}
 	if e.lifeStore == nil {
-		if profile.LifeEntityID != 0 {
-			profile.LifeEntityID = 0
-		}
+		profile.WorldBindStatus = WorldBindMissing
 		return nil
 	}
-	entities, err := e.lifeStore.ListEntities(ctx, "default")
+	entity, err := e.lifeStore.GetEntityByID(ctx, uint(profile.LifeEntityID))
 	if err != nil {
-		return fmt.Errorf("list Life entities for companion binding: %w", err)
+		return fmt.Errorf("get Life entity for companion binding: %w", err)
 	}
-	if profile.LifeEntityID == 0 {
+	if entity == nil || !entity.IsAlive {
+		profile.WorldBindStatus = WorldBindMissing
 		return nil
 	}
-	for i := range entities {
-		if entities[i].ID == uint(profile.LifeEntityID) {
-			return nil
-		}
+	profile.WorldBindStatus = WorldBindOK
+	return nil
+}
+
+// resolveWorldBindOnUpsert 用户显式写入绑定：ID 在库中完全不存在才清空；软删除保留。
+func (e *Engine) resolveWorldBindOnUpsert(ctx context.Context, profile *Profile) error {
+	if profile == nil {
+		return nil
 	}
-	profile.LifeEntityID = 0
+	if profile.LifeEntityID <= 0 {
+		profile.LifeEntityID = 0
+		profile.WorldBindStatus = WorldBindUnbound
+		return nil
+	}
+	if e.lifeStore == nil {
+		profile.WorldBindStatus = WorldBindMissing
+		return nil
+	}
+	entity, err := e.lifeStore.GetEntityByID(ctx, uint(profile.LifeEntityID))
+	if err != nil {
+		return fmt.Errorf("get Life entity for companion binding: %w", err)
+	}
+	if entity == nil {
+		// 从未存在的 ID：拒绝写入，避免脏绑定。
+		profile.LifeEntityID = 0
+		profile.WorldBindStatus = WorldBindUnbound
+		return nil
+	}
+	if !entity.IsAlive {
+		profile.WorldBindStatus = WorldBindMissing
+		return nil
+	}
+	profile.WorldBindStatus = WorldBindOK
 	return nil
 }
 

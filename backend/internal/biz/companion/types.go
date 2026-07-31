@@ -17,6 +17,8 @@ type Profile struct {
 	SystemPromptOverride string
 	AgentID              string
 	LifeEntityID         int
+	// WorldBindStatus: unbound | bound_ok | bound_missing（运行时解析，不落 companion_profiles 列）。
+	WorldBindStatus string
 }
 
 // Memory AI 伙伴持久记忆。
@@ -41,6 +43,8 @@ type State struct {
 	Mood          float64
 	Hunger        float64
 	Energy        float64
+	EntityAlive     bool
+	WorldBindStatus string
 }
 
 // Moment 伙伴动态卡片（类朋友圈）。

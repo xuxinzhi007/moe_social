@@ -234,8 +234,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                   personaController.text = draft.persona;
                 }
                 if (draft.personalityTraits.isNotEmpty) {
-                  traitsController.text =
-                      draft.personalityTraits.join('，');
+                  traitsController.text = draft.personalityTraits.join('，');
                 }
                 if (draft.systemPromptOverride.isNotEmpty) {
                   systemPromptController.text = draft.systemPromptOverride;
@@ -310,8 +309,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () =>
-                              Navigator.pop(dialogContext),
+                          onPressed: () => Navigator.pop(dialogContext),
                           child: const Text('取消'),
                         ),
                         FilledButton(
@@ -447,8 +445,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                         ),
                         const SizedBox(height: 10),
                         OutlinedButton.icon(
-                          onPressed:
-                              uploadingAvatar ? null : showImportPicker,
+                          onPressed: uploadingAvatar ? null : showImportPicker,
                           icon: const Icon(Icons.badge_outlined),
                           label: const Text('从角色卡导入'),
                         ),
@@ -660,6 +657,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                     profile: _hub.profile,
                     state: _hub.state,
                     onChat: _openChat,
+                    onCustomize: _isSavingProfile ? null : _editProfile,
                   ),
                   if (FeatureFlags.showLifeEngine) ...[
                     const SizedBox(height: 14),
@@ -668,8 +666,13 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                           ? _hub.worldSummaryLine
                           : '打开 2D 小世界，看看居民在做什么',
                       bound: _hub.worldBound,
+                      bindMissing: _hub.worldBindMissing,
                       onOpen: _openLifeWorld,
                     ),
+                    if (_hub.worldBindMissing) ...[
+                      const SizedBox(height: 10),
+                      _BindMissingBanner(onOpenWorld: _openLifeWorld),
+                    ],
                   ],
                   const SizedBox(height: 16),
                   _DailyFeedCard(
@@ -746,16 +749,19 @@ class _HeroCard extends StatelessWidget {
     required this.profile,
     required this.state,
     required this.onChat,
+    this.onCustomize,
   });
 
   final CompanionProfileData profile;
   final CompanionStateData state;
   final VoidCallback onChat;
+  final VoidCallback? onCustomize;
 
   @override
   Widget build(BuildContext context) {
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
-    final persona = profile.persona.trim().isNotEmpty
+    final hasPersona = profile.persona.trim().isNotEmpty;
+    final persona = hasPersona
         ? profile.persona.trim()
         : '会长期陪着你、慢慢懂你的虚拟伙伴。';
     final moodLine = state.moodThought.trim().isNotEmpty
@@ -816,6 +822,19 @@ class _HeroCard extends StatelessWidget {
               ),
             ],
           ),
+          if (!hasPersona && onCustomize != null) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: onCustomize,
+              icon: const Icon(Icons.badge_outlined, size: 18),
+              label: const Text('完善人设或从角色卡导入'),
+              style: TextButton.styleFrom(
+                foregroundColor: AiBrandTokens.primary,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Text(
             moodLine,
@@ -859,14 +878,29 @@ class _WorldStrip extends StatelessWidget {
     required this.summaryLine,
     required this.onOpen,
     this.bound = false,
+    this.bindMissing = false,
   });
 
   final String summaryLine;
   final VoidCallback onOpen;
   final bool bound;
+  final bool bindMissing;
 
   @override
   Widget build(BuildContext context) {
+    final title = !bound
+        ? 'TA 的世界 · 未绑定'
+        : (bindMissing ? 'TA 的世界 · 绑定异常' : 'TA 的世界 · 已绑定');
+    final accent = !bound
+        ? const Color(0xFFE2A54A)
+        : (bindMissing ? const Color(0xFFE97891) : AiBrandTokens.primary);
+    final border = !bound
+        ? const Color(0xFFFFD89C)
+        : (bindMissing ? const Color(0xFFF5C0CB) : const Color(0xFFE8E0F2));
+    final icon = !bound
+        ? Icons.link_off_rounded
+        : (bindMissing ? Icons.warning_amber_rounded : Icons.public_rounded);
+
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(18),
@@ -877,30 +911,22 @@ class _WorldStrip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: bound ? const Color(0xFFE8E0F2) : const Color(0xFFFFD89C),
-            ),
+            border: Border.all(color: border),
           ),
           child: Row(
             children: [
-              Icon(
-                bound ? Icons.public_rounded : Icons.link_off_rounded,
-                color: bound ? AiBrandTokens.primary : const Color(0xFFE2A54A),
-                size: 22,
-              ),
+              Icon(icon, color: accent, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      bound ? 'TA 的世界 · 已绑定' : 'TA 的世界 · 未绑定',
+                      title,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: bound
-                            ? AiBrandTokens.primary
-                            : const Color(0xFFE2A54A),
+                        color: accent,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -920,6 +946,45 @@ class _WorldStrip extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0A4C0)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BindMissingBanner extends StatelessWidget {
+  const _BindMissingBanner({required this.onOpenWorld});
+
+  final VoidCallback onOpenWorld;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFFF1F4),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onOpenWorld,
+        borderRadius: BorderRadius.circular(14),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded,
+                  size: 18, color: Color(0xFFE97891)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '绑定没有丢，但居民暂时不在舞台上。点这里进世界改绑或看看近况。',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: Color(0xFF6B4A52),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

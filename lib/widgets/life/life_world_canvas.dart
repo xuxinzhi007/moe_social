@@ -76,9 +76,10 @@ class _LifeWorldCanvasState extends State<LifeWorldCanvas>
   @override
   void initState() {
     super.initState();
+    // 与 Flame 路径对齐：拉长插值，减弱「跳一下」的顿挫感。
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 2200),
     );
     _ambientController = AnimationController(
       vsync: this,
@@ -401,7 +402,8 @@ class LifeWorldCanvasPainter extends CustomPainter {
               ? sin(phase * 1.8) * 2.2
               : sin(phase) * 0.8;
       final pulse = isSleeping ? 0.94 + sin(phase) * 0.04 : 1.0;
-      final opacity = rd.action == 'dying' || rd.growthStage == 'elderly' ? 0.72 : 1.0;
+      final opacity =
+          rd.action == 'dying' || rd.growthStage == 'elderly' ? 0.72 : 1.0;
       final stageScale = _stageScale(rd.growthStage);
 
       // --- 阴影 ---
@@ -466,7 +468,8 @@ class LifeWorldCanvasPainter extends CustomPainter {
         _paintBadge(
           canvas,
           actionIcon,
-          Offset(drawCenter.dx + ringRadius * 0.55, drawCenter.dy - ringRadius * 0.9),
+          Offset(drawCenter.dx + ringRadius * 0.55,
+              drawCenter.dy - ringRadius * 0.9),
           color: rd.action == 'dying'
               ? Colors.red.shade600
               : const Color(0xFF6A4C93),
@@ -521,7 +524,8 @@ class LifeWorldCanvasPainter extends CustomPainter {
     }
   }
 
-  void _paintBadge(Canvas canvas, String text, Offset center, {required Color color}) {
+  void _paintBadge(Canvas canvas, String text, Offset center,
+      {required Color color}) {
     final bgPaint = Paint()..color = Colors.white.withValues(alpha: 0.92);
     canvas.drawCircle(center, 10, bgPaint);
     canvas.drawCircle(
@@ -535,11 +539,15 @@ class LifeWorldCanvasPainter extends CustomPainter {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: TextStyle(fontSize: text.length > 1 ? 9 : 13, color: color, fontWeight: FontWeight.w700),
+        style: TextStyle(
+            fontSize: text.length > 1 ? 9 : 13,
+            color: color,
+            fontWeight: FontWeight.w700),
       ),
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: 24);
-    painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
+    painter.paint(canvas,
+        Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
   }
 
   void _paintSmallEmoji(Canvas canvas, String emoji, Offset center) {
@@ -547,8 +555,10 @@ class LifeWorldCanvasPainter extends CustomPainter {
       text: TextSpan(text: emoji, style: const TextStyle(fontSize: 13)),
       textDirection: TextDirection.ltr,
     )..layout();
-    canvas.drawCircle(center, 8, Paint()..color = Colors.white.withValues(alpha: 0.9));
-    painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
+    canvas.drawCircle(
+        center, 8, Paint()..color = Colors.white.withValues(alpha: 0.9));
+    painter.paint(canvas,
+        Offset(center.dx - painter.width / 2, center.dy - painter.height / 2));
   }
 
   void _paintNeedBubble(Canvas canvas, String text, Offset anchor) {
@@ -569,7 +579,8 @@ class LifeWorldCanvasPainter extends CustomPainter {
       height: painter.height + 8,
     );
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(12));
-    canvas.drawRRect(rrect, Paint()..color = Colors.white.withValues(alpha: 0.94));
+    canvas.drawRRect(
+        rrect, Paint()..color = Colors.white.withValues(alpha: 0.94));
     canvas.drawRRect(
       rrect,
       Paint()
@@ -577,7 +588,8 @@ class LifeWorldCanvasPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
-    painter.paint(canvas, Offset(anchor.dx - painter.width / 2, anchor.dy - painter.height / 2));
+    painter.paint(canvas,
+        Offset(anchor.dx - painter.width / 2, anchor.dy - painter.height / 2));
   }
 
   @override

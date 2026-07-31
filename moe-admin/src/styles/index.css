@@ -1,7 +1,9 @@
 /**
- * Moe Admin styles — 唯一入口（main.tsx 只 import 此文件）。
- * 新样式写入 tokens / layout / components / pages；禁止往 legacy 单体追加。
- * Sprint A：单体迁入 legacy/，import 顺序对齐 css-architecture-v3。
+ * Moe Admin styles entry (imported only from main.tsx).
+ * Put new styles in tokens / layout / components / feature / pages; do not append to legacy.
+ *
+ * Do not name a CSS folder "domains": Vite postcss-import on Windows fails
+ * @import './domains/...' and falls back to cwd (ENOENT: moe-admin/domains/...).
  */
 
 /* tokens */
@@ -11,20 +13,34 @@
 @import './tokens/motion.css';
 
 /* base */
+@import './base/reset.css';
 @import './base/utilities.css';
 
-/* layout (V3 chrome overrides) */
+/* layout */
 @import './layout/chrome-v3.css';
 
-/* components (modular) */
+/* components */
+@import './components/buttons.css';
+@import './components/panels.css';
+@import './components/tags.css';
+@import './components/drawers.css';
 @import './components/toolbar.css';
 @import './components/admin-filters.css';
 @import './components/gift-catalog.css';
 @import './components/platform-page.css';
 @import './components/list-table.css';
-@import './components/soft-particles.css';
 @import './components/bot-flow.css';
 @import './components/brain-rpg.css';
 
-/* legacy monolith — 逐段搬空后删除（P4） */
+/* feature (cross-page; was planned as domains/) */
+@import './feature/brain.css';
+@import './feature/data-domain-map.css';
+
+/* pages — login shell first, soft-particles overrides hero */
+@import './pages/login.css';
+@import './components/soft-particles.css';
+@import './pages/landing-feedback.css';
+@import './pages/analytics.css';
+
+/* legacy monolith — remaining shell / platform / data-catalog / moe-tools */
 @import './legacy/moe-admin-theme.css';

@@ -10,6 +10,8 @@ import (
 type Store interface {
 	// Entity CRUD
 	ListEntities(ctx context.Context, worldID string) ([]model.LifeEntity, error)
+	// GetEntityByID 按主键取实体（含已软删除），不存在返回 nil。
+	GetEntityByID(ctx context.Context, entityID uint) (*model.LifeEntity, error)
 	UpsertEntity(ctx context.Context, entity *model.LifeEntity) error
 	BatchUpsertEntities(ctx context.Context, entities []*model.LifeEntity) error
 	// SoftDeleteEntity 软删除实体（设置 is_alive=false）

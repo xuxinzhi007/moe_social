@@ -41,11 +41,16 @@ func buildSystemPrompt(profile *Profile, state *State, memories []Memory) string
 		b.WriteString(state.ActivityLabel)
 	}
 
-	// [3] 记忆上下文
+	// [3] 记忆上下文（置顶优先且显式标注，聊天时更「记得牢」）
 	if len(memories) > 0 {
 		b.WriteString("\n\n[你记得的事]")
+		b.WriteString("\n（标【置顶】的是用户特别强调、务必记住的事）")
 		for _, m := range memories {
-			b.WriteString("\n- ")
+			if m.Pinned {
+				b.WriteString("\n- 【置顶】")
+			} else {
+				b.WriteString("\n- ")
+			}
 			b.WriteString(m.Content)
 		}
 	}

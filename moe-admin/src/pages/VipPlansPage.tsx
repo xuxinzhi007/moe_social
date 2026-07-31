@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { FormField } from '../components/FormField'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
@@ -247,17 +248,18 @@ export function VipPlansPage() {
               placeholder: '搜索套餐名称 / 说明',
             }}
             filters={
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={includeDeleted}
-                  onChange={(e) => {
-                    setIncludeDeleted(e.target.checked)
-                    setPage(1)
-                  }}
-                />
-                <span>含已删除</span>
-              </label>
+              <AdminFilterPills
+                ariaLabel="套餐状态"
+                value={includeDeleted ? 'with_deleted' : 'active'}
+                onChange={(next) => {
+                  setIncludeDeleted(next === 'with_deleted')
+                  setPage(1)
+                }}
+                options={[
+                  { value: 'active', label: '仅有效' },
+                  { value: 'with_deleted', label: '含已删除' },
+                ]}
+              />
             }
           />
         }

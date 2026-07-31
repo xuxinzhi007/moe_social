@@ -9,25 +9,49 @@ import (
 )
 
 // computeState 从 LifeEntity 数值 + Profile 人格 → 人格化 State。
+// events 始终可转 Moments（含实体已软删除），作为「TA 的日常」世界侧 SSOT。
 func computeState(profile *Profile, entity *model.LifeEntity, events []model.LifeEventLog) *State {
+	moments := buildMoments(events)
+	greeting := greetingForStyle(profile, time.Now().Hour())
 	if entity == nil {
+		thought := "刚来到这里，一切都是新的"
+		activity := "刚上线"
+		if profile != nil && profile.LifeEntityID > 0 {
+			thought = "世界里暂时找不到 TA，绑定还在，去世界看看吧"
+			activity = "暂时不在舞台上"
+		}
 		return &State{
-			MoodThought:   "刚来到这里，一切都是新的",
-			ActivityLabel: "刚上线",
-			Greeting:      greetingForStyle(profile, time.Now().Hour()),
+			MoodThought:   thought,
+			ActivityLabel: activity,
+			Greeting:      greeting,
+			Moments:       moments,
 			Mood:          70,
 			Hunger:        80,
 			Energy:        80,
+			EntityAlive:   false,
+		}
+	}
+	if !entity.IsAlive {
+		return &State{
+			MoodThought:   "TA 暂时离开了舞台，日常记录还在这里",
+			ActivityLabel: "已离开舞台",
+			Greeting:      greeting,
+			Moments:       moments,
+			Mood:          entity.Mood,
+			Hunger:        entity.Hunger,
+			Energy:        entity.Energy,
+			EntityAlive:   false,
 		}
 	}
 	return &State{
 		MoodThought:   moodThought(profile, entity.Mood, entity.Hunger, entity.Energy),
 		ActivityLabel: activityLabel(entity),
-		Greeting:      greetingForStyle(profile, time.Now().Hour()),
-		Moments:       buildMoments(events),
+		Greeting:      greeting,
+		Moments:       moments,
 		Mood:          entity.Mood,
 		Hunger:        entity.Hunger,
 		Energy:        entity.Energy,
+		EntityAlive:   true,
 	}
 }
 
@@ -140,7 +164,7 @@ func buildMoments(events []model.LifeEventLog) []Moment {
 	if len(events) == 0 {
 		return nil
 	}
-	limit := 3
+	limit := 8
 	if len(events) < limit {
 		limit = len(events)
 	}

@@ -140,6 +140,20 @@ func (s *store) UpdateMemoryPinned(
 	return nil
 }
 
+func (s *store) UpdateMemoryContent(ctx context.Context, userID, memoryID uint, content string) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemory{}).
+		Where("id = ? AND user_id = ?", memoryID, userID).
+		Update("content", content)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (s *store) CleanupExpiredMemories(ctx context.Context) (int64, error) {
 	result := s.db.WithContext(ctx).
 		Where("pinned = ? AND expires_at IS NOT NULL AND expires_at < ?", false, time.Now()).

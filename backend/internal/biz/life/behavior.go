@@ -92,8 +92,8 @@ func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.Lif
 			dy := e.PositionY - rival.PositionY
 			dist := math.Sqrt(dx*dx + dy*dy)
 			if dist > 0 {
-				e.PositionX = clamp(e.PositionX+(dx/dist)*30, 0, worldWidth)
-				e.PositionY = clamp(e.PositionY+(dy/dist)*30, 0, worldHeight)
+				e.PositionX = clamp(e.PositionX+(dx/dist)*16, 0, worldWidth)
+				e.PositionY = clamp(e.PositionY+(dy/dist)*16, 0, worldHeight)
 			}
 			return ActionWalking
 		}
@@ -109,8 +109,8 @@ func decideActionWithRelations(e *model.LifeEntity, entities map[uint]*model.Lif
 			dy := friend.PositionY - e.PositionY
 			dist := math.Sqrt(dx*dx + dy*dy)
 			if dist > 0 {
-				e.PositionX = clamp(e.PositionX+(dx/dist)*25, 0, worldWidth)
-				e.PositionY = clamp(e.PositionY+(dy/dist)*25, 0, worldHeight)
+				e.PositionX = clamp(e.PositionX+(dx/dist)*14, 0, worldWidth)
+				e.PositionY = clamp(e.PositionY+(dy/dist)*14, 0, worldHeight)
 			}
 			e.Mood = clamp(e.Mood+0.3, 0, 100)
 			return ActionTalking
@@ -178,11 +178,10 @@ func applyAction(e *model.LifeEntity, action LifeAction, cell *WorldCell) {
 		e.Energy = clamp(e.Energy+sleepRecovery, 0, 100)
 	case ActionWandering:
 		e.Mood = clamp(e.Mood+wanderMoodBoost, 0, 100)
-		e.PositionX = clamp(e.PositionX+(rand.Float64()-0.5)*60, 0, worldWidth)
-		e.PositionY = clamp(e.PositionY+(rand.Float64()-0.5)*60, 0, worldHeight)
+		// 小步 + 短时保持朝向，避免每 tick 乱跳导致「一卡一卡」。
+		npcStep(e, 14)
 	case ActionWalking:
-		e.PositionX = clamp(e.PositionX+(rand.Float64()-0.5)*90, 0, worldWidth)
-		e.PositionY = clamp(e.PositionY+(rand.Float64()-0.5)*90, 0, worldHeight)
+		npcStep(e, 22)
 		e.Energy = clamp(e.Energy-0.25, 0, 100)
 	case ActionSeekingFood:
 		e.Energy = clamp(e.Energy-0.3, 0, 100)
@@ -192,14 +191,15 @@ func applyAction(e *model.LifeEntity, action LifeAction, cell *WorldCell) {
 			e.Hunger = clamp(e.Hunger+consumed*1.4, 0, 100)
 			e.CurrentAction = string(ActionEating)
 		} else {
-			e.PositionX = clamp(e.PositionX+(rand.Float64()-0.5)*100, 0, worldWidth)
-			e.PositionY = clamp(e.PositionY+(rand.Float64()-0.5)*100, 0, worldHeight)
+			npcStep(e, 26)
 		}
 	case ActionSeekingRest:
 		e.Energy = clamp(e.Energy-0.2, 0, 100)
 		if cell != nil && cell.Habitable && cell.Danger < 20 {
 			e.Energy = clamp(e.Energy+18, 0, 100)
 			e.CurrentAction = string(ActionSleeping)
+		} else {
+			npcStep(e, 18)
 		}
 	case ActionTalking:
 		e.Mood = clamp(e.Mood+0.5, 0, 100)
@@ -210,16 +210,30 @@ func applyAction(e *model.LifeEntity, action LifeAction, cell *WorldCell) {
 		e.Energy = clamp(e.Energy+idleRecovery*0.5, 0, 100)
 		e.Mood = clamp(e.Mood+idleRecovery*0.3, 0, 100)
 	case ActionFleeing:
-		// 逃跑：消耗 energy，向随机方向快速移动
+		// 逃跑：消耗 energy，沿朝向较快移动（仍比旧随机大跳更顺）。
 		e.Energy = clamp(e.Energy-3, 0, 100)
-		e.PositionX = clamp(e.PositionX+(rand.Float64()-0.5)*120, 0, worldWidth)
-		e.PositionY = clamp(e.PositionY+(rand.Float64()-0.5)*120, 0, worldHeight)
+		npcStep(e, 36)
 	case ActionPlaying:
-		// 玩耍：提升情绪，轻微消耗能量
+		// 玩耍：提升情绪，轻微消耗能量；原地小幅挪动。
 		maxStat := GetMaxStat(e.GrowthStage)
 		e.Mood = clamp(e.Mood+5, 0, maxStat)
 		e.Energy = clamp(e.Energy-1, 0, 100)
+		npcStep(e, 10)
 	}
+}
+
+// npcStep 沿稳定朝向迈一小步（约每 6 tick 换向一次），观感接近手游 NPC 漫游。
+func npcStep(e *model.LifeEntity, step float64) {
+	if e == nil || step <= 0 {
+		return
+	}
+	// Age 分段 + 实体 ID：同名居民不会齐步走；约 6 tick 换一次 8 向之一。
+	sector := (e.Age / 6) + int(e.ID*13)
+	angle := float64(sector%8) * (math.Pi / 4)
+	// 轻微噪声，避免走直线轨道感。
+	angle += (rand.Float64() - 0.5) * 0.35
+	e.PositionX = clamp(e.PositionX+math.Cos(angle)*step, 0, worldWidth)
+	e.PositionY = clamp(e.PositionY+math.Sin(angle)*step, 0, worldHeight)
 }
 
 func clamp(v, min, max float64) float64 {

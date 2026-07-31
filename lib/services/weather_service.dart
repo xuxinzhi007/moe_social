@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
+
+import '../utils/reverse_geocode.dart';
 
 class WeatherData {
   final String city;
@@ -183,24 +185,13 @@ class WeatherService {
   static Future<WeatherData?> getWeatherByLocation(
       double lat, double lon) async {
     try {
-      String cityName = _defaultCity;
-      try {
-        final placemarks = await geocoding.placemarkFromCoordinates(
+      final cityName = _normalizeCityName(
+        await ReverseGeocode.cityName(
           lat,
           lon,
-          localeIdentifier: 'zh_CN',
-        );
-        if (placemarks.isNotEmpty) {
-          cityName = _normalizeCityName(
-            placemarks.first.locality ??
-                placemarks.first.subAdministrativeArea ??
-                placemarks.first.administrativeArea ??
-                _defaultCity,
-          );
-        }
-      } catch (_) {
-        // reverse geocoding 失败时回退默认城市
-      }
+          fallback: _defaultCity,
+        ),
+      );
       return getWeatherByCity(cityName);
     } catch (e) {
       return null;
