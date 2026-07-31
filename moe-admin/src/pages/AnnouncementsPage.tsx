@@ -3,11 +3,12 @@ import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { AdminTag } from '../components/AdminTag'
 import { FormField } from '../components/FormField'
 import { IdCell } from '../components/IdCell'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { announcementTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
-import { AdminTable, ListPageLayout } from '../ui'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
 type Row = { id: string; title: string; content: string; status: string; published_at?: string; created_at: string }
@@ -19,6 +20,7 @@ export function AnnouncementsPage() {
   const [items, setItems] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [status, setStatus] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -33,7 +35,11 @@ export function AnnouncementsPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await client.listAnnouncements({ page, page_size: pageSize })
+      const res = await client.listAnnouncements({
+        page,
+        page_size: pageSize,
+        status: status || undefined,
+      })
       if (!res.success || !res.data) {
         setError(res.message || '加载失败')
         setItems([])
@@ -47,7 +53,7 @@ export function AnnouncementsPage() {
     } finally {
       setLoading(false)
     }
-  }, [client, page])
+  }, [client, page, status])
 
   useEffect(() => {
     void load()
@@ -179,6 +185,25 @@ export function AnnouncementsPage() {
           </button>
         }
         banner={message ? { message, tone: 'ok', onClose: () => setMessage('') } : undefined}
+        toolbar={
+          <AdminToolbar
+            filters={
+              <AdminFilterPills
+                ariaLabel="公告状态"
+                value={status}
+                onChange={(next) => {
+                  setStatus(next)
+                  setPage(1)
+                }}
+                options={[
+                  { value: '', label: '全部' },
+                  { value: 'draft', label: '草稿' },
+                  { value: 'published', label: '已发布' },
+                ]}
+              />
+            }
+          />
+        }
         error={error}
         pagination={{ page, totalPages, total, onPageChange: setPage }}
       >

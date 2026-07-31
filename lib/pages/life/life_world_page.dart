@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../../game/life/life_flame_game.dart';
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
 import '../../services/game_service.dart';
+import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_tile.dart';
@@ -24,8 +26,13 @@ import 'life_relationship_page.dart';
 /// 方案 2：底栏 AI伙伴仍是关系首页；本页全屏地图为舞台，
 /// 照料/概况叠在底部可拖拽面板。
 /// [FeatureFlags.useFlameLifeWorld]=true 时用地图 Flame 实验渲染。
+///
+/// [focusEntityId]：从关系首页带入的绑定实体，进页后应对焦该居民。
 class LifeWorldPage extends StatefulWidget {
-  const LifeWorldPage({super.key});
+  const LifeWorldPage({super.key, this.focusEntityId});
+
+  /// 优先对焦的 Life 实体 ID（通常 = companion.life_entity_id）。
+  final int? focusEntityId;
 
   @override
   State<LifeWorldPage> createState() => _LifeWorldPageState();
@@ -47,6 +54,7 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   bool _isOpeningStory = false;
   bool _isBindingCompanion = false;
   bool _bindingLoaded = false;
+  bool _didInitialFocus = false;
   CompanionProfileData? _companionProfile;
   String? _response;
 
@@ -55,6 +63,10 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     super.initState();
     _provider = context.read<LifeProvider>();
     _provider.startListening();
+    final hint = widget.focusEntityId ?? 0;
+    if (hint > 0) {
+      _selectedEntityId = hint;
+    }
     _loadCompanionBinding();
     if (FeatureFlags.useFlameLifeWorld) {
       _flameGame = LifeFlameGame(
@@ -82,20 +94,54 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
 
   LifeEntity? _selectedEntity(List<LifeEntity> entities) {
     if (entities.isEmpty || !_bindingLoaded) return null;
-    for (final entity in entities) {
-      if (entity.id == _selectedEntityId) return entity;
+    final resolvedId = _resolveFocusEntityId(entities);
+    if (resolvedId != null) {
+      for (final entity in entities) {
+        if (entity.id == resolvedId) return entity;
+      }
     }
     return entities.first;
+  }
+
+  /// 绑定 ID > 入参 hint > 当前选中 > 名称匹配 > null（再由调用方回退 first）。
+  int? _resolveFocusEntityId(List<LifeEntity> entities) {
+    if (entities.isEmpty) return null;
+    final ids = entities.map((e) => e.id).toSet();
+
+    final boundId = _companionProfile?.lifeEntityId ?? 0;
+    if (boundId > 0 && ids.contains(boundId)) return boundId;
+
+    final hint = widget.focusEntityId ?? 0;
+    if (hint > 0 && ids.contains(hint)) return hint;
+
+    final selected = _selectedEntityId;
+    if (selected != null && selected > 0 && ids.contains(selected)) {
+      return selected;
+    }
+
+    final name = _companionProfile?.name.trim() ?? '';
+    if (name.isNotEmpty) {
+      for (final entity in entities) {
+        if (entity.name.trim() == name) return entity.id;
+      }
+    }
+    return null;
   }
 
   Future<void> _loadCompanionBinding() async {
     try {
       final profile = await CompanionService().getProfile();
       if (!mounted) return;
+      final boundId = profile.lifeEntityId;
       setState(() {
         _companionProfile = profile;
-        _selectedEntityId =
-            profile.lifeEntityId == 0 ? null : profile.lifeEntityId;
+        // 已绑定：强制对焦绑定实体；未绑定：保留入参 hint / 现选中。
+        if (boundId > 0) {
+          _selectedEntityId = boundId;
+        } else if ((_selectedEntityId ?? 0) <= 0) {
+          final hint = widget.focusEntityId ?? 0;
+          _selectedEntityId = hint > 0 ? hint : null;
+        }
         _bindingLoaded = true;
       });
     } catch (_) {
@@ -112,8 +158,32 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
         _response = null;
       });
     }
+    _flameGame?.focusEntity(entityId);
     // 点选只更新 HUD，不自动抬高面板（避免挡世界）。
     _expandSheet(_sheetPeekSize);
+  }
+
+  /// 首帧实体就绪后，把选中纠正为绑定伙伴并镜头跟随。
+  void _ensureInitialBoundFocus(
+      List<LifeEntity> entities, LifeEntity selected) {
+    if (_didInitialFocus || entities.isEmpty) return;
+    final targetId = _resolveFocusEntityId(entities) ?? selected.id;
+    _didInitialFocus = true;
+    if (_selectedEntityId != targetId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _selectedEntityId = targetId;
+          _response = null;
+        });
+        _flameGame?.focusEntity(targetId);
+      });
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _flameGame?.focusEntity(targetId);
+    });
   }
 
   void _expandSheet(double size) {
@@ -127,18 +197,31 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     );
   }
 
+  /// 同名居民加 #id，避免两个「啾啾」无法区分。
+  static Map<int, String> _residentDisplayNames(List<LifeEntity> entities) {
+    final counts = <String, int>{};
+    for (final e in entities) {
+      final key = e.name.trim();
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    final out = <int, String>{};
+    for (final e in entities) {
+      final key = e.name.trim();
+      out[e.id] = (counts[key] ?? 0) > 1 ? '$key#${e.id}' : key;
+    }
+    return out;
+  }
+
   Future<void> _selectCompanion(LifeEntity entity) async {
-    if (_isBindingCompanion || entity.id == _selectedEntityId) return;
+    final alreadyBound = (_companionProfile?.lifeEntityId ?? 0) == entity.id;
+    if (_isBindingCompanion || alreadyBound) return;
     setState(() => _isBindingCompanion = true);
     try {
       final current =
           _companionProfile ?? await CompanionService().getProfile();
+      // 双层身份：只改世界绑定，不覆盖关系层名字/头像/人设。
       final saved = await CompanionService().updateProfile(
-        current.copyWith(
-          name: entity.name,
-          emoji: entity.emoji,
-          lifeEntityId: entity.id,
-        ),
+        current.copyWith(lifeEntityId: entity.id),
       );
       if (!mounted) return;
       setState(() {
@@ -146,6 +229,10 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
         _selectedEntityId = saved.lifeEntityId;
         _response = null;
       });
+      _flameGame?.focusEntity(saved.lifeEntityId);
+      if (mounted) {
+        MoeToast.success(context, '已将 ${entity.name} 设为当前伙伴');
+      }
     } catch (error) {
       if (mounted) {
         MoeToast.error(
@@ -169,15 +256,13 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     if (!mounted) return;
 
     if (success) {
-      setState(() {
-        _response = action == 'feed'
-            ? entity.hunger < 35
-                ? '终于吃到了，谢谢你。'
-                : '好满足，感觉又有精神了！'
-            : entity.mood > 75
-                ? '最喜欢你陪着我了。'
-                : '感觉安心多了。';
-      });
+      final reply = await _resolveCareReply(action, entity);
+      if (!mounted) return;
+      setState(() => _response = reply);
+      final boundId = _companionProfile?.lifeEntityId ?? 0;
+      if (boundId > 0 && boundId == entity.id) {
+        unawaited(CompanionService().bumpIntimacy(reason: action));
+      }
     } else if (_provider.lastActionError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -191,6 +276,38 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
     }
 
     if (mounted) setState(() => _isActing = false);
+  }
+
+  /// 绑定伙伴优先用 companion state 语气；否则回退本地短句。
+  Future<String> _resolveCareReply(String action, LifeEntity entity) async {
+    final fallback = _fallbackCareReply(action, entity);
+    final boundId = _companionProfile?.lifeEntityId ?? 0;
+    if (boundId == 0 || boundId != entity.id) return fallback;
+    try {
+      final snapshot = await CompanionService().getSnapshot();
+      final thought = snapshot.state.moodThought.trim();
+      if (thought.isNotEmpty) return thought;
+      final greeting = snapshot.state.greeting.trim();
+      if (greeting.isNotEmpty) return greeting;
+    } catch (_) {}
+    return fallback;
+  }
+
+  static String _fallbackCareReply(String action, LifeEntity entity) {
+    if (action == 'feed') {
+      return entity.hunger < 35 ? '终于吃到了，谢谢你。' : '好满足，感觉又有精神了！';
+    }
+    return entity.mood > 75 ? '最喜欢你陪着我了。' : '感觉安心多了。';
+  }
+
+  Future<void> _openCompanionChat() async {
+    try {
+      await CompanionChatLauncher.openChat(context);
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
   }
 
   void _openDetail(LifeEntity entity) {
@@ -299,9 +416,18 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
 
           final selected = data.selected;
           if (selected == null) return const _LoadingState();
+          _ensureInitialBoundFocus(data.entities, selected);
           final boundId = _companionProfile?.lifeEntityId ?? 0;
-          final bindingNeedsRepair = boundId != 0 && selected.id != boundId;
+          final isBoundCompanion = boundId != 0 && selected.id == boundId;
+          final hasAnyBinding = boundId > 0;
+          // 已绑当前选中：不显示 CTA；已绑其他居民：显示「改绑」；未绑：显示「设为伙伴」。
+          final showBindCta = !isBoundCompanion;
           final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight;
+          final eventTickerLines = _provider.recentEvents
+              .take(12)
+              .map((e) => e.desc.trim())
+              .where((s) => s.isNotEmpty)
+              .toList(growable: false);
 
           final flame = _flameGame;
           if (flame != null) {
@@ -310,6 +436,9 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
               flame.syncEntities(
                 data.entities,
                 selectedId: selected.id,
+              );
+              flame.syncRecentEvents(
+                _provider.recentEvents.take(8).toList(growable: false),
               );
             });
           }
@@ -334,6 +463,13 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
                   right: 12,
                   child: const _OfflineBanner(),
                 ),
+              if (eventTickerLines.isNotEmpty)
+                Positioned(
+                  top: topInset + (data.isOffline ? 48 : 8),
+                  left: 12,
+                  right: 12,
+                  child: _WorldEventTicker(lines: eventTickerLines),
+                ),
               DraggableScrollableSheet(
                 controller: _sheetController,
                 initialChildSize: _sheetPeekSize,
@@ -342,93 +478,137 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
                 snap: true,
                 snapSizes: const [_sheetPeekSize, _sheetFocusSize, 0.72],
                 builder: (context, scrollController) {
-                  return Material(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    elevation: 8,
-                    shadowColor: Colors.black26,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(22),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
-                      children: [
-                        const SizedBox(height: 8),
-                        Center(
-                          child: Container(
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(99),
+                  // 游戏 HUD：peek 只露薄条；上滑再展开详情，避免双份身份卡 + 底栏裁切。
+                  return AnimatedBuilder(
+                    animation: _sheetController,
+                    builder: (context, _) {
+                      final sheetSize = _sheetController.isAttached
+                          ? _sheetController.size
+                          : _sheetPeekSize;
+                      final showDetails = sheetSize > _sheetPeekSize + 0.05;
+                      return Material(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        elevation: 8,
+                        shadowColor: Colors.black26,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(22),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListView(
+                          controller: scrollController,
+                          padding: EdgeInsets.fromLTRB(
+                            12,
+                            0,
+                            12,
+                            showDetails ? 28 : 10,
+                          ),
+                          children: [
+                            const SizedBox(height: 8),
+                            Center(
+                              child: Container(
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            _CompactCareBar(
+                              entity: selected,
+                              isActing: _isActing,
+                              bound: isBoundCompanion,
+                              onFeed: () => _performAction('feed', selected),
+                              onPet: () => _performAction('pet', selected),
+                              onExpand: () => _expandSheet(_sheetFocusSize),
+                            ),
+                            if (showDetails) ...[
+                              const SizedBox(height: 12),
+                              if (showBindCta) ...[
+                                FilledButton.tonalIcon(
+                                  onPressed: _isBindingCompanion
+                                      ? null
+                                      : () =>
+                                          unawaited(_selectCompanion(selected)),
+                                  icon: Icon(
+                                    hasAnyBinding
+                                        ? Icons.swap_horiz_rounded
+                                        : Icons.link_rounded,
+                                  ),
+                                  label: Text(
+                                    hasAnyBinding
+                                        ? '改绑为 ${selected.name}'
+                                        : '将 ${selected.name} 设为我的伙伴',
+                                  ),
+                                ),
+                                if (hasAnyBinding && !isBoundCompanion)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      '当前伙伴是另一位居民（ID $boundId）。同名时请点对卡片再绑定。',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.55,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(height: 10),
+                              ],
+                              _StatusThoughtCard(
+                                entity: selected,
+                                response: _response,
+                                onChat: isBoundCompanion
+                                    ? () => unawaited(_openCompanionChat())
+                                    : null,
+                                onDetail: () => _openDetail(selected),
+                                onStory: FeatureFlags.showGameFeatures
+                                    ? () => _openStory(selected)
+                                    : null,
+                                isOpeningStory: _isOpeningStory,
+                              ),
+                              if (data.entities.length > 1) ...[
+                                const SizedBox(height: 12),
+                                const _SectionTitle(
+                                  title: '居民',
+                                  trailing: '点地图或卡片切换',
+                                ),
+                                const SizedBox(height: 8),
+                                _ResidentList(
+                                  entities: data.entities,
+                                  selectedId: selected.id,
+                                  boundId: boundId,
+                                  displayNames: _residentDisplayNames(
+                                    data.entities,
+                                  ),
+                                  onSelected: (entity) =>
+                                      _focusEntity(entity.id),
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              _CareInsightCard(entity: selected),
+                              const SizedBox(height: 12),
+                              _VitalCard(entity: selected),
+                              const SizedBox(height: 12),
+                              _WorldPulseCard(
+                                summary: data.summary,
+                                tickCount: data.tickCount,
+                                connected: data.connected,
+                              ),
+                              const SizedBox(height: 16),
+                              const _SectionTitle(
+                                title: '最近发生',
+                                trailing: '共同记忆',
+                              ),
+                              const SizedBox(height: 10),
+                              _EventSection(events: data.events),
+                            ],
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        _CompactCareBar(
-                          entity: selected,
-                          isActing: _isActing,
-                          onFeed: () => _performAction('feed', selected),
-                          onPet: () => _performAction('pet', selected),
-                          onDetail: () => _openDetail(selected),
-                          onExpand: () => _expandSheet(_sheetFocusSize),
-                        ),
-                        const SizedBox(height: 14),
-                        if (bindingNeedsRepair) ...[
-                          OutlinedButton.icon(
-                            onPressed: _isBindingCompanion
-                                ? null
-                                : () => unawaited(_selectCompanion(selected)),
-                            icon: const Icon(Icons.link_rounded),
-                            label: Text('将 ${selected.name} 设为我的伙伴'),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                        _CompanionHero(
-                          entity: selected,
-                          response: _response,
-                          isActing: _isActing,
-                          onFeed: () => _performAction('feed', selected),
-                          onPet: () => _performAction('pet', selected),
-                          onStory: FeatureFlags.showGameFeatures
-                              ? () => _openStory(selected)
-                              : null,
-                          isOpeningStory: _isOpeningStory,
-                          onDetail: () => _openDetail(selected),
-                        ),
-                        if (data.entities.length > 1) ...[
-                          const SizedBox(height: 12),
-                          const _SectionTitle(
-                            title: '居民',
-                            trailing: '点地图或此处切换',
-                          ),
-                          const SizedBox(height: 8),
-                          _ResidentList(
-                            entities: data.entities,
-                            selectedId: selected.id,
-                            onSelected: (entity) => _focusEntity(entity.id),
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        _CareInsightCard(entity: selected),
-                        const SizedBox(height: 12),
-                        _VitalCard(entity: selected),
-                        const SizedBox(height: 12),
-                        _WorldPulseCard(
-                          summary: data.summary,
-                          tickCount: data.tickCount,
-                          connected: data.connected,
-                        ),
-                        const SizedBox(height: 16),
-                        const _SectionTitle(
-                          title: '最近发生',
-                          trailing: '共同记忆',
-                        ),
-                        const SizedBox(height: 10),
-                        _EventSection(events: data.events),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),
@@ -833,22 +1013,22 @@ String _worldMoodLabel(LifeWorldSummary summary) {
   return '低迷';
 }
 
-/// 默认 peek 露出的薄条：身份 + 喂食/陪伴，上滑才见大卡。
+/// 默认 peek 露出的薄条：身份 + 喂食/陪伴（游戏 HUD），上滑才见详情。
 class _CompactCareBar extends StatelessWidget {
   const _CompactCareBar({
     required this.entity,
     required this.isActing,
+    required this.bound,
     required this.onFeed,
     required this.onPet,
-    required this.onDetail,
     required this.onExpand,
   });
 
   final LifeEntity entity;
   final bool isActing;
+  final bool bound;
   final VoidCallback onFeed;
   final VoidCallback onPet;
-  final VoidCallback onDetail;
   final VoidCallback onExpand;
 
   @override
@@ -881,15 +1061,44 @@ class _CompactCareBar extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      entity.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF312A25),
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            entity.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF312A25),
+                            ),
+                          ),
+                        ),
+                        if (bound) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE97891).withValues(
+                                alpha: 0.16,
+                              ),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: const Text(
+                              '伙伴',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFFE97891),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     Text(
                       entity.actionLabel,
@@ -916,14 +1125,89 @@ class _CompactCareBar extends StatelessWidget {
                 onPressed: isActing ? null : onPet,
               ),
               IconButton(
-                tooltip: '详情',
+                tooltip: '展开',
                 visualDensity: VisualDensity.compact,
-                onPressed: onDetail,
-                icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                onPressed: onExpand,
+                icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 22),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 展开层：心声 + 次级入口（不再重复大头像/喂食按钮）。
+class _StatusThoughtCard extends StatelessWidget {
+  const _StatusThoughtCard({
+    required this.entity,
+    required this.response,
+    required this.onDetail,
+    this.onChat,
+    this.onStory,
+    this.isOpeningStory = false,
+  });
+
+  final LifeEntity entity;
+  final String? response;
+  final VoidCallback onDetail;
+  final VoidCallback? onChat;
+  final VoidCallback? onStory;
+  final bool isOpeningStory;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6E8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD89C)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            response ?? _defaultThought(entity),
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: Color(0xFF6E625A),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (onChat != null)
+                ActionChip(
+                  avatar: const Icon(Icons.chat_bubble_rounded, size: 16),
+                  label: Text('和 ${entity.name} 聊天'),
+                  onPressed: onChat,
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.info_outline_rounded, size: 16),
+                label: const Text('详情'),
+                onPressed: onDetail,
+              ),
+              if (onStory != null)
+                ActionChip(
+                  avatar: isOpeningStory
+                      ? const SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_stories_rounded, size: 16),
+                  label: const Text('互动故事'),
+                  onPressed: isOpeningStory ? null : onStory,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -961,227 +1245,11 @@ class _CompactActionChip extends StatelessWidget {
   }
 }
 
-class _CompanionHero extends StatelessWidget {
-  final LifeEntity entity;
-  final String? response;
-  final bool isActing;
-  final VoidCallback onFeed;
-  final VoidCallback onPet;
-  final VoidCallback? onStory;
-  final bool isOpeningStory;
-  final VoidCallback onDetail;
-
-  const _CompanionHero({
-    required this.entity,
-    required this.response,
-    required this.isActing,
-    required this.onFeed,
-    required this.onPet,
-    this.onStory,
-    required this.isOpeningStory,
-    required this.onDetail,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFF1D6), Color(0xFFFFFBF4)],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFFFD89C)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1AFFA94D),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 92,
-                height: 92,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.84),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: entity.growthStageColor.withValues(alpha: 0.45),
-                    width: 2,
-                  ),
-                ),
-                child: Text(entity.emoji, style: const TextStyle(fontSize: 54)),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 7),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entity.name,
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF312A25),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        entity.actionLabel,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF9A6B32),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        child: Text(
-                          response ?? _defaultThought(entity),
-                          key: ValueKey(response ?? entity.action),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            height: 1.4,
-                            color: Color(0xFF6E625A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _HeroAction(
-                  icon: Icons.restaurant_rounded,
-                  label: '喂食',
-                  color: const Color(0xFFF59E42),
-                  busy: isActing,
-                  onTap: onFeed,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _HeroAction(
-                  icon: Icons.front_hand_rounded,
-                  label: '陪伴',
-                  color: const Color(0xFFE97891),
-                  busy: isActing,
-                  onTap: onPet,
-                ),
-              ),
-              const SizedBox(width: 10),
-              _DetailButton(onTap: onDetail),
-            ],
-          ),
-          if (onStory != null) ...[
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: isOpeningStory ? null : onStory,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF70594A),
-                side: const BorderSide(color: Color(0xFFD8B98D)),
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              icon: isOpeningStory
-                  ? const SizedBox.square(
-                      dimension: 17,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.auto_stories_rounded),
-              label: Text(
-                '和 ${entity.name} 开始互动故事',
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 String _defaultThought(LifeEntity entity) {
   if (entity.hunger < 30) return '肚子有点饿了，想吃点东西。';
   if (entity.energy < 30) return '今天有点困，想安静地休息。';
   if (entity.mood < 35) return '希望你能多陪我一会儿。';
   return '今天也在认真生活，见到你很开心。';
-}
-
-class _HeroAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool busy;
-  final VoidCallback onTap;
-
-  const _HeroAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.busy,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: busy ? null : onTap,
-      style: FilledButton.styleFrom(
-        backgroundColor: color,
-        disabledBackgroundColor: color.withValues(alpha: 0.55),
-        minimumSize: const Size.fromHeight(48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      icon: busy
-          ? const SizedBox.square(
-              dimension: 17,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
-            )
-          : Icon(icon, size: 19),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-    );
-  }
-}
-
-class _DetailButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _DetailButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      onPressed: onTap,
-      tooltip: '查看详情',
-      style: IconButton.styleFrom(
-        minimumSize: const Size(48, 48),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF70594A),
-      ),
-      icon: const Icon(Icons.arrow_forward_rounded),
-    );
-  }
 }
 
 class _VitalCard extends StatelessWidget {
@@ -1287,52 +1355,69 @@ class _VitalRow extends StatelessWidget {
 class _ResidentList extends StatelessWidget {
   final List<LifeEntity> entities;
   final int selectedId;
+  final int boundId;
+  final Map<int, String> displayNames;
   final ValueChanged<LifeEntity> onSelected;
 
   const _ResidentList({
     required this.entities,
     required this.selectedId,
+    required this.boundId,
+    required this.displayNames,
     required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 106,
+      height: 84,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.hardEdge,
         itemCount: entities.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final entity = entities[index];
           final selected = entity.id == selectedId;
+          final isBound = boundId > 0 && entity.id == boundId;
           return InkWell(
             onTap: () => onSelected(entity),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              width: 96,
-              padding: const EdgeInsets.all(10),
+              width: 76,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? const Color(0xFFFFEAC6) : Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: selected
                       ? const Color(0xFFF59E42)
                       : const Color(0xFFE8E5E1),
+                  width: selected ? 1.5 : 1,
                 ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(entity.emoji, style: const TextStyle(fontSize: 31)),
-                  const SizedBox(height: 5),
+                  Text(entity.emoji, style: const TextStyle(fontSize: 26)),
+                  const SizedBox(height: 4),
                   Text(
-                    entity.name,
+                    () {
+                      final base =
+                          displayNames[entity.id] ?? entity.name.trim();
+                      return isBound ? '$base·伴' : base;
+                    }(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isBound
+                          ? const Color(0xFFE97891)
+                          : const Color(0xFF312A25),
+                    ),
                   ),
                 ],
               ),
@@ -1427,6 +1512,130 @@ class _OfflineBanner extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(child: Text('当前展示缓存状态，连接恢复后可以互动。')),
         ],
+      ),
+    );
+  }
+}
+
+/// 顶部世界事件跑马灯（数据来自 recentEvents，照料事件已同步落库）。
+///
+/// 短文案只显示一份；超出可视宽度时才复制第二份做无缝滚动，避免「并排重复」。
+class _WorldEventTicker extends StatefulWidget {
+  const _WorldEventTicker({required this.lines});
+
+  final List<String> lines;
+
+  @override
+  State<_WorldEventTicker> createState() => _WorldEventTickerState();
+}
+
+class _WorldEventTickerState extends State<_WorldEventTicker> {
+  static const _textStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: Color(0xFF4A3F38),
+  );
+
+  late final ScrollController _controller;
+  Timer? _timer;
+  bool _looping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = ScrollController();
+    _timer = Timer.periodic(const Duration(milliseconds: 40), (_) {
+      if (!mounted || !_looping || !_controller.hasClients) return;
+      final max = _controller.position.maxScrollExtent;
+      if (max <= 0) return;
+      final next = _controller.offset + 0.6;
+      _controller.jumpTo(next >= max ? 0 : next);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// 连续相同事件描述去重，避免「啾啾… · 啾啾…」叠字。
+  String _joinedText() {
+    final out = <String>[];
+    for (final raw in widget.lines) {
+      final line = raw.trim();
+      if (line.isEmpty) continue;
+      if (out.isNotEmpty && out.last == line) continue;
+      out.add(line);
+    }
+    return out.join('   ·   ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _joinedText();
+    return Material(
+      color: Colors.white.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(999),
+      elevation: 2,
+      shadowColor: Colors.black26,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.campaign_rounded,
+              size: 16,
+              color: Color(0xFFE97891),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: SizedBox(
+                height: 18,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final painter = TextPainter(
+                      text: TextSpan(text: text, style: _textStyle),
+                      textDirection: TextDirection.ltr,
+                      maxLines: 1,
+                    )..layout();
+                    final needLoop = painter.width > constraints.maxWidth + 1;
+                    if (_looping != needLoop) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        setState(() => _looping = needLoop);
+                        if (!needLoop && _controller.hasClients) {
+                          _controller.jumpTo(0);
+                        }
+                      });
+                    }
+                    if (!needLoop) {
+                      return Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _textStyle,
+                      );
+                    }
+                    // 两段之间拉开间距，无缝循环时不会贴成「双标题」。
+                    return ListView(
+                      controller: _controller,
+                      scrollDirection: Axis.horizontal,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        Text(text, style: _textStyle),
+                        SizedBox(
+                            width: math.max(80, constraints.maxWidth * 0.35)),
+                        Text(text, style: _textStyle),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

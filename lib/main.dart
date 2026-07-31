@@ -31,6 +31,7 @@ import 'providers/user_level_provider.dart';
 import 'providers/virtual_avatar_provider.dart';
 import 'providers/main_nav_controller.dart';
 import 'providers/life_provider.dart';
+import 'providers/companion_presence_provider.dart';
 import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'services/wechat_sdk_service.dart';
@@ -235,6 +236,7 @@ class SplashScreenWrapper extends StatelessWidget {
     if (AuthService.isLoggedIn) {
       PresenceService.start();
       ChatPushService.start();
+      CompanionPresenceProvider.instance.start();
       BehaviorAnalyticsService.instance.start();
       final uid = AuthService.currentUser;
       if (uid != null) {
@@ -313,6 +315,9 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ChangeNotifierProvider(create: (_) => MainNavController()),
         ChangeNotifierProvider(create: (_) => LifeProvider()),
+        ChangeNotifierProvider.value(
+          value: CompanionPresenceProvider.instance,
+        ),
       ],
       child: MaterialApp(
         title: 'Moe Social',

@@ -4,6 +4,8 @@
  * Legacy redirects: remove after 2026-12
  */
 
+import type { AdminIconName } from '../components/AdminIcon'
+
 export type WorkspaceId = 'biz' | 'ai' | 'infra'
 
 export type NavItem = {
@@ -12,7 +14,8 @@ export type NavItem = {
   to: string
   label: string
   end?: boolean
-  icon?: string
+  /** AdminIcon 名，禁止 emoji */
+  icon?: AdminIconName
   title?: string
 }
 
@@ -20,7 +23,7 @@ export type NavGroup = {
   kind: 'group'
   id: string
   label: string
-  icon?: string
+  icon?: AdminIconName
   caption?: string
   defaultOpen?: boolean
   children: NavItem[]
@@ -39,7 +42,7 @@ export type WorkspaceMeta = {
 export const WORKSPACES: WorkspaceMeta[] = [
   { id: 'biz', label: '运营', home: '/biz', caption: '用户 · 内容 · 触达' },
   { id: 'ai', label: 'AI', home: '/ai/moe-brain', caption: 'Bot · 大脑 · 工具' },
-  { id: 'infra', label: '运维', home: '/infra/deploy', caption: '发布 · 配置 · 审计' },
+  { id: 'infra', label: '运维', home: '/infra/deploy', caption: '后端发布 · 配置 · 审计' },
 ]
 
 export const DEFAULT_WORKSPACE: WorkspaceId = 'biz'
@@ -50,7 +53,7 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'item',
       to: '/biz',
       label: '工作台',
-      icon: '🏠',
+      icon: 'home',
       end: true,
       title: '运营工作台',
     },
@@ -58,7 +61,7 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'group',
       id: 'biz-users',
       label: 'App 用户',
-      icon: '👤',
+      icon: 'users',
       caption: '账号 · 会员 · 成长',
       defaultOpen: true,
       children: [
@@ -73,7 +76,7 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'group',
       id: 'biz-content',
       label: '内容运营',
-      icon: '📝',
+      icon: 'content',
       caption: '动态 · 社区 · 公告',
       defaultOpen: false,
       children: [
@@ -90,7 +93,7 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'group',
       id: 'biz-commerce',
       label: '商业与数据',
-      icon: '📊',
+      icon: 'chart',
       caption: '礼物 · 标签 · 分析',
       defaultOpen: false,
       children: [
@@ -106,14 +109,14 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'item',
       to: '/ai/moe-brain',
       label: 'AI 大脑',
-      icon: '🧠',
+      icon: 'brain',
       title: '脑图与推理监控',
     },
     {
       kind: 'group',
       id: 'ai-bots',
       label: '角色与 Bot',
-      icon: '🤖',
+      icon: 'bot',
       caption: '酒馆 · 社区 Bot',
       defaultOpen: true,
       children: [
@@ -130,14 +133,14 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'item',
       to: '/infra/deploy',
       label: '运维总览',
-      icon: '📡',
+      icon: 'antenna',
       title: '部署总览',
     },
     {
       kind: 'group',
       id: 'infra-platform',
       label: '平台治理',
-      icon: '⚙️',
+      icon: 'settings',
       caption: '配置 · 账号 · 审计',
       defaultOpen: true,
       children: [
@@ -150,14 +153,19 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
       kind: 'group',
       id: 'infra-release',
       label: '构建与发布',
-      icon: '🚀',
-      caption: 'Docker · 流水线',
+      icon: 'rocket',
+      caption: '后端 Docker · Agent',
       defaultOpen: false,
       children: [
-        { kind: 'item', to: '/infra/docker', label: '云 Docker', title: 'Docker 管理' },
-        { kind: 'item', to: '/infra/build', label: '构建流水线', title: '构建任务' },
-        { kind: 'item', to: '/infra/release', label: '应用发布', title: '发布任务' },
-        { kind: 'item', to: '/infra/jobs', label: '任务审计', title: '任务列表' },
+        { kind: 'item', to: '/infra/docker', label: '云 Docker', title: 'VPS Docker / compose' },
+        { kind: 'item', to: '/infra/build', label: '构建流水线', title: '本机交叉编译后端' },
+        {
+          kind: 'item',
+          to: '/infra/release',
+          label: 'GitHub APK 构建',
+          title: '触发 flutter-release（不写 app_releases）',
+        },
+        { kind: 'item', to: '/infra/jobs', label: '任务审计', title: 'Deploy Agent 任务列表' },
       ],
     },
   ],

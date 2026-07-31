@@ -2,13 +2,13 @@ package companionapp
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
-	"backend/model"
 	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -51,6 +51,7 @@ func (s *AppService) UpsertProfile(ctx context.Context, userID uint, in *compani
 	p := &companionbiz.Profile{
 		Name:                 in.GetName(),
 		Emoji:                in.GetEmoji(),
+		AvatarURL:            strings.TrimSpace(in.GetAvatarUrl()),
 		Persona:              in.GetPersona(),
 		PersonalityTraits:    in.GetPersonalityTraits(),
 		GreetingStyle:        in.GetGreetingStyle(),
@@ -93,6 +94,37 @@ func (s *AppService) ListMemories(ctx context.Context, userID uint, in *companio
 	}
 	return &companionv1.ListMemoriesReply{
 		Memories: toProtoMemories(memories),
+	}, nil
+}
+
+func (s *AppService) DeleteMemory(ctx context.Context, userID uint, in *companionv1.DeleteMemoryRequest) (*companionv1.DeleteMemoryReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	if err := engine.DeleteMemory(ctx, userID, uint(in.GetMemoryId())); err != nil {
+		if errors.Is(err, companionbiz.ErrMemoryNotFound) {
+			return nil, kerrors.NotFound("COMPANION_MEMORY_NOT_FOUND", "记忆不存在")
+		}
+		return nil, err
+	}
+	return &companionv1.DeleteMemoryReply{}, nil
+}
+
+func (s *AppService) SetMemoryPinned(ctx context.Context, userID uint, in *companionv1.SetMemoryPinnedRequest) (*companionv1.SetMemoryPinnedReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	memory, err := engine.SetMemoryPinned(ctx, userID, uint(in.GetMemoryId()), in.GetPinned())
+	if err != nil {
+		if errors.Is(err, companionbiz.ErrMemoryNotFound) {
+			return nil, kerrors.NotFound("COMPANION_MEMORY_NOT_FOUND", "记忆不存在")
+		}
+		return nil, err
+	}
+	return &companionv1.SetMemoryPinnedReply{
+		Memory: toProtoMemory(*memory),
 	}, nil
 }
 
@@ -159,6 +191,7 @@ func toProtoProfile(p *companionbiz.Profile) *companionv1.CompanionProfileMsg {
 		SystemPromptOverride: p.SystemPromptOverride,
 		AgentId:              p.AgentID,
 		LifeEntityId:         int32(p.LifeEntityID),
+		AvatarUrl:            p.AvatarURL,
 	}
 }
 
@@ -175,28 +208,24 @@ func (s *AppService) GetCommunityIdentity(ctx context.Context, userID uint, in *
 	if err != nil {
 		return nil, err
 	}
-	agentID := strings.TrimSpace(profile.AgentID)
-	if agentID == "" {
-		return &companionv1.GetCommunityIdentityReply{}, nil
+	botUser, agentID, err := s.ensureCommunityBot(ctx, userID, profile)
+	if err != nil {
+		return nil, err
 	}
-
-	var botUser model.User
-	if err := s.db.WithContext(ctx).
-		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
-		First(&botUser).Error; err != nil {
+	if botUser == nil || agentID == "" {
 		return &companionv1.GetCommunityIdentityReply{}, nil
 	}
 
 	userName := strings.TrimSpace(botUser.Username)
 	if userName == "" {
-		userName = strings.TrimSpace(botUser.Email)
+		userName = strings.TrimSpace(profile.Name)
 	}
 	if userName == "" {
-		userName = profile.Name
+		userName = "AI伙伴"
 	}
 	userAvatar := strings.TrimSpace(botUser.Avatar)
 	if userAvatar == "" {
-		userAvatar = "https://picsum.photos/150"
+		userAvatar = strings.TrimSpace(profile.AvatarURL)
 	}
 
 	return &companionv1.GetCommunityIdentityReply{
@@ -209,6 +238,26 @@ func (s *AppService) GetCommunityIdentity(ctx context.Context, userID uint, in *
 			AuthorBotAgentKey: strings.TrimSpace(botUser.BotAgentKey),
 		},
 	}, nil
+}
+
+// BumpIntimacyByReason 供照料等互动调用（chat 由 ChatStream 内部处理）。
+func (s *AppService) BumpIntimacyByReason(ctx context.Context, userID uint, reason string) (*companionbiz.Profile, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	delta := companionbiz.IntimacyDeltaForReason(reason)
+	if delta <= 0 {
+		return nil, kerrors.BadRequest("INVALID_REASON", "不支持的亲密度原因")
+	}
+	if err := engine.BumpIntimacy(ctx, userID, delta); err != nil {
+		return nil, err
+	}
+	profile, err := engine.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return profile, nil
 }
 
 func toProtoState(s *companionbiz.State) *companionv1.CompanionStateMsg {
@@ -237,15 +286,20 @@ func toProtoState(s *companionbiz.State) *companionv1.CompanionStateMsg {
 func toProtoMemories(memories []companionbiz.Memory) []*companionv1.CompanionMemoryMsg {
 	out := make([]*companionv1.CompanionMemoryMsg, 0, len(memories))
 	for _, m := range memories {
-		out = append(out, &companionv1.CompanionMemoryMsg{
-			Id:         uint64(m.ID),
-			MemoryType: m.MemoryType,
-			Content:    m.Content,
-			Importance: int32(m.Importance),
-			CreatedAt:  m.CreatedAt.Format("2006-01-02 15:04:05"),
-		})
+		out = append(out, toProtoMemory(m))
 	}
 	return out
+}
+
+func toProtoMemory(m companionbiz.Memory) *companionv1.CompanionMemoryMsg {
+	return &companionv1.CompanionMemoryMsg{
+		Id:         uint64(m.ID),
+		MemoryType: m.MemoryType,
+		Content:    m.Content,
+		Importance: int32(m.Importance),
+		CreatedAt:  m.CreatedAt.Format("2006-01-02 15:04:05"),
+		Pinned:     m.Pinned,
+	}
 }
 
 func toProtoChatLogs(logs []companionbiz.ChatLog) []*companionv1.CompanionChatLogMsg {

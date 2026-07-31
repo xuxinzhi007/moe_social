@@ -49,7 +49,7 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 	common.InitSSEHeaders(w)
 	_ = common.WriteSSE(w, "start", map[string]string{})
 
-	_, err = app.ChatStream(r.Context(), userID, req.Message, func(chunk string) error {
+	fullReply, err := app.ChatStream(r.Context(), userID, req.Message, func(chunk string) error {
 		return common.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
@@ -57,6 +57,6 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		return nil
 	}
 
-	_ = common.WriteSSE(w, "done", map[string]string{})
+	_ = common.WriteSSE(w, "done", map[string]string{"text": strings.TrimSpace(fullReply)})
 	return nil
 }

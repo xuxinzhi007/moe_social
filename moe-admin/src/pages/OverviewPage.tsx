@@ -23,6 +23,7 @@ export function OverviewPage() {
     setDeployTarget,
     bootstrapped,
     authOk,
+    agentOnline,
   } = useDeploy()
   const [metricsTarget, setMetricsTarget] = useState('local')
   const overview = useOverviewData(metricsTarget)
@@ -56,9 +57,12 @@ export function OverviewPage() {
         { label: '本机', value: overview.localBadge.text, hint: '开发编包环境' },
         { label: '云 VPS', value: overview.cloudBadge.text, hint: overview.cloudHostLabel },
         {
-          label: '部署 Token',
-          value: authOk === true ? '已授权' : '未授权',
-          hint: authOk === true ? '可执行发布任务' : '请在设置中填写',
+          label: '运维网关',
+          value: authOk === true ? '就绪' : agentOnline ? '鉴权失败' : '离线',
+          hint:
+            authOk === true
+              ? '可执行发布任务'
+              : '检查 Agent 是否启动；自定义 token 见设置→高级',
         },
         {
           label: '进行中任务',
@@ -77,7 +81,7 @@ export function OverviewPage() {
         </button>
       }
     >
-      {!bootstrapped ? <p className="loading-hint">正在连接 Agent 并验证 Token…</p> : null}
+      {!bootstrapped ? <p className="loading-hint">正在连接 Deploy Agent…</p> : null}
 
       <section className="overview-section" aria-label="环境状态">
         <div className="env-grid">
@@ -155,16 +159,25 @@ export function OverviewPage() {
         </section>
       ) : null}
 
+      <AdminPanel title="文档与边界">
+        <p className="muted config-hint" style={{ margin: 0 }}>
+          后端部署：<code>docs/dev/deploy-platform.md</code> · App 发版速查：
+          <code>docs/dev/app-release-cheatsheet.md</code>。本页「一键发布」只更新云端{' '}
+          <code>moe-social</code>；手机 APK / 强制更新在运营区「App 版本更新」或侧栏「GitHub APK
+          构建」。
+        </p>
+      </AdminPanel>
+
       <section className="overview-section overview-bottom" aria-label="发布与快捷操作">
         <AdminPanel
-          title="发布流水线"
+          title="后端发布流水线"
           actions={
             <button
               type="button"
               className="btn btn-primary"
               onClick={() => void runJob('backend_release_pipeline')}
             >
-              一键发布
+              一键发布（仅后端）
             </button>
           }
         >
@@ -178,13 +191,13 @@ export function OverviewPage() {
             </div>
             <span className="pipe-arrow">→</span>
             <div className="pipe-step">
-              <span className="num">3</span> 云 Docker
-            </div>
-            <span className="pipe-arrow">→</span>
-            <div className="pipe-step">
-              <span className="num">4</span> GitHub APK
+              <span className="num">3</span> 健康检查
             </div>
           </div>
+          <p className="muted config-hint" style={{ marginTop: 12, marginBottom: 0 }}>
+            串联：编 <code>bin/moe-social</code> → 上传 → 检查容器。手机 APK 不在此流程，见侧栏「GitHub APK
+            构建」或运营区「App 版本更新」。
+          </p>
         </AdminPanel>
 
         <AdminPanel title="快捷操作">

@@ -27,20 +27,31 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
 
   Future<void> _claimDailyItems() async {
     if (_claiming) return;
-    setState(() => _claiming = true);
     final provider = context.read<LifeProvider>();
-    final ok = await provider.claimItems();
+    if (provider.claimedToday) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('今日已签到领取过了，明天再来吧'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    setState(() => _claiming = true);
+    final result = await provider.claimItems();
     if (!mounted) return;
     setState(() => _claiming = false);
-    final itemCount =
-        provider.inventory.fold<int>(0, (sum, item) => sum + item.quantity);
+    final ok = result != null && result.success;
+    final msg = !ok
+        ? (provider.lastActionError ?? '领取失败，请稍后重试')
+        : result.alreadyClaimed
+            ? '今日已签到领取过了'
+            : result.count > 0
+                ? '签到成功！获得 ${result.items.map((e) => e.displayIcon).join('')} ×${result.count}'
+                : (result.message.isNotEmpty ? result.message : '签到成功');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? itemCount > 0
-                ? '🎁 已领取，背包新增道具！'
-                : '🎁 已签到，但暂时没有可用道具'
-            : provider.lastActionError ?? '领取失败，请稍后重试'),
+        content: Text(msg),
         backgroundColor: ok ? MoeTokens.success : MoeTokens.danger,
         duration: const Duration(seconds: 2),
       ),
@@ -245,50 +256,75 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
               // 顶部签到领取按钮
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: MoeTokens.primaryGradient,
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                    boxShadow: MoeTokens.shadowButton(),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                      onTap: _claiming ? null : _claimDailyItems,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        alignment: Alignment.center,
-                        child: _claiming
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('🎁', style: TextStyle(fontSize: 18)),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    '签到领取每日道具',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
+                child: Builder(
+                  builder: (context) {
+                    final claimed = provider.claimedToday;
+                    return Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: claimed ? null : MoeTokens.primaryGradient,
+                        color: claimed ? const Color(0xFFE8E4F0) : null,
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                        boxShadow: claimed ? null : MoeTokens.shadowButton(),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusLg),
+                          onTap:
+                              (_claiming || claimed) ? null : _claimDailyItems,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            alignment: Alignment.center,
+                            child: _claiming
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
                                       color: Colors.white,
                                     ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        claimed ? '✅' : '🎁',
+                                        style: const TextStyle(fontSize: 18),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        claimed ? '今日已签到 · 明天再来' : '签到领取每日道具',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: claimed
+                                              ? const Color(0xFF7A6F8A)
+                                              : Colors.white,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                          ),
+                        ),
                       ),
+                    );
+                  },
+                ),
+              ),
+              if (!provider.claimedToday)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: Text(
+                    '每天可领一次：食物 / 药剂 / 玩具各 1 份，记入你的账号背包。',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: MoeTokens.hintText,
+                      height: 1.35,
                     ),
                   ),
                 ),
-              ),
               // 加载指示
               if (provider.inventoryLoading)
                 const Expanded(
@@ -339,9 +375,11 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '点击上方按钮领取每日补给；如果刚领取后仍为空，说明服务端今天没有发放可用道具。',
+                              provider.claimedToday
+                                  ? '今日补给已领过。去世界里对居民使用道具吧。'
+                                  : '点上方「签到领取每日道具」领取今日补给。',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 13,
                                 height: 1.45,
                                 color: MoeTokens.hintText,

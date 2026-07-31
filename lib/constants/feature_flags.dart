@@ -34,4 +34,8 @@ class FeatureFlags {
   /// 二期多角色未定形态前，禁止据此做「永远只能一个」的 UI/死逻辑扩展；
   /// 多角色应在 Companion 域演进，不要复活酒馆大厅。
   static const bool companionSingleActiveBondPhase1 = true;
+
+  /// AIRI 向轻量语音存在感：Companion 聊天语音输入 + 朗读回复。
+  /// 不做 Live2D / 形象驱动（决策 13）；仅本机 STT/TTS。
+  static const bool companionVoicePresence = true;
 }

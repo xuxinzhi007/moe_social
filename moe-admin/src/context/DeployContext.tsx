@@ -135,10 +135,10 @@ export function DeployProvider({ children }: { children: ReactNode }) {
       try {
         await c.session()
         setAuthOk(true)
-        showToast('Token 已验证')
+        showToast('运维网关已连接')
       } catch (e) {
         setAuthOk(false)
-        showToast(e instanceof DeployApiError ? e.message : '验证失败')
+        showToast(e instanceof DeployApiError ? e.message : '连接失败')
       }
       await probeAgent()
     },
@@ -186,7 +186,7 @@ export function DeployProvider({ children }: { children: ReactNode }) {
   const runJob = useCallback(
     async (type: string, params: Record<string, string> = {}) => {
       if (!token.trim()) {
-        showToast('请先填写 Deploy Token')
+        showToast('运维网关未就绪，请打开设置检测 Agent')
         return undefined
       }
       const resolved = jobTargetForType(type, deployTarget)

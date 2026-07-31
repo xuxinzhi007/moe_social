@@ -1,6 +1,7 @@
 # Moe Admin CSS 架构 V3（拆分方案）
 
-> 配套 [DESIGN.md](../DESIGN.md)。当前 monolith：`src/styles/moe-admin-theme.css`（约 **4000 行**）。
+> 配套 [DESIGN.md](../DESIGN.md)。  
+> 迁移期 monolith：`src/styles/legacy/moe-admin-theme.css`（Sprint A 已迁入 `legacy/`；**禁止再往该文件追加**）。
 
 ---
 

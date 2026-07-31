@@ -108,11 +108,10 @@ func TestShouldDie(t *testing.T) {
 		cell   *WorldCell
 		want   bool
 	}{
-		{"hunger=0死亡", &model.LifeEntity{Hunger: 0, Energy: 50}, nil, true},
-		{"hunger=2死亡", &model.LifeEntity{Hunger: 2, Energy: 50}, nil, true},
-		{"hunger=3存活", &model.LifeEntity{Hunger: 3, Energy: 50}, nil, false},
-		{"energy=0死亡", &model.LifeEntity{Hunger: 50, Energy: 0}, nil, true},
-		{"energy=2死亡", &model.LifeEntity{Hunger: 50, Energy: 2}, nil, true},
+		{"hunger=0但energy高存活", &model.LifeEntity{Hunger: 0, Energy: 50}, nil, false},
+		{"hunger=0且energy<=5死亡", &model.LifeEntity{Hunger: 0, Energy: 5}, nil, true},
+		{"energy=0但hunger高存活", &model.LifeEntity{Hunger: 50, Energy: 0}, nil, false},
+		{"energy=0且hunger<=5死亡", &model.LifeEntity{Hunger: 5, Energy: 0}, nil, true},
 		{"hunger=0且energy=0死亡", &model.LifeEntity{Hunger: 0, Energy: 0}, nil, true},
 		{"双高存活", &model.LifeEntity{Hunger: 50, Energy: 50}, nil, false},
 		{"nil entity", nil, nil, false},

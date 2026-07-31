@@ -1,5 +1,6 @@
 # Android Release 签名配置
 
+> 发版全流程速查：[app-release-cheatsheet.md](./app-release-cheatsheet.md)  
 > 本文档含敏感信息，请勿提交到公开仓库。若仓库曾公开，请轮换 keystore 密码并评估是否更换 `release.jks`。
 
 ## 签名文件

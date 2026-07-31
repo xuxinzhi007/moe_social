@@ -6,16 +6,17 @@ import "time"
 type Profile struct {
 	ID                uint
 	UserID            uint
-	Name              string
-	Emoji             string
-	Persona           string
-	PersonalityTraits []string // JSON 解析后
-	GreetingStyle     string   // warm / playful / calm
-	RelationshipLevel int
-	IntimacyScore     float64
+	Name                 string
+	Emoji                string
+	AvatarURL            string // 关系层自定义头像 URL
+	Persona              string
+	PersonalityTraits    []string // JSON 解析后
+	GreetingStyle        string   // warm / playful / calm
+	RelationshipLevel    int
+	IntimacyScore        float64
 	SystemPromptOverride string
-	AgentID           string
-	LifeEntityID      int
+	AgentID              string
+	LifeEntityID         int
 }
 
 // Memory AI 伙伴持久记忆。
@@ -25,6 +26,7 @@ type Memory struct {
 	MemoryType      string // conversation / milestone / preference / fact
 	Content         string
 	Importance      int // 0=7天 / 1=30天 / 2=永久
+	Pinned          bool
 	SourceChatLogID uint
 	ExpiresAt       *time.Time
 	CreatedAt       time.Time

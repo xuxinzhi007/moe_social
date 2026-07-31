@@ -161,7 +161,7 @@ export function AdminAccountsPage() {
     <>
       <ListPageLayout
         title="管理员账号"
-        description="Moe Admin 后台账号（与 App 用户分离）"
+        description="Moe Admin 后台账号（与 App 用户分离）· 仅 super_admin 可进入运维区本页"
         metrics={[{ label: '管理员', value: loading ? '…' : total }]}
         headActions={
           <button

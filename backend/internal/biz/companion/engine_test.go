@@ -2,10 +2,14 @@ package companionbiz
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"backend/model"
 	"backend/pkg/llminference"
+
+	"gorm.io/gorm"
 )
 
 func TestGetProfileCreatesStableLifeBinding(t *testing.T) {
@@ -90,6 +94,32 @@ func TestGetProfileKeepsExistingProfileUnboundUntilExplicitlyBound(t *testing.T)
 	}
 }
 
+func TestBindLifeEntityDoesNotOverwriteCustomIdentity(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		Name:         "小花",
+		Emoji:        "🐰",
+		AvatarURL:    "https://example.com/a.png",
+		LifeEntityID: 3,
+	})
+	life := &fakeLifeStore{entities: []model.LifeEntity{
+		{ID: 3, Name: "啾啾", Emoji: "🐥", IsAlive: true},
+	}}
+	engine := NewEngine(store, life, llminference.Config{}, "")
+
+	profile, err := engine.GetProfile(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetProfile() error = %v", err)
+	}
+	if profile.LifeEntityID != 3 {
+		t.Fatalf("LifeEntityID = %d, want 3", profile.LifeEntityID)
+	}
+	if profile.Name != "小花" || profile.Emoji != "🐰" || profile.AvatarURL != "https://example.com/a.png" {
+		t.Fatalf("identity overwritten: name=%q emoji=%q avatar=%q",
+			profile.Name, profile.Emoji, profile.AvatarURL)
+	}
+}
+
 func TestDeadLifeBindingCanBeReplaced(t *testing.T) {
 	store := newFakeStore()
 	store.profiles[7] = profileToModel(7, &Profile{LifeEntityID: 2, Name: "Old"})
@@ -110,6 +140,36 @@ func TestDeadLifeBindingCanBeReplaced(t *testing.T) {
 	}
 	if rebound.LifeEntityID != 3 {
 		t.Fatalf("UpsertProfile() binding = %d, want 3", rebound.LifeEntityID)
+	}
+}
+
+func TestDeleteAndPinMemory(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	exp := time.Now().Add(24 * time.Hour)
+	if err := store.CreateMemory(context.Background(), &model.CompanionMemory{
+		UserID:     7,
+		MemoryType: "fact",
+		Content:    "喜欢猫",
+		Importance: 0,
+		ExpiresAt:  &exp,
+	}); err != nil {
+		t.Fatalf("CreateMemory: %v", err)
+	}
+
+	pinned, err := engine.SetMemoryPinned(context.Background(), 7, 1, true)
+	if err != nil {
+		t.Fatalf("SetMemoryPinned: %v", err)
+	}
+	if !pinned.Pinned || pinned.Importance < 2 || pinned.ExpiresAt != nil {
+		t.Fatalf("pin result = %+v", pinned)
+	}
+
+	if err := engine.DeleteMemory(context.Background(), 7, 1); err != nil {
+		t.Fatalf("DeleteMemory: %v", err)
+	}
+	if err := engine.DeleteMemory(context.Background(), 7, 1); !errors.Is(err, ErrMemoryNotFound) {
+		t.Fatalf("second delete err = %v, want ErrMemoryNotFound", err)
 	}
 }
 
@@ -139,6 +199,16 @@ func (s *fakeStore) UpsertProfile(_ context.Context, profile *model.CompanionPro
 	return nil
 }
 
+func (s *fakeStore) UpdateIntimacy(_ context.Context, userID uint, intimacy float64, level int) error {
+	row := s.profiles[userID]
+	if row == nil {
+		return nil
+	}
+	row.IntimacyScore = intimacy
+	row.RelationshipLevel = level
+	return nil
+}
+
 func (s *fakeStore) ListProfileUserIDs(_ context.Context) ([]uint, error) {
 	userIDs := make([]uint, 0, len(s.profiles))
 	for userID := range s.profiles {
@@ -148,12 +218,60 @@ func (s *fakeStore) ListProfileUserIDs(_ context.Context) ([]uint, error) {
 }
 
 func (s *fakeStore) CreateMemory(_ context.Context, memory *model.CompanionMemory) error {
+	memory.ID = uint(len(s.memories) + 1)
 	s.memories = append(s.memories, *memory)
 	return nil
 }
 
 func (s *fakeStore) ListActiveMemories(_ context.Context, userID uint, limit int) ([]model.CompanionMemory, error) {
+	out := make([]model.CompanionMemory, 0, len(s.memories))
+	for _, m := range s.memories {
+		if m.UserID == userID {
+			out = append(out, m)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) GetMemoryByID(_ context.Context, userID, memoryID uint) (*model.CompanionMemory, error) {
+	for i := range s.memories {
+		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
+			row := s.memories[i]
+			return &row, nil
+		}
+	}
 	return nil, nil
+}
+
+func (s *fakeStore) DeleteMemory(_ context.Context, userID, memoryID uint) error {
+	for i := range s.memories {
+		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
+			s.memories = append(s.memories[:i], s.memories[i+1:]...)
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (s *fakeStore) UpdateMemoryPinned(
+	_ context.Context,
+	userID, memoryID uint,
+	pinned bool,
+	importance int,
+	expiresAt *time.Time,
+) error {
+	for i := range s.memories {
+		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
+			s.memories[i].Pinned = pinned
+			s.memories[i].Importance = importance
+			s.memories[i].ExpiresAt = expiresAt
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
 }
 
 func (s *fakeStore) CleanupExpiredMemories(_ context.Context) (int64, error) {

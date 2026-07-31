@@ -5,6 +5,12 @@ const LS_TARGET = 'moe_deploy_target'
 /** Deploy Agent（:19010），管理台默认连此网关 */
 export const AGENT_URL = 'http://127.0.0.1:19010'
 
+/**
+ * 与 backend/deploy 默认 token 对齐（config.Token 空时为 change-me）。
+ * 本地开发无需在设置里再填一遍；自定义 token 仍可在设置「高级」覆盖。
+ */
+export const DEFAULT_DEPLOY_TOKEN = 'change-me'
+
 const FALLBACK_URL = AGENT_URL
 
 function isDevUiPort(port: string) {
@@ -38,9 +44,10 @@ export function loadConn(): {
   token: string
   deployTarget: string
 } {
+  const stored = localStorage.getItem(LS_TOKEN)
   return {
     baseUrl: resolveBaseUrl(),
-    token: localStorage.getItem(LS_TOKEN) || '',
+    token: stored?.trim() ? stored : DEFAULT_DEPLOY_TOKEN,
     deployTarget: localStorage.getItem(LS_TARGET) || 'local',
   }
 }

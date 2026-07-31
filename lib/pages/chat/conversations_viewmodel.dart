@@ -226,21 +226,51 @@ class ConversationsViewModel extends ChangeNotifier {
     return time.isAfter(clearedAt);
   }
 
-  /// 从会话列表隐藏（写 clear marker，与私信页清空历史同键）。
+  /// 会话列表是否展示该 peer（微信式：隐藏后直到有更新活动才再出现）。
+  ///
+  /// [lastActivityAt] 为该会话最后一条消息时间；无消息时用 epoch。
+  bool isPeerVisibleInConversationList(
+    String peerId,
+    DateTime lastActivityAt,
+  ) {
+    final trimmed = peerId.trim();
+    if (trimmed.isEmpty) return false;
+    return isAfterClearMarker(trimmed, lastActivityAt);
+  }
+
+  /// 从会话列表隐藏（写 clear marker；聊天记录仍在，有新消息后会话再出现）。
   Future<void> hideConversation(String peerId) async {
     final trimmed = peerId.trim();
     if (trimmed.isEmpty) return;
     final uid = await AuthService.getUserId();
     if (uid.isEmpty) return;
 
-    final now = DateTime.now();
+    // marker 至少覆盖当前已知最后活动，避免时钟偏差导致「隐藏后立刻又出现」。
+    var marker = DateTime.now();
+    for (final c in _serverConversations) {
+      if (c.peerUserId.trim() != trimmed) continue;
+      final at = DateTime.tryParse(c.lastMessage.createdAt);
+      if (at != null && !at.isBefore(marker)) {
+        marker = at.add(const Duration(milliseconds: 1));
+      }
+    }
+    final localAt = _localThreadTails[trimmed]?.at;
+    if (localAt != null && !localAt.isBefore(marker)) {
+      marker = localAt.add(const Duration(milliseconds: 1));
+    }
+    final serverTailAt = _serverThreadTails[trimmed]?.at;
+    if (serverTailAt != null && !serverTailAt.isBefore(marker)) {
+      marker = serverTailAt.add(const Duration(milliseconds: 1));
+    }
+
     final ids = [uid, trimmed]..sort();
     final key = 'direct_chat_cleared_${ids.join('_')}';
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, now.toIso8601String());
+    await prefs.setString(key, marker.toIso8601String());
 
     if (_disposed) return;
-    _clearMarkers = Map<String, DateTime>.from(_clearMarkers)..[trimmed] = now;
+    _clearMarkers = Map<String, DateTime>.from(_clearMarkers)
+      ..[trimmed] = marker;
     _serverConversations = _serverConversations
         .where((c) => c.peerUserId.trim() != trimmed)
         .toList();

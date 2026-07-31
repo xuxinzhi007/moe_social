@@ -4,8 +4,8 @@ description: >-
   Unified Moe Social Flutter project skill: product boundaries, production
   architecture (thin pages, ViewModels, domain services, FeatureFlags), MoeTokens
   UI craft, success-app P0 loops, and strict audit/review. Use for any lib/
-  Flutter work, 正式产品/收口, UI design/redesign, hallmark, or when the user asks
-  to audit/review Flutter code.
+  Flutter work, 正式产品/收口, UI design/redesign, hallmark, or Flutter audit.
+  Life/Flame/TA的世界 also load digital-life + flame-life-world.
 ---
 
 # Moe Flutter（统一项目 Skill）
@@ -26,6 +26,7 @@ description: >-
 - 布局模式 → [references/layout-patterns.md](references/layout-patterns.md)
 - 反模式 → [references/anti-patterns.md](references/anti-patterns.md)
 - **Life / 小世界** → 必须叠加 [digital-life](../digital-life/SKILL.md)（勿只读本 skill）
+- **Flame / GameWidget / `lib/game/life/`** → 再叠加 [flame-life-world](../flame-life-world/SKILL.md)（相机手势 SSOT）
 - 动画 / Ticker 踩坑 → 见下方 §1.1（`flutter analyze` **抓不到**）
 
 改动幅度：始终叠加 [implementation-guardrails](../implementation-guardrails/SKILL.md)。

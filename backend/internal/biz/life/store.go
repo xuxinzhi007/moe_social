@@ -43,4 +43,10 @@ type Store interface {
 	GetInventory(ctx context.Context, userID string) ([]*model.LifeInventory, error)
 	DecrementInventory(ctx context.Context, userID string, itemID uint) error
 	GrantItem(ctx context.Context, userID string, itemID uint, qty int) error
+
+	// 背包每日签到
+	HasDailyClaim(ctx context.Context, userID, claimDate string) (bool, error)
+	// MarkDailyClaim 写入签到记录；同日重复返回 created=false。
+	MarkDailyClaim(ctx context.Context, userID, claimDate string, itemCount int) (created bool, err error)
+	UpdateDailyClaimCount(ctx context.Context, userID, claimDate string, itemCount int) error
 }

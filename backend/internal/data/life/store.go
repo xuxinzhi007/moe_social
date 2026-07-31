@@ -3,6 +3,7 @@ package lifedata
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	lifebiz "backend/internal/biz/life"
@@ -286,4 +287,47 @@ func (s *gormStore) GrantItem(ctx context.Context, userID string, itemID uint, q
 			}),
 		}).
 		Create(inv).Error
+}
+
+func (s *gormStore) HasDailyClaim(ctx context.Context, userID, claimDate string) (bool, error) {
+	var n int64
+	err := s.db.WithContext(ctx).
+		Model(&model.LifeDailyClaim{}).
+		Where("user_id = ? AND claim_date = ?", userID, claimDate).
+		Count(&n).Error
+	return n > 0, err
+}
+
+func (s *gormStore) MarkDailyClaim(ctx context.Context, userID, claimDate string, itemCount int) (bool, error) {
+	row := &model.LifeDailyClaim{
+		UserID:    userID,
+		ClaimDate: claimDate,
+		ItemCount: itemCount,
+		CreatedAt: time.Now(),
+	}
+	err := s.db.WithContext(ctx).Create(row).Error
+	if err == nil {
+		return true, nil
+	}
+	if isMySQLDuplicateKey(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func (s *gormStore) UpdateDailyClaimCount(ctx context.Context, userID, claimDate string, itemCount int) error {
+	return s.db.WithContext(ctx).
+		Model(&model.LifeDailyClaim{}).
+		Where("user_id = ? AND claim_date = ?", userID, claimDate).
+		Update("item_count", itemCount).Error
+}
+
+func isMySQLDuplicateKey(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate entry") ||
+		strings.Contains(msg, "unique constraint") ||
+		strings.Contains(msg, "UNIQUE constraint failed")
 }

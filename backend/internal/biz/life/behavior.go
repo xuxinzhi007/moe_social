@@ -43,10 +43,14 @@ func shouldDie(e *model.LifeEntity, cell *WorldCell) bool {
 	if e == nil {
 		return false
 	}
-	if e.Hunger <= 2 || e.Energy <= 2 {
+	// 更贴近「长期照料」：仅在极端衰竭时消亡，避免稍低状态就消失。
+	if e.Hunger <= 0 && e.Energy <= 5 {
 		return true
 	}
-	if cell != nil && cell.Danger > 92 && rand.Float64() < 0.08 {
+	if e.Energy <= 0 && e.Hunger <= 5 {
+		return true
+	}
+	if cell != nil && cell.Danger > 96 && rand.Float64() < 0.03 {
 		return true
 	}
 	return false

@@ -19,14 +19,17 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationCompanionDeleteMemory = "/companion.v1.Companion/DeleteMemory"
 const OperationCompanionGetCommunityIdentity = "/companion.v1.Companion/GetCommunityIdentity"
 const OperationCompanionGetProfile = "/companion.v1.Companion/GetProfile"
 const OperationCompanionGetState = "/companion.v1.Companion/GetState"
 const OperationCompanionListChatHistory = "/companion.v1.Companion/ListChatHistory"
 const OperationCompanionListMemories = "/companion.v1.Companion/ListMemories"
+const OperationCompanionSetMemoryPinned = "/companion.v1.Companion/SetMemoryPinned"
 const OperationCompanionUpsertProfile = "/companion.v1.Companion/UpsertProfile"
 
 type CompanionHTTPServer interface {
+	DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error)
 	GetCommunityIdentity(context.Context, *GetCommunityIdentityRequest) (*GetCommunityIdentityReply, error)
 	// GetProfile Profile
 	GetProfile(context.Context, *GetProfileRequest) (*GetProfileReply, error)
@@ -36,6 +39,7 @@ type CompanionHTTPServer interface {
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
 	// ListMemories Memory
 	ListMemories(context.Context, *ListMemoriesRequest) (*ListMemoriesReply, error)
+	SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error)
 	UpsertProfile(context.Context, *UpsertProfileRequest) (*UpsertProfileReply, error)
 }
 
@@ -46,6 +50,8 @@ func RegisterCompanionHTTPServer(s *http.Server, srv CompanionHTTPServer) {
 	r.POST("/api/companion/profile", _Companion_UpsertProfile0_HTTP_Handler(srv))
 	r.GET("/api/companion/state", _Companion_GetState0_HTTP_Handler(srv))
 	r.GET("/api/companion/memories", _Companion_ListMemories0_HTTP_Handler(srv))
+	r.DELETE("/api/companion/memories/{memory_id}", _Companion_DeleteMemory0_HTTP_Handler(srv))
+	r.POST("/api/companion/memories/{memory_id}/pin", _Companion_SetMemoryPinned0_HTTP_Handler(srv))
 	r.GET("/api/companion/chat/history", _Companion_ListChatHistory0_HTTP_Handler(srv))
 }
 
@@ -147,6 +153,53 @@ func _Companion_ListMemories0_HTTP_Handler(srv CompanionHTTPServer) func(ctx htt
 	}
 }
 
+func _Companion_DeleteMemory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteMemoryRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionDeleteMemory)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteMemory(ctx, req.(*DeleteMemoryRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DeleteMemoryReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_SetMemoryPinned0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in SetMemoryPinnedRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionSetMemoryPinned)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SetMemoryPinned(ctx, req.(*SetMemoryPinnedRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*SetMemoryPinnedReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _Companion_ListChatHistory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ListChatHistoryRequest
@@ -167,6 +220,7 @@ func _Companion_ListChatHistory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx 
 }
 
 type CompanionHTTPClient interface {
+	DeleteMemory(ctx context.Context, req *DeleteMemoryRequest, opts ...http.CallOption) (rsp *DeleteMemoryReply, err error)
 	GetCommunityIdentity(ctx context.Context, req *GetCommunityIdentityRequest, opts ...http.CallOption) (rsp *GetCommunityIdentityReply, err error)
 	// GetProfile Profile
 	GetProfile(ctx context.Context, req *GetProfileRequest, opts ...http.CallOption) (rsp *GetProfileReply, err error)
@@ -176,6 +230,7 @@ type CompanionHTTPClient interface {
 	ListChatHistory(ctx context.Context, req *ListChatHistoryRequest, opts ...http.CallOption) (rsp *ListChatHistoryReply, err error)
 	// ListMemories Memory
 	ListMemories(ctx context.Context, req *ListMemoriesRequest, opts ...http.CallOption) (rsp *ListMemoriesReply, err error)
+	SetMemoryPinned(ctx context.Context, req *SetMemoryPinnedRequest, opts ...http.CallOption) (rsp *SetMemoryPinnedReply, err error)
 	UpsertProfile(ctx context.Context, req *UpsertProfileRequest, opts ...http.CallOption) (rsp *UpsertProfileReply, err error)
 }
 
@@ -185,6 +240,19 @@ type CompanionHTTPClientImpl struct {
 
 func NewCompanionHTTPClient(client *http.Client) CompanionHTTPClient {
 	return &CompanionHTTPClientImpl{client}
+}
+
+func (c *CompanionHTTPClientImpl) DeleteMemory(ctx context.Context, in *DeleteMemoryRequest, opts ...http.CallOption) (*DeleteMemoryReply, error) {
+	var out DeleteMemoryReply
+	pattern := "/api/companion/memories/{memory_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionDeleteMemory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *CompanionHTTPClientImpl) GetCommunityIdentity(ctx context.Context, in *GetCommunityIdentityRequest, opts ...http.CallOption) (*GetCommunityIdentityReply, error) {
@@ -250,6 +318,19 @@ func (c *CompanionHTTPClientImpl) ListMemories(ctx context.Context, in *ListMemo
 	opts = append(opts, http.Operation(OperationCompanionListMemories))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) SetMemoryPinned(ctx context.Context, in *SetMemoryPinnedRequest, opts ...http.CallOption) (*SetMemoryPinnedReply, error) {
+	var out SetMemoryPinnedReply
+	pattern := "/api/companion/memories/{memory_id}/pin"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionSetMemoryPinned))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

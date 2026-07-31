@@ -10,6 +10,7 @@ import '../../utils/error_handler.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
+import '../../providers/companion_presence_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../widgets/post_card.dart';
@@ -17,6 +18,7 @@ import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_empty_state.dart';
+import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
@@ -36,6 +38,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late final HomeFeedViewModel _feed;
+  late final CompanionPresenceProvider _presence;
 
   late TabController _tabController;
 
@@ -70,6 +73,8 @@ class _HomePageState extends State<HomePage>
     super.initState();
     _feed = HomeFeedViewModel();
     _feed.addListener(_onFeedChanged);
+    _presence = CompanionPresenceProvider.instance;
+    _presence.addListener(_onPresenceChanged);
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_scrollListener);
@@ -80,8 +85,17 @@ class _HomePageState extends State<HomePage>
     if (mounted) setState(() {});
   }
 
+  void _onPresenceChanged() {
+    _feed.applyLiveCompanionPresence(
+      greeting: _presence.greeting,
+      moodThought: _presence.moodThought,
+      activityLabel: _presence.activityLabel,
+    );
+  }
+
   @override
   void dispose() {
+    _presence.removeListener(_onPresenceChanged);
     _feed.removeListener(_onFeedChanged);
     _feed.dispose();
     _tabController.removeListener(_onTabChanged);
@@ -450,13 +464,13 @@ class _HomePageState extends State<HomePage>
     final profile = snapshot.profile;
     final state = snapshot.state;
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
-    final avatar =
-        profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
     final greeting = state.greeting.trim().isNotEmpty
         ? state.greeting.trim()
         : (state.moodThought.trim().isNotEmpty
             ? state.moodThought.trim()
             : '想你了，去看看 TA 吧');
+    final wantsYou =
+        context.watch<CompanionPresenceProvider>().hasAttention;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
@@ -467,8 +481,11 @@ class _HomePageState extends State<HomePage>
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border:
-                Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
+            border: Border.all(
+              color: wantsYou
+                  ? const Color(0xFFE97891).withValues(alpha: 0.35)
+                  : MoeTokens.primary.withValues(alpha: 0.12),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -479,28 +496,42 @@ class _HomePageState extends State<HomePage>
           ),
           child: Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: MoeTokens.surface0,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
-                ),
-                alignment: Alignment.center,
-                child: Text(avatar, style: const TextStyle(fontSize: 20)),
+              CompanionAvatar(
+                emoji: profile.emoji,
+                avatarUrl: profile.avatarUrl,
+                size: 40,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
+                backgroundColor: MoeTokens.surface0,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: MoeTokens.titleText,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: MoeTokens.titleText,
+                            ),
+                          ),
+                        ),
+                        if (wantsYou) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '想你了',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.pink.shade400,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(

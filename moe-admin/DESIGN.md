@@ -102,8 +102,8 @@
 ┌──────────┬────────────────────────────────────┐
 │ Sidebar  │ Topbar（Agent · 环境 · 用户）        │
 │ 260px    ├────────────────────────────────────┤
-│ 深色     │ .content > .admin-page              │
-│          │   PageHead → InsightStrip → Body    │
+│ 浅色     │ .content > .admin-page              │
+│ Chrome   │   PageHead → InsightStrip → Body    │
 └──────────┴────────────────────────────────────┘
 ```
 
@@ -183,7 +183,7 @@
 - 复用 `PageTabs`、`DataEnvBar`、`AdminFormDrawer`
 
 **Don't**
-- 不要继续往 `moe-admin-theme.css` 追加（迁移期除外）
+- 不要继续往 `styles/legacy/moe-admin-theme.css` 追加
 - 不要引入第二套 `:root` 变量（`src/index.css` 为 Vite 遗留，待删）
 - 不要全页深色（仅 Chrome 深色，Workbench 保持浅底）
 
@@ -218,4 +218,5 @@
 | **P1 基础** | Token + 入口 + 壳层 | `styles/index.css` + tokens + layout |
 | **P2 组件** | 按钮/面板/表格/标签 | `components/*.css` |
 | **P3 样板页** | Dashboard / Platform / Analytics | 视觉验收 |
-| **P4 扫尾** | 其余页面 + 删 monolith | `moe-admin-theme.css` 清空删除 |
+| **P4 扫尾** | 其余页面 + 删 monolith | `legacy/moe-admin-theme.css` 清空删除 |
+| **Sprint A（2026-08）** | 像控制台 | 单体迁 `styles/legacy/`；侧栏 `AdminIcon`；运维 4 页 `MonitorPageLayout` |

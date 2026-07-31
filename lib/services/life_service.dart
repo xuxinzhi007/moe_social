@@ -3,6 +3,24 @@ import '../models/life_state.dart';
 
 export 'api_service.dart' show ApiException, LifeActionCooldownException;
 
+class LifeClaimResult {
+  final bool success;
+  final bool alreadyClaimed;
+  final bool claimedToday;
+  final String message;
+  final List<LifeInventoryItem> items;
+  final int count;
+
+  const LifeClaimResult({
+    required this.success,
+    required this.alreadyClaimed,
+    required this.claimedToday,
+    required this.message,
+    this.items = const [],
+    this.count = 0,
+  });
+}
+
 class LifeInitialState {
   final String worldId;
   final int tick;
@@ -41,8 +59,39 @@ class LifeService {
   static Future<bool> useLifeItem(int entityId, int itemId) =>
       ApiService.useLifeItem(entityId, itemId);
 
+  /// 背包每日签到状态。
+  static Future<({bool claimedToday, String claimDate})>
+      getLifeClaimStatus() async {
+    final raw = await ApiService.getLifeClaimStatus();
+    return (
+      claimedToday: raw['claimed_today'] == true,
+      claimDate: raw['claim_date']?.toString() ?? '',
+    );
+  }
+
   /// 签到领取每日道具。
-  static Future<bool> claimLifeItems() => ApiService.claimLifeItems();
+  static Future<LifeClaimResult> claimLifeItems() async {
+    final raw = await ApiService.claimLifeItems();
+    if (raw['error'] != null) {
+      throw Exception(raw['error'].toString());
+    }
+    final itemsRaw = raw['items'];
+    final items = itemsRaw is List
+        ? itemsRaw
+            .whereType<Map>()
+            .map(
+                (e) => LifeInventoryItem.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <LifeInventoryItem>[];
+    return LifeClaimResult(
+      success: raw['success'] != false,
+      alreadyClaimed: raw['already_claimed'] == true,
+      claimedToday: raw['claimed_today'] == true,
+      message: raw['message']?.toString() ?? '',
+      items: items,
+      count: (raw['count'] as num?)?.toInt() ?? items.length,
+    );
+  }
 
   static Future<LifeInitialState> getInitialState() async {
     final results = await Future.wait([

@@ -1,17 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { WORKSPACES, type WorkspaceId } from '../config/workspaceNav'
+import type { WorkspaceId } from '../config/workspaceNav'
+import { useAdminAuth } from '../context/AdminAuthContext'
+import { visibleWorkspaces } from '../lib/adminAccess'
 
 type WorkspaceSwitcherProps = {
   active: WorkspaceId
 }
 
-/** 顶栏三段工作区切换：运营 | AI | 运维 */
+/** 顶栏工作区切换：按角色过滤可见区 */
 export function WorkspaceSwitcher({ active }: WorkspaceSwitcherProps) {
   const navigate = useNavigate()
+  const { user } = useAdminAuth()
+  const workspaces = visibleWorkspaces(user?.role)
 
   return (
     <div className="ws-switch" role="tablist" aria-label="工作区">
-      {WORKSPACES.map((ws) => {
+      {workspaces.map((ws) => {
         const isActive = ws.id === active
         return (
           <button

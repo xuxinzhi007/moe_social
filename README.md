@@ -149,6 +149,8 @@ make deploy-agent
 
 ## CI/CD 与自动更新
 
+**发版速查（Secrets / 流程 / 别忘清单）**：[docs/dev/app-release-cheatsheet.md](docs/dev/app-release-cheatsheet.md)
+
 推送形如 `v*` 的 Tag（例如 `v1.0.3`）会触发 GitHub Actions：构建 Release APK 并发布到 [GitHub Releases](https://github.com/xuxinzhi007/moe_social/releases)。
 
 ```bash

@@ -134,6 +134,37 @@ class HomeFeedViewModel extends ChangeNotifier {
     }
   }
 
+  /// Companion WS 推送：刷新首页轻卡问候/心情。
+  void applyLiveCompanionPresence({
+    String? greeting,
+    String? moodThought,
+    String? activityLabel,
+  }) {
+    final snap = _companionSnapshot;
+    if (_disposed || snap == null) return;
+    final nextState = snap.state.copyWith(
+      greeting: (greeting != null && greeting.trim().isNotEmpty)
+          ? greeting.trim()
+          : null,
+      moodThought: (moodThought != null && moodThought.trim().isNotEmpty)
+          ? moodThought.trim()
+          : null,
+      activityLabel: (activityLabel != null && activityLabel.trim().isNotEmpty)
+          ? activityLabel.trim()
+          : null,
+    );
+    if (nextState.greeting == snap.state.greeting &&
+        nextState.moodThought == snap.state.moodThought &&
+        nextState.activityLabel == snap.state.activityLabel) {
+      return;
+    }
+    _companionSnapshot = CompanionSnapshotData(
+      profile: snap.profile,
+      state: nextState,
+    );
+    notifyListeners();
+  }
+
   void setMode(HomeFeedMode mode, {bool clearTopic = true}) {
     if (_mode == mode && (!clearTopic || _activeTopic == null)) return;
     _mode = mode;

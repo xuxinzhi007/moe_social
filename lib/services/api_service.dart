@@ -2538,9 +2538,15 @@ class ApiService {
     return result['error'] == null;
   }
 
-  /// 签到领取每日道具。
-  static Future<bool> claimLifeItems() async {
+  /// 背包每日签到状态。
+  static Future<Map<String, dynamic>> getLifeClaimStatus() async {
+    final result = await _request('/api/life/items/claim/status');
+    return result;
+  }
+
+  /// 签到领取每日道具（返回完整结果，含 already_claimed / items）。
+  static Future<Map<String, dynamic>> claimLifeItems() async {
     final result = await _request('/api/life/items/claim', method: 'POST');
-    return result['error'] == null;
+    return result;
   }
 }

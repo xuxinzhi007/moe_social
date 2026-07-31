@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
 import { FormField } from '../components/FormField'
+import { PageMessage } from '../components/PageMessage'
 import { MonitorPageLayout } from '../ui'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
@@ -122,7 +123,7 @@ export function AppReleasePage() {
       <MonitorPageLayout
         title="App 版本更新"
         description="配置 Android 侧载更新：版本号、APK 下载地址、强制更新 · 不上传安装包"
-        envNote="公开接口 GET /api/public/app-release/latest · 以 versionCode 判断是否有新版本"
+        envNote="公开接口 GET /api/public/app-release/latest · 推 v* tag 后 CI 通常已自动回写；本页改 changelog / 强制更新"
         headActions={
           <button
             type="button"
@@ -138,14 +139,7 @@ export function AppReleasePage() {
         }
         error={error || undefined}
       >
-        {message ? (
-          <div className="admin-hint admin-hint-ok" style={{ marginBottom: 12 }}>
-            {message}
-            <button type="button" className="btn btn-ghost" style={{ marginLeft: 8 }} onClick={() => setMessage('')}>
-              关闭
-            </button>
-          </div>
-        ) : null}
+        <PageMessage message={message} tone="ok" onClose={() => setMessage('')} />
 
         {loading && !release && !configured ? (
           <p className="muted">加载中…</p>
@@ -182,12 +176,12 @@ export function AppReleasePage() {
                 <div>
                   <dt>APK URL</dt>
                   <dd>
-                    <code style={{ wordBreak: 'break-all' }}>{release.apk_url || '—'}</code>
+                    <code className="text-break-all">{release.apk_url || '—'}</code>
                   </dd>
                 </div>
                 <div>
                   <dt>更新说明</dt>
-                  <dd style={{ whiteSpace: 'pre-wrap' }}>{release.changelog || '—'}</dd>
+                  <dd className="text-pre-wrap">{release.changelog || '—'}</dd>
                 </div>
                 <div>
                   <dt>最近更新</dt>
@@ -195,8 +189,9 @@ export function AppReleasePage() {
                 </div>
               </dl>
               <p className="muted config-hint">
-                发版时请提高 pubspec 的 <code>+versionCode</code>，并把 GitHub Release（或其它）APK 直链填到此处。
-                GitHub 链接客户端会自动测速镜像；OSS 等直链则直连下载。
+                推荐：推 <code>v*</code> tag，Actions 打 APK 并回写本页字段（versionCode =
+                GITHUB_RUN_NUMBER）。也可手工填 GitHub Release / OSS 直链。强制更新请在此页勾选保存。速查：
+                <code>docs/dev/app-release-cheatsheet.md</code>。
               </p>
             </section>
           </div>
@@ -249,22 +244,24 @@ export function AppReleasePage() {
           />
         </FormField>
         <FormField label="选项">
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <input
-              type="checkbox"
-              checked={form.enabled}
-              onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
-            />
-            启用（关闭后客户端视为无更新）
-          </label>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              checked={form.force_update}
-              onChange={(e) => setForm((f) => ({ ...f, force_update: e.target.checked }))}
-            />
-            强制更新（用户必须更新才能继续使用主功能）
-          </label>
+          <div className="checkbox-stack">
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={form.enabled}
+                onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
+              />
+              <span>启用（关闭后客户端视为无更新）</span>
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={form.force_update}
+                onChange={(e) => setForm((f) => ({ ...f, force_update: e.target.checked }))}
+              />
+              <span>强制更新（用户必须更新才能继续使用主功能）</span>
+            </label>
+          </div>
         </FormField>
       </AdminFormDrawer>
     </>

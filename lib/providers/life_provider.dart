@@ -35,6 +35,7 @@ class LifeProvider extends ChangeNotifier {
   List<LifeInventoryItem> _inventory = [];
   List<LifeItem> _allItems = [];
   bool _inventoryLoading = false;
+  bool _claimedToday = false;
 
   /// 最近一次操作失败的错误信息（null 表示无错误）。
   String? _lastActionError;
@@ -77,6 +78,9 @@ class LifeProvider extends ChangeNotifier {
   /// 背包道具列表
   List<LifeInventoryItem> get inventory => List.unmodifiable(_inventory);
 
+  /// 今日是否已签到领取背包补给
+  bool get claimedToday => _claimedToday;
+
   /// 所有道具定义
   List<LifeItem> get allItems => List.unmodifiable(_allItems);
 
@@ -105,7 +109,11 @@ class LifeProvider extends ChangeNotifier {
 
   /// 获取指定实体的最近事件（已按时间倒序）。
   List<LifeEvent> getEventsForEntity(int entityId) {
-    return _recentEvents.where((e) => e.entityId == entityId).toList().reversed.toList();
+    return _recentEvents
+        .where((e) => e.entityId == entityId)
+        .toList()
+        .reversed
+        .toList();
   }
 
   /// 关系统计
@@ -320,7 +328,7 @@ class LifeProvider extends ChangeNotifier {
     }
     _entitiesList = List.unmodifiable(_entities.values);
     notifyListeners();
-    
+
     try {
       await LifeService.postLifeAction(action, entityId);
 
@@ -389,10 +397,13 @@ class LifeProvider extends ChangeNotifier {
       final results = await Future.wait([
         LifeService.getLifeInventory(),
         LifeService.getLifeItems(),
+        LifeService.getLifeClaimStatus(),
       ]);
       if (_disposed) return;
       _inventory = results[0] as List<LifeInventoryItem>;
       _allItems = results[1] as List<LifeItem>;
+      final status = results[2] as ({bool claimedToday, String claimDate});
+      _claimedToday = status.claimedToday;
     } catch (e) {
       debugPrint('fetchInventory error: $e');
     } finally {
@@ -453,21 +464,24 @@ class LifeProvider extends ChangeNotifier {
     }
   }
 
-  /// 签到领取每日道具。
-  Future<bool> claimItems() async {
+  /// 签到领取每日道具。成功或「今日已领」都返回结果对象。
+  Future<LifeClaimResult?> claimItems() async {
     try {
-      final ok = await LifeService.claimLifeItems();
-      if (ok) {
-        // 重新拉取背包
-        await fetchInventory();
-      }
-      return ok;
+      final result = await LifeService.claimLifeItems();
+      if (_disposed) return result;
+      _claimedToday = result.claimedToday || result.alreadyClaimed;
+      _lastActionError = null;
+      notifyListeners();
+      // 放行可能尚未结束的首屏加载，确保签到后背包能刷新。
+      _inventoryLoading = false;
+      await fetchInventory();
+      return result;
     } catch (e) {
       debugPrint('claimItems error: $e');
-      _lastActionError = e.toString();
+      _lastActionError = e.toString().replaceFirst('Exception: ', '');
       _lastActionIsCooldown = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 

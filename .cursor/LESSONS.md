@@ -22,6 +22,8 @@
 | 用户记忆 | `docs/dev/用户记忆系统-OpenClaw式演进设计.md` |
 | 产品定位 | `docs/product/product-positioning.md` |
 | AI 陪伴正式化决策 | `docs/dev/ai-companion-formal-decisions.md` |
+| AI 互动闭环迭代 | `docs/dev/ai-companion-interaction-loop.md` |
+| Flame 小世界引擎 | `.cursor/skills/flame-life-world/SKILL.md` |
 | Code Review | `code_review.md` |
 
 ## 交付

@@ -2,6 +2,7 @@ package companionbiz
 
 import (
 	"context"
+	"time"
 
 	"backend/model"
 )
@@ -11,11 +12,16 @@ type Store interface {
 	// Profile
 	GetProfileByUserID(ctx context.Context, userID uint) (*model.CompanionProfile, error)
 	UpsertProfile(ctx context.Context, p *model.CompanionProfile) error
+	// UpdateIntimacy 只更新亲密相关字段，避免 Upsert 冲掉其它列。
+	UpdateIntimacy(ctx context.Context, userID uint, intimacy float64, level int) error
 	ListProfileUserIDs(ctx context.Context) ([]uint, error)
 
 	// Memory
 	CreateMemory(ctx context.Context, m *model.CompanionMemory) error
 	ListActiveMemories(ctx context.Context, userID uint, limit int) ([]model.CompanionMemory, error)
+	GetMemoryByID(ctx context.Context, userID, memoryID uint) (*model.CompanionMemory, error)
+	DeleteMemory(ctx context.Context, userID, memoryID uint) error
+	UpdateMemoryPinned(ctx context.Context, userID, memoryID uint, pinned bool, importance int, expiresAt *time.Time) error
 	CleanupExpiredMemories(ctx context.Context) (int64, error)
 
 	// Chat Log

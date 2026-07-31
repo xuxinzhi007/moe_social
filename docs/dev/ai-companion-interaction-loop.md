@@ -1,0 +1,167 @@
+# AI 陪伴互动闭环（迭代方案）
+
+> **日期**：2026-07-31  
+> **状态**：迭代中 · Slice-1～6 已落地（记忆管理 + 轻量语音，2026-08-01）  
+
+> **决策 SSOT**：`docs/dev/ai-companion-formal-decisions.md`  
+> **边界**：`docs/dev/ai-companion-backend-boundary.md`  
+> **Flame 舞台**：`.cursor/skills/flame-life-world/SKILL.md`
+
+---
+
+## 1. 背景
+
+一期关系首页 + 聊天 SSE +「TA 的世界」已通；二期-A 日常流（聊天高光/记忆）已并入。  
+当前缺口是**同一 TA 在照料 / 状态 / 聊天 / 日常之间感觉断开**：
+
+- 照料回复是硬编码文案，不读 companion state
+- 后端 `state.moments` Flutter 未解析
+- 日常流多数条目不可点进
+- 世界页无「去聊天」；从聊天返回依赖手动刷新（世界已有）
+- WS 问候 / 亲密度增长 / 多 bond 仍后置
+
+目标：持续迭代「活着的长期 TA」，**不**复活酒馆、**不**误开工多 bond。
+
+---
+
+## 2. 产品边界（不变）
+
+| 是 | 不是 |
+|----|------|
+| 单活跃伙伴闭环 | 多 bond UI（决策 B，未开工） |
+| 关系首页第一眼 | 酒馆选卡大厅 |
+| 世界 = 延伸舞台 | 地图点选 = 多会话 |
+
+---
+
+## 3. 迭代切片
+
+### Slice-1（已落地）照料—状态—聊天—日常闭环
+
+| 项 | 验收 |
+|----|------|
+| moments | ✅ `CompanionStateData` 解析；Hub 日常流优先展示 |
+| 日常深链 | ✅ `world`/`moment`→世界；`memory`→全文 sheet；`post`→详情；`chat`→会话 |
+| 照料语气 | ✅ 绑定实体 feed/pet 优先 `moodThought`/`greeting` |
+| 世界 CTA | ✅ 绑定实体 Sheet「和 TA 聊天」 |
+| Hub 刷新 | ✅ 聊天/世界返回 `loadDashboard` |
+
+**不做本切片**：Flutter Companion WS、亲密度服务端增长、多 profile、记忆专页。
+
+### Slice-2（已落地）实时存在感
+
+| 项 | 验收 |
+|----|------|
+| WS 客户端 | ✅ `CompanionWsService` → `/ws/companion`（subscribe/ping、退避重连） |
+| Presence | ✅ `CompanionPresenceProvider` 全局；登录 start / 登出 stop |
+| Hub / 首页 | ✅ 问候/mood/activity 实时补丁；首页轻卡「想你了」 |
+| 角标 | ✅ 底栏 AI伙伴 badge；Hub「TA 想你了」横幅；聊天已读清除 |
+| 聊天 AppBar | ✅ SSE done 后刷新 companion state |
+
+### Slice-3（已落地）关系进度 + 收口
+
+| 项 | 验收 |
+|----|------|
+| 聊天亲密 | ✅ ChatStream 成功后 +2；等级每 10 点 +1（上限 10） |
+| 照料亲密 | ✅ `POST /api/companion/intimacy/bump`；绑定实体 feed/pet 调用 |
+| 社区 bot | ✅ 缺失时自动创建 bot 用户并同步头像/签名 |
+| 死代码 | ✅ 删除 `companion_context.dart` |
+
+### 明确延后
+
+- 多 bond（决策 B）
+- 酒馆复活
+- 主动发帖 / 外联推送产品化
+
+---
+
+## 4. 架构（Slice-1）
+
+```text
+CompanionService.getSnapshot()
+  └─ state.moments / moodThought / greeting
+        │
+        ├─ CompanionHubViewModel → 日常流 + Hero
+        ├─ LifeWorldPage care → 语气 + 聊天 CTA
+        └─ Daily tile → world / memory sheet / post detail / chat
+```
+
+原则：状态以 `/api/companion/state` 为展示 SSOT；Life 照料仍走 LifeProvider；Flame 只渲染。
+
+**绑定联动（必守）**：`companion.life_entity_id` = 当前伙伴在世界里的居民。  
+进「TA 的世界」必须对焦该 ID；Hub 世界条只展示已绑定居民，未绑定不得假装 `entities.first` 就是 TA。
+
+**双层身份（决策 12/13）**：  
+- 关系层：`name` / `emoji` / `avatar_url` / `persona`（用户自定义，聊天/Hub 用）  
+- 世界层：绑定居民仅舞台与照料；`bindLifeEntity` **禁止**用居民名/emoji 覆盖关系层  
+- 一期不做 Live2D / 角色卡大厅
+
+---
+
+## 5. 影响文件
+
+- `lib/services/companion_service.dart`
+- `lib/pages/ai/companion_hub_viewmodel.dart`
+- `lib/pages/ai/companion_hub_page.dart`
+- `lib/pages/life/life_world_page.dart`
+- `docs/dev/ai-companion-formal-decisions.md`（进度勾选）
+
+---
+
+## 6. 回滚
+
+纯 Flutter 展示与导航增强；关 Flag / 回退提交即可。无 DB 迁移。
+
+---
+
+## 7. Slice-1 验收清单
+
+- [x] moments 解析并出现在日常流（或回退世界事件）
+- [x] 日常流四类均可导航（post 无 id 时可跳过）
+- [x] 绑定实体照料语气来自 companion state
+- [x] 世界页绑定实体可进聊天
+- [x] 聊天返回 Hub 自动刷新
+- [x] `dart analyze` 相关文件无 error
+
+## 8. Slice-2 验收清单
+
+- [x] `/ws/companion` 连接 + 心跳 + 重连
+- [x] greeting / state_snapshot 刷新 Hub Hero 与首页轻卡
+- [x] 底栏 AI伙伴角标 + Hub「TA 想你了」
+- [x] 聊天已读 / 点横幅清角标
+- [x] 聊天结束后 AppBar 活动态刷新
+
+## 9. Slice-4（已落地）记忆专页
+
+| 项 | 验收 |
+|----|------|
+| 入口 | ✅ Hub AppBar「TA 记得的事」→ `/ai-memories` |
+| 日常流 | ✅ `memory` 条点进专页并高亮对应记忆 |
+| 详情 | ✅ 点卡片看全文 +「和 TA 聊聊这件事」→ 聊天 |
+| 列表 | ✅ 拉取最多 40 条；类型/重要度标签；下拉刷新 |
+
+## 10. Slice-5（已落地）角色卡轻量导入
+
+| 项 | 验收 |
+|----|------|
+| 入口 | ✅ Hub「自定义我的 TA」→「从角色卡导入」 |
+| 格式 | ✅ ST V2/V3 JSON、扁平 Tavern JSON、Moe 导出卡、PNG `chara` tEXt |
+| 映射 | ✅ name / persona / traits / system_prompt_override；PNG 可上传为头像 |
+| 边界 | ✅ 不写酒馆 Agent、不导入 Lorebook / Character Book、需点「保存」才落库 |
+
+## 11. Slice-6（已落地）记忆管理 + 轻量语音
+
+| 项 | 验收 |
+|----|------|
+| 删除 | ✅ `DELETE /api/companion/memories/{id}`；专页确认后移除 |
+| 置顶 | ✅ `POST .../pin`；`pinned` 字段；置顶→永久；列表置顶优先 |
+| 语音 | ✅ Companion 聊天：麦克风听写 + 气泡朗读 + AppBar 自动朗读开关（`companionVoicePresence`） |
+| 边界 | ✅ **不做 Live2D**；语音仅本机 STT/TTS（AIRI 向第一步） |
+
+> 部署后需 `make db-migrate`（`companion_memories.pinned`）。
+
+## 12. 下一刀建议
+
+1. AIRI 向形象（Live2D）仅在明确产品决策改写决策 13 后  
+2. 多 bond（决策 B，勿误开工）  
+3. 记忆编辑正文（可选）

@@ -7,6 +7,7 @@ import {
   type NavGroup,
   type NavItem,
 } from '../config/workspaceNav'
+import { AdminIcon } from './AdminIcon'
 
 function itemActive(pathname: string, to: string, end?: boolean) {
   if (end || to === '/biz') {
@@ -75,7 +76,7 @@ export function SidebarNav() {
       >
         {item.icon ? (
           <span className="nav-item-icon" aria-hidden>
-            {item.icon}
+            <AdminIcon name={item.icon} />
           </span>
         ) : topLevel ? null : (
           <span className="nav-item-dot" aria-hidden />
@@ -92,14 +93,22 @@ export function SidebarNav() {
     const open = openMap[entry.id] ?? false
     const activeInGroup = groupHasActive(entry, pathname)
     return (
-      <div key={entry.id} className={`nav-group${open ? ' is-open' : ''}${activeInGroup ? ' has-active' : ''}`}>
-        <button type="button" className="nav-group-head" onClick={() => toggleGroup(entry.id)} aria-expanded={open}>
+      <div
+        key={entry.id}
+        className={`nav-group${open ? ' is-open' : ''}${activeInGroup ? ' has-active' : ''}`}
+      >
+        <button
+          type="button"
+          className="nav-group-head"
+          onClick={() => toggleGroup(entry.id)}
+          aria-expanded={open}
+        >
           <span className="nav-group-chevron" aria-hidden>
-            {open ? '▾' : '▸'}
+            <AdminIcon name={open ? 'chevronDown' : 'chevronRight'} />
           </span>
           {entry.icon ? (
             <span className="nav-group-icon" aria-hidden>
-              {entry.icon}
+              <AdminIcon name={entry.icon} />
             </span>
           ) : null}
           <span className="nav-group-text">

@@ -5,6 +5,7 @@ import { auditActionTag, auditResourceTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
 import { AdminFilterInput } from '../components/AdminFilterInput'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
@@ -26,6 +27,7 @@ export function AuditLogsPage() {
   const [page, setPage] = useState(1)
   const [action, setAction] = useState('')
   const [resource, setResource] = useState('')
+  const [resourcePill, setResourcePill] = useState('')
   const [filters, setFilters] = useState({ action: '', resource: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -112,13 +114,35 @@ export function AuditLogsPage() {
             submitLabel: '筛选',
           }}
           filters={
-            <AdminFilterInput
-              label="资源"
-              value={resource}
-              onChange={setResource}
-              placeholder="resource"
-              ariaLabel="按资源筛选"
-            />
+            <>
+              <AdminFilterPills
+                ariaLabel="资源类型"
+                value={resourcePill}
+                onChange={(next) => {
+                  setResourcePill(next)
+                  setResource(next)
+                  setPage(1)
+                  setFilters({ action: action.trim(), resource: next })
+                }}
+                options={[
+                  { value: '', label: '全部资源' },
+                  { value: 'user', label: 'user' },
+                  { value: 'post', label: 'post' },
+                  { value: 'account', label: 'account' },
+                  { value: 'app_release', label: 'app_release' },
+                ]}
+              />
+              <AdminFilterInput
+                label="资源"
+                value={resource}
+                onChange={(v) => {
+                  setResource(v)
+                  setResourcePill('')
+                }}
+                placeholder="自定义 resource"
+                ariaLabel="按资源筛选"
+              />
+            </>
           }
         />
       }

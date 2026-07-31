@@ -39,7 +39,7 @@ export function useOverviewData(metricsTarget: string) {
         setState((s) => ({
           ...s,
           localLoading: false,
-          localRows: [{ key: '状态', value: '请先在连接设置中填写 Deploy Token' }],
+          localRows: [{ key: '状态', value: '运维网关未就绪，请打开设置检测 Agent' }],
           localBadge: { text: '需 Token', kind: 'pending' },
         }))
         return
@@ -125,7 +125,7 @@ export function useOverviewData(metricsTarget: string) {
     if (!token.trim()) {
       setState((s) => ({
         ...s,
-        cloudRows: [{ key: '状态', value: '请先在连接设置中验证 Token' }],
+        cloudRows: [{ key: '状态', value: '运维网关未就绪，请打开设置检测 Agent' }],
         cloudBadge: { text: '需 Token', kind: 'pending' },
         cloudDockerOut: '—',
       }))
@@ -295,8 +295,8 @@ export function useOverviewData(metricsTarget: string) {
         setState((s) => ({
           ...s,
           loading: false,
-          localRows: [{ key: '状态', value: '请填写 Deploy Token' }],
-          cloudRows: [{ key: '状态', value: '请填写 Deploy Token' }],
+          localRows: [{ key: '状态', value: '运维网关未就绪' }],
+          cloudRows: [{ key: '状态', value: '运维网关未就绪' }],
         }))
       }
       return

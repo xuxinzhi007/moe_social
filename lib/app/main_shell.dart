@@ -8,6 +8,7 @@ import '../pages/feed/home_page.dart';
 import '../pages/ai/companion_hub_page.dart' deferred as companion_hub;
 import '../pages/chat/message_center_page.dart' deferred as message_center;
 import '../pages/profile/profile_page.dart' deferred as profile;
+import '../providers/companion_presence_provider.dart';
 import '../providers/main_nav_controller.dart';
 import '../providers/notification_provider.dart';
 import '../services/chat_push_service.dart';
@@ -51,6 +52,9 @@ class _MainPageState extends State<MainPage> {
     _mainNav = context.read<MainNavController>();
     _mainNav.addListener(_onMainNavRequested);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
+    CompanionPresenceProvider.instance.start();
+    CompanionPresenceProvider.instance
+        .setViewingCompanion(_selectedIndex == 2);
     // 主界面就绪后再静默检查更新（软更新可稍后；强制更新会拦截）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 800), () {
@@ -81,11 +85,23 @@ class _MainPageState extends State<MainPage> {
       _loadedPages[idx] ??= _pageBuilders[idx]();
       _selectedIndex = idx;
     });
+    CompanionPresenceProvider.instance.setViewingCompanion(idx == 2);
+  }
+
+  void _selectTab(int index) {
+    if (index == _selectedIndex) return;
+    setState(() {
+      _loadedPages[index] ??= _pageBuilders[index]();
+      _selectedIndex = index;
+    });
+    CompanionPresenceProvider.instance.setViewingCompanion(index == 2);
   }
 
   @override
   Widget build(BuildContext context) {
     final notificationProvider = context.watch<NotificationProvider>();
+    final companionAttention =
+        context.watch<CompanionPresenceProvider>().attentionCount;
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -96,17 +112,12 @@ class _MainPageState extends State<MainPage> {
       ),
       bottomNavigationBar: MoeBottomBar(
         selectedIndex: _selectedIndex,
-        onItemSelected: (int index) {
-          if (index == _selectedIndex) return; // 重复点击不重建
-          setState(() {
-            _loadedPages[index] ??= _pageBuilders[index]();
-            _selectedIndex = index;
-          });
-        },
+        onItemSelected: _selectTab,
         badgeCounts: [
           0,
           notificationProvider.directMessageUnreadCount,
-          0,
+          // 在 AI 伙伴 Tab 内用 Hub 横幅提示，底栏角标隐藏避免重复。
+          _selectedIndex == 2 ? 0 : companionAttention,
           0,
         ],
         destinations: [

@@ -86,6 +86,30 @@ func (s *Server) ListMemories(ctx context.Context, in *companionv1.ListMemoriesR
 	return app.ListMemories(ctx, userID, in)
 }
 
+func (s *Server) DeleteMemory(ctx context.Context, in *companionv1.DeleteMemoryRequest) (*companionv1.DeleteMemoryReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.DeleteMemory(ctx, userID, in)
+}
+
+func (s *Server) SetMemoryPinned(ctx context.Context, in *companionv1.SetMemoryPinnedRequest) (*companionv1.SetMemoryPinnedReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.SetMemoryPinned(ctx, userID, in)
+}
+
 func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	app, err := s.requireApp()
 	if err != nil {

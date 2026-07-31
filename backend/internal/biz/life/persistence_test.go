@@ -62,6 +62,15 @@ func (m *mockStore) GetInventory(_ context.Context, _ string) ([]*model.LifeInve
 }
 func (m *mockStore) DecrementInventory(_ context.Context, _ string, _ uint) error { return nil }
 func (m *mockStore) GrantItem(_ context.Context, _ string, _ uint, _ int) error   { return nil }
+func (m *mockStore) HasDailyClaim(_ context.Context, _, _ string) (bool, error) {
+	return false, nil
+}
+func (m *mockStore) MarkDailyClaim(_ context.Context, _, _ string, _ int) (bool, error) {
+	return true, nil
+}
+func (m *mockStore) UpdateDailyClaimCount(_ context.Context, _, _ string, _ int) error {
+	return nil
+}
 
 // 确保 mockStore 实现了 Store 接口
 var _ Store = (*mockStore)(nil)
