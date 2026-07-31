@@ -38,4 +38,8 @@ class FeatureFlags {
   /// AIRI 向轻量语音存在感：Companion 聊天语音输入 + 朗读回复。
   /// 不做 Live2D / 形象驱动（决策 13）；仅本机 STT/TTS。
   static const bool companionVoicePresence = true;
+
+  /// 礼物全屏动效走 Lottie 模板 + 左侧跑道；失败 / 无障碍降级粒子。
+  /// 见 `docs/dev/lottie-achievement-gift-design.md`。
+  static const bool useLottieGiftEffects = true;
 }

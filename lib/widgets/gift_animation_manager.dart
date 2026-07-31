@@ -2,8 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../auth_service.dart';
+import '../constants/feature_flags.dart';
 import '../models/gift.dart';
+import 'gift_runway.dart';
 import 'live_gift_effect.dart';
+import 'lottie_gift_effect.dart';
+import 'motion/lottie_motion_registry.dart';
+import 'motion/moe_lottie_motion.dart';
 import 'motion/moe_vfx_profile.dart';
 
 /// Public API: call `GiftAnimationManager().showGiftAnimation(context, gift)`
@@ -18,6 +23,7 @@ class GiftAnimationManager {
   final List<_AnimTask> _queue = [];
   bool _isPlaying = false;
   OverlayEntry? _currentEntry;
+  bool _precacheStarted = false;
 
   // Combo tracking
   int _comboCount = 0;
@@ -28,6 +34,14 @@ class GiftAnimationManager {
 
   int get comboCount => _comboCount;
   bool get isPlaying => _isPlaying;
+
+  /// 打开礼物面板时预载 Lottie 模板（可重复调用，仅首次生效）。
+  void precacheGiftLottie() {
+    if (_precacheStarted || !FeatureFlags.useLottieGiftEffects) return;
+    _precacheStarted = true;
+    unawaited(
+        MoeLottieMotion.precache(LottieMotionRegistry.giftPrecacheAssets));
+  }
 
   // ─── Public entry point ─────────────────────────────────────────────────
 
@@ -82,6 +96,11 @@ class GiftAnimationManager {
     for (final task in _queue) {
       if (task.gift.id == gift.id) {
         task.comboCount = _comboCount;
+        GiftRunwayController().push(
+          overlay,
+          gift: gift,
+          comboCount: _comboCount,
+        );
         return;
       }
     }
@@ -94,6 +113,12 @@ class GiftAnimationManager {
       unawaited(HapticFeedback.mediumImpact());
     }
     PerformanceController().applyVfxProfile(profile);
+
+    GiftRunwayController().push(
+      overlay,
+      gift: gift,
+      comboCount: _comboCount,
+    );
 
     final task = _AnimTask(
       gift: gift,
@@ -139,11 +164,37 @@ class GiftAnimationManager {
 
   Future<void> _playTask(_AnimTask task) async {
     final completer = Completer<void>();
+    final useLottie =
+        FeatureFlags.useLottieGiftEffects && !task.vfxProfile.reduceMotion;
 
     late OverlayEntry entry;
     entry = OverlayEntry(
       builder: (ctx) {
         final screen = MediaQuery.sizeOf(ctx);
+        final effect = useLottie
+            ? LottieGiftEffect(
+                gift: task.gift,
+                comboCount: task.comboCount,
+                duration: task.gift.animationDuration,
+                vfxProfile: task.vfxProfile,
+                onComplete: () {
+                  entry.remove();
+                  _currentEntry = null;
+                  if (!completer.isCompleted) completer.complete();
+                },
+              )
+            : LiveGiftEffect(
+                gift: task.gift,
+                comboCount: task.comboCount,
+                duration: task.gift.animationDuration,
+                vfxProfile: task.vfxProfile,
+                onComplete: () {
+                  entry.remove();
+                  _currentEntry = null;
+                  if (!completer.isCompleted) completer.complete();
+                },
+              );
+
         return Positioned(
           left: 0,
           top: 0,
@@ -152,17 +203,7 @@ class GiftAnimationManager {
           child: IgnorePointer(
             child: Material(
               type: MaterialType.transparency,
-              child: LiveGiftEffect(
-                gift: task.gift,
-                comboCount: task.comboCount,
-                duration: task.gift.animationDuration,
-                vfxProfile: task.vfxProfile,
-                onComplete: () {
-                  entry.remove();
-                  _currentEntry = null;
-                  completer.complete();
-                },
-              ),
+              child: effect,
             ),
           ),
         );
@@ -206,6 +247,7 @@ class GiftAnimationManager {
     _currentEntry = null;
     _isPlaying = false;
     _comboCount = 0;
+    GiftRunwayController().clear();
   }
 
   void resetCombo() {
