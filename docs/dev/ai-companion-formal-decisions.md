@@ -42,6 +42,7 @@
 | 13 | 自定义角色一期 | **轻量**：头像图 + 名字 + 人设；不做 Live2D/角色卡大厅；多 bond 仍延后 |
 | 14 | 绑定与死亡 | **绑定居民免死**（tick/dedupe 跳过）；失踪不解绑，暴露 `world_bind_status=bound_missing` + Hub 提示 |
 | 15 | TA 的日常 | 世界侧 SSOT = `life_event_logs`（按 `life_entity_id`，含软删除历史）；经 `/api/companion/state.moments` 下发 |
+| 16 | 完整养成（Pet Life Sim） | **Flag 独立域**（`petLifeSim`）：Flutter + Flame 小家养成，对标宠我一生能力面分期交付；**不替代**关系首页 / Feed / 私信；与 Life 多居民地图分离。SSOT：`docs/dev/pet-life-sim-roadmap.md` |
 
 ---
 

@@ -154,6 +154,14 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     if (mounted) unawaited(_hub.loadDashboard());
   }
 
+  Future<void> _openPetHome() async {
+    if (!FeatureFlags.petLifeSim) {
+      MoeToast.info(context, '养成小家暂未开放');
+      return;
+    }
+    await Navigator.of(context).pushNamed('/pet/home');
+  }
+
   Future<void> _editProfile() async {
     final saved = await _showProfileEditor();
     if (saved == null) return;
@@ -674,6 +682,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       _BindMissingBanner(onOpenWorld: _openLifeWorld),
                     ],
                   ],
+                  if (FeatureFlags.petLifeSim) ...[
+                    const SizedBox(height: 14),
+                    _PetHomeStrip(onOpen: _openPetHome),
+                  ],
                   const SizedBox(height: 16),
                   _DailyFeedCard(
                     items: _hub.dailyItems,
@@ -946,6 +958,64 @@ class _WorldStrip extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: Color(0xFFB0A4C0)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PetHomeStrip extends StatelessWidget {
+  const _PetHomeStrip({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFFFD6E0)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.home_rounded, color: Color(0xFFE97891), size: 22),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TA 的小家',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFE97891),
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '喂食、装扮、上学打工与轻冒险',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AiBrandTokens.titleColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: Color(0xFFB0A4C0)),
             ],
           ),
         ),

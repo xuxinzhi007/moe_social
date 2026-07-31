@@ -19,14 +19,19 @@ class FeatureFlags {
 
   static const bool showLocalModelSettings = showExperimentalFeatures;
 
-  /// AI 伙伴 — 数字生命个人小世界（P1）。主 Tab「AI伙伴」始终可见；
-  /// 本开关只控制数字生命入口，不隐藏 Companion 聊天。
-  static const bool showLifeEngine = true;
+  /// AI 伙伴 — 数字生命个人小世界（「TA 的世界」多居民地图）。
+  /// 养成主路径已切到 [petLifeSim] 小家；默认关闭入口，代码保留可回滚。
+  /// 本开关只控制世界入口，不隐藏 Companion 聊天。
+  static const bool showLifeEngine = false;
 
   /// Flame 小世界实验渲染（「TA 的世界」全屏 GameWidget）。
   /// true = 走 Flame；false = 回退 CustomPaint [LifeWorldMap]。
   /// 见 `.cursor/skills/flame-life-world/SKILL.md`。
   static const bool useFlameLifeWorld = true;
+
+  /// 完整养成域（Pet Life Sim，《宠我一生》级分期）——当前主路径。
+  /// 见 `docs/dev/pet-life-sim-roadmap.md`；不替代 Companion 关系首页。
+  static const bool petLifeSim = true;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 
