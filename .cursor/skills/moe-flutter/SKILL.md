@@ -22,8 +22,9 @@ description: >-
 细节：
 - 架构补改删 / 分层 → [product-reference.md](product-reference.md)
 - 好坏对照 → [examples.md](examples.md)
-- 视觉 gates 全文 → [../hallmark-flutter/references/slop-test.md](../hallmark-flutter/references/slop-test.md)
-- 布局模式 → [../hallmark-flutter/references/layout-patterns.md](../hallmark-flutter/references/layout-patterns.md)
+- 视觉 gates 全文 → [references/slop-test.md](references/slop-test.md)
+- 布局模式 → [references/layout-patterns.md](references/layout-patterns.md)
+- 反模式 → [references/anti-patterns.md](references/anti-patterns.md)
 
 改动幅度：始终叠加 [implementation-guardrails](../implementation-guardrails/SKILL.md)。
 
@@ -135,7 +136,7 @@ Audit 触及导航/菜单时：重复入口记 **R1 Fail**（见下节）。
 
 1. 读 `MoeTokens`；同域先扫 2–3 个现有页。
 2. 明确 Audience / Job / Tone（kawaii-soft · playful · clean-modern · editorial · utilitarian）。
-3. 先选布局模式（见 hallmark layout-patterns），同会话连续页勿同骨架。
+3. 先选布局模式（见 [references/layout-patterns.md](references/layout-patterns.md)），同会话连续页勿同骨架。
 4. 禁默认 Material 裸 `AppBar`/`Card`/`ListTile`（必须 Moe 定制）。
 5. **多机适配 / 防溢出（必做）** — 见下方 §2.1。
 6. 动效优先 `MoeReveal` / `MoeStaggerReveal` / `MoePressable`（见 `lib/widgets/motion/`）。
@@ -240,7 +241,7 @@ Top fixes:
 
 ### Visual gates
 
-完整列表：`hallmark-flutter/references/slop-test.md`（G1–G17）。Audit 时对**本次改动的 UI**或用户指定文件执行；全文件历史债可标 `debt` 不挡分，但新引入的 fail 必须列出。
+完整列表：`references/slop-test.md`（G1–G17 + G21–G22）。Audit 时对**本次改动的 UI**或用户指定文件执行；全文件历史债可标 `debt` 不挡分，但新引入的 fail 必须列出。
 
 ---
 
