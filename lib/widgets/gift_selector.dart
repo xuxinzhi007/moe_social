@@ -53,6 +53,7 @@ class _GiftSelectorState extends State<GiftSelector>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    GiftAnimationManager().precacheGiftLottie();
     _loadUserBalance();
     _loadGiftCatalog();
   }

@@ -9,19 +9,23 @@
 | 设计可迭代 | 动效改 JSON，无需改 700 行 `CustomPaint` |
 | 动态内容 | 礼物 emoji、成就名称仍来自后端/模型，不 baked 进 Lottie |
 | 性能可控 | Web 降级、reduceMotion、体积上限 |
-| 渐进迁移 | 保留 `OptimizedGiftAnimation` 作 fallback |
+| 渐进迁移 | 保留 `LiveGiftEffect` 粒子作 fallback |
 
 ## 2. 现状
 
-### 礼物（生产路径）
+### 礼物（生产路径 · 2026-08 已落地 Hybrid）
 
 ```
-GiftSelector → GiftAnimationManager → OptimizedGiftAnimation
+GiftSelector → GiftAnimationManager
+  ├─ GiftRunwayController（左侧连送跑道）
+  └─ LottieGiftEffect（默认，FeatureFlags.useLottieGiftEffects）
+       └─ 失败 / reduceMotion → LiveGiftEffect
 ```
 
 - 分 4 档：`GiftLevel`（basic / medium / advanced / luxury），由 `price` 推导
-- 阶段：飞入(0–15%) → 悬浮(15–60%) → 粒子(15–70%) → 名称(60–85%) → 淡出(85–100%)
-- 奢华档全屏闪光 + 最多 40 粒子 `CustomPaint`，Web 压力大
+- 模板：`assets/lottie/gifts/gift_burst_*.json`（`LottieMotionRegistry`）
+- 播放器：`MoeLottieMotion`；打开礼物面板时 `precacheGiftLottie`
+- 粒子路径 `LiveGiftEffect` / `OptimizedGiftAnimation` 仅作降级与历史参考
 
 ### 成就
 
@@ -74,8 +78,8 @@ Lottie 负责**氛围**；Flutter 负责**业务数据**。
 
 ```
 1. Lottie 模板（默认）
-2. 现有 OptimizedGiftAnimation / BadgeUnlockAnimation（加载失败或低端机）
-3. reduceMotion → 静态图 + MoeReveal 淡入（无粒子）
+2. LiveGiftEffect（加载失败或 FeatureFlags.useLottieGiftEffects=false）
+3. reduceMotion → LiveGiftEffect（内部已缩粒子 / 时长）
 ```
 
 ---
@@ -261,11 +265,11 @@ optional string unlock_lottie = 15;
 
 | 阶段 | 内容 | 验收 |
 |------|------|------|
-| **A** | 目录 + `LottieMotionRegistry` + `MoeLottieMotion` + 占位 JSON（可用 LottieFiles 免费素材暂代） | 演示页能播 placeholder |
-| **B** | 礼物 hybrid 接入，`kUseLottieGifts` 开关 | 送禮流程与现版视觉大致一致 |
-| **C** | 成就通知光晕接入 | 解锁通知有稀有度差异 |
-| **D** | 设计师正式 JSON 替换占位 | 五档成就 + 四档礼物过视觉评审 |
-| **E** | 删除 `OptimizedGiftAnimation` 粒子代码（保留 80 行 wrapper） | Web FPS 不低于现版 |
+| **A** | 目录 + `LottieMotionRegistry` + `MoeLottieMotion` + 四档 JSON | ✅ 已完成 |
+| **B** | 礼物 hybrid + 左侧跑道，`FeatureFlags.useLottieGiftEffects` | ✅ 已完成 |
+| **C** | 成就通知光晕接入 | 待做 |
+| **D** | 设计师正式 JSON 同名替换 `assets/lottie/gifts/` | 待视觉评审 |
+| **E** | 删除未引用粒子路径（保留 `LiveGiftEffect` fallback） | 待做 |
 | **F** | 后端 `lottie_asset` 字段 | 单个礼物可定制 |
 
 ---

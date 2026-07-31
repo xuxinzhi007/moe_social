@@ -87,10 +87,19 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
   void _pushFlameSync() {
     final flame = _flameGame;
     if (flame == null || !mounted) return;
+    final boundId = _companionProfile?.lifeEntityId ?? 0;
+    flame.setBoundEntityId(boundId > 0 ? boundId : null);
     final selected = _selectedEntity(_provider.entities);
+    // 照料默认围着绑定 TA：有绑定且当前未选时，选中绑定实体。
+    var selectedId = _selectedEntityId ?? selected?.id;
+    if (boundId > 0 &&
+        (_selectedEntityId == null || _selectedEntityId! <= 0) &&
+        _provider.entities.any((e) => e.id == boundId)) {
+      selectedId = boundId;
+    }
     flame.syncEntities(
       _provider.entities,
-      selectedId: _selectedEntityId ?? selected?.id,
+      selectedId: selectedId,
     );
     flame.syncRecentEvents(
       _provider.recentEvents.take(8).toList(growable: false),
@@ -173,6 +182,11 @@ class _LifeWorldPageState extends State<LifeWorldPage> {
         }
         _bindingLoaded = true;
       });
+      _pushFlameSync();
+      final focusId = boundId > 0 ? boundId : _selectedEntityId;
+      if (focusId != null && focusId > 0) {
+        _flameGame?.focusEntity(focusId);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() => _bindingLoaded = true);

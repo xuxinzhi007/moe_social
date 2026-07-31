@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/life_state.dart';
 
-/// Flame 小世界（1280×720）。
+/// Flame「TA 的院子」舞台（1280×720）· v1 成品竖切。
 ///
 /// 相机/拖拽按官方推荐：
 /// - 输入用组件 [DragCallbacks]（勿混用已弃用的 [PanDetector] + TapCallbacks）
@@ -33,37 +33,35 @@ class LifeFlameGame extends FlameGame {
   /// 居民追目标的最大世界速度（单位/秒）。匀速滑动，避免指数吸附「窜一下再停」。
   static const double _markerMoveSpeed = 48;
 
+  /// 院子中景（TA 常驻落脚区中心），进世界未对焦前的默认镜头。
+  static final Vector2 yardFocus = Vector2(640, 430);
+
   final void Function(int entityId) onEntityTap;
   final void Function(int entityId)? onEntityLongPress;
 
   final Map<int, _LifeEntityMarker> _markers = {};
   final Set<String> _seenEventKeys = {};
-  final List<_WorldLooseProp> _looseProps = [];
 
   bool _followSelected = true;
   bool _isPanning = false;
   int? _followedEntityId;
-  double _propSpawnAcc = 0;
-  static const int _maxLooseProps = 14;
-  static const double _propSpawnInterval = 3.6;
+  int? _boundEntityId;
+
+  /// 跟随锚点 Y：小于 0.5 表示角色出现在屏幕偏上，躲开底栏 Care HUD。
+  static const Anchor _followAnchor = Anchor(0.5, 0.34);
 
   @override
-  Color backgroundColor() => const Color(0xFFD7F0DE);
+  Color backgroundColor() => const Color(0xFFB8D9C4);
 
   @override
   Future<void> onLoad() async {
     await world.add(_LifeWorldGround());
-    camera.viewfinder.anchor = Anchor.center;
+    // 角色落在屏幕偏上（约 34% 高），底栏 HUD 不再压住台词气泡。
+    camera.viewfinder.anchor = _followAnchor;
     _applyPortraitAwareZoom();
-    camera.viewfinder.position = _clampCamera(
-      Vector2(worldWidth / 2, worldHeight / 2),
-    );
+    camera.viewfinder.position = _clampCamera(yardFocus.clone());
     // Viewport HUD 层接收拖拽（屏幕坐标），见 Flame Camera 文档。
     await camera.viewport.add(_ViewportPanLayer());
-    // 开局撒一点地上物，避免空旷。
-    for (var i = 0; i < 6; i++) {
-      _spawnLooseProp(force: true);
-    }
   }
 
   @override
@@ -71,13 +69,22 @@ class LifeFlameGame extends FlameGame {
     super.update(dt);
     // 角色 update 之后硬锁镜头：不用 camera.follow 追赶，避免移动时整屏抖动。
     _syncFollowCamera();
-    _tickLoosePropSpawner(dt);
-    _tickLoosePropInteractions();
+  }
+
+  /// 绑定伙伴 ID（世界层主角）。0 / null = 未绑定。
+  void setBoundEntityId(int? entityId) {
+    final next = (entityId != null && entityId > 0) ? entityId : null;
+    if (_boundEntityId == next) return;
+    _boundEntityId = next;
+    for (final entry in _markers.entries) {
+      entry.value.setBoundCompanion(entry.key == _boundEntityId);
+    }
   }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
+    camera.viewfinder.anchor = _followAnchor;
     _applyPortraitAwareZoom();
     camera.viewfinder.position = _clampCamera(camera.viewfinder.position);
   }
@@ -132,11 +139,18 @@ class LifeFlameGame extends FlameGame {
         pos.y.clamp(0, worldHeight),
       );
     }
-    final halfW = view.x / (2 * zoom);
-    final halfH = view.y / (2 * zoom);
+    // 按实际 anchor 算可视边界（非中心锚点时 halfH 公式会偏）。
+    final ax = camera.viewfinder.anchor.x;
+    final ay = camera.viewfinder.anchor.y;
+    final visibleW = view.x / zoom;
+    final visibleH = view.y / zoom;
+    final minX = ax * visibleW;
+    final maxX = worldWidth - (1 - ax) * visibleW;
+    final minY = ay * visibleH;
+    final maxY = worldHeight - (1 - ay) * visibleH;
     return Vector2(
-      pos.x.clamp(halfW, math.max(halfW, worldWidth - halfW)),
-      pos.y.clamp(halfH, math.max(halfH, worldHeight - halfH)),
+      pos.x.clamp(minX, math.max(minX, maxX)),
+      pos.y.clamp(minY, math.max(minY, maxY)),
     );
   }
 
@@ -186,16 +200,19 @@ class LifeFlameGame extends FlameGame {
 
     for (final entity in entities) {
       liveIds.add(entity.id);
+      final isBound = _boundEntityId != null && entity.id == _boundEntityId;
       final existing = _markers[entity.id];
       if (existing == null) {
         final marker = _LifeEntityMarker(
           entity: entity,
           selected: entity.id == selectedId,
+          boundCompanion: isBound,
         );
         _markers[entity.id] = marker;
         world.add(marker);
       } else {
         existing.applyEntity(entity, selected: entity.id == selectedId);
+        existing.setBoundCompanion(isBound);
       }
     }
 
@@ -258,82 +275,6 @@ class LifeFlameGame extends FlameGame {
       _focusCameraOnMarker(marker);
     }
     onEntityTap(entityId);
-  }
-
-  void _tickLoosePropSpawner(double dt) {
-    _propSpawnAcc += dt;
-    if (_propSpawnAcc < _propSpawnInterval) return;
-    _propSpawnAcc = 0;
-    _looseProps.removeWhere((p) => p.parent == null);
-    if (_looseProps.length >= _maxLooseProps) return;
-    _spawnLooseProp();
-  }
-
-  void _spawnLooseProp({bool force = false}) {
-    if (!force && _looseProps.length >= _maxLooseProps) return;
-    final rng = math.Random();
-    final kindRoll = rng.nextDouble();
-    final String kind;
-    final String label;
-    final int variant;
-    final double life;
-    if (kindRoll < 0.45) {
-      kind = 'food';
-      variant = rng.nextInt(3);
-      label = const ['果子', '浆果', '胡萝卜'][variant];
-      life = 22 + rng.nextDouble() * 16;
-    } else if (kindRoll < 0.7) {
-      kind = 'shiny';
-      variant = rng.nextInt(2);
-      label = const ['亮晶晶', '小花'][variant];
-      life = 16 + rng.nextDouble() * 12;
-    } else {
-      kind = 'decor';
-      variant = rng.nextInt(3);
-      label = const ['落叶', '小蘑菇', '石头'][variant];
-      life = 28 + rng.nextDouble() * 20;
-    }
-    final prop = _WorldLooseProp(
-      kind: kind,
-      label: label,
-      variant: variant,
-      maxLife: life,
-      position: Vector2(
-        80 + rng.nextDouble() * (worldWidth - 160),
-        80 + rng.nextDouble() * (worldHeight - 160),
-      ),
-    );
-    _looseProps.add(prop);
-    world.add(prop);
-  }
-
-  /// 居民靠近地上物：食物捡起吃掉，闪光物欣赏，装饰物拨弄一下。
-  void _tickLoosePropInteractions() {
-    if (_looseProps.isEmpty || _markers.isEmpty) return;
-    for (final marker in _markers.values) {
-      if (marker.isCareBusy) continue;
-      for (final prop in _looseProps) {
-        if (prop.claimed || prop.parent == null) continue;
-        final d = marker.position.distanceTo(prop.position);
-        if (d > 46) continue;
-        prop.claimed = true;
-        switch (prop.kind) {
-          case 'food':
-            marker.playCare('feed', line: '捡到${prop.label}，真香！');
-            prop.beginCollectToward(marker);
-            break;
-          case 'shiny':
-            marker.showSpeech('哇，${prop.label}好漂亮～', duration: 1.6);
-            prop.beginCollectToward(marker);
-            break;
-          default:
-            marker.showSpeech('拨弄了一下${prop.label}', duration: 1.4);
-            prop.beginFadeOut();
-            break;
-        }
-        break;
-      }
-    }
   }
 
   void notifyLongPress(int entityId) => onEntityLongPress?.call(entityId);
@@ -414,6 +355,7 @@ class _ViewportPanLayer extends PositionComponent
   }
 }
 
+/// TA 小院子固定场景（纯 Canvas，不用 emoji / 随机刷物）。
 class _LifeWorldGround extends PositionComponent {
   _LifeWorldGround()
       : super(
@@ -424,102 +366,216 @@ class _LifeWorldGround extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    final rect = size.toRect();
-    final sky = Paint()
-      ..shader = ui.Gradient.linear(
-        Offset.zero,
-        Offset(0, size.y),
-        const [
-          Color(0xFFEAF6FF),
-          Color(0xFFE4F6EA),
-          Color(0xFFD2EBB8),
-        ],
-        const [0.0, 0.42, 1.0],
-      );
-    canvas.drawRect(rect, sky);
+    final w = size.x;
+    final h = size.y;
 
-    // 远景丘陵
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.x * 0.28, size.y * 0.62),
-        width: size.x * 0.55,
-        height: size.y * 0.28,
-      ),
-      Paint()..color = const Color(0xFF8FCF7A).withValues(alpha: 0.22),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.x * 0.72, size.y * 0.58),
-        width: size.x * 0.5,
-        height: size.y * 0.26,
-      ),
-      Paint()..color = const Color(0xFF7BCB86).withValues(alpha: 0.2),
+    // 天空 → 远草
+    canvas.drawRect(
+      size.toRect(),
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset.zero,
+          Offset(0, h),
+          const [
+            Color(0xFFDCEEF8),
+            Color(0xFFC8E6D0),
+            Color(0xFFA8D49A),
+            Color(0xFF8FBF7A),
+          ],
+          const [0.0, 0.38, 0.62, 1.0],
+        ),
     );
 
-    // 近景草地
+    // 远丘
+    _hill(canvas, Offset(w * 0.22, h * 0.48), w * 0.55, h * 0.22,
+        const Color(0xFF7CB86E));
+    _hill(canvas, Offset(w * 0.78, h * 0.46), w * 0.5, h * 0.2,
+        const Color(0xFF6FAF66));
+    _hill(canvas, Offset(w * 0.5, h * 0.52), w * 0.7, h * 0.18,
+        const Color(0xFF85C474));
+
+    // 近草软带
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(size.x * 0.5, size.y * 0.82),
-        width: size.x * 1.15,
-        height: size.y * 0.4,
+        center: Offset(w * 0.5, h * 0.78),
+        width: w * 1.2,
+        height: h * 0.42,
       ),
-      Paint()..color = const Color(0xFF6FBF78).withValues(alpha: 0.28),
+      Paint()..color = const Color(0xFF6BB06A).withValues(alpha: 0.35),
     );
 
-    // 软路径
-    final pathPaint = Paint()
-      ..color = const Color(0xFFE8D5A8).withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 36
-      ..strokeCap = StrokeCap.round;
+    // 弧形小路（通往院子中心）
     final path = Path()
-      ..moveTo(120, size.y * 0.72)
-      ..quadraticBezierTo(
-        size.x * 0.45,
-        size.y * 0.55,
-        size.x * 0.88,
-        size.y * 0.68,
-      );
-    canvas.drawPath(path, pathPaint);
+      ..moveTo(80, h * 0.78)
+      ..quadraticBezierTo(w * 0.38, h * 0.58, w * 0.5, h * 0.62)
+      ..quadraticBezierTo(w * 0.72, h * 0.68, w - 60, h * 0.74);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0xFFD8C09A).withValues(alpha: 0.55)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 48
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0xFFEAD8B4).withValues(alpha: 0.4)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 28
+        ..strokeCap = StrokeCap.round,
+    );
 
-    // 淡网格（低存在感）
-    final grid = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
-      ..strokeWidth = 1;
-    const step = 96.0;
-    for (var x = 0.0; x <= size.x; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.y), grid);
-    }
-    for (var y = 0.0; y <= size.y; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.x, y), grid);
-    }
+    // 宅前落脚垫（TA 常驻区）
+    final pad = Offset(w * 0.5, h * 0.60);
+    canvas.drawOval(
+      Rect.fromCenter(center: pad, width: 220, height: 96),
+      Paint()..color = const Color(0xFFE8D9B8).withValues(alpha: 0.55),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: pad, width: 168, height: 70),
+      Paint()..color = const Color(0xFFF3E6C8).withValues(alpha: 0.65),
+    );
 
-    _drawProp(canvas, const Offset(180, 160), '🌳', 44);
-    _drawProp(canvas, const Offset(1080, 200), '🏡', 42);
-    _drawProp(canvas, const Offset(920, 520), '🌸', 34);
-    _drawProp(canvas, const Offset(260, 540), '🪨', 30);
-    _drawProp(canvas, const Offset(640, 120), '☁️', 36);
-    _drawProp(canvas, const Offset(520, 480), '🌿', 28);
-    // 静态氛围点缀（不交互），减轻空旷感。
-    _drawProp(canvas, const Offset(420, 220), '🌲', 38);
-    _drawProp(canvas, const Offset(780, 180), '🌳', 36);
-    _drawProp(canvas, const Offset(150, 400), '🌾', 26);
-    _drawProp(canvas, const Offset(1100, 420), '🌻', 30);
-    _drawProp(canvas, const Offset(600, 560), '🪴', 28);
-    _drawProp(canvas, const Offset(980, 300), '☁️', 30);
-    _drawProp(canvas, const Offset(340, 300), '🌺', 26);
-    _drawProp(canvas, const Offset(720, 400), '🪨', 24);
+    // 树丛（左 / 右 / 后）
+    _treeCluster(canvas, const Offset(210, 280), 1.15);
+    _treeCluster(canvas, const Offset(1040, 300), 1.05);
+    _treeCluster(canvas, const Offset(420, 200), 0.85);
+    _treeCluster(canvas, const Offset(860, 190), 0.8);
+    _bush(canvas, const Offset(300, 480), 1.0);
+    _bush(canvas, const Offset(980, 500), 1.1);
+    _bush(canvas, const Offset(560, 520), 0.75);
+
+    // 矮篱 / 木桩（院子边界感）
+    _fence(canvas, Offset(w * 0.28, h * 0.55), 7);
+    _fence(canvas, Offset(w * 0.68, h * 0.56), 7);
+
+    // 小屋剪影（右后，轻存在）
+    _cottage(canvas, Offset(w * 0.82, h * 0.36));
+
+    // 轻云
+    _cloud(canvas, const Offset(280, 110), 1.0);
+    _cloud(canvas, const Offset(920, 90), 0.85);
   }
 
-  void _drawProp(Canvas canvas, Offset center, String emoji, double fontSize) {
-    final tp = TextPainter(
-      text: TextSpan(
-        text: emoji,
-        style: TextStyle(fontSize: fontSize),
+  void _hill(
+    Canvas canvas,
+    Offset c,
+    double ww,
+    double hh,
+    Color color,
+  ) {
+    canvas.drawOval(
+      Rect.fromCenter(center: c, width: ww, height: hh),
+      Paint()..color = color.withValues(alpha: 0.45),
+    );
+  }
+
+  void _treeCluster(Canvas canvas, Offset base, double s) {
+    final trunk = Paint()..color = const Color(0xFF8B5E3C);
+    final leaf = Paint()..color = const Color(0xFF4F9A57);
+    final leafDeep = Paint()..color = const Color(0xFF3E7F48);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(base.dx, base.dy + 18 * s),
+          width: 10 * s,
+          height: 28 * s,
+        ),
+        Radius.circular(3 * s),
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+      trunk,
+    );
+    canvas.drawCircle(
+      Offset(base.dx - 10 * s, base.dy - 6 * s),
+      22 * s,
+      leafDeep,
+    );
+    canvas.drawCircle(
+      Offset(base.dx + 12 * s, base.dy - 4 * s),
+      20 * s,
+      leaf,
+    );
+    canvas.drawCircle(
+      Offset(base.dx, base.dy - 22 * s),
+      24 * s,
+      leaf,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(base.dx, base.dy + 34 * s),
+        width: 36 * s,
+        height: 10 * s,
+      ),
+      Paint()..color = Colors.black.withValues(alpha: 0.1),
+    );
+  }
+
+  void _bush(Canvas canvas, Offset c, double s) {
+    final p = Paint()..color = const Color(0xFF5EAA62);
+    canvas.drawCircle(Offset(c.dx - 12 * s, c.dy), 14 * s, p);
+    canvas.drawCircle(Offset(c.dx + 10 * s, c.dy + 2 * s), 13 * s, p);
+    canvas.drawCircle(Offset(c.dx, c.dy - 8 * s), 12 * s, p);
+  }
+
+  void _fence(Canvas canvas, Offset start, int posts) {
+    final wood = Paint()..color = const Color(0xFFB8956A);
+    final rail = Paint()
+      ..color = const Color(0xFFC9A878)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < posts; i++) {
+      final x = start.dx + i * 22;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, start.dy, 6, 28),
+          const Radius.circular(2),
+        ),
+        wood,
+      );
+    }
+    canvas.drawLine(
+      Offset(start.dx, start.dy + 8),
+      Offset(start.dx + (posts - 1) * 22 + 6, start.dy + 8),
+      rail,
+    );
+    canvas.drawLine(
+      Offset(start.dx, start.dy + 18),
+      Offset(start.dx + (posts - 1) * 22 + 6, start.dy + 18),
+      rail,
+    );
+  }
+
+  void _cottage(Canvas canvas, Offset c) {
+    final wall = Paint()..color = const Color(0xFFF2E6D4).withValues(alpha: 0.9);
+    final roof = Paint()..color = const Color(0xFFD4846A).withValues(alpha: 0.92);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset(c.dx, c.dy + 18), width: 72, height: 48),
+        const Radius.circular(6),
+      ),
+      wall,
+    );
+    final roofPath = Path()
+      ..moveTo(c.dx - 46, c.dy)
+      ..lineTo(c.dx, c.dy - 28)
+      ..lineTo(c.dx + 46, c.dy)
+      ..close();
+    canvas.drawPath(roofPath, roof);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(center: Offset(c.dx, c.dy + 28), width: 14, height: 22),
+        const Radius.circular(2),
+      ),
+      Paint()..color = const Color(0xFF8B5E3C).withValues(alpha: 0.85),
+    );
+  }
+
+  void _cloud(Canvas canvas, Offset c, double s) {
+    final p = Paint()..color = Colors.white.withValues(alpha: 0.55);
+    canvas.drawCircle(Offset(c.dx - 16 * s, c.dy), 14 * s, p);
+    canvas.drawCircle(Offset(c.dx + 14 * s, c.dy + 2 * s), 16 * s, p);
+    canvas.drawCircle(Offset(c.dx, c.dy - 8 * s), 18 * s, p);
   }
 }
 
@@ -528,15 +584,18 @@ class _LifeEntityMarker extends PositionComponent
   _LifeEntityMarker({
     required this.entity,
     required this.selected,
-  }) : super(
+    required bool boundCompanion,
+  })  : boundCompanion = boundCompanion,
+        super(
           size: Vector2(92, 108),
           anchor: Anchor.center,
           position: Vector2(entity.x, entity.y),
-          priority: 20,
+          priority: boundCompanion ? 28 : 18,
         );
 
   LifeEntity entity;
   bool selected;
+  bool boundCompanion;
   double _bob = 0;
   double _selectPulse = 0;
   double _selectScale = 1;
@@ -554,6 +613,12 @@ class _LifeEntityMarker extends PositionComponent
 
   bool get hasSpeech =>
       _speechT > 0.05 && (_speech?.trim().isNotEmpty ?? false);
+
+  void setBoundCompanion(bool value) {
+    if (boundCompanion == value) return;
+    boundCompanion = value;
+    priority = value ? 28 : 18;
+  }
 
   void applyEntity(LifeEntity next, {required bool selected}) {
     final wasSelected = this.selected;
@@ -655,11 +720,21 @@ class _LifeEntityMarker extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    // 选中呼吸幅度收一点，避免跟镜头叠成「整屏在抖」。
-    final bobY = math.sin(_bob) * (selected ? 2.2 : 1.6);
+    // 非绑定居民弱化；绑定 TA 为视觉主角。
+    final presence = boundCompanion ? 1.0 : 0.52;
+    final bodyScale = boundCompanion ? 1.0 : 0.78;
+    final bobY = math.sin(_bob) * (selected ? 2.0 : 1.4) * bodyScale;
     canvas.save();
     canvas.translate(size.x / 2, size.y / 2 + bobY);
-    canvas.scale(_selectScale);
+    canvas.scale(_selectScale * bodyScale);
+    // 必须盖住台词气泡区域；半径 80 会把气泡裁成「一条线 + 小三角」。
+    final dimLayer = presence < 0.99;
+    if (dimLayer) {
+      canvas.saveLayer(
+        const Rect.fromLTWH(-130, -170, 260, 260),
+        Paint()..color = Colors.white.withValues(alpha: presence),
+      );
+    }
 
     // 地面阴影
     canvas.drawOval(
@@ -667,22 +742,34 @@ class _LifeEntityMarker extends PositionComponent
       Paint()..color = Colors.black.withValues(alpha: 0.14),
     );
 
+    // 绑定 TA：轻伴侣光晕（未选中也有存在感）
+    if (boundCompanion && !selected) {
+      canvas.drawCircle(
+        Offset.zero,
+        38,
+        Paint()
+          ..color = const Color(0xFFE97891).withValues(alpha: 0.12)
+          ..style = PaintingStyle.fill,
+      );
+    }
+
     if (selected) {
       final pulse = 0.55 + 0.45 * math.sin(_bob * 2.2);
       final ringR = 36 + (1 - _selectPulse) * 10;
+      final ringColor =
+          boundCompanion ? const Color(0xFFE97891) : const Color(0xFF7C75DD);
       canvas.drawCircle(
         Offset.zero,
         ringR,
         Paint()
-          ..color =
-              const Color(0xFF7C75DD).withValues(alpha: 0.12 + 0.1 * pulse)
+          ..color = ringColor.withValues(alpha: 0.12 + 0.1 * pulse)
           ..style = PaintingStyle.fill,
       );
       canvas.drawCircle(
         Offset.zero,
         34,
         Paint()
-          ..color = const Color(0xFF7C75DD).withValues(alpha: 0.85)
+          ..color = ringColor.withValues(alpha: 0.9)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.8,
       );
@@ -697,7 +784,9 @@ class _LifeEntityMarker extends PositionComponent
           29,
           [
             Colors.white,
-            const Color(0xFFF3F0FF),
+            boundCompanion
+                ? const Color(0xFFFFF0F3)
+                : const Color(0xFFF3F0FF),
           ],
         ),
     );
@@ -705,49 +794,34 @@ class _LifeEntityMarker extends PositionComponent
     final emoji = TextPainter(
       text: TextSpan(
         text: entity.emoji.trim().isEmpty ? '🐣' : entity.emoji,
-        style: const TextStyle(fontSize: 32),
+        style: TextStyle(fontSize: boundCompanion ? 34 : 28),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
     emoji.paint(canvas, Offset(-emoji.width / 2, -emoji.height / 2 - 2));
 
-    // 喂食：食物从侧边飞到嘴边；抚摸：爱心上浮。
+    // 喂食/陪伴：只在 Marker 上用 Canvas 几何演出（不用 emoji，避免缺字/旁侧色块）。
     if (_careT > 0 && _careAction.isNotEmpty) {
       final p = (1 - _careT / _careDuration).clamp(0.0, 1.0);
       if (_careAction == 'feed') {
-        final fly = Curves.easeOut.transform(p.clamp(0.0, 1.0));
-        final foodX = ui.lerpDouble(48, 10, fly)!;
-        final foodY = ui.lerpDouble(-8, -6, fly)!;
-        final foodScale = ui.lerpDouble(1.15, 0.55, fly)!;
-        final food = TextPainter(
-          text: TextSpan(
-            text: '🍖',
-            style: TextStyle(fontSize: 22 * foodScale),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        food.paint(
-          canvas,
-          Offset(foodX - food.width / 2, foodY - food.height / 2),
-        );
+        final fly = Curves.easeOut.transform(p);
+        final foodX = ui.lerpDouble(46, 12, fly)!;
+        final foodY = ui.lerpDouble(-10, -4, fly)!;
+        final foodScale = ui.lerpDouble(1.1, 0.55, fly)!;
+        canvas.save();
+        canvas.translate(foodX, foodY);
+        canvas.scale(foodScale);
+        _paintCareFood(canvas);
+        canvas.restore();
       } else {
         for (var i = 0; i < 3; i++) {
           final t = (p + i * 0.18).clamp(0.0, 1.0);
-          final heart = TextPainter(
-            text: TextSpan(
-              text: i.isEven ? '💕' : '✨',
-              style: TextStyle(fontSize: 14 + i * 2.0),
-            ),
-            textDirection: TextDirection.ltr,
-          )..layout();
           final hx = -18.0 + i * 16;
           final hy = -20.0 - t * 36;
           canvas.save();
           canvas.translate(hx, hy);
-          heart.paint(
-            canvas,
-            Offset(-heart.width / 2, -heart.height / 2),
-          );
+          canvas.scale(0.7 + i * 0.12);
+          _paintCareHeart(canvas, alpha: (1 - t * 0.35).clamp(0.35, 1.0));
           canvas.restore();
         }
       }
@@ -755,11 +829,15 @@ class _LifeEntityMarker extends PositionComponent
 
     final name = TextPainter(
       text: TextSpan(
-        text: entity.name,
+        text: boundCompanion ? '${entity.name} · TA' : entity.name,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: boundCompanion ? 12.5 : 11,
           fontWeight: FontWeight.w800,
-          color: selected ? const Color(0xFF5B4B8A) : const Color(0xFF243447),
+          color: selected
+              ? (boundCompanion
+                  ? const Color(0xFFB54B66)
+                  : const Color(0xFF5B4B8A))
+              : const Color(0xFF243447).withValues(alpha: presence),
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -771,17 +849,52 @@ class _LifeEntityMarker extends PositionComponent
     final showSpeech =
         speech != null && speech.isNotEmpty && _speechT > 0;
     if (showSpeech) {
-      _paintSpeechBubble(canvas, speech, const Offset(0, -78));
-    } else {
+      _paintSpeechBubble(canvas, speech, const Offset(0, -86));
+    } else if (boundCompanion || selected) {
       final label = isCareBusy
           ? (_careAction == 'feed' ? '吃东西中' : '享受中')
           : entity.actionLabel.trim();
       if (label.isNotEmpty) {
-        _paintStatusChip(canvas, label, const Offset(0, -42));
+        _paintStatusChip(canvas, label, const Offset(0, -48));
       }
     }
 
+    if (dimLayer) {
+      canvas.restore(); // saveLayer
+    }
     canvas.restore();
+  }
+
+  void _paintCareFood(Canvas canvas) {
+    canvas.drawCircle(
+      Offset.zero,
+      10,
+      Paint()..color = const Color(0xFFE8893A),
+    );
+    canvas.drawCircle(
+      const Offset(-3, -3),
+      2.8,
+      Paint()..color = Colors.white.withValues(alpha: 0.4),
+    );
+    canvas.drawCircle(
+      Offset.zero,
+      10,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.55)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  void _paintCareHeart(Canvas canvas, {required double alpha}) {
+    final paint = Paint()
+      ..color = const Color(0xFFE97891).withValues(alpha: alpha);
+    final path = Path()
+      ..moveTo(0, 6)
+      ..cubicTo(-10, -2, -8, -12, 0, -6)
+      ..cubicTo(8, -12, 10, -2, 0, 6)
+      ..close();
+    canvas.drawPath(path, paint);
   }
 
   void _paintStatusChip(Canvas canvas, String text, Offset center) {
@@ -873,191 +986,6 @@ class _LifeEntityMarker extends PositionComponent
     super.onLongPressStart(event);
     final game = findGame();
     if (game is LifeFlameGame) game.notifyLongPress(entity.id);
-  }
-}
-
-/// 地上临时物：会过期消失；食物/闪光可被居民靠近捡起。
-///
-/// 用 Canvas 几何绘制（不用 emoji）——模拟器/部分 Android 字体缺字形会显示白块 X。
-class _WorldLooseProp extends PositionComponent {
-  _WorldLooseProp({
-    required this.kind,
-    required this.label,
-    required this.variant,
-    required this.maxLife,
-    required Vector2 position,
-  }) : life = maxLife,
-       super(
-         position: position.clone(),
-         size: Vector2(36, 36),
-         anchor: Anchor.center,
-         priority: 12,
-       );
-
-  final String kind; // food | shiny | decor
-  final String label;
-  final int variant;
-  final double maxLife;
-  double life;
-  bool claimed = false;
-  _LifeEntityMarker? _collectTarget;
-  bool _fading = false;
-
-  void beginCollectToward(_LifeEntityMarker marker) {
-    _collectTarget = marker;
-  }
-
-  void beginFadeOut() {
-    _fading = true;
-    life = math.min(life, 0.45);
-  }
-
-  @override
-  void update(double dt) {
-    if (!claimed) {
-      life -= dt;
-      if (life <= 0) {
-        removeFromParent();
-      }
-      return;
-    }
-    final target = _collectTarget;
-    if (target != null && target.parent != null) {
-      final dest = target.position + Vector2(8, -6);
-      final delta = dest - position;
-      final dist = delta.length;
-      if (dist < 8) {
-        removeFromParent();
-        return;
-      }
-      position += delta.normalized() * math.min(dist, 140 * dt);
-      life -= dt;
-      if (life <= 0) removeFromParent();
-      return;
-    }
-    if (_fading) {
-      life -= dt;
-      if (life <= 0) removeFromParent();
-    } else {
-      removeFromParent();
-    }
-  }
-
-  @override
-  void render(Canvas canvas) {
-    final fade = claimed
-        ? 0.55
-        : (life < 4 ? (life / 4).clamp(0.25, 1.0) : 1.0);
-    final bob = math.sin(life * 3.2) * 1.6;
-    canvas.save();
-    canvas.translate(size.x / 2, size.y / 2 + bob);
-    canvas.drawOval(
-      const Rect.fromLTWH(-10, 10, 20, 7),
-      Paint()..color = Colors.black.withValues(alpha: 0.12 * fade),
-    );
-    switch (kind) {
-      case 'food':
-        _paintFood(canvas, fade, variant);
-        break;
-      case 'shiny':
-        _paintShiny(canvas, fade, variant);
-        break;
-      default:
-        _paintDecor(canvas, fade, variant);
-        break;
-    }
-    canvas.restore();
-  }
-
-  void _paintFood(Canvas canvas, double fade, int v) {
-    final colors = const [
-      Color(0xFFE85D4C),
-      Color(0xFFC43B6E),
-      Color(0xFFE8893A),
-    ];
-    final fill = colors[v % colors.length].withValues(alpha: fade);
-    canvas.drawCircle(Offset.zero, 11, Paint()..color = fill);
-    canvas.drawCircle(
-      const Offset(-3, -3),
-      3.2,
-      Paint()..color = Colors.white.withValues(alpha: 0.35 * fade),
-    );
-    canvas.drawCircle(
-      Offset.zero,
-      11,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.55 * fade)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4,
-    );
-  }
-
-  void _paintShiny(Canvas canvas, double fade, int v) {
-    final fill = (v.isEven ? const Color(0xFFFFC84A) : const Color(0xFF7EC8FF))
-        .withValues(alpha: fade);
-    final path = Path()
-      ..moveTo(0, -12)
-      ..lineTo(3.5, -3.5)
-      ..lineTo(12, 0)
-      ..lineTo(3.5, 3.5)
-      ..lineTo(0, 12)
-      ..lineTo(-3.5, 3.5)
-      ..lineTo(-12, 0)
-      ..lineTo(-3.5, -3.5)
-      ..close();
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.65 * fade)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-  }
-
-  void _paintDecor(Canvas canvas, double fade, int v) {
-    if (v % 3 == 0) {
-      // 落叶
-      final leaf = Path()
-        ..moveTo(0, -10)
-        ..quadraticBezierTo(12, -2, 0, 11)
-        ..quadraticBezierTo(-12, -2, 0, -10)
-        ..close();
-      canvas.drawPath(
-        leaf,
-        Paint()..color = const Color(0xFFD98A3A).withValues(alpha: fade),
-      );
-      return;
-    }
-    if (v % 3 == 1) {
-      // 蘑菇
-      canvas.drawCircle(
-        const Offset(0, -4),
-        10,
-        Paint()..color = const Color(0xFFE85D4C).withValues(alpha: fade),
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          const Rect.fromLTWH(-3.5, -2, 7, 12),
-          const Radius.circular(2),
-        ),
-        Paint()..color = const Color(0xFFF5E6D0).withValues(alpha: fade),
-      );
-      return;
-    }
-    // 石头
-    final rock = Path()
-      ..moveTo(-11, 4)
-      ..lineTo(-6, -8)
-      ..lineTo(5, -10)
-      ..lineTo(11, 2)
-      ..lineTo(4, 10)
-      ..lineTo(-8, 9)
-      ..close();
-    canvas.drawPath(
-      rock,
-      Paint()..color = const Color(0xFF8A93A0).withValues(alpha: fade),
-    );
   }
 }
 
