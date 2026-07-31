@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 外部缓存目录，用于存放下载的 APK -->
-    <external-cache-path name="apk_cache" path="." />
-    <cache-path name="cache" path="." />
+    <!-- App 内更新：覆盖 Download/MoeSocial、应用专属目录与缓存 -->
     <external-path name="external" path="." />
+    <external-files-path name="external_files" path="." />
+    <external-cache-path name="apk_cache" path="." />
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
+    <root-path name="root" path="." />
 </paths>

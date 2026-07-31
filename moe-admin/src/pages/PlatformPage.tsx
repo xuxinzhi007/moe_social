@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { AdminTag } from '../components/AdminTag'
 import { DataDomainMap } from '../components/DataDomainMap'
 import { TabbedPageLayout } from '../ui'
 import { PageMessage } from '../components/PageMessage'
@@ -76,7 +77,39 @@ export function PlatformPage() {
   const [mediaOwnerCount, setMediaOwnerCount] = useState(0)
   const [dataDomain, setDataDomain] = useState<string | null>(null)
 
-  const apiOnline = health?.local_api?.online ?? health?.cloud_api?.online
+  const apiOnline = apiTarget === 'cloud' ? health?.cloud_api?.online : health?.local_api?.online
+  const apiBaseUrl =
+    (apiTarget === 'cloud' ? health?.cloud_api?.base_url : health?.local_api?.base_url) || ''
+
+  const overviewMetrics = useMemo(
+    () => [
+      {
+        label: '用户总数',
+        value: loading ? '…' : (dashboard?.user_total ?? 0),
+        hint: '注册用户',
+      },
+      {
+        label: '数据表',
+        value: loading ? '…' : (catalog?.summary?.total_tables ?? 0),
+        hint: 'schema 目录',
+      },
+      {
+        label: '全量托管',
+        value: loading ? '…' : (catalog?.summary?.managed_full ?? 0),
+        hint: 'coverage=full',
+      },
+      {
+        label: '服务时间',
+        value: dashboard?.server_time
+          ? dashboard.server_time.replace('T', ' ').slice(0, 19)
+          : loading
+            ? '…'
+            : '—',
+        hint: 'API 返回',
+      },
+    ],
+    [loading, dashboard, catalog],
+  )
 
   const domainMatrix = useMemo(() => {
     if (!catalog?.items) return []
@@ -212,12 +245,18 @@ export function PlatformPage() {
     }
   }
 
+  const publicApi =
+    configForm.public_api_base_url.trim() || configForm.api_public_base_url.trim() || '—'
+  const imagePublic = configForm.image_public_base_url.trim() || '—'
+
   return (
     <>
       <TabbedPageLayout
         title="平台治理"
-        description="App → API → 数据资产 · 连接配置、图库与数据地图在同一页切换"
-        envNote={`当前数据环境：${apiTargetLabel} · 配置写入 backend/config/config.yaml`}
+        description="连接配置、图库与数据资产 · 在下方 Tab 切换"
+        envNote={`配置写入 backend/config/config.yaml`}
+        showEnvPlatformLink={false}
+        metrics={overviewMetrics}
         headActions={
           <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>
             刷新
@@ -226,6 +265,7 @@ export function PlatformPage() {
         tabs={TABS}
         activeTab={tab}
         onTabChange={setTab}
+        tabVariant="line"
       >
       {message ? (
         <PageMessage message={message} tone="ok" onClose={() => setMessage('')} />
@@ -234,75 +274,114 @@ export function PlatformPage() {
 
       {tab === 'overview' ? (
         <div className="platform-overview">
-          <div className="platform-health-grid">
-            <div className={`platform-health-card${apiOnline ? ' is-ok' : ''}`}>
-              <div className="label">业务 API</div>
-              <div className="value">{apiOnline ? '可达' : '不可达'}</div>
-              <p className="muted">{apiTargetLabel}</p>
+          {!apiOnline ? (
+            <PageMessage
+              message={`${apiTargetLabel} API 暂不可达。请确认 backend 已启动，或在顶栏切换数据环境。`}
+              tone="warn"
+            />
+          ) : null}
+
+          <section className="platform-status-strip" aria-label="连接状态">
+            <div className="platform-status-item">
+              <span className="label">业务 API</span>
+              <AdminTag label={apiOnline ? '可达' : '不可达'} tone={apiOnline ? 'ok' : 'fail'} dot />
+              {apiBaseUrl ? (
+                <span className="platform-status-meta" title={apiBaseUrl}>
+                  {apiBaseUrl}
+                </span>
+              ) : null}
             </div>
-            <div className={`platform-health-card${clientConfigOk ? ' is-ok' : clientConfigOk === false ? ' is-err' : ''}`}>
-              <div className="label">client-config</div>
-              <div className="value">{clientConfigOk === null ? '检测中' : clientConfigOk ? '正常' : '异常'}</div>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => void testClientConfig(configForm.public_api_base_url || configForm.api_public_base_url)}>
-                测试
+            <div className="platform-status-item">
+              <span className="label">client-config</span>
+              <AdminTag
+                label={
+                  clientConfigOk === null ? '检测中' : clientConfigOk ? '正常' : '异常'
+                }
+                tone={
+                  clientConfigOk === null ? 'pending' : clientConfigOk ? 'ok' : 'fail'
+                }
+                dot
+              />
+            </div>
+            <div className="platform-status-actions">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() =>
+                  void testClientConfig(
+                    configForm.public_api_base_url || configForm.api_public_base_url,
+                  )
+                }
+              >
+                测试 client-config
               </button>
             </div>
-            <div className="platform-health-card">
-              <div className="label">用户总数</div>
-              <div className="value">{dashboard?.user_total ?? 0}</div>
-              <p className="muted">注册用户</p>
-            </div>
-            <div className="platform-health-card">
-              <div className="label">服务时间</div>
-              <div className="value">{dashboard?.server_time ? '已返回' : '—'}</div>
-              <p className="muted">API 时间：{dashboard?.server_time || '—'}</p>
-            </div>
-          </div>
-          <section className="panel platform-panel">
-            <div className="page-head-row">
+          </section>
+
+          <section className="panel platform-panel" aria-label="连接摘要">
+            <div className="platform-section-head">
               <div>
-                <h3 style={{ margin: 0 }}>快速入口</h3>
-                <p className="muted" style={{ margin: '4px 0 0' }}>常用配置与管理工具</p>
+                <h3>连接摘要</h3>
+                <p>当前写入配置 · 完整编辑请切到「连接与地址」</p>
               </div>
             </div>
-            <div className="platform-quick-grid">
-              <div className="quick-item">
-                <div className="quick-icon">🔗</div>
-                <div>
-                  <div className="quick-title">连接与地址</div>
-                  <div className="quick-desc">API 地址、图库 URL 配置</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('config')}>前往</button>
+            <dl className="platform-summary-grid">
+              <div className="platform-summary-cell">
+                <dt>对外 API</dt>
+                <dd>{publicApi}</dd>
               </div>
-              <div className="quick-item">
-                <div className="quick-icon">🖼️</div>
-                <div>
-                  <div className="quick-title">媒体与图库</div>
-                  <div className="quick-desc">云图库文件管理</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('media')}>前往</button>
+              <div className="platform-summary-cell">
+                <dt>图片公开地址</dt>
+                <dd>{imagePublic}</dd>
               </div>
-              <div className="quick-item">
-                <div className="quick-icon">🗺️</div>
-                <div>
-                  <div className="quick-title">数据地图</div>
-                  <div className="quick-desc">数据表域覆盖与能力</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('data')}>前往</button>
+              <div className="platform-summary-cell">
+                <dt>图片本地目录</dt>
+                <dd>{configForm.image_local_dir.trim() || '—'}</dd>
               </div>
+              <div className="platform-summary-cell">
+                <dt>配置文件</dt>
+                <dd>{config?.config_file || '—'}</dd>
+              </div>
+            </dl>
+            <div className="platform-summary-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setTab('config')}>
+                编辑连接
+              </button>
+              <Link className="btn btn-ghost btn-sm" to="/biz/media-gallery">
+                打开云图库
+              </Link>
             </div>
           </section>
+
+          <div className="platform-related-grid" aria-label="相关能力">
+            <button type="button" className="platform-related-card" onClick={() => setTab('config')}>
+              <span className="related-kicker">配置</span>
+              <span className="related-title">连接与地址</span>
+              <span className="related-desc">API 根地址、图库 URL 与热更新</span>
+              <span className="related-go">打开 →</span>
+            </button>
+            <button type="button" className="platform-related-card" onClick={() => setTab('media')}>
+              <span className="related-kicker">媒体</span>
+              <span className="related-title">媒体与图库</span>
+              <span className="related-desc">预览云图库文件与占用</span>
+              <span className="related-go">打开 →</span>
+            </button>
+            <button type="button" className="platform-related-card" onClick={() => setTab('data')}>
+              <span className="related-kicker">数据</span>
+              <span className="related-title">数据地图</span>
+              <span className="related-desc">表域覆盖与托管能力</span>
+              <span className="related-go">打开 →</span>
+            </button>
+          </div>
         </div>
       ) : null}
 
       {tab === 'config' ? (
         <section className="panel platform-panel">
-          <div className="page-head-row" style={{ marginBottom: 16 }}>
+          <div className="platform-section-head">
             <div>
-              <h3 style={{ margin: 0 }}>连接与地址</h3>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
-                配置文件：{config?.config_file || '—'}
-              </p>
+              <h3>连接与地址</h3>
+              <p>配置文件：{config?.config_file || '—'}</p>
             </div>
           </div>
           <div className="config-form-grid">
@@ -347,13 +426,13 @@ export function PlatformPage() {
               />
             </FormField>
           </div>
-          <div style={{ marginTop: 20 }}>
+          <div className="platform-panel-actions">
             <button type="button" className="btn btn-primary" disabled={savingConfig} onClick={() => void saveConfig()}>
               {savingConfig ? '保存中…' : '保存配置'}
             </button>
           </div>
           {clientConfigPreview ? (
-            <div className="config-preview" style={{ marginTop: 20 }}>
+            <div className="config-preview">
               <div className="muted" style={{ marginBottom: 6 }}>client-config 预览：</div>
               <pre>{clientConfigPreview}</pre>
             </div>
@@ -363,10 +442,10 @@ export function PlatformPage() {
 
       {tab === 'media' ? (
         <section className="panel platform-panel">
-          <div className="page-head-row" style={{ marginBottom: 12 }}>
+          <div className="platform-section-head">
             <div>
-              <h3 style={{ margin: 0 }}>媒体与图库</h3>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
+              <h3>媒体与图库</h3>
+              <p>
                 共 {mediaTotal} 个文件 · {mediaOwnerCount} 个所有者目录
               </p>
             </div>
@@ -389,17 +468,18 @@ export function PlatformPage() {
             </div>
           )}
           <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
-            完整管理请前往「系统管理 → 云图库」
+            完整管理请前往运营工作区「云图库」，或{' '}
+            <Link to="/biz/media-gallery">点此打开</Link>
           </p>
         </section>
       ) : null}
 
       {tab === 'data' ? (
         <section className="panel platform-panel">
-          <div className="page-head-row" style={{ marginBottom: 12 }}>
+          <div className="platform-section-head">
             <div>
-              <h3 style={{ margin: 0 }}>数据地图</h3>
-              <p className="muted" style={{ margin: '4px 0 0' }}>
+              <h3>数据地图</h3>
+              <p>
                 {catalog?.summary?.total_tables ?? 0} 张表 · {catalog?.summary?.managed_full ?? 0} 全量托管
               </p>
             </div>

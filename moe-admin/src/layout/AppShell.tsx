@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { SidebarNav } from '../components/SidebarNav'
 import { SettingsDrawer } from '../components/SettingsDrawer'
+import { WorkspaceSwitcher } from '../components/WorkspaceSwitcher'
+import { detectWorkspace, workspaceMeta } from '../config/workspaceNav'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDeploy } from '../context/DeployContext'
 import { usePlatform } from '../context/PlatformContext'
@@ -11,8 +13,11 @@ export function AppShell() {
   const { agentOnline, authOk, toast, agentMeta } = useDeploy()
   const { user, logout } = useAdminAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { apiTarget, setApiTarget, health } = usePlatform()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const workspace = detectWorkspace(location.pathname)
+  const wsMeta = workspaceMeta(workspace)
 
   const agentChip = agentMeta?.pid
     ? `Agent · PID ${agentMeta.pid}`
@@ -35,11 +40,15 @@ export function AppShell() {
         <div className="sidebar-nav-wrap">
           <SidebarNav />
         </div>
-        <div className="sidebar-foot">业务 API · Deploy Agent</div>
+        <div className="sidebar-foot">
+          {wsMeta.label}工作区 · {wsMeta.caption}
+        </div>
       </aside>
 
       <div className="main">
         <header className="topbar">
+          <WorkspaceSwitcher active={workspace} />
+
           <div className="conn-pill">
             <span
               className={`dot ${agentOnline ? 'ok' : agentOnline === false ? 'err' : ''}`}

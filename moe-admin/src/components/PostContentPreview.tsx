@@ -21,9 +21,7 @@ export function PostContentPreview({ content, images, handDrawThumbUrl, compact 
   const mediaUrls = useMemo(() => {
     const urls: string[] = []
     if (handDrawThumbUrl?.trim()) {
-      urls.push(
-        resolveMediaViewUrl(handDrawThumbUrl.trim(), apiBase, devDirect, apiTarget),
-      )
+      urls.push(resolveMediaViewUrl(handDrawThumbUrl.trim(), apiBase, devDirect, apiTarget))
     }
     for (const img of images || []) {
       const s = img.trim()
@@ -42,37 +40,17 @@ export function PostContentPreview({ content, images, handDrawThumbUrl, compact 
   }
 
   return (
-    <div className="post-content-preview">
+    <div className={`post-content-preview${compact ? ' is-compact' : ''}`}>
       {hasText ? (
-        <p
-          className="post-content-preview-text"
-          style={
-            compact
-              ? { margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-              : { margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
-          }
-        >
+        <p className={`post-content-preview-text${compact ? ' is-clamp' : ''}`} title={compact ? text : undefined}>
           {text}
         </p>
       ) : null}
       {hasMedia ? (
-        <div className="post-content-preview-media" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: hasText ? 10 : 0 }}>
-          {mediaUrls.map((url) => (
+        <div className="post-content-preview-media" style={hasText ? undefined : { marginTop: 0 }}>
+          {mediaUrls.slice(0, compact ? 3 : mediaUrls.length).map((url) => (
             <a key={url} href={url} target="_blank" rel="noreferrer" className="post-content-preview-thumb">
-              <img
-                src={url}
-                alt=""
-                loading="lazy"
-                style={{
-                  display: 'block',
-                  maxWidth: compact ? 120 : '100%',
-                  maxHeight: compact ? 80 : 320,
-                  borderRadius: 8,
-                  border: '1px solid var(--hairline)',
-                  objectFit: 'contain',
-                  background: 'var(--canvas)',
-                }}
-              />
+              <img src={url} alt="" loading="lazy" />
             </a>
           ))}
         </div>

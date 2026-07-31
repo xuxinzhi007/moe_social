@@ -1,5 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { LoginHeroAside } from '../components/LoginHeroAside'
+import { SoftParticles } from '../components/SoftParticles'
+import { resolveAdminPath } from '../config/workspaceNav'
 import { useAdminAuth } from '../context/AdminAuthContext'
 
 export function LoginPage() {
@@ -17,9 +20,9 @@ export function LoginPage() {
     }
   }, [searchParams])
 
-  const from =
-    (location.state as { from?: string } | null)?.from?.replace(/^\/ops/, '') ||
-    '/'
+  const rawFrom =
+    (location.state as { from?: string } | null)?.from?.replace(/^\/ops/, '') || '/biz'
+  const from = resolveAdminPath(rawFrom)
 
   if (bootstrapped && token) {
     return <Navigate to={from} replace />
@@ -38,16 +41,9 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
+      <SoftParticles count={48} opacity={0.4} />
       <div className="login-layout">
-        <div className="login-aside">
-          <h2>Moe Admin</h2>
-          <p>Moe Social 专属管理后台</p>
-          <ul className="login-aside-list">
-            <li>App 用户与内容运营</li>
-            <li>本机 / 云端 API 切换</li>
-            <li>构建发布与运维监控</li>
-          </ul>
-        </div>
+        <LoginHeroAside />
 
         <div className="login-card">
           <div className="login-brand">
@@ -86,10 +82,11 @@ export function LoginPage() {
 
             <button
               type="submit"
-              className="btn btn-primary btn-block"
+              className="btn btn-primary btn-block login-submit-btn"
               disabled={loggingIn}
             >
-              {loggingIn ? '登录中…' : '登录'}
+              <span className="login-submit-shine" aria-hidden />
+              <span className="login-submit-label">{loggingIn ? '登录中…' : '登录'}</span>
             </button>
           </form>
         </div>

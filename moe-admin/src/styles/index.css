@@ -5,5 +5,8 @@
 @import './components/gift-catalog.css';
 @import './moe-admin-theme.css';
 @import './layout/chrome-v3.css';
+@import './components/platform-page.css';
+@import './components/list-table.css';
+@import './components/soft-particles.css';
 @import './components/bot-flow.css';
 @import './components/brain-rpg.css';

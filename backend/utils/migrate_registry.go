@@ -52,6 +52,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "landing_feedbacks", Model: &model.LandingFeedback{}},
 		{Key: "admin_accounts", Model: &model.AdminAccount{}},
 		{Key: "admin_announcements", Model: &model.AdminAnnouncement{}},
+		{Key: "app_releases", Model: &model.AppRelease{}},
 		{Key: "admin_menus", Model: &model.AdminMenu{}},
 		{Key: "admin_audit_logs", Model: &model.AdminAuditLog{}},
 		{Key: "user_behavior_events", Model: &model.UserBehaviorEvent{}},

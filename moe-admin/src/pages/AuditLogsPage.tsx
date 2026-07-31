@@ -4,6 +4,7 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { auditActionTag, auditResourceTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminFilterInput } from '../components/AdminFilterInput'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
@@ -111,10 +112,12 @@ export function AuditLogsPage() {
             submitLabel: '筛选',
           }}
           filters={
-            <input
-              placeholder="资源 resource"
+            <AdminFilterInput
+              label="资源"
               value={resource}
-              onChange={(e) => setResource(e.target.value)}
+              onChange={setResource}
+              placeholder="resource"
+              ariaLabel="按资源筛选"
             />
           }
         />

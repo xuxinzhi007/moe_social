@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -13,7 +11,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../auth_service.dart';
 import '../widgets/moe_toast.dart';
+import 'app_release_service.dart';
 
 /// 与已安装应用对比 APK 签名的结果（仅 Android 原生通道有效）。
 class ApkSignatureCompareResult {
@@ -76,7 +76,7 @@ class ApkSignatureCompareResult {
   }
 }
 
-/// GitHub Release 最新一条的解析结果（手动检查与启动静默检测共用）。
+/// 最新版本解析结果（后端管理台配置；手动检查与启动静默检测共用）。
 class UpdateReleaseInfo {
   UpdateReleaseInfo({
     required this.version,
@@ -84,13 +84,20 @@ class UpdateReleaseInfo {
     this.downloadUrl,
     this.fileName = 'app-release.apk',
     this.expectedAssetBytes,
+    this.versionCode = 0,
+    this.forceUpdate = false,
   });
 
+  /// 展示用版本名（versionName）。
   final String version;
+
+  /// Android 覆盖安装依据（versionCode）。
+  final int versionCode;
   final String body;
   final String? downloadUrl;
   final String fileName;
   final int? expectedAssetBytes;
+  final bool forceUpdate;
 }
 
 enum UpdateFetchStatus {
@@ -117,13 +124,10 @@ class UpdateFetchResult {
 }
 
 /// App 内更新服务
-/// 支持 GitHub 加速镜像和 App 内下载安装
+/// 版本元数据来自后端；APK 下载对 GitHub URL 走加速镜像，其它 URL 直连。
 class UpdateService {
   static const MethodChannel _androidUpdateChannel =
       MethodChannel('com.moe_social/app_update');
-
-  static const String _owner = 'xuxinzhi007';
-  static const String _repo = 'moe_social';
 
   /// GitHub Release 直链前加前缀，由镜像代为拉取。公益镜像会随时限流、变慢或失效，故多备几条并支持「卡住则换线」。
   /// 格式均为：`前缀 + 完整 https://github.com/...`（与多数 ghproxy 类服务文档一致）。
@@ -239,83 +243,46 @@ class UpdateService {
     return '已保存到应用目录；卸载本应用后此文件可能被系统删除，建议立即安装或点「分享」另存。';
   }
 
-  /// 拉取 GitHub 上最新 Release 元数据（不弹 UI）。
+  /// 是否应对该下载 URL 使用 GitHub 镜像测速。
+  static bool shouldUseGithubMirrors(String downloadUrl) {
+    final lower = downloadUrl.toLowerCase();
+    return lower.contains('github.com') || lower.contains('githubusercontent.com');
+  }
+
+  static String _fileNameFromUrl(String url) {
+    try {
+      final name = p.basename(Uri.parse(url).path);
+      if (name.toLowerCase().endsWith('.apk') && name.isNotEmpty) {
+        return name;
+      }
+    } catch (_) {}
+    return 'app-release.apk';
+  }
+
+  /// 拉取后端配置的最新版本元数据（不弹 UI）。
   static Future<UpdateFetchResult> fetchLatestRelease() async {
     try {
-      final url =
-          Uri.parse('https://api.github.com/repos/$_owner/$_repo/releases');
-      final response = await http.get(
-        url,
-        headers: {
-          'User-Agent': 'MoeSocial-App',
-          'Accept': 'application/vnd.github.v3+json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final dynamic decoded = jsonDecode(response.body);
-        if (decoded is! List || decoded.isEmpty) {
-          return UpdateFetchResult(status: UpdateFetchStatus.empty);
-        }
-
-        final Object? first = decoded.first;
-        if (first is! Map) {
-          return UpdateFetchResult(status: UpdateFetchStatus.error);
-        }
-        final Map<String, dynamic> data = Map<String, dynamic>.from(first);
-
-        final String tagName = data['tag_name'] as String? ?? '';
-        final String remoteVersion = tagName.replaceAll('v', '');
-        final String body = data['body'] as String? ?? '暂无更新日志';
-        final List<dynamic> assets =
-            data['assets'] as List<dynamic>? ?? const <dynamic>[];
-
-        String? downloadUrl;
-        String fileName = 'app-release.apk';
-        int? apkAssetSize;
-        for (final asset in assets) {
-          if (asset is! Map<String, dynamic>) continue;
-          final String name = asset['name'] as String? ?? '';
-          if (name.endsWith('.apk')) {
-            downloadUrl = asset['browser_download_url'] as String?;
-            fileName = name;
-            final rawSize = asset['size'];
-            if (rawSize is int) {
-              apkAssetSize = rawSize;
-            } else if (rawSize != null) {
-              apkAssetSize = int.tryParse(rawSize.toString());
-            }
-            break;
-          }
-        }
-
-        return UpdateFetchResult(
-          status: UpdateFetchStatus.ok,
-          info: UpdateReleaseInfo(
-            version: remoteVersion,
-            body: body,
-            downloadUrl: downloadUrl,
-            fileName: fileName,
-            expectedAssetBytes: apkAssetSize,
-          ),
-        );
+      final remote = await AppReleaseService.fetchLatest(platform: 'android');
+      if (remote == null) {
+        return UpdateFetchResult(status: UpdateFetchStatus.error);
       }
-
-      if (response.statusCode == 403) {
-        return UpdateFetchResult(
-          status: UpdateFetchStatus.rateLimited,
-          httpStatus: 403,
-        );
-      }
-      if (response.statusCode == 404) {
-        return UpdateFetchResult(
-          status: UpdateFetchStatus.notFound,
-          httpStatus: 404,
-        );
+      if (!remote.available ||
+          remote.apkUrl.isEmpty ||
+          remote.versionCode <= 0) {
+        return UpdateFetchResult(status: UpdateFetchStatus.empty);
       }
       return UpdateFetchResult(
-        status: UpdateFetchStatus.badStatus,
-        httpStatus: response.statusCode,
+        status: UpdateFetchStatus.ok,
+        info: UpdateReleaseInfo(
+          version: remote.versionName.isEmpty
+              ? remote.versionCode.toString()
+              : remote.versionName,
+          versionCode: remote.versionCode,
+          body: remote.changelog.isEmpty ? '暂无更新日志' : remote.changelog,
+          downloadUrl: remote.apkUrl,
+          fileName: _fileNameFromUrl(remote.apkUrl),
+          forceUpdate: remote.forceUpdate,
+        ),
       );
     } catch (e) {
       return UpdateFetchResult(status: UpdateFetchStatus.error, error: e);
@@ -328,6 +295,7 @@ class UpdateService {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+      final localCode = int.tryParse(packageInfo.buildNumber) ?? 0;
       final result = await fetchLatestRelease();
 
       switch (result.status) {
@@ -339,7 +307,12 @@ class UpdateService {
             }
             return;
           }
-          if (_hasNewVersion(currentVersion, info.version)) {
+          if (isRemoteNewerThanLocal(
+            localVersion: currentVersion,
+            localVersionCode: localCode,
+            remoteVersion: info.version,
+            remoteVersionCode: info.versionCode,
+          )) {
             if (context.mounted && info.downloadUrl != null) {
               presentUpdateDialog(context, info);
             }
@@ -361,7 +334,7 @@ class UpdateService {
           return;
         case UpdateFetchStatus.notFound:
           if (showNoUpdateToast && context.mounted) {
-            MoeToast.error(context, '仓库不存在或为私有仓库');
+            MoeToast.error(context, '未找到版本配置');
           }
           return;
         case UpdateFetchStatus.badStatus:
@@ -371,7 +344,7 @@ class UpdateService {
           return;
         case UpdateFetchStatus.error:
           if (showNoUpdateToast && context.mounted) {
-            MoeToast.error(context, '检查更新出错: ${result.error}');
+            MoeToast.error(context, '检查更新出错，请确认已连接服务器');
           }
           return;
       }
@@ -382,9 +355,19 @@ class UpdateService {
     }
   }
 
-  /// 远端版本是否高于本地（与 [checkUpdate] 比较逻辑一致）。
-  static bool isRemoteNewerThanLocal(
-      String localVersion, String remoteVersion) {
+  /// 远端版本是否高于本地：优先比 versionCode，缺省时回退版本名。
+  static bool isRemoteNewerThanLocal({
+    required String localVersion,
+    required int localVersionCode,
+    required String remoteVersion,
+    required int remoteVersionCode,
+  }) {
+    if (remoteVersionCode > 0 && localVersionCode > 0) {
+      return remoteVersionCode > localVersionCode;
+    }
+    if (remoteVersionCode > 0 && localVersionCode <= 0) {
+      return true;
+    }
     return _hasNewVersion(localVersion, remoteVersion);
   }
 
@@ -738,174 +721,228 @@ class UpdateService {
     final note = info.body;
     final fileName = info.fileName;
     final expectedAssetBytes = info.expectedAssetBytes;
+    final force = info.forceUpdate;
+    final useMirrors = shouldUseGithubMirrors(downloadUrl);
+    final codeHint =
+        info.versionCode > 0 ? '（构建号 ${info.versionCode}）' : '';
 
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.system_update,
-                color: Color(0xFF7F7FD5),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '发现新版本 v$version',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
+      barrierDismissible: !force,
+      builder: (dialogContext) => PopScope(
+        canPop: !force,
+        child: AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
             children: [
-              if (kDebugMode) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Text(
-                    '当前是调试版（debug 签名）。GitHub 上的 APK 多为正式签名，'
-                    '不能直接覆盖安装，需先卸载再装；与「是否下载完整」无关。',
-                    style: TextStyle(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: Colors.orange.shade900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: const Color(0xFF7F7FD5).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.article_outlined,
-                            size: 16, color: Colors.grey),
-                        SizedBox(width: 6),
-                        Text(
-                          '更新内容',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      note,
-                      style: const TextStyle(fontSize: 14, height: 1.5),
-                    ),
-                  ],
+                child: Icon(
+                  force ? Icons.security_update_warning : Icons.system_update,
+                  color: const Color(0xFF7F7FD5),
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child:
-                        Icon(Icons.speed, size: 14, color: Colors.green[600]),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'App 内下载会测速选线；也可使用浏览器由系统下载管理器拉取',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green[700],
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '选择下载方式',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
-                ),
-              ),
-              const SizedBox(height: 10),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _startDownload(
-                    context,
-                    downloadUrl,
-                    fileName,
-                    version,
-                    expectedAssetBytes: expectedAssetBytes,
-                  );
-                },
-                icon: const Icon(Icons.download_rounded, size: 20),
-                label: const Text('App 内下载'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF7F7FD5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await openApkUrlInBrowser(context, downloadUrl);
-                },
-                icon: const Icon(Icons.open_in_browser_rounded, size: 20),
-                label: const Text('浏览器下载'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF7F7FD5),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: const BorderSide(color: Color(0xFF7F7FD5)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  force ? '必须更新到 v$version' : '发现新版本 v$version',
+                  style: const TextStyle(fontSize: 18),
                 ),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              onRemindLater?.call();
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('稍后更新'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (force) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Text(
+                      '此版本为强制更新，需要更新后才能继续使用。$codeHint',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: Colors.red.shade900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (kDebugMode) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Text(
+                      '当前是调试版（debug 签名）。正式签名 APK 不能直接覆盖安装，'
+                      '需先卸载再装；与「是否下载完整」无关。',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: Colors.orange.shade900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.article_outlined,
+                              size: 16, color: Colors.grey),
+                          SizedBox(width: 6),
+                          Text(
+                            '更新内容',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        note,
+                        style: const TextStyle(fontSize: 14, height: 1.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child:
+                          Icon(Icons.speed, size: 14, color: Colors.green[600]),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        useMirrors
+                            ? 'App 内下载会测速选线；也可使用浏览器由系统下载管理器拉取'
+                            : '将直连下载地址；也可使用浏览器由系统下载管理器拉取',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[700],
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '选择下载方式',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  onPressed: () {
+                    // 先抓宿主页 context，再关弹窗，避免 async 后 context 失效导致「点了没反应」
+                    final hostContext = context;
+                    Navigator.pop(dialogContext);
+                    unawaited(
+                      _startDownload(
+                        hostContext,
+                        downloadUrl,
+                        fileName,
+                        version,
+                        expectedAssetBytes: expectedAssetBytes,
+                        allowBackground: !force,
+                        onCancelled: force
+                            ? () {
+                                if (hostContext.mounted) {
+                                  presentUpdateDialog(
+                                    hostContext,
+                                    info,
+                                    onRemindLater: onRemindLater,
+                                  );
+                                }
+                              }
+                            : null,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 20),
+                  label: const Text('App 内下载'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF7F7FD5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                if (!force) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(dialogContext);
+                      await openApkUrlInBrowser(context, downloadUrl);
+                    },
+                    icon: const Icon(Icons.open_in_browser_rounded, size: 20),
+                    label: const Text('浏览器下载'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF7F7FD5),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: Color(0xFF7F7FD5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ],
+          actions: [
+            if (!force)
+              TextButton(
+                onPressed: () {
+                  onRemindLater?.call();
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('稍后更新'),
+              )
+            else
+              Text(
+                '请更新后继续使用',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -917,38 +954,76 @@ class UpdateService {
     String fileName,
     String version, {
     int? expectedAssetBytes,
+    bool allowBackground = true,
+    VoidCallback? onCancelled,
   }) async {
     // 检查安装权限（Android）
     if (Platform.isAndroid) {
-      final status = await Permission.requestInstallPackages.request();
+      var status = await Permission.requestInstallPackages.status;
+      if (!status.isGranted) {
+        status = await Permission.requestInstallPackages.request();
+      }
       if (!status.isGranted) {
         if (context.mounted) {
-          MoeToast.error(context, '需要安装权限才能更新应用');
+          final goSettings = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('需要安装权限'),
+              content: const Text(
+                '更新需要允许「安装未知应用」。请在系统设置中开启后重试。',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('去设置'),
+                ),
+              ],
+            ),
+          );
+          if (goSettings == true) {
+            await openAppSettings();
+          } else if (context.mounted) {
+            MoeToast.error(context, '需要安装权限才能更新应用');
+          }
         }
+        onCancelled?.call();
         return;
       }
     }
 
-    // 显示下载进度对话框
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => _DownloadProgressDialog(
-          originalUrl: originalUrl,
-          fileName: fileName,
-          version: version,
-          expectedAssetBytes: expectedAssetBytes,
-        ),
-      );
+    if (!context.mounted) {
+      onCancelled?.call();
+      return;
     }
+
+    await showDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      builder: (dialogCtx) => _DownloadProgressDialog(
+        originalUrl: originalUrl,
+        fileName: fileName,
+        version: version,
+        expectedAssetBytes: expectedAssetBytes,
+        allowBackground: allowBackground,
+        onCancelled: onCancelled,
+      ),
+    );
   }
 
   /// 并行对各镜像做短测速（小流量），按吞吐量排序；全部失败时退回默认顺序。
+  /// 非 GitHub URL 直接返回空前缀（直连）。
   static Future<List<String>> rankMirrorPrefixes(
     String originalUrl, {
     CancelToken? userCancelToken,
   }) async {
+    if (!shouldUseGithubMirrors(originalUrl)) {
+      return const <String>[''];
+    }
     if (userCancelToken?.isCancelled == true) {
       return List<String>.from(_mirrorPrefixes);
     }
@@ -1196,14 +1271,55 @@ class UpdateService {
 
   /// 唤起系统 APK 安装界面。
   ///
+  /// Android 优先走原生 [FileProvider] + `ACTION_VIEW`（不依赖 open_filex 的包可见性）。
+  ///
   /// **常见失败原因（与 applicationId 无关时多半是签名）：**
-  /// - 本机是 `flutter run` 的 **debug 包**，Release APK 使用 **release.jks** 签名，二者不能覆盖安装，系统会提示与已安装应用冲突/签名不一致。
+  /// - 本机是 `flutter run` 的 **debug 包**，Release APK 使用 **release.jks** 签名，二者不能覆盖安装。
   /// - 新 APK 的 **versionCode**（pubspec 里 `+` 后数字）**≤** 已安装版本，也无法覆盖。
-  /// - 解决：卸载当前 App 后再装；或始终用同一套签名打升级包。
+  /// - 未开启「安装未知应用」时会跳转系统设置，需允许后再点「立即安装」。
   static Future<void> installApk(BuildContext context, String filePath) async {
+    if (Platform.isAndroid) {
+      try {
+        final ok = await _androidUpdateChannel.invokeMethod<bool>(
+          'installApk',
+          <String, dynamic>{'apkPath': filePath},
+        );
+        if (!context.mounted) return;
+        if (ok == true) {
+          Clipboard.setData(ClipboardData(text: filePath));
+          MoeToast.info(
+            context,
+            '已唤起系统安装。若提示冲突，请先卸载旧包或提升 versionCode',
+          );
+          return;
+        }
+        // false：原生侧已打开「安装未知应用」设置页
+        MoeToast.warning(
+          context,
+          '请允许「安装未知应用」后，回到 App 再点「立即安装」',
+        );
+        return;
+      } on PlatformException catch (e) {
+        debugPrint('原生 installApk 失败: ${e.code} ${e.message}');
+        if (context.mounted) {
+          final tip = switch (e.code) {
+            'ERROR' when (e.message ?? '').contains('apk_missing') =>
+              '未找到安装包文件，请重新下载',
+            'ERROR' when (e.message ?? '').contains('no_installer') =>
+              '系统找不到安装程序，请改用「浏览器下载」或「打开文件夹」',
+            _ => '唤起安装失败：${e.message ?? e.code}',
+          };
+          MoeToast.error(context, tip);
+        }
+        return;
+      } catch (e) {
+        debugPrint('原生 installApk 异常，回退 OpenFilex: $e');
+      }
+    }
+
     try {
       final result = await OpenFilex.open(filePath);
-      debugPrint('安装结果: ${result.type} - ${result.message}');
+      debugPrint('OpenFilex 安装结果: ${result.type} - ${result.message}');
       if (!context.mounted) return;
 
       if (result.type != ResultType.done) {
@@ -1238,6 +1354,72 @@ class UpdateService {
     _cancelToken?.cancel('用户取消下载');
     _cancelToken = null;
   }
+
+  static bool _backgroundDownloadRunning = false;
+
+  /// 软更新：关闭进度框后在后台继续下载；完成后 Toast 提示。
+  static Future<void> continueDownloadInBackground({
+    required String originalUrl,
+    required String fileName,
+    required String version,
+    int? expectedAssetBytes,
+  }) async {
+    if (_backgroundDownloadRunning) return;
+    _backgroundDownloadRunning = true;
+    final token = CancelToken();
+    _cancelToken = token;
+    try {
+      final savePath = await resolveApkSavePath(
+        versionLabel: version,
+        originalFileName: fileName,
+      );
+      final existing = File(savePath);
+      if (await existing.exists()) {
+        final ok =
+            await validateDownloadedApk(savePath, expectedAssetBytes);
+        if (ok) {
+          _toastBackgroundReady();
+          return;
+        }
+        try {
+          await existing.delete();
+        } catch (_) {}
+      }
+
+      final ranked = await rankMirrorPrefixes(
+        originalUrl,
+        userCancelToken: token,
+      );
+      if (token.isCancelled) return;
+
+      final result = await downloadWithMirror(
+        originalUrl,
+        savePath,
+        (_, __, ___) {},
+        token,
+        mirrorOrder: ranked,
+      );
+      if (result == null) return;
+      final ok = await validateDownloadedApk(result, expectedAssetBytes);
+      if (ok) {
+        _toastBackgroundReady();
+      }
+    } catch (e) {
+      debugPrint('后台下载失败: $e');
+    } finally {
+      _backgroundDownloadRunning = false;
+      if (identical(_cancelToken, token)) {
+        _cancelToken = null;
+      }
+    }
+  }
+
+  static void _toastBackgroundReady() {
+    final ctx = AuthService.navigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      MoeToast.success(ctx, '更新包已下载完成，可在「设置 → 关于」中检查更新并安装');
+    }
+  }
 }
 
 /// 下载进度对话框
@@ -1249,11 +1431,19 @@ class _DownloadProgressDialog extends StatefulWidget {
   /// GitHub Release 资源声明的大小（字节），用于与本地已存在文件比对。
   final int? expectedAssetBytes;
 
+  /// 软更新允许「后台继续」；强制更新不可。
+  final bool allowBackground;
+
+  /// 用户取消下载时回调（强制更新用于重新弹出更新框）。
+  final VoidCallback? onCancelled;
+
   const _DownloadProgressDialog({
     required this.originalUrl,
     required this.fileName,
     required this.version,
     this.expectedAssetBytes,
+    this.allowBackground = true,
+    this.onCancelled,
   });
 
   @override
@@ -1282,12 +1472,36 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
   DateTime _lastTime = DateTime.now();
 
   late CancelToken _cancelToken;
+  bool _handedOffToBackground = false;
 
   @override
   void initState() {
     super.initState();
     _cancelToken = CancelToken();
     _bootstrap();
+  }
+
+  Future<void> _continueInBackground() async {
+    if (_handedOffToBackground || !_isDownloading) return;
+    _handedOffToBackground = true;
+    _cancelToken.cancel('切换后台下载');
+    final originalUrl = widget.originalUrl;
+    final fileName = widget.fileName;
+    final version = widget.version;
+    final expected = widget.expectedAssetBytes;
+    if (mounted) {
+      Navigator.pop(context);
+    }
+    final rootCtx = AuthService.navigatorKey.currentContext;
+    if (rootCtx != null && rootCtx.mounted) {
+      MoeToast.info(rootCtx, '正在后台下载更新包…');
+    }
+    await UpdateService.continueDownloadInBackground(
+      originalUrl: originalUrl,
+      fileName: fileName,
+      version: version,
+      expectedAssetBytes: expected,
+    );
   }
 
   /// 若目标路径已有同版本 APK 且校验通过则直接展示「使用已下载」；否则删损坏包后下载。
@@ -1389,8 +1603,14 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
       final top = ranked.isEmpty
           ? ''
           : UpdateService.mirrorLabelForPrefix(ranked.first);
+      final useMirrors =
+          UpdateService.shouldUseGithubMirrors(widget.originalUrl);
       setState(() {
-        _status = top.isEmpty ? '开始下载…' : '测速完成，优先使用「$top」，开始下载…';
+        if (!useMirrors) {
+          _status = '开始直连下载…';
+        } else {
+          _status = top.isEmpty ? '开始下载…' : '测速完成，优先使用「$top」，开始下载…';
+        }
         _lastReceived = 0;
         _lastTime = DateTime.now();
         _speedText = '';
@@ -1681,19 +1901,29 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
         ),
       ),
       actions: [
-        if (_isDownloading)
+        if (_isDownloading) ...[
+          if (widget.allowBackground)
+            TextButton(
+              onPressed: () {
+                // 软更新：关掉进度框但继续下载；完成后用 Toast 提示去「关于」安装或再次检查。
+                unawaited(_continueInBackground());
+              },
+              child: const Text('后台继续'),
+            ),
           TextButton(
             onPressed: () {
               _cancelToken.cancel('用户取消');
               Navigator.pop(context);
+              widget.onCancelled?.call();
             },
             child: const Text('取消'),
-          )
-        else if (_downloadComplete) ...[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('稍后安装'),
           ),
+        ]         else if (_downloadComplete) ...[
+          if (widget.allowBackground)
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('稍后安装'),
+            ),
           TextButton(
             onPressed: () => _onRedownloadPressed(),
             child: const Text('重新下载'),
@@ -1723,7 +1953,10 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
           ),
         ] else
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onCancelled?.call();
+            },
             child: const Text('关闭'),
           ),
       ],

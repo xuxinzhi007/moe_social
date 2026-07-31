@@ -31,6 +31,9 @@ import '../../widgets/layout/adaptive_page_scaffold.dart';
 part 'tavern/agents_tab.part.dart';
 part 'tavern/providers_tab.part.dart';
 
+/// 酒馆大厅（退役向）：不进主导航；`showGameFeatures=false` 时正式产品不可达。
+/// 多角色陪伴二期勿以此为载体，见 `docs/dev/ai-companion-formal-decisions.md`。
+
 // 精简菜单：仅保留不易被快捷入口覆盖的操作
 enum _TavernMenuAction { importCard, lorebooks }
 

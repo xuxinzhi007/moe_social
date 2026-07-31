@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/api_client.dart' show ApiException;
+import '../../services/friend_request_sync.dart';
 import '../../services/user_service.dart';
 import '../../widgets/gift_selector.dart';
 import '../../services/presence_service.dart';
@@ -21,6 +22,7 @@ import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import '../discover/discover_match_tab.dart';
 import 'widgets/add_friend_bottom_sheet.dart';
+import 'widgets/friend_requests_panel.dart';
 import 'widgets/friends_logged_out_body.dart';
 
 // 好友分组
@@ -34,9 +36,17 @@ enum _FriendGroup {
 class FriendsPage extends StatefulWidget {
   final bool contactsOnly;
 
+  /// 嵌入好友 Tab 时隐藏「添加」（枢纽 AppBar 已有入口）。
+  final bool hideAddAction;
+
+  /// 枢纽递增后打开好友申请面板。
+  final ValueNotifier<int>? openRequestsTick;
+
   const FriendsPage({
     super.key,
     this.contactsOnly = false,
+    this.hideAddAction = false,
+    this.openRequestsTick,
   });
 
   @override
@@ -57,8 +67,8 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   String _searchKeyword = '';
   Map<String, bool> _onlineStatus = {};
   Timer? _onlineTimer;
-  Timer? _friendsHubPollTimer;
   bool _presenceListening = false;
+  int _lastSyncTick = -1;
   _FriendGroup _currentGroup = _FriendGroup.all;
   final Set<String> _favoriteFriends = {};
   final Map<String, DateTime> _recentInteractions = {};
@@ -76,11 +86,23 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _friendsHubPollTimer = Timer.periodic(const Duration(seconds: 22), (_) {
-      if (!mounted || AuthService.currentUser == null) return;
-      unawaited(_loadFriends(silent: true));
-    });
+    widget.openRequestsTick?.addListener(_onOpenRequestsTick);
+    FriendRequestSync.tick.addListener(_onFriendRequestSyncTick);
+    _lastSyncTick = FriendRequestSync.tick.value;
     _loadFriends();
+  }
+
+  void _onOpenRequestsTick() {
+    if (!mounted) return;
+    _showRequestsSheet();
+  }
+
+  void _onFriendRequestSyncTick() {
+    if (!mounted || AuthService.currentUser == null) return;
+    final t = FriendRequestSync.tick.value;
+    if (t == _lastSyncTick) return;
+    _lastSyncTick = t;
+    unawaited(_loadFriends(silent: true));
   }
 
   @override
@@ -92,8 +114,9 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    widget.openRequestsTick?.removeListener(_onOpenRequestsTick);
+    FriendRequestSync.tick.removeListener(_onFriendRequestSyncTick);
     WidgetsBinding.instance.removeObserver(this);
-    _friendsHubPollTimer?.cancel();
     _onlineTimer?.cancel();
     if (_presenceListening) {
       PresenceService.online.removeListener(_onPresenceUpdate);
@@ -106,111 +129,81 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   }
 
   void _showMatchSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final height = MediaQuery.sizeOf(context).height * 0.84;
-        return SafeArea(
-          top: false,
-          child: Container(
-            height: height,
-            decoration: const BoxDecoration(
-              color: MoeTokens.pageBackground,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              children: [
-                _buildSheetHandle(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          '在线匹配',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: MoeTokens.titleText,
-                          ),
+    unawaited(
+      MoeSheet.showDraggable<void>(
+        context,
+        initialChildSize: 0.86,
+        minChildSize: 0.5,
+        maxChildSize: 0.96,
+        backgroundColor: MoeTokens.pageBackground,
+        builder: (sheetContext, scrollController) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 8, 8),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        '遇见同好',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
                 ),
-                const Expanded(child: DiscoverMatchTab(compact: true)),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+              const Expanded(child: DiscoverMatchTab(compact: true)),
+            ],
+          );
+        },
+      ),
     );
   }
 
   void _showRequestsSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final height = MediaQuery.sizeOf(context).height * 0.76;
-        return SafeArea(
-          top: false,
-          child: Container(
-            height: height,
-            decoration: const BoxDecoration(
-              color: MoeTokens.pageBackground,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Column(
-              children: [
-                _buildSheetHandle(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '好友申请${_incomingRequests.isEmpty ? '' : ' (${_incomingRequests.length})'}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: MoeTokens.titleText,
-                          ),
+    unawaited(
+      MoeSheet.showDraggable<void>(
+        context,
+        initialChildSize: 0.78,
+        minChildSize: 0.45,
+        maxChildSize: 0.94,
+        backgroundColor: MoeTokens.pageBackground,
+        builder: (sheetContext, scrollController) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '好友申请${_incomingRequests.isEmpty ? '' : ' (${_incomingRequests.length})'}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: MoeTokens.titleText,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded),
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
                 ),
-                Expanded(child: _buildIncomingRequestsTab()),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSheetHandle() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 8),
-      child: Container(
-        width: 42,
-        height: 4,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(999),
-        ),
+              ),
+              Expanded(child: _buildIncomingRequestsTab()),
+            ],
+          );
+        },
       ),
     );
   }
@@ -225,10 +218,12 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     if (me == null || requestId.isEmpty) return;
     try {
       await UserService.acceptFriendRequest(me, requestId);
-      if (mounted) MoeToast.success(context, '已同意');
+      if (mounted) MoeToast.success(context, '已通过申请');
       await _loadFriends();
+      unawaited(FriendRequestSync.refreshIncomingCount());
     } catch (e) {
       if (mounted) MoeToast.error(context, _apiErr(e));
+      rethrow;
     }
   }
 
@@ -239,6 +234,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       await UserService.rejectFriendRequest(me, requestId);
       if (mounted) MoeToast.info(context, '已拒绝');
       await _loadFriends();
+      unawaited(FriendRequestSync.refreshIncomingCount());
     } catch (e) {
       if (mounted) MoeToast.error(context, _apiErr(e));
     }
@@ -327,6 +323,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
         _hasError = false;
         _loadError = null;
       });
+      FriendRequestSync.incomingCount.value = incoming.length;
 
       await _ensureOnlineStatus();
     } catch (e) {
@@ -481,216 +478,13 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     );
   }
 
-  Map<String, dynamic>? _applicantFromRequest(Map<String, dynamic> request) {
-    final from = request['from_user'];
-    if (from is Map) return Map<String, dynamic>.from(from);
-    final u = request['user'];
-    if (u is Map) return Map<String, dynamic>.from(u);
-    return null;
-  }
-
-  /// 过滤无法解析的申请行，避免 [SliverList] 中出现零尺寸子项触发渲染断言。
-  List<Map<String, dynamic>> get _renderableIncomingRequests {
-    return _incomingRequests.where((row) {
-      final map = _applicantFromRequest(row);
-      if (map == null || map.isEmpty) return false;
-      try {
-        User.fromJson(map);
-      } catch (_) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
-
   Widget _buildIncomingRequestsTab() {
-    final renderableRequests = _renderableIncomingRequests;
-    return RefreshIndicator(
+    return FriendRequestsPanel(
+      requests: _incomingRequests,
+      primaryColor: _moe.primary,
       onRefresh: _loadFriends,
-      color: _moe.primary,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-              child: Text(
-                '待你处理的好友申请',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          if (renderableRequests.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.mark_email_read_outlined,
-                      size: 56,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      '暂无申请',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '下拉可刷新',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) {
-                    final row = renderableRequests[i];
-                    final u = User.fromJson(_applicantFromRequest(row)!);
-                    final rid = row['id']?.toString() ?? '';
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final compact = constraints.maxWidth < 360;
-                          return Material(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: Colors.grey.shade200),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.05),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                child: Row(
-                                  children: [
-                                    NetworkAvatarImage(
-                                      imageUrl: u.avatar,
-                                      radius: 26,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            u.username,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 16,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          if (u.moeNo.isNotEmpty)
-                                            Text(
-                                              'Moe ${u.moeNo}',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600],
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    compact
-                                        ? Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              TextButton(
-                                                onPressed: rid.isEmpty
-                                                    ? null
-                                                    : () =>
-                                                        _rejectIncomingRequest(
-                                                            rid),
-                                                child: const Text('拒绝'),
-                                              ),
-                                              FilledButton(
-                                                onPressed: rid.isEmpty
-                                                    ? null
-                                                    : () =>
-                                                        _acceptIncomingRequest(
-                                                            rid),
-                                                style: FilledButton.styleFrom(
-                                                  backgroundColor: _moe.primary,
-                                                  visualDensity:
-                                                      VisualDensity.compact,
-                                                ),
-                                                child: const Text('同意'),
-                                              ),
-                                            ],
-                                          )
-                                        : Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              TextButton(
-                                                onPressed: rid.isEmpty
-                                                    ? null
-                                                    : () =>
-                                                        _rejectIncomingRequest(
-                                                            rid),
-                                                child: const Text('拒绝'),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              FilledButton(
-                                                onPressed: rid.isEmpty
-                                                    ? null
-                                                    : () =>
-                                                        _acceptIncomingRequest(
-                                                            rid),
-                                                style: FilledButton.styleFrom(
-                                                  backgroundColor: _moe.primary,
-                                                  visualDensity:
-                                                      VisualDensity.compact,
-                                                ),
-                                                child: const Text('同意'),
-                                              ),
-                                            ],
-                                          ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  childCount: renderableRequests.length,
-                ),
-              ),
-            ),
-        ],
-      ),
+      onAccept: _acceptIncomingRequest,
+      onReject: _rejectIncomingRequest,
     );
   }
 
@@ -885,8 +679,8 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
         const SizedBox(height: 14),
         _buildContactsPanelBlankState(
           icon: Icons.people_outline_rounded,
-          title: '还没有同好',
-          subtitle: '添加好友，或用在线匹配认识新朋友',
+          title: '通讯录还是空的',
+          subtitle: '添加好友，或点「遇见同好」认识新朋友，聊起来才有灵魂',
         ),
         if (myMoe.isNotEmpty || myEmail.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -976,25 +770,28 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
 
   Widget _buildContactsPanelActions() {
     final hasRequests = _incomingRequests.isNotEmpty;
+    final showAdd = !widget.hideAddAction;
     return Row(
       children: [
         Expanded(
           child: _compactActionChip(
             icon: Icons.favorite_rounded,
-            label: '匹配',
+            label: '遇见同好',
             color: const Color(0xFFFC6076),
             onTap: _showMatchSheet,
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _compactActionChip(
-            icon: Icons.person_add_rounded,
-            label: '添加',
-            color: _moe.primary,
-            onTap: _showAddFriendDialog,
+        if (showAdd) ...[
+          const SizedBox(width: 10),
+          Expanded(
+            child: _compactActionChip(
+              icon: Icons.person_add_rounded,
+              label: '添加',
+              color: _moe.primary,
+              onTap: _showAddFriendDialog,
+            ),
           ),
-        ),
+        ],
         const SizedBox(width: 10),
         Expanded(
           child: _compactActionChip(
@@ -1148,14 +945,15 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: () {
+            // 社交主路径：点行进私信
             _updateRecentInteraction(user.id);
             Navigator.pushNamed(
               context,
-              '/user-profile',
+              '/direct-chat',
               arguments: {
                 'userId': user.id,
-                'userName': user.username,
-                'userAvatar': user.avatar,
+                'username': user.username,
+                'avatar': user.avatar,
               },
             );
           },
@@ -1173,30 +971,44 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
             ),
             child: Row(
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    NetworkAvatarImage(
-                      imageUrl: user.avatar,
-                      radius: 23,
-                      placeholderIcon: Icons.person,
-                    ),
-                    Positioned(
-                      right: -1,
-                      bottom: -1,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: isOnline
-                              ? const Color(0xFF2EBD85)
-                              : Colors.grey.shade300,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pushNamed(
+                      context,
+                      '/user-profile',
+                      arguments: {
+                        'userId': user.id,
+                        'userName': user.username,
+                        'userAvatar': user.avatar,
+                      },
+                    );
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      NetworkAvatarImage(
+                        imageUrl: user.avatar,
+                        radius: 23,
+                        placeholderIcon: Icons.person,
+                      ),
+                      Positioned(
+                        right: -1,
+                        bottom: -1,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: isOnline
+                                ? const Color(0xFF2EBD85)
+                                : Colors.grey.shade300,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

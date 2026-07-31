@@ -10,6 +10,7 @@ import '../../models/user.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/direct_chat_local_reader.dart';
+import '../../services/direct_chat_sync_bus.dart';
 import '../../services/notification_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/chat_message_display.dart';
@@ -223,6 +224,55 @@ class ConversationsViewModel extends ChangeNotifier {
     final clearedAt = _clearMarkers[peerId];
     if (clearedAt == null) return true;
     return time.isAfter(clearedAt);
+  }
+
+  /// 从会话列表隐藏（写 clear marker，与私信页清空历史同键）。
+  Future<void> hideConversation(String peerId) async {
+    final trimmed = peerId.trim();
+    if (trimmed.isEmpty) return;
+    final uid = await AuthService.getUserId();
+    if (uid.isEmpty) return;
+
+    final now = DateTime.now();
+    final ids = [uid, trimmed]..sort();
+    final key = 'direct_chat_cleared_${ids.join('_')}';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, now.toIso8601String());
+
+    if (_disposed) return;
+    _clearMarkers = Map<String, DateTime>.from(_clearMarkers)..[trimmed] = now;
+    _serverConversations = _serverConversations
+        .where((c) => c.peerUserId.trim() != trimmed)
+        .toList();
+    _localPeers = Set<String>.from(_localPeers)..remove(trimmed);
+    _localThreadTails = Map<String, ({DateTime at, String rawPreview})>.from(
+      _localThreadTails,
+    )..remove(trimmed);
+    _serverThreadTails = Map<String, ({DateTime at, String rawPreview})>.from(
+      _serverThreadTails,
+    )..remove(trimmed);
+    DirectChatSyncBus.bump();
+    _notify();
+  }
+
+  /// 撤销 [hideConversation]（删除 clear marker 并刷新列表）。
+  Future<void> unhideConversation(String peerId) async {
+    final trimmed = peerId.trim();
+    if (trimmed.isEmpty) return;
+    final uid = await AuthService.getUserId();
+    if (uid.isEmpty) return;
+
+    final ids = [uid, trimmed]..sort();
+    final key = 'direct_chat_cleared_${ids.join('_')}';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+
+    if (_disposed) return;
+    final nextMarkers = Map<String, DateTime>.from(_clearMarkers)
+      ..remove(trimmed);
+    _clearMarkers = nextMarkers;
+    DirectChatSyncBus.bump();
+    await load();
   }
 
   Set<String> _collectPeerIdsForServerTail(String myId) {

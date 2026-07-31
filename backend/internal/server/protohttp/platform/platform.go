@@ -135,6 +135,17 @@ func (s *Server) GetAnnouncement(ctx context.Context, in *platformv1.GetAnnounce
 	return s.deps.AdminApp.GetPublishedAnnouncement(ctx, in)
 }
 
+// GetLatestAppRelease 客户端公开拉取最新 App 版本（无需登录）。
+func (s *Server) GetLatestAppRelease(ctx context.Context, in *platformv1.GetLatestAppReleaseReq) (*platformv1.GetLatestAppReleaseResp, error) {
+	if !s.hasDeps() {
+		return nil, errPlatformUnavailable
+	}
+	if s.deps.AdminApp == nil {
+		return nil, kerrors.ServiceUnavailable("ADMIN_UNAVAILABLE", "admin service unavailable")
+	}
+	return s.deps.AdminApp.GetLatestAppReleasePublic(ctx, in)
+}
+
 func (s *Server) ListUserContent(ctx context.Context, in *platformv1.ListUserContentReq) (*platformv1.ListUserContentResp, error) {
 	if !s.hasDeps() {
 		return nil, errPlatformUnavailable

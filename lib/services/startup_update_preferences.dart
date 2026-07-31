@@ -5,6 +5,7 @@ class StartupUpdatePreferences {
   static const _kAutoCheck = 'startup_update_auto_check';
   static const _kLastCheckMs = 'startup_update_last_check_ms';
   static const _kDismissedVersion = 'startup_update_dismissed_version';
+  static const _kDismissedVersionCode = 'startup_update_dismissed_version_code';
 
   static Future<bool> getAutoCheckOnLaunch() async {
     final p = await SharedPreferences.getInstance();
@@ -38,5 +39,16 @@ class StartupUpdatePreferences {
   static Future<void> setDismissedAutoPromptVersion(String version) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_kDismissedVersion, version);
+  }
+
+  /// 软更新「稍后」按 versionCode 记录（正式覆盖安装依据）。
+  static Future<int?> getDismissedAutoPromptVersionCode() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getInt(_kDismissedVersionCode);
+  }
+
+  static Future<void> setDismissedAutoPromptVersionCode(int versionCode) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setInt(_kDismissedVersionCode, versionCode);
   }
 }

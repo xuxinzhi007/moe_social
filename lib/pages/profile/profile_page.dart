@@ -414,21 +414,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       ]),
                     ),
                     const SizedBox(height: 20),
-                    // System（AI 伙伴入口仅底栏 Tab，对齐 §0.6）
+                    // 设置入口仅 AppBar 齿轮（单一入口）；此处只放账号危险操作
                     MoeReveal(
                       delay: const Duration(milliseconds: 140),
-                      child: _menuSection('设置', [
-                        _MenuItem(
-                            icon: Icons.settings_outlined,
-                            title: '通用设置',
-                            color: const Color(0xFF90A4AE),
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.pushNamed(context, '/settings')
-                                  .then((_) {
-                                if (mounted) _loadUserInfo();
-                              });
-                            }),
+                      child: _menuSection('账号', [
                         _MenuItem(
                             icon: Icons.logout_rounded,
                             title: '退出登录',

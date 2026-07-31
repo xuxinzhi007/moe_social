@@ -209,7 +209,7 @@ export function ReportsPage() {
                     />
                     {detailRow.reporter_user_id ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        <Link to={`/users/${detailRow.reporter_user_id}`}>打开用户详情</Link>
+                        <Link to="/biz/users">打开用户详情</Link>
                       </p>
                     ) : null}
                   </dd>
@@ -225,7 +225,7 @@ export function ReportsPage() {
                     />
                     {detailRow.post_author_id ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        <Link to={`/users/${detailRow.post_author_id}`}>打开用户详情</Link>
+                        <Link to="/biz/users">打开用户详情</Link>
                       </p>
                     ) : null}
                   </dd>
@@ -246,7 +246,7 @@ export function ReportsPage() {
               <button type="button" className="btn btn-ghost" onClick={() => setDetailRow(null)}>
                 关闭
               </button>
-              <Link to="/content/posts" className="btn btn-ghost">
+              <Link to="/biz/content/posts" className="btn btn-ghost">
                 动态审核
               </Link>
               <button

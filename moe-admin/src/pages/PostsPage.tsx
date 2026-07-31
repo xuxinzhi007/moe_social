@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { AdminTag } from '../components/AdminTag'
 import { IdCell } from '../components/IdCell'
+import { PostContentPreview } from '../components/PostContentPreview'
 import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { moderationTag } from '../lib/adminLabels'
@@ -68,6 +70,7 @@ export function PostsPage() {
       {
         key: 'author',
         header: '作者',
+        cellClassName: 'cell-nowrap',
         render: (row) => (
           <UserCell
             name={row.user_name}
@@ -76,51 +79,57 @@ export function PostsPage() {
           />
         ),
       },
-      { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
+      {
+        key: 'id',
+        header: 'ID',
+        cellClassName: 'cell-nowrap',
+        render: (row) => <IdCell id={row.id} />,
+      },
       {
         key: 'content',
         header: '内容',
+        cellClassName: 'cell-content',
         render: (row) => {
           const content = fieldStr(row as Record<string, unknown>, 'content')
-          return (
-            <span style={{ maxWidth: 320, display: 'inline-block' }}>
-              {content.slice(0, 80)}
-              {content.length > 80 ? '…' : ''}
-            </span>
-          )
+          return <PostContentPreview content={content} compact />
         },
       },
       {
         key: 'status',
         header: '状态',
+        cellClassName: 'cell-nowrap',
         render: (row) => <AdminTag spec={moderationTag(row.moderation_status)} />,
       },
       {
         key: 'stats',
-        header: '赞/评',
-        render: (row) => (
-          <>
-            <AdminTag label={`${fieldNum(row as Record<string, unknown>, 'likes')} 赞`} tone="neutral" />
-            <span className="muted" style={{ margin: '0 4px' }}>
-              /
+        header: '互动',
+        cellClassName: 'cell-nowrap',
+        render: (row) => {
+          const likes = fieldNum(row as Record<string, unknown>, 'likes')
+          const comments = fieldNum(row as Record<string, unknown>, 'comments')
+          return (
+            <span className="cell-stats" title={`${likes} 赞 · ${comments} 评`}>
+              <span>{likes} 赞</span>
+              <span className="sep">·</span>
+              <span>{comments} 评</span>
             </span>
-            <AdminTag label={`${fieldNum(row as Record<string, unknown>, 'comments')} 评`} tone="info" />
-          </>
-        ),
+          )
+        },
       },
       {
         key: 'time',
         header: '时间',
-        cellClassName: 'muted',
+        cellClassName: 'cell-muted cell-nowrap',
         render: (row) => formatDateTime(row.created_at),
       },
       {
         key: 'actions',
         header: '',
+        cellClassName: 'cell-actions',
         render: (row) => (
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm btn-danger"
             onClick={async () => {
               if (!confirm('确定删除该动态？')) return
               const res = await client.deletePost(row.id)
@@ -153,18 +162,20 @@ export function PostsPage() {
             placeholder: '搜索正文',
           }}
           filters={
-            <select
+            <AdminFilterPills
+              ariaLabel="审核状态"
               value={status}
-              onChange={(e) => {
-                setStatus(e.target.value)
+              onChange={(next) => {
+                setStatus(next)
                 setPage(1)
               }}
-            >
-              <option value="">全部状态</option>
-              <option value="ok">已通过</option>
-              <option value="pending">待审核</option>
-              <option value="rejected">已拒绝</option>
-            </select>
+              options={[
+                { value: '', label: '全部' },
+                { value: 'pending', label: '待审核' },
+                { value: 'ok', label: '已通过' },
+                { value: 'rejected', label: '已拒绝' },
+              ]}
+            />
           }
         />
       }

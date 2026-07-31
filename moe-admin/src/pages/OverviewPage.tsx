@@ -5,7 +5,7 @@ import { AdminTag } from '../components/AdminTag'
 import { deployJobStatusTag } from '../lib/adminLabels'
 import { UploadProgressBar } from '../components/UploadProgressBar'
 import { stripUploadProgressLines } from '../lib/uploadProgress'
-import { PageHead } from '../ui'
+import { AdminPanel, MonitorPageLayout } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 import { useOverviewData } from '../hooks/useOverviewData'
 
@@ -44,125 +44,121 @@ export function OverviewPage() {
   }, [activeJob, refreshCloud, refreshLocal])
 
   return (
-    <>
-      <PageHead
-        title="运维总览"
-        description={
-          <>
-            本机编 Linux 单二进制 <code>bin/moe-social</code> · 云 VPS <code>/root/gowork/backend</code> · APK 走 GitHub tag
-          </>
-        }
-        actions={
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={!bootstrapped || authOk !== true}
-            onClick={() => void overview.refreshAll()}
-          >
-            刷新总览
-          </button>
-        }
-      />
+    <MonitorPageLayout
+      title="运维总览"
+      description={
+        <>
+          本机编 Linux 单二进制 <code>bin/moe-social</code> · 云 VPS <code>/root/gowork/backend</code> · APK
+          走 GitHub tag
+        </>
+      }
+      metrics={[
+        { label: '本机', value: overview.localBadge.text, hint: '开发编包环境' },
+        { label: '云 VPS', value: overview.cloudBadge.text, hint: overview.cloudHostLabel },
+        {
+          label: '部署 Token',
+          value: authOk === true ? '已授权' : '未授权',
+          hint: authOk === true ? '可执行发布任务' : '请在设置中填写',
+        },
+        {
+          label: '进行中任务',
+          value: activeJob ? activeJob.type : '无',
+          hint: activeJob ? activeJob.status : '空闲',
+        },
+      ]}
+      headActions={
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={!bootstrapped || authOk !== true}
+          onClick={() => void overview.refreshAll()}
+        >
+          刷新总览
+        </button>
+      }
+    >
+      {!bootstrapped ? <p className="loading-hint">正在连接 Agent 并验证 Token…</p> : null}
 
-      {!bootstrapped ? (
-        <p className="loading-hint">正在连接 Agent 并验证 Token…</p>
-      ) : null}
-
-      <div className="env-grid">
-        <article className="env-card">
-          <div className="env-card-head">
-            <h3>
-              💻 本机 <span className="sub">开发 · 编 Linux 包</span>
-            </h3>
-            <span className={badgeClass(overview.localBadge.kind)}>
-              {overview.localBadge.text}
-            </span>
-          </div>
-          <div className="env-card-body">
-            <EnvKv rows={overview.localRows} />
-            <div className="env-actions btn-row">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => void overview.refreshLocal()}
-              >
-                刷新
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void runJob('backend_build_linux')}
-              >
-                编译 Linux
-              </button>
-              <BuildCacheActions compact />
+      <section className="overview-section" aria-label="环境状态">
+        <div className="env-grid">
+          <article className="env-card">
+            <div className="env-card-head">
+              <h3>
+                本机 <span className="sub">开发 · 编 Linux 包</span>
+              </h3>
+              <span className={badgeClass(overview.localBadge.kind)}>{overview.localBadge.text}</span>
             </div>
-          </div>
-        </article>
-
-        <article className="env-card env-card-cloud">
-          <div className="env-card-head">
-            <h3>
-              ☁ 云 VPS{' '}
-              <span className="sub">{overview.cloudHostLabel}</span>
-            </h3>
-            <span className={badgeClass(overview.cloudBadge.kind)}>
-              {overview.cloudBadge.text}
-            </span>
-          </div>
-          <div className="env-card-body">
-            <EnvKv rows={overview.cloudRows} />
-            <pre className="env-pre">{overview.cloudDockerOut}</pre>
-            <div className="env-actions btn-row">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => void overview.refreshCloud()}
-              >
-                刷新
-              </button>
-              <button
-                type="button"
-                className="btn btn-mint"
-                onClick={() => {
-                  setDeployTarget('cloud')
-                  void runJob('docker_ps')
-                }}
-              >
-                容器状态
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => void runJob('docker_up')}
-              >
-                Docker Up
-              </button>
+            <div className="env-card-body">
+              <EnvKv rows={overview.localRows} />
+              <div className="env-actions btn-row">
+                <button type="button" className="btn btn-ghost" onClick={() => void overview.refreshLocal()}>
+                  刷新
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void runJob('backend_build_linux')}
+                >
+                  编译 Linux
+                </button>
+                <BuildCacheActions compact />
+              </div>
             </div>
-          </div>
-        </article>
-      </div>
+          </article>
+
+          <article className="env-card env-card-cloud">
+            <div className="env-card-head">
+              <h3>
+                云 VPS <span className="sub">{overview.cloudHostLabel}</span>
+              </h3>
+              <span className={badgeClass(overview.cloudBadge.kind)}>{overview.cloudBadge.text}</span>
+            </div>
+            <div className="env-card-body">
+              <EnvKv rows={overview.cloudRows} />
+              <pre className="env-pre">{overview.cloudDockerOut}</pre>
+              <div className="env-actions btn-row">
+                <button type="button" className="btn btn-ghost" onClick={() => void overview.refreshCloud()}>
+                  刷新
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-mint"
+                  onClick={() => {
+                    setDeployTarget('cloud')
+                    void runJob('docker_ps')
+                  }}
+                >
+                  容器状态
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => void runJob('docker_up')}>
+                  Docker Up
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
 
       {activeJob ? (
-        <div className="live-job-dock">
-          <div className="live-job-head">
-            <strong>{activeJob.type}</strong>
-            <AdminTag spec={deployJobStatusTag(activeJob.status)} />
-            <span className="tag tag-pending">
-              {activeJob.target || deployTarget}
-            </span>
+        <section className="overview-section" aria-label="当前任务">
+          <div className="live-job-dock">
+            <div className="live-job-head">
+              <strong>{activeJob.type}</strong>
+              <AdminTag spec={deployJobStatusTag(activeJob.status)} />
+              <span className="tag tag-pending">{activeJob.target || deployTarget}</span>
+            </div>
+            <UploadProgressBar log={activeJob.log} />
+            <pre className="env-pre live-job-log">
+              {stripUploadProgressLines(activeJob.log) || '等待输出…'}
+            </pre>
           </div>
-          <UploadProgressBar log={activeJob.log} />
-          <pre className="env-pre live-job-log">
-            {stripUploadProgressLines(activeJob.log) || '等待输出…'}
-          </pre>
-        </div>
+        </section>
       ) : null}
 
-      <div className="overview-bottom">
-        <div className="panel">
-          <div className="panel-head">
-            <h3>发布流水线</h3>
+      <section className="overview-section overview-bottom" aria-label="发布与快捷操作">
+        <AdminPanel
+          title="发布流水线"
+          actions={
             <button
               type="button"
               className="btn btn-primary"
@@ -170,33 +166,29 @@ export function OverviewPage() {
             >
               一键发布
             </button>
-          </div>
-          <div className="panel-body">
-            <div className="pipeline compact">
-              <div className="pipe-step">
-                <span className="num">1</span> 本机编包
-              </div>
-              <span className="pipe-arrow">→</span>
-              <div className="pipe-step">
-                <span className="num">2</span> 上传 VPS
-              </div>
-              <span className="pipe-arrow">→</span>
-              <div className="pipe-step">
-                <span className="num">3</span> 云 Docker
-              </div>
-              <span className="pipe-arrow">→</span>
-              <div className="pipe-step">
-                <span className="num">4</span> GitHub APK
-              </div>
+          }
+        >
+          <div className="pipeline compact">
+            <div className="pipe-step">
+              <span className="num">1</span> 本机编包
+            </div>
+            <span className="pipe-arrow">→</span>
+            <div className="pipe-step">
+              <span className="num">2</span> 上传 VPS
+            </div>
+            <span className="pipe-arrow">→</span>
+            <div className="pipe-step">
+              <span className="num">3</span> 云 Docker
+            </div>
+            <span className="pipe-arrow">→</span>
+            <div className="pipe-step">
+              <span className="num">4</span> GitHub APK
             </div>
           </div>
-        </div>
+        </AdminPanel>
 
-        <div className="panel">
-          <div className="panel-head">
-            <h3>快捷操作</h3>
-          </div>
-          <div className="panel-body btn-row">
+        <AdminPanel title="快捷操作">
+          <div className="btn-row">
             <button
               type="button"
               className="btn btn-primary"
@@ -211,11 +203,7 @@ export function OverviewPage() {
             >
               ② 上传 VPS
             </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void runJob('docker_up')}
-            >
+            <button type="button" className="btn btn-primary" onClick={() => void runJob('docker_up')}>
               ③ 云 Docker Up
             </button>
             <button
@@ -229,22 +217,23 @@ export function OverviewPage() {
               ④ 云容器状态
             </button>
           </div>
-        </div>
-      </div>
+        </AdminPanel>
+      </section>
 
-      <div className="panel">
-        <div className="panel-head">
-          <h3>环境指标</h3>
-          <select
-            className="select-inline"
-            value={metricsTarget}
-            onChange={(e) => setMetricsTarget(e.target.value)}
-          >
-            <option value="local">本机</option>
-            <option value="cloud">云平台</option>
-          </select>
-        </div>
-        <div className="panel-body">
+      <section className="overview-section" aria-label="环境指标">
+        <AdminPanel
+          title="环境指标"
+          actions={
+            <select
+              className="select-inline"
+              value={metricsTarget}
+              onChange={(e) => setMetricsTarget(e.target.value)}
+            >
+              <option value="local">本机</option>
+              <option value="cloud">云平台</option>
+            </select>
+          }
+        >
           {overview.metricsLoading ? (
             <p className="loading-hint">加载指标…</p>
           ) : (
@@ -257,8 +246,8 @@ export function OverviewPage() {
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </>
+        </AdminPanel>
+      </section>
+    </MonitorPageLayout>
   )
 }

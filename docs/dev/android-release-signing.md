@@ -27,6 +27,11 @@ export KEY_PASSWORD='你的密码'
 | `KEYSTORE_BASE64` | `release.jks` 的 Base64 |
 | `KEYSTORE_PASSWORD` | 密钥库密码 |
 | `KEY_PASSWORD` | 密钥密码 |
+| `MOE_ADMIN_API_BASE` | （可选）CI 回写 App 版本的后端根 URL |
+| `MOE_ADMIN_USERNAME` | （可选）管理台登录用户 |
+| `MOE_ADMIN_PASSWORD` | （可选）管理台登录密码 |
+
+后三项用于发版后自动 `PUT /api/admin/app-release`，详见 [app-release-backend.md](./app-release-backend.md) §9。未配置则只发 GitHub Release，不回写后端。
 
 生成 `KEYSTORE_BASE64`（PowerShell）：
 

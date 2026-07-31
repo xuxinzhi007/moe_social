@@ -54,7 +54,7 @@ class LifeWorldCanvas extends StatefulWidget {
 }
 
 class _LifeWorldCanvasState extends State<LifeWorldCanvas>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   /// 位置插值动画控制器（500ms 平滑过渡）
   late final AnimationController _animController;
 

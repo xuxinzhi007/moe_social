@@ -315,7 +315,7 @@ export function MoeBrainPage() {
       description="单 Bot 标签策略、生成结果与记忆整理 · 先选对象再编辑规则"
       headActions={
         <div className="btn-row page-head-toolbar">
-          <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
+          <Link className="btn btn-ghost btn-sm" to="/ai/moe-bots">
             <AdminIcon name="bot" />
             Bot 配置
           </Link>
@@ -349,6 +349,16 @@ export function MoeBrainPage() {
           </button>
         </div>
       }
+      metrics={[
+        { label: '自传记录', value: loading ? '…' : episodes.length },
+        { label: '认可记录', value: loading ? '…' : approvedCount },
+        { label: '平均质量', value: loading ? '…' : avgEpisodeQuality },
+        {
+          label: '稳定度',
+          value: loading ? '…' : stabilityScore,
+          hint: stabilityDelta ? `${stabilityDelta > 0 ? '+' : ''}${stabilityDelta}` : undefined,
+        },
+      ]}
       error={error || undefined}
     >
       <InferenceStatusBar agentKey={activeKey} refreshKey={opsRefresh} />
@@ -356,7 +366,7 @@ export function MoeBrainPage() {
       <MemoryInfluencePanel meta={brain?.generation_meta} />
       <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
 
-      <section className="panel content-panel-table brain-object-panel">
+      <section className="panel content-panel-table brain-object-panel" aria-label="当前对象">
         <div className="content-toolbar">
           <div className="content-toolbar-head">
             <strong>当前对象</strong>

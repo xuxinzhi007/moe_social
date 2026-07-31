@@ -4,6 +4,7 @@ import { UserCell } from '../components/UserCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminFilterInput } from '../components/AdminFilterInput'
 import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
@@ -62,20 +63,30 @@ export function CommentsPage() {
       { key: 'id', header: 'ID', render: (row) => <IdCell id={row.id} /> },
       { key: 'post', header: '动态', render: (row) => <IdCell id={row.post_id} /> },
       { key: 'user', header: '用户', render: (row) => <UserCell name={row.user_name} /> },
-      { key: 'content', header: '内容', render: (row) => row.content },
+      {
+        key: 'content',
+        header: '内容',
+        cellClassName: 'cell-content',
+        render: (row) => (
+          <span className={`cell-clamp${row.content?.trim() ? '' : ' is-empty'}`} title={row.content}>
+            {row.content?.trim() || '—'}
+          </span>
+        ),
+      },
       {
         key: 'time',
         header: '时间',
-        cellClassName: 'muted',
+        cellClassName: 'cell-muted cell-nowrap',
         render: (row) => formatDateTime(row.created_at),
       },
       {
         key: 'actions',
         header: '',
+        cellClassName: 'cell-actions',
         render: (row) => (
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm btn-danger"
             onClick={async () => {
               if (!confirm('删除该评论？')) return
               const res = await client.deleteComment(row.id)
@@ -111,10 +122,12 @@ export function CommentsPage() {
             placeholder: '评论内容',
           }}
           filters={
-            <input
-              placeholder="动态 ID"
+            <AdminFilterInput
+              label="动态"
               value={postId}
-              onChange={(e) => setPostId(e.target.value)}
+              onChange={setPostId}
+              placeholder="动态 ID"
+              ariaLabel="按动态 ID 筛选"
             />
           }
         />

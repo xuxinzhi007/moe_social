@@ -21,6 +21,7 @@
 | 推理 + 记忆 | `docs/dev/llm-inference-and-memory-vision.md` |
 | 用户记忆 | `docs/dev/用户记忆系统-OpenClaw式演进设计.md` |
 | 产品定位 | `docs/product/product-positioning.md` |
+| AI 陪伴正式化决策 | `docs/dev/ai-companion-formal-decisions.md` |
 | Code Review | `code_review.md` |
 
 ## 交付

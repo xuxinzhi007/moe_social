@@ -168,6 +168,20 @@ func (s *store) DeleteAnnouncement(ctx context.Context, id uint64) error {
 	return s.db.WithContext(ctx).Delete(&model.AdminAnnouncement{}, id).Error
 }
 
+func (s *store) GetAppReleaseByPlatform(ctx context.Context, platform string) (model.AppRelease, error) {
+	var row model.AppRelease
+	err := s.db.WithContext(ctx).Where("platform = ?", platform).First(&row).Error
+	return row, err
+}
+
+func (s *store) CreateAppRelease(ctx context.Context, row *model.AppRelease) error {
+	return s.db.WithContext(ctx).Create(row).Error
+}
+
+func (s *store) SaveAppRelease(ctx context.Context, row *model.AppRelease) error {
+	return s.db.WithContext(ctx).Save(row).Error
+}
+
 func (s *store) CountModel(ctx context.Context, model any) (int64, error) {
 	var n int64
 	err := s.db.WithContext(ctx).Model(model).Count(&n).Error

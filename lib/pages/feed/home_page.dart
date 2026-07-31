@@ -21,7 +21,6 @@ import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
-import '../../widgets/ai_bot_badge.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
 import 'create_post_page.dart';
@@ -450,159 +449,77 @@ class _HomePageState extends State<HomePage>
     if (snapshot == null) return const SizedBox.shrink();
     final profile = snapshot.profile;
     final state = snapshot.state;
-    final identity = _feed.communityIdentity;
-    final agentKey = identity != null && identity.authorBotAgentKey.isNotEmpty
-        ? identity.authorBotAgentKey
-        : identity?.agentId;
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
     final avatar =
         profile.emoji.trim().isNotEmpty ? profile.emoji.trim() : '🐾';
-    final greeting =
-        state.greeting.trim().isNotEmpty ? state.greeting.trim() : '今天也在社区里活动。';
+    final greeting = state.greeting.trim().isNotEmpty
+        ? state.greeting.trim()
+        : (state.moodThought.trim().isNotEmpty
+            ? state.moodThought.trim()
+            : '想你了，去看看 TA 吧');
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: MoeTokens.surface0,
-                    borderRadius:
-                        BorderRadius.circular(MoeTokens.radiusIconBg),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    avatar,
-                    style: const TextStyle(fontSize: 20),
-                  ),
+      child: MoePressable(
+        onTap: () => context.read<MainNavController>().requestTab(2),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border:
+                Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: MoeTokens.surface0,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: MoeTokens.titleText,
-                              ),
-                            ),
-                          ),
-                          AiBotBadge(
-                            compact: true,
-                            agentKey: agentKey,
-                          ),
-                        ],
+                alignment: Alignment.center,
+                child: Text(avatar, style: const TextStyle(fontSize: 20)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: MoeTokens.titleText,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        greeting,
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.25,
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: [
-                  _buildCompanionChip(
-                    icon: Icons.chat_bubble_rounded,
-                    label: '聊天',
-                    onTap: () => Navigator.pushNamed(context, '/ai-chat'),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildCompanionChip(
-                    icon: Icons.auto_awesome_rounded,
-                    label: 'AI 主页',
-                    onTap: () => context.read<MainNavController>().requestTab(2),
-                  ),
-                  if (identity?.isValid == true) ...[
-                    const SizedBox(width: 8),
-                    _buildCompanionChip(
-                      icon: Icons.edit_note_rounded,
-                      label: '发动态',
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/create-post',
-                        arguments: {'communityIdentity': identity},
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      greeting,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.25,
+                        color: Colors.grey.shade700,
                       ),
                     ),
                   ],
-                  const SizedBox(width: 8),
-                  _buildCompanionChip(
-                    icon: Icons.groups_rounded,
-                    label: '社区',
-                    onTap: () => Navigator.pushNamed(context, '/community'),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompanionChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return MoePressable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: MoeTokens.surface0,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 15, color: MoeTokens.primary),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: MoeTokens.titleText,
-              ),
-            ),
-          ],
+              Icon(Icons.chevron_right_rounded,
+                  color: Colors.grey.shade400, size: 22),
+            ],
+          ),
         ),
       ),
     );

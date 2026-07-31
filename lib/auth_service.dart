@@ -9,6 +9,7 @@ import 'services/api_response.dart';
 import 'services/behavior_analytics_service.dart';
 import 'services/chat_push_service.dart';
 import 'services/daily_growth_service.dart';
+import 'services/friend_request_sync.dart';
 import 'services/presence_service.dart';
 import 'widgets/moe_toast.dart';
 
@@ -275,6 +276,7 @@ class AuthService {
     // Stop websocket-based services to avoid reconnect loops.
     PresenceService.stop();
     ChatPushService.stop();
+    FriendRequestSync.clear();
 
     // 跳转到登录页
     navigatorKey.currentState

@@ -165,10 +165,10 @@ git push origin :refs/tags/v1.0.3
 ### 产物与 App 内更新
 
 - APK：[Releases](https://github.com/xuxinzhi007/moe_social/releases)（`app-release.apk`）
-- 检测：对比本地版本与 GitHub API 最新 Tag；**设置 → 常规 → 软件版本** 可手动检查
-- 支持镜像加速下载、进度显示；配置 Release 签名后可覆盖安装
+- 检测：客户端读后端 `GET /api/public/app-release/latest`（CI 发版后自动回写，见 [docs/dev/app-release-backend.md](docs/dev/app-release-backend.md)）
+- **设置 → 常规 → 软件版本** 可手动检查；支持镜像加速下载、进度显示
 
-Release 签名完整步骤：[docs/dev/android-release-signing.md](docs/dev/android-release-signing.md)
+Release 签名与 CI Secrets：[docs/dev/android-release-signing.md](docs/dev/android-release-signing.md)
 
 ```bash
 # 简要：android/app/release.jks + 环境变量 KEYSTORE_PASSWORD、KEY_PASSWORD

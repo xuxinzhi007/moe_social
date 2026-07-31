@@ -247,7 +247,7 @@ export function MoeBotFlowPage() {
       metrics={metrics}
       headActions={
         <div className="btn-row page-head-toolbar">
-          <Link className="btn btn-ghost btn-sm" to={`/app/moe-brain?agent=${encodeURIComponent(agentKey)}`}>
+          <Link className="btn btn-ghost btn-sm" to={`/ai/moe-brain?agent=${encodeURIComponent(agentKey)}`}>
             <AdminIcon name="bot" />
             AI 大脑
           </Link>

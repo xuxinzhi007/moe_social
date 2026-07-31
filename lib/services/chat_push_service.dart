@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
+import 'friend_request_sync.dart';
 import 'notification_service.dart';
 import 'ws_channel_connector.dart';
 import '../auth_service.dart';
@@ -194,6 +195,8 @@ class ChatPushService {
       final ch = connectMoeWebSocket(wsUri, headers: headers);
       _channel = ch;
       connectionLive.value = true;
+      // 重连后补一次角标，避免离线期间漏掉的 friend_request 推送
+      unawaited(FriendRequestSync.refreshIncomingCount());
       _heartbeatTimer?.cancel();
       _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
         ping();
@@ -269,6 +272,15 @@ class ChatPushService {
           NotificationService.onRealtimeRefresh?.call();
         }
       }
+      return;
+    }
+    if (msgType == 'friend_request') {
+      final inner = map['data'];
+      Map<String, dynamic>? data;
+      if (inner is Map) {
+        data = Map<String, dynamic>.from(inner);
+      }
+      FriendRequestSync.onRealtimeEvent(data);
       return;
     }
     if (msgType == 'gift_received') {

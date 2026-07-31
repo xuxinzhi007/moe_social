@@ -4,6 +4,8 @@ import { IdCell } from '../components/IdCell'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { formatDateTime } from '../lib/format'
 import { DeployApiError } from '../api/deployClient'
+import { AdminFilterInput } from '../components/AdminFilterInput'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { AdminPanel, AdminPagination, AdminTable, AdminToolbar, TabbedPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
@@ -269,57 +271,72 @@ export function AiChatLogsPage() {
 
       <AdminPanel>
         <AdminToolbar
+          search={
+            tab === 'messages'
+              ? {
+                  value: filters.keyword,
+                  onChange: (v) => setFilters((f) => ({ ...f, keyword: v })),
+                  onSubmit: applyFilters,
+                  placeholder: '内容关键词',
+                  submitLabel: '筛选',
+                }
+              : {
+                  value: filters.userId,
+                  onChange: (v) => setFilters((f) => ({ ...f, userId: v })),
+                  onSubmit: applyFilters,
+                  placeholder: '用户 ID',
+                  submitLabel: '筛选',
+                }
+          }
           filters={
             <div className="admin-filter-grid">
-              <label className="admin-filter-field">
-                <span>用户 ID</span>
-                <input
-                  value={filters.userId}
-                  onChange={(e) => setFilters((f) => ({ ...f, userId: e.target.value }))}
-                  placeholder="可选"
-                />
-              </label>
-              <label className="admin-filter-field">
-                <span>Session ID</span>
-                <input
-                  value={filters.sessionId}
-                  onChange={(e) => setFilters((f) => ({ ...f, sessionId: e.target.value }))}
-                  placeholder="可选"
-                />
-              </label>
               {tab === 'messages' ? (
                 <>
-                  <label className="admin-filter-field">
-                    <span>角色</span>
-                    <select value={filters.role} onChange={(e) => setFilters((f) => ({ ...f, role: e.target.value }))}>
-                      <option value="">全部</option>
-                      <option value="user">user</option>
-                      <option value="assistant">assistant</option>
-                      <option value="system">system</option>
-                    </select>
-                  </label>
-                  <label className="admin-filter-field">
-                    <span>关键词</span>
-                    <input
-                      value={filters.keyword}
-                      onChange={(e) => setFilters((f) => ({ ...f, keyword: e.target.value }))}
-                      placeholder="内容包含"
-                    />
-                  </label>
+                  <AdminFilterInput
+                    label="用户"
+                    value={filters.userId}
+                    onChange={(v) => setFilters((f) => ({ ...f, userId: v }))}
+                    placeholder="用户 ID"
+                  />
+                  <AdminFilterInput
+                    label="Session"
+                    value={filters.sessionId}
+                    onChange={(v) => setFilters((f) => ({ ...f, sessionId: v }))}
+                    placeholder="可选"
+                  />
+                  <AdminFilterPills
+                    ariaLabel="消息角色"
+                    value={filters.role}
+                    onChange={(v) => setFilters((f) => ({ ...f, role: v }))}
+                    options={[
+                      { value: '', label: '全部' },
+                      { value: 'user', label: 'user' },
+                      { value: 'assistant', label: 'assistant' },
+                      { value: 'system', label: 'system' },
+                    ]}
+                  />
                 </>
-              ) : null}
-              <label className="admin-filter-field">
-                <span>起始日期</span>
-                <input type="date" value={filters.from} onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))} />
-              </label>
-              <label className="admin-filter-field">
-                <span>结束日期</span>
-                <input type="date" value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} />
-              </label>
+              ) : (
+                <AdminFilterInput
+                  label="Session"
+                  value={filters.sessionId}
+                  onChange={(v) => setFilters((f) => ({ ...f, sessionId: v }))}
+                  placeholder="可选"
+                />
+              )}
+              <AdminFilterInput
+                label="从"
+                type="date"
+                value={filters.from}
+                onChange={(v) => setFilters((f) => ({ ...f, from: v }))}
+              />
+              <AdminFilterInput
+                label="到"
+                type="date"
+                value={filters.to}
+                onChange={(v) => setFilters((f) => ({ ...f, to: v }))}
+              />
               <div className="admin-filter-actions">
-                <button type="button" className="btn btn-primary btn-sm" onClick={applyFilters}>
-                  筛选
-                </button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={resetFilters}>
                   重置
                 </button>

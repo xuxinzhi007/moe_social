@@ -41,6 +41,10 @@ type AdminStore interface {
 	SaveAnnouncement(ctx context.Context, row *model.AdminAnnouncement) error
 	DeleteAnnouncement(ctx context.Context, id uint64) error
 
+	GetAppReleaseByPlatform(ctx context.Context, platform string) (model.AppRelease, error)
+	CreateAppRelease(ctx context.Context, row *model.AppRelease) error
+	SaveAppRelease(ctx context.Context, row *model.AppRelease) error
+
 	ListAuditLogs(ctx context.Context, action, resource string, adminID uint64, offset, limit int) ([]model.AdminAuditLog, int64, error)
 
 	CountModel(ctx context.Context, model any) (int64, error)

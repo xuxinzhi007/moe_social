@@ -22,7 +22,7 @@ export function MemoryInfluencePanel({ meta }: Props) {
           <h3>记忆如何参与生成</h3>
           <p className="muted">{meta.note}</p>
         </div>
-        <Link className="btn btn-ghost btn-sm" to="/app/moe-tools?tab=tools">
+        <Link className="btn btn-ghost btn-sm" to="/ai/moe-tools?tab=tools">
           查看全部 8 个 Moe 工具 →
         </Link>
       </header>

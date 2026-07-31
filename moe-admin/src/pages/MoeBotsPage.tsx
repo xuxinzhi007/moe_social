@@ -281,7 +281,7 @@ export function MoeBotsPage() {
           <div className="btn-row">
             <Link
               className="btn btn-ghost btn-sm"
-              to={`/app/moe-bots/${encodeURIComponent(row.agent_key)}/brain`}
+              to={`/ai/moe-bots/${encodeURIComponent(row.agent_key)}/brain`}
             >
               AI 大脑
             </Link>

@@ -89,6 +89,42 @@ message AdminAnnouncementItem {
   string updated_at = 8;
 }
 
+// AdminAppRelease 管理台 App 版本配置（每平台一条）。
+message AdminAppRelease {
+  string platform = 1;
+  string version_name = 2;
+  int64 version_code = 3;
+  string apk_url = 4;
+  string changelog = 5;
+  bool force_update = 6;
+  bool enabled = 7;
+  string updated_at = 8;
+  string updated_by = 9;
+}
+
+message AdminGetAppReleaseReq {
+  string platform = 1;
+}
+
+message AdminGetAppReleaseResp {
+  AdminAppRelease release = 1;
+  bool configured = 2;
+}
+
+message AdminUpsertAppReleaseReq {
+  string platform = 1;
+  string version_name = 2;
+  int64 version_code = 3;
+  string apk_url = 4;
+  string changelog = 5;
+  bool force_update = 6;
+  bool enabled = 7;
+}
+
+message AdminUpsertAppReleaseResp {
+  AdminAppRelease release = 1;
+}
+
 message AdminAuditLogItem {
   string id = 1;
   string admin_id = 2;
@@ -1928,6 +1964,12 @@ service AdminApp {
   }
   rpc AdminRuntimeOverview(AdminGetRuntimeOverviewReq) returns (AdminGetRuntimeOverviewResp) {
     option (google.api.http) = { get: "/api/admin/runtime/overview" };
+  }
+  rpc AdminGetAppRelease(AdminGetAppReleaseReq) returns (AdminGetAppReleaseResp) {
+    option (google.api.http) = { get: "/api/admin/app-release" };
+  }
+  rpc AdminUpsertAppRelease(AdminUpsertAppReleaseReq) returns (AdminUpsertAppReleaseResp) {
+    option (google.api.http) = { put: "/api/admin/app-release" body: "*" };
   }
 }
 

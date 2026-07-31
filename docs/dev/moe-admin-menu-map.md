@@ -1,7 +1,9 @@
 # Moe Admin 菜单与 App 业务域对照
 
-> 侧栏配置：`moe-admin/src/config/menu.ts`  
-> 占位说明：`moe-admin/src/config/placeholders.ts`
+> **现行 SSOT**：`moe-admin/src/config/workspaceNav.ts`（工作区 `biz` / `ai` / `infra`）  
+> 方案：`docs/dev/moe-admin-workspaces.md`  
+> 占位说明：`moe-admin/src/config/placeholders.ts`  
+> 下文表格为历史规划，路径以 `workspaceNav.ts` 为准。
 
 ## 设计原则
 

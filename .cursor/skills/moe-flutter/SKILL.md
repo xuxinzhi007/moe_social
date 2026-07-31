@@ -25,6 +25,8 @@ description: >-
 - 视觉 gates 全文 → [references/slop-test.md](references/slop-test.md)
 - 布局模式 → [references/layout-patterns.md](references/layout-patterns.md)
 - 反模式 → [references/anti-patterns.md](references/anti-patterns.md)
+- **Life / 小世界** → 必须叠加 [digital-life](../digital-life/SKILL.md)（勿只读本 skill）
+- 动画 / Ticker 踩坑 → 见下方 §1.1（`flutter analyze` **抓不到**）
 
 改动幅度：始终叠加 [implementation-guardrails](../implementation-guardrails/SKILL.md)。
 
@@ -105,6 +107,20 @@ Audit 触及导航/菜单时：重复入口记 **R1 Fail**（见下节）。
 8. **不整仓换栈** — 保持 Provider + `app_routes`。
 9. **密钥与环境** — 第三方 API key 不得硬编码进仓；现阶段用 `AppConfig` 安全存储 / 设置页配置。基址用 `lib/utils/config.dart` 的 `isProduction` 切换，**上线前再切生产**（勿提前强制 `kReleaseMode`）。
 
+### 1.1 动画 Ticker（运行时硬崩 · 必检）
+
+`flutter analyze` **不会**报这类错；进页立刻红屏。
+
+| 规则 | 说明 |
+|------|------|
+| 1 个 `AnimationController` | 可用 `SingleTickerProviderStateMixin` |
+| ≥2 个 `AnimationController`（或会多次 `createTicker`） | **必须** `TickerProviderStateMixin` |
+| 复用旧组件 | 接进主路径前：数该类 `AnimationController(` 个数 vs mixin |
+
+**案例（2026-07-31）：** `LifeWorldCanvas` 有 `_animController` + `_ambientController`，却写了 `SingleTickerProviderStateMixin` → `_LifeWorldCanvasState is a SingleTickerProviderStateMixin but multiple tickers were created`。修复：改 `TickerProviderStateMixin`。
+
+接地图 / Canvas / 粒子等动画进正式路径时：热重载进目标页做一次冒烟，勿只跑 analyze。
+
 ### 实现检查清单
 
 ```text
@@ -114,7 +130,9 @@ Audit 触及导航/菜单时：重复入口记 **R1 Fail**（见下节）。
 - [ ] 新逻辑进 ViewModel（或扩展现有）
 - [ ] 无 page/widget HTTP 泄漏；无新密钥进仓
 - [ ] Token + 三态；失败可见（禁 silent catch 主路径）
+- [ ] 若 State 含 AnimationController：个数=1→Single；≥2→TickerProviderStateMixin（§1.1）
 - [ ] flutter analyze --no-fatal-infos（touched，无 error）
+- [ ] 触及动画/Canvas/地图：目标页冒烟一次（analyze 不够）
 ```
 
 ### 栈锁定
@@ -254,6 +272,7 @@ Top fixes:
 - [ ] Token + 三态（触及 UI 时）
 - [ ] 状态在 VM/Provider
 - [ ] `flutter analyze --no-fatal-infos` 无 error
+- [ ] 触及多 AnimationController / Canvas：§1.1 已核对 + 目标页冒烟
 - [ ] 若用户要了 audit：已出报告
 
 ## 不做

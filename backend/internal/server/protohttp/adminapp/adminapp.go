@@ -557,3 +557,46 @@ func normalizeRewardID(in *adminv1.AdminUpdateCheckInRewardReq) {
 		in.Id = in.GetRewardId()
 	}
 }
+
+// AdminGetAppRelease 管理台读取 App 版本配置。
+func (s *Server) AdminGetAppRelease(ctx context.Context, in *adminv1.AdminGetAppReleaseReq) (*adminv1.AdminGetAppReleaseResp, error) {
+	if _, err := requireAdminContext(ctx); err != nil {
+		return nil, err
+	}
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.GetAppRelease(ctx, in)
+}
+
+// AdminUpsertAppRelease 管理台保存 App 版本配置。
+func (s *Server) AdminUpsertAppRelease(ctx context.Context, in *adminv1.AdminUpsertAppReleaseReq) (*adminv1.AdminUpsertAppReleaseResp, error) {
+	if _, err := requireAdminContext(ctx); err != nil {
+		return nil, err
+	}
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	return app.UpsertAppRelease(ctx, in, adminIDFromContext(ctx))
+}
+
+func adminIDFromContext(ctx context.Context) uint {
+	v := ctx.Value("admin_id")
+	switch id := v.(type) {
+	case uint:
+		return id
+	case uint64:
+		return uint(id)
+	case int:
+		if id > 0 {
+			return uint(id)
+		}
+	case int64:
+		if id > 0 {
+			return uint(id)
+		}
+	}
+	return 0
+}

@@ -180,7 +180,7 @@ export function MoeToolsPage() {
       envNote={`当前数据环境：${apiTargetLabel} · 工具执行经 /api/moe/tools/execute 埋点`}
       headActions={
         <div className="btn-row">
-          <Link className="btn btn-ghost btn-sm" to="/app/moe-bots">
+          <Link className="btn btn-ghost btn-sm" to="/ai/moe-bots">
             社区 Bot
           </Link>
           <button type="button" className="btn btn-ghost" disabled={loading} onClick={() => void loadCore()}>

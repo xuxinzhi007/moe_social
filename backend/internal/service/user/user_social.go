@@ -84,6 +84,7 @@ func (s *AppService) SendFriendRequest(ctx context.Context, in *userv1.SendFrien
 	if err != nil {
 		return nil, err
 	}
+	pushIncomingFriendRequest(view)
 	return userbiz.SendFriendRequestRespV1(view), nil
 }
 
@@ -119,9 +120,11 @@ func (s *AppService) AcceptFriendRequest(ctx context.Context, in *userv1.AcceptF
 	if err != nil {
 		return nil, err
 	}
-	if err := userbiz.AcceptFriendRequest(ctx, s.store, me, in.GetRequestId()); err != nil {
+	fr, err := userbiz.AcceptFriendRequest(ctx, s.store, me, in.GetRequestId())
+	if err != nil {
 		return nil, err
 	}
+	pushFriendRequestResolved(fr, friendRequestEventAccepted)
 	return &userv1.AcceptFriendRequestResp{Ok: true}, nil
 }
 
@@ -131,9 +134,11 @@ func (s *AppService) RejectFriendRequest(ctx context.Context, in *userv1.RejectF
 	if err != nil {
 		return nil, err
 	}
-	if err := userbiz.RejectFriendRequest(ctx, s.store, me, in.GetRequestId()); err != nil {
+	fr, err := userbiz.RejectFriendRequest(ctx, s.store, me, in.GetRequestId())
+	if err != nil {
 		return nil, err
 	}
+	pushFriendRequestResolved(fr, friendRequestEventRejected)
 	return &userv1.RejectFriendRequestResp{Ok: true}, nil
 }
 

@@ -97,7 +97,7 @@
 2. `lib/pages/ai/agent_list_page.dart`
 3. `lib/pages/ai/chat_page.dart`
 4. `lib/pages/ai/content_generation_page.dart`
-5. `lib/pages/ai/game_hub_page.dart`
+5. `lib/pages/ai/companion_hub_page.dart`
 6. `lib/pages/ai/game_play_page.dart`
 7. `lib/pages/autoglm/autoglm_task_page.dart`
 8. `lib/pages/chat/direct_chat_page.dart`
@@ -176,7 +176,7 @@
 1. `lib/pages/ai/agent_editor_page.dart`
 2. `lib/pages/ai/agent_list_page.dart`
 3. `lib/pages/ai/content_generation_page.dart`
-4. `lib/pages/ai/game_hub_page.dart`
+4. `lib/pages/ai/companion_hub_page.dart`
 5. `lib/pages/profile/user_profile_page.dart`
 6. `lib/pages/settings/modules/account_security_module.dart`
 7. `lib/pages/settings/modules/device_storage_module.dart`
@@ -243,7 +243,7 @@
 建议文件：
 
 1. `lib/pages/ai/content_generation_page.dart`
-2. `lib/pages/ai/game_hub_page.dart`
+2. `lib/pages/ai/companion_hub_page.dart`
 3. `lib/pages/profile/user_profile_page.dart`
 4. `lib/pages/settings/modules/account_security_module.dart`
 5. `lib/pages/settings/modules/device_storage_module.dart`

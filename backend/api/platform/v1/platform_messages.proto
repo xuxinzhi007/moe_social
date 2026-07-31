@@ -201,6 +201,21 @@ message AnnouncementItem {
   string published_at = 4;
 }
 
+// App 公开版本检查（无需登录）。
+message GetLatestAppReleaseReq {
+  string platform = 1;
+}
+
+message GetLatestAppReleaseResp {
+  bool available = 1;
+  string platform = 2;
+  string version_name = 3;
+  int64 version_code = 4;
+  string apk_url = 5;
+  string changelog = 6;
+  bool force_update = 7;
+}
+
 message ListAnnouncementsReq {
   int32 page = 1;
   int32 page_size = 2;
@@ -276,5 +291,8 @@ service Platform {
   }
   rpc GetAnnouncement(GetAnnouncementReq) returns (GetAnnouncementResp) {
     option (google.api.http) = { get: "/api/announcements/{announcement_id}" };
+  }
+  rpc GetLatestAppRelease(GetLatestAppReleaseReq) returns (GetLatestAppReleaseResp) {
+    option (google.api.http) = { get: "/api/public/app-release/latest" };
   }
 }
