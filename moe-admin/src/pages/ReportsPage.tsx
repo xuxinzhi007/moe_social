@@ -8,8 +8,9 @@ import { useAdminAuth } from '../context/AdminAuthContext'
 import { useDrawerDismiss } from '../hooks/useDrawerDismiss'
 import { reportReasonTag } from '../lib/adminLabels'
 import { formatDateTime } from '../lib/format'
+import { AdminFilterPills } from '../components/AdminFilterPills'
 import { DeployApiError } from '../api/deployClient'
-import { AdminTable, ListPageLayout } from '../ui'
+import { AdminTable, AdminToolbar, ListPageLayout } from '../ui'
 import type { AdminTableColumn } from '../ui'
 
 type ReportRow = {
@@ -47,6 +48,8 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [detailRow, setDetailRow] = useState<ReportRow | null>(null)
+  /** 本页客户端筛选（接口暂无 reason 参数） */
+  const [reasonFilter, setReasonFilter] = useState('')
   const pageSize = 30
 
   useDrawerDismiss(detailRow !== null, () => setDetailRow(null))
@@ -72,6 +75,13 @@ export function ReportsPage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const filteredItems = useMemo(() => {
+    if (!reasonFilter) return items
+    return items.filter((row) =>
+      (row.reason || '').toLowerCase().includes(reasonFilter.toLowerCase()),
+    )
+  }, [items, reasonFilter])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -158,11 +168,41 @@ export function ReportsPage() {
       <ListPageLayout
         title="举报处理"
         description="用户举报动态记录，可预览正文、图片与手绘缩略图"
-        metrics={[{ label: '待处理举报', value: loading ? '…' : total }]}
+        metrics={[
+          { label: '待处理举报', value: loading ? '…' : total },
+          {
+            label: '本页匹配',
+            value: loading ? '…' : String(filteredItems.length),
+            hint: reasonFilter ? `原因含「${reasonFilter}」` : '当前页',
+          },
+        ]}
+        toolbar={
+          <AdminToolbar
+            filters={
+              <AdminFilterPills
+                ariaLabel="举报原因"
+                value={reasonFilter}
+                onChange={setReasonFilter}
+                options={[
+                  { value: '', label: '全部原因' },
+                  { value: 'spam', label: 'spam' },
+                  { value: 'abuse', label: 'abuse' },
+                  { value: '违规', label: '违规' },
+                ]}
+              />
+            }
+          />
+        }
         error={error}
         pagination={{ page, totalPages, total, onPageChange: setPage }}
       >
-        <AdminTable columns={columns} rows={items} rowKey={(row) => row.id} loading={loading} emptyText="暂无举报" />
+        <AdminTable
+          columns={columns}
+          rows={filteredItems}
+          rowKey={(row) => row.id}
+          loading={loading}
+          emptyText="暂无举报"
+        />
       </ListPageLayout>
 
       {detailRow ? (

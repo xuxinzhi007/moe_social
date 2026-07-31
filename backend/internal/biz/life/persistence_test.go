@@ -13,6 +13,9 @@ type mockStore struct{}
 func (m *mockStore) ListEntities(_ context.Context, _ string) ([]model.LifeEntity, error) {
 	return nil, nil
 }
+func (m *mockStore) GetEntityByID(_ context.Context, _ uint) (*model.LifeEntity, error) {
+	return nil, nil
+}
 func (m *mockStore) UpsertEntity(_ context.Context, _ *model.LifeEntity) error { return nil }
 func (m *mockStore) BatchUpsertEntities(_ context.Context, _ []*model.LifeEntity) error {
 	return nil

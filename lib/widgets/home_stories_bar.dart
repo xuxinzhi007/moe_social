@@ -66,127 +66,22 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final visibleUsers = _followings.take(6).toList();
+    // 始终细条：左侧「发动态」为唯一创作入口（对标 IG Stories），不做大海报 CTA。
+    final trailingCount = _isLoading ? 5 : visibleUsers.length;
 
-    if (!_isLoading && visibleUsers.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-        child: _buildCreateOnlyCard(context, scheme),
-      );
-    }
-
-    final itemCount = _isLoading ? 5 : visibleUsers.length;
-
-    return Container(
-      height: 82,
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 2),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: scheme.outline.withValues(alpha: 0.08),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 76,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: itemCount + 1,
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+        itemCount: trailingCount + 1,
         itemBuilder: (context, index) {
-          if (index == 0) return _buildCreateItem(context, scheme, compact: true);
+          if (index == 0) {
+            return _buildCreateItem(context, scheme, compact: true);
+          }
           if (_isLoading) return _buildSkeletonItem(scheme);
           return _buildUserItem(context, visibleUsers[index - 1], scheme);
         },
-      ),
-    );
-  }
-
-  Widget _buildCreateOnlyCard(BuildContext context, ColorScheme scheme) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () async {
-          final result = await Navigator.pushNamed(context, '/create-post');
-          if (result != null) {
-            await widget.onCreatePostSuccess?.call(result);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: scheme.outline.withValues(alpha: 0.08),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: scheme.shadow.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '发一条新动态',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '把这一刻记录下来，首页就会开始真正活起来',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_rounded,
-                color: scheme.primary,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

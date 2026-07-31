@@ -40,6 +40,8 @@
 | 11 | 小世界渲染实验 | **Flame**（`useFlameLifeWorld`）；可关 Flag 回退 CustomPaint；见 `docs/dev/flame-life-world-experiment.md` |
 | 12 | 身份分层 | **双层**：关系层 = 名字/头像/人设（用户自定义）；世界层 = `life_entity_id` 居民舞台。绑定不覆盖关系层形象 |
 | 13 | 自定义角色一期 | **轻量**：头像图 + 名字 + 人设；不做 Live2D/角色卡大厅；多 bond 仍延后 |
+| 14 | 绑定与死亡 | **绑定居民免死**（tick/dedupe 跳过）；失踪不解绑，暴露 `world_bind_status=bound_missing` + Hub 提示 |
+| 15 | TA 的日常 | 世界侧 SSOT = `life_event_logs`（按 `life_entity_id`，含软删除历史）；经 `/api/companion/state.moments` 下发 |
 
 ---
 
@@ -113,6 +115,7 @@
 - [x] **Slice-4**：记忆专页 `/ai-memories`；日常流 memory 深链 + 进聊天 CTA
 - [x] **Slice-5**：角色卡轻量导入（ST JSON/PNG → 关系层人设；不复活酒馆）
 - [x] **Slice-6**：记忆删除/置顶 + Companion 轻量语音（STT/TTS；仍不做 Live2D）
+- [x] **Slice-6.1**：记忆编辑正文 + Hub 导入引导 + 置顶注入标注
 - [ ] **B. 多角色（Companion 多 bond）**：未开工；勿把 Life 地图点选误当成多会话已完成
 
 仍勿误开工：Companion 多 profile 表结构、酒馆大厅复活、Live2D 大厅。

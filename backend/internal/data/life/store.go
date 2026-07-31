@@ -33,6 +33,18 @@ func (s *gormStore) ListEntities(ctx context.Context, worldID string) ([]model.L
 	return entities, err
 }
 
+func (s *gormStore) GetEntityByID(ctx context.Context, entityID uint) (*model.LifeEntity, error) {
+	var entity model.LifeEntity
+	err := s.db.WithContext(ctx).Where("id = ?", entityID).First(&entity).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &entity, nil
+}
+
 func (s *gormStore) UpsertEntity(ctx context.Context, entity *model.LifeEntity) error {
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{

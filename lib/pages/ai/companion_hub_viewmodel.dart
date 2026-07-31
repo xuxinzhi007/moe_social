@@ -49,6 +49,7 @@ class CompanionHubViewModel extends ChangeNotifier {
   List<CompanionDailyItem> _dailyItems = const [];
   String _worldSummaryLine = '';
   bool _worldBound = false;
+  String _worldBindStatus = 'unbound';
   bool _disposed = false;
 
   bool get isLoading => _isLoading;
@@ -60,6 +61,12 @@ class CompanionHubViewModel extends ChangeNotifier {
 
   /// 是否已绑定世界居民（以 profile.life_entity_id > 0 为准）。
   bool get worldBound => _worldBound;
+
+  /// unbound | bound_ok | bound_missing
+  String get worldBindStatus => _worldBindStatus;
+
+  bool get worldBindMissing =>
+      _worldBound && _worldBindStatus == 'bound_missing';
 
   Future<void> loadDashboard() async {
     _isLoading = true;
@@ -79,8 +86,15 @@ class CompanionHubViewModel extends ChangeNotifier {
       final daily = <CompanionDailyItem>[];
       var worldLine = '';
       var worldBound = snapshot.profile.lifeEntityId > 0;
+      var bindStatus = snapshot.profile.worldBindStatus;
+      if (bindStatus.isEmpty) {
+        bindStatus = worldBound ? 'bound_ok' : 'unbound';
+      }
+      if (snapshot.state.worldBindStatus.isNotEmpty) {
+        bindStatus = snapshot.state.worldBindStatus;
+      }
 
-      // 后端 moments 优先（与 state SSOT 对齐）；无则回退 Life 事件。
+      // 后端 moments 优先（life_event_logs，含离场居民历史）；无则回退 Life 事件。
       final momentItems = _momentDailyItems(snapshot.state.moments);
       if (momentItems.isNotEmpty) {
         daily.addAll(momentItems);
@@ -96,6 +110,8 @@ class CompanionHubViewModel extends ChangeNotifier {
             snapshot.profile.lifeEntityId,
             profileName: snapshot.profile.name,
             profileEmoji: snapshot.profile.emoji,
+            bindStatus: bindStatus,
+            entityAlive: snapshot.state.entityAlive,
           );
           if (momentItems.isEmpty) {
             daily.addAll(_worldDailyItems(life, snapshot.profile.lifeEntityId));
@@ -105,7 +121,9 @@ class CompanionHubViewModel extends ChangeNotifier {
             final who = snapshot.profile.name.trim().isNotEmpty
                 ? snapshot.profile.name.trim()
                 : 'TA';
-            worldLine = '$who 已绑定 · 点进世界看看';
+            worldLine = bindStatus == 'bound_missing'
+                ? '$who 绑定还在 · 居民暂时不在舞台'
+                : '$who 已绑定 · 点进世界看看';
           }
         }
       }
@@ -161,6 +179,7 @@ class CompanionHubViewModel extends ChangeNotifier {
       _dailyItems = daily.take(16).toList(growable: false);
       _worldSummaryLine = worldLine;
       _worldBound = worldBound;
+      _worldBindStatus = bindStatus;
       _isLoading = false;
       _notify();
     } catch (e) {
@@ -220,6 +239,8 @@ class CompanionHubViewModel extends ChangeNotifier {
     int lifeEntityId, {
     String profileName = '',
     String profileEmoji = '',
+    String bindStatus = 'unbound',
+    bool entityAlive = true,
   }) {
     final bound = _findBoundEntity(life, lifeEntityId);
     if (bound != null) {
@@ -228,9 +249,12 @@ class CompanionHubViewModel extends ChangeNotifier {
     }
     final who = profileName.trim().isNotEmpty ? profileName.trim() : 'TA';
     final emoji = profileEmoji.trim();
-    // 已绑定但本轮 Life 列表未带回实体（冷启动/同步中）仍视为已绑定。
+    // 已绑定但本轮 Life 列表未带回实体：区分「同步中」与「居民失踪/离场」。
     if (lifeEntityId > 0) {
       final head = emoji.isNotEmpty ? '$emoji $who' : who;
+      if (bindStatus == 'bound_missing' || !entityAlive) {
+        return '$head 绑定还在 · 居民暂时不在舞台，点进世界可改绑';
+      }
       if (life.entities.isEmpty) {
         return '$head 已绑定 · 世界同步中';
       }
@@ -247,7 +271,7 @@ class CompanionHubViewModel extends ChangeNotifier {
   ) {
     return moments
         .where((m) => m.text.trim().isNotEmpty)
-        .take(6)
+        .take(8)
         .map(
           (m) => CompanionDailyItem(
             kind: 'moment',

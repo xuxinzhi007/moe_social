@@ -22,6 +22,7 @@ type Store interface {
 	GetMemoryByID(ctx context.Context, userID, memoryID uint) (*model.CompanionMemory, error)
 	DeleteMemory(ctx context.Context, userID, memoryID uint) error
 	UpdateMemoryPinned(ctx context.Context, userID, memoryID uint, pinned bool, importance int, expiresAt *time.Time) error
+	UpdateMemoryContent(ctx context.Context, userID, memoryID uint, content string) error
 	CleanupExpiredMemories(ctx context.Context) (int64, error)
 
 	// Chat Log
@@ -32,5 +33,14 @@ type Store interface {
 // LifeStore defines the Life data needed by the Companion domain.
 type LifeStore interface {
 	ListEntities(ctx context.Context, worldID string) ([]model.LifeEntity, error)
+	// GetEntityByID 含已软删除；不存在返回 nil。
+	GetEntityByID(ctx context.Context, entityID uint) (*model.LifeEntity, error)
 	ListRecentEventLogsByEntity(ctx context.Context, worldID string, entityID uint, limit int) ([]model.LifeEventLog, error)
 }
+
+// World bind status values（写入 Profile / State，供前端展示）。
+const (
+	WorldBindUnbound = "unbound"
+	WorldBindOK      = "bound_ok"
+	WorldBindMissing = "bound_missing"
+)

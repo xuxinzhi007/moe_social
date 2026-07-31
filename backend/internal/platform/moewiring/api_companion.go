@@ -46,5 +46,9 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 	}
 	engine := companionbiz.NewEngine(store, lifeStore, inf, model)
 	hub := companionbiz.NewCompanionWSHub()
+	// 绑定居民免死：Life tick 查询 companion_profiles.life_entity_id。
+	if lifeApp != nil && lifeApp.Engine() != nil {
+		lifeApp.Engine().SetBoundEntitySource(&companionBoundEntitySource{db: db})
+	}
 	return companionapp.New(engine, hub, db), nil
 }

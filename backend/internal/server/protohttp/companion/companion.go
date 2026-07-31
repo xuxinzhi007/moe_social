@@ -110,6 +110,18 @@ func (s *Server) SetMemoryPinned(ctx context.Context, in *companionv1.SetMemoryP
 	return app.SetMemoryPinned(ctx, userID, in)
 }
 
+func (s *Server) UpdateMemory(ctx context.Context, in *companionv1.UpdateMemoryRequest) (*companionv1.UpdateMemoryReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.UpdateMemory(ctx, userID, in)
+}
+
 func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	app, err := s.requireApp()
 	if err != nil {

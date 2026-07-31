@@ -26,6 +26,7 @@ const (
 	Companion_ListMemories_FullMethodName         = "/companion.v1.Companion/ListMemories"
 	Companion_DeleteMemory_FullMethodName         = "/companion.v1.Companion/DeleteMemory"
 	Companion_SetMemoryPinned_FullMethodName      = "/companion.v1.Companion/SetMemoryPinned"
+	Companion_UpdateMemory_FullMethodName         = "/companion.v1.Companion/UpdateMemory"
 	Companion_ListChatHistory_FullMethodName      = "/companion.v1.Companion/ListChatHistory"
 )
 
@@ -43,6 +44,7 @@ type CompanionClient interface {
 	ListMemories(ctx context.Context, in *ListMemoriesRequest, opts ...grpc.CallOption) (*ListMemoriesReply, error)
 	DeleteMemory(ctx context.Context, in *DeleteMemoryRequest, opts ...grpc.CallOption) (*DeleteMemoryReply, error)
 	SetMemoryPinned(ctx context.Context, in *SetMemoryPinnedRequest, opts ...grpc.CallOption) (*SetMemoryPinnedReply, error)
+	UpdateMemory(ctx context.Context, in *UpdateMemoryRequest, opts ...grpc.CallOption) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error)
 }
@@ -125,6 +127,16 @@ func (c *companionClient) SetMemoryPinned(ctx context.Context, in *SetMemoryPinn
 	return out, nil
 }
 
+func (c *companionClient) UpdateMemory(ctx context.Context, in *UpdateMemoryRequest, opts ...grpc.CallOption) (*UpdateMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMemoryReply)
+	err := c.cc.Invoke(ctx, Companion_UpdateMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListChatHistoryReply)
@@ -149,6 +161,7 @@ type CompanionServer interface {
 	ListMemories(context.Context, *ListMemoriesRequest) (*ListMemoriesReply, error)
 	DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error)
 	SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error)
+	UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
 	mustEmbedUnimplementedCompanionServer()
@@ -181,6 +194,9 @@ func (UnimplementedCompanionServer) DeleteMemory(context.Context, *DeleteMemoryR
 }
 func (UnimplementedCompanionServer) SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetMemoryPinned not implemented")
+}
+func (UnimplementedCompanionServer) UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateMemory not implemented")
 }
 func (UnimplementedCompanionServer) ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListChatHistory not implemented")
@@ -332,6 +348,24 @@ func _Companion_SetMemoryPinned_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_UpdateMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).UpdateMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_UpdateMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).UpdateMemory(ctx, req.(*UpdateMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_ListChatHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListChatHistoryRequest)
 	if err := dec(in); err != nil {
@@ -384,6 +418,10 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetMemoryPinned",
 			Handler:    _Companion_SetMemoryPinned_Handler,
+		},
+		{
+			MethodName: "UpdateMemory",
+			Handler:    _Companion_UpdateMemory_Handler,
 		},
 		{
 			MethodName: "ListChatHistory",

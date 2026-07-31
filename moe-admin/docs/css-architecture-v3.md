@@ -1,7 +1,7 @@
 # Moe Admin CSS 架构 V3（拆分方案）
 
 > 配套 [DESIGN.md](../DESIGN.md)。  
-> 迁移期 monolith：`src/styles/legacy/moe-admin-theme.css`（Sprint A 已迁入 `legacy/`；**禁止再往该文件追加**）。
+> 迁移期 monolith：`src/styles/legacy/moe-admin-theme.css`（Sprint D/E 已抽出组件 + brain/login/landing/analytics/data-map；约 **3032** 行剩余；**禁止再往该文件追加**）。
 
 ---
 
@@ -44,9 +44,8 @@ moe-admin/src/styles/
 │   ├── drawers.css           # settings drawer、form drawer
 │   ├── metrics.css           # .page-insight-strip、指标卡
 │   └── charts.css            # recharts 容器、图例
-├── domains/                  # 跨页业务组件（非单页）
-│   ├── brain.css             # brain-pipeline、memory-influence
-│   ├── inference.css         # inference-status-bar
+├── feature/                  # 跨页业务组件（非单页；勿用 domains/，Vite Windows ENOENT）
+│   ├── brain.css             # brain-pipeline、memory-influence、inference
 │   └── data-domain-map.css   # 数据星系地图
 ├── pages/                    # 仅该页使用的样式（可选 co-locate）
 │   ├── platform.css
@@ -87,9 +86,8 @@ moe-admin/src/styles/
 @import './components/metrics.css';
 @import './components/charts.css';
 
-@import './domains/brain.css';
-@import './domains/inference.css';
-@import './domains/data-domain-map.css';
+@import './feature/brain.css';
+@import './feature/data-domain-map.css';
 
 @import './pages/platform.css';
 @import './pages/data-catalog.css';
@@ -121,14 +119,14 @@ import './styles/index.css'   // 替换 moe-admin-theme.css
 | 792–900 | `components/buttons.css` | .btn* |
 | 843–1100 | `components/panels.css` | .panel、.env-card |
 | 1100–1800 | `components/tables.css` + `components/forms.css` | 表格、表单、filter |
-| 487–740 | `domains/brain.css` + `domains/inference.css` | brain、memory、inference |
+| 487–740 | `feature/brain.css` | brain、memory、inference |
 | 1800–1963 | `pages/rpc.css` | rpc-log-* |
 | 1964–2015 | `pages/landing-feedback.css` | Landing feedback |
 | 2016–2336 | `pages/platform.css` | platform-*、tab-rail |
-| 2337–3222 | `domains/data-domain-map.css` | 数据星系 |
+| 2337–3222 | `feature/data-domain-map.css` | 数据星系 |
 | 3223–3399 | `pages/data-catalog.css` | 数据目录树 |
 | 3400–3636 | `pages/` 或 `components/forms.css` | 应用配置 |
-| 3637–3898 | `domains/` 或 `pages/` | Moe 工具调用 |
+| 3637–3898 | `feature/` 或 `pages/` | Moe 工具调用 |
 | 3899–4000 | `pages/analytics.css` | 分析、对话日志、标签 |
 
 ---

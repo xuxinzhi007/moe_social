@@ -14,7 +14,7 @@
 |----|------|
 | 世界 | 1280×720 横屏逻辑坐标 |
 | 相机 | 默认 zoom≈0.62，竖屏按 viewport 抬高 zoom 保留上下可拖；`viewport` + `DragCallbacks`；点选 `follow`；拖后 `stop` |
-| 壳层 | `LifeWorldPage` 全屏 Game + 底部薄 Sheet（方案 2） |
+| 壳层 | 全屏 Game + 手游 HUD v2：玻璃顶栏、左右 FAB、底栏迷你属性、照料飘字；禁常驻上拉 Sheet |
 | 状态 | `LifeProvider` → `syncEntities`；Game 不 HTTP |
 | 回滚 | `useFlameLifeWorld = false` → `LifeWorldMap` |
 

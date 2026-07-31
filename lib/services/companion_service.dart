@@ -38,6 +38,9 @@ class CompanionProfileData {
   final String agentId;
   final int lifeEntityId;
 
+  /// unbound | bound_ok | bound_missing
+  final String worldBindStatus;
+
   const CompanionProfileData({
     this.name = '',
     this.emoji = '🐾',
@@ -50,13 +53,27 @@ class CompanionProfileData {
     this.systemPromptOverride = '',
     this.agentId = '',
     this.lifeEntityId = 0,
+    this.worldBindStatus = 'unbound',
   });
 
+  bool get isWorldBound => lifeEntityId > 0;
+
+  bool get isWorldBindMissing =>
+      lifeEntityId > 0 && worldBindStatus == 'bound_missing';
+
   factory CompanionProfileData.fromMap(Map<String, dynamic> m) {
+    final lifeEntityId = (m['life_entity_id'] as num?)?.toInt() ?? 0;
+    var status = m['world_bind_status']?.toString() ??
+        m['worldBindStatus']?.toString() ??
+        '';
+    if (status.isEmpty) {
+      status = lifeEntityId > 0 ? 'bound_ok' : 'unbound';
+    }
     return CompanionProfileData(
       name: m['name']?.toString() ?? '',
       emoji: m['emoji']?.toString() ?? '🐾',
-      avatarUrl: m['avatar_url']?.toString() ?? m['avatarUrl']?.toString() ?? '',
+      avatarUrl:
+          m['avatar_url']?.toString() ?? m['avatarUrl']?.toString() ?? '',
       persona: m['persona']?.toString() ?? '',
       greetingStyle: m['greeting_style']?.toString() ?? 'warm',
       relationshipLevel: (m['relationship_level'] as num?)?.toInt() ?? 1,
@@ -67,7 +84,8 @@ class CompanionProfileData {
           const [],
       systemPromptOverride: m['system_prompt_override']?.toString() ?? '',
       agentId: m['agent_id']?.toString() ?? '',
-      lifeEntityId: (m['life_entity_id'] as num?)?.toInt() ?? 0,
+      lifeEntityId: lifeEntityId,
+      worldBindStatus: status,
     );
   }
 
@@ -81,6 +99,7 @@ class CompanionProfileData {
     String? systemPromptOverride,
     String? agentId,
     int? lifeEntityId,
+    String? worldBindStatus,
   }) {
     return CompanionProfileData(
       name: name ?? this.name,
@@ -94,6 +113,7 @@ class CompanionProfileData {
       systemPromptOverride: systemPromptOverride ?? this.systemPromptOverride,
       agentId: agentId ?? this.agentId,
       lifeEntityId: lifeEntityId ?? this.lifeEntityId,
+      worldBindStatus: worldBindStatus ?? this.worldBindStatus,
     );
   }
 
@@ -141,6 +161,8 @@ class CompanionStateData {
   final double mood;
   final double hunger;
   final double energy;
+  final bool entityAlive;
+  final String worldBindStatus;
 
   const CompanionStateData({
     this.moodThought = '',
@@ -150,6 +172,8 @@ class CompanionStateData {
     this.mood = 0.5,
     this.hunger = 0.5,
     this.energy = 0.5,
+    this.entityAlive = true,
+    this.worldBindStatus = 'unbound',
   });
 
   CompanionStateData copyWith({
@@ -160,6 +184,8 @@ class CompanionStateData {
     double? mood,
     double? hunger,
     double? energy,
+    bool? entityAlive,
+    String? worldBindStatus,
   }) {
     return CompanionStateData(
       moodThought: moodThought ?? this.moodThought,
@@ -169,6 +195,8 @@ class CompanionStateData {
       mood: mood ?? this.mood,
       hunger: hunger ?? this.hunger,
       energy: energy ?? this.energy,
+      entityAlive: entityAlive ?? this.entityAlive,
+      worldBindStatus: worldBindStatus ?? this.worldBindStatus,
     );
   }
 
@@ -194,6 +222,10 @@ class CompanionStateData {
       mood: (m['mood'] as num?)?.toDouble() ?? 0.5,
       hunger: (m['hunger'] as num?)?.toDouble() ?? 0.5,
       energy: (m['energy'] as num?)?.toDouble() ?? 0.5,
+      entityAlive: m['entity_alive'] != false,
+      worldBindStatus: m['world_bind_status']?.toString() ??
+          m['worldBindStatus']?.toString() ??
+          '',
     );
   }
 }
@@ -267,13 +299,14 @@ class CompanionMemoryData {
   }
 
   CompanionMemoryData copyWith({
+    String? content,
     int? importance,
     bool? pinned,
   }) {
     return CompanionMemoryData(
       id: id,
       memoryType: memoryType,
-      content: content,
+      content: content ?? this.content,
       importance: importance ?? this.importance,
       createdAt: createdAt,
       pinned: pinned ?? this.pinned,
@@ -413,6 +446,27 @@ class CompanionService {
     final result = await ApiService.post(
       '/api/companion/memories/$memoryId/pin',
       body: {'pinned': pinned},
+    );
+    return CompanionMemoryData.fromMap(
+      ApiResponse.object(result, keys: const ['memory']),
+    );
+  }
+
+  Future<CompanionMemoryData> updateMemoryContent({
+    required int memoryId,
+    required String content,
+  }) async {
+    _requireUserId();
+    if (memoryId <= 0) {
+      throw Exception('无效的记忆');
+    }
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('记忆内容不能为空');
+    }
+    final result = await ApiService.put(
+      '/api/companion/memories/$memoryId',
+      body: {'content': trimmed},
     );
     return CompanionMemoryData.fromMap(
       ApiResponse.object(result, keys: const ['memory']),

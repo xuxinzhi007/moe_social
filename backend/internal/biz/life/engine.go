@@ -14,6 +14,12 @@ import (
 // BroadcastFunc 广播回调类型
 type BroadcastFunc func(msg TickBroadcast)
 
+// BoundEntitySource 查询哪些 Life 实体被 Companion 绑定（绑定居民免死）。
+// 由 wiring 注入；未注入时视为无绑定。
+type BoundEntitySource interface {
+	BoundEntityIDs(ctx context.Context) (map[uint]struct{}, error)
+}
+
 // LifeEngine 数字生命引擎
 type LifeEngine struct {
 	store            Store
@@ -25,6 +31,8 @@ type LifeEngine struct {
 	config           LifeConfig
 	broadcastMu      sync.RWMutex
 	broadcastFn      BroadcastFunc
+	boundSrcMu       sync.RWMutex
+	boundSrc         BoundEntitySource
 	actionCooldowns  map[uint]time.Time                // 实体 ID→冷却到期时间
 	eventCooldowns   map[uint]map[string]time.Time      // entityID → eventType → cooldown expiry
 	cooldownMu       sync.Mutex
@@ -84,6 +92,52 @@ func (e *LifeEngine) SetBroadcastFunc(fn BroadcastFunc) {
 	e.broadcastMu.Lock()
 	defer e.broadcastMu.Unlock()
 	e.broadcastFn = fn
+}
+
+// SetBoundEntitySource 注入 Companion 绑定查询（可运行时注入）。
+func (e *LifeEngine) SetBoundEntitySource(src BoundEntitySource) {
+	e.boundSrcMu.Lock()
+	defer e.boundSrcMu.Unlock()
+	e.boundSrc = src
+}
+
+func (e *LifeEngine) loadBoundEntityIDs(ctx context.Context) map[uint]struct{} {
+	e.boundSrcMu.RLock()
+	src := e.boundSrc
+	e.boundSrcMu.RUnlock()
+	if src == nil {
+		return nil
+	}
+	ids, err := src.BoundEntityIDs(ctx)
+	if err != nil || len(ids) == 0 {
+		return nil
+	}
+	return ids
+}
+
+func isBoundEntity(bound map[uint]struct{}, id uint) bool {
+	if len(bound) == 0 {
+		return false
+	}
+	_, ok := bound[id]
+	return ok
+}
+
+// protectBoundEntity 绑定居民濒死时拉回安全线，避免消亡导致重复绑定。
+func protectBoundEntity(entity *model.LifeEntity) {
+	if entity == nil {
+		return
+	}
+	const floor = 12.0
+	if entity.Hunger < floor {
+		entity.Hunger = floor
+	}
+	if entity.Energy < floor {
+		entity.Energy = floor
+	}
+	if entity.Mood < floor {
+		entity.Mood = floor
+	}
 }
 
 // GetWorldCache 暴露缓存供外部读取

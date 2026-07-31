@@ -5,13 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../auth_service.dart';
 import '../services/device_service.dart';
+import '../utils/reverse_geocode.dart';
 
 /// 设备信息：服务端仅做「轻量上报」（版本/平台/匿名设备 id）；
 /// 定位、WiFi 名、电量等只在本地用于天气与设置页展示，不上传。
@@ -274,7 +274,8 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
         }
 
         if (permission == LocationPermission.deniedForever) {
-          locationText = '定位权限被永久拒绝';
+          // 永久拒绝：不再弹窗；设置页可引导用户打开系统权限。
+          locationText = '定位权限未开启';
         } else if (permission == LocationPermission.whileInUse ||
             permission == LocationPermission.always) {
           final position = await Geolocator.getCurrentPosition(
@@ -284,20 +285,11 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
           latitude = position.latitude;
           longitude = position.longitude;
 
-          try {
-            final placemarks = await geocoding.placemarkFromCoordinates(
-              latitude,
-              longitude,
-              localeIdentifier: 'zh_CN',
-            );
-            if (placemarks.isNotEmpty) {
-              locationText = _formatPlacemark(placemarks.first);
-            }
-          } catch (e) {
-            if (kDebugMode) debugPrint('❌ 地理编码失败: $e');
-            locationText =
-                '坐标: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
-          }
+          final geo = await ReverseGeocode.fromCoordinates(
+            latitude,
+            longitude,
+          );
+          locationText = geo.label;
         } else {
           locationText = '需要定位权限';
         }
@@ -314,20 +306,6 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
     _locationText = locationText;
     _batteryLevel = batteryLevel;
     notifyListeners();
-  }
-
-  static String _formatPlacemark(geocoding.Placemark p) {
-    final parts = <String>[];
-    void add(String? s) {
-      if (s != null && s.isNotEmpty) parts.add(s);
-    }
-
-    add(p.administrativeArea);
-    add(p.subAdministrativeArea);
-    add(p.locality);
-    add(p.subLocality);
-    add(p.thoroughfare);
-    return parts.isEmpty ? '未知位置' : parts.join(' ');
   }
 
   String _buildDeviceName(String platform, String deviceId) {

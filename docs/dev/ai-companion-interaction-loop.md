@@ -160,8 +160,18 @@ CompanionService.getSnapshot()
 
 > 部署后需 `make db-migrate`（`companion_memories.pinned`）。
 
-## 12. 下一刀建议
+## 12. Slice-6.1（已落地）记忆编辑 + 体验打磨
+
+| 项 | 验收 |
+|----|------|
+| 编辑 | ✅ `PUT /api/companion/memories/{id}`；专页「编辑这段记忆」 |
+| Prompt | ✅ 置顶记忆注入时标【置顶】 |
+| Hub | ✅ 无人设时 Hero「完善人设或从角色卡导入」 |
+| 语音文案 | ✅ 麦克风权限/不可用时友好 Toast |
+| 迁移 | ✅ `companion_memories.pinned` 已可 `make db-migrate` |
+
+## 13. 下一刀建议
 
 1. AIRI 向形象（Live2D）仅在明确产品决策改写决策 13 后  
 2. 多 bond（决策 B，勿误开工）  
-3. 记忆编辑正文（可选）
+3. 亲密度可见性（Hub 进度条）

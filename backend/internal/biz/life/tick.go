@@ -80,6 +80,8 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		engine.persistence.EnqueueEvent(evt)
 	})
 
+	boundIDs := engine.loadBoundEntityIDs(ctx)
+
 	var entityDiffs []EntityDiff
 	var eventDiffs []EventDiff
 	var removedEntityIDs []uint
@@ -149,51 +151,17 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 		applyEnvironmentEffects(entity, cell)
 
 		if shouldDie(entity, cell) {
-			entity.CurrentAction = string(ActionDying)
-			evt := &model.LifeEventLog{
-				WorldID:     engine.config.WorldName,
-				EntityID:    entity.ID,
-				EntityType:  entity.Name,
-				EventType:   "death",
-				Description: entity.Name + " 在生态压力中消亡",
-				PositionX:   entity.PositionX,
-				PositionY:   entity.PositionY,
-				CreatedAt:   time.Now(),
-			}
-			evt.Importance = eventImportance(evt.EventType)
-			engine.persistence.EnqueueEvent(evt)
-			eventDiffs = append(eventDiffs, EventDiff{
-				EntityID:   entity.ID,
-				EntityType: entity.Name,
-				EventType:  "death",
-				Desc:       evt.Description,
-				PositionX:  entity.PositionX,
-				PositionY:  entity.PositionY,
-			})
-			// Bug1: 通过 PersistenceWriter 入队软删除，确保 DB 中标记 is_alive=false
-			engine.persistence.EnqueueDeleteEntity(entity.ID)
-			// Bug2: 收集死亡实体 ID，供前端感知并移除
-			removedEntityIDs = append(removedEntityIDs, entity.ID)
-			delete(engine.eventCooldowns, id)
-			delete(mutableEntities, id)
-			deathCount++
-			continue
-		}
-
-		// 老年自然死亡概率（收紧：更慢、更稀）
-		if entity.GrowthStage == StageElderly {
-			deathChance := 0.001 + float64(entity.Age-800)*0.000004
-			if deathChance > 0.02 {
-				deathChance = 0.02
-			}
-			if deathChance > 0 && rand.Float64() < deathChance {
+			if isBoundEntity(boundIDs, id) {
+				// 绑定居民：不消亡，拉回安全线，避免用户反复重绑。
+				protectBoundEntity(entity)
+			} else {
 				entity.CurrentAction = string(ActionDying)
 				evt := &model.LifeEventLog{
 					WorldID:     engine.config.WorldName,
 					EntityID:    entity.ID,
 					EntityType:  entity.Name,
 					EventType:   "death",
-					Description: entity.Name + " 因年迈而安详离世",
+					Description: entity.Name + " 在生态压力中消亡",
 					PositionX:   entity.PositionX,
 					PositionY:   entity.PositionY,
 					CreatedAt:   time.Now(),
@@ -208,12 +176,55 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 					PositionX:  entity.PositionX,
 					PositionY:  entity.PositionY,
 				})
+				// Bug1: 通过 PersistenceWriter 入队软删除，确保 DB 中标记 is_alive=false
 				engine.persistence.EnqueueDeleteEntity(entity.ID)
+				// Bug2: 收集死亡实体 ID，供前端感知并移除
 				removedEntityIDs = append(removedEntityIDs, entity.ID)
 				delete(engine.eventCooldowns, id)
 				delete(mutableEntities, id)
 				deathCount++
 				continue
+			}
+		}
+
+		// 老年自然死亡概率（收紧：更慢、更稀）
+		if entity.GrowthStage == StageElderly {
+			deathChance := 0.001 + float64(entity.Age-800)*0.000004
+			if deathChance > 0.02 {
+				deathChance = 0.02
+			}
+			if deathChance > 0 && rand.Float64() < deathChance {
+				if isBoundEntity(boundIDs, id) {
+					protectBoundEntity(entity)
+				} else {
+					entity.CurrentAction = string(ActionDying)
+					evt := &model.LifeEventLog{
+						WorldID:     engine.config.WorldName,
+						EntityID:    entity.ID,
+						EntityType:  entity.Name,
+						EventType:   "death",
+						Description: entity.Name + " 因年迈而安详离世",
+						PositionX:   entity.PositionX,
+						PositionY:   entity.PositionY,
+						CreatedAt:   time.Now(),
+					}
+					evt.Importance = eventImportance(evt.EventType)
+					engine.persistence.EnqueueEvent(evt)
+					eventDiffs = append(eventDiffs, EventDiff{
+						EntityID:   entity.ID,
+						EntityType: entity.Name,
+						EventType:  "death",
+						Desc:       evt.Description,
+						PositionX:  entity.PositionX,
+						PositionY:  entity.PositionY,
+					})
+					engine.persistence.EnqueueDeleteEntity(entity.ID)
+					removedEntityIDs = append(removedEntityIDs, entity.ID)
+					delete(engine.eventCooldowns, id)
+					delete(mutableEntities, id)
+					deathCount++
+					continue
+				}
 			}
 		}
 
@@ -486,10 +497,12 @@ func seedEmptyWorld(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot
 }
 
 // dedupeAliveEntitiesByName 清理同名重复居民（历史 reseed 竞态产物），保留最小 ID。
+// 已被 Companion 绑定的 ID 永不删除；若最小 ID 与绑定冲突则优先保留绑定。
 func dedupeAliveEntitiesByName(ctx context.Context, engine *LifeEngine, snap *WorldSnapshot) {
 	if snap == nil || len(snap.Entities) == 0 {
 		return
 	}
+	boundIDs := engine.loadBoundEntityIDs(ctx)
 	byName := make(map[string][]uint, len(snap.Entities))
 	for id, e := range snap.Entities {
 		if e == nil {
@@ -511,15 +524,24 @@ func dedupeAliveEntitiesByName(ctx context.Context, engine *LifeEngine, snap *Wo
 				keep = id
 			}
 		}
+		// 同名里若有绑定居民，强制保留绑定 ID。
+		for _, id := range ids {
+			if isBoundEntity(boundIDs, id) {
+				keep = id
+				break
+			}
+		}
 		for _, id := range ids {
 			if id == keep {
+				continue
+			}
+			if isBoundEntity(boundIDs, id) {
 				continue
 			}
 			engine.persistence.EnqueueDeleteEntity(id)
 			delete(snap.Entities, id)
 			moelog.Infof("life: dedupe removed duplicate %q id=%d (keep=%d)", name, id, keep)
 		}
-		_ = ctx
 	}
 }
 

@@ -1,0 +1,110 @@
+/* panels · extracted from legacy · Sprint D */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  flex: 1;
+}
+
+.panel-body {
+  padding: 14px 16px;
+}
+
+.env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.env-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.env-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.env-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.env-card-head .sub {
+  font-weight: normal;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.env-card-body {
+  padding: 12px 14px;
+}
+
+.env-kv {
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+
+.env-kv-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.env-kv dt {
+  color: var(--muted);
+  margin: 0;
+}
+
+.env-kv dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.env-actions {
+  margin-top: 8px;
+}
+
+.env-card-cloud {
+  border-color: rgba(145, 234, 228, 0.25);
+}
+
+.env-pre,
+.log-pre,
+.terminal pre {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  overflow: auto;
+  max-height: 200px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
