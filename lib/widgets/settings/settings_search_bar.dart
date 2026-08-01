@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/moe_tokens.dart';
 
 class SettingsSearchBar extends StatefulWidget {
   final Function(String) onSearch;
@@ -6,14 +7,14 @@ class SettingsSearchBar extends StatefulWidget {
   final String hintText;
 
   const SettingsSearchBar({
-    Key? key,
+    super.key,
     required this.onSearch,
     required this.onClear,
     this.hintText = '搜索设置',
-  }) : super(key: key);
+  });
 
   @override
-  _SettingsSearchBarState createState() => _SettingsSearchBarState();
+  State<SettingsSearchBar> createState() => _SettingsSearchBarState();
 }
 
 class _SettingsSearchBarState extends State<SettingsSearchBar> {
@@ -31,15 +32,9 @@ class _SettingsSearchBarState extends State<SettingsSearchBar> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7F7FD5).withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
       ),
       child: TextField(
         controller: _controller,
@@ -51,10 +46,16 @@ class _SettingsSearchBarState extends State<SettingsSearchBar> {
         },
         decoration: InputDecoration(
           hintText: widget.hintText,
-          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+          prefixIcon: const Icon(
+            Icons.search,
+            color: MoeTokens.hintText,
+          ),
           suffixIcon: _isSearching
               ? IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
+                  icon: const Icon(
+                    Icons.clear,
+                    color: MoeTokens.hintText,
+                  ),
                   onPressed: () {
                     _controller.clear();
                     setState(() {
@@ -66,7 +67,8 @@ class _SettingsSearchBarState extends State<SettingsSearchBar> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
     );

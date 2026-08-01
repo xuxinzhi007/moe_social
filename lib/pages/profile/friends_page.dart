@@ -735,7 +735,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
@@ -815,16 +815,16 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     required VoidCallback onTap,
   }) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: MoeTokens.surface1,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         child: Container(
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             border: Border.all(color: color.withValues(alpha: 0.16)),
           ),
           child: Row(
@@ -855,15 +855,21 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     return Container(
       height: 46,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+        border: Border.all(color: MoeTokens.surfaceBorder),
       ),
       child: TextField(
         decoration: InputDecoration(
           hintText: '搜索昵称、邮箱或 Moe 号',
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-          prefixIcon: Icon(Icons.search_rounded, color: Colors.grey[400]),
+          hintStyle: const TextStyle(
+            color: MoeTokens.hintText,
+            fontSize: 13,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: MoeTokens.hintText,
+          ),
           border: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -880,16 +886,22 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
   Widget _buildCompactGroupTabs() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
-      child: Row(
-        children: [
-          _compactGroupTab(_FriendGroup.all, '全部'),
-          const SizedBox(width: 8),
-          _compactGroupTab(_FriendGroup.online, '在线'),
-          const SizedBox(width: 8),
-          _compactGroupTab(_FriendGroup.recent, '最近'),
-          const SizedBox(width: 8),
-          _compactGroupTab(_FriendGroup.favorite, '收藏'),
-        ],
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+        ),
+        child: Row(
+          children: [
+            _compactGroupTab(_FriendGroup.all, '全部'),
+            _compactGroupTab(_FriendGroup.online, '在线'),
+            _compactGroupTab(_FriendGroup.recent, '最近'),
+            _compactGroupTab(_FriendGroup.favorite, '收藏'),
+          ],
+        ),
       ),
     );
   }
@@ -898,29 +910,28 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
     final selected = _currentGroup == group;
     return Expanded(
       child: Material(
-        color: selected ? _moe.primary : Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
             setState(() => _currentGroup = group);
           },
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            height: 38,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: selected ? _moe.primary : Colors.grey.shade200,
-              ),
+              gradient: selected ? MoeTokens.gradientPrimary : null,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
             ),
             child: Text(
               label,
               style: TextStyle(
-                color: selected ? Colors.white : Colors.grey[700],
+                color: selected ? Colors.white : MoeTokens.hintText,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight:
+                    selected ? MoeTokens.fontWeightSubtitle : FontWeight.w600,
               ),
             ),
           ),
@@ -941,7 +952,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
       staggerStep: const Duration(milliseconds: 35),
       duration: const Duration(milliseconds: 180),
       child: Material(
-        color: Colors.white,
+        color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: () {
@@ -966,8 +977,9 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
               border: Border.all(
                 color: isOnline
                     ? const Color(0xFF2EBD85).withValues(alpha: 0.24)
-                    : Colors.black.withValues(alpha: 0.04),
+                    : MoeTokens.surfaceBorder,
               ),
+              boxShadow: MoeTokens.shadowSm(),
             ),
             child: Row(
               children: [
@@ -1042,8 +1054,8 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
                             : (user.email.isNotEmpty ? user.email : '同好'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.grey[600],
+                        style: const TextStyle(
+                          color: MoeTokens.hintText,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),

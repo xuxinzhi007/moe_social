@@ -8,12 +8,7 @@ import '../services/user_service.dart';
 import 'avatar_image.dart';
 
 class HomeStoriesBar extends StatefulWidget {
-  final Future<void> Function(dynamic result)? onCreatePostSuccess;
-
-  const HomeStoriesBar({
-    super.key,
-    this.onCreatePostSuccess,
-  });
+  const HomeStoriesBar({super.key});
 
   @override
   State<HomeStoriesBar> createState() => _HomeStoriesBarState();
@@ -67,80 +62,19 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
     final scheme = Theme.of(context).colorScheme;
     final visibleUsers = _followings.take(6).toList();
     // 始终细条：左侧「发动态」为唯一创作入口（对标 IG Stories），不做大海报 CTA。
-    final trailingCount = _isLoading ? 5 : visibleUsers.length;
+    final itemCount = _isLoading ? 5 : visibleUsers.length;
+    if (!_isLoading && itemCount == 0) return const SizedBox.shrink();
 
     return SizedBox(
       height: 76,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-        itemCount: trailingCount + 1,
+        itemCount: itemCount,
         itemBuilder: (context, index) {
-          if (index == 0) {
-            return _buildCreateItem(context, scheme, compact: true);
-          }
           if (_isLoading) return _buildSkeletonItem(scheme);
-          return _buildUserItem(context, visibleUsers[index - 1], scheme);
+          return _buildUserItem(context, visibleUsers[index], scheme);
         },
-      ),
-    );
-  }
-
-  Widget _buildCreateItem(BuildContext context, ColorScheme scheme, {bool compact = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () async {
-            final result = await Navigator.pushNamed(context, '/create-post');
-            if (result != null) {
-              await widget.onCreatePostSuccess?.call(result);
-            }
-          },
-          child: SizedBox(
-            width: compact ? 64 : 68,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: compact ? 44 : 50,
-                  height: compact ? 44 : 50,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7F7FD5), Color(0xFF86A8E7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7F7FD5).withValues(alpha: 0.24),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '发动态',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

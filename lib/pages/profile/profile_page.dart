@@ -444,7 +444,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildSliverAppBar() {
     final moe = MoeTheme.of(context);
     return SliverAppBar(
-      expandedHeight: 340,
+      expandedHeight: 320,
       pinned: true,
       stretch: true,
       backgroundColor: moe.primary,
@@ -522,7 +522,7 @@ class _ProfilePageState extends State<ProfilePage> {
         SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 36, 20, 12),
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -550,7 +550,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: Colors.white, shape: BoxShape.circle),
                           child: DynamicAvatar(
                               avatarUrl: _user?.avatar ?? '',
-                              size: 78,
+                              size: 72,
                               frameId: _user?.equippedFrameId),
                         ),
                       ),
@@ -841,8 +841,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(24),
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+        border: Border.all(color: MoeTokens.surfaceBorder),
       ),
       child: Row(
         children: actions.map((a) {
@@ -857,14 +858,14 @@ class _ProfilePageState extends State<ProfilePage> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: MoeTokens.surface1,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: action.onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           child: SizedBox(
-            height: 120,
+            height: 104,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               child: Stack(
@@ -897,7 +898,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF2F3142),
+                            color: MoeTokens.titleText,
                             height: 1.25,
                           ),
                         ),
@@ -913,8 +914,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color:
-                                isCta ? _moe.primary : const Color(0xFF76798D),
+                            color: isCta ? _moe.primary : MoeTokens.hintText,
                             height: 1.2,
                           ),
                         ),
@@ -966,14 +966,10 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-                color: _moe.primary.withValues(alpha: 0.07),
-                blurRadius: 16,
-                offset: const Offset(0, 6))
-          ],
+          color: MoeTokens.surface1,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          border: Border.all(color: MoeTokens.surfaceBorder),
+          boxShadow: MoeTokens.shadowSm(),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -989,7 +985,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF333333))),
+                              color: MoeTokens.titleText)),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -1114,14 +1110,10 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                  color: _moe.primary.withValues(alpha: 0.07),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6))
-            ],
+            color: MoeTokens.surface1,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+            border: Border.all(color: MoeTokens.surfaceBorder),
+            boxShadow: MoeTokens.shadowSm(),
           ),
           child: Column(
             children: items.map((item) {
@@ -1167,14 +1159,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                           fontWeight: FontWeight.w600,
                                           fontSize: 15,
                                           color: item.isDestructive
-                                              ? Colors.redAccent
-                                              : const Color(0xFF333333))),
+                                              ? MoeTokens.danger
+                                              : MoeTokens.titleText)),
                                   if (item.subtitle != null) ...[
                                     const SizedBox(height: 2),
                                     Text(item.subtitle!,
                                         style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey[400])),
+                                            color: MoeTokens.hintText)),
                                   ],
                                 ],
                               ),
@@ -1189,9 +1181,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   if (!isLast)
                     Padding(
                       padding: const EdgeInsets.only(left: 60, right: 20),
-                      child: Divider(
-                          height: 1,
-                          color: Colors.grey.withValues(alpha: 0.08)),
+                      child: Divider(height: 1, color: MoeTokens.surfaceBorder),
                     ),
                 ],
               );

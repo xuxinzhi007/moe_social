@@ -58,6 +58,16 @@ export type SpriteSourceMetadata = {
   generatedAt?: string
 }
 
+export type SpriteGenerationMode = 'source_frames' | 'video_extracted' | 'synthetic_transform'
+
+export type SpriteGenerationMetadata = {
+  mode: SpriteGenerationMode
+  action?: string
+  quality?: string
+  approximation?: string
+  sourceFrame?: number
+}
+
 export type SpriteLayer = {
   id: string
   path: string
@@ -79,6 +89,7 @@ export type SpriteResource = {
   animations: SpriteAnimation[]
   frameLayout: SpriteFrameLayout
   source: SpriteSourceMetadata
+  generation?: SpriteGenerationMetadata
   layers?: SpriteLayer[]
   frames?: SpriteFrameAdjustment[]
   frameAdjustments?: SpriteFrameAdjustment[]
