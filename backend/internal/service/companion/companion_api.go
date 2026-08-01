@@ -88,6 +88,36 @@ func (s *AppService) GetState(ctx context.Context, userID uint, in *companionv1.
 	}, nil
 }
 
+func (s *AppService) GetProactiveSettings(ctx context.Context, userID uint, in *companionv1.GetProactiveSettingsRequest) (*companionv1.GetProactiveSettingsReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	settings, err := engine.GetProactiveSettings(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &companionv1.GetProactiveSettingsReply{Settings: toProtoProactiveSettings(settings)}, nil
+}
+
+func (s *AppService) UpdateProactiveSettings(ctx context.Context, userID uint, in *companionv1.UpdateProactiveSettingsRequest) (*companionv1.UpdateProactiveSettingsReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	settings, err := engine.UpdateProactiveSettings(ctx, userID, companionbiz.ProactiveSettings{
+		Enabled:        in.GetEnabled(),
+		DailyLimit:     int(in.GetDailyLimit()),
+		QuietStart:     int(in.GetQuietStart()),
+		QuietEnd:       int(in.GetQuietEnd()),
+		TimezoneOffset: int(in.GetTimezoneOffset()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &companionv1.UpdateProactiveSettingsReply{Settings: toProtoProactiveSettings(settings)}, nil
+}
+
 func (s *AppService) ListMemories(ctx context.Context, userID uint, in *companionv1.ListMemoriesRequest) (*companionv1.ListMemoriesReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
@@ -245,6 +275,19 @@ func clampLimit(raw int32) int {
 		return maxCompanionListLimit
 	}
 	return limit
+}
+
+func toProtoProactiveSettings(settings *companionbiz.ProactiveSettings) *companionv1.CompanionProactiveSettingsMsg {
+	if settings == nil {
+		return nil
+	}
+	return &companionv1.CompanionProactiveSettingsMsg{
+		Enabled:        settings.Enabled,
+		DailyLimit:     int32(settings.DailyLimit),
+		QuietStart:     int32(settings.QuietStart),
+		QuietEnd:       int32(settings.QuietEnd),
+		TimezoneOffset: int32(settings.TimezoneOffset),
+	}
 }
 
 // ── Proto 转换函数 ──

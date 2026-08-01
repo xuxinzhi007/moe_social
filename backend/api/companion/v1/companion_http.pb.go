@@ -22,6 +22,7 @@ const _ = http.SupportPackageIsVersion1
 const OperationCompanionConfirmMemory = "/companion.v1.Companion/ConfirmMemory"
 const OperationCompanionDeleteMemory = "/companion.v1.Companion/DeleteMemory"
 const OperationCompanionGetCommunityIdentity = "/companion.v1.Companion/GetCommunityIdentity"
+const OperationCompanionGetProactiveSettings = "/companion.v1.Companion/GetProactiveSettings"
 const OperationCompanionGetProfile = "/companion.v1.Companion/GetProfile"
 const OperationCompanionGetState = "/companion.v1.Companion/GetState"
 const OperationCompanionListChatHistory = "/companion.v1.Companion/ListChatHistory"
@@ -29,12 +30,14 @@ const OperationCompanionListMemories = "/companion.v1.Companion/ListMemories"
 const OperationCompanionListRelationshipEvents = "/companion.v1.Companion/ListRelationshipEvents"
 const OperationCompanionSetMemoryPinned = "/companion.v1.Companion/SetMemoryPinned"
 const OperationCompanionUpdateMemory = "/companion.v1.Companion/UpdateMemory"
+const OperationCompanionUpdateProactiveSettings = "/companion.v1.Companion/UpdateProactiveSettings"
 const OperationCompanionUpsertProfile = "/companion.v1.Companion/UpsertProfile"
 
 type CompanionHTTPServer interface {
 	ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error)
 	DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error)
 	GetCommunityIdentity(context.Context, *GetCommunityIdentityRequest) (*GetCommunityIdentityReply, error)
+	GetProactiveSettings(context.Context, *GetProactiveSettingsRequest) (*GetProactiveSettingsReply, error)
 	// GetProfile Profile
 	GetProfile(context.Context, *GetProfileRequest) (*GetProfileReply, error)
 	// GetState State（当前状态，含人格化表达 + 动态）
@@ -46,6 +49,7 @@ type CompanionHTTPServer interface {
 	ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error)
 	SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error)
 	UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error)
+	UpdateProactiveSettings(context.Context, *UpdateProactiveSettingsRequest) (*UpdateProactiveSettingsReply, error)
 	UpsertProfile(context.Context, *UpsertProfileRequest) (*UpsertProfileReply, error)
 }
 
@@ -60,6 +64,8 @@ func RegisterCompanionHTTPServer(s *http.Server, srv CompanionHTTPServer) {
 	r.POST("/api/companion/memories/{memory_id}/pin", _Companion_SetMemoryPinned0_HTTP_Handler(srv))
 	r.PUT("/api/companion/memories/{memory_id}", _Companion_UpdateMemory0_HTTP_Handler(srv))
 	r.GET("/api/companion/chat/history", _Companion_ListChatHistory0_HTTP_Handler(srv))
+	r.GET("/api/companion/proactive-settings", _Companion_GetProactiveSettings0_HTTP_Handler(srv))
+	r.PUT("/api/companion/proactive-settings", _Companion_UpdateProactiveSettings0_HTTP_Handler(srv))
 	r.POST("/api/companion/memories/{memory_id}/confirm", _Companion_ConfirmMemory0_HTTP_Handler(srv))
 	r.GET("/api/companion/relationship-events", _Companion_ListRelationshipEvents0_HTTP_Handler(srv))
 }
@@ -253,6 +259,47 @@ func _Companion_ListChatHistory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx 
 	}
 }
 
+func _Companion_GetProactiveSettings0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetProactiveSettingsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionGetProactiveSettings)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetProactiveSettings(ctx, req.(*GetProactiveSettingsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetProactiveSettingsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_UpdateProactiveSettings0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in UpdateProactiveSettingsRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionUpdateProactiveSettings)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.UpdateProactiveSettings(ctx, req.(*UpdateProactiveSettingsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*UpdateProactiveSettingsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _Companion_ConfirmMemory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ConfirmMemoryRequest
@@ -301,6 +348,7 @@ type CompanionHTTPClient interface {
 	ConfirmMemory(ctx context.Context, req *ConfirmMemoryRequest, opts ...http.CallOption) (rsp *ConfirmMemoryReply, err error)
 	DeleteMemory(ctx context.Context, req *DeleteMemoryRequest, opts ...http.CallOption) (rsp *DeleteMemoryReply, err error)
 	GetCommunityIdentity(ctx context.Context, req *GetCommunityIdentityRequest, opts ...http.CallOption) (rsp *GetCommunityIdentityReply, err error)
+	GetProactiveSettings(ctx context.Context, req *GetProactiveSettingsRequest, opts ...http.CallOption) (rsp *GetProactiveSettingsReply, err error)
 	// GetProfile Profile
 	GetProfile(ctx context.Context, req *GetProfileRequest, opts ...http.CallOption) (rsp *GetProfileReply, err error)
 	// GetState State（当前状态，含人格化表达 + 动态）
@@ -312,6 +360,7 @@ type CompanionHTTPClient interface {
 	ListRelationshipEvents(ctx context.Context, req *ListRelationshipEventsRequest, opts ...http.CallOption) (rsp *ListRelationshipEventsReply, err error)
 	SetMemoryPinned(ctx context.Context, req *SetMemoryPinnedRequest, opts ...http.CallOption) (rsp *SetMemoryPinnedReply, err error)
 	UpdateMemory(ctx context.Context, req *UpdateMemoryRequest, opts ...http.CallOption) (rsp *UpdateMemoryReply, err error)
+	UpdateProactiveSettings(ctx context.Context, req *UpdateProactiveSettingsRequest, opts ...http.CallOption) (rsp *UpdateProactiveSettingsReply, err error)
 	UpsertProfile(ctx context.Context, req *UpsertProfileRequest, opts ...http.CallOption) (rsp *UpsertProfileReply, err error)
 }
 
@@ -354,6 +403,19 @@ func (c *CompanionHTTPClientImpl) GetCommunityIdentity(ctx context.Context, in *
 	pattern := "/api/companion/community-identity"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationCompanionGetCommunityIdentity))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) GetProactiveSettings(ctx context.Context, in *GetProactiveSettingsRequest, opts ...http.CallOption) (*GetProactiveSettingsReply, error) {
+	var out GetProactiveSettingsReply
+	pattern := "/api/companion/proactive-settings"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionGetProactiveSettings))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -449,6 +511,19 @@ func (c *CompanionHTTPClientImpl) UpdateMemory(ctx context.Context, in *UpdateMe
 	pattern := "/api/companion/memories/{memory_id}"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationCompanionUpdateMemory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) UpdateProactiveSettings(ctx context.Context, in *UpdateProactiveSettingsRequest, opts ...http.CallOption) (*UpdateProactiveSettingsReply, error) {
+	var out UpdateProactiveSettingsReply
+	pattern := "/api/companion/proactive-settings"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionUpdateProactiveSettings))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "PUT", path, in, &out, opts...)
 	if err != nil {

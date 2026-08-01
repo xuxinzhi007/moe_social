@@ -19,17 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Companion_GetProfile_FullMethodName             = "/companion.v1.Companion/GetProfile"
-	Companion_GetCommunityIdentity_FullMethodName   = "/companion.v1.Companion/GetCommunityIdentity"
-	Companion_UpsertProfile_FullMethodName          = "/companion.v1.Companion/UpsertProfile"
-	Companion_GetState_FullMethodName               = "/companion.v1.Companion/GetState"
-	Companion_ListMemories_FullMethodName           = "/companion.v1.Companion/ListMemories"
-	Companion_DeleteMemory_FullMethodName           = "/companion.v1.Companion/DeleteMemory"
-	Companion_SetMemoryPinned_FullMethodName        = "/companion.v1.Companion/SetMemoryPinned"
-	Companion_UpdateMemory_FullMethodName           = "/companion.v1.Companion/UpdateMemory"
-	Companion_ListChatHistory_FullMethodName        = "/companion.v1.Companion/ListChatHistory"
-	Companion_ConfirmMemory_FullMethodName          = "/companion.v1.Companion/ConfirmMemory"
-	Companion_ListRelationshipEvents_FullMethodName = "/companion.v1.Companion/ListRelationshipEvents"
+	Companion_GetProfile_FullMethodName              = "/companion.v1.Companion/GetProfile"
+	Companion_GetCommunityIdentity_FullMethodName    = "/companion.v1.Companion/GetCommunityIdentity"
+	Companion_UpsertProfile_FullMethodName           = "/companion.v1.Companion/UpsertProfile"
+	Companion_GetState_FullMethodName                = "/companion.v1.Companion/GetState"
+	Companion_ListMemories_FullMethodName            = "/companion.v1.Companion/ListMemories"
+	Companion_DeleteMemory_FullMethodName            = "/companion.v1.Companion/DeleteMemory"
+	Companion_SetMemoryPinned_FullMethodName         = "/companion.v1.Companion/SetMemoryPinned"
+	Companion_UpdateMemory_FullMethodName            = "/companion.v1.Companion/UpdateMemory"
+	Companion_ListChatHistory_FullMethodName         = "/companion.v1.Companion/ListChatHistory"
+	Companion_GetProactiveSettings_FullMethodName    = "/companion.v1.Companion/GetProactiveSettings"
+	Companion_UpdateProactiveSettings_FullMethodName = "/companion.v1.Companion/UpdateProactiveSettings"
+	Companion_ConfirmMemory_FullMethodName           = "/companion.v1.Companion/ConfirmMemory"
+	Companion_ListRelationshipEvents_FullMethodName  = "/companion.v1.Companion/ListRelationshipEvents"
 )
 
 // CompanionClient is the client API for Companion service.
@@ -49,6 +51,8 @@ type CompanionClient interface {
 	UpdateMemory(ctx context.Context, in *UpdateMemoryRequest, opts ...grpc.CallOption) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error)
+	GetProactiveSettings(ctx context.Context, in *GetProactiveSettingsRequest, opts ...grpc.CallOption) (*GetProactiveSettingsReply, error)
+	UpdateProactiveSettings(ctx context.Context, in *UpdateProactiveSettingsRequest, opts ...grpc.CallOption) (*UpdateProactiveSettingsReply, error)
 	ConfirmMemory(ctx context.Context, in *ConfirmMemoryRequest, opts ...grpc.CallOption) (*ConfirmMemoryReply, error)
 	ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...grpc.CallOption) (*ListRelationshipEventsReply, error)
 }
@@ -151,6 +155,26 @@ func (c *companionClient) ListChatHistory(ctx context.Context, in *ListChatHisto
 	return out, nil
 }
 
+func (c *companionClient) GetProactiveSettings(ctx context.Context, in *GetProactiveSettingsRequest, opts ...grpc.CallOption) (*GetProactiveSettingsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProactiveSettingsReply)
+	err := c.cc.Invoke(ctx, Companion_GetProactiveSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) UpdateProactiveSettings(ctx context.Context, in *UpdateProactiveSettingsRequest, opts ...grpc.CallOption) (*UpdateProactiveSettingsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateProactiveSettingsReply)
+	err := c.cc.Invoke(ctx, Companion_UpdateProactiveSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) ConfirmMemory(ctx context.Context, in *ConfirmMemoryRequest, opts ...grpc.CallOption) (*ConfirmMemoryReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ConfirmMemoryReply)
@@ -188,6 +212,8 @@ type CompanionServer interface {
 	UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
+	GetProactiveSettings(context.Context, *GetProactiveSettingsRequest) (*GetProactiveSettingsReply, error)
+	UpdateProactiveSettings(context.Context, *UpdateProactiveSettingsRequest) (*UpdateProactiveSettingsReply, error)
 	ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error)
 	ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error)
 	mustEmbedUnimplementedCompanionServer()
@@ -226,6 +252,12 @@ func (UnimplementedCompanionServer) UpdateMemory(context.Context, *UpdateMemoryR
 }
 func (UnimplementedCompanionServer) ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListChatHistory not implemented")
+}
+func (UnimplementedCompanionServer) GetProactiveSettings(context.Context, *GetProactiveSettingsRequest) (*GetProactiveSettingsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProactiveSettings not implemented")
+}
+func (UnimplementedCompanionServer) UpdateProactiveSettings(context.Context, *UpdateProactiveSettingsRequest) (*UpdateProactiveSettingsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateProactiveSettings not implemented")
 }
 func (UnimplementedCompanionServer) ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConfirmMemory not implemented")
@@ -416,6 +448,42 @@ func _Companion_ListChatHistory_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_GetProactiveSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProactiveSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).GetProactiveSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_GetProactiveSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).GetProactiveSettings(ctx, req.(*GetProactiveSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_UpdateProactiveSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProactiveSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).UpdateProactiveSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_UpdateProactiveSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).UpdateProactiveSettings(ctx, req.(*UpdateProactiveSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_ConfirmMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ConfirmMemoryRequest)
 	if err := dec(in); err != nil {
@@ -494,6 +562,14 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListChatHistory",
 			Handler:    _Companion_ListChatHistory_Handler,
+		},
+		{
+			MethodName: "GetProactiveSettings",
+			Handler:    _Companion_GetProactiveSettings_Handler,
+		},
+		{
+			MethodName: "UpdateProactiveSettings",
+			Handler:    _Companion_UpdateProactiveSettings_Handler,
 		},
 		{
 			MethodName: "ConfirmMemory",

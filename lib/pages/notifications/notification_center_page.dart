@@ -65,7 +65,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     try {
       await provider.markAllActivityAsRead();
       if (!mounted) return;
-      ErrorHandler.showSuccess(context, 'All notifications marked as read');
+      ErrorHandler.showSuccess(context, '已全部标记为已读');
     } catch (e) {
       if (!mounted) return;
       ErrorHandler.handleException(
@@ -94,11 +94,11 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     final difference = now.difference(time);
 
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
+      return difference.inMinutes <= 0 ? '刚刚' : '${difference.inMinutes} 分钟前';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours} 小时前';
     } else if (difference.inDays < 30) {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays} 天前';
     } else {
       return '${time.month}/${time.day}';
     }
@@ -133,6 +133,10 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
         icon = Icons.card_giftcard_rounded;
         color = Colors.amber;
         break;
+      case NotificationModel.companionProactive:
+        icon = Icons.auto_awesome_rounded;
+        color = MoeTokens.primary;
+        break;
       default:
         icon = Icons.notifications_rounded;
         color = Colors.grey;
@@ -160,7 +164,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           backgroundColor: MoeTokens.pageBackground,
           appBar: AppBar(
             title: Text(
-              'Notification Center',
+             '通知中心',
               style: TextStyle(
                 fontWeight: MoeTokens.fontWeightTitle,
                 fontSize: MoeTokens.textLg,
@@ -172,7 +176,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/announcements'),
-                child: const Text('Notices'),
+                 child: const Text('公告'),
               ),
               if (unreadCount > 0)
                 TextButton.icon(
@@ -181,7 +185,7 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                     Icons.done_all_rounded,
                     size: MoeTokens.spaceLg,
                   ),
-                  label: const Text('Read all'),
+                   label: const Text('全部已读'),
                   style: TextButton.styleFrom(
                     foregroundColor: moe.primary,
                   ),
@@ -208,8 +212,8 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
               : notifications.isEmpty
                   ? const Center(
                       child: MoeEmptyState(
-                        title: 'No notifications yet',
-                        subtitle: 'New interactions will appear here',
+                        title: '暂时没有通知',
+                        subtitle: '新的互动和伙伴消息会出现在这里',
                         icon: Icons.notifications_none_rounded,
                         compact: false,
                       ),
@@ -247,8 +251,13 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                                 }
                                 if (notification.type ==
                                     NotificationModel.system) {
-                                  Navigator.pushNamed(
-                                      context, '/announcements');
+                                   Navigator.pushNamed(
+                                       context, '/announcements');
+                                } else if (notification.type ==
+                                    NotificationModel.companionProactive) {
+                                  unawaited(
+                                    CompanionChatLauncher.openChat(context),
+                                  );
                                 }
                               },
                               child: Container(

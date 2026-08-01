@@ -2,6 +2,7 @@ package companionapp
 
 import (
 	"context"
+	"time"
 
 	companionbiz "backend/internal/biz/companion"
 	"backend/model"
@@ -33,9 +34,15 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 		}
 		engine.OnProactive = func(userID uint, message, reason string) {
 			if db != nil {
+				var recent model.Notification
+				if err := db.WithContext(context.Background()).
+					Where("user_id = ? AND type = ? AND created_at >= ?", userID, 9, time.Now().Add(-24*time.Hour)).
+					Order("created_at DESC").First(&recent).Error; err == nil {
+					return
+				}
 				notice := &model.Notification{
 					UserID:  userID,
-					Type:    4,
+					Type:    9,
 					Content: message,
 				}
 				if err := db.WithContext(context.Background()).Create(notice).Error; err != nil {

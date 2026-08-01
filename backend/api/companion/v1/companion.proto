@@ -27,6 +27,14 @@ message CompanionProfileMsg {
   string world_bind_status = 12;
 }
 
+message CompanionProactiveSettingsMsg {
+  bool enabled = 1;
+  int32 daily_limit = 2;
+  int32 quiet_start = 3;
+  int32 quiet_end = 4;
+  int32 timezone_offset = 5;
+}
+
 message CommunityIdentityMsg {
   string user_id = 1;
   string user_name = 2;
@@ -160,6 +168,24 @@ message UpdateMemoryReply {
   CompanionMemoryMsg memory = 1;
 }
 
+message GetProactiveSettingsRequest {}
+
+message GetProactiveSettingsReply {
+  CompanionProactiveSettingsMsg settings = 1;
+}
+
+message UpdateProactiveSettingsRequest {
+  bool enabled = 1;
+  int32 daily_limit = 2;
+  int32 quiet_start = 3;
+  int32 quiet_end = 4;
+  int32 timezone_offset = 5;
+}
+
+message UpdateProactiveSettingsReply {
+  CompanionProactiveSettingsMsg settings = 1;
+}
+
 message ConfirmMemoryRequest {
   uint64 memory_id = 1;
 }
@@ -229,6 +255,16 @@ service Companion {
   // Chat History
   rpc ListChatHistory(ListChatHistoryRequest) returns (ListChatHistoryReply) {
     option (google.api.http) = {get: "/api/companion/chat/history"};
+  }
+
+  rpc GetProactiveSettings(GetProactiveSettingsRequest) returns (GetProactiveSettingsReply) {
+    option (google.api.http) = {get: "/api/companion/proactive-settings"};
+  }
+  rpc UpdateProactiveSettings(UpdateProactiveSettingsRequest) returns (UpdateProactiveSettingsReply) {
+    option (google.api.http) = {
+      put: "/api/companion/proactive-settings"
+      body: "*"
+    };
   }
   rpc ConfirmMemory(ConfirmMemoryRequest) returns (ConfirmMemoryReply) {
     option (google.api.http) = {
