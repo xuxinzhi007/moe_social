@@ -15,12 +15,14 @@ import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
 import '../../utils/post_navigation.dart';
 import 'companion_hub_viewmodel.dart';
+import 'ai_provider_profiles_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/moe_error_copy.dart';
+import '../../widgets/motion/moe_pressable.dart';
 
 /// AI 伙伴关系首页（产品叙事：长期陪伴；正式主路径入口）。
 ///
@@ -160,6 +162,14 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
       return;
     }
     await Navigator.of(context).pushNamed('/pet/home');
+  }
+
+  Future<void> _openProviderSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const AiProviderProfilesPage(),
+      ),
+    );
   }
 
   Future<void> _editProfile() async {
@@ -523,6 +533,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                           controller: agentIdController,
                           label: 'Agent ID',
                           hint: '对接 OpenClaw / 后端 AI 的账号标识',
+                          maxLength: 64,
                         ),
                         const SizedBox(height: 12),
                         _ProfileField(
@@ -602,6 +613,8 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
         },
       );
     } finally {
+      // BottomSheet returns before its exit animation has fully detached TextField dependents.
+      await Future<void>.delayed(const Duration(milliseconds: 400));
       nameController.dispose();
       emojiController.dispose();
       personaController.dispose();
@@ -628,13 +641,18 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
             onPressed: () => unawaited(_openMemories()),
           ),
           IconButton(
+            tooltip: '模型服务配置',
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: _openProviderSettings,
+          ),
+          IconButton(
             tooltip: '刷新',
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _hub.isLoading ? null : _hub.loadDashboard,
           ),
           IconButton(
             tooltip: '编辑资料',
-            icon: const Icon(Icons.tune_rounded),
+            icon: const Icon(Icons.edit_note_rounded),
             onPressed: _isSavingProfile ? null : _editProfile,
           ),
         ],
@@ -658,9 +676,9 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                 children: [
                   Builder(
                     builder: (context) {
-                      final hasAttention =
-                          context.watch<CompanionPresenceProvider>().hasAttention;
-                      final leadItem = _hub.latestDailyItem;
+                      final hasAttention = context
+                          .watch<CompanionPresenceProvider>()
+                          .hasAttention;
                       final pulse = CompanionHubViewModel.buildPulseData(
                         profile: _hub.profile,
                         state: _hub.state,
@@ -668,52 +686,14 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                         hasAttention: hasAttention,
                       );
 
-                      void openPulse() {
-                        if (hasAttention) {
-                          unawaited(_openChat());
-                          return;
-                        }
-                        switch (leadItem?.kind) {
-                          case 'memory':
-                            unawaited(
-                              _openMemories(
-                                focusMemoryId: leadItem?.memoryId,
-                              ),
-                            );
-                            return;
-                          case 'world':
-                          case 'moment':
-                            unawaited(_openLifeWorld());
-                            return;
-                          case 'post':
-                            if (leadItem != null) {
-                              unawaited(_openDailyPost(leadItem));
-                              return;
-                            }
-                            break;
-                          case 'chat':
-                            unawaited(_openChat());
-                            return;
-                          default:
-                            break;
-                        }
-                        unawaited(_openChat());
-                      }
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _CompanionPulseCard(
-                          pulse: pulse,
-                          onTap: openPulse,
-                        ),
+                      return _HeroCard(
+                        profile: _hub.profile,
+                        state: _hub.state,
+                        pulse: pulse,
+                        onChat: _openChat,
+                        onCustomize: _isSavingProfile ? null : _editProfile,
                       );
                     },
-                  ),
-                  _HeroCard(
-                    profile: _hub.profile,
-                    state: _hub.state,
-                    onChat: _openChat,
-                    onCustomize: _isSavingProfile ? null : _editProfile,
                   ),
                   if (FeatureFlags.showLifeEngine) ...[
                     const SizedBox(height: 14),
@@ -733,6 +713,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                   if (FeatureFlags.petLifeSim) ...[
                     const SizedBox(height: 14),
                     _PetHomeStrip(onOpen: _openPetHome),
+                  ],
+                  if (_hub.dailySummary != null) ...[
+                    const SizedBox(height: 16),
+                    _DailySummaryCard(summary: _hub.dailySummary!),
                   ],
                   const SizedBox(height: 16),
                   _DailyFeedCard(
@@ -755,65 +739,18 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   }
 }
 
-class _AttentionBanner extends StatelessWidget {
-  const _AttentionBanner({required this.onChat});
-
-  final VoidCallback onChat;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFFF1F4),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () {
-          CompanionPresenceProvider.instance.clearAttention();
-          onChat();
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.favorite_rounded,
-                  color: Color(0xFFE97891), size: 20),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'TA 想你了，去聊聊吧',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AiBrandTokens.titleColor,
-                  ),
-                ),
-              ),
-              Text(
-                '去聊天',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.pink.shade400,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.profile,
     required this.state,
+    required this.pulse,
     required this.onChat,
     this.onCustomize,
   });
 
   final CompanionProfileData profile;
   final CompanionStateData state;
+  final CompanionPulseData pulse;
   final VoidCallback onChat;
   final VoidCallback? onCustomize;
 
@@ -821,17 +758,10 @@ class _HeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
     final hasPersona = profile.persona.trim().isNotEmpty;
-    final persona = hasPersona
-        ? profile.persona.trim()
-        : '会长期陪着你、慢慢懂你的虚拟伙伴。';
-    final moodLine = state.moodThought.trim().isNotEmpty
-        ? state.moodThought.trim()
-        : (state.greeting.trim().isNotEmpty
-            ? state.greeting.trim()
-            : '今天也在等你来聊聊。');
+    final persona = hasPersona ? profile.persona.trim() : '会长期陪着你、慢慢懂你的虚拟伙伴。';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -840,6 +770,13 @@ class _HeroCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A8A2387),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,10 +787,10 @@ class _HeroCard extends StatelessWidget {
               CompanionAvatar(
                 emoji: profile.emoji,
                 avatarUrl: profile.avatarUrl,
-                size: 80,
-                borderRadius: BorderRadius.circular(26),
+                size: 58,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,20 +798,52 @@ class _HeroCard extends StatelessWidget {
                     Text(
                       name,
                       style: const TextStyle(
-                        fontSize: 24,
+                        fontSize: 19,
                         fontWeight: FontWeight.w900,
                         color: AiBrandTokens.titleColor,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
                     Text(
                       persona,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.45,
+                        fontSize: 12,
+                        height: 1.25,
                         color: Color(0xFF5D4E6E),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(99),
+                  border:
+                      Border.all(color: Colors.white.withValues(alpha: 0.8)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF51B982),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Text(
+                      '在这里',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AiBrandTokens.companionInkMuted,
                       ),
                     ),
                   ],
@@ -883,7 +852,7 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           if (!hasPersona && onCustomize != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             TextButton.icon(
               onPressed: onCustomize,
               icon: const Icon(Icons.badge_outlined, size: 18),
@@ -895,31 +864,41 @@ class _HeroCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 14),
-          Text(
-            moodLine,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              fontWeight: FontWeight.w600,
-              color: AiBrandTokens.titleColor,
-            ),
+          const SizedBox(height: 8),
+          _CompanionSummaryBlock(
+            pulse: pulse,
+            profile: profile,
+            state: state,
           ),
-          const SizedBox(height: 12),
-          _RelationshipProgressCard(profile: profile),
-          if (state.activityLabel.trim().isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _MiniChip('近况', state.activityLabel.trim()),
-          ],
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onChat,
-            icon: const Icon(Icons.chat_bubble_rounded),
-            label: const Text('开始聊天'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: AiBrandTokens.primary,
-              foregroundColor: Colors.white,
+          const SizedBox(height: 10),
+          MoePressable(
+            onTap: onChat,
+            borderRadius: BorderRadius.circular(15),
+            child: Semantics(
+              button: true,
+              label: '开始聊天',
+              child: Container(
+                width: double.infinity,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: AiBrandTokens.primary,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.chat_bubble_rounded, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      '开始聊天',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -928,70 +907,125 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _RelationshipProgressCard extends StatelessWidget {
-  const _RelationshipProgressCard({required this.profile});
+class _CompanionSummaryBlock extends StatelessWidget {
+  const _CompanionSummaryBlock({
+    required this.pulse,
+    required this.profile,
+    required this.state,
+  });
 
+  final CompanionPulseData pulse;
   final CompanionProfileData profile;
+  final CompanionStateData state;
 
   @override
   Widget build(BuildContext context) {
+    final isAttention = pulse.kind == 'attention';
+    final accent =
+        isAttention ? const Color(0xFFE97891) : AiBrandTokens.primary;
     final stage = profile.relationshipStageLabel;
     final progress = profile.relationshipProgress;
     final progressLabel = profile.relationshipProgressLabel;
+    IconData icon = Icons.auto_awesome_rounded;
+    if (pulse.kind == 'attention') {
+      icon = Icons.favorite_rounded;
+    } else if (pulse.kind == 'memory') {
+      icon = Icons.psychology_alt_rounded;
+    } else if (pulse.kind == 'world' || pulse.kind == 'moment') {
+      icon = Icons.public_rounded;
+    } else if (pulse.kind == 'post') {
+      icon = Icons.article_rounded;
+    } else if (pulse.kind == 'chat') {
+      icon = Icons.chat_bubble_rounded;
+    }
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+        color: Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.12)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.favorite_rounded,
-                  size: 18, color: Color(0xFFE97891)),
-              const SizedBox(width: 8),
-              const Text(
-                '关系进程',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AiBrandTokens.titleColor,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                stage,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFFE97891),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              minHeight: 8,
-              value: progress,
-              backgroundColor: const Color(0xFFF2E9F4),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFFE97891),
-              ),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
+            alignment: Alignment.center,
+            child: Icon(icon, color: accent, size: 16),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '$progressLabel · 关系在持续生长中',
-            style: const TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: Color(0xFF6B4A52),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        pulse.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AiBrandTokens.titleColor,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      stage,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  pulse.body,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.2,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: LinearProgressIndicator(
+                    minHeight: 4,
+                    value: progress,
+                    backgroundColor: const Color(0xFFF2E9F4),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Color(0xFFE97891),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  state.activityLabel.trim().isNotEmpty
+                      ? '$progressLabel · ${state.activityLabel.trim()}'
+                      : '$progressLabel · 关系在持续生长中',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.2,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1209,6 +1243,112 @@ class _DailyFeedCard extends StatelessWidget {
   }
 }
 
+class _DailySummaryCard extends StatelessWidget {
+  const _DailySummaryCard({required this.summary});
+
+  final CompanionDailySummaryData summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AiBrandTokens.companionSurface, Color(0xFFFFF2F5)],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AiBrandTokens.companionBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F8A2387),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE3D8),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              size: 19,
+              color: Color(0xFFE97891),
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  summary.title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AiBrandTokens.titleColor,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AiBrandTokens.companionGlow,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    summary.sceneLabel,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFFE97891),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  summary.body,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: Color(0xFF6B5962),
+                  ),
+                ),
+                if (summary.continuationHint != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '可以继续：${summary.continuationHint}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Color(0xFFE97891),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DailyTile extends StatelessWidget {
   const _DailyTile({
     required this.item,
@@ -1298,6 +1438,8 @@ class _DailyTile extends StatelessWidget {
       );
     case 'memory':
       return (icon: Icons.psychology_alt_rounded, bg: const Color(0xFFF3E8FF));
+    case 'relationship':
+      return (icon: Icons.favorite_rounded, bg: const Color(0xFFFFE8EE));
     case 'post':
     default:
       return (icon: Icons.article_outlined, bg: const Color(0xFFEFE7FF));
@@ -1367,52 +1509,27 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _MiniChip extends StatelessWidget {
-  const _MiniChip(this.label, this.value);
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.84),
-        borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: AiBrandTokens.primary.withValues(alpha: 0.14)),
-      ),
-      child: Text(
-        '$label · $value',
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AiBrandTokens.primary,
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileField extends StatelessWidget {
   const _ProfileField({
     required this.controller,
     required this.label,
     required this.hint,
     this.maxLines = 1,
+    this.maxLength,
   });
 
   final TextEditingController controller;
   final String label;
   final String hint;
   final int maxLines;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
+      maxLength: maxLength,
       decoration: _profileFieldDecoration(label).copyWith(hintText: hint),
     );
   }

@@ -35,3 +35,24 @@ func TestBumpIntimacyPersists(t *testing.T) {
 		t.Fatalf("intimacy=%v level=%d, want 1 / 1", row.IntimacyScore, row.RelationshipLevel)
 	}
 }
+
+func TestBumpIntimacyRecordsLevelUpEvent(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		Name:              "小花",
+		IntimacyScore:     9,
+		RelationshipLevel: 1,
+	})
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if err := engine.BumpIntimacy(context.Background(), 7, IntimacyDeltaChat); err != nil {
+		t.Fatalf("BumpIntimacy() error = %v", err)
+	}
+	if len(store.relationshipEvents) != 1 {
+		t.Fatalf("relationship events=%d, want 1", len(store.relationshipEvents))
+	}
+	event := store.relationshipEvents[0]
+	if event.EventType != "level_up" || event.RelationshipLevel != 2 {
+		t.Fatalf("event=%+v, want level_up at level 2", event)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	companionbiz "backend/internal/biz/companion"
+	"backend/model"
 	"gorm.io/gorm"
 )
 
@@ -29,6 +30,19 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 			if err == nil && state != nil {
 				hub.BroadcastGreeting(userID, greeting, state.MoodThought, state.ActivityLabel)
 			}
+		}
+		engine.OnProactive = func(userID uint, message, reason string) {
+			if db != nil {
+				notice := &model.Notification{
+					UserID:  userID,
+					Type:    4,
+					Content: message,
+				}
+				if err := db.WithContext(context.Background()).Create(notice).Error; err != nil {
+					// WS delivery still proceeds when the inbox write is unavailable.
+				}
+			}
+			hub.BroadcastProactive(userID, message, reason)
 		}
 	}
 

@@ -83,6 +83,10 @@ type UserStore interface {
 	CreateUserAvatar(ctx context.Context, avatar *model.UserAvatar) error
 	UpdateUserAvatarFields(ctx context.Context, existing *model.UserAvatar, updates map[string]interface{}) error
 
+	UpsertAvatarPackRevision(ctx context.Context, revision *model.AvatarPackRevision) error
+	GetAvatarPackRevision(ctx context.Context, userID, packID, version string) (model.AvatarPackRevision, bool, error)
+	GetLatestAvatarPackRevision(ctx context.Context, userID, packID string) (model.AvatarPackRevision, bool, error)
+
 	FindUserByFeishuOpenID(ctx context.Context, openID string) (model.User, error)
 	FindUserByWechatOpenID(ctx context.Context, openID string) (model.User, error)
 	UsernameTaken(ctx context.Context, candidate string) (bool, error)

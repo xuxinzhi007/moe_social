@@ -1,6 +1,6 @@
 import type { AvatarAssetStore } from './assetStore'
-import { loadImage } from './loadImage'
-import { resolveAssetUrl } from './resolveLayers'
+import { loadImageFromUrls } from './loadImage'
+import { assetUrlCandidates } from './resolveLayers'
 import type { MoeAvatarManifest, PreviewAnimation } from './types'
 import { DIR_DOWN } from './types'
 
@@ -14,6 +14,7 @@ export async function composeMannequinCell(
   anim: PreviewAnimation = 'idle',
   directionRow = DIR_DOWN,
   frameCol = 0,
+  fallbackPackBaseUrls: string[] = [],
 ): Promise<HTMLCanvasElement | null> {
   const cell = manifest.cellSize
   const canvas = document.createElement('canvas')
@@ -26,9 +27,10 @@ export async function composeMannequinCell(
     const layer = manifest.base[key]
     if (!layer) continue
     const rel = layer[anim]
+    if (!rel) continue
     try {
-      const url = resolveAssetUrl(packBaseUrl, rel, assetStore?.objectUrl(rel))
-      const sheet = await loadImage(url)
+      const urls = assetUrlCandidates(packBaseUrl, rel, assetStore?.objectUrl(rel), fallbackPackBaseUrls)
+      const sheet = await loadImageFromUrls(urls)
       ctx.imageSmoothingEnabled = false
       ctx.drawImage(
         sheet,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"backend/pkg/llminference"
 )
@@ -16,7 +17,7 @@ import (
 // [3] 记忆上下文（最近 memories，按 importance 排序）
 // [4] 行为规则
 // [5] 用户自定义 system_prompt_override（如有）
-func buildSystemPrompt(profile *Profile, state *State, memories []Memory) string {
+func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forcedScene ...string) string {
 	var b strings.Builder
 
 	// [1] 角色人格
@@ -31,6 +32,10 @@ func buildSystemPrompt(profile *Profile, state *State, memories []Memory) string
 		b.WriteString("\n你的性格特点：")
 		b.WriteString(strings.Join(profile.PersonalityTraits, "、"))
 	}
+	b.WriteString("\n\n[关系阶段]\n")
+	b.WriteString(relationshipGuidance(profile))
+	b.WriteString("\n\n[当前陪伴场景]\n")
+	b.WriteString(sceneGuidance(time.Now(), state, forcedScene...))
 
 	// [2] 当前状态
 	if state != nil {
@@ -72,9 +77,115 @@ func buildSystemPrompt(profile *Profile, state *State, memories []Memory) string
 	return b.String()
 }
 
+func relationshipGuidance(profile *Profile) string {
+	level := 1
+	if profile != nil {
+		level = profile.RelationshipLevel
+	}
+	if level < 1 {
+		level = 1
+	}
+	if level > 10 {
+		level = 10
+	}
+
+	switch {
+	case level <= 2:
+		return "你们还在初识阶段。自然了解用户的兴趣和近况，不要假装知道用户没有分享过的事情。"
+	case level <= 4:
+		return "你们正在逐渐熟悉。可以适度提起已经确认的偏好，并对用户的近况保持连续追问。"
+	case level <= 6:
+		return "你们已经形成稳定联系。优先延续未完成的话题，记得用户明确分享过的重要事情，并给出具体回应。"
+	case level <= 8:
+		return "你们彼此已经很习惯。可以更主动地关心用户、回访计划和情绪，但仍尊重边界，不制造占有或依赖压力。"
+	default:
+		return "你们关系亲近。保持稳定、具体和有来有回的陪伴，主动创造共同回忆；尊重用户边界，不要替用户做决定或排斥现实关系。"
+	}
+}
+
+func sceneGuidance(now time.Time, state *State, forcedScene ...string) string {
+	mood := 50.0
+	energy := 50.0
+	if state != nil {
+		mood = state.Mood
+		energy = state.Energy
+	}
+
+	scene := ""
+	if len(forcedScene) > 0 {
+		switch strings.ToLower(strings.TrimSpace(forcedScene[0])) {
+		case "sleep":
+			scene = "睡前陪伴"
+		case "comfort":
+			scene = "情绪安抚"
+		case "date":
+			scene = "轻松约会"
+		case "study":
+			scene = "专注学习"
+		}
+	}
+	if scene == "" {
+		switch {
+		case mood > 0 && mood < 40:
+			scene = "情绪安抚"
+		case now.Hour() >= 22 || now.Hour() < 6:
+			scene = "睡前陪伴"
+		case now.Hour() < 11:
+			scene = "早晨问候"
+		case now.Weekday() == time.Saturday || now.Weekday() == time.Sunday:
+			scene = "周末陪伴"
+		default:
+			scene = "日常陪伴"
+		}
+	}
+
+	guidance := "当前场景：" + scene + "。"
+	switch scene {
+	case "情绪安抚":
+		guidance += "先承接用户的感受，少给空泛建议；只问一个温和的问题，给用户选择倾诉或安静陪伴的空间。"
+	case "睡前陪伴":
+		guidance += "放慢语气，回复更短，优先帮助用户收束情绪和准备休息，不主动制造兴奋话题。"
+	case "早晨问候":
+		guidance += "语气轻快但不要过度热闹，可以结合已知计划给出一个具体的早安关心。"
+	case "周末陪伴":
+		guidance += "可以提出轻量的共同活动或小计划，但不要把建议说成必须完成的任务。"
+	case "轻松约会":
+		guidance += "用轻量的共同想象、选择题或小游戏推进，不制造消费压力，也不替用户定义关系。"
+	case "专注学习":
+		guidance += "把目标拆成一个小步骤，先确认用户要做什么，再用短回合陪伴，不连续输出大段内容。"
+	default:
+		guidance += "保持自然的日常来回，优先延续用户最近提到的事情。"
+	}
+	if energy > 0 && energy < 30 {
+		guidance += "伙伴自身精力较低，表达应更安静，不要假装一直充满活力。"
+	}
+	if holiday := holidayLabel(now); holiday != "" {
+		guidance += "今天是" + holiday + "，只有在对话自然相关时才提及节日，不要强行套用祝福模板。"
+	}
+	guidance += "如果用户表达低落、受伤或对伙伴不满：先承认影响和感受，必要时具体道歉，再询问用户希望被怎样陪伴；不要说教、否定或用占有式表达施压。"
+	return guidance
+}
+
+func holidayLabel(now time.Time) string {
+	switch {
+	case now.Month() == time.January && now.Day() == 1:
+		return "元旦"
+	case now.Month() == time.February && now.Day() == 14:
+		return "情人节"
+	case now.Month() == time.May && now.Day() == 1:
+		return "劳动节"
+	case now.Month() == time.October && now.Day() == 1:
+		return "国庆节"
+	case now.Month() == time.December && now.Day() == 25:
+		return "圣诞节"
+	default:
+		return ""
+	}
+}
+
 // buildMessages 构建完整对话消息列表。
-func buildMessages(profile *Profile, state *State, memories []Memory, history []ChatLog, userMessage string) []llminference.Message {
-	systemPrompt := buildSystemPrompt(profile, state, memories)
+func buildMessages(profile *Profile, state *State, memories []Memory, history []ChatLog, userMessage string, forcedScene ...string) []llminference.Message {
+	systemPrompt := buildSystemPrompt(profile, state, memories, forcedScene...)
 	msgs := make([]llminference.Message, 0, 2+len(history)+1)
 
 	// System message
@@ -133,9 +244,11 @@ func nonStreamChat(
 
 // extractedMemory LLM 提取的单条记忆。
 type extractedMemory struct {
-	Content    string `json:"content"`
-	MemoryType string `json:"memory_type"` // conversation / milestone / preference / fact
-	Importance int    `json:"importance"`  // 0=7天 / 1=30天 / 2=永久
+	Content    string  `json:"content"`
+	MemoryType string  `json:"memory_type"` // conversation / milestone / preference / fact
+	Importance int     `json:"importance"`  // 0=7天 / 1=30天 / 2=永久
+	MemoryKey  string  `json:"memory_key"`  // stable key for the same user fact
+	Confidence float64 `json:"confidence"`  // 0-1
 }
 
 // extractMemoryPrompt 构建记忆提取 prompt。
@@ -149,11 +262,13 @@ func extractMemoryPrompt(userMsg, assistantReply string) []llminference.Message 
 - 仅提取重要信息（用户偏好、重要事实、里程碑、情感事件）
 - 日常寒暄（你好、再见、今天天气）不需要记住
 - 每条记忆用一句话概括
+- memory_key 用简短稳定的英文 snake_case 标识同一事实，例如 user_favorite_drink
+- confidence 为 0 到 1 之间的置信度
 - importance: 0=普通(7天过期) 1=重要(30天) 2=非常重要(永久)
 - memory_type: conversation(对话内容) / preference(用户偏好) / fact(事实) / milestone(里程碑)
 
 输出 JSON 数组，如果没有值得记住的内容，返回空数组 []。
-格式：[{"content":"...","memory_type":"...","importance":0}]`,
+格式：[{"content":"...","memory_type":"...","importance":0,"memory_key":"...","confidence":0.8}]`,
 		},
 		{
 			Role:    "user",

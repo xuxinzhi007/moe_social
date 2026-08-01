@@ -8,8 +8,8 @@ import { PetContentMaturityPanel } from '../features/moe-content/PetContentMatur
 const SECTIONS = [
   {
     to: '/biz/pet/avatar',
-    title: '角色装扮',
-    desc: '分层 walk/idle · 帽/衣/裤/鞋 · Canvas 叠层预览',
+    title: 'AI 精灵资源',
+    desc: '导入 PNG · 模板对齐 · 锚点校准 · sprite 草稿',
     status: 'MVP',
   },
   {

@@ -14,6 +14,18 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
   return p
 }
 
+export async function loadImageFromUrls(urls: string[]): Promise<HTMLImageElement> {
+  let lastError: unknown
+  for (const url of urls) {
+    try {
+      return await loadImage(url)
+    } catch (err) {
+      lastError = err
+    }
+  }
+  throw (lastError instanceof Error ? lastError : new Error('load failed'))
+}
+
 export function clearImageCache(): void {
   cache.clear()
 }

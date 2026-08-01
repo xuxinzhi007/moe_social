@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AvatarAssetStore } from '../assetStore'
-import { resolveAssetUrl } from '../composer/resolveLayers'
+import { assetUrlCandidates } from '../composer/resolveLayers'
 import type { PaintRect } from '../editor/layerTemplate'
 import type { MoeAvatarManifest } from '../types'
+import { loadImageFromUrls } from '../../../../../moe-avatar/core/src/loadImage'
+import { MOE_AVATAR_LEGACY_PACK_BASE } from '../../moe-content/constants'
 
 type Props = {
   manifest: MoeAvatarManifest
@@ -37,14 +39,9 @@ export function SheetGridPreview({
     setError(false)
 
     async function draw() {
-      const url = resolveAssetUrl(packBaseUrl, relPath, assetStore?.objectUrl(relPath))
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve()
-        img.onerror = () => reject(new Error('load'))
-        img.src = url
-      })
+      const img = await loadImageFromUrls(
+        assetUrlCandidates(packBaseUrl, relPath, assetStore?.objectUrl(relPath), [MOE_AVATAR_LEGACY_PACK_BASE]),
+      )
       if (cancelled) return
       const canvas = canvasRef.current
       if (!canvas) return

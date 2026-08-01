@@ -90,8 +90,9 @@ class CompanionPresenceProvider extends ChangeNotifier {
       changed = true;
     }
 
-    // 问候推送且用户不在伙伴页 → 点亮「TA 想你了」
-    if (event.type == 'greeting' && !_viewingCompanion) {
+    // 问候/主动回访且用户不在伙伴页 → 点亮「TA 想你了」
+    if ((event.type == 'greeting' || event.type == 'proactive') &&
+        !_viewingCompanion) {
       if (_attentionCount != 1) {
         _attentionCount = 1;
         changed = true;

@@ -3,6 +3,7 @@ package companionbiz
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -201,6 +202,13 @@ func TestDeleteAndPinMemory(t *testing.T) {
 	if edited.Content != "其实更喜欢狗" {
 		t.Fatalf("content = %q", edited.Content)
 	}
+	confirmed, err := engine.ConfirmMemory(context.Background(), 7, 1)
+	if err != nil {
+		t.Fatalf("ConfirmMemory: %v", err)
+	}
+	if !confirmed.UserConfirmed || confirmed.ConfirmedAt == nil {
+		t.Fatalf("confirm result = %+v", confirmed)
+	}
 
 	if err := engine.DeleteMemory(context.Background(), 7, 1); err != nil {
 		t.Fatalf("DeleteMemory: %v", err)
@@ -210,10 +218,43 @@ func TestDeleteAndPinMemory(t *testing.T) {
 	}
 }
 
+func TestMemoryDedupeKeyNormalizesWhitespaceAndCase(t *testing.T) {
+	left := memoryDedupeKey(" Preference ", "  I  like  tea ")
+	right := memoryDedupeKey("preference", "i like tea")
+	if left != right {
+		t.Fatalf("keys differ: %q != %q", left, right)
+	}
+}
+
+func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
+	store := newFakeStore()
+	store.logs = []model.CompanionChatLog{
+		{
+			UserID:    7,
+			Role:      "user",
+			Content:   "我明天要面试",
+			CreatedAt: time.Now().Add(-25 * time.Hour),
+		},
+	}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	messages := make([]string, 0, 2)
+	engine.OnProactive = func(_ uint, message, _ string) {
+		messages = append(messages, message)
+	}
+
+	engine.pushProactive(7)
+	engine.pushProactive(7)
+
+	if len(messages) != 1 || !strings.Contains(messages[0], "面试") {
+		t.Fatalf("messages=%v, want one interview follow-up", messages)
+	}
+}
+
 type fakeStore struct {
-	profiles map[uint]*model.CompanionProfile
-	memories []model.CompanionMemory
-	logs     []model.CompanionChatLog
+	profiles           map[uint]*model.CompanionProfile
+	memories           []model.CompanionMemory
+	logs               []model.CompanionChatLog
+	relationshipEvents []model.CompanionRelationshipEvent
 }
 
 func newFakeStore() *fakeStore {
@@ -321,6 +362,40 @@ func (s *fakeStore) UpdateMemoryContent(_ context.Context, userID, memoryID uint
 	return gorm.ErrRecordNotFound
 }
 
+func (s *fakeStore) UpdateMemoryRecord(
+	_ context.Context,
+	userID, memoryID uint,
+	memoryType, memoryKey, content string,
+	importance int,
+	expiresAt *time.Time,
+	confidence float64,
+) error {
+	for index := range s.memories {
+		memory := &s.memories[index]
+		if memory.ID == memoryID && memory.UserID == userID && !memory.UserConfirmed {
+			memory.MemoryType = memoryType
+			memory.MemoryKey = memoryKey
+			memory.Content = content
+			memory.Importance = importance
+			memory.ExpiresAt = expiresAt
+			memory.Confidence = confidence
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (s *fakeStore) ConfirmMemory(_ context.Context, userID, memoryID uint, confirmedAt time.Time) error {
+	for index := range s.memories {
+		if s.memories[index].ID == memoryID && s.memories[index].UserID == userID {
+			s.memories[index].UserConfirmed = true
+			s.memories[index].ConfirmedAt = &confirmedAt
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
 func (s *fakeStore) CleanupExpiredMemories(_ context.Context) (int64, error) {
 	return 0, nil
 }
@@ -331,7 +406,43 @@ func (s *fakeStore) AppendChatLog(_ context.Context, chatLog *model.CompanionCha
 }
 
 func (s *fakeStore) ListRecentChatLogs(_ context.Context, userID uint, limit int) ([]model.CompanionChatLog, error) {
-	return nil, nil
+	out := make([]model.CompanionChatLog, 0, len(s.logs))
+	for index := len(s.logs) - 1; index >= 0; index-- {
+		if s.logs[index].UserID == userID {
+			out = append(out, s.logs[index])
+		}
+	}
+	for left, right := 0, len(out)-1; left < right; left, right = left+1, right-1 {
+		out[left], out[right] = out[right], out[left]
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[len(out)-limit:]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) CreateRelationshipEvent(_ context.Context, event *model.CompanionRelationshipEvent) error {
+	event.ID = uint(len(s.relationshipEvents) + 1)
+	s.relationshipEvents = append(s.relationshipEvents, *event)
+	return nil
+}
+
+func (s *fakeStore) ListRelationshipEvents(
+	_ context.Context,
+	userID uint,
+	limit int,
+) ([]model.CompanionRelationshipEvent, error) {
+	out := make([]model.CompanionRelationshipEvent, 0, len(s.relationshipEvents))
+	for index := len(s.relationshipEvents) - 1; index >= 0; index-- {
+		event := s.relationshipEvents[index]
+		if event.UserID == userID {
+			out = append(out, event)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
 }
 
 type fakeLifeStore struct {

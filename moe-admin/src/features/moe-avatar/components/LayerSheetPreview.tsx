@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AvatarAssetStore } from '../assetStore'
 import { layerThumbCanvas } from '../composer/composeSheet'
-import { resolveAssetUrl } from '../composer/resolveLayers'
+import { assetUrlCandidates } from '../composer/resolveLayers'
+import { loadImageFromUrls } from '../../../../../moe-avatar/core/src/loadImage'
 import type { MoeAvatarManifest } from '../types'
+import { MOE_AVATAR_LEGACY_PACK_BASE } from '../../moe-content/constants'
 
 type Props = {
   manifest: MoeAvatarManifest
@@ -35,7 +37,12 @@ export function LayerSheetPreview({
     setError(false)
 
     async function draw() {
-      const url = resolveAssetUrl(packBaseUrl, relPath, assetStore?.objectUrl(relPath))
+      const urls = assetUrlCandidates(
+        packBaseUrl,
+        relPath,
+        assetStore?.objectUrl(relPath),
+        [MOE_AVATAR_LEGACY_PACK_BASE],
+      )
       if (mode === 'frame') {
         const thumb = await layerThumbCanvas(
           manifest,
@@ -43,6 +50,7 @@ export function LayerSheetPreview({
           packBaseUrl,
           64,
           assetStore,
+          [MOE_AVATAR_LEGACY_PACK_BASE],
         )
         if (cancelled || !thumb) {
           if (!cancelled) setError(true)
@@ -61,13 +69,7 @@ export function LayerSheetPreview({
         return
       }
 
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve()
-        img.onerror = () => reject(new Error('load failed'))
-        img.src = url
-      })
+      const img = await loadImageFromUrls(urls)
       if (cancelled) return
       const canvas = canvasRef.current
       if (!canvas) return

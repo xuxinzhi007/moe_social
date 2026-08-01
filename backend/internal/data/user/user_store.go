@@ -9,6 +9,7 @@ import (
 	"backend/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type userStore struct {
@@ -397,6 +398,36 @@ func (s *userStore) CreateUserAvatar(ctx context.Context, avatar *model.UserAvat
 
 func (s *userStore) UpdateUserAvatarFields(ctx context.Context, existing *model.UserAvatar, updates map[string]interface{}) error {
 	return s.db.WithContext(ctx).Model(existing).Updates(updates).Error
+}
+
+func (s *userStore) UpsertAvatarPackRevision(ctx context.Context, revision *model.AvatarPackRevision) error {
+	return s.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}, {Name: "pack_id"}, {Name: "version"}},
+		DoUpdates: clause.AssignmentColumns([]string{"manifest_json", "artifacts_json", "updated_at"}),
+	}).Create(revision).Error
+}
+
+func (s *userStore) GetAvatarPackRevision(ctx context.Context, userID, packID, version string) (model.AvatarPackRevision, bool, error) {
+	var revision model.AvatarPackRevision
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND pack_id = ? AND version = ?", userID, packID, version).
+		First(&revision).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.AvatarPackRevision{}, false, nil
+	}
+	return revision, err == nil, err
+}
+
+func (s *userStore) GetLatestAvatarPackRevision(ctx context.Context, userID, packID string) (model.AvatarPackRevision, bool, error) {
+	var revision model.AvatarPackRevision
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND pack_id = ?", userID, packID).
+		Order("updated_at DESC, created_at DESC").
+		First(&revision).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.AvatarPackRevision{}, false, nil
+	}
+	return revision, err == nil, err
 }
 
 func (s *userStore) FindUserByFeishuOpenID(ctx context.Context, openID string) (model.User, error) {

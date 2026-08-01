@@ -47,6 +47,14 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   bool _isSpeaking = false;
   int? _speakingIndex;
 
+  static const _sceneStarters = <String, ({String id, String prompt})>{
+    '睡前收尾': (id: 'sleep', prompt: '陪我做个睡前收尾，帮我把今天慢慢放下。'),
+    '情绪安抚': (id: 'comfort', prompt: '我今天有点低落，先陪陪我，不用急着给建议。'),
+    '轻松约会': (id: 'date', prompt: '和我安排一个轻松的线上约会吧，节奏慢一点。'),
+    '专注学习': (id: 'study', prompt: '陪我专心学习 25 分钟，先帮我定一个小目标。'),
+  };
+  String? _activeScene;
+
   bool get _voiceEnabled => FeatureFlags.companionVoicePresence;
 
   @override
@@ -189,7 +197,10 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         );
       });
 
-      await for (final event in CompanionService().chatStream(text)) {
+      await for (final event in CompanionService().chatStream(
+        text,
+        scene: _activeScene,
+      )) {
         if (!mounted) return;
         switch (event.type) {
           case 'start':
@@ -209,9 +220,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             final finalText = event.text.trim().isNotEmpty
                 ? event.text.trim()
                 : fullText.trim();
-            final spoken = finalText.isNotEmpty
-                ? finalText
-                : '我在呢～刚才走神了一下，再说一次好吗？';
+            final spoken =
+                finalText.isNotEmpty ? finalText : '我在呢～刚才走神了一下，再说一次好吗？';
             setState(() {
               _items.last = _ChatItem(
                 role: 'assistant',
@@ -418,10 +428,34 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 _state.activityLabel,
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
               ),
+            if (_activeScene != null)
+              Text(
+                '场景 · ${_sceneDisplayName(_activeScene!)}',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AiBrandTokens.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
           ],
         ),
       ],
     );
+  }
+
+  String _sceneDisplayName(String id) {
+    switch (id) {
+      case 'sleep':
+        return '睡前收尾';
+      case 'comfort':
+        return '情绪安抚';
+      case 'date':
+        return '轻松约会';
+      case 'study':
+        return '专注学习';
+      default:
+        return '陪伴';
+    }
   }
 
   Widget _buildContent() {
@@ -450,9 +484,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
-            crossAxisAlignment: isAssistant
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.end,
+            crossAxisAlignment:
+                isAssistant ? CrossAxisAlignment.start : CrossAxisAlignment.end,
             children: [
               AiMessageBubble(
                 content: item.content,
@@ -470,9 +503,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                   padding: const EdgeInsets.only(left: 8, top: 2),
                   child: IconButton(
                     visualDensity: VisualDensity.compact,
-                    tooltip: _isSpeaking && _speakingIndex == index
-                        ? '停止朗读'
-                        : '朗读',
+                    tooltip:
+                        _isSpeaking && _speakingIndex == index ? '停止朗读' : '朗读',
                     onPressed: () => unawaited(
                       _speakAt(index, item.content),
                     ),
@@ -673,49 +705,108 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       ),
       child: Row(
         children: [
-          if (_voiceEnabled) ...[
-            IconButton(
-              tooltip: _listening ? '停止听写' : '语音输入',
-              onPressed: (_isSending || hasError)
-                  ? null
-                  : () => unawaited(_toggleListen()),
-              icon: Icon(
-                _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                color: _listening
-                    ? AiBrandTokens.primary
-                    : Colors.grey.shade600,
-              ),
-            ),
-          ],
           Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              textInputAction: TextInputAction.send,
-              maxLines: 4,
-              minLines: 1,
-              decoration: InputDecoration(
-                hintText: hasError
-                    ? '暂时无法发送消息'
-                    : _listening
-                        ? '正在听…'
-                        : _isSending
-                            ? '思考中...'
-                            : '说点什么...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!_isSending && !hasError)
+                  SizedBox(
+                    height: 34,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _sceneStarters.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 6),
+                      itemBuilder: (_, index) {
+                        final label = _sceneStarters.keys.elementAt(index);
+                        return ActionChip(
+                          label: Text(label),
+                          avatar:
+                              const Icon(Icons.auto_awesome_rounded, size: 14),
+                          backgroundColor: AiBrandTokens.companionSurface,
+                          side: const BorderSide(
+                            color: AiBrandTokens.companionBorder,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(13),
+                          ),
+                          labelStyle: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AiBrandTokens.titleColor,
+                          ),
+                          onPressed: () {
+                            final starter = _sceneStarters[label]!;
+                            setState(() => _activeScene = starter.id);
+                            _controller.text = starter.prompt;
+                            _controller.selection = TextSelection.collapsed(
+                              offset: _controller.text.length,
+                            );
+                            _focusNode.requestFocus();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                if (_activeScene != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => _activeScene = null),
+                      icon: const Icon(Icons.close_rounded, size: 14),
+                      label: const Text('退出场景'),
+                    ),
+                  ),
+                Row(
+                  children: [
+                    if (_voiceEnabled)
+                      IconButton(
+                        tooltip: _listening ? '停止听写' : '语音输入',
+                        onPressed: (_isSending || hasError)
+                            ? null
+                            : () => unawaited(_toggleListen()),
+                        icon: Icon(
+                          _listening
+                              ? Icons.mic_rounded
+                              : Icons.mic_none_rounded,
+                          color: _listening
+                              ? AiBrandTokens.primary
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        textInputAction: TextInputAction.send,
+                        maxLines: 4,
+                        minLines: 1,
+                        decoration: InputDecoration(
+                          hintText: hasError
+                              ? '暂时无法发送消息'
+                              : _listening
+                                  ? '正在听…'
+                                  : _isSending
+                                      ? '思考中...'
+                                      : '说点什么...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                        enabled: !_isSending && !hasError,
+                      ),
+                    ),
+                  ],
                 ),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.5),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-              ),
-              onSubmitted: (_) => _sendMessage(),
-              enabled: !_isSending && !hasError,
+              ],
             ),
           ),
           const SizedBox(width: 8),

@@ -67,6 +67,11 @@ message CompanionMemoryMsg {
   string created_at = 5;
   // 置顶：列表靠前；置顶时服务端会取消过期（永久保留）。
   bool pinned = 6;
+  // 用户已确认：表示用户检查过这条记忆。
+  bool user_confirmed = 7;
+  string confirmed_at = 8;
+  string memory_key = 9;
+  double confidence = 10;
 }
 
 message CompanionChatLogMsg {
@@ -74,6 +79,16 @@ message CompanionChatLogMsg {
   string role = 2;
   string content = 3;
   string created_at = 4;
+}
+
+message CompanionRelationshipEventMsg {
+  uint64 id = 1;
+  string event_type = 2;
+  string title = 3;
+  string content = 4;
+  int32 relationship_level = 5;
+  double intimacy_score = 6;
+  string created_at = 7;
 }
 
 // ── Request / Reply ──
@@ -145,12 +160,28 @@ message UpdateMemoryReply {
   CompanionMemoryMsg memory = 1;
 }
 
+message ConfirmMemoryRequest {
+  uint64 memory_id = 1;
+}
+
+message ConfirmMemoryReply {
+  CompanionMemoryMsg memory = 1;
+}
+
 message ListChatHistoryRequest {
   int32 limit = 1;
 }
 
 message ListChatHistoryReply {
   repeated CompanionChatLogMsg messages = 1;
+}
+
+message ListRelationshipEventsRequest {
+  int32 limit = 1;
+}
+
+message ListRelationshipEventsReply {
+  repeated CompanionRelationshipEventMsg events = 1;
 }
 
 // ── Service ──
@@ -198,6 +229,16 @@ service Companion {
   // Chat History
   rpc ListChatHistory(ListChatHistoryRequest) returns (ListChatHistoryReply) {
     option (google.api.http) = {get: "/api/companion/chat/history"};
+  }
+  rpc ConfirmMemory(ConfirmMemoryRequest) returns (ConfirmMemoryReply) {
+    option (google.api.http) = {
+      post: "/api/companion/memories/{memory_id}/confirm"
+      body: "*"
+    };
+  }
+
+  rpc ListRelationshipEvents(ListRelationshipEventsRequest) returns (ListRelationshipEventsReply) {
+    option (google.api.http) = {get: "/api/companion/relationship-events"};
   }
 
   // 注意：Chat SSE 流式端点通过 RegisterChatStreamRoute 手工注册（参照 game 模块）

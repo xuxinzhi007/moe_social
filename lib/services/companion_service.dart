@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_response.dart';
 import 'api_service.dart';
+import 'ai_provider_service.dart';
 import '../auth_service.dart';
 
 /// 伙伴聊天 SSE 事件。
@@ -61,8 +62,7 @@ class CompanionProfileData {
   bool get isWorldBindMissing =>
       lifeEntityId > 0 && worldBindStatus == 'bound_missing';
 
-  double get relationshipProgress =>
-      (intimacyScore / 100).clamp(0.0, 1.0);
+  double get relationshipProgress => (intimacyScore / 100).clamp(0.0, 1.0);
 
   String get relationshipStageLabel {
     final score = intimacyScore.clamp(0.0, 100.0);
@@ -295,6 +295,10 @@ class CompanionMemoryData {
   final int importance;
   final String createdAt;
   final bool pinned;
+  final bool userConfirmed;
+  final String confirmedAt;
+  final String memoryKey;
+  final double confidence;
 
   const CompanionMemoryData({
     required this.id,
@@ -303,6 +307,10 @@ class CompanionMemoryData {
     required this.importance,
     required this.createdAt,
     this.pinned = false,
+    this.userConfirmed = false,
+    this.confirmedAt = '',
+    this.memoryKey = '',
+    this.confidence = 0.5,
   });
 
   factory CompanionMemoryData.fromMap(Map<String, dynamic> m) {
@@ -313,6 +321,10 @@ class CompanionMemoryData {
       importance: (m['importance'] as num?)?.toInt() ?? 0,
       createdAt: m['created_at']?.toString() ?? '',
       pinned: m['pinned'] == true,
+      userConfirmed: m['user_confirmed'] == true,
+      confirmedAt: m['confirmed_at']?.toString() ?? '',
+      memoryKey: m['memory_key']?.toString() ?? '',
+      confidence: (m['confidence'] as num?)?.toDouble() ?? 0.5,
     );
   }
 
@@ -328,6 +340,10 @@ class CompanionMemoryData {
       importance: importance ?? this.importance,
       createdAt: createdAt,
       pinned: pinned ?? this.pinned,
+      userConfirmed: userConfirmed,
+      confirmedAt: confirmedAt,
+      memoryKey: memoryKey,
+      confidence: confidence,
     );
   }
 }
@@ -350,6 +366,38 @@ class CompanionChatLogData {
       id: (m['id'] as num?)?.toInt() ?? 0,
       role: m['role']?.toString() ?? '',
       content: m['content']?.toString() ?? '',
+      createdAt: m['created_at']?.toString() ?? '',
+    );
+  }
+}
+
+class CompanionRelationshipEventData {
+  final int id;
+  final String eventType;
+  final String title;
+  final String content;
+  final int relationshipLevel;
+  final double intimacyScore;
+  final String createdAt;
+
+  const CompanionRelationshipEventData({
+    required this.id,
+    required this.eventType,
+    required this.title,
+    required this.content,
+    required this.relationshipLevel,
+    required this.intimacyScore,
+    required this.createdAt,
+  });
+
+  factory CompanionRelationshipEventData.fromMap(Map<String, dynamic> m) {
+    return CompanionRelationshipEventData(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      eventType: m['event_type']?.toString() ?? '',
+      title: m['title']?.toString() ?? '',
+      content: m['content']?.toString() ?? '',
+      relationshipLevel: (m['relationship_level'] as num?)?.toInt() ?? 1,
+      intimacyScore: (m['intimacy_score'] as num?)?.toDouble() ?? 0,
       createdAt: m['created_at']?.toString() ?? '',
     );
   }
@@ -445,6 +493,22 @@ class CompanionService {
         .toList(growable: false);
   }
 
+  Future<List<CompanionRelationshipEventData>> listRelationshipEvents({
+    int limit = 8,
+  }) async {
+    _requireUserId();
+    final result = await ApiService.get(
+      '/api/companion/relationship-events?limit=$limit',
+    );
+    final items = ApiResponse.listOf(result, keys: const ['events']);
+    return items
+        .whereType<Map>()
+        .map((item) => CompanionRelationshipEventData.fromMap(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: false);
+  }
+
   Future<void> deleteMemory(int memoryId) async {
     _requireUserId();
     if (memoryId <= 0) {
@@ -491,6 +555,20 @@ class CompanionService {
     );
   }
 
+  Future<CompanionMemoryData> confirmMemory(int memoryId) async {
+    _requireUserId();
+    if (memoryId <= 0) {
+      throw Exception('无效的记忆');
+    }
+    final result = await ApiService.post(
+      '/api/companion/memories/$memoryId/confirm',
+      body: const <String, dynamic>{},
+    );
+    return CompanionMemoryData.fromMap(
+      ApiResponse.object(result, keys: const ['memory']),
+    );
+  }
+
   Future<List<CompanionChatLogData>> listChatHistory({int limit = 12}) async {
     _requireUserId();
     final result =
@@ -524,7 +602,10 @@ class CompanionService {
   }
 
   /// SSE 流式聊天。
-  Stream<CompanionChatEvent> chatStream(String message) async* {
+  Stream<CompanionChatEvent> chatStream(
+    String message, {
+    String? scene,
+  }) async* {
     _requireUserId();
     final uri = Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
     final headers = <String, String>{
@@ -536,9 +617,30 @@ class CompanionService {
     if (token != null && token.isNotEmpty) {
       headers['Authorization'] = 'Bearer $token';
     }
+    final body = <String, dynamic>{'message': message};
+    if (scene != null && scene.trim().isNotEmpty) {
+      body['scene'] = scene.trim();
+    }
+    try {
+      final selectedId = await AiProviderService().readLastSelectedProfileId();
+      final provider = await AiProviderService().resolveProfile(selectedId);
+      if (!provider.isBuiltinBackend &&
+          provider.baseUrl.trim().isNotEmpty &&
+          provider.defaultModel.trim().isNotEmpty) {
+        body.addAll({
+          'provider_base_url': provider.baseUrl.trim(),
+          'provider_api_style': provider.isBackendOllama ? 'ollama' : 'openai',
+          'provider_model': provider.defaultModel.trim(),
+          'provider_api_key': await AiProviderService().readApiKey(provider.id),
+          'provider_timeout_seconds': 120,
+        });
+      }
+    } catch (_) {
+      // Fall back to the backend inference configuration.
+    }
     final request = http.Request('POST', uri)
       ..headers.addAll(headers)
-      ..body = jsonEncode({'message': message});
+      ..body = jsonEncode(body);
 
     final client = http.Client();
     _activeStreamClient = client;

@@ -8,6 +8,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"backend/model"
@@ -29,12 +30,18 @@ type Engine struct {
 	CleanupInterval time.Duration // 记忆清理周期，默认 1h
 
 	// WebSocket 广播回调（可选，nil 时不广播）
-	OnGreeting func(userID uint, greeting string)
+	OnGreeting  func(userID uint, greeting string)
+	OnProactive func(userID uint, message, reason string)
 
 	// 内部
 	cancelCleanup  context.CancelFunc
 	cancelGreeting context.CancelFunc
+	proactiveMu    sync.Mutex
+	lastProactive  map[uint]time.Time
 }
+
+// ChatStream sends one message with an optional per-request inference config.
+type ChatInferenceOverride = llminference.Config
 
 // NewEngine 创建 Companion 引擎。lifeStore 可为 nil（无数字生命数据时退化）。
 func NewEngine(store Store, lifeStore LifeStore, llmCfg llminference.Config, model string) *Engine {
@@ -46,6 +53,7 @@ func NewEngine(store Store, lifeStore LifeStore, llmCfg llminference.Config, mod
 		MaxHistoryTurns: 10,
 		MaxMemories:     5,
 		CleanupInterval: time.Hour,
+		lastProactive:   make(map[uint]time.Time),
 	}
 }
 
@@ -107,7 +115,48 @@ func (e *Engine) pushGreeting() {
 			continue
 		}
 		e.OnGreeting(userID, state.Greeting)
+		e.pushProactive(userID)
 	}
+}
+
+func (e *Engine) pushProactive(userID uint) {
+	if e.OnProactive == nil {
+		return
+	}
+	history, err := e.ListChatHistory(context.Background(), userID, 8)
+	if err != nil || len(history) == 0 {
+		return
+	}
+	last := history[len(history)-1]
+	if last.CreatedAt.IsZero() || time.Since(last.CreatedAt) < 24*time.Hour {
+		return
+	}
+
+	e.proactiveMu.Lock()
+	lastSent := e.lastProactive[userID]
+	if !lastSent.IsZero() && time.Since(lastSent) < 24*time.Hour {
+		e.proactiveMu.Unlock()
+		return
+	}
+	e.lastProactive[userID] = time.Now()
+	e.proactiveMu.Unlock()
+
+	message := "有一阵子没见到你了，最近过得怎么样？"
+	for index := len(history) - 1; index >= 0; index-- {
+		if history[index].Role == "user" && strings.TrimSpace(history[index].Content) != "" {
+			message = fmt.Sprintf("我还记得你之前提到的「%s」，最近有新进展吗？", clipProactiveText(history[index].Content))
+			break
+		}
+	}
+	e.OnProactive(userID, message, "久未聊天回访")
+}
+
+func clipProactiveText(value string) string {
+	text := strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+	if len([]rune(text)) <= 32 {
+		return text
+	}
+	return string([]rune(text)[:32]) + "…"
 }
 
 // StartCleanup 启动定时记忆清理任务。
@@ -332,6 +381,31 @@ func (e *Engine) UpdateMemoryContent(ctx context.Context, userID, memoryID uint,
 	return &out, nil
 }
 
+// ConfirmMemory marks a memory as reviewed by its owner.
+func (e *Engine) ConfirmMemory(ctx context.Context, userID, memoryID uint) (*Memory, error) {
+	if memoryID == 0 {
+		return nil, fmt.Errorf("confirm memory: invalid id")
+	}
+	row, err := e.store.GetMemoryByID(ctx, userID, memoryID)
+	if err != nil {
+		return nil, fmt.Errorf("confirm memory get %d: %w", memoryID, err)
+	}
+	if row == nil {
+		return nil, ErrMemoryNotFound
+	}
+	confirmedAt := time.Now()
+	if err := e.store.ConfirmMemory(ctx, userID, memoryID, confirmedAt); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrMemoryNotFound
+		}
+		return nil, fmt.Errorf("confirm memory %d: %w", memoryID, err)
+	}
+	row.UserConfirmed = true
+	row.ConfirmedAt = &confirmedAt
+	out := modelToMemory(row)
+	return &out, nil
+}
+
 // ── Chat History ──
 
 func (e *Engine) ListChatHistory(ctx context.Context, userID uint, limit int) ([]ChatLog, error) {
@@ -349,6 +423,19 @@ func (e *Engine) ListChatHistory(ctx context.Context, userID uint, limit int) ([
 	return out, nil
 }
 
+// ListRelationshipEvents returns the newest meaningful bond events.
+func (e *Engine) ListRelationshipEvents(ctx context.Context, userID uint, limit int) ([]RelationshipEvent, error) {
+	rows, err := e.store.ListRelationshipEvents(ctx, userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list relationship events for user %d: %w", userID, err)
+	}
+	out := make([]RelationshipEvent, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, modelToRelationshipEvent(&row))
+	}
+	return out, nil
+}
+
 // ── Chat (流式) ──
 
 func (e *Engine) ChatStream(
@@ -356,7 +443,15 @@ func (e *Engine) ChatStream(
 	userID uint,
 	userMessage string,
 	onChunk llminference.StreamHandler,
+	scene string,
+	overrides ...*ChatInferenceOverride,
 ) (string, error) {
+	config := e.llmCfg
+	modelName := e.model
+	if len(overrides) > 0 && overrides[0] != nil {
+		config = *overrides[0]
+		modelName = config.DefaultModel
+	}
 	// 1. 获取 profile + state
 	state, profile, err := e.GetState(ctx, userID)
 	if err != nil {
@@ -371,6 +466,7 @@ func (e *Engine) ChatStream(
 
 	// 3. 获取聊天历史
 	history, _ := e.ListChatHistory(ctx, userID, e.MaxHistoryTurns)
+	isFirstChat := len(history) == 0
 
 	// 4. 保存用户消息
 	_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
@@ -380,9 +476,9 @@ func (e *Engine) ChatStream(
 	})
 
 	// 5. 构建 messages 并流式调用 LLM
-	msgs := buildMessages(profile, state, memories, history, userMessage)
+	msgs := buildMessages(profile, state, memories, history, userMessage, scene)
 
-	if !e.llmCfg.Ready() {
+	if !config.Ready() {
 		// LLM 不可用，返回兜底回复
 		fallback := fallbackReply(profile, state)
 		_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
@@ -396,10 +492,13 @@ func (e *Engine) ChatStream(
 		if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
 			log.Printf("[companion] bump intimacy after fallback chat user=%d: %v", userID, err)
 		}
+		if isFirstChat {
+			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
+		}
 		return fallback, nil
 	}
 
-	fullReply, err := streamChat(ctx, e.llmCfg, e.model, msgs, onChunk)
+	fullReply, err := streamChat(ctx, config, modelName, msgs, onChunk)
 	if err != nil {
 		if strings.TrimSpace(fullReply) != "" {
 			_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
@@ -422,6 +521,9 @@ func (e *Engine) ChatStream(
 		if bumpErr := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); bumpErr != nil {
 			log.Printf("[companion] bump intimacy after error fallback user=%d: %v", userID, bumpErr)
 		}
+		if isFirstChat {
+			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
+		}
 		return fallback, nil
 	}
 
@@ -433,11 +535,14 @@ func (e *Engine) ChatStream(
 	})
 
 	// 7. 异步提取记忆（不阻塞响应）
-	go e.asyncExtractMemory(userID, userMessage, fullReply, profile)
+	go e.asyncExtractMemory(userID, userMessage, fullReply, profile, config, modelName)
 
 	// 8. 聊天成功 → 亲密度微增（失败仅打日志，不影响回复）
 	if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
 		log.Printf("[companion] bump intimacy after chat user=%d: %v", userID, err)
+	}
+	if isFirstChat {
+		e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 	}
 
 	return fullReply, nil
@@ -465,15 +570,52 @@ func (e *Engine) BumpIntimacy(ctx context.Context, userID uint, delta float64) e
 	if err := e.store.UpdateIntimacy(ctx, userID, score, level); err != nil {
 		return fmt.Errorf("bump intimacy persist user %d: %w", userID, err)
 	}
+	if level > row.RelationshipLevel {
+		e.recordRelationshipEvent(
+			ctx,
+			userID,
+			"level_up",
+			fmt.Sprintf("关系升级到 Lv.%d", level),
+			fmt.Sprintf("你们的关系进入了新的阶段：Lv.%d", level),
+		)
+	}
 	return nil
 }
 
+func (e *Engine) recordRelationshipEvent(
+	ctx context.Context,
+	userID uint,
+	eventType, title, content string,
+) {
+	profile, err := e.store.GetProfileByUserID(ctx, userID)
+	if err != nil || profile == nil {
+		return
+	}
+	event := &model.CompanionRelationshipEvent{
+		UserID:            userID,
+		EventType:         eventType,
+		Title:             title,
+		Content:           content,
+		RelationshipLevel: profile.RelationshipLevel,
+		IntimacyScore:     profile.IntimacyScore,
+	}
+	if err := e.store.CreateRelationshipEvent(ctx, event); err != nil {
+		log.Printf("[companion] save relationship event user=%d type=%s: %v", userID, eventType, err)
+	}
+}
+
 // asyncExtractMemory 异步从对话中提取记忆并持久化。
-func (e *Engine) asyncExtractMemory(userID uint, userMsg, assistantReply string, profile *Profile) {
+func (e *Engine) asyncExtractMemory(
+	userID uint,
+	userMsg, assistantReply string,
+	profile *Profile,
+	config llminference.Config,
+	modelName string,
+) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	extracted, err := ExtractMemories(ctx, e.llmCfg, e.model, userMsg, assistantReply)
+	extracted, err := ExtractMemories(ctx, config, modelName, userMsg, assistantReply)
 	if err != nil {
 		log.Printf("[companion] extract memory error: %v", err)
 		return
@@ -482,10 +624,28 @@ func (e *Engine) asyncExtractMemory(userID uint, userMsg, assistantReply string,
 		return
 	}
 
+	existing, err := e.store.ListActiveMemories(ctx, userID, 50)
+	if err != nil {
+		log.Printf("[companion] list memories for dedupe user=%d: %v", userID, err)
+	}
+	seen := make(map[string]struct{}, len(existing)+len(extracted))
+	existingByMemoryKey := make(map[string]model.CompanionMemory)
+	for _, memory := range existing {
+		seen[memoryDedupeKey(memory.MemoryType, memory.Content)] = struct{}{}
+		if memoryKey := normalizeMemoryKey(memory.MemoryKey); memoryKey != "" {
+			existingByMemoryKey[memoryKey] = memory
+		}
+	}
+
 	for _, m := range extracted {
 		if strings.TrimSpace(m.Content) == "" {
 			continue
 		}
+		key := memoryDedupeKey(m.MemoryType, m.Content)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		memoryKey := normalizeMemoryKey(m.MemoryKey)
 		importance := m.Importance
 		if importance < 0 {
 			importance = 0
@@ -493,18 +653,72 @@ func (e *Engine) asyncExtractMemory(userID uint, userMsg, assistantReply string,
 		if importance > 2 {
 			importance = 2
 		}
+		confidence := m.Confidence
+		if confidence <= 0 {
+			confidence = 0.5
+		}
+		if confidence > 1 {
+			confidence = 1
+		}
+		if memoryKey != "" {
+			if previous, exists := existingByMemoryKey[memoryKey]; exists {
+				if previous.UserConfirmed {
+					continue
+				}
+				if err := e.store.UpdateMemoryRecord(
+					ctx,
+					userID,
+					previous.ID,
+					m.MemoryType,
+					memoryKey,
+					m.Content,
+					importance,
+					memoryExpiresAt(importance),
+					confidence,
+				); err == nil {
+					existingByMemoryKey[memoryKey] = model.CompanionMemory{
+						ID:         previous.ID,
+						UserID:     userID,
+						MemoryType: m.MemoryType,
+						MemoryKey:  memoryKey,
+						Content:    m.Content,
+						Importance: importance,
+						Confidence: confidence,
+						CreatedAt:  previous.CreatedAt,
+					}
+					seen[key] = struct{}{}
+					continue
+				}
+			}
+		}
 		mem := &model.CompanionMemory{
 			UserID:     userID,
 			MemoryType: m.MemoryType,
+			MemoryKey:  memoryKey,
 			Content:    m.Content,
 			Importance: importance,
+			Confidence: confidence,
 			ExpiresAt:  memoryExpiresAt(importance),
 		}
 		if err := e.store.CreateMemory(ctx, mem); err != nil {
 			log.Printf("[companion] save extracted memory: %v", err)
+			continue
+		}
+		seen[key] = struct{}{}
+		if memoryKey != "" {
+			existingByMemoryKey[memoryKey] = *mem
 		}
 	}
 	log.Printf("[companion] extracted %d memories for user %d", len(extracted), userID)
+}
+
+func memoryDedupeKey(memoryType, content string) string {
+	normalizedContent := strings.ToLower(strings.Join(strings.Fields(content), " "))
+	return strings.ToLower(strings.TrimSpace(memoryType)) + "\x00" + normalizedContent
+}
+
+func normalizeMemoryKey(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
 }
 
 // ── 内部方法 ──
@@ -676,9 +890,13 @@ func modelToMemory(m *model.CompanionMemory) Memory {
 		ID:              m.ID,
 		UserID:          m.UserID,
 		MemoryType:      m.MemoryType,
+		MemoryKey:       m.MemoryKey,
 		Content:         m.Content,
+		Confidence:      m.Confidence,
 		Importance:      m.Importance,
 		Pinned:          m.Pinned,
+		UserConfirmed:   m.UserConfirmed,
+		ConfirmedAt:     m.ConfirmedAt,
 		SourceChatLogID: m.SourceChatLogID,
 		ExpiresAt:       m.ExpiresAt,
 		CreatedAt:       m.CreatedAt,
@@ -692,5 +910,18 @@ func modelToChatLog(m *model.CompanionChatLog) ChatLog {
 		Role:      m.Role,
 		Content:   m.Content,
 		CreatedAt: m.CreatedAt,
+	}
+}
+
+func modelToRelationshipEvent(m *model.CompanionRelationshipEvent) RelationshipEvent {
+	return RelationshipEvent{
+		ID:                m.ID,
+		UserID:            m.UserID,
+		EventType:         m.EventType,
+		Title:             m.Title,
+		Content:           m.Content,
+		RelationshipLevel: m.RelationshipLevel,
+		IntimacyScore:     m.IntimacyScore,
+		CreatedAt:         m.CreatedAt,
 	}
 }

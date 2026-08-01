@@ -133,6 +133,18 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
     }
   }
 
+  Future<void> _confirmMemory(CompanionMemoryData memory) async {
+    try {
+      await _vm.confirmMemory(memory);
+      if (!mounted) return;
+      MoeToast.success(context, '已确认，TA 会更放心地记住这件事');
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+  }
+
   Future<void> _confirmDelete(CompanionMemoryData memory) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -274,6 +286,19 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
                   ),
                   label: Text(memory.pinned ? '取消置顶' : '置顶（永久记住）'),
                 ),
+                if (!memory.userConfirmed) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: _vm.isMutating
+                        ? null
+                        : () {
+                            Navigator.of(sheetContext).pop();
+                            unawaited(_confirmMemory(memory));
+                          },
+                    icon: const Icon(Icons.check_circle_outline_rounded),
+                    label: const Text('确认 TA 记得没错'),
+                  ),
+                ],
                 TextButton.icon(
                   onPressed: _vm.isMutating
                       ? null
@@ -397,8 +422,8 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
           }
           final memory = _vm.items[index - 1];
           final key = _itemKeys.putIfAbsent(memory.id, GlobalKey.new);
-          final focused = widget.focusMemoryId != null &&
-              widget.focusMemoryId == memory.id;
+          final focused =
+              widget.focusMemoryId != null && widget.focusMemoryId == memory.id;
           return _MemoryCard(
             key: key,
             memory: memory,
@@ -456,6 +481,14 @@ class _MemoryCard extends StatelessWidget {
                       Icons.push_pin_rounded,
                       size: 14,
                       color: AiBrandTokens.primary.withValues(alpha: 0.85),
+                    ),
+                  ],
+                  if (memory.userConfirmed) ...[
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 14,
+                      color: Colors.green.shade500,
                     ),
                   ],
                   const Spacer(),

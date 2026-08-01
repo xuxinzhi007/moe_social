@@ -106,6 +106,25 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
     }
   }
 
+  Future<CompanionMemoryData> confirmMemory(CompanionMemoryData memory) async {
+    if (_mutating || memory.id <= 0 || memory.userConfirmed) {
+      return memory;
+    }
+    _mutating = true;
+    _notify();
+    try {
+      final updated = await _companion.confirmMemory(memory.id);
+      if (_disposed) return updated;
+      _replaceAndSort(updated);
+      return updated;
+    } finally {
+      if (!_disposed) {
+        _mutating = false;
+        _notify();
+      }
+    }
+  }
+
   void _replaceAndSort(CompanionMemoryData updated) {
     _items = _items
         .map((m) => m.id == updated.id ? updated : m)

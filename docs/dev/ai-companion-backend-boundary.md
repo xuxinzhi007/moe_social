@@ -28,9 +28,10 @@ protohttp -> service -> biz <- data
 ## 影响范围
 
 - Companion Profile、状态、记忆、聊天 SSE 和 WebSocket。
+- Companion 关系事件、记忆确认状态和结构化记忆 key。
 - AI provider、agent、lorebook 云端资源 CRUD。
 - AI 伙伴首页和 Life 伙伴选择页。
-- 数据库迁移新增 Companion 三张既有模型表。
+- 数据库迁移新增 Companion 四张业务表，关系事件表用于里程碑和主动陪伴的事实来源。
 
 旧 AI 酒馆（AgentList / 本地 ChatPage / providers）按产品决策**退役向**：不进正式导航，也不是二期多角色载体。  
 正式陪伴决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`。  
@@ -41,7 +42,7 @@ protohttp -> service -> biz <- data
 ## 迁移步骤
 
 1. 部署前执行 `cd backend && make db-migrate`。
-2. 轮换服务并确认 Companion 三张表已创建。
+2. 轮换服务并确认 Companion 四张表已创建。
 3. 使用两个测试账号分别访问 Profile、聊天和 AI resources，确认数据隔离。
 4. 旧用户首次访问时由后端创建或补齐 Life Entity 绑定。
 

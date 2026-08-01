@@ -4,26 +4,39 @@ export type ManifestAssetEntry = {
   path: string
   group: 'base' | 'slot'
   label: string
+  slot?: string
+  itemId?: string
+  animation: 'walk' | 'idle'
 }
 
 /** manifest 引用的全部 layer 路径（当前 pack 正在使用的文件清单） */
 export function collectManifestAssets(manifest: MoeAvatarManifest): ManifestAssetEntry[] {
   const out: ManifestAssetEntry[] = []
+  const push = (entry: Omit<ManifestAssetEntry, 'path'> & { path: string }): void => {
+    if (!entry.path) return
+    out.push(entry)
+  }
   for (const [key, layer] of Object.entries(manifest.base)) {
-    out.push({ path: layer.walk, group: 'base', label: `${key} · walk` })
-    out.push({ path: layer.idle, group: 'base', label: `${key} · idle` })
+    push({ path: layer.walk, group: 'base', label: `${key} · walk`, slot: key, animation: 'walk' })
+    push({ path: layer.idle, group: 'base', label: `${key} · idle`, slot: key, animation: 'idle' })
   }
   for (const [slot, items] of Object.entries(manifest.slots)) {
     for (const [itemId, layer] of Object.entries(items)) {
-      out.push({
+      push({
         path: layer.walk,
         group: 'slot',
         label: `${slot}/${itemId} · walk`,
+        slot,
+        itemId,
+        animation: 'walk',
       })
-      out.push({
+      push({
         path: layer.idle,
         group: 'slot',
         label: `${slot}/${itemId} · idle`,
+        slot,
+        itemId,
+        animation: 'idle',
       })
     }
   }
@@ -43,8 +56,9 @@ export function layersForOutfit(
 ): Set<string> {
   const paths = new Set<string>()
   for (const key of manifest.composeOrder) {
-    if (manifest.base[key]) {
-      paths.add(manifest.base[key][anim])
+    const baseLayer = manifest.base[key]
+    if (baseLayer?.[anim]) {
+      paths.add(baseLayer[anim])
       continue
     }
     const slotId = (
@@ -57,7 +71,7 @@ export function layersForOutfit(
     )[key]
     if (!slotId) continue
     const layer = manifest.slots[key]?.[slotId]
-    if (layer) paths.add(layer[anim])
+    if (layer?.[anim]) paths.add(layer[anim])
   }
   return paths
 }
