@@ -78,12 +78,22 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: MoeTokens.pageBackground,
       appBar: AppBar(
-        title: const Text('设置',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: const Text(
+          '设置',
+          style: TextStyle(
+            fontWeight: MoeTokens.fontWeightTitle,
+            color: MoeTokens.titleText,
+          ),
+        ),
+        backgroundColor: MoeTokens.surface1,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        foregroundColor: MoeTokens.titleText,
+        surfaceTintColor: Colors.transparent,
+        shape: const Border(
+          bottom: BorderSide(color: MoeTokens.surfaceBorder),
+        ),
       ),
       body: Column(
         children: [
@@ -93,24 +103,24 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: MoeTokens.primary.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  color: MoeTokens.surface1,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                  border: Border.all(color: MoeTokens.surfaceBorder),
                 ),
                 child: TextField(
                   onChanged: _onSearch,
                   decoration: InputDecoration(
                     hintText: '搜索设置',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: MoeTokens.hintText,
+                    ),
                     suffixIcon: _isSearching
                         ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            icon: const Icon(
+                              Icons.clear,
+                              color: MoeTokens.hintText,
+                            ),
                             onPressed: () {
                               _onClearSearch();
                               _onSearch('');

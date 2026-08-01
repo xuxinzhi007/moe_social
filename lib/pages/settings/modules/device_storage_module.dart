@@ -66,20 +66,20 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
       title: '清理缓存',
       message: '将删除本应用的临时文件，不会影响登录状态与个人数据。',
     );
-    if (!ok || !mounted) {
+    if (!ok || !context.mounted) {
       return;
     }
 
     setState(() => _clearingCache = true);
     try {
       await AppStorageService.clearAppCache();
-      if (!mounted) {
+      if (!context.mounted) {
         return;
       }
       MoeToast.success(context, '缓存已清理');
       await _refreshCacheSubtitle();
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         MoeToast.error(context, '清理失败，请稍后重试');
       }
     } finally {
@@ -100,19 +100,19 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
       title: '清理本地数据',
       message: '将删除本地日志和字符卡导出文件，不会影响登录状态。',
     );
-    if (!ok || !mounted) {
+    if (!ok || !context.mounted) {
       return;
     }
 
     setState(() => _clearingGeneratedData = true);
     try {
       await AppStorageService.clearGeneratedData();
-      if (!mounted) {
+      if (!context.mounted) {
         return;
       }
       MoeToast.success(context, '本地数据已清理');
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         MoeToast.error(context, '清理失败，请稍后重试');
       }
     } finally {
@@ -136,7 +136,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
           onTap: () {},
           trailing: Switch.adaptive(
             value: widget.autoUpdateOnLaunch,
-            activeColor: MoeTokens.primary,
+            activeThumbColor: MoeTokens.primary,
             onChanged: widget.onAutoUpdateChanged,
           ),
         ),

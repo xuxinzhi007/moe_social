@@ -190,8 +190,8 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    // Feed 优先：轻顶栏 → Stories「+」→ 轻陪伴 → 粘性分段 → 帖子。
-    // 发帖只保留 Stories 左侧「+」，不再叠 FAB / 大海报。
+    // Feed 优先：轻顶栏 → Stories → 轻陪伴 → 粘性分段 → 帖子。
+    // 发帖入口固定在筛选栏右侧，不叠加 FAB 或大海报。
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
       backgroundColor: MoeTheme.of(context).pageBackground,
@@ -210,8 +210,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             SliverToBoxAdapter(
-              child:
-                  HomeStoriesBar(onCreatePostSuccess: _handleCreatePostResult),
+              child: const HomeStoriesBar(),
             ),
             SliverToBoxAdapter(
               child: _buildCompanionPresenceCard(context),
@@ -412,8 +411,7 @@ class _HomePageState extends State<HomePage>
         : (state.moodThought.trim().isNotEmpty
             ? state.moodThought.trim()
             : '想你了，去看看 TA 吧');
-    final wantsYou =
-        context.watch<CompanionPresenceProvider>().hasAttention;
+    final wantsYou = context.watch<CompanionPresenceProvider>().hasAttention;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
@@ -501,65 +499,98 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildFeedModeSwitcher(BuildContext context) {
     // topic 模式下不高亮任一 Tab，点 Tab 会清话题回到该模式。
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-        border: Border.all(color: MoeTokens.surfaceBorder),
-      ),
-      child: Row(
-        children: _tabs.asMap().entries.map((entry) {
-          final index = entry.key;
-          final tab = entry.value;
-          final isSelected = _feed.mode == tab.mode;
-          return Expanded(
-            child: InkWell(
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              onTap: () {
-                if (_tabController.index != index) {
-                  _tabController.animateTo(index);
-                  return;
-                }
-                // 已在该 Tab 但处于话题筛选时：点一次清话题回到该模式。
-                if (_feed.activeTopic != null || _feed.mode != tab.mode) {
-                  _feed.setMode(tab.mode);
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: isSelected ? MoeTokens.gradientPrimary : null,
-                  color: isSelected ? null : Colors.transparent,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      tab.icon,
-                      size: 14,
-                      color: isSelected ? Colors.white : MoeTokens.hintText,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      tab.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? Colors.white : MoeTokens.hintText,
+              border: Border.all(color: MoeTokens.surfaceBorder),
+            ),
+            child: Row(
+              children: _tabs.asMap().entries.map((entry) {
+                final index = entry.key;
+                final tab = entry.value;
+                final isSelected = _feed.mode == tab.mode;
+                return Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                    onTap: () {
+                      if (_tabController.index != index) {
+                        _tabController.animateTo(index);
+                        return;
+                      }
+                      // 已在该 Tab 但处于话题筛选时：点一次清话题回到该模式。
+                      if (_feed.activeTopic != null || _feed.mode != tab.mode) {
+                        _feed.setMode(tab.mode);
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: isSelected ? MoeTokens.gradientPrimary : null,
+                        color: isSelected ? null : Colors.transparent,
+                        borderRadius:
+                            BorderRadius.circular(MoeTokens.radiusFull),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            tab.icon,
+                            size: 14,
+                            color:
+                                isSelected ? Colors.white : MoeTokens.hintText,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            tab.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : MoeTokens.hintText,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Semantics(
+          button: true,
+          label: '发动态',
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+              onTap: _openCreatePost,
+              child: Ink(
+                width: 48,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: MoeTokens.gradientPrimary,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  boxShadow: MoeTokens.shadowGlow(MoeTokens.primary),
                 ),
+                child: const Icon(Icons.add_rounded, color: Colors.white),
               ),
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -647,9 +678,8 @@ class _HomePageState extends State<HomePage>
     return MoeEmptyState(
       icon: Icons.auto_awesome_rounded,
       title: inTopic ? '#${topicName ?? ''} 下暂时还没有动态' : '这里还是空的',
-      subtitle: inTopic
-          ? '换个话题看看，或者自己发一条带上这个标签的动态吧。'
-          : '发一条动态记录今天，或者去好友页认识新朋友。',
+      subtitle:
+          inTopic ? '换个话题看看，或者自己发一条带上这个标签的动态吧。' : '发一条动态记录今天，或者去好友页认识新朋友。',
       primaryAction: MoeEmptyStateAction(
         label: '发布动态',
         icon: Icons.edit_rounded,

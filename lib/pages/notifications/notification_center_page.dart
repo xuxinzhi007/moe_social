@@ -152,6 +152,12 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
     );
   }
 
+  bool _isActionable(NotificationModel notification) {
+    return notification.announcementId?.isNotEmpty == true ||
+        notification.type == NotificationModel.system ||
+        notification.type == NotificationModel.companionProactive;
+  }
+
   @override
   Widget build(BuildContext context) {
     final moe = MoeTheme.of(context);
@@ -164,31 +170,31 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
           backgroundColor: MoeTokens.pageBackground,
           appBar: AppBar(
             title: Text(
-             '通知中心',
+              '通知中心',
               style: TextStyle(
                 fontWeight: MoeTokens.fontWeightTitle,
                 fontSize: MoeTokens.textLg,
               ),
             ),
             backgroundColor: MoeTokens.cardBackground,
+            foregroundColor: MoeTokens.titleText,
             elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
             centerTitle: true,
+            shape: const Border(
+              bottom: BorderSide(color: MoeTokens.surfaceBorder),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/announcements'),
-                 child: const Text('公告'),
+                child: const Text('公告'),
               ),
               if (unreadCount > 0)
-                TextButton.icon(
+                IconButton(
                   onPressed: _markAllAsRead,
-                  icon: const Icon(
-                    Icons.done_all_rounded,
-                    size: MoeTokens.spaceLg,
-                  ),
-                   label: const Text('全部已读'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: moe.primary,
-                  ),
+                  tooltip: '全部已读',
+                  icon: Icon(Icons.done_all_rounded, color: moe.primary),
                 ),
             ],
           ),
@@ -233,136 +239,155 @@ class _NotificationCenterPageState extends State<NotificationCenterPage> {
                             index: index,
                             itemKey: notification.id,
                             revealedKeys: _revealedNotificationIds,
-                            child: GestureDetector(
-                              onTap: () {
-                                if (!notification.isRead) {
-                                  _markAsRead(notification.id);
-                                }
-                                final annId = notification.announcementId;
-                                if (annId != null && annId.isNotEmpty) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => AnnouncementDetailPage(
-                                          announcementId: annId),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (notification.type ==
-                                    NotificationModel.system) {
-                                   Navigator.pushNamed(
-                                       context, '/announcements');
-                                } else if (notification.type ==
-                                    NotificationModel.companionProactive) {
-                                  unawaited(
-                                    CompanionChatLauncher.openChat(context),
-                                  );
-                                }
-                              },
-                              child: Container(
-                                margin:
-                                    EdgeInsets.only(bottom: MoeTokens.spaceMd),
-                                decoration: BoxDecoration(
-                                  color: MoeTokens.cardBackground,
-                                  borderRadius: BorderRadius.circular(
-                                    MoeTokens.radiusXl,
-                                  ),
-                                  boxShadow: MoeTokens.shadowSm(),
-                                  border: !notification.isRead
-                                      ? Border.all(
-                                          color: MoeTokens.primary.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 1.5,
-                                        )
-                                      : null,
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(
+                                MoeTokens.radiusXl,
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(
+                                  MoeTokens.radiusXl,
                                 ),
-                                child: Padding(
-                                  padding: EdgeInsets.all(MoeTokens.spaceLg),
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      notification.relatedUserAvatar != null
-                                          ? NetworkAvatarImage(
-                                              imageUrl: notification
-                                                  .relatedUserAvatar!,
-                                              radius: MoeTokens.space2xl,
-                                              placeholderIcon: Icons.person,
-                                            )
-                                          : _buildNotificationIcon(
-                                              notification.type,
-                                            ),
-                                      SizedBox(width: MoeTokens.spaceLg),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    notification.title,
-                                                    style: TextStyle(
-                                                      fontWeight: MoeTokens
-                                                          .fontWeightSubtitle,
-                                                      fontSize:
-                                                          MoeTokens.textMd,
-                                                      color:
-                                                          MoeTokens.titleText,
-                                                    ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                                if (!notification.isRead)
-                                                  Container(
-                                                    margin: EdgeInsets.only(
-                                                      left: MoeTokens.spaceSm,
-                                                    ),
-                                                    width: MoeTokens.spaceSm,
-                                                    height: MoeTokens.spaceSm,
-                                                    decoration: BoxDecoration(
-                                                      color: MoeTokens.primary,
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                            SizedBox(
-                                              height: MoeTokens.spaceXs +
-                                                  MoeTokens.spaceXs,
-                                            ),
-                                            Text(
-                                              notification.content,
-                                              style: TextStyle(
-                                                color: MoeTokens.hintText,
-                                                fontSize: MoeTokens.textBase,
-                                                height: 1.4,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            SizedBox(height: MoeTokens.spaceSm),
-                                            Text(
-                                              _formatTime(
-                                                  notification.createdAt),
-                                              style: TextStyle(
-                                                fontSize: MoeTokens.textSm,
-                                                color: MoeTokens.hintText
-                                                    .withValues(alpha: 0.7),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                onTap: () {
+                                  if (!notification.isRead) {
+                                    _markAsRead(notification.id);
+                                  }
+                                  final annId = notification.announcementId;
+                                  if (annId != null && annId.isNotEmpty) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => AnnouncementDetailPage(
+                                            announcementId: annId),
                                       ),
-                                    ],
+                                    );
+                                    return;
+                                  }
+                                  if (notification.type ==
+                                      NotificationModel.system) {
+                                    Navigator.pushNamed(
+                                        context, '/announcements');
+                                  } else if (notification.type ==
+                                      NotificationModel.companionProactive) {
+                                    unawaited(
+                                      CompanionChatLauncher.openChat(context),
+                                    );
+                                  }
+                                },
+                                child: Container(
+                                  margin: EdgeInsets.only(
+                                      bottom: MoeTokens.spaceMd),
+                                  decoration: BoxDecoration(
+                                    color: MoeTokens.surface1,
+                                    borderRadius: BorderRadius.circular(
+                                      MoeTokens.radiusXl,
+                                    ),
+                                    boxShadow: MoeTokens.shadowSm(),
+                                    border: !notification.isRead
+                                        ? Border.all(
+                                            color: MoeTokens.primary.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            width: 1.5,
+                                          )
+                                        : null,
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(MoeTokens.spaceLg),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        notification.relatedUserAvatar != null
+                                            ? NetworkAvatarImage(
+                                                imageUrl: notification
+                                                    .relatedUserAvatar!,
+                                                radius: MoeTokens.space2xl,
+                                                placeholderIcon: Icons.person,
+                                              )
+                                            : _buildNotificationIcon(
+                                                notification.type,
+                                              ),
+                                        SizedBox(width: MoeTokens.spaceLg),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      notification.title,
+                                                      style: TextStyle(
+                                                        fontWeight: MoeTokens
+                                                            .fontWeightSubtitle,
+                                                        fontSize:
+                                                            MoeTokens.textMd,
+                                                        color:
+                                                            MoeTokens.titleText,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  if (!notification.isRead)
+                                                    Container(
+                                                      margin: EdgeInsets.only(
+                                                        left: MoeTokens.spaceSm,
+                                                      ),
+                                                      width: MoeTokens.spaceSm,
+                                                      height: MoeTokens.spaceSm,
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            MoeTokens.primary,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              SizedBox(
+                                                height: MoeTokens.spaceXs +
+                                                    MoeTokens.spaceXs,
+                                              ),
+                                              Text(
+                                                notification.content,
+                                                style: TextStyle(
+                                                  color: MoeTokens.hintText,
+                                                  fontSize: MoeTokens.textBase,
+                                                  height: 1.4,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              SizedBox(
+                                                  height: MoeTokens.spaceSm),
+                                              Text(
+                                                _formatTime(
+                                                    notification.createdAt),
+                                                style: TextStyle(
+                                                  fontSize: MoeTokens.textSm,
+                                                  color: MoeTokens.hintText
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (_isActionable(notification))
+                                          const Padding(
+                                            padding: EdgeInsets.only(left: 6),
+                                            child: Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: MoeTokens.hintText,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

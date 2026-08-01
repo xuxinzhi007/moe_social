@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/device_info_provider.dart';
 import '../../../services/user_service.dart';
@@ -8,7 +7,7 @@ import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
 
 class AboutModule extends StatelessWidget {
-  const AboutModule({Key? key}) : super(key: key);
+  const AboutModule({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +95,8 @@ class AboutModule extends StatelessWidget {
                             onSelected: (selected) {
                               setState(() => selectedCategory = cat);
                             },
-                            selectedColor: Colors.deepOrange.withOpacity(0.15),
+                            selectedColor:
+                                Colors.deepOrange.withValues(alpha: 0.15),
                             labelStyle: selectedCategory == cat
                                 ? const TextStyle(color: Colors.deepOrange)
                                 : null,

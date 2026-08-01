@@ -1,4 +1,4 @@
-import type { SpriteResource, SpriteTemplateMode } from './spriteTypes'
+import type { SpriteGenerationMode, SpriteResource, SpriteTemplateMode } from './spriteTypes'
 
 export type SpriteValidationIssue = {
   code: string
@@ -32,6 +32,15 @@ export function validateSpriteResource(resource: SpriteResource): SpriteValidati
 
   if (!isNonEmpty(resource.id)) issue(issues, 'id-required', 'id must be non-empty', 'id')
   if (!isNonEmpty(resource.source.path)) issue(issues, 'source-path-required', 'source.path must be non-empty', 'source.path')
+  if (resource.generation !== undefined) {
+    const validGenerationModes: SpriteGenerationMode[] = ['source_frames', 'video_extracted', 'synthetic_transform']
+    if (!validGenerationModes.includes(resource.generation.mode)) {
+      issue(issues, 'generation-mode-invalid', 'generation.mode is invalid', 'generation.mode')
+    }
+    if (resource.generation.action !== undefined && !isNonEmpty(resource.generation.action)) {
+      issue(issues, 'generation-action-required', 'generation.action must be non-empty', 'generation.action')
+    }
+  }
   if ((resource.status === 'ready' || resource.status === 'published') && !isNonEmpty(resource.sheet)) {
     issue(issues, 'runtime-sheet-required', 'ready or published resources need a normalized runtime sheet', 'sheet')
   }
