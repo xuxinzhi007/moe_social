@@ -1,0 +1,7 @@
+{
+  "specVersion": "1",
+  "comment": "轻冒险关卡表 · 可选",
+  "stages": [
+    { "id": "stage_1", "label": "小院试炼", "minAge": 8, "energyCost": 25, "coinReward": 30 }
+  ]
+}

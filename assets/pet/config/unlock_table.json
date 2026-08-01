@@ -1,0 +1,12 @@
+{
+  "specVersion": "1",
+  "comment": "年龄解锁表 · 客户端可读；缺失时用代码内回落",
+  "entries": [
+    { "id": "dressing", "minAge": 1, "label": "换装" },
+    { "id": "shop", "minAge": 3, "label": "商店" },
+    { "id": "school", "minAge": 6, "label": "上学" },
+    { "id": "work", "minAge": 16, "label": "打工" },
+    { "id": "adventure", "minAge": 8, "label": "轻冒险" },
+    { "id": "marry", "minAge": 22, "label": "结婚" }
+  ]
+}

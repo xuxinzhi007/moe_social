@@ -1,0 +1,16 @@
+{
+  "specVersion": "1",
+  "comment": "软通货商店 · 仅列出 content_manifest 中已有资产",
+  "currency": "coins",
+  "items": [
+    { "id": "hat_cap", "kind": "clothes", "slot": "hat", "price": 40, "label": "帽子" },
+    { "id": "top_basic", "kind": "clothes", "slot": "top", "price": 40, "label": "基础上衣" },
+    { "id": "bottom_basic", "kind": "clothes", "slot": "bottom", "price": 40, "label": "基础下装" },
+    { "id": "shoes_basic", "kind": "clothes", "slot": "shoes", "price": 40, "label": "基础鞋" },
+    { "id": "bed_basic", "kind": "furniture", "price": 40, "label": "小床" },
+    { "id": "lamp_basic", "kind": "furniture", "price": 40, "label": "台灯" },
+    { "id": "rug_basic", "kind": "furniture", "price": 40, "label": "地毯" },
+    { "id": "table_wood", "kind": "furniture", "price": 50, "label": "木桌" },
+    { "id": "window_lace", "kind": "furniture", "price": 45, "label": "窗纱" }
+  ]
+}

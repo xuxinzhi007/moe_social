@@ -297,12 +297,11 @@ class _PetActor extends PositionComponent
   }
 
   Future<void> _load() async {
-    // LPC：服装 id 变化时重合成；PNG：仅 id 变化重载栈。
+    // LPC/Moe sheet：合成失败必须回落 Paper PNG，禁止长期蓝块占位。
     final key =
         '${_profile.hatId}|${_profile.topId}|${_profile.bottomId}|${_profile.shoesId}';
     if (_useSheet) {
-      size = Vector2(lpcSize, lpcSize);
-      if (key == _wearKey && _lpc != null) return;
+      if (key == _wearKey && (_lpc != null || _stack != null)) return;
       _wearKey = key;
       _lpc = await PetSheetAvatar.composeOutfit(
         hatId: _profile.hatId,
@@ -310,11 +309,16 @@ class _PetActor extends PositionComponent
         bottomId: _profile.bottomId,
         shoesId: _profile.shoesId,
       );
-      return;
+      if (_lpc != null) {
+        size = Vector2(lpcSize, lpcSize);
+        _stack = null;
+        return;
+      }
+      // sheet 失败 → Paper
     }
     size = Vector2(pngW, pngH);
-    if (key == _wearKey && _stack != null) return;
-    _wearKey = key;
+    _lpc = null;
+    if (key == _wearKey && _stack != null && !_useSheet) return;
     _stack = await PetAvatarStack.compose(
       hatId: _profile.hatId,
       topId: _profile.topId,
@@ -386,22 +390,15 @@ class _PetActor extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    if (_useSheet) {
-      final sheet = _lpc;
-      if (sheet != null) {
-        sheet.paint(
-          canvas,
-          Size(size.x, size.y),
-          dir: _dir,
-          moving: _moving,
-          frame: _frame,
-        );
-      } else {
-        canvas.drawRect(
-          Rect.fromLTWH(0, 0, size.x, size.y),
-          Paint()..color = const Color(0xFF90CAF9),
-        );
-      }
+    final sheet = _lpc;
+    if (sheet != null) {
+      sheet.paint(
+        canvas,
+        Size(size.x, size.y),
+        dir: _dir,
+        moving: _moving,
+        frame: _frame,
+      );
     } else {
       final stack = _stack;
       if (stack != null) {
@@ -411,6 +408,7 @@ class _PetActor extends PositionComponent
           _profile.wearLayout,
         );
       } else {
+        // 仅真正无资源时用粉色椭圆；禁止蓝色方块占位。
         canvas.drawOval(
           Rect.fromLTWH(0, 0, size.x, size.y).deflate(10),
           Paint()..color = const Color(0xFFFFB7C5),

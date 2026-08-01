@@ -1,0 +1,33 @@
+{
+  "specVersion": "1",
+  "packId": "moe-pet-paper-v1",
+  "displayName": "Moe 小家 · Paper 内容清单",
+  "comment": "仅登记真实存在的资产。换衣间/商店可读此文件；缺失时客户端应静默回落。",
+  "pattern": "paper",
+  "clothes": {
+    "hat": [
+      { "id": "hat_cap", "label": "帽子", "asset": "assets/pet/clothes/hat_cap.png" }
+    ],
+    "top": [
+      { "id": "top_basic", "label": "基础上衣", "asset": "assets/pet/clothes/top_basic.png" }
+    ],
+    "bottom": [
+      { "id": "bottom_basic", "label": "基础下装", "asset": "assets/pet/clothes/bottom_basic.png" }
+    ],
+    "shoes": [
+      { "id": "shoes_basic", "label": "基础鞋", "asset": "assets/pet/clothes/shoes_basic.png" }
+    ]
+  },
+  "furniture": [
+    { "id": "bed_basic", "label": "小床", "asset": "assets/pet/furniture/bed_basic.png", "scenes": ["living", "bedroom"] },
+    { "id": "table_wood", "label": "木桌", "asset": "assets/pet/furniture/table_wood.png", "scenes": ["living"] },
+    { "id": "lamp_basic", "label": "台灯", "asset": "assets/pet/furniture/lamp_basic.png", "scenes": ["living", "bedroom"] },
+    { "id": "rug_basic", "label": "地毯", "asset": "assets/pet/furniture/rug_basic.png", "scenes": ["living", "bedroom"] },
+    { "id": "window_lace", "label": "窗纱", "asset": "assets/pet/furniture/window_lace.png", "scenes": ["living", "bedroom"] }
+  ],
+  "speciesPresets": [
+    { "id": "bunny", "label": "软萌兔", "defaultTop": "top_basic", "defaultBottom": "bottom_basic", "defaultShoes": "shoes_basic" },
+    { "id": "bear", "label": "小熊", "defaultTop": "top_basic", "defaultBottom": "bottom_basic", "defaultShoes": "shoes_basic" },
+    { "id": "cat", "label": "小猫", "defaultTop": "top_basic", "defaultBottom": "bottom_basic", "defaultShoes": "shoes_basic" }
+  ]
+}
