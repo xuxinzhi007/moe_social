@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 
 /// 养成美术路径与缺图探测。
 ///
@@ -17,6 +18,18 @@ class PetArt {
   static const babyHead = 'assets/pet/character/baby_head.png';
   static const monsterHead = 'assets/pet/adventure/monster_head.png';
 
+  /// A 方案身体拆层；见 `docs/dev/pet-layered-avatar.md`。
+  static const legs = 'assets/pet/character/legs.png';
+  static const torso = 'assets/pet/character/torso.png';
+  static const arms = 'assets/pet/character/arms.png';
+  static const head = 'assets/pet/character/head.png';
+
+  static const avatarStackConfig = 'assets/pet/config/avatar_stack.json';
+
+  /// LPC 短跑原型 sheet（个人流水线）；见 `docs/dev/pet-lpc-pipeline.md`。
+  static const lpcWalk = 'assets/pet/lpc/hero_walk.png';
+  static const lpcIdle = 'assets/pet/lpc/hero_idle.png';
+
   static String clothes(String slotId) {
     if (slotId.isEmpty) return '';
     return 'assets/pet/clothes/$slotId.png';
@@ -26,16 +39,15 @@ class PetArt {
 
   static const coin = 'assets/pet/ui/coin.png';
 
-  /// 装扮 ID → 实际文件（缺专用图时回落到基础款）。
+  /// 装扮 ID → 实际文件。空 ID =「无」，不回落基础款。
   static String resolveClothes(String slot, String id) {
-    if (id.isEmpty) {
-      return slot == 'hat' ? '' : clothes('${slot}_basic');
-    }
+    if (id.isEmpty) return '';
     return clothes(id);
   }
 
-  /// 有专用图用专用图，否则回落同槽基础款（舞台叠穿用）。
+  /// 有专用图用专用图；缺图时回落同槽基础款。空 ID 不加载。
   static Future<String?> resolveClothesPath(String slot, String id) async {
+    if (id.isEmpty) return null;
     final primary = resolveClothes(slot, id);
     if (primary.isNotEmpty && await exists(primary)) return primary;
     final fallback = switch (slot) {
@@ -62,7 +74,6 @@ class PetArt {
       'window_lace',
     };
     if (known.contains(id)) {
-      // cozy/soft/heart 暂复用基础款图
       final file = switch (id) {
         'bed_cozy' => 'bed_basic',
         'lamp_soft' => 'lamp_basic',
@@ -93,11 +104,26 @@ class PetArt {
   }
 
   /// 加载 PNG；1×1 占位视为无效。
-  static Future<ui.Image?> loadImage(String assetPath) async {
+  ///
+  /// [knockoutDarkBg]：将近黑不透明像素改为透明（model 裁切头图层常用）。
+  static Future<ui.Image?> loadImage(
+    String assetPath, {
+    bool knockoutDarkBg = false,
+  }) async {
     if (assetPath.isEmpty) return null;
     try {
       final data = await rootBundle.load(assetPath);
-      final bytes = data.buffer.asUint8List();
+      var bytes = data.buffer.asUint8List();
+      if (knockoutDarkBg) {
+        final decoded = img.decodeImage(bytes);
+        if (decoded == null) return null;
+        for (final p in decoded) {
+          if (p.r < 22 && p.g < 22 && p.b < 22) {
+            p.a = 0;
+          }
+        }
+        bytes = Uint8List.fromList(img.encodePng(decoded));
+      }
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
       if (frame.image.width <= 2 && frame.image.height <= 2) {

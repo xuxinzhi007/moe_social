@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "comment": "LPC 短跑默认叠层；改路径后运行 scripts/pet/compose_lpc_hero.ps1",
+  "generatorOnline": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/",
+  "generatorPreset": "#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light",
+  "localDev": "cd Universal-LPC-Spritesheet-Character-Generator-master && npm install && npm run dev",
+  "output": {
+    "walk": "assets/pet/lpc/hero_walk.png",
+    "idle": "assets/pet/lpc/hero_idle.png"
+  },
+  "layersWalk": [
+    "body/bodies/male/walk.png",
+    "legs/pants/male/walk/teal.png",
+    "torso/clothes/longsleeve/longsleeve/male/walk.png",
+    "feet/shoes/basic/male/walk/brown.png",
+    "head/heads/human/male/walk.png",
+    "head/faces/male/neutral/walk.png",
+    "hair/afro/adult/walk.png"
+  ]
+}

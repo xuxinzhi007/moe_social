@@ -3,11 +3,19 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../constants/feature_flags.dart';
+import '../../game/pet/pet_art.dart';
+import '../../game/pet/pet_avatar_stack.dart';
 import '../../game/pet/pet_labels.dart';
+import '../../game/pet/pet_lpc_composer.dart';
+import '../../game/pet/pet_lpc_item_thumb.dart';
+import '../../game/pet/pet_lpc_sheet.dart';
 import '../../models/pet_state.dart';
 import '../../providers/pet_provider.dart';
 
-/// 换衣间整页：左侧选中驱动，右侧大预览变换（位移 / 四角缩放 / 顶柄旋转）。
+/// 换衣间：模型锚点穿搭 + 大预览；可选微调位移/缩放/旋转。
+///
+/// SSOT：`docs/dev/pet-layered-avatar.md`、`assets/pet/config/avatar_stack.json`。
 class PetDressingPage extends StatefulWidget {
   const PetDressingPage({super.key});
 
@@ -26,6 +34,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
     'hat_vip_star',
   ];
   static const _tops = [
+    '',
     'top_basic',
     'top_hoodie',
     'top_tee',
@@ -34,6 +43,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
     'top_vest',
   ];
   static const _bottoms = [
+    '',
     'bottom_basic',
     'bottom_skirt',
     'bottom_jeans',
@@ -42,6 +52,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
     'bottom_overall',
   ];
   static const _shoes = [
+    '',
     'shoes_basic',
     'shoes_sneaker',
     'shoes_boot',
@@ -55,8 +66,44 @@ class _PetDressingPageState extends State<PetDressingPage> {
   late String _bottomId;
   late String _shoesId;
   late PetWearLayout _layout;
-  String _activeSlot = 'hat';
+  PetWearLayout _anchors = PetWearLayout.defaults;
+  String _activeSlot = 'top';
   var _saving = false;
+  var _fineTune = false;
+  PetLpcComposer? _lpcComposer;
+
+  static const _canonicalHats = [
+    'hat_cap',
+    'hat_beret',
+    'hat_crown',
+    'hat_bow',
+    'hat_earmuff',
+    'hat_vip_star',
+  ];
+  static const _canonicalTops = [
+    'top_basic',
+    'top_hoodie',
+    'top_tee',
+    'top_coat',
+    'top_dress',
+    'top_vest',
+  ];
+  static const _canonicalBottoms = [
+    'bottom_basic',
+    'bottom_skirt',
+    'bottom_jeans',
+    'bottom_shorts',
+    'bottom_pants',
+    'bottom_overall',
+  ];
+  static const _canonicalShoes = [
+    'shoes_basic',
+    'shoes_sneaker',
+    'shoes_boot',
+    'shoes_sandal',
+    'shoes_slipper',
+    'shoes_heel',
+  ];
 
   @override
   void initState() {
@@ -67,14 +114,50 @@ class _PetDressingPageState extends State<PetDressingPage> {
     _bottomId = p.bottomId;
     _shoesId = p.shoesId;
     _layout = p.wearLayout;
+    _loadAnchors();
+    if (_lpcMode) _loadLpcComposer();
   }
 
-  List<String> get _activeIds => switch (_activeSlot) {
+  Future<void> _loadLpcComposer() async {
+    final composer = await PetLpcComposer.load();
+    if (!mounted) return;
+    setState(() => _lpcComposer = composer);
+  }
+
+  Future<void> _loadAnchors() async {
+    final cfg = await PetAvatarStackConfig.load();
+    if (!mounted) return;
+    setState(() => _anchors = cfg.wearAnchors);
+  }
+
+  List<String> _legacyIds(String slot) => switch (slot) {
         'hat' => _hats,
         'top' => _tops,
         'bottom' => _bottoms,
         _ => _shoes,
       };
+
+  List<String> _lpcIds(String slot) {
+    final catalog = _lpcComposer?.itemIdsForSlot(slot) ?? const [];
+    if (catalog.isEmpty) return const [''];
+    final canon = switch (slot) {
+      'hat' => _canonicalHats,
+      'top' => _canonicalTops,
+      'bottom' => _canonicalBottoms,
+      _ => _canonicalShoes,
+    };
+    final out = <String>[''];
+    for (final id in canon) {
+      if (catalog.contains(id)) out.add(id);
+    }
+    for (final id in catalog) {
+      if (!out.contains(id)) out.add(id);
+    }
+    return out;
+  }
+
+  List<String> get _activeIds =>
+      _lpcMode ? _lpcIds(_activeSlot) : _legacyIds(_activeSlot);
 
   String get _activeId => switch (_activeSlot) {
         'hat' => _hatId,
@@ -83,6 +166,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
         _ => _shoesId,
       };
 
+  /// 选单品：空=脱下；有货=贴到模型锚点（正式方案默认）。
   void _setActiveId(String id) {
     setState(() {
       if (_activeSlot == 'hat') {
@@ -94,6 +178,16 @@ class _PetDressingPageState extends State<PetDressingPage> {
       } else {
         _shoesId = id;
       }
+      if (id.isNotEmpty) {
+        _layout = _layout.updateSlot(_activeSlot, _anchors.slot(_activeSlot));
+      }
+    });
+  }
+
+  void _resetActiveToAnchor() {
+    if (_activeId.isEmpty) return;
+    setState(() {
+      _layout = _layout.updateSlot(_activeSlot, _anchors.slot(_activeSlot));
     });
   }
 
@@ -120,21 +214,17 @@ class _PetDressingPageState extends State<PetDressingPage> {
   }
 
   String? _asset(String slot, String id) {
-    if (slot == 'hat' && id.isEmpty) return null;
-    return switch (slot) {
-      'hat' => 'assets/pet/clothes/hat_cap.png',
-      'top' => 'assets/pet/clothes/top_basic.png',
-      'bottom' => 'assets/pet/clothes/bottom_basic.png',
-      'shoes' => 'assets/pet/clothes/shoes_basic.png',
-      _ => null,
-    };
+    if (id.isEmpty) return null;
+    final path = PetArt.resolveClothes(slot, id);
+    return path.isEmpty ? null : path;
   }
+
+  static const _railPad = 12.0;
+
+  bool get _lpcMode => FeatureFlags.petLpcPrototype;
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.sizeOf(context);
-    final previewSize = (media.width * 0.52).clamp(220.0, 340.0);
-
     return Scaffold(
       backgroundColor: const Color(0xFFFFF5EE),
       appBar: AppBar(
@@ -163,153 +253,161 @@ class _PetDressingPageState extends State<PetDressingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                '左侧选部位与单品 → 仅编辑该层：拖动位移 · 四角缩放 · 顶柄旋转',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF5A4638).withValues(alpha: 0.7),
+            // 预览与下方衣柜同宽（_railPad），纵向吃满剩余高度（非正方形）。
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(_railPad, 0, _railPad, 8),
+                child: _DressPreview(
+                  hatId: _hatId,
+                  topId: _topId,
+                  bottomId: _bottomId,
+                  shoesId: _shoesId,
+                  layout: _layout,
+                  activeSlot: _activeSlot,
+                  fineTune: !_lpcMode && _fineTune && _activeId.isNotEmpty,
+                  onUpdateActive: _updateLayer,
                 ),
               ),
             ),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(_railPad, 0, _railPad, 8),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 左侧：槽位 + 单品（驱动选中态）
-                  SizedBox(
-                    width: media.width * 0.42,
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: _SlotSelector(
-                            active: _activeSlot,
-                            onSelect: (s) => setState(() => _activeSlot = s),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '编辑：${PetLabels.of(_activeId)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: Color(0xFF5A4638),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
-                            itemCount: _activeIds.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (_, i) {
-                              final id = _activeIds[i];
-                              final on = id == _activeId;
-                              final asset = _asset(_activeSlot, id);
-                              return Material(
-                                color: on
-                                    ? const Color(0xFFFFE4EC)
-                                    : Colors.white.withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(14),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: () => _setActiveId(id),
-                                  child: Container(
-                                    height: 72,
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: on
-                                            ? const Color(0xFFE97891)
-                                            : const Color(0x22000000),
-                                        width: on ? 2 : 1,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                          width: 48,
-                                          height: 48,
-                                          child: id.isEmpty
-                                              ? const Icon(
-                                                  Icons.block,
-                                                  color: Color(0xFFB0A090),
-                                                )
-                                              : Image.asset(
-                                                  asset ?? '',
-                                                  fit: BoxFit.contain,
-                                                  errorBuilder: (_, __, ___) =>
-                                                      const Icon(
-                                                    Icons.checkroom_rounded,
-                                                  ),
-                                                ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            id.isEmpty
-                                                ? '无'
-                                                : PetLabels.of(id),
-                                            style: TextStyle(
-                                              fontWeight: on
-                                                  ? FontWeight.w800
-                                                  : FontWeight.w600,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // 右侧：大预览（仅 active 层可操作）
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 0, 12, 12),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: _DressPreview(
-                                size: previewSize,
-                                hatId: _hatId,
-                                topId: _topId,
-                                bottomId: _bottomId,
-                                shoesId: _shoesId,
-                                layout: _layout,
-                                activeSlot: _activeSlot,
-                                assetOf: _asset,
-                                onUpdateActive: _updateLayer,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '缩放 ${( _layout.slot(_activeSlot).scale * 100).round()}%'
-                            ' · 旋转 ${_layout.slot(_activeSlot).rot.round()}°',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF8A7364),
-                            ),
-                          ),
-                        ],
+                    child: Text(
+                      _lpcMode
+                          ? (_activeId.isEmpty
+                              ? 'LPC · 未穿 · 部件由 catalog 维护'
+                              : 'LPC · ${PetLabels.of(_activeId)} · 同套 sheet 叠层')
+                          : (_activeId.isEmpty
+                              ? '未穿 · 点「无」可脱下'
+                              : '${PetLabels.of(_activeId)} · '
+                                  '${(_layout.slot(_activeSlot).scale * 100).round()}%'
+                                  ' · ${_layout.slot(_activeSlot).rot.round()}°'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF8A7364),
                       ),
                     ),
                   ),
+                  if (!_lpcMode && _fineTune)
+                    TextButton(
+                      onPressed:
+                          _activeId.isEmpty ? null : _resetActiveToAnchor,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFE97891),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text('复位'),
+                    ),
+                  if (!_lpcMode)
+                    FilterChip(
+                      label: const Text('微调'),
+                      selected: _fineTune,
+                      onSelected: _activeId.isEmpty
+                          ? null
+                          : (v) => setState(() => _fineTune = v),
+                      selectedColor: const Color(0xFFFFE4EC),
+                      checkmarkColor: const Color(0xFFE97891),
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: _fineTune
+                            ? const Color(0xFFE97891)
+                            : const Color(0xFF5A4638),
+                      ),
+                    ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: _railPad),
+              child: _SlotSelector(
+                active: _activeSlot,
+                onSelect: (s) => setState(() {
+                  _activeSlot = s;
+                  _fineTune = false;
+                }),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 104,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(_railPad, 0, _railPad, 12),
+                itemCount: _activeIds.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final id = _activeIds[i];
+                  final on = id == _activeId;
+                  final asset = _lpcMode ? null : _asset(_activeSlot, id);
+                  return Material(
+                    color: on
+                        ? const Color(0xFFFFE4EC)
+                        : Colors.white.withValues(alpha: 0.92),
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => _setActiveId(id),
+                      child: Container(
+                        width: 88,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: on
+                                ? const Color(0xFFE97891)
+                                : const Color(0x22000000),
+                            width: on ? 2 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: id.isEmpty
+                                  ? const Icon(
+                                      Icons.block,
+                                      color: Color(0xFFB0A090),
+                                    )
+                                  : _lpcMode
+                                      ? PetLpcItemThumb(
+                                          slot: _activeSlot,
+                                          itemId: id,
+                                          hatId: _hatId,
+                                          topId: _topId,
+                                          bottomId: _bottomId,
+                                          shoesId: _shoesId,
+                                        )
+                                      : Image.asset(
+                                          asset ?? '',
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) =>
+                                              const Icon(
+                                            Icons.checkroom_rounded,
+                                          ),
+                                        ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              id.isEmpty ? '无' : PetLabels.of(id),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight:
+                                    on ? FontWeight.w800 : FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -399,107 +497,299 @@ class _SlotSelector extends StatelessWidget {
   }
 }
 
-class _DressPreview extends StatelessWidget {
+class _DressPreview extends StatefulWidget {
   const _DressPreview({
-    required this.size,
     required this.hatId,
     required this.topId,
     required this.bottomId,
     required this.shoesId,
     required this.layout,
     required this.activeSlot,
-    required this.assetOf,
+    required this.fineTune,
     required this.onUpdateActive,
   });
 
-  final double size;
   final String hatId;
   final String topId;
   final String bottomId;
   final String shoesId;
   final PetWearLayout layout;
   final String activeSlot;
-  final String? Function(String slot, String id) assetOf;
+  final bool fineTune;
   final ValueChanged<PetWearLayer> onUpdateActive;
 
   @override
+  State<_DressPreview> createState() => _DressPreviewState();
+}
+
+class _DressPreviewState extends State<_DressPreview>
+    with SingleTickerProviderStateMixin {
+  PetAvatarStack? _stack;
+  PetLpcSheet? _lpc;
+  List<PetAvatarLayerStatus> _status = const [];
+  var _showStatus = false;
+  String _key = '';
+  late final AnimationController _idleCtrl;
+  var _idleFrame = 0;
+
+  bool get _lpcMode => FeatureFlags.petLpcPrototype;
+
+  @override
+  void initState() {
+    super.initState();
+    _idleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+    _idleCtrl.addListener(() {
+      if (!_lpcMode || !mounted) return;
+      final f = (_idleCtrl.value * PetLpcSheet.idleCols).floor() %
+          PetLpcSheet.idleCols;
+      if (f != _idleFrame) setState(() => _idleFrame = f);
+    });
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _idleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DressPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final key =
+        '${widget.hatId}|${widget.topId}|${widget.bottomId}|${widget.shoesId}';
+    if (key != _key) _reload();
+  }
+
+  Future<void> _reload() async {
+    final key =
+        '${widget.hatId}|${widget.topId}|${widget.bottomId}|${widget.shoesId}';
+    _key = key;
+    if (_lpcMode) {
+      final composer = await PetLpcComposer.load();
+      final sheet = await composer.composeOutfit(
+        hatId: widget.hatId,
+        topId: widget.topId,
+        bottomId: widget.bottomId,
+        shoesId: widget.shoesId,
+      );
+      if (!mounted || _key != key) return;
+      setState(() {
+        _lpc = sheet;
+        _stack = null;
+      });
+      return;
+    }
+    final results = await Future.wait([
+      PetAvatarStack.compose(
+        hatId: widget.hatId,
+        topId: widget.topId,
+        bottomId: widget.bottomId,
+        shoesId: widget.shoesId,
+      ),
+      PetAvatarStackConfig.diagnose(),
+    ]);
+    if (!mounted || _key != key) return;
+    setState(() {
+      _stack = results[0] as PetAvatarStack;
+      _lpc = null;
+      _status = results[1] as List<PetAvatarLayerStatus>;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: size, maxHeight: size),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF1E8),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0x44E97891)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFC48B9A).withValues(alpha: 0.18),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+    final stack = _stack;
+    final lpc = _lpc;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFF8F2), Color(0xFFFFE8DC)],
         ),
-        clipBehavior: Clip.none,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final panel = constraints.biggest.shortestSide;
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: Image.asset(
-                      'assets/pet/character/model.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/pet/character/body.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Center(
-                          child: Icon(Icons.pets_rounded, size: 64),
-                        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x44E97891)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFC48B9A).withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 外框与衣柜同宽拉高；角色仍在居中正方形画布上画，避免竖框拉伸服装。
+            Center(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final side = math.min(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
+                  );
+                  final panel = Size(side, side);
+                  return SizedBox(
+                    width: side,
+                    height: side,
+                    child: stack == null && lpc == null
+                        ? const Center(child: CircularProgressIndicator())
+                        : stack != null
+                            ? Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Positioned.fill(
+                                    child: PetAvatarStackView(
+                                      stack: stack,
+                                      layout: widget.layout,
+                                    ),
+                                  ),
+                                  if (widget.fineTune)
+                                    _WearEditor(
+                                      panel: panel,
+                                      layer:
+                                          widget.layout.slot(widget.activeSlot),
+                                      onChanged: widget.onUpdateActive,
+                                    ),
+                                ],
+                              )
+                            : CustomPaint(
+                                painter: _LpcFramePainter(
+                                  sheet: lpc!,
+                                  frame: _idleFrame,
+                                ),
+                              ),
+                  );
+                },
+              ),
+            ),
+            if (stack != null || lpc != null)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.88),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: () => setState(() => _showStatus = !_showStatus),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Icon(
+                        _showStatus
+                            ? Icons.info_rounded
+                            : Icons.info_outline_rounded,
+                        size: 18,
+                        color: lpc != null
+                            ? const Color(0xFF8A7364)
+                            : (stack!.layeredBody
+                                ? const Color(0xFF8A7364)
+                                : const Color(0xFFE97891)),
                       ),
                     ),
                   ),
                 ),
-                for (final entry in [
-                  ('shoes', shoesId),
-                  ('bottom', bottomId),
-                  ('top', topId),
-                  ('hat', hatId),
-                ])
-                  if (assetOf(entry.$1, entry.$2) != null)
-                    _WearEditor(
-                      panelSize: panel,
-                      asset: assetOf(entry.$1, entry.$2)!,
-                      layer: layout.slot(entry.$1),
-                      interactive: entry.$1 == activeSlot,
-                      onChanged: onUpdateActive,
+              ),
+            if (_showStatus && lpc != null)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Text(
+                      'LPC · 选部位换装 · 预览与单品缩略图均走 catalog 叠层',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF5A4638),
+                      ),
                     ),
-              ],
-            );
-          },
+                  ),
+                ),
+              ),
+            if (_showStatus && stack != null)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          stack.layeredBody
+                              ? '分层 · ${stack.orderIds.join(' → ')}'
+                              : '合体模式 · 缺 head/torso 分层资源',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF5A4638),
+                          ),
+                        ),
+                        for (final s in _status)
+                          Text(
+                            '${s.ready ? '✓' : '✗'} ${s.label}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: s.ready
+                                  ? const Color(0xFF66BB6A)
+                                  : const Color(0xFFE57373),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// 仅 [interactive] 层响应手势，避免右侧误点切层。
+class _LpcFramePainter extends CustomPainter {
+  _LpcFramePainter({required this.sheet, required this.frame});
+
+  final PetLpcSheet sheet;
+  final int frame;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    sheet.paint(canvas, size, dir: 2, moving: false, frame: frame);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LpcFramePainter old) =>
+      old.frame != frame || old.sheet != sheet;
+}
+
+/// 微调手柄：位移 / 四角缩放 / 顶柄旋转（支持非正方形预览框）。
 class _WearEditor extends StatelessWidget {
   const _WearEditor({
-    required this.panelSize,
-    required this.asset,
+    required this.panel,
     required this.layer,
-    required this.interactive,
     required this.onChanged,
   });
 
-  final double panelSize;
-  final String asset;
+  final Size panel;
   final PetWearLayer layer;
-  final bool interactive;
   final ValueChanged<PetWearLayer> onChanged;
 
   static const double _handle = 18;
@@ -507,17 +797,20 @@ class _WearEditor extends StatelessWidget {
   static const double _scaleGain = 2.8;
 
   Offset get _center => Offset(
-        panelSize / 2 + layer.ox * panelSize,
-        panelSize / 2 + layer.oy * panelSize,
+        panel.width / 2 + layer.ox * panel.width,
+        panel.height / 2 + layer.oy * panel.height,
       );
 
-  double get _side => panelSize * layer.scale.clamp(0.15, 1.2);
+  Size get _box {
+    final s = layer.scale.clamp(0.15, 1.2);
+    return Size(panel.width * s, panel.height * s);
+  }
 
   void _moveBy(Offset delta) {
     onChanged(
       layer.copyWith(
-        ox: (layer.ox + delta.dx / panelSize).clamp(-0.45, 0.45),
-        oy: (layer.oy + delta.dy / panelSize).clamp(-0.5, 0.5),
+        ox: (layer.ox + delta.dx / panel.width).clamp(-0.45, 0.45),
+        oy: (layer.oy + delta.dy / panel.height).clamp(-0.5, 0.5),
       ),
     );
   }
@@ -525,8 +818,8 @@ class _WearEditor extends StatelessWidget {
   void _scaleByCorner(Alignment corner, Offset delta) {
     final sx = corner.x;
     final sy = corner.y;
-    final deltaScale =
-        (delta.dx * sx + delta.dy * sy) / panelSize * _scaleGain;
+    final norm = math.min(panel.width, panel.height);
+    final deltaScale = (delta.dx * sx + delta.dy * sy) / norm * _scaleGain;
     onChanged(
       layer.copyWith(scale: (layer.scale + deltaScale).clamp(0.18, 1.15)),
     );
@@ -534,7 +827,7 @@ class _WearEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final side = _side;
+    final box = _box;
     final c = _center;
     final child = Transform.rotate(
       angle: layer.rot * math.pi / 180,
@@ -542,110 +835,97 @@ class _WearEditor extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: interactive
-                ? GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (d) => _moveBy(d.delta),
-                    child: _layerBody(selected: true),
-                  )
-                : IgnorePointer(child: _layerBody(selected: false)),
-          ),
-          if (interactive) ...[
-            Positioned(
-              left: side / 2 - (_handle + 6) / 2,
-              top: -36,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (d) {
-                      onChanged(
-                        layer.copyWith(rot: layer.rot + d.delta.dx * 1.35),
-                      );
-                    },
-                    child: Container(
-                      width: _handle + 6,
-                      height: _handle + 6,
-                      decoration: BoxDecoration(
-                        color: _accent,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: _accent.withValues(alpha: 0.35),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.rotate_right_rounded,
-                        size: 14,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  Container(width: 2, height: 12, color: _accent),
-                ],
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanUpdate: (d) => _moveBy(d.delta),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: _accent, width: 2.5),
+                ),
               ),
             ),
-            for (final corner in const [
-              Alignment.topLeft,
-              Alignment.topRight,
-              Alignment.bottomLeft,
-              Alignment.bottomRight,
-            ])
-              Align(
-                alignment: corner,
-                child: Transform.translate(
-                  offset: Offset(
-                    corner.x * (_handle / 2),
-                    corner.y * (_handle / 2),
+          ),
+          Positioned(
+            left: box.width / 2 - (_handle + 6) / 2,
+            top: -36,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (d) {
+                    onChanged(
+                      layer.copyWith(rot: layer.rot + d.delta.dx * 1.35),
+                    );
+                  },
+                  child: Container(
+                    width: _handle + 6,
+                    height: _handle + 6,
+                    decoration: BoxDecoration(
+                      color: _accent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: _accent.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.rotate_right_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (d) => _scaleByCorner(corner, d.delta),
-                    child: Container(
-                      width: _handle,
-                      height: _handle,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: _accent, width: 2.5),
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _accent.withValues(alpha: 0.3),
-                            blurRadius: 5,
-                          ),
-                        ],
-                      ),
+                ),
+                Container(width: 2, height: 12, color: _accent),
+              ],
+            ),
+          ),
+          for (final corner in const [
+            Alignment.topLeft,
+            Alignment.topRight,
+            Alignment.bottomLeft,
+            Alignment.bottomRight,
+          ])
+            Align(
+              alignment: corner,
+              child: Transform.translate(
+                offset: Offset(
+                  corner.x * (_handle / 2),
+                  corner.y * (_handle / 2),
+                ),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanUpdate: (d) => _scaleByCorner(corner, d.delta),
+                  child: Container(
+                    width: _handle,
+                    height: _handle,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: _accent, width: 2.5),
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _accent.withValues(alpha: 0.3),
+                          blurRadius: 5,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-          ],
+            ),
         ],
       ),
     );
 
     return Positioned(
-      left: c.dx - side / 2,
-      top: c.dy - side / 2,
-      width: side,
-      height: side,
+      left: c.dx - box.width / 2,
+      top: c.dy - box.height / 2,
+      width: box.width,
+      height: box.height,
       child: child,
-    );
-  }
-
-  Widget _layerBody({required bool selected}) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: selected ? Border.all(color: _accent, width: 2.5) : null,
-      ),
-      child: Image.asset(
-        asset,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-      ),
     );
   }
 }

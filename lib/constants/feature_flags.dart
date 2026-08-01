@@ -33,6 +33,15 @@ class FeatureFlags {
   /// 见 `docs/dev/pet-life-sim-roadmap.md`；不替代 Companion 关系首页。
   static const bool petLifeSim = true;
 
+  /// 小家角色用 Spine 骨骼换装（C 方案）。默认关：无授权/无资源时走 PNG。
+  /// 见 `docs/dev/pet-spine-avatar.md`。开启前需 Spine Editor 授权 + `assets/pet/spine/`。
+  static const bool petSpineAvatar = false;
+
+  /// LPC 流水线短跑：小家角色用同画布 spritesheet + 自主走动（仍可拖拽打断）。
+  /// 关则回退分层 PNG / 贴纸。见 `docs/dev/pet-lpc-pipeline.md`。
+  /// 个人非商用原型；上架前需处理 LPC 署名与画风是否正式采用。
+  static const bool petLpcPrototype = true;
+
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 
   /// 一期：每用户一个「当前活跃」伙伴（后端 profile 按 user 取）。

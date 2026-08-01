@@ -50,6 +50,11 @@
 
 见路线图计划附录；资源目录 `assets/pet/`，缺图用 Canvas 占位。说明：`assets/pet/README.md`。
 
+**装扮渲染（正式路线）**：**Moe Avatar Spec** — 管理台 Canvas 编辑器导出官方包；SSOT `moe-avatar/` · `docs/dev/moe-avatar-admin.md`。  
+**LPC 短跑（过渡）**：`FeatureFlags.petLpcPrototype` → 验证走动 + compose；SSOT `docs/dev/pet-lpc-pipeline.md`。  
+**装扮 A（回滚）**：PNG 分层 + 锚点；`docs/dev/pet-layered-avatar.md`。  
+Spine（C）远期：`docs/dev/pet-spine-avatar.md` + `FeatureFlags.petSpineAvatar`。
+
 ## 7. P4 占位
 
 内购校验与桌面小组件：`docs/dev/pet-iap-and-widget.md`。

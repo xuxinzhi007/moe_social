@@ -74,6 +74,40 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
     },
     {
       kind: 'group',
+      id: 'biz-pet-content',
+      label: '养成内容',
+      icon: 'content',
+      caption: '角色 · 家具 · 装饰',
+      defaultOpen: false,
+      children: [
+        {
+          kind: 'item',
+          to: '/biz/pet/content',
+          label: '内容总览',
+          title: '角色 / 家具 / 装饰官方包',
+        },
+        {
+          kind: 'item',
+          to: '/biz/pet/avatar',
+          label: '角色装扮',
+          title: 'Canvas 叠层 · walk/idle',
+        },
+        {
+          kind: 'item',
+          to: '/biz/pet/furniture',
+          label: '家具',
+          title: '单品 PNG · 场景元数据',
+        },
+        {
+          kind: 'item',
+          to: '/biz/pet/decor',
+          label: '装饰',
+          title: '墙贴 / 挂饰（规划）',
+        },
+      ],
+    },
+    {
+      kind: 'group',
       id: 'biz-content',
       label: '内容运营',
       icon: 'content',
@@ -182,6 +216,7 @@ export const LEGACY_REDIRECTS: Array<{ from: string; to: string }> = [
   { from: '/content/community', to: '/biz/content/community' },
   { from: '/content/reports', to: '/biz/content/reports' },
   { from: '/app/growth', to: '/biz/growth' },
+  { from: '/biz/pet/lpc', to: '/biz/pet/avatar' },
   { from: '/app/announcements', to: '/biz/announcements' },
   { from: '/app/update', to: '/biz/update' },
   { from: '/app/notify', to: '/biz/notify' },

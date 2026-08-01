@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 
 import '../../models/pet_state.dart';
 import 'pet_art.dart';
+import 'pet_avatar_backend.dart';
+import 'pet_avatar_stack.dart';
+import 'pet_lpc_composer.dart';
+import 'pet_lpc_sheet.dart';
 
 /// 养成小家 Room：固定竖屏舞台；布置模式拖家具/旋转；角色可缩小拖动。
 class PetRoomGame extends FlameGame {
@@ -238,20 +242,32 @@ class _PetActor extends PositionComponent
     with DragCallbacks, HasGameReference<PetRoomGame> {
   _PetActor({required this.onMoved});
 
-  static const double actorW = 200;
-  static const double actorH = 268;
+  static const double pngW = 200;
+  static const double pngH = 268;
+  static const double lpcSize = 112;
+  static const double _walkSpeed = 90;
+  static const double _animFps = 9;
 
   final void Function(double x, double y) onMoved;
+  final math.Random _rng = math.Random();
 
   PetProfile _profile = PetProfile.fresh();
-  ui.Image? _character;
-  ui.Image? _shoes;
-  ui.Image? _bottom;
-  ui.Image? _top;
-  ui.Image? _hat;
+  PetAvatarStack? _stack;
+  PetLpcSheet? _lpc;
   String _wearKey = '';
   bool decorateMode = false;
   bool dragging = false;
+  bool _placed = false;
+
+  /// LPC 自主移动目标（世界坐标）；null = 站立等待下一次闲逛。
+  Vector2? _wanderTarget;
+  double _idleWait = 0.8;
+  double _animT = 0;
+  int _frame = 0;
+  int _dir = 2; // down
+  bool _moving = false;
+
+  bool get _useLpc => resolvePetAvatarBackend() == PetAvatarBackend.lpc;
 
   double get normX =>
       (position.x / PetRoomGame.worldWidth).clamp(0.12, 0.88);
@@ -260,8 +276,14 @@ class _PetActor extends PositionComponent
 
   void apply(PetProfile profile, {bool forcePosition = true}) {
     _profile = profile;
-    if (forcePosition && !dragging) {
-      _placeFromNorm(profile.actorX, profile.actorY);
+    if (!dragging) {
+      if (!_placed) {
+        _placeFromNorm(profile.actorX, profile.actorY);
+        _placed = true;
+      } else if (!_useLpc && forcePosition) {
+        // PNG 模式：跟随存档坐标；LPC 闲逛中勿每帧拽回。
+        _placeFromNorm(profile.actorX, profile.actorY);
+      }
     }
     _load();
   }
@@ -274,76 +296,127 @@ class _PetActor extends PositionComponent
   }
 
   Future<void> _load() async {
-    _character =
-        await PetArt.loadImage(PetArt.model) ?? await PetArt.loadImage(PetArt.body);
-    // 仅服装 id 变化时重载贴图；ox/oy/scale/rot 在 render 时读取。
+    // LPC：服装 id 变化时重合成；PNG：仅 id 变化重载栈。
     final key =
         '${_profile.hatId}|${_profile.topId}|${_profile.bottomId}|${_profile.shoesId}';
-    if (key == _wearKey &&
-        _shoes != null &&
-        _bottom != null &&
-        _top != null) {
+    if (_useLpc) {
+      size = Vector2(lpcSize, lpcSize);
+      if (key == _wearKey && _lpc != null) return;
+      _wearKey = key;
+      final composer = await PetLpcComposer.load();
+      _lpc = await composer.composeOutfit(
+        hatId: _profile.hatId,
+        topId: _profile.topId,
+        bottomId: _profile.bottomId,
+        shoesId: _profile.shoesId,
+      );
       return;
     }
+    size = Vector2(pngW, pngH);
+    if (key == _wearKey && _stack != null) return;
     _wearKey = key;
-    _shoes = await _loadSlot('shoes', _profile.shoesId);
-    _bottom = await _loadSlot('bottom', _profile.bottomId);
-    _top = await _loadSlot('top', _profile.topId);
-    _hat = _profile.hatId.isEmpty
-        ? null
-        : await _loadSlot('hat', _profile.hatId);
-  }
-
-  Future<ui.Image?> _loadSlot(String slot, String id) async {
-    final path = await PetArt.resolveClothesPath(slot, id);
-    if (path == null) return null;
-    return PetArt.loadImage(path);
+    _stack = await PetAvatarStack.compose(
+      hatId: _profile.hatId,
+      topId: _profile.topId,
+      bottomId: _profile.bottomId,
+      shoesId: _profile.shoesId,
+    );
   }
 
   @override
   Future<void> onLoad() async {
-    size = Vector2(actorW, actorH);
+    size = Vector2(_useLpc ? lpcSize : pngW, _useLpc ? lpcSize : pngH);
     anchor = Anchor.center;
     priority = 20;
     _placeFromNorm(_profile.actorX, _profile.actorY);
+    _placed = true;
     await _load();
   }
 
-  /// 按换衣间保存的 ox/oy/scale/rot 画单层（不再铺满角色）。
-  void _paintWearLayer(
-    Canvas canvas,
-    ui.Image? image,
-    PetWearLayer layer,
-  ) {
-    if (image == null) return;
-    final w = size.x * layer.scale.clamp(0.15, 1.2);
-    final h = size.y * layer.scale.clamp(0.15, 1.2);
-    final cx = size.x / 2 + layer.ox * size.x;
-    final cy = size.y / 2 + layer.oy * size.y;
-    final rect = Rect.fromCenter(center: Offset.zero, width: w, height: h);
-    canvas.save();
-    canvas.translate(cx, cy);
-    if (layer.rot != 0) {
-      canvas.rotate(layer.rot * math.pi / 180);
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (!_useLpc || _lpc == null || decorateMode || dragging) {
+      _moving = false;
+      return;
     }
-    paintImage(canvas: canvas, rect: rect, image: image, fit: BoxFit.contain);
-    canvas.restore();
+
+    if (_wanderTarget == null) {
+      _idleWait -= dt;
+      _moving = false;
+      if (_idleWait <= 0) {
+        _pickWanderTarget();
+      }
+    } else {
+      final to = _wanderTarget! - position;
+      final dist = to.length;
+      if (dist < 4) {
+        _wanderTarget = null;
+        _idleWait = 1.2 + _rng.nextDouble() * 2.4;
+        _moving = false;
+        onMoved(normX, normY);
+      } else {
+        final step = math.min(_walkSpeed * dt, dist);
+        final delta = to.normalized() * step;
+        position += delta;
+        _placeFromNorm(normX, normY);
+        _dir = PetLpcSheet.dirFromVelocity(delta.x, delta.y);
+        _moving = true;
+      }
+    }
+
+    _animT += dt;
+    final step = 1 / _animFps;
+    while (_animT >= step) {
+      _animT -= step;
+      final cols = _moving ? PetLpcSheet.walkCols : PetLpcSheet.idleCols;
+      _frame = (_frame + 1) % cols;
+    }
+  }
+
+  void _pickWanderTarget() {
+    final nx = 0.18 + _rng.nextDouble() * 0.64;
+    final ny = 0.42 + _rng.nextDouble() * 0.40;
+    _wanderTarget = Vector2(
+      nx * PetRoomGame.worldWidth,
+      ny * PetRoomGame.worldHeight,
+    );
+    _frame = 0;
   }
 
   @override
   void render(Canvas canvas) {
-    final rect = Rect.fromLTWH(0, 0, size.x, size.y);
-    final img = _character;
-    if (img != null) {
-      paintImage(canvas: canvas, rect: rect, image: img, fit: BoxFit.contain);
+    if (_useLpc) {
+      final sheet = _lpc;
+      if (sheet != null) {
+        sheet.paint(
+          canvas,
+          Size(size.x, size.y),
+          dir: _dir,
+          moving: _moving,
+          frame: _frame,
+        );
+      } else {
+        canvas.drawRect(
+          Rect.fromLTWH(0, 0, size.x, size.y),
+          Paint()..color = const Color(0xFF90CAF9),
+        );
+      }
     } else {
-      canvas.drawOval(rect.deflate(10), Paint()..color = const Color(0xFFFFB7C5));
+      final stack = _stack;
+      if (stack != null) {
+        stack.paint(
+          canvas,
+          Size(size.x, size.y),
+          _profile.wearLayout,
+        );
+      } else {
+        canvas.drawOval(
+          Rect.fromLTWH(0, 0, size.x, size.y).deflate(10),
+          Paint()..color = const Color(0xFFFFB7C5),
+        );
+      }
     }
-    final layout = _profile.wearLayout;
-    _paintWearLayer(canvas, _shoes, layout.shoes);
-    _paintWearLayer(canvas, _bottom, layout.bottom);
-    _paintWearLayer(canvas, _top, layout.top);
-    _paintWearLayer(canvas, _hat, layout.hat);
     final name = TextPainter(
       text: TextSpan(
         text: _profile.name,
@@ -361,12 +434,13 @@ class _PetActor extends PositionComponent
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    // 布置模式优先拖家具；非布置时可拖角色走动。
     if (decorateMode) {
       event.continuePropagation = true;
       return;
     }
     dragging = true;
+    _wanderTarget = null;
+    _moving = false;
     priority = 40;
   }
 
@@ -376,6 +450,10 @@ class _PetActor extends PositionComponent
     if (decorateMode || !dragging) return;
     position += event.localDelta;
     _placeFromNorm(normX, normY);
+    final d = event.localDelta;
+    if (d.x.abs() + d.y.abs() > 0.5) {
+      _dir = PetLpcSheet.dirFromVelocity(d.x, d.y);
+    }
   }
 
   @override
@@ -384,6 +462,7 @@ class _PetActor extends PositionComponent
     if (!dragging) return;
     dragging = false;
     priority = 20;
+    _idleWait = 0.6 + _rng.nextDouble();
     onMoved(normX, normY);
   }
 
