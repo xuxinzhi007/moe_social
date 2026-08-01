@@ -585,7 +585,10 @@ class _PetHomePageState extends State<PetHomePage> {
     final power = pet.profile.sport +
         pet.profile.labor +
         (pet.profile.mood ~/ 10);
-    final adv = PetAdventureGame(playerPower: power);
+    final adv = PetAdventureGame(
+      playerPower: power,
+      stageLabel: '小院试炼',
+    );
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => Scaffold(
@@ -877,12 +880,20 @@ class _StatusBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _bar('饱食', profile.hunger, const Color(0xFFFF8A65)),
-        _bar('精力', profile.energy, const Color(0xFF4FC3F7)),
-        _bar('心情', profile.mood, const Color(0xFFF06292)),
-      ],
+    return Material(
+      color: Colors.white.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _bar('饱食', profile.hunger, const Color(0xFFFF8A65)),
+            _bar('精力', profile.energy, const Color(0xFF4FC3F7)),
+            _bar('心情', profile.mood, const Color(0xFFF06292)),
+          ],
+        ),
+      ),
     );
   }
 

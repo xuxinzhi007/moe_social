@@ -1,0 +1,17 @@
+{
+  "specVersion": "1",
+  "comment": "房间尺度与构图 · 可选；缺失时用代码默认",
+  "actor": { "displayHeightNorm": 0.24, "footY": 0.64 },
+  "furnitureDefaults": {
+    "rug": { "scale": 1.55 },
+    "bed": { "scale": 1.25 },
+    "table": { "scale": 1.1 },
+    "lamp": { "scale": 1.0 },
+    "window": { "scale": 1.3 }
+  },
+  "scenes": {
+    "living": { "preset": "default", "slots": [] },
+    "bedroom": { "preset": "default", "slots": [] },
+    "yard": { "preset": "default", "slots": [] }
+  }
+}

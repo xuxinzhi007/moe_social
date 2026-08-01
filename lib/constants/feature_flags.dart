@@ -38,8 +38,9 @@ class FeatureFlags {
   static const bool petSpineAvatar = false;
 
   /// Moe 官方 avatar 分层 pack（admin 生产 → assets/pet/moe_content/avatar/）。
-  /// 见 `docs/dev/moe-pet-content-pack.md` · `docs/dev/moe-avatar-admin.md`。
-  static const bool petMoeAvatar = true;
+  /// 正式小家默认 **false**：走 Paper PNG，避免 sheet 合成失败出现蓝块占位。
+  /// 调研时再开；见 `docs/dev/moe-pet-content-pack.md`。
+  static const bool petMoeAvatar = false;
 
   /// LPC 流水线短跑：关则优先 [petMoeAvatar] 或 PNG。见 `docs/dev/pet-lpc-pipeline.md`。
   static const bool petLpcPrototype = false;

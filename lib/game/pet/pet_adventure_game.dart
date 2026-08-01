@@ -9,9 +9,13 @@ import 'pet_art.dart';
 
 /// P3 轻冒险：短回合放置演出（无 HTTP；胜负由 Page 传入）。
 class PetAdventureGame extends FlameGame {
-  PetAdventureGame({required this.playerPower});
+  PetAdventureGame({
+    required this.playerPower,
+    this.stageLabel = '轻冒险',
+  });
 
   final int playerPower;
+  final String stageLabel;
 
   bool? _win;
   double _t = 0;
@@ -25,6 +29,7 @@ class PetAdventureGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    _status = '遭遇$stageLabel…';
     camera.viewfinder.anchor = Anchor.center;
     camera.viewfinder.position = Vector2(360, 640);
     await world.add(_AdventureStage(playerPower: playerPower));
