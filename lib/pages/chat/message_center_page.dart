@@ -123,19 +123,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                 bottom: BorderSide(color: MoeTokens.surfaceBorder),
               ),
               actions: [
-                if (hasRequests)
-                  IconButton(
-                    tooltip: '好友申请',
-                    onPressed: _openRequests,
-                    icon: Badge(
-                      label: Text(
-                        incomingRequestCount > 99
-                            ? '99+'
-                            : '$incomingRequestCount',
-                      ),
-                      child: const Icon(Icons.mark_email_unread_rounded),
-                    ),
-                  ),
                 IconButton(
                   tooltip: '添加好友',
                   onPressed: _showAddFriendSheet,

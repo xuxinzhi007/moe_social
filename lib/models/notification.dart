@@ -9,6 +9,7 @@ class NotificationModel {
   static const int directMessage = 6;
   static const int announcement = 7;
   static const int giftReceived = 8;
+  static const int companionProactive = 9;
 
   final String id;
   final int type; // 1:like, 2:comment, 3:follow, 4:system
@@ -98,6 +99,8 @@ class NotificationModel {
         return senderName != null ? '$senderName 给你发来了私信' : '收到一条新的私信';
       case giftReceived:
         return senderName != null ? '$senderName 送给你礼物' : '收到一份礼物';
+      case companionProactive:
+        return 'AI 伙伴想和你聊聊';
       default:
         return '新通知';
     }

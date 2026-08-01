@@ -89,8 +89,8 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
         {
           kind: 'item',
           to: '/biz/pet/avatar',
-          label: '角色装扮',
-          title: 'Canvas 叠层 · walk/idle',
+           label: 'AI 精灵资源',
+           title: 'PNG 模板校准 · sprite 导出',
         },
         {
           kind: 'item',

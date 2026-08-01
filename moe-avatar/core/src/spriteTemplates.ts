@@ -57,11 +57,16 @@ export function createSpriteFromTemplate(
     id: overrides.id ?? template.id,
     kind: overrides.kind ?? template.kind,
     templateId,
+    ...(overrides.status ? { status: overrides.status } : {}),
+    ...(overrides.directions ? { directions: [...overrides.directions] } : {}),
+    ...(overrides.sheet ? { sheet: overrides.sheet } : {}),
     canvas: { ...template.canvas, ...overrides.canvas },
     anchor: { ...template.anchor, ...overrides.anchor },
     animations: overrides.animations?.map((animation) => ({ ...animation })) ?? template.animations.map((animation) => ({ ...animation })),
     frameLayout: { ...template.frameLayout, ...overrides.frameLayout },
     source: { path: sourcePath },
     ...(overrides.layers ? { layers: overrides.layers.map((layer) => ({ ...layer })) } : {}),
+    ...(overrides.frames ? { frames: overrides.frames.map((adjustment) => ({ ...adjustment, ...(adjustment.anchor ? { anchor: { ...adjustment.anchor } } : {}) })) } : {}),
+    ...(overrides.frameAdjustments ? { frameAdjustments: overrides.frameAdjustments.map((adjustment) => ({ ...adjustment, ...(adjustment.anchor ? { anchor: { ...adjustment.anchor } } : {}) })) } : {}),
   }
 }

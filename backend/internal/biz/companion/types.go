@@ -4,21 +4,34 @@ import "time"
 
 // Profile AI 伙伴身份（值类型，由 model.CompanionProfile 转换）。
 type Profile struct {
-	ID                   uint
-	UserID               uint
-	Name                 string
-	Emoji                string
-	AvatarURL            string // 关系层自定义头像 URL
-	Persona              string
-	PersonalityTraits    []string // JSON 解析后
-	GreetingStyle        string   // warm / playful / calm
-	RelationshipLevel    int
-	IntimacyScore        float64
-	SystemPromptOverride string
-	AgentID              string
-	LifeEntityID         int
+	ID                      uint
+	UserID                  uint
+	Name                    string
+	Emoji                   string
+	AvatarURL               string // 关系层自定义头像 URL
+	Persona                 string
+	PersonalityTraits       []string // JSON 解析后
+	GreetingStyle           string   // warm / playful / calm
+	RelationshipLevel       int
+	IntimacyScore           float64
+	SystemPromptOverride    string
+	AgentID                 string
+	LifeEntityID            int
+	ProactiveEnabled        bool
+	ProactiveDailyLimit     int
+	ProactiveQuietStart     int
+	ProactiveQuietEnd       int
+	ProactiveTimezoneOffset int
 	// WorldBindStatus: unbound | bound_ok | bound_missing（运行时解析，不落 companion_profiles 列）。
 	WorldBindStatus string
+}
+
+type ProactiveSettings struct {
+	Enabled        bool
+	DailyLimit     int
+	QuietStart     int
+	QuietEnd       int
+	TimezoneOffset int
 }
 
 // Memory AI 伙伴持久记忆。

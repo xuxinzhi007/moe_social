@@ -148,6 +148,40 @@ class CompanionProfileData {
       };
 }
 
+class CompanionProactiveSettingsData {
+  final bool enabled;
+  final int dailyLimit;
+  final int quietStart;
+  final int quietEnd;
+  final int timezoneOffset;
+
+  const CompanionProactiveSettingsData({
+    this.enabled = true,
+    this.dailyLimit = 1,
+    this.quietStart = 1350,
+    this.quietEnd = 450,
+    this.timezoneOffset = 0,
+  });
+
+  factory CompanionProactiveSettingsData.fromMap(Map<String, dynamic> map) {
+    return CompanionProactiveSettingsData(
+      enabled: map['enabled'] != false,
+      dailyLimit: (map['daily_limit'] as num?)?.toInt() ?? 1,
+      quietStart: (map['quiet_start'] as num?)?.toInt() ?? 1350,
+      quietEnd: (map['quiet_end'] as num?)?.toInt() ?? 450,
+      timezoneOffset: (map['timezone_offset'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toRequestMap() => {
+        'enabled': enabled,
+        'daily_limit': dailyLimit,
+        'quiet_start': quietStart,
+        'quiet_end': quietEnd,
+        'timezone_offset': timezoneOffset,
+      };
+}
+
 /// 伙伴动态卡片（后端 `state.moments`）。
 class CompanionMomentData {
   final String text;
@@ -479,6 +513,27 @@ class CompanionService {
     );
     return CompanionProfileData.fromMap(
       ApiResponse.object(result, keys: const ['profile']),
+    );
+  }
+
+  Future<CompanionProactiveSettingsData> getProactiveSettings() async {
+    _requireUserId();
+    final result = await ApiService.get('/api/companion/proactive-settings');
+    return CompanionProactiveSettingsData.fromMap(
+      ApiResponse.object(result, keys: const ['settings']),
+    );
+  }
+
+  Future<CompanionProactiveSettingsData> updateProactiveSettings(
+    CompanionProactiveSettingsData settings,
+  ) async {
+    _requireUserId();
+    final result = await ApiService.put(
+      '/api/companion/proactive-settings',
+      body: settings.toRequestMap(),
+    );
+    return CompanionProactiveSettingsData.fromMap(
+      ApiResponse.object(result, keys: const ['settings']),
     );
   }
 

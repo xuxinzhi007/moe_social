@@ -74,6 +74,30 @@ func (s *Server) GetState(ctx context.Context, in *companionv1.GetStateRequest) 
 	return app.GetState(ctx, userID, in)
 }
 
+func (s *Server) GetProactiveSettings(ctx context.Context, in *companionv1.GetProactiveSettingsRequest) (*companionv1.GetProactiveSettingsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.GetProactiveSettings(ctx, userID, in)
+}
+
+func (s *Server) UpdateProactiveSettings(ctx context.Context, in *companionv1.UpdateProactiveSettingsRequest) (*companionv1.UpdateProactiveSettingsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.UpdateProactiveSettings(ctx, userID, in)
+}
+
 func (s *Server) ListMemories(ctx context.Context, in *companionv1.ListMemoriesRequest) (*companionv1.ListMemoriesReply, error) {
 	app, err := s.requireApp()
 	if err != nil {

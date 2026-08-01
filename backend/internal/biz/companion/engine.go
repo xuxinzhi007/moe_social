@@ -37,7 +37,12 @@ type Engine struct {
 	cancelCleanup  context.CancelFunc
 	cancelGreeting context.CancelFunc
 	proactiveMu    sync.Mutex
-	lastProactive  map[uint]time.Time
+	lastProactive  map[uint]proactiveDelivery
+}
+
+type proactiveDelivery struct {
+	localDate string
+	count     int
 }
 
 // ChatStream sends one message with an optional per-request inference config.
@@ -53,7 +58,7 @@ func NewEngine(store Store, lifeStore LifeStore, llmCfg llminference.Config, mod
 		MaxHistoryTurns: 10,
 		MaxMemories:     5,
 		CleanupInterval: time.Hour,
-		lastProactive:   make(map[uint]time.Time),
+		lastProactive:   make(map[uint]proactiveDelivery),
 	}
 }
 
@@ -123,6 +128,15 @@ func (e *Engine) pushProactive(userID uint) {
 	if e.OnProactive == nil {
 		return
 	}
+	profile, err := e.GetProfile(context.Background(), userID)
+	if err != nil || profile == nil || !profile.ProactiveEnabled {
+		return
+	}
+	now := time.Now().UTC().Add(time.Duration(profile.ProactiveTimezoneOffset) * time.Minute)
+	minuteOfDay := now.Hour()*60 + now.Minute()
+	if inQuietHours(minuteOfDay, profile.ProactiveQuietStart, profile.ProactiveQuietEnd) {
+		return
+	}
 	history, err := e.ListChatHistory(context.Background(), userID, 8)
 	if err != nil || len(history) == 0 {
 		return
@@ -133,12 +147,15 @@ func (e *Engine) pushProactive(userID uint) {
 	}
 
 	e.proactiveMu.Lock()
-	lastSent := e.lastProactive[userID]
-	if !lastSent.IsZero() && time.Since(lastSent) < 24*time.Hour {
+	localDate := now.Format("2006-01-02")
+	delivery := e.lastProactive[userID]
+	if delivery.localDate == localDate && delivery.count >= profile.ProactiveDailyLimit {
 		e.proactiveMu.Unlock()
 		return
 	}
-	e.lastProactive[userID] = time.Now()
+	delivery.localDate = localDate
+	delivery.count++
+	e.lastProactive[userID] = delivery
 	e.proactiveMu.Unlock()
 
 	message := "有一阵子没见到你了，最近过得怎么样？"
@@ -149,6 +166,16 @@ func (e *Engine) pushProactive(userID uint) {
 		}
 	}
 	e.OnProactive(userID, message, "久未聊天回访")
+}
+
+func inQuietHours(minute, start, end int) bool {
+	if start == end {
+		return false
+	}
+	if start < end {
+		return minute >= start && minute < end
+	}
+	return minute >= start || minute < end
 }
 
 func clipProactiveText(value string) string {
@@ -232,6 +259,50 @@ func (e *Engine) GetProfile(ctx context.Context, userID uint) (*Profile, error) 
 		return nil, fmt.Errorf("resolve Life binding for companion user %d: %w", userID, err)
 	}
 	return created, nil
+}
+
+func (e *Engine) GetProactiveSettings(ctx context.Context, userID uint) (*ProactiveSettings, error) {
+	profile, err := e.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &ProactiveSettings{
+		Enabled:        profile.ProactiveEnabled,
+		DailyLimit:     profile.ProactiveDailyLimit,
+		QuietStart:     profile.ProactiveQuietStart,
+		QuietEnd:       profile.ProactiveQuietEnd,
+		TimezoneOffset: profile.ProactiveTimezoneOffset,
+	}, nil
+}
+
+func (e *Engine) UpdateProactiveSettings(ctx context.Context, userID uint, settings ProactiveSettings) (*ProactiveSettings, error) {
+	profile, err := e.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	settings.DailyLimit = clampInt(settings.DailyLimit, 1, 3)
+	settings.QuietStart = clampInt(settings.QuietStart, 0, 1439)
+	settings.QuietEnd = clampInt(settings.QuietEnd, 0, 1439)
+	settings.TimezoneOffset = clampInt(settings.TimezoneOffset, -840, 840)
+	profile.ProactiveEnabled = settings.Enabled
+	profile.ProactiveDailyLimit = settings.DailyLimit
+	profile.ProactiveQuietStart = settings.QuietStart
+	profile.ProactiveQuietEnd = settings.QuietEnd
+	profile.ProactiveTimezoneOffset = settings.TimezoneOffset
+	if _, err := e.UpsertProfile(ctx, userID, profile); err != nil {
+		return nil, err
+	}
+	return &settings, nil
+}
+
+func clampInt(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
 }
 
 func (e *Engine) UpsertProfile(ctx context.Context, userID uint, p *Profile) (*Profile, error) {
@@ -819,14 +890,18 @@ func (e *Engine) resolveWorldBindOnUpsert(ctx context.Context, profile *Profile)
 // defaultProfile 无 profile 时的默认伙伴。
 func defaultProfile(userID uint) *Profile {
 	return &Profile{
-		UserID:            userID,
-		Name:              "小伙伴",
-		Emoji:             "🐾",
-		Persona:           "一个温暖、好奇的AI朋友，喜欢聊天",
-		PersonalityTraits: []string{"温暖", "好奇", "幽默"},
-		GreetingStyle:     "warm",
-		RelationshipLevel: 1,
-		AgentID:           fmt.Sprintf("companion-%d", userID),
+		UserID:              userID,
+		Name:                "小伙伴",
+		Emoji:               "🐾",
+		Persona:             "一个温暖、好奇的AI朋友，喜欢聊天",
+		PersonalityTraits:   []string{"温暖", "好奇", "幽默"},
+		GreetingStyle:       "warm",
+		RelationshipLevel:   1,
+		ProactiveEnabled:    true,
+		ProactiveDailyLimit: 1,
+		ProactiveQuietStart: 1350,
+		ProactiveQuietEnd:   450,
+		AgentID:             fmt.Sprintf("companion-%d", userID),
 	}
 }
 
@@ -845,20 +920,35 @@ func modelToProfile(m *model.CompanionProfile) *Profile {
 	if m.PersonalityTraitsJSON != "" {
 		_ = json.Unmarshal([]byte(m.PersonalityTraitsJSON), &traits)
 	}
+	proactiveEnabled := m.ProactiveEnabled
+	proactiveDailyLimit := m.ProactiveDailyLimit
+	proactiveQuietStart := m.ProactiveQuietStart
+	proactiveQuietEnd := m.ProactiveQuietEnd
+	if !proactiveEnabled && proactiveDailyLimit == 0 && proactiveQuietStart == 0 && proactiveQuietEnd == 0 {
+		proactiveEnabled = true
+		proactiveDailyLimit = 1
+		proactiveQuietStart = 1350
+		proactiveQuietEnd = 450
+	}
 	return &Profile{
-		ID:                   m.ID,
-		UserID:               m.UserID,
-		Name:                 m.Name,
-		Emoji:                m.Emoji,
-		AvatarURL:            m.AvatarURL,
-		Persona:              m.Persona,
-		PersonalityTraits:    traits,
-		GreetingStyle:        m.GreetingStyle,
-		RelationshipLevel:    m.RelationshipLevel,
-		IntimacyScore:        m.IntimacyScore,
-		SystemPromptOverride: m.SystemPromptOverride,
-		AgentID:              m.AgentID,
-		LifeEntityID:         m.LifeEntityID,
+		ID:                      m.ID,
+		UserID:                  m.UserID,
+		Name:                    m.Name,
+		Emoji:                   m.Emoji,
+		AvatarURL:               m.AvatarURL,
+		Persona:                 m.Persona,
+		PersonalityTraits:       traits,
+		GreetingStyle:           m.GreetingStyle,
+		RelationshipLevel:       m.RelationshipLevel,
+		IntimacyScore:           m.IntimacyScore,
+		SystemPromptOverride:    m.SystemPromptOverride,
+		AgentID:                 m.AgentID,
+		LifeEntityID:            m.LifeEntityID,
+		ProactiveEnabled:        proactiveEnabled,
+		ProactiveDailyLimit:     proactiveDailyLimit,
+		ProactiveQuietStart:     proactiveQuietStart,
+		ProactiveQuietEnd:       proactiveQuietEnd,
+		ProactiveTimezoneOffset: m.ProactiveTimezoneOffset,
 	}
 }
 
@@ -869,19 +959,24 @@ func profileToModel(userID uint, p *Profile) *model.CompanionProfile {
 		style = "warm"
 	}
 	return &model.CompanionProfile{
-		UserID:                userID,
-		Name:                  p.Name,
-		Emoji:                 p.Emoji,
-		AvatarURL:             strings.TrimSpace(p.AvatarURL),
-		Persona:               p.Persona,
-		PersonalityTraitsJSON: string(traitsJSON),
-		GreetingStyle:         style,
-		RelationshipLevel:     p.RelationshipLevel,
-		IntimacyScore:         p.IntimacyScore,
-		SystemPromptOverride:  p.SystemPromptOverride,
-		AgentID:               p.AgentID,
-		LifeEntityID:          p.LifeEntityID,
-		UpdatedAt:             time.Now(),
+		UserID:                  userID,
+		Name:                    p.Name,
+		Emoji:                   p.Emoji,
+		AvatarURL:               strings.TrimSpace(p.AvatarURL),
+		Persona:                 p.Persona,
+		PersonalityTraitsJSON:   string(traitsJSON),
+		GreetingStyle:           style,
+		RelationshipLevel:       p.RelationshipLevel,
+		IntimacyScore:           p.IntimacyScore,
+		SystemPromptOverride:    p.SystemPromptOverride,
+		AgentID:                 p.AgentID,
+		LifeEntityID:            p.LifeEntityID,
+		ProactiveEnabled:        p.ProactiveEnabled,
+		ProactiveDailyLimit:     p.ProactiveDailyLimit,
+		ProactiveQuietStart:     p.ProactiveQuietStart,
+		ProactiveQuietEnd:       p.ProactiveQuietEnd,
+		ProactiveTimezoneOffset: p.ProactiveTimezoneOffset,
+		UpdatedAt:               time.Now(),
 	}
 }
 

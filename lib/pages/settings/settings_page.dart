@@ -556,6 +556,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     Navigator.pushNamed(context, '/virtual-avatar-settings');
                   },
                 ),
+                MoeMenuItem(
+                  icon: Icons.auto_awesome_rounded,
+                  title: 'AI 伙伴设置',
+                  subtitle: '管理主动陪伴、免打扰时间和伙伴消息',
+                  color: MoeTokens.secondary,
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    '/companion-settings',
+                  ),
+                ),
               ],
             ),
           ],
