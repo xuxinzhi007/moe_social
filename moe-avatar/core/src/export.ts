@@ -4,21 +4,7 @@ import type { MoeAvatarManifest, OutfitSelection } from './types'
 import type { TemplateSelection } from './resolveLayers'
 import { assetUrl } from './resolveLayers'
 import { layerThumbCanvas, composeSheet, composeTemplateSheet } from './composeSheet'
-
-function collectAssetPaths(manifest: MoeAvatarManifest): Set<string> {
-  const paths = new Set<string>()
-  for (const b of Object.values(manifest.base)) {
-    paths.add(b.walk)
-    paths.add(b.idle)
-  }
-  for (const slot of Object.values(manifest.slots)) {
-    for (const item of Object.values(slot)) {
-      paths.add(item.walk)
-      paths.add(item.idle)
-    }
-  }
-  return paths
-}
+import { collectManifestAssets } from './collectManifestAssets'
 
 async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -46,7 +32,7 @@ export type ExportPackOptions = {
 export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob> {
   const { manifest, packBaseUrl, assetStore, previewOutfit, includeBaked = false } = options
   const zip = new JSZip()
-  const paths = collectAssetPaths(manifest)
+  const paths = new Set(collectManifestAssets(manifest).map((entry) => entry.path))
 
   for (const rel of paths) {
     try {

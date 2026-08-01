@@ -421,7 +421,12 @@ type CompanionMemoryMsg struct {
 	Importance int32                  `protobuf:"varint,4,opt,name=importance,proto3" json:"importance,omitempty"`
 	CreatedAt  string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// 置顶：列表靠前；置顶时服务端会取消过期（永久保留）。
-	Pinned        bool `protobuf:"varint,6,opt,name=pinned,proto3" json:"pinned,omitempty"`
+	Pinned bool `protobuf:"varint,6,opt,name=pinned,proto3" json:"pinned,omitempty"`
+	// 用户已确认：表示用户检查过这条记忆。
+	UserConfirmed bool    `protobuf:"varint,7,opt,name=user_confirmed,json=userConfirmed,proto3" json:"user_confirmed,omitempty"`
+	ConfirmedAt   string  `protobuf:"bytes,8,opt,name=confirmed_at,json=confirmedAt,proto3" json:"confirmed_at,omitempty"`
+	MemoryKey     string  `protobuf:"bytes,9,opt,name=memory_key,json=memoryKey,proto3" json:"memory_key,omitempty"`
+	Confidence    float64 `protobuf:"fixed64,10,opt,name=confidence,proto3" json:"confidence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -498,6 +503,34 @@ func (x *CompanionMemoryMsg) GetPinned() bool {
 	return false
 }
 
+func (x *CompanionMemoryMsg) GetUserConfirmed() bool {
+	if x != nil {
+		return x.UserConfirmed
+	}
+	return false
+}
+
+func (x *CompanionMemoryMsg) GetConfirmedAt() string {
+	if x != nil {
+		return x.ConfirmedAt
+	}
+	return ""
+}
+
+func (x *CompanionMemoryMsg) GetMemoryKey() string {
+	if x != nil {
+		return x.MemoryKey
+	}
+	return ""
+}
+
+func (x *CompanionMemoryMsg) GetConfidence() float64 {
+	if x != nil {
+		return x.Confidence
+	}
+	return 0
+}
+
 type CompanionChatLogMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -566,6 +599,98 @@ func (x *CompanionChatLogMsg) GetCreatedAt() string {
 	return ""
 }
 
+type CompanionRelationshipEventMsg struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	EventType         string                 `protobuf:"bytes,2,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	Title             string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Content           string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	RelationshipLevel int32                  `protobuf:"varint,5,opt,name=relationship_level,json=relationshipLevel,proto3" json:"relationship_level,omitempty"`
+	IntimacyScore     float64                `protobuf:"fixed64,6,opt,name=intimacy_score,json=intimacyScore,proto3" json:"intimacy_score,omitempty"`
+	CreatedAt         string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *CompanionRelationshipEventMsg) Reset() {
+	*x = CompanionRelationshipEventMsg{}
+	mi := &file_api_companion_v1_companion_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompanionRelationshipEventMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompanionRelationshipEventMsg) ProtoMessage() {}
+
+func (x *CompanionRelationshipEventMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_api_companion_v1_companion_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompanionRelationshipEventMsg.ProtoReflect.Descriptor instead.
+func (*CompanionRelationshipEventMsg) Descriptor() ([]byte, []int) {
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CompanionRelationshipEventMsg) GetId() uint64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *CompanionRelationshipEventMsg) GetEventType() string {
+	if x != nil {
+		return x.EventType
+	}
+	return ""
+}
+
+func (x *CompanionRelationshipEventMsg) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *CompanionRelationshipEventMsg) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+func (x *CompanionRelationshipEventMsg) GetRelationshipLevel() int32 {
+	if x != nil {
+		return x.RelationshipLevel
+	}
+	return 0
+}
+
+func (x *CompanionRelationshipEventMsg) GetIntimacyScore() float64 {
+	if x != nil {
+		return x.IntimacyScore
+	}
+	return 0
+}
+
+func (x *CompanionRelationshipEventMsg) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
 type GetProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -574,7 +699,7 @@ type GetProfileRequest struct {
 
 func (x *GetProfileRequest) Reset() {
 	*x = GetProfileRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[6]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -586,7 +711,7 @@ func (x *GetProfileRequest) String() string {
 func (*GetProfileRequest) ProtoMessage() {}
 
 func (x *GetProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[6]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -599,7 +724,7 @@ func (x *GetProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProfileRequest.ProtoReflect.Descriptor instead.
 func (*GetProfileRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{6}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{7}
 }
 
 type GetProfileReply struct {
@@ -611,7 +736,7 @@ type GetProfileReply struct {
 
 func (x *GetProfileReply) Reset() {
 	*x = GetProfileReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[7]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -623,7 +748,7 @@ func (x *GetProfileReply) String() string {
 func (*GetProfileReply) ProtoMessage() {}
 
 func (x *GetProfileReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[7]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -636,7 +761,7 @@ func (x *GetProfileReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProfileReply.ProtoReflect.Descriptor instead.
 func (*GetProfileReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{7}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetProfileReply) GetProfile() *CompanionProfileMsg {
@@ -654,7 +779,7 @@ type GetCommunityIdentityRequest struct {
 
 func (x *GetCommunityIdentityRequest) Reset() {
 	*x = GetCommunityIdentityRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[8]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +791,7 @@ func (x *GetCommunityIdentityRequest) String() string {
 func (*GetCommunityIdentityRequest) ProtoMessage() {}
 
 func (x *GetCommunityIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[8]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +804,7 @@ func (x *GetCommunityIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommunityIdentityRequest.ProtoReflect.Descriptor instead.
 func (*GetCommunityIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{8}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{9}
 }
 
 type GetCommunityIdentityReply struct {
@@ -691,7 +816,7 @@ type GetCommunityIdentityReply struct {
 
 func (x *GetCommunityIdentityReply) Reset() {
 	*x = GetCommunityIdentityReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[9]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +828,7 @@ func (x *GetCommunityIdentityReply) String() string {
 func (*GetCommunityIdentityReply) ProtoMessage() {}
 
 func (x *GetCommunityIdentityReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[9]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +841,7 @@ func (x *GetCommunityIdentityReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCommunityIdentityReply.ProtoReflect.Descriptor instead.
 func (*GetCommunityIdentityReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{9}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetCommunityIdentityReply) GetIdentity() *CommunityIdentityMsg {
@@ -743,7 +868,7 @@ type UpsertProfileRequest struct {
 
 func (x *UpsertProfileRequest) Reset() {
 	*x = UpsertProfileRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[10]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -755,7 +880,7 @@ func (x *UpsertProfileRequest) String() string {
 func (*UpsertProfileRequest) ProtoMessage() {}
 
 func (x *UpsertProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[10]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -768,7 +893,7 @@ func (x *UpsertProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertProfileRequest.ProtoReflect.Descriptor instead.
 func (*UpsertProfileRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{10}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UpsertProfileRequest) GetName() string {
@@ -843,7 +968,7 @@ type UpsertProfileReply struct {
 
 func (x *UpsertProfileReply) Reset() {
 	*x = UpsertProfileReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[11]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -855,7 +980,7 @@ func (x *UpsertProfileReply) String() string {
 func (*UpsertProfileReply) ProtoMessage() {}
 
 func (x *UpsertProfileReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[11]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -868,7 +993,7 @@ func (x *UpsertProfileReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertProfileReply.ProtoReflect.Descriptor instead.
 func (*UpsertProfileReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{11}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpsertProfileReply) GetProfile() *CompanionProfileMsg {
@@ -886,7 +1011,7 @@ type GetStateRequest struct {
 
 func (x *GetStateRequest) Reset() {
 	*x = GetStateRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[12]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +1023,7 @@ func (x *GetStateRequest) String() string {
 func (*GetStateRequest) ProtoMessage() {}
 
 func (x *GetStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[12]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1036,7 @@ func (x *GetStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStateRequest.ProtoReflect.Descriptor instead.
 func (*GetStateRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{12}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{13}
 }
 
 type GetStateReply struct {
@@ -924,7 +1049,7 @@ type GetStateReply struct {
 
 func (x *GetStateReply) Reset() {
 	*x = GetStateReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[13]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -936,7 +1061,7 @@ func (x *GetStateReply) String() string {
 func (*GetStateReply) ProtoMessage() {}
 
 func (x *GetStateReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[13]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -949,7 +1074,7 @@ func (x *GetStateReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStateReply.ProtoReflect.Descriptor instead.
 func (*GetStateReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{13}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetStateReply) GetState() *CompanionStateMsg {
@@ -975,7 +1100,7 @@ type ListMemoriesRequest struct {
 
 func (x *ListMemoriesRequest) Reset() {
 	*x = ListMemoriesRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[14]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -987,7 +1112,7 @@ func (x *ListMemoriesRequest) String() string {
 func (*ListMemoriesRequest) ProtoMessage() {}
 
 func (x *ListMemoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[14]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1000,7 +1125,7 @@ func (x *ListMemoriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMemoriesRequest.ProtoReflect.Descriptor instead.
 func (*ListMemoriesRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{14}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListMemoriesRequest) GetLimit() int32 {
@@ -1019,7 +1144,7 @@ type ListMemoriesReply struct {
 
 func (x *ListMemoriesReply) Reset() {
 	*x = ListMemoriesReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[15]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1031,7 +1156,7 @@ func (x *ListMemoriesReply) String() string {
 func (*ListMemoriesReply) ProtoMessage() {}
 
 func (x *ListMemoriesReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[15]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1044,7 +1169,7 @@ func (x *ListMemoriesReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMemoriesReply.ProtoReflect.Descriptor instead.
 func (*ListMemoriesReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{15}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListMemoriesReply) GetMemories() []*CompanionMemoryMsg {
@@ -1063,7 +1188,7 @@ type DeleteMemoryRequest struct {
 
 func (x *DeleteMemoryRequest) Reset() {
 	*x = DeleteMemoryRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[16]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1075,7 +1200,7 @@ func (x *DeleteMemoryRequest) String() string {
 func (*DeleteMemoryRequest) ProtoMessage() {}
 
 func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[16]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1088,7 +1213,7 @@ func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteMemoryRequest.ProtoReflect.Descriptor instead.
 func (*DeleteMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{16}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeleteMemoryRequest) GetMemoryId() uint64 {
@@ -1106,7 +1231,7 @@ type DeleteMemoryReply struct {
 
 func (x *DeleteMemoryReply) Reset() {
 	*x = DeleteMemoryReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[17]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1118,7 +1243,7 @@ func (x *DeleteMemoryReply) String() string {
 func (*DeleteMemoryReply) ProtoMessage() {}
 
 func (x *DeleteMemoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[17]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1256,7 @@ func (x *DeleteMemoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteMemoryReply.ProtoReflect.Descriptor instead.
 func (*DeleteMemoryReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{17}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{18}
 }
 
 type SetMemoryPinnedRequest struct {
@@ -1144,7 +1269,7 @@ type SetMemoryPinnedRequest struct {
 
 func (x *SetMemoryPinnedRequest) Reset() {
 	*x = SetMemoryPinnedRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[18]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1156,7 +1281,7 @@ func (x *SetMemoryPinnedRequest) String() string {
 func (*SetMemoryPinnedRequest) ProtoMessage() {}
 
 func (x *SetMemoryPinnedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[18]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1169,7 +1294,7 @@ func (x *SetMemoryPinnedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMemoryPinnedRequest.ProtoReflect.Descriptor instead.
 func (*SetMemoryPinnedRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{18}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SetMemoryPinnedRequest) GetMemoryId() uint64 {
@@ -1195,7 +1320,7 @@ type SetMemoryPinnedReply struct {
 
 func (x *SetMemoryPinnedReply) Reset() {
 	*x = SetMemoryPinnedReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[19]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1207,7 +1332,7 @@ func (x *SetMemoryPinnedReply) String() string {
 func (*SetMemoryPinnedReply) ProtoMessage() {}
 
 func (x *SetMemoryPinnedReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[19]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1220,7 +1345,7 @@ func (x *SetMemoryPinnedReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetMemoryPinnedReply.ProtoReflect.Descriptor instead.
 func (*SetMemoryPinnedReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{19}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SetMemoryPinnedReply) GetMemory() *CompanionMemoryMsg {
@@ -1240,7 +1365,7 @@ type UpdateMemoryRequest struct {
 
 func (x *UpdateMemoryRequest) Reset() {
 	*x = UpdateMemoryRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[20]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1252,7 +1377,7 @@ func (x *UpdateMemoryRequest) String() string {
 func (*UpdateMemoryRequest) ProtoMessage() {}
 
 func (x *UpdateMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[20]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1265,7 +1390,7 @@ func (x *UpdateMemoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMemoryRequest.ProtoReflect.Descriptor instead.
 func (*UpdateMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{20}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *UpdateMemoryRequest) GetMemoryId() uint64 {
@@ -1291,7 +1416,7 @@ type UpdateMemoryReply struct {
 
 func (x *UpdateMemoryReply) Reset() {
 	*x = UpdateMemoryReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[21]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1303,7 +1428,7 @@ func (x *UpdateMemoryReply) String() string {
 func (*UpdateMemoryReply) ProtoMessage() {}
 
 func (x *UpdateMemoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[21]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,10 +1441,98 @@ func (x *UpdateMemoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateMemoryReply.ProtoReflect.Descriptor instead.
 func (*UpdateMemoryReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{21}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *UpdateMemoryReply) GetMemory() *CompanionMemoryMsg {
+	if x != nil {
+		return x.Memory
+	}
+	return nil
+}
+
+type ConfirmMemoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MemoryId      uint64                 `protobuf:"varint,1,opt,name=memory_id,json=memoryId,proto3" json:"memory_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfirmMemoryRequest) Reset() {
+	*x = ConfirmMemoryRequest{}
+	mi := &file_api_companion_v1_companion_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfirmMemoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfirmMemoryRequest) ProtoMessage() {}
+
+func (x *ConfirmMemoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_companion_v1_companion_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfirmMemoryRequest.ProtoReflect.Descriptor instead.
+func (*ConfirmMemoryRequest) Descriptor() ([]byte, []int) {
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ConfirmMemoryRequest) GetMemoryId() uint64 {
+	if x != nil {
+		return x.MemoryId
+	}
+	return 0
+}
+
+type ConfirmMemoryReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Memory        *CompanionMemoryMsg    `protobuf:"bytes,1,opt,name=memory,proto3" json:"memory,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfirmMemoryReply) Reset() {
+	*x = ConfirmMemoryReply{}
+	mi := &file_api_companion_v1_companion_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfirmMemoryReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfirmMemoryReply) ProtoMessage() {}
+
+func (x *ConfirmMemoryReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_companion_v1_companion_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfirmMemoryReply.ProtoReflect.Descriptor instead.
+func (*ConfirmMemoryReply) Descriptor() ([]byte, []int) {
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ConfirmMemoryReply) GetMemory() *CompanionMemoryMsg {
 	if x != nil {
 		return x.Memory
 	}
@@ -1335,7 +1548,7 @@ type ListChatHistoryRequest struct {
 
 func (x *ListChatHistoryRequest) Reset() {
 	*x = ListChatHistoryRequest{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[22]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1347,7 +1560,7 @@ func (x *ListChatHistoryRequest) String() string {
 func (*ListChatHistoryRequest) ProtoMessage() {}
 
 func (x *ListChatHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[22]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1360,7 +1573,7 @@ func (x *ListChatHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChatHistoryRequest.ProtoReflect.Descriptor instead.
 func (*ListChatHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{22}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ListChatHistoryRequest) GetLimit() int32 {
@@ -1379,7 +1592,7 @@ type ListChatHistoryReply struct {
 
 func (x *ListChatHistoryReply) Reset() {
 	*x = ListChatHistoryReply{}
-	mi := &file_api_companion_v1_companion_proto_msgTypes[23]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1391,7 +1604,7 @@ func (x *ListChatHistoryReply) String() string {
 func (*ListChatHistoryReply) ProtoMessage() {}
 
 func (x *ListChatHistoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_companion_v1_companion_proto_msgTypes[23]
+	mi := &file_api_companion_v1_companion_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1404,12 +1617,100 @@ func (x *ListChatHistoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChatHistoryReply.ProtoReflect.Descriptor instead.
 func (*ListChatHistoryReply) Descriptor() ([]byte, []int) {
-	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{23}
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListChatHistoryReply) GetMessages() []*CompanionChatLogMsg {
 	if x != nil {
 		return x.Messages
+	}
+	return nil
+}
+
+type ListRelationshipEventsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRelationshipEventsRequest) Reset() {
+	*x = ListRelationshipEventsRequest{}
+	mi := &file_api_companion_v1_companion_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRelationshipEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRelationshipEventsRequest) ProtoMessage() {}
+
+func (x *ListRelationshipEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_companion_v1_companion_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRelationshipEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListRelationshipEventsRequest) Descriptor() ([]byte, []int) {
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ListRelationshipEventsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListRelationshipEventsReply struct {
+	state         protoimpl.MessageState           `protogen:"open.v1"`
+	Events        []*CompanionRelationshipEventMsg `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRelationshipEventsReply) Reset() {
+	*x = ListRelationshipEventsReply{}
+	mi := &file_api_companion_v1_companion_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRelationshipEventsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRelationshipEventsReply) ProtoMessage() {}
+
+func (x *ListRelationshipEventsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_api_companion_v1_companion_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRelationshipEventsReply.ProtoReflect.Descriptor instead.
+func (*ListRelationshipEventsReply) Descriptor() ([]byte, []int) {
+	return file_api_companion_v1_companion_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *ListRelationshipEventsReply) GetEvents() []*CompanionRelationshipEventMsg {
+	if x != nil {
+		return x.Events
 	}
 	return nil
 }
@@ -1457,7 +1758,7 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x1d\n" +
 	"\n" +
-	"time_label\x18\x03 \x01(\tR\ttimeLabel\"\xb6\x01\n" +
+	"time_label\x18\x03 \x01(\tR\ttimeLabel\"\xbf\x02\n" +
 	"\x12CompanionMemoryMsg\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1f\n" +
 	"\vmemory_type\x18\x02 \x01(\tR\n" +
@@ -1468,13 +1769,31 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"importance\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x12\x16\n" +
-	"\x06pinned\x18\x06 \x01(\bR\x06pinned\"r\n" +
+	"\x06pinned\x18\x06 \x01(\bR\x06pinned\x12%\n" +
+	"\x0euser_confirmed\x18\a \x01(\bR\ruserConfirmed\x12!\n" +
+	"\fconfirmed_at\x18\b \x01(\tR\vconfirmedAt\x12\x1d\n" +
+	"\n" +
+	"memory_key\x18\t \x01(\tR\tmemoryKey\x12\x1e\n" +
+	"\n" +
+	"confidence\x18\n" +
+	" \x01(\x01R\n" +
+	"confidence\"r\n" +
 	"\x13CompanionChatLogMsg\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x12\n" +
 	"\x04role\x18\x02 \x01(\tR\x04role\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x04 \x01(\tR\tcreatedAt\"\x13\n" +
+	"created_at\x18\x04 \x01(\tR\tcreatedAt\"\xf3\x01\n" +
+	"\x1dCompanionRelationshipEventMsg\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x1d\n" +
+	"\n" +
+	"event_type\x18\x02 \x01(\tR\teventType\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12-\n" +
+	"\x12relationship_level\x18\x05 \x01(\x05R\x11relationshipLevel\x12%\n" +
+	"\x0eintimacy_score\x18\x06 \x01(\x01R\rintimacyScore\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\"\x13\n" +
 	"\x11GetProfileRequest\"N\n" +
 	"\x0fGetProfileReply\x12;\n" +
 	"\aprofile\x18\x01 \x01(\v2!.companion.v1.CompanionProfileMsgR\aprofile\"\x1d\n" +
@@ -1514,11 +1833,19 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"\tmemory_id\x18\x01 \x01(\x04R\bmemoryId\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\"M\n" +
 	"\x11UpdateMemoryReply\x128\n" +
+	"\x06memory\x18\x01 \x01(\v2 .companion.v1.CompanionMemoryMsgR\x06memory\"3\n" +
+	"\x14ConfirmMemoryRequest\x12\x1b\n" +
+	"\tmemory_id\x18\x01 \x01(\x04R\bmemoryId\"N\n" +
+	"\x12ConfirmMemoryReply\x128\n" +
 	"\x06memory\x18\x01 \x01(\v2 .companion.v1.CompanionMemoryMsgR\x06memory\".\n" +
 	"\x16ListChatHistoryRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\"U\n" +
 	"\x14ListChatHistoryReply\x12=\n" +
-	"\bmessages\x18\x01 \x03(\v2!.companion.v1.CompanionChatLogMsgR\bmessages2\x81\t\n" +
+	"\bmessages\x18\x01 \x03(\v2!.companion.v1.CompanionChatLogMsgR\bmessages\"5\n" +
+	"\x1dListRelationshipEventsRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\"b\n" +
+	"\x1bListRelationshipEventsReply\x12C\n" +
+	"\x06events\x18\x01 \x03(\v2+.companion.v1.CompanionRelationshipEventMsgR\x06events2\xb0\v\n" +
 	"\tCompanion\x12l\n" +
 	"\n" +
 	"GetProfile\x12\x1f.companion.v1.GetProfileRequest\x1a\x1d.companion.v1.GetProfileReply\"\x1e\x82\xd3\xe4\x93\x02\x18\x12\x16/api/companion/profile\x12\x95\x01\n" +
@@ -1529,7 +1856,9 @@ const file_api_companion_v1_companion_proto_rawDesc = "" +
 	"\fDeleteMemory\x12!.companion.v1.DeleteMemoryRequest\x1a\x1f.companion.v1.DeleteMemoryReply\"+\x82\xd3\xe4\x93\x02%*#/api/companion/memories/{memory_id}\x12\x8f\x01\n" +
 	"\x0fSetMemoryPinned\x12$.companion.v1.SetMemoryPinnedRequest\x1a\".companion.v1.SetMemoryPinnedReply\"2\x82\xd3\xe4\x93\x02,:\x01*\"'/api/companion/memories/{memory_id}/pin\x12\x82\x01\n" +
 	"\fUpdateMemory\x12!.companion.v1.UpdateMemoryRequest\x1a\x1f.companion.v1.UpdateMemoryReply\".\x82\xd3\xe4\x93\x02(:\x01*\x1a#/api/companion/memories/{memory_id}\x12\x80\x01\n" +
-	"\x0fListChatHistory\x12$.companion.v1.ListChatHistoryRequest\x1a\".companion.v1.ListChatHistoryReply\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/companion/chat/historyB&Z$backend/api/companion/v1;companionv1b\x06proto3"
+	"\x0fListChatHistory\x12$.companion.v1.ListChatHistoryRequest\x1a\".companion.v1.ListChatHistoryReply\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/companion/chat/history\x12\x8d\x01\n" +
+	"\rConfirmMemory\x12\".companion.v1.ConfirmMemoryRequest\x1a .companion.v1.ConfirmMemoryReply\"6\x82\xd3\xe4\x93\x020:\x01*\"+/api/companion/memories/{memory_id}/confirm\x12\x9c\x01\n" +
+	"\x16ListRelationshipEvents\x12+.companion.v1.ListRelationshipEventsRequest\x1a).companion.v1.ListRelationshipEventsReply\"*\x82\xd3\xe4\x93\x02$\x12\"/api/companion/relationship-eventsB&Z$backend/api/companion/v1;companionv1b\x06proto3"
 
 var (
 	file_api_companion_v1_companion_proto_rawDescOnce sync.Once
@@ -1543,32 +1872,37 @@ func file_api_companion_v1_companion_proto_rawDescGZIP() []byte {
 	return file_api_companion_v1_companion_proto_rawDescData
 }
 
-var file_api_companion_v1_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_api_companion_v1_companion_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_api_companion_v1_companion_proto_goTypes = []any{
-	(*CompanionProfileMsg)(nil),         // 0: companion.v1.CompanionProfileMsg
-	(*CommunityIdentityMsg)(nil),        // 1: companion.v1.CommunityIdentityMsg
-	(*CompanionStateMsg)(nil),           // 2: companion.v1.CompanionStateMsg
-	(*CompanionMomentMsg)(nil),          // 3: companion.v1.CompanionMomentMsg
-	(*CompanionMemoryMsg)(nil),          // 4: companion.v1.CompanionMemoryMsg
-	(*CompanionChatLogMsg)(nil),         // 5: companion.v1.CompanionChatLogMsg
-	(*GetProfileRequest)(nil),           // 6: companion.v1.GetProfileRequest
-	(*GetProfileReply)(nil),             // 7: companion.v1.GetProfileReply
-	(*GetCommunityIdentityRequest)(nil), // 8: companion.v1.GetCommunityIdentityRequest
-	(*GetCommunityIdentityReply)(nil),   // 9: companion.v1.GetCommunityIdentityReply
-	(*UpsertProfileRequest)(nil),        // 10: companion.v1.UpsertProfileRequest
-	(*UpsertProfileReply)(nil),          // 11: companion.v1.UpsertProfileReply
-	(*GetStateRequest)(nil),             // 12: companion.v1.GetStateRequest
-	(*GetStateReply)(nil),               // 13: companion.v1.GetStateReply
-	(*ListMemoriesRequest)(nil),         // 14: companion.v1.ListMemoriesRequest
-	(*ListMemoriesReply)(nil),           // 15: companion.v1.ListMemoriesReply
-	(*DeleteMemoryRequest)(nil),         // 16: companion.v1.DeleteMemoryRequest
-	(*DeleteMemoryReply)(nil),           // 17: companion.v1.DeleteMemoryReply
-	(*SetMemoryPinnedRequest)(nil),      // 18: companion.v1.SetMemoryPinnedRequest
-	(*SetMemoryPinnedReply)(nil),        // 19: companion.v1.SetMemoryPinnedReply
-	(*UpdateMemoryRequest)(nil),         // 20: companion.v1.UpdateMemoryRequest
-	(*UpdateMemoryReply)(nil),           // 21: companion.v1.UpdateMemoryReply
-	(*ListChatHistoryRequest)(nil),      // 22: companion.v1.ListChatHistoryRequest
-	(*ListChatHistoryReply)(nil),        // 23: companion.v1.ListChatHistoryReply
+	(*CompanionProfileMsg)(nil),           // 0: companion.v1.CompanionProfileMsg
+	(*CommunityIdentityMsg)(nil),          // 1: companion.v1.CommunityIdentityMsg
+	(*CompanionStateMsg)(nil),             // 2: companion.v1.CompanionStateMsg
+	(*CompanionMomentMsg)(nil),            // 3: companion.v1.CompanionMomentMsg
+	(*CompanionMemoryMsg)(nil),            // 4: companion.v1.CompanionMemoryMsg
+	(*CompanionChatLogMsg)(nil),           // 5: companion.v1.CompanionChatLogMsg
+	(*CompanionRelationshipEventMsg)(nil), // 6: companion.v1.CompanionRelationshipEventMsg
+	(*GetProfileRequest)(nil),             // 7: companion.v1.GetProfileRequest
+	(*GetProfileReply)(nil),               // 8: companion.v1.GetProfileReply
+	(*GetCommunityIdentityRequest)(nil),   // 9: companion.v1.GetCommunityIdentityRequest
+	(*GetCommunityIdentityReply)(nil),     // 10: companion.v1.GetCommunityIdentityReply
+	(*UpsertProfileRequest)(nil),          // 11: companion.v1.UpsertProfileRequest
+	(*UpsertProfileReply)(nil),            // 12: companion.v1.UpsertProfileReply
+	(*GetStateRequest)(nil),               // 13: companion.v1.GetStateRequest
+	(*GetStateReply)(nil),                 // 14: companion.v1.GetStateReply
+	(*ListMemoriesRequest)(nil),           // 15: companion.v1.ListMemoriesRequest
+	(*ListMemoriesReply)(nil),             // 16: companion.v1.ListMemoriesReply
+	(*DeleteMemoryRequest)(nil),           // 17: companion.v1.DeleteMemoryRequest
+	(*DeleteMemoryReply)(nil),             // 18: companion.v1.DeleteMemoryReply
+	(*SetMemoryPinnedRequest)(nil),        // 19: companion.v1.SetMemoryPinnedRequest
+	(*SetMemoryPinnedReply)(nil),          // 20: companion.v1.SetMemoryPinnedReply
+	(*UpdateMemoryRequest)(nil),           // 21: companion.v1.UpdateMemoryRequest
+	(*UpdateMemoryReply)(nil),             // 22: companion.v1.UpdateMemoryReply
+	(*ConfirmMemoryRequest)(nil),          // 23: companion.v1.ConfirmMemoryRequest
+	(*ConfirmMemoryReply)(nil),            // 24: companion.v1.ConfirmMemoryReply
+	(*ListChatHistoryRequest)(nil),        // 25: companion.v1.ListChatHistoryRequest
+	(*ListChatHistoryReply)(nil),          // 26: companion.v1.ListChatHistoryReply
+	(*ListRelationshipEventsRequest)(nil), // 27: companion.v1.ListRelationshipEventsRequest
+	(*ListRelationshipEventsReply)(nil),   // 28: companion.v1.ListRelationshipEventsReply
 }
 var file_api_companion_v1_companion_proto_depIdxs = []int32{
 	3,  // 0: companion.v1.CompanionStateMsg.moments:type_name -> companion.v1.CompanionMomentMsg
@@ -1580,30 +1914,36 @@ var file_api_companion_v1_companion_proto_depIdxs = []int32{
 	4,  // 6: companion.v1.ListMemoriesReply.memories:type_name -> companion.v1.CompanionMemoryMsg
 	4,  // 7: companion.v1.SetMemoryPinnedReply.memory:type_name -> companion.v1.CompanionMemoryMsg
 	4,  // 8: companion.v1.UpdateMemoryReply.memory:type_name -> companion.v1.CompanionMemoryMsg
-	5,  // 9: companion.v1.ListChatHistoryReply.messages:type_name -> companion.v1.CompanionChatLogMsg
-	6,  // 10: companion.v1.Companion.GetProfile:input_type -> companion.v1.GetProfileRequest
-	8,  // 11: companion.v1.Companion.GetCommunityIdentity:input_type -> companion.v1.GetCommunityIdentityRequest
-	10, // 12: companion.v1.Companion.UpsertProfile:input_type -> companion.v1.UpsertProfileRequest
-	12, // 13: companion.v1.Companion.GetState:input_type -> companion.v1.GetStateRequest
-	14, // 14: companion.v1.Companion.ListMemories:input_type -> companion.v1.ListMemoriesRequest
-	16, // 15: companion.v1.Companion.DeleteMemory:input_type -> companion.v1.DeleteMemoryRequest
-	18, // 16: companion.v1.Companion.SetMemoryPinned:input_type -> companion.v1.SetMemoryPinnedRequest
-	20, // 17: companion.v1.Companion.UpdateMemory:input_type -> companion.v1.UpdateMemoryRequest
-	22, // 18: companion.v1.Companion.ListChatHistory:input_type -> companion.v1.ListChatHistoryRequest
-	7,  // 19: companion.v1.Companion.GetProfile:output_type -> companion.v1.GetProfileReply
-	9,  // 20: companion.v1.Companion.GetCommunityIdentity:output_type -> companion.v1.GetCommunityIdentityReply
-	11, // 21: companion.v1.Companion.UpsertProfile:output_type -> companion.v1.UpsertProfileReply
-	13, // 22: companion.v1.Companion.GetState:output_type -> companion.v1.GetStateReply
-	15, // 23: companion.v1.Companion.ListMemories:output_type -> companion.v1.ListMemoriesReply
-	17, // 24: companion.v1.Companion.DeleteMemory:output_type -> companion.v1.DeleteMemoryReply
-	19, // 25: companion.v1.Companion.SetMemoryPinned:output_type -> companion.v1.SetMemoryPinnedReply
-	21, // 26: companion.v1.Companion.UpdateMemory:output_type -> companion.v1.UpdateMemoryReply
-	23, // 27: companion.v1.Companion.ListChatHistory:output_type -> companion.v1.ListChatHistoryReply
-	19, // [19:28] is the sub-list for method output_type
-	10, // [10:19] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	4,  // 9: companion.v1.ConfirmMemoryReply.memory:type_name -> companion.v1.CompanionMemoryMsg
+	5,  // 10: companion.v1.ListChatHistoryReply.messages:type_name -> companion.v1.CompanionChatLogMsg
+	6,  // 11: companion.v1.ListRelationshipEventsReply.events:type_name -> companion.v1.CompanionRelationshipEventMsg
+	7,  // 12: companion.v1.Companion.GetProfile:input_type -> companion.v1.GetProfileRequest
+	9,  // 13: companion.v1.Companion.GetCommunityIdentity:input_type -> companion.v1.GetCommunityIdentityRequest
+	11, // 14: companion.v1.Companion.UpsertProfile:input_type -> companion.v1.UpsertProfileRequest
+	13, // 15: companion.v1.Companion.GetState:input_type -> companion.v1.GetStateRequest
+	15, // 16: companion.v1.Companion.ListMemories:input_type -> companion.v1.ListMemoriesRequest
+	17, // 17: companion.v1.Companion.DeleteMemory:input_type -> companion.v1.DeleteMemoryRequest
+	19, // 18: companion.v1.Companion.SetMemoryPinned:input_type -> companion.v1.SetMemoryPinnedRequest
+	21, // 19: companion.v1.Companion.UpdateMemory:input_type -> companion.v1.UpdateMemoryRequest
+	25, // 20: companion.v1.Companion.ListChatHistory:input_type -> companion.v1.ListChatHistoryRequest
+	23, // 21: companion.v1.Companion.ConfirmMemory:input_type -> companion.v1.ConfirmMemoryRequest
+	27, // 22: companion.v1.Companion.ListRelationshipEvents:input_type -> companion.v1.ListRelationshipEventsRequest
+	8,  // 23: companion.v1.Companion.GetProfile:output_type -> companion.v1.GetProfileReply
+	10, // 24: companion.v1.Companion.GetCommunityIdentity:output_type -> companion.v1.GetCommunityIdentityReply
+	12, // 25: companion.v1.Companion.UpsertProfile:output_type -> companion.v1.UpsertProfileReply
+	14, // 26: companion.v1.Companion.GetState:output_type -> companion.v1.GetStateReply
+	16, // 27: companion.v1.Companion.ListMemories:output_type -> companion.v1.ListMemoriesReply
+	18, // 28: companion.v1.Companion.DeleteMemory:output_type -> companion.v1.DeleteMemoryReply
+	20, // 29: companion.v1.Companion.SetMemoryPinned:output_type -> companion.v1.SetMemoryPinnedReply
+	22, // 30: companion.v1.Companion.UpdateMemory:output_type -> companion.v1.UpdateMemoryReply
+	26, // 31: companion.v1.Companion.ListChatHistory:output_type -> companion.v1.ListChatHistoryReply
+	24, // 32: companion.v1.Companion.ConfirmMemory:output_type -> companion.v1.ConfirmMemoryReply
+	28, // 33: companion.v1.Companion.ListRelationshipEvents:output_type -> companion.v1.ListRelationshipEventsReply
+	23, // [23:34] is the sub-list for method output_type
+	12, // [12:23] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_api_companion_v1_companion_proto_init() }
@@ -1617,7 +1957,7 @@ func file_api_companion_v1_companion_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_companion_v1_companion_proto_rawDesc), len(file_api_companion_v1_companion_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   24,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

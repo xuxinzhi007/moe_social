@@ -1,10 +1,11 @@
 import JSZip from 'jszip'
 import type { AvatarAssetStore } from '../assetStore'
 import type { MoeAvatarManifest } from '../types'
-import { assetUrl } from '../composer/resolveLayers'
+import { assetUrlCandidates } from '../composer/resolveLayers'
 import { layerThumbCanvas } from '../composer/composeSheet'
 import { composeSheet } from '../composer/composeSheet'
 import type { OutfitSelection } from '../types'
+import { MOE_AVATAR_LEGACY_PACK_BASE } from '../../moe-content/constants'
 
 function collectAssetPaths(manifest: MoeAvatarManifest): Set<string> {
   const paths = new Set<string>()
@@ -27,10 +28,18 @@ async function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
-async function fetchBlob(url: string): Promise<Blob> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
-  return res.blob()
+async function fetchBlob(urls: string[]): Promise<Blob> {
+  let lastError: unknown
+  for (const url of urls) {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`)
+      return res.blob()
+    } catch (err) {
+      lastError = err
+    }
+  }
+  throw (lastError instanceof Error ? lastError : new Error('fetch failed'))
 }
 
 export type ExportPackOptions = {
@@ -45,12 +54,13 @@ export type ExportPackOptions = {
 /** 导出官方包 zip：manifest + 各部位分层 PNG + 部件 thumbs */
 export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob> {
   const { manifest, packBaseUrl, assetStore, previewOutfit, includeBaked = false } = options
+  const fallbackPackBaseUrls = [MOE_AVATAR_LEGACY_PACK_BASE]
   const zip = new JSZip()
   const paths = collectAssetPaths(manifest)
 
   for (const rel of paths) {
     try {
-      const blob = assetStore?.get(rel) ?? (await fetchBlob(assetUrl(packBaseUrl, rel)))
+      const blob = assetStore?.get(rel) ?? (await fetchBlob(assetUrlCandidates(packBaseUrl, rel, undefined, fallbackPackBaseUrls)))
       zip.file(rel, blob)
     } catch (e) {
       console.warn('skip layer', rel, e)
@@ -73,6 +83,7 @@ export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob
         packBaseUrl,
         64,
         assetStore,
+        fallbackPackBaseUrls,
       )
       if (!thumbCanvas) continue
       const blob = await canvasToPngBlob(thumbCanvas)
@@ -82,8 +93,8 @@ export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob
   }
 
   if (includeBaked && previewOutfit) {
-    const walk = await composeSheet(manifestOut, previewOutfit, 'walk', packBaseUrl, assetStore)
-    const idle = await composeSheet(manifestOut, previewOutfit, 'idle', packBaseUrl, assetStore)
+    const walk = await composeSheet(manifestOut, previewOutfit, 'walk', packBaseUrl, assetStore, fallbackPackBaseUrls)
+    const idle = await composeSheet(manifestOut, previewOutfit, 'idle', packBaseUrl, assetStore, fallbackPackBaseUrls)
     if (walk) zip.file('baked/hero_walk.png', await canvasToPngBlob(walk))
     if (idle) zip.file('baked/hero_idle.png', await canvasToPngBlob(idle))
   }

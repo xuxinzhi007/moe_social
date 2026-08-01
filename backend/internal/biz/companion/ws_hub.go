@@ -182,6 +182,14 @@ func (h *CompanionWSHub) BroadcastGreeting(userID uint, greeting, moodThought, a
 	})
 }
 
+// BroadcastProactive sends a user-specific proactive message.
+func (h *CompanionWSHub) BroadcastProactive(userID uint, message, reason string) {
+	h.Broadcast(userID, "proactive", map[string]interface{}{
+		"greeting": message,
+		"reason":   reason,
+	})
+}
+
 // GetMemberCount 返回当前连接数。
 func (h *CompanionWSHub) GetMemberCount() int {
 	h.mu.RLock()

@@ -4,6 +4,7 @@ import type { MoeAvatarManifest, OutfitSelection, PreviewAnimation } from '../ty
 import { DIR_DOWN } from '../types'
 import { composeSheet, drawSheetFrame } from '../composer/composeSheet'
 import { resolveLayerPaths } from '../composer/resolveLayers'
+import { MOE_AVATAR_LEGACY_PACK_BASE } from '../../moe-content/constants'
 
 type Props = {
   manifest: MoeAvatarManifest
@@ -38,7 +39,7 @@ export function AvatarPreviewCanvas({
 
   useEffect(() => {
     let cancelled = false
-    void composeSheet(manifest, outfit, anim, packBaseUrl, assetStore).then((s) => {
+    void composeSheet(manifest, outfit, anim, packBaseUrl, assetStore, [MOE_AVATAR_LEGACY_PACK_BASE]).then((s) => {
       if (!cancelled) setSheet(s)
     })
     return () => {

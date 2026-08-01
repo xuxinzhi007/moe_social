@@ -25,6 +25,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "follows", Model: &model.Follow{}},
 		{Key: "notifications", Model: &model.Notification{}},
 		{Key: "user_avatars", Model: &model.UserAvatar{}},
+		{Key: "avatar_pack_revisions", Model: &model.AvatarPackRevision{}},
 		{Key: "avatar_outfits", Model: &model.AvatarOutfit{}},
 		{Key: "emojis", Model: &model.Emoji{}},
 		{Key: "emoji_packs", Model: &model.EmojiPack{}},
@@ -94,5 +95,6 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "companion_profiles", Model: &model.CompanionProfile{}},
 		{Key: "companion_memories", Model: &model.CompanionMemory{}},
 		{Key: "companion_chat_logs", Model: &model.CompanionChatLog{}},
+		{Key: "companion_relationship_events", Model: &model.CompanionRelationshipEvent{}},
 	}
 }

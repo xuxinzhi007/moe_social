@@ -1,11 +1,17 @@
 import type { AvatarAssetStore } from './assetStore'
 import type { MoeAvatarManifest, OutfitSelection, PreviewAnimation } from './types'
 import type { TemplateSelection } from './resolveLayers'
-import { resolveAssetUrl, resolveLayerPaths, resolveTemplateLayerPaths } from './resolveLayers'
-import { loadImage } from './loadImage'
+import { assetUrlCandidates, resolveLayerPaths, resolveTemplateLayerPaths } from './resolveLayers'
+import { loadImageFromUrls } from './loadImage'
 
-function urlForPath(packBaseUrl: string, rel: string, assetStore?: AvatarAssetStore): string {
-  return resolveAssetUrl(packBaseUrl, rel, assetStore?.objectUrl(rel))
+function urlsForPath(
+  packBaseUrl: string,
+  rel: string,
+  assetStore?: AvatarAssetStore,
+  fallbackPackBaseUrls: string[] = [],
+): string[] {
+  if (!rel) return []
+  return assetUrlCandidates(packBaseUrl, rel, assetStore?.objectUrl(rel), fallbackPackBaseUrls)
 }
 
 /** 叠层合成 walk 或 idle 整张 sheet canvas */
@@ -15,6 +21,7 @@ export async function composeSheet(
   anim: PreviewAnimation,
   packBaseUrl: string,
   assetStore?: AvatarAssetStore,
+  fallbackPackBaseUrls: string[] = [],
 ): Promise<HTMLCanvasElement | null> {
   const grid = manifest.animations[anim]
   const cell = manifest.cellSize
@@ -30,8 +37,9 @@ export async function composeSheet(
   if (!ctx) return null
 
   for (const rel of paths) {
+    if (!rel) continue
     try {
-      const img = await loadImage(urlForPath(packBaseUrl, rel, assetStore))
+      const img = await loadImageFromUrls(urlsForPath(packBaseUrl, rel, assetStore, fallbackPackBaseUrls))
       ctx.drawImage(img, 0, 0)
     } catch {
       // 缺层跳过
@@ -46,6 +54,7 @@ export async function composeTemplateSheet(
   anim: PreviewAnimation,
   packBaseUrl: string,
   assetStore?: AvatarAssetStore,
+  fallbackPackBaseUrls: string[] = [],
 ): Promise<HTMLCanvasElement | null> {
   const grid = manifest.animations[anim]
   const cell = manifest.cellSize
@@ -61,8 +70,9 @@ export async function composeTemplateSheet(
   if (!ctx) return null
 
   for (const rel of paths) {
+    if (!rel) continue
     try {
-      const img = await loadImage(urlForPath(packBaseUrl, rel, assetStore))
+      const img = await loadImageFromUrls(urlsForPath(packBaseUrl, rel, assetStore, fallbackPackBaseUrls))
       ctx.drawImage(img, 0, 0)
     } catch {
       // 缺层跳过
@@ -108,9 +118,11 @@ export async function layerThumbCanvas(
   packBaseUrl: string,
   thumbSize = 64,
   assetStore?: AvatarAssetStore,
+  fallbackPackBaseUrls: string[] = [],
 ): Promise<HTMLCanvasElement | null> {
+  if (!layerRelPath) return null
   try {
-    const img = await loadImage(urlForPath(packBaseUrl, layerRelPath, assetStore))
+    const img = await loadImageFromUrls(urlsForPath(packBaseUrl, layerRelPath, assetStore, fallbackPackBaseUrls))
     const cell = manifest.cellSize
     const canvas = document.createElement('canvas')
     canvas.width = thumbSize

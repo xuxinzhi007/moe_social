@@ -28,6 +28,12 @@ export class AvatarAssetStore {
     return this.blobs.get(originalAssetKey(relativePath))
   }
 
+  entries(): Array<{ key: string; blob: Blob }> {
+    return [...this.blobs.entries()]
+      .map(([key, blob]) => ({ key, blob }))
+      .sort((a, b) => a.key.localeCompare(b.key))
+  }
+
   objectUrl(relativePath: string): string | undefined {
     return this.objectUrls.get(relativePath)
   }
@@ -69,6 +75,11 @@ export class AvatarAssetStore {
   revoke(relativePath: string): void {
     this.revokeKey(relativePath)
     this.revokeKey(originalAssetKey(relativePath))
+    clearImageCache()
+  }
+
+  deleteKey(key: string): void {
+    this.revokeKey(key)
     clearImageCache()
   }
 

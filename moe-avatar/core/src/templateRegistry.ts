@@ -1,4 +1,4 @@
-import type { AnimationGrid, MoeAvatarManifest } from './types'
+import type { AnimationGrid, BaseLayerPaths, MoeAvatarManifest } from './types'
 
 export type AvatarTemplateId =
   | 'base_character'
@@ -11,16 +11,17 @@ export type AvatarTemplateId =
 export type AvatarTemplatePreset = {
   id: AvatarTemplateId
   label: string
+  category: string
   description: string
   cellSize: number
-  directions: string[]
-  animations: Record<string, AnimationGrid>
-  composeOrder: string[]
-  baseKeys: string[]
-  slotKeys: string[]
-  requiredSlots: string[]
-  optionalSlots: string[]
-  importSteps: string[]
+  directions: readonly string[]
+  animations: Readonly<Record<string, AnimationGrid>>
+  composeOrder: readonly string[]
+  baseKeys: readonly string[]
+  slotKeys: readonly string[]
+  requiredSlots: readonly string[]
+  optionalSlots: readonly string[]
+  importSteps: readonly string[]
   style: string
 }
 
@@ -31,10 +32,28 @@ const DEFAULT_ANIMATIONS: Record<string, AnimationGrid> = {
 
 const DEFAULT_DIRECTIONS = ['up', 'left', 'down', 'right']
 
+function cloneAnimationGridMap(source: Readonly<Record<string, AnimationGrid>>): Record<string, AnimationGrid> {
+  return Object.fromEntries(Object.entries(source).map(([key, grid]) => [key, { ...grid }]))
+}
+
+function cloneBaseLayers(source: Record<string, BaseLayerPaths>): Record<string, BaseLayerPaths> {
+  return Object.fromEntries(Object.entries(source).map(([key, layer]) => [key, { ...layer }]))
+}
+
+function cloneSlots(source: MoeAvatarManifest['slots']): MoeAvatarManifest['slots'] {
+  return Object.fromEntries(
+    Object.entries(source).map(([slot, items]) => [
+      slot,
+      Object.fromEntries(Object.entries(items).map(([itemId, layer]) => [itemId, { ...layer }])),
+    ]),
+  )
+}
+
 const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   base_character: {
     id: 'base_character',
     label: 'Base Character',
+    category: '基础角色',
     description: '基础角色模板。用于换装、替换角色与标准站立/行走预览。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -50,6 +69,7 @@ const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   wearable_overlay: {
     id: 'wearable_overlay',
     label: 'Wearable Overlay',
+    category: '叠穿模板',
     description: '叠穿模板。重点处理衣服、帽子、鞋子、背部层。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -65,6 +85,7 @@ const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   held_item: {
     id: 'held_item',
     label: 'Held Item',
+    category: '道具模板',
     description: '手持物模板。适合武器、工具、道具、双手物件。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -80,6 +101,7 @@ const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   face_accessory: {
     id: 'face_accessory',
     label: 'Face Accessory',
+    category: '脸饰模板',
     description: '脸部附件模板。适合眼镜、面罩、贴花、表情覆盖。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -95,6 +117,7 @@ const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   full_replacement: {
     id: 'full_replacement',
     label: 'Full Replacement',
+    category: '整角色替换',
     description: '整角色替换模板。适合完全自定义角色，槽位最少，替换范围最大。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -110,6 +133,7 @@ const PRESETS: Record<AvatarTemplateId, AvatarTemplatePreset> = {
   pose_variant: {
     id: 'pose_variant',
     label: 'Pose Variant',
+    category: '姿态变体',
     description: '姿态模板。用于站、走、坐、待机等动作族的变体。',
     cellSize: 128,
     directions: DEFAULT_DIRECTIONS,
@@ -144,12 +168,12 @@ export function createManifestFromTemplate(
     displayName: overrides.displayName ?? preset.label,
     cellSize: overrides.cellSize ?? preset.cellSize,
     style: overrides.style ?? preset.style,
-    directionRows: overrides.directionRows ?? preset.directions,
-    animations: overrides.animations ?? preset.animations,
-    composeOrder: overrides.composeOrder ?? preset.composeOrder,
-    base: overrides.base ?? base,
-    slots: overrides.slots ?? slots,
-    animationPolicy: overrides.animationPolicy ?? { source: 'moe_official' },
+    directionRows: [...(overrides.directionRows ?? preset.directions)],
+    animations: cloneAnimationGridMap(overrides.animations ?? preset.animations),
+    composeOrder: [...(overrides.composeOrder ?? preset.composeOrder)],
+    base: cloneBaseLayers(overrides.base ?? base),
+    slots: cloneSlots(overrides.slots ?? slots),
+    animationPolicy: overrides.animationPolicy ? { ...overrides.animationPolicy } : { source: 'moe_official' },
   }
 }
 

@@ -1,5 +1,6 @@
 import { AVATAR_TEMPLATE_PRESETS, type AvatarTemplateId } from './templateRegistry'
 import type { MoeAvatarManifest } from './types'
+import { findDuplicateAssetPaths } from './manifestIntegrity'
 
 export type ManifestValidationIssue = {
   level: 'error' | 'warning'
@@ -23,8 +24,19 @@ function pushIssue(
   issues.push({ level, code, message, path })
 }
 
-function hasKeys<T extends Record<string, unknown>>(obj: T, keys: string[]): boolean {
-  return keys.every((key) => Object.prototype.hasOwnProperty.call(obj, key))
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function validateLayerPair(
+  issues: ManifestValidationIssue[],
+  kind: 'base' | 'slot',
+  key: string,
+  layer: { walk?: unknown; idle?: unknown },
+): void {
+  if (!isNonEmptyString(layer.walk) || !isNonEmptyString(layer.idle)) {
+    pushIssue(issues, 'error', `${kind}-layer`, `${kind} layer ${key} needs walk + idle`, `${kind}.${key}`)
+  }
 }
 
 function validateCommon(manifest: MoeAvatarManifest, issues: ManifestValidationIssue[]): void {
@@ -45,7 +57,7 @@ function validateCommon(manifest: MoeAvatarManifest, issues: ManifestValidationI
       pushIssue(issues, 'error', 'animation-missing', `${anim} animation grid is missing`, `animations.${anim}`)
       continue
     }
-    if (grid.cols <= 0 || grid.rows <= 0) {
+    if (!Number.isInteger(grid.cols) || !Number.isInteger(grid.rows) || grid.cols <= 0 || grid.rows <= 0) {
       pushIssue(issues, 'error', 'animation-grid', `${anim} grid must be positive`, `animations.${anim}`)
     }
   }
@@ -57,6 +69,9 @@ function validateAgainstPreset(
   issues: ManifestValidationIssue[],
 ): void {
   const preset = AVATAR_TEMPLATE_PRESETS[templateId]
+  const allowedBaseKeys = new Set(preset.baseKeys)
+  const allowedSlots = new Set(preset.slotKeys)
+
   if (manifest.cellSize !== preset.cellSize) {
     pushIssue(
       issues,
@@ -79,21 +94,30 @@ function validateAgainstPreset(
     )
   }
 
-  if (!hasKeys(manifest.base, preset.baseKeys)) {
-    pushIssue(issues, 'error', 'base-keys', `base keys must include ${preset.baseKeys.join(', ')}`, 'base')
+  for (const [key, layer] of Object.entries(manifest.base)) {
+    if (!allowedBaseKeys.has(key)) {
+      pushIssue(issues, 'warning', 'base-unexpected', `base layer ${key} is not part of template ${preset.label}`, `base.${key}`)
+    }
+    validateLayerPair(issues, 'base', key, layer)
   }
 
-  for (const key of Object.keys(manifest.base)) {
-    const layer = manifest.base[key]
-    if (!layer?.walk || !layer?.idle) {
-      pushIssue(issues, 'error', 'base-layer', `base layer ${key} needs walk + idle`, `base.${key}`)
+  const missingBaseKeys = preset.baseKeys.filter((key) => !manifest.base[key])
+  if (missingBaseKeys.length > 0) {
+    pushIssue(issues, 'error', 'base-keys', `base keys must include ${missingBaseKeys.join(', ')}`, 'base')
+  }
+
+  for (const key of manifest.composeOrder) {
+    if (!allowedBaseKeys.has(key) && !allowedSlots.has(key)) {
+      pushIssue(issues, 'error', 'compose-order-key', `composeOrder references unknown key ${key}`, 'composeOrder')
     }
   }
 
-  const allowedSlots = new Set(preset.slotKeys)
-  for (const slot of Object.keys(manifest.slots)) {
+  for (const [slot, items] of Object.entries(manifest.slots)) {
     if (!allowedSlots.has(slot)) {
       pushIssue(issues, 'warning', 'slot-unexpected', `slot ${slot} is not part of template ${preset.label}`, `slots.${slot}`)
+    }
+    for (const [itemId, layer] of Object.entries(items)) {
+      validateLayerPair(issues, 'slot', `${slot}/${itemId}`, layer)
     }
   }
 
@@ -108,6 +132,10 @@ function validateAgainstPreset(
         `slots.${slot}`,
       )
     }
+  }
+
+  for (const [path, refs] of findDuplicateAssetPaths(manifest)) {
+    pushIssue(issues, 'warning', 'duplicate-asset-path', `asset path ${path} is shared by ${refs.join(', ')}`, 'slots')
   }
 
   for (const slot of preset.optionalSlots) {

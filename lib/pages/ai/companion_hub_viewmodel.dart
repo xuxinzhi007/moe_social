@@ -19,7 +19,7 @@ class CompanionDailyItem {
     this.memoryId,
   });
 
-  /// `world` | `moment` | `post` | `chat` | `memory`
+  /// `world` | `moment` | `post` | `chat` | `memory` | `relationship`
   final String kind;
   final String title;
   final String body;
@@ -53,6 +53,20 @@ class CompanionPulseData {
   final String? postId;
 }
 
+class CompanionDailySummaryData {
+  const CompanionDailySummaryData({
+    required this.title,
+    required this.body,
+    required this.sceneLabel,
+    this.continuationHint,
+  });
+
+  final String title;
+  final String body;
+  final String sceneLabel;
+  final String? continuationHint;
+}
+
 /// AI 伙伴关系首页状态（陪伴为主，世界/动态为日常流）。
 class CompanionHubViewModel extends ChangeNotifier {
   CompanionHubViewModel({CompanionService? companionService})
@@ -65,6 +79,7 @@ class CompanionHubViewModel extends ChangeNotifier {
   CompanionProfileData _profile = const CompanionProfileData();
   CompanionStateData _state = const CompanionStateData();
   List<CompanionDailyItem> _dailyItems = const [];
+  CompanionDailySummaryData? _dailySummary;
   String _worldSummaryLine = '';
   bool _worldBound = false;
   String _worldBindStatus = 'unbound';
@@ -75,6 +90,7 @@ class CompanionHubViewModel extends ChangeNotifier {
   CompanionProfileData get profile => _profile;
   CompanionStateData get state => _state;
   List<CompanionDailyItem> get dailyItems => _dailyItems;
+  CompanionDailySummaryData? get dailySummary => _dailySummary;
   CompanionDailyItem? get latestDailyItem =>
       _dailyItems.isNotEmpty ? _dailyItems.first : null;
   String get worldSummaryLine => _worldSummaryLine;
@@ -112,11 +128,10 @@ class CompanionHubViewModel extends ChangeNotifier {
     }
 
     if (leadItem == null) {
+      final who = profile.name.trim().isNotEmpty ? profile.name.trim() : 'TA';
       final fallback = greeting.isNotEmpty
           ? greeting
-          : (mood.isNotEmpty
-              ? mood
-              : '今天先陪 TA 说说话，或者去看看最近的变化。');
+          : (mood.isNotEmpty ? mood : '$who 今天先陪你聊聊，看看最近的变化。');
       return CompanionPulseData(
         title: '今天的 TA',
         body: fallback,
@@ -268,16 +283,28 @@ class CompanionHubViewModel extends ChangeNotifier {
         daily.addAll(_memoryDailyItems(memories));
       } catch (_) {}
 
+      try {
+        final events = await _companion.listRelationshipEvents(limit: 6);
+        daily.addAll(_relationshipEventDailyItems(events));
+      } catch (_) {}
+
       daily.sort((a, b) {
         final at = a.at ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bt = b.at ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bt.compareTo(at);
       });
+      final compressedDaily = _compressDailyItems(daily);
+      final dailySummary = _buildDailySummary(
+        profile: snapshot.profile,
+        state: snapshot.state,
+        dailyItems: compressedDaily,
+      );
 
       if (_disposed) return;
       _profile = snapshot.profile;
       _state = snapshot.state;
-      _dailyItems = daily.take(16).toList(growable: false);
+      _dailyItems = compressedDaily.take(16).toList(growable: false);
+      _dailySummary = dailySummary;
       _worldSummaryLine = worldLine;
       _worldBound = worldBound;
       _worldBindStatus = bindStatus;
@@ -449,6 +476,151 @@ class CompanionHubViewModel extends ChangeNotifier {
         );
       },
     ).toList(growable: false);
+  }
+
+  static List<CompanionDailyItem> _relationshipEventDailyItems(
+    List<CompanionRelationshipEventData> events,
+  ) {
+    return events
+        .where((event) => event.title.trim().isNotEmpty)
+        .take(4)
+        .map(
+          (event) => CompanionDailyItem(
+            kind: 'relationship',
+            title: event.title.trim(),
+            body: event.content.trim(),
+            at: DateTime.tryParse(event.createdAt),
+            fullBody: event.content.trim(),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static CompanionDailySummaryData? _buildDailySummary({
+    required CompanionProfileData profile,
+    required CompanionStateData state,
+    required List<CompanionDailyItem> dailyItems,
+  }) {
+    if (dailyItems.isEmpty && state.moodThought.trim().isEmpty) return null;
+
+    final relationship = dailyItems.cast<CompanionDailyItem?>().firstWhere(
+          (item) => item?.kind == 'relationship',
+          orElse: () => null,
+        );
+    final memory = dailyItems.cast<CompanionDailyItem?>().firstWhere(
+          (item) => item?.kind == 'memory',
+          orElse: () => null,
+        );
+    final chat = dailyItems.cast<CompanionDailyItem?>().firstWhere(
+          (item) => item?.kind == 'chat',
+          orElse: () => null,
+        );
+    final who = profile.name.trim().isNotEmpty ? profile.name.trim() : 'TA';
+    final mood = state.moodThought.trim();
+    final summaryBody = relationship != null
+        ? relationship.body
+        : (mood.isNotEmpty ? mood : '$who 今天也在和你保持联系。');
+    final continuation = _findContinuationHint(chat?.body);
+    final detail = memory != null && memory.body.trim().isNotEmpty
+        ? 'TA 还记得：${memory.body.trim()}'
+        : null;
+
+    return CompanionDailySummaryData(
+      title: relationship?.title ?? '今天的关系摘要',
+      body: detail == null ? summaryBody : '$summaryBody\n$detail',
+      sceneLabel: _companionSceneLabel(DateTime.now(), state.mood),
+      continuationHint: continuation,
+    );
+  }
+
+  @visibleForTesting
+  static String companionSceneLabelForTest(DateTime now, double mood) {
+    return _companionSceneLabel(now, mood);
+  }
+
+  static String _companionSceneLabel(DateTime now, double mood) {
+    final normalizedMood = mood <= 1 ? mood * 100 : mood;
+    if (normalizedMood < 40) return '情绪安抚';
+    if (now.hour >= 22 || now.hour < 6) return '睡前陪伴';
+    if (now.hour < 11) return '早晨问候';
+    if (now.weekday >= DateTime.saturday) return '周末陪伴';
+    return '日常陪伴';
+  }
+
+  @visibleForTesting
+  static CompanionDailySummaryData? buildDailySummaryForTest({
+    required CompanionProfileData profile,
+    required CompanionStateData state,
+    required List<CompanionDailyItem> dailyItems,
+  }) {
+    return _buildDailySummary(
+      profile: profile,
+      state: state,
+      dailyItems: dailyItems,
+    );
+  }
+
+  static String? _findContinuationHint(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    if (text.contains('?') || text.contains('？')) return text;
+    const markers = ['下次', '明天', '后来', '记得告诉我', '还好吗'];
+    if (markers.any(text.contains)) return text;
+    return null;
+  }
+
+  static List<CompanionDailyItem> _compressDailyItems(
+    List<CompanionDailyItem> items,
+  ) {
+    if (items.length < 2) return List<CompanionDailyItem>.unmodifiable(items);
+
+    final output = <CompanionDailyItem>[];
+    for (final item in items) {
+      if (output.isEmpty) {
+        output.add(item);
+        continue;
+      }
+
+      final last = output.last;
+      if (_sameDay(last.at, item.at) && last.kind == item.kind) {
+        output[output.length - 1] = CompanionDailyItem(
+          kind: last.kind,
+          title: last.title,
+          body: _mergeDailyBody(last.body, item.body),
+          at: last.at ?? item.at,
+          postId: last.postId ?? item.postId,
+          fullBody: _mergeDailyBody(
+              last.fullBody ?? last.body, item.fullBody ?? item.body),
+          memoryId: last.memoryId ?? item.memoryId,
+        );
+      } else {
+        output.add(item);
+      }
+    }
+    return List<CompanionDailyItem>.unmodifiable(output);
+  }
+
+  @visibleForTesting
+  static List<CompanionDailyItem> compressDailyItemsForTest(
+    List<CompanionDailyItem> items,
+  ) {
+    return _compressDailyItems(items);
+  }
+
+  static bool _sameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return false;
+    final al = a.toLocal();
+    final bl = b.toLocal();
+    return al.year == bl.year && al.month == bl.month && al.day == bl.day;
+  }
+
+  static String _mergeDailyBody(String a, String b) {
+    final left = a.trim();
+    final right = b.trim();
+    if (left.isEmpty) return right;
+    if (right.isEmpty) return left;
+    if (left == right) return left;
+    return '$left · $right';
   }
 
   static String _clip(String text, int maxChars) {

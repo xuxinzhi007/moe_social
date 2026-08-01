@@ -2,6 +2,11 @@
 
 export type AnimationGrid = { cols: number; rows: number }
 
+export type BaseLayerPaths = {
+  walk: string
+  idle: string
+}
+
 /** 动画策略：姿势/动作由 Moe 在 manifest 控制，非 ULPC 全集 */
 export type MoeAnimationPolicy = {
   source: 'moe_official'
@@ -14,7 +19,7 @@ export type SlotLayerPaths = {
   thumb?: string
   /** 显示名（admin 生产 · App 换衣 rail） */
   label?: string
-}
+} & BaseLayerPaths
 
 export type MoeAvatarManifest = {
   specVersion: string
@@ -27,7 +32,7 @@ export type MoeAvatarManifest = {
   animations: Record<string, AnimationGrid>
   animationPolicy?: MoeAnimationPolicy
   composeOrder: string[]
-  base: Record<string, { walk: string; idle: string }>
+  base: Record<string, BaseLayerPaths>
   slots: Record<string, Record<string, SlotLayerPaths>>
 }
 
@@ -37,14 +42,14 @@ export type MoeAvatarSection = Omit<
   'specVersion' | 'packId' | 'displayName'
 >
 
-export type WearSlot = 'hat' | 'top' | 'bottom' | 'shoes'
+export type WearSlot = 'hat' | 'top' | 'bottom' | 'shoes' | (string & {})
 
 export type OutfitSelection = {
   hatId: string
   topId: string
   bottomId: string
   shoesId: string
-}
+} & Record<string, string>
 
 export type PreviewAnimation = 'walk' | 'idle'
 

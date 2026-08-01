@@ -43,6 +43,7 @@ import { PetAvatarEditorPage } from './pages/PetAvatarEditorPage'
 import { PetContentHubPage, PetDecorEditorPage } from './pages/PetContentHubPage'
 import { PetFurnitureEditorPage } from './pages/PetFurnitureEditorPage'
 import { CodeGraphPage } from './pages/CodeGraphPage'
+import { SpriteStudioPage } from './features/sprite-studio/SpriteStudioPage'
 
 function PlatformTabRedirect({ tab }: { tab: string }) {
   return <Navigate to={`/infra/platform?tab=${tab}`} replace />
@@ -92,10 +93,12 @@ export default function App() {
                 <Route path="biz/content/reports" element={<ReportsPage />} />
                 <Route path="biz/growth" element={<GrowthPage />} />
                 <Route path="biz/pet/content" element={<PetContentHubPage />} />
-                <Route path="biz/pet/avatar" element={<PetAvatarEditorPage />} />
+                <Route path="biz/pet/avatar" element={<SpriteStudioPage />} />
+                <Route path="biz/pet/sprites" element={<SpriteStudioPage />} />
+                <Route path="biz/pet/avatar-legacy" element={<PetAvatarEditorPage />} />
                 <Route path="biz/pet/furniture" element={<PetFurnitureEditorPage />} />
                 <Route path="biz/pet/decor" element={<PetDecorEditorPage />} />
-                <Route path="biz/pet/lpc" element={<Navigate to="/biz/pet/avatar" replace />} />
+                <Route path="biz/pet/lpc" element={<Navigate to="/biz/pet/avatar-legacy" replace />} />
                 <Route path="biz/announcements" element={<AnnouncementsPage />} />
                 <Route path="biz/update" element={<AppReleasePage />} />
                 <Route path="biz/notify" element={<NotifyPage />} />

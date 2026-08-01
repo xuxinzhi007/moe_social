@@ -19,15 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Companion_GetProfile_FullMethodName           = "/companion.v1.Companion/GetProfile"
-	Companion_GetCommunityIdentity_FullMethodName = "/companion.v1.Companion/GetCommunityIdentity"
-	Companion_UpsertProfile_FullMethodName        = "/companion.v1.Companion/UpsertProfile"
-	Companion_GetState_FullMethodName             = "/companion.v1.Companion/GetState"
-	Companion_ListMemories_FullMethodName         = "/companion.v1.Companion/ListMemories"
-	Companion_DeleteMemory_FullMethodName         = "/companion.v1.Companion/DeleteMemory"
-	Companion_SetMemoryPinned_FullMethodName      = "/companion.v1.Companion/SetMemoryPinned"
-	Companion_UpdateMemory_FullMethodName         = "/companion.v1.Companion/UpdateMemory"
-	Companion_ListChatHistory_FullMethodName      = "/companion.v1.Companion/ListChatHistory"
+	Companion_GetProfile_FullMethodName             = "/companion.v1.Companion/GetProfile"
+	Companion_GetCommunityIdentity_FullMethodName   = "/companion.v1.Companion/GetCommunityIdentity"
+	Companion_UpsertProfile_FullMethodName          = "/companion.v1.Companion/UpsertProfile"
+	Companion_GetState_FullMethodName               = "/companion.v1.Companion/GetState"
+	Companion_ListMemories_FullMethodName           = "/companion.v1.Companion/ListMemories"
+	Companion_DeleteMemory_FullMethodName           = "/companion.v1.Companion/DeleteMemory"
+	Companion_SetMemoryPinned_FullMethodName        = "/companion.v1.Companion/SetMemoryPinned"
+	Companion_UpdateMemory_FullMethodName           = "/companion.v1.Companion/UpdateMemory"
+	Companion_ListChatHistory_FullMethodName        = "/companion.v1.Companion/ListChatHistory"
+	Companion_ConfirmMemory_FullMethodName          = "/companion.v1.Companion/ConfirmMemory"
+	Companion_ListRelationshipEvents_FullMethodName = "/companion.v1.Companion/ListRelationshipEvents"
 )
 
 // CompanionClient is the client API for Companion service.
@@ -47,6 +49,8 @@ type CompanionClient interface {
 	UpdateMemory(ctx context.Context, in *UpdateMemoryRequest, opts ...grpc.CallOption) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...grpc.CallOption) (*ListChatHistoryReply, error)
+	ConfirmMemory(ctx context.Context, in *ConfirmMemoryRequest, opts ...grpc.CallOption) (*ConfirmMemoryReply, error)
+	ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...grpc.CallOption) (*ListRelationshipEventsReply, error)
 }
 
 type companionClient struct {
@@ -147,6 +151,26 @@ func (c *companionClient) ListChatHistory(ctx context.Context, in *ListChatHisto
 	return out, nil
 }
 
+func (c *companionClient) ConfirmMemory(ctx context.Context, in *ConfirmMemoryRequest, opts ...grpc.CallOption) (*ConfirmMemoryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmMemoryReply)
+	err := c.cc.Invoke(ctx, Companion_ConfirmMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...grpc.CallOption) (*ListRelationshipEventsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRelationshipEventsReply)
+	err := c.cc.Invoke(ctx, Companion_ListRelationshipEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CompanionServer is the server API for Companion service.
 // All implementations must embed UnimplementedCompanionServer
 // for forward compatibility.
@@ -164,6 +188,8 @@ type CompanionServer interface {
 	UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error)
 	// Chat History
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
+	ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error)
+	ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error)
 	mustEmbedUnimplementedCompanionServer()
 }
 
@@ -200,6 +226,12 @@ func (UnimplementedCompanionServer) UpdateMemory(context.Context, *UpdateMemoryR
 }
 func (UnimplementedCompanionServer) ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListChatHistory not implemented")
+}
+func (UnimplementedCompanionServer) ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmMemory not implemented")
+}
+func (UnimplementedCompanionServer) ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRelationshipEvents not implemented")
 }
 func (UnimplementedCompanionServer) mustEmbedUnimplementedCompanionServer() {}
 func (UnimplementedCompanionServer) testEmbeddedByValue()                   {}
@@ -384,6 +416,42 @@ func _Companion_ListChatHistory_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_ConfirmMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ConfirmMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ConfirmMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ConfirmMemory(ctx, req.(*ConfirmMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_ListRelationshipEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRelationshipEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ListRelationshipEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ListRelationshipEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ListRelationshipEvents(ctx, req.(*ListRelationshipEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Companion_ServiceDesc is the grpc.ServiceDesc for Companion service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -426,6 +494,14 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListChatHistory",
 			Handler:    _Companion_ListChatHistory_Handler,
+		},
+		{
+			MethodName: "ConfirmMemory",
+			Handler:    _Companion_ConfirmMemory_Handler,
+		},
+		{
+			MethodName: "ListRelationshipEvents",
+			Handler:    _Companion_ListRelationshipEvents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

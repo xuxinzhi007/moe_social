@@ -23,11 +23,17 @@ type Store interface {
 	DeleteMemory(ctx context.Context, userID, memoryID uint) error
 	UpdateMemoryPinned(ctx context.Context, userID, memoryID uint, pinned bool, importance int, expiresAt *time.Time) error
 	UpdateMemoryContent(ctx context.Context, userID, memoryID uint, content string) error
+	UpdateMemoryRecord(ctx context.Context, userID, memoryID uint, memoryType, memoryKey, content string, importance int, expiresAt *time.Time, confidence float64) error
+	ConfirmMemory(ctx context.Context, userID, memoryID uint, confirmedAt time.Time) error
 	CleanupExpiredMemories(ctx context.Context) (int64, error)
 
 	// Chat Log
 	AppendChatLog(ctx context.Context, log *model.CompanionChatLog) error
 	ListRecentChatLogs(ctx context.Context, userID uint, limit int) ([]model.CompanionChatLog, error)
+
+	// Relationship Events
+	CreateRelationshipEvent(ctx context.Context, event *model.CompanionRelationshipEvent) error
+	ListRelationshipEvents(ctx context.Context, userID uint, limit int) ([]model.CompanionRelationshipEvent, error)
 }
 
 // LifeStore defines the Life data needed by the Companion domain.

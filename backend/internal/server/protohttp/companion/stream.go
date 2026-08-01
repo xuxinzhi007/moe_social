@@ -7,13 +7,20 @@ import (
 
 	"backend/internal/apilegacy/common"
 	companionapp "backend/internal/service/companion"
+	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
 type chatStreamRequest struct {
-	Message string `json:"message"`
+	Message          string `json:"message"`
+	ProviderBaseURL  string `json:"provider_base_url"`
+	ProviderAPIStyle string `json:"provider_api_style"`
+	ProviderModel    string `json:"provider_model"`
+	ProviderAPIKey   string `json:"provider_api_key"`
+	ProviderTimeout  int    `json:"provider_timeout_seconds"`
+	Scene            string `json:"scene"`
 }
 
 const maxChatStreamBodyBytes = 32 << 10
@@ -45,11 +52,25 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 	if strings.TrimSpace(req.Message) == "" {
 		return kerrors.BadRequest("MESSAGE_REQUIRED", "消息不能为空")
 	}
+	var override *llminference.Config
+	if strings.TrimSpace(req.ProviderBaseURL) != "" {
+		config := llminference.ConfigFrom(
+			req.ProviderBaseURL,
+			req.ProviderAPIStyle,
+			req.ProviderTimeout,
+			req.ProviderModel,
+			req.ProviderAPIKey,
+		)
+		if config.BaseURL == "" || config.DefaultModel == "" {
+			return kerrors.BadRequest("INVALID_PROVIDER_CONFIG", "用户模型配置缺少地址或模型")
+		}
+		override = &config
+	}
 
 	common.InitSSEHeaders(w)
 	_ = common.WriteSSE(w, "start", map[string]string{})
 
-	fullReply, err := app.ChatStream(r.Context(), userID, req.Message, func(chunk string) error {
+	fullReply, err := app.ChatStreamWithInference(r.Context(), userID, req.Message, override, req.Scene, func(chunk string) error {
 		return common.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {

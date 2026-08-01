@@ -154,6 +154,53 @@ func (s *store) UpdateMemoryContent(ctx context.Context, userID, memoryID uint, 
 	return nil
 }
 
+// UpdateMemoryRecord replaces an unconfirmed extracted memory with newer evidence.
+func (s *store) UpdateMemoryRecord(
+	ctx context.Context,
+	userID, memoryID uint,
+	memoryType, memoryKey, content string,
+	importance int,
+	expiresAt *time.Time,
+	confidence float64,
+) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemory{}).
+		Where("id = ? AND user_id = ? AND user_confirmed = ?", memoryID, userID, false).
+		Updates(map[string]interface{}{
+			"memory_type": memoryType,
+			"memory_key":  memoryKey,
+			"content":     content,
+			"importance":  importance,
+			"expires_at":  expiresAt,
+			"confidence":  confidence,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// ConfirmMemory marks a memory as reviewed by its owner.
+func (s *store) ConfirmMemory(ctx context.Context, userID, memoryID uint, confirmedAt time.Time) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemory{}).
+		Where("id = ? AND user_id = ?", memoryID, userID).
+		Updates(map[string]interface{}{
+			"user_confirmed": true,
+			"confirmed_at":   confirmedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (s *store) CleanupExpiredMemories(ctx context.Context) (int64, error) {
 	result := s.db.WithContext(ctx).
 		Where("pinned = ? AND expires_at IS NOT NULL AND expires_at < ?", false, time.Now()).
@@ -185,4 +232,23 @@ func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) 
 		rows[i], rows[j] = rows[j], rows[i]
 	}
 	return rows, nil
+}
+
+// CreateRelationshipEvent persists one meaningful relationship event.
+func (s *store) CreateRelationshipEvent(ctx context.Context, event *model.CompanionRelationshipEvent) error {
+	return s.db.WithContext(ctx).Create(event).Error
+}
+
+// ListRelationshipEvents returns the newest relationship events first.
+func (s *store) ListRelationshipEvents(ctx context.Context, userID uint, limit int) ([]model.CompanionRelationshipEvent, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	var rows []model.CompanionRelationshipEvent
+	err := s.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
 }

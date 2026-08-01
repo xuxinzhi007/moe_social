@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { AvatarAssetStore } from '../assetStore'
 import type { MoeAvatarManifest, PreviewAnimation } from '../types'
 import { downloadGridTemplate } from '../editor/gridTemplate'
@@ -37,7 +37,7 @@ export function BaseLayerProductionPanel({
   onMessage,
 }: Props) {
   const [activeKey, setActiveKey] = useState<BaseKey>('body')
-  const { uploadSheet, revertLayer, bindModal, pendingEditor } = useSheetUpload({
+  const { uploadSheet, revertLayer, openBind, bindModal, pendingEditor } = useSheetUpload({
     manifest,
     packBaseUrl,
     assetStore,
@@ -48,6 +48,8 @@ export function BaseLayerProductionPanel({
     onMessage,
   })
 
+  const bindInputRef = useRef<HTMLInputElement>(null)
+
   const handleUpload = (baseKey: BaseKey, anim: PreviewAnimation, file: File | null) => {
     const entry = manifest.base[baseKey]
     if (!entry) {
@@ -55,6 +57,25 @@ export function BaseLayerProductionPanel({
       return
     }
     void uploadSheet(entry[anim], anim, file, baseKey, entry.idle)
+  }
+
+  const handleCustomPngImport = () => {
+    bindInputRef.current?.click()
+  }
+
+  const handleCustomPngFile = (file: File | null) => {
+    if (!file) return
+    const entry = manifest.base[activeKey]
+    if (!entry) {
+      onError(`manifest.base 缺少 ${activeKey}`)
+      return
+    }
+    openBind({
+      file,
+      layerKey: activeKey,
+      walkPath: entry.walk,
+      idlePath: entry.idle,
+    })
   }
 
   return (
@@ -80,6 +101,22 @@ export function BaseLayerProductionPanel({
               {label}
             </button>
           ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button type="button" className="btn primary" style={{ fontSize: 11 }} onClick={handleCustomPngImport}>
+            导入自定义 PNG
+          </button>
+          <input
+            ref={bindInputRef}
+            type="file"
+            accept="image/png"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              handleCustomPngFile(e.target.files?.[0] ?? null)
+              e.target.value = ''
+            }}
+          />
         </div>
 
         {(() => {

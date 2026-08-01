@@ -16,7 +16,7 @@ class CompanionPresenceEvent {
     this.activityLabel = '',
   });
 
-  /// `state_snapshot` | `greeting`
+  /// `state_snapshot` | `greeting` | `proactive`
   final String type;
   final String greeting;
   final String moodThought;
@@ -167,7 +167,7 @@ class CompanionWsService {
     final type = map['type']?.toString() ?? '';
     if (type == 'pong') return;
 
-    if (type == 'state_snapshot' || type == 'greeting') {
+    if (type == 'state_snapshot' || type == 'greeting' || type == 'proactive') {
       onPresence?.call(
         CompanionPresenceEvent(
           type: type,

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	companionv1 "backend/api/companion/v1"
@@ -17,6 +18,7 @@ import (
 const (
 	maxCompanionMessageRunes = 4000
 	maxCompanionListLimit    = 100
+	maxCompanionAgentIDRunes = 64
 )
 
 func (s *AppService) requireEngine() (*companionbiz.Engine, error) {
@@ -58,6 +60,9 @@ func (s *AppService) UpsertProfile(ctx context.Context, userID uint, in *compani
 		SystemPromptOverride: in.GetSystemPromptOverride(),
 		AgentID:              in.GetAgentId(),
 		LifeEntityID:         int(in.GetLifeEntityId()),
+	}
+	if utf8.RuneCountInString(p.AgentID) > maxCompanionAgentIDRunes {
+		return nil, kerrors.BadRequest("AGENT_ID_TOO_LONG", "Agent ID 不能超过 64 个字符")
 	}
 	saved, err := engine.UpsertProfile(ctx, userID, p)
 	if err != nil {
@@ -149,6 +154,23 @@ func (s *AppService) UpdateMemory(ctx context.Context, userID uint, in *companio
 	}, nil
 }
 
+func (s *AppService) ConfirmMemory(ctx context.Context, userID uint, in *companionv1.ConfirmMemoryRequest) (*companionv1.ConfirmMemoryReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	memory, err := engine.ConfirmMemory(ctx, userID, uint(in.GetMemoryId()))
+	if err != nil {
+		if errors.Is(err, companionbiz.ErrMemoryNotFound) {
+			return nil, kerrors.NotFound("COMPANION_MEMORY_NOT_FOUND", "记忆不存在")
+		}
+		return nil, err
+	}
+	return &companionv1.ConfirmMemoryReply{
+		Memory: toProtoMemory(*memory),
+	}, nil
+}
+
 func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
@@ -163,11 +185,41 @@ func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *compa
 	}, nil
 }
 
+func (s *AppService) ListRelationshipEvents(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ListRelationshipEventsRequest,
+) (*companionv1.ListRelationshipEventsReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	events, err := engine.ListRelationshipEvents(ctx, userID, clampLimit(in.GetLimit()))
+	if err != nil {
+		return nil, err
+	}
+	return &companionv1.ListRelationshipEventsReply{
+		Events: toProtoRelationshipEvents(events),
+	}, nil
+}
+
 // ChatStream streams one authenticated user's companion response.
 func (s *AppService) ChatStream(
 	ctx context.Context,
 	userID uint,
 	message string,
+	onChunk llminference.StreamHandler,
+) (string, error) {
+	return s.ChatStreamWithInference(ctx, userID, message, nil, "", onChunk)
+}
+
+// ChatStreamWithInference streams one message with an optional user-selected provider.
+func (s *AppService) ChatStreamWithInference(
+	ctx context.Context,
+	userID uint,
+	message string,
+	override *llminference.Config,
+	scene string,
 	onChunk llminference.StreamHandler,
 ) (string, error) {
 	engine, err := s.requireEngine()
@@ -181,7 +233,7 @@ func (s *AppService) ChatStream(
 	if utf8.RuneCountInString(message) > maxCompanionMessageRunes {
 		return "", kerrors.BadRequest("MESSAGE_TOO_LONG", "消息长度不能超过 4000 个字符")
 	}
-	return engine.ChatStream(ctx, userID, message, onChunk)
+	return engine.ChatStream(ctx, userID, message, onChunk, scene, override)
 }
 
 func clampLimit(raw int32) int {
@@ -317,13 +369,24 @@ func toProtoMemories(memories []companionbiz.Memory) []*companionv1.CompanionMem
 
 func toProtoMemory(m companionbiz.Memory) *companionv1.CompanionMemoryMsg {
 	return &companionv1.CompanionMemoryMsg{
-		Id:         uint64(m.ID),
-		MemoryType: m.MemoryType,
-		Content:    m.Content,
-		Importance: int32(m.Importance),
-		CreatedAt:  m.CreatedAt.Format("2006-01-02 15:04:05"),
-		Pinned:     m.Pinned,
+		Id:            uint64(m.ID),
+		MemoryType:    m.MemoryType,
+		Content:       m.Content,
+		Importance:    int32(m.Importance),
+		CreatedAt:     m.CreatedAt.Format("2006-01-02 15:04:05"),
+		Pinned:        m.Pinned,
+		UserConfirmed: m.UserConfirmed,
+		ConfirmedAt:   formatOptionalTime(m.ConfirmedAt),
+		MemoryKey:     m.MemoryKey,
+		Confidence:    m.Confidence,
 	}
+}
+
+func formatOptionalTime(value *time.Time) string {
+	if value == nil {
+		return ""
+	}
+	return value.Format("2006-01-02 15:04:05")
 }
 
 func toProtoChatLogs(logs []companionbiz.ChatLog) []*companionv1.CompanionChatLogMsg {
@@ -334,6 +397,22 @@ func toProtoChatLogs(logs []companionbiz.ChatLog) []*companionv1.CompanionChatLo
 			Role:      l.Role,
 			Content:   l.Content,
 			CreatedAt: l.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return out
+}
+
+func toProtoRelationshipEvents(events []companionbiz.RelationshipEvent) []*companionv1.CompanionRelationshipEventMsg {
+	out := make([]*companionv1.CompanionRelationshipEventMsg, 0, len(events))
+	for _, event := range events {
+		out = append(out, &companionv1.CompanionRelationshipEventMsg{
+			Id:                uint64(event.ID),
+			EventType:         event.EventType,
+			Title:             event.Title,
+			Content:           event.Content,
+			RelationshipLevel: int32(event.RelationshipLevel),
+			IntimacyScore:     event.IntimacyScore,
+			CreatedAt:         event.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 	return out

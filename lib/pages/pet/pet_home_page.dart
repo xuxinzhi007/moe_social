@@ -6,17 +6,15 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/feature_flags.dart';
-import '../../game/pet/pet_adventure_game.dart';
 import '../../game/pet/pet_art.dart';
 import '../../game/pet/pet_content_catalog.dart';
 import '../../game/pet/pet_labels.dart';
 import '../../game/pet/pet_room_game.dart';
 import '../../models/pet_state.dart';
 import '../../providers/pet_provider.dart';
-import '../../services/pet_career_config.dart';
 import 'pet_dressing_page.dart';
 
-/// 养成主页：Flame Room + 照料 HUD + 九宫格（P0–P4）。
+/// 养成主页：Flame Room + 照料 HUD + 轻量换装/布置体验。
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key});
 
@@ -153,32 +151,6 @@ class _PetHomePageState extends State<PetHomePage> {
           Navigator.pop(ctx);
           _showFurnitureSheet();
         },
-        onSchool: () {
-          Navigator.pop(ctx);
-          _showSchoolSheet();
-        },
-        onWork: () async {
-          Navigator.pop(ctx);
-          await pet.work();
-          _toast();
-        },
-        onSocial: () {
-          Navigator.pop(ctx);
-          _showSocialSheet();
-        },
-        onAdventure: () {
-          Navigator.pop(ctx);
-          _openAdventure();
-        },
-        onShop: () {
-          Navigator.pop(ctx);
-          _showShopSheet();
-        },
-        onIap: () async {
-          Navigator.pop(ctx);
-          await pet.purchaseIapPlaceholder();
-          _toast();
-        },
       ),
     );
   }
@@ -258,14 +230,12 @@ class _PetHomePageState extends State<PetHomePage> {
       title: '布置家具',
       children: [
         Text(
-          '点选添加后布置：拖动 · 四角缩放 · 顶柄旋转。'
-          '每房间最多 ${PetFurniture.maxPerScene} 件，同款最多 ${PetFurniture.maxSameIdPerScene} 件。'
-          '货架来自 content_manifest（见绑定骨架文档）。',
+          '选择家具添加到小家，再拖动调整位置。每个房间最多 ${PetFurniture.maxPerScene} 件家具。',
           style: const TextStyle(fontSize: 12, color: Colors.black54),
         ),
         const SizedBox(height: 12),
         if (catalog.isEmpty)
-          const Text('当前场景暂无已登记家具，请先在 content_manifest 绑定。')
+          const Text('这个房间暂时没有可用家具。')
         else
           GridView.count(
             shrinkWrap: true,
@@ -344,9 +314,7 @@ class _PetHomePageState extends State<PetHomePage> {
   Widget _decorateBar() {
     final idx = _selectedFurn;
     String title = '布置：拖动 · 四角缩放 · 顶柄旋转';
-    if (idx != null &&
-        idx >= 0 &&
-        idx < pet.profile.furniture.length) {
+    if (idx != null && idx >= 0 && idx < pet.profile.furniture.length) {
       final f = pet.profile.furniture[idx];
       title =
           '${PetLabels.of(f.id)} · ${f.rotation}° · ${(f.scale * 100).round()}%';
@@ -440,184 +408,6 @@ class _PetHomePageState extends State<PetHomePage> {
     );
   }
 
-  Future<void> _showSchoolSheet() async {
-    final cfg = await PetCareerConfig.load();
-    if (!mounted) return;
-    final p = pet.profile;
-    await _showScrollSheet(
-      title: '学校 · ${p.ageYears}岁',
-      children: [
-        Text(
-          '德${p.virtue}  智${p.intel}  体${p.sport}  美${p.art}  劳${p.labor}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 10),
-        _PetSheetAction(
-          icon: Icons.cake_rounded,
-          label: '过生日（年龄+1）',
-          tint: const Color(0xFFFF8A65),
-          fill: const Color(0xFFFFF3E0),
-          onTap: () async {
-            await pet.ageUp();
-            if (mounted) Navigator.pop(context);
-            _toast();
-          },
-        ),
-        const SizedBox(height: 14),
-        const Text('课程', style: TextStyle(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        for (final s in cfg.subjects) ...[
-          _PetSheetAction(
-            icon: Icons.menu_book_rounded,
-            label: '上${s.name}课',
-            onTap: () async {
-              await pet.study(s.id);
-              if (mounted) Navigator.pop(context);
-              _toast();
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-        const SizedBox(height: 8),
-        const Text('职场', style: TextStyle(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 8),
-        for (final j in cfg.jobs) ...[
-          _PetSheetAction(
-            icon: Icons.work_outline_rounded,
-            label: '${j.name}（+${j.basePay}）',
-            tint: const Color(0xFF5C6BC0),
-            fill: const Color(0xFFE8EAF6),
-            onTap: () async {
-              await pet.work(jobId: j.id);
-              if (mounted) Navigator.pop(context);
-              _toast();
-            },
-          ),
-          const SizedBox(height: 8),
-        ],
-      ],
-    );
-  }
-
-  void _showSocialSheet() {
-    final friendCtrl = TextEditingController();
-    _showScrollSheet(
-      title: '社交 / 结婚',
-      children: [
-        Text(
-          '好友：${pet.profile.friends.isEmpty ? '暂无' : pet.profile.friends.join('、')}',
-        ),
-        Text(
-          '配偶：${pet.profile.spouseId.isEmpty ? '未婚' : pet.profile.spouseId}'
-          '　宝宝：${pet.profile.hasBaby ? '有' : '无'}',
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: friendCtrl,
-          decoration: const InputDecoration(
-            labelText: '好友 / 配偶 ID',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 10),
-        _PetSheetAction(
-          icon: Icons.person_add_alt_1_rounded,
-          label: '加好友',
-          onTap: () async {
-            final id = friendCtrl.text.trim();
-            if (id.isEmpty) return;
-            await pet.addFriend(id);
-            if (mounted) Navigator.pop(context);
-            _toast();
-          },
-        ),
-        const SizedBox(height: 8),
-        _PetSheetAction(
-          icon: Icons.favorite_rounded,
-          label: '求婚结婚',
-          tint: const Color(0xFFE97891),
-          fill: const Color(0xFFFFE4EC),
-          onTap: () async {
-            final id = friendCtrl.text.trim();
-            if (id.isEmpty) return;
-            await pet.marry(id);
-            if (mounted) Navigator.pop(context);
-            _toast();
-          },
-        ),
-        const SizedBox(height: 8),
-        _PetSheetAction(
-          icon: Icons.child_care_rounded,
-          label: '生子',
-          tint: const Color(0xFFFF8A65),
-          fill: const Color(0xFFFFF3E0),
-          onTap: () async {
-            await pet.haveBaby();
-            if (mounted) Navigator.pop(context);
-            _toast();
-          },
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          '合规：未成年人社交规则由产品侧另行配置；当前为内测简化闭环。',
-          style: TextStyle(fontSize: 12, color: Colors.black54),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _showShopSheet() async {
-    await PetContentCatalog.load();
-    if (!mounted) return;
-    final items = PetContentCatalog.shopItems();
-    _showScrollSheet(
-      title: '商店 · ${pet.profile.coins} 币',
-      children: [
-        if (items.isEmpty)
-          const Text('商店清单为空：请在 shop_catalog.json 登记已有资产。')
-        else
-          for (final e in items)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(e.label),
-              subtitle: Text('${e.price ?? 40} 币 · ${e.kind}'),
-              onTap: () async {
-                await pet.buySoft(e.id);
-                if (mounted) Navigator.pop(context);
-                _toast();
-              },
-            ),
-      ],
-    );
-  }
-
-  Future<void> _openAdventure() async {
-    final p = pet.profile;
-    final power = p.sport + p.labor + (p.mood ~/ 10);
-    final adv = PetAdventureGame(
-      playerPower: power,
-      stageLabel: '小院试炼',
-      hatId: p.hatId,
-      topId: p.topId,
-      bottomId: p.bottomId,
-      shoesId: p.shoesId,
-    );
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _PetAdventurePage(
-          game: adv,
-          onSettle: () async {
-            await pet.adventure();
-            if (mounted) {
-              Navigator.pop(context);
-              _toast();
-            }
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!FeatureFlags.petLifeSim) {
@@ -694,7 +484,8 @@ class _PetHomePageState extends State<PetHomePage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF5A4638).withValues(alpha: 0.75),
+                              color: const Color(0xFF5A4638)
+                                  .withValues(alpha: 0.75),
                             ),
                           ),
                         ),
@@ -712,7 +503,8 @@ class _PetHomePageState extends State<PetHomePage> {
                             ),
                             child: Text(
                               pet.lastMessage!,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -899,7 +691,9 @@ class _StatusBars extends StatelessWidget {
         children: [
           SizedBox(
             width: 36,
-            child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            child: Text(label,
+                style:
+                    const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
           Expanded(
             child: ClipRRect(
@@ -1096,99 +890,20 @@ class _DecorToolBtn extends StatelessWidget {
   }
 }
 
-class _PetSheetAction extends StatelessWidget {
-  const _PetSheetAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.tint = const Color(0xFF7E57C2),
-    this.fill = const Color(0xFFF3E5F5),
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color tint;
-  final Color fill;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: fill,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: tint.withValues(alpha: 0.28)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: tint, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    color: Color(0xFF5A4638),
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: tint.withValues(alpha: 0.7)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MoreGrid extends StatelessWidget {
   const _MoreGrid({
     required this.onDress,
     required this.onFurniture,
-    required this.onSchool,
-    required this.onWork,
-    required this.onSocial,
-    required this.onAdventure,
-    required this.onShop,
-    required this.onIap,
   });
 
   final VoidCallback onDress;
   final VoidCallback onFurniture;
-  final VoidCallback onSchool;
-  final VoidCallback onWork;
-  final VoidCallback onSocial;
-  final VoidCallback onAdventure;
-  final VoidCallback onShop;
-  final VoidCallback onIap;
 
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String, VoidCallback)>[
       (Icons.checkroom_rounded, '换衣间', onDress),
       (Icons.chair_rounded, '布置', onFurniture),
-      (Icons.school_rounded, '学校', onSchool),
-      (Icons.work_rounded, '打工', onWork),
-      (Icons.people_rounded, '社交', onSocial),
-      (Icons.sports_martial_arts_rounded, '冒险', onAdventure),
-      (Icons.storefront_rounded, '商店', onShop),
-      (Icons.card_giftcard_rounded, '内购', onIap),
     ];
     return SafeArea(
       child: Padding(
@@ -1196,13 +911,15 @@ class _MoreGrid extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('更多', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const Text('小家',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 16),
             GridView.count(
               shrinkWrap: true,
-              crossAxisCount: 4,
+              crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
+              childAspectRatio: 1.35,
               children: [
                 for (final it in items)
                   InkWell(
@@ -1216,7 +933,9 @@ class _MoreGrid extends StatelessWidget {
                           child: Icon(it.$1, color: const Color(0xFFE97891)),
                         ),
                         const SizedBox(height: 6),
-                        Text(it.$2, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        Text(it.$2,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
@@ -1224,98 +943,6 @@ class _MoreGrid extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 轻冒险页壳：与小家同色板，避免深夜蓝 + 系统默认按钮。
-class _PetAdventurePage extends StatefulWidget {
-  const _PetAdventurePage({
-    required this.game,
-    required this.onSettle,
-  });
-
-  final PetAdventureGame game;
-  final Future<void> Function() onSettle;
-
-  @override
-  State<_PetAdventurePage> createState() => _PetAdventurePageState();
-}
-
-class _PetAdventurePageState extends State<_PetAdventurePage> {
-  static const _ink = Color(0xFF5A4638);
-  static const _rose = Color(0xFFE97891);
-  static const _cream = Color(0xFFFFF6EE);
-
-  var _done = false;
-  var _settling = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.game.onFinished = (_) {
-      if (mounted) setState(() => _done = true);
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _cream,
-      appBar: AppBar(
-        title: Text(
-          '轻冒险 · ${widget.game.stageLabel}',
-          style: const TextStyle(
-            fontWeight: FontWeight.w800,
-            color: _ink,
-            fontSize: 17,
-          ),
-        ),
-        backgroundColor: const Color(0xFFFFF8F2),
-        foregroundColor: _ink,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          GameWidget(game: widget.game),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 28,
-            child: SafeArea(
-              top: false,
-              child: FilledButton(
-                onPressed: !_done || _settling
-                    ? null
-                    : () async {
-                        setState(() => _settling = true);
-                        await widget.onSettle();
-                      },
-                style: FilledButton.styleFrom(
-                  backgroundColor: _rose,
-                  disabledBackgroundColor: const Color(0xFFE8D5C4),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: _ink.withValues(alpha: 0.45),
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  elevation: 0,
-                ),
-                child: Text(
-                  _done ? (_settling ? '结算中…' : '结算并返回') : '对战中…',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

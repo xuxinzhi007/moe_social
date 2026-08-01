@@ -408,15 +408,9 @@ export function SlotItemProductionPanel({
 
         >
 
-          上传单图并绑定官方模型
+          导入自定义 PNG
 
         </button>
-
-        <span className="muted" style={{ fontSize: 10 }}>
-
-          推荐：Fooocus 单张 → 拖拽对齐 → 自动生成 walk+idle 格线
-
-        </span>
 
         <input
 
@@ -424,7 +418,7 @@ export function SlotItemProductionPanel({
 
           type="file"
 
-          accept="image/png,image/webp"
+          accept="image/png"
 
           style={{ display: 'none' }}
 

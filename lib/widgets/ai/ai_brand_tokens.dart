@@ -14,10 +14,16 @@ abstract final class AiBrandTokens {
   // ─── AI-exclusive accent / gradient colors ───────────────────────
   /// AI 气泡渐变起始色（紫红）
   static const gradientPink = Color(0xFF8A2387);
+
   /// AI 气泡渐变结束色（珊瑚红）
   static const gradientCoral = Color(0xFFE94057);
+
   /// AI 标题色（深灰蓝）
   static const titleColor = Color(0xFF1F2430);
+  static const companionInkMuted = Color(0xFF6B6175);
+  static const companionSurface = Color(0xFFFFFCFF);
+  static const companionBorder = Color(0xFFE9DFF0);
+  static const companionGlow = Color(0xFFFFE6EF);
 
   // ─── AI-exclusive gradients ──────────────────────────────────────
   /// 用户气泡渐变（紫红 → 珊瑚红）

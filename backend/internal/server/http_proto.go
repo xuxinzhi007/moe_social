@@ -14,6 +14,7 @@ import (
 	gamev1 "backend/api/game/v1"
 	giftv1 "backend/api/gift/v1"
 	landingv1 "backend/api/landing/v1"
+	lifev1 "backend/api/life/v1"
 	llmv1 "backend/api/llm/v1"
 	moepb "backend/api/moe/v1"
 	notifyv1 "backend/api/notify/v1"
@@ -37,12 +38,11 @@ import (
 	gamehttp "backend/internal/server/protohttp/game"
 	gifthttp "backend/internal/server/protohttp/gift"
 	landinghttp "backend/internal/server/protohttp/landing"
-	lifev1 "backend/api/life/v1"
 	lifehttp "backend/internal/server/protohttp/life"
-	pethttp "backend/internal/server/protohttp/pet"
 	llmhttp "backend/internal/server/protohttp/llm"
 	mediahttp "backend/internal/server/protohttp/media"
 	notifyhttp "backend/internal/server/protohttp/notify"
+	pethttp "backend/internal/server/protohttp/pet"
 	platformhttp "backend/internal/server/protohttp/platform"
 	posthttp "backend/internal/server/protohttp/post"
 	userhttp "backend/internal/server/protohttp/user"
@@ -63,11 +63,11 @@ import (
 	giftapp "backend/internal/service/gift"
 	landingapp "backend/internal/service/landing"
 	lifeapp "backend/internal/service/life"
-	petapp "backend/internal/service/pet"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
+	petapp "backend/internal/service/pet"
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
@@ -140,6 +140,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))
+		userhttp.RegisterAvatarPackRoutes(srv, d.UserApp)
 	}
 	if d.CommentApp != nil {
 		commentv1.RegisterCommentServiceHTTPServer(srv, commenthttp.New(d.CommentApp))

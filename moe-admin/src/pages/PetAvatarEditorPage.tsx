@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminPanel } from '../ui/AdminPanel'
 import { ListPageLayout } from '../ui'
-import { AssetFolderPanel } from '../features/moe-avatar/components/AssetFolderPanel'
+import { AssetPackPanel } from '../features/moe-avatar/components/AssetPackPanel'
 import { AvatarArchitectureNotice } from '../features/moe-avatar/components/AvatarArchitectureNotice'
 import { AvatarPreviewCanvas } from '../features/moe-avatar/components/AvatarPreviewCanvas'
 import { BaseLayerProductionPanel } from '../features/moe-avatar/components/BaseLayerProductionPanel'
 import { SlotItemProductionPanel } from '../features/moe-avatar/components/SlotItemProductionPanel'
+import { TemplateLibraryPanel } from '../features/moe-avatar/components/TemplateLibraryPanel'
 import { SlotItemThumb } from '../features/moe-avatar/components/SlotItemThumb'
 import { AvatarAssetStore } from '../features/moe-avatar/assetStore'
 import { itemLabel } from '../features/moe-avatar/labels'
@@ -15,6 +16,7 @@ import {
   downloadBlob,
   exportMoePackZip,
 } from '../features/moe-avatar/export/exportMoePack'
+import { createManifestFromTemplate, exampleCaseByTemplate, type AvatarTemplateId } from '../features/moe-avatar/editor/templateLibrary'
 import type {
   MoeAvatarManifest,
   OutfitSelection,
@@ -24,6 +26,7 @@ import type {
 import {
   MOE_AVATAR_MANIFEST_URL,
   MOE_AVATAR_PACK_BASE,
+  MOE_AVATAR_LEGACY_PACK_BASE,
 } from '../features/moe-avatar/constants'
 
 const DEFAULT_OUTFIT: OutfitSelection = {
@@ -33,15 +36,39 @@ const DEFAULT_OUTFIT: OutfitSelection = {
   shoesId: 'shoes_basic',
 }
 
-const SLOTS: { id: WearSlot; label: string }[] = [
-  { id: 'hat', label: '帽' },
-  { id: 'top', label: '衣' },
-  { id: 'bottom', label: '裤' },
-  { id: 'shoes', label: '鞋' },
+type Tab = 'editor' | 'templates' | 'assets' | 'manifest'
+type ProduceTarget = 'base' | 'slot'
+
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: 'editor', label: '生产编辑' },
+  { id: 'templates', label: '模板库' },
+  { id: 'assets', label: '资产包' },
+  { id: 'manifest', label: 'manifest JSON' },
 ]
 
-type Tab = 'editor' | 'assets' | 'manifest'
-type ProduceTarget = 'base' | 'slot'
+function buildOutfitForManifest(
+  nextManifest: MoeAvatarManifest,
+  seed: Record<string, string> = DEFAULT_OUTFIT,
+): OutfitSelection {
+  const next: OutfitSelection = { ...DEFAULT_OUTFIT, ...seed }
+  for (const slot of Object.keys(nextManifest.slots)) {
+    const key = `${slot}Id`
+    if (!(key in next)) next[key] = ''
+  }
+  return next
+}
+
+function outfitFromTemplateSelection(
+  nextManifest: MoeAvatarManifest,
+  selection: Partial<Record<string, string>>,
+): OutfitSelection {
+  const next = buildOutfitForManifest(nextManifest)
+  for (const [slot, id] of Object.entries(selection)) {
+    if (!id) continue
+    next[`${slot}Id`] = id
+  }
+  return next
+}
 
 /** 养成 · Moe Avatar 生产编辑器 */
 export function PetAvatarEditorPage() {
@@ -61,6 +88,7 @@ export function PetAvatarEditorPage() {
   const [produceTarget, setProduceTarget] = useState<ProduceTarget>('slot')
   const [exporting, setExporting] = useState(false)
   const [assetRevision, setAssetRevision] = useState(0)
+  const [packBaseUrl, setPackBaseUrl] = useState(MOE_AVATAR_PACK_BASE)
 
   const loadManifest = useCallback(async () => {
     setParseError('')
@@ -70,6 +98,7 @@ export function PetAvatarEditorPage() {
       const data = (await res.json()) as MoeAvatarManifest
       setManifest(data)
       setManifestText(JSON.stringify(data, null, 2))
+      setOutfit(buildOutfitForManifest(data))
       setMessage('已加载官方包 manifest · 可新建单品并上传 sheet')
     } catch (e) {
       setParseError(e instanceof Error ? e.message : '加载失败')
@@ -84,9 +113,28 @@ export function PetAvatarEditorPage() {
   const handleManifestChange = (next: MoeAvatarManifest) => {
     setManifest(next)
     setManifestText(JSON.stringify(next, null, 2))
+    setOutfit((current) => buildOutfitForManifest(next, current))
     setParseError('')
     setMessage('manifest 已更新')
   }
+
+  const loadTemplateManifest = useCallback(
+    (templateId: AvatarTemplateId, mode: 'example' | 'blank') => {
+      const example = exampleCaseByTemplate(templateId)[0]
+      const next = mode === 'example' && example ? example.manifest : createManifestFromTemplate(templateId)
+      handleManifestChange(next)
+      setOutfit(
+        mode === 'example' && example
+          ? outfitFromTemplateSelection(next, example.selection)
+          : buildOutfitForManifest(next),
+      )
+      const firstSlot = Object.keys(next.slots)[0] as WearSlot | undefined
+      if (firstSlot) setActiveSlot(firstSlot)
+      setTab('editor')
+      setMessage(mode === 'example' ? `已载入模板示例 · ${templateId}` : `已创建模板骨架 · ${templateId}`)
+    },
+    [handleManifestChange],
+  )
 
   const bumpAssets = () => setAssetRevision((n) => n + 1)
 
@@ -94,6 +142,17 @@ export function PetAvatarEditorPage() {
     assetStore.revoke(relPath)
     bumpAssets()
     setMessage(`已恢复官方包 · ${relPath}`)
+    setParseError('')
+  }
+
+  const deleteAssetResource = (relPath: string) => {
+    if (relPath.startsWith('_originals/')) {
+      assetStore.deleteKey(relPath)
+    } else {
+      assetStore.revoke(relPath)
+    }
+    bumpAssets()
+    setMessage(`已删除会话资源 · ${relPath}`)
     setParseError('')
   }
 
@@ -107,6 +166,15 @@ export function PetAvatarEditorPage() {
   const setSlotId = (id: string) => {
     setOutfit((o) => ({ ...o, [`${activeSlot}Id`]: id }))
   }
+
+  useEffect(() => {
+    if (!manifest) return
+    const slots = Object.keys(manifest.slots)
+    if (slots.length === 0) return
+    if (!slots.includes(activeSlot)) {
+      setActiveSlot(slots[0] as WearSlot)
+    }
+  }, [manifest, activeSlot])
 
   const applyManifestText = () => {
     try {
@@ -127,7 +195,7 @@ export function PetAvatarEditorPage() {
     try {
       const blob = await exportMoePackZip({
         manifest,
-        packBaseUrl: MOE_AVATAR_PACK_BASE,
+        packBaseUrl,
         assetStore,
         includeBaked: true,
       })
@@ -151,6 +219,12 @@ export function PetAvatarEditorPage() {
           <Link to="/biz/pet/content" className="btn" style={{ marginRight: 8 }}>
             总览
           </Link>
+          <button type="button" className="btn" style={{ marginRight: 8 }} onClick={() => setPackBaseUrl(MOE_AVATAR_PACK_BASE)}>
+            内容包
+          </button>
+          <button type="button" className="btn" style={{ marginRight: 8 }} onClick={() => setPackBaseUrl(MOE_AVATAR_LEGACY_PACK_BASE)}>
+            旧包
+          </button>
           <button
             type="button"
             className="btn primary"
@@ -162,28 +236,17 @@ export function PetAvatarEditorPage() {
         </>
       }
     >
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button
-          type="button"
-          className={`btn${tab === 'editor' ? ' primary' : ''}`}
-          onClick={() => setTab('editor')}
-        >
-          生产编辑
-        </button>
-        <button
-          type="button"
-          className={`btn${tab === 'assets' ? ' primary' : ''}`}
-          onClick={() => setTab('assets')}
-        >
-          当前资产包
-        </button>
-        <button
-          type="button"
-          className={`btn${tab === 'manifest' ? ' primary' : ''}`}
-          onClick={() => setTab('manifest')}
-        >
-          manifest JSON
-        </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {TABS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`btn${tab === item.id ? ' primary' : ''}`}
+            onClick={() => setTab(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
       {parseError ? <p style={{ color: 'crimson' }}>{parseError}</p> : null}
       {message ? <p className="muted">{message}</p> : null}
@@ -191,160 +254,173 @@ export function PetAvatarEditorPage() {
       {manifest ? <AvatarArchitectureNotice manifest={manifest} /> : null}
 
       {tab === 'editor' && manifest ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(260px, 1fr) minmax(200px, 240px) minmax(200px, 280px)',
-            gap: 16,
-            alignItems: 'start',
-          }}
-        >
-          <AdminPanel title="生产">
-            <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-              <button
-                type="button"
-                className={`btn${produceTarget === 'base' ? ' primary' : ''}`}
-                onClick={() => setProduceTarget('base')}
-              >
-                素体 base
-              </button>
-              <button
-                type="button"
-                className={`btn${produceTarget === 'slot' ? ' primary' : ''}`}
-                onClick={() => setProduceTarget('slot')}
-              >
-                槽位单品
-              </button>
-            </div>
-            {produceTarget === 'base' ? (
-              <BaseLayerProductionPanel
-                manifest={manifest}
-                assetStore={assetStore}
-                assetRevision={assetRevision}
-                packBaseUrl={MOE_AVATAR_PACK_BASE}
-                onManifestChange={handleManifestChange}
-                onAssetUploaded={bumpAssets}
-                onError={(msg) => {
-                  setParseError(msg)
-                  setMessage('')
-                }}
-                onMessage={(msg) => {
-                  setParseError('')
-                  setMessage(msg)
-                }}
-              />
-            ) : (
-              <SlotItemProductionPanel
-                manifest={manifest}
-                slot={activeSlot}
-                itemId={activeId}
-                assetStore={assetStore}
-                assetRevision={assetRevision}
-                packBaseUrl={MOE_AVATAR_PACK_BASE}
-                onManifestChange={handleManifestChange}
-                onSelectItem={setSlotId}
-                onError={(msg) => {
-                  setParseError(msg)
-                  setMessage('')
-                }}
-                onMessage={(msg) => {
-                  setParseError('')
-                  setMessage(msg)
-                }}
-                onAssetUploaded={bumpAssets}
-              />
-            )}
-          </AdminPanel>
-
-          <AdminPanel title="实时合成（App 同款叠层）">
-            <div style={{ display: 'flex', justifyContent: 'center', padding: 8 }}>
-              <AvatarPreviewCanvas
-                manifest={manifest}
-                outfit={outfit}
-                packBaseUrl={MOE_AVATAR_PACK_BASE}
-                assetStore={assetStore}
-                assetRevision={assetRevision}
-              />
-            </div>
-            <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
-              {manifest.displayName} · cell {manifest.cellSize}px · 切换 walk 可看行走
-            </p>
-          </AdminPanel>
-
-          <AdminPanel title="槽位 · 试穿选型">
-            <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
-              {SLOTS.map((s) => (
+        <div style={{ display: 'grid', gap: 16 }}>
+          <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+            当前资源根：<code>{packBaseUrl}</code>
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(260px, 1fr) minmax(200px, 240px) minmax(200px, 280px)',
+              gap: 16,
+              alignItems: 'start',
+            }}
+          >
+            <AdminPanel title="生产">
+              <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
                 <button
-                  key={s.id}
                   type="button"
-                  className={`btn${activeSlot === s.id ? ' primary' : ''}`}
-                  onClick={() => setActiveSlot(s.id)}
+                  className={`btn${produceTarget === 'base' ? ' primary' : ''}`}
+                  onClick={() => setProduceTarget('base')}
                 >
-                  {s.label}
+                  素体 base
                 </button>
-              ))}
-            </div>
-            <p className="muted" style={{ fontSize: 12 }}>
-              当前：{activeId ? itemLabel(activeId, manifest, activeSlot) : '未穿'}
-            </p>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))',
-                gap: 8,
-                maxHeight: 360,
-                overflowY: 'auto',
-              }}
-            >
-              {activeItems.map((id) => {
-                const selected = id === activeId
-                return (
+                <button
+                  type="button"
+                  className={`btn${produceTarget === 'slot' ? ' primary' : ''}`}
+                  onClick={() => setProduceTarget('slot')}
+                >
+                  槽位单品
+                </button>
+              </div>
+              {produceTarget === 'base' ? (
+                <BaseLayerProductionPanel
+                  manifest={manifest}
+                  assetStore={assetStore}
+                  assetRevision={assetRevision}
+                  packBaseUrl={packBaseUrl}
+                  onManifestChange={handleManifestChange}
+                  onAssetUploaded={bumpAssets}
+                  onError={(msg) => {
+                    setParseError(msg)
+                    setMessage('')
+                  }}
+                  onMessage={(msg) => {
+                    setParseError('')
+                    setMessage(msg)
+                  }}
+                />
+              ) : (
+                <SlotItemProductionPanel
+                  manifest={manifest}
+                  slot={activeSlot}
+                  itemId={activeId}
+                  assetStore={assetStore}
+                  assetRevision={assetRevision}
+                  packBaseUrl={packBaseUrl}
+                  onManifestChange={handleManifestChange}
+                  onSelectItem={setSlotId}
+                  onError={(msg) => {
+                    setParseError(msg)
+                    setMessage('')
+                  }}
+                  onMessage={(msg) => {
+                    setParseError('')
+                    setMessage(msg)
+                  }}
+                  onAssetUploaded={bumpAssets}
+                />
+              )}
+            </AdminPanel>
+
+            <AdminPanel title="实时合成（App 同款叠层）">
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 8 }}>
+                <AvatarPreviewCanvas
+                  manifest={manifest}
+                  outfit={outfit}
+                  packBaseUrl={packBaseUrl}
+                  assetStore={assetStore}
+                  assetRevision={assetRevision}
+                />
+              </div>
+              <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
+                {manifest.displayName} · cell {manifest.cellSize}px · 切换 walk 可看行走
+              </p>
+            </AdminPanel>
+
+            <AdminPanel title="槽位 · 试穿选型">
+              <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+                {manifest ? Object.keys(manifest.slots).map((slot) => (
                   <button
-                    key={id || '__none'}
+                    key={slot}
                     type="button"
-                    className="btn"
-                    onClick={() => setSlotId(id)}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: 8,
-                      border: selected ? '2px solid var(--accent, #e97891)' : '1px solid #ddd',
-                      borderRadius: 12,
-                      background: selected ? '#ffe4ec' : '#fff',
-                    }}
+                    className={`btn${activeSlot === slot ? ' primary' : ''}`}
+                    onClick={() => setActiveSlot(slot as WearSlot)}
                   >
-                    <SlotItemThumb
-                      manifest={manifest}
-                      packBaseUrl={MOE_AVATAR_PACK_BASE}
-                      slot={activeSlot}
-                      itemId={id}
-                      assetStore={assetStore}
-                      assetRevision={assetRevision}
-                    />
-                    <span style={{ fontSize: 11, fontWeight: selected ? 700 : 500 }}>
-                      {itemLabel(id, manifest, activeSlot)}
-                    </span>
+                    {slot}
                   </button>
-                )
-              })}
-            </div>
-          </AdminPanel>
+                )) : null}
+              </div>
+              <p className="muted" style={{ fontSize: 12 }}>
+                当前：{activeId ? itemLabel(activeId, manifest, activeSlot) : '未穿'}
+              </p>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))',
+                  gap: 8,
+                  maxHeight: 360,
+                  overflowY: 'auto',
+                }}
+              >
+                {activeItems.map((id) => {
+                  const selected = id === activeId
+                  return (
+                    <button
+                      key={id || '__none'}
+                      type="button"
+                      className="btn"
+                      onClick={() => setSlotId(id)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: 8,
+                        border: selected ? '2px solid var(--accent, #e97891)' : '1px solid #ddd',
+                        borderRadius: 12,
+                        background: selected ? '#ffe4ec' : '#fff',
+                      }}
+                    >
+                      <SlotItemThumb
+                        manifest={manifest}
+                        packBaseUrl={packBaseUrl}
+                        slot={activeSlot}
+                        itemId={id}
+                        assetStore={assetStore}
+                        assetRevision={assetRevision}
+                      />
+                      <span style={{ fontSize: 11, fontWeight: selected ? 700 : 500 }}>
+                        {itemLabel(id, manifest, activeSlot)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </AdminPanel>
+          </div>
+
         </div>
       ) : null}
 
+      {tab === 'templates' ? (
+        <AdminPanel title="模板库">
+          <TemplateLibraryPanel onLoadTemplate={loadTemplateManifest} />
+        </AdminPanel>
+      ) : null}
+
       {tab === 'assets' && manifest ? (
-        <AdminPanel title="当前资产包 · manifest 引用文件">
-          <AssetFolderPanel
+        <AdminPanel title="资产包">
+          <AssetPackPanel
             manifest={manifest}
-            packBaseUrl={MOE_AVATAR_PACK_BASE}
+            packBaseUrl={packBaseUrl}
             assetStore={assetStore}
             assetRevision={assetRevision}
             outfit={outfit}
             focusSlot={activeSlot}
             focusItemId={activeId}
             onRevert={revertAsset}
+            onDeleteResource={deleteAssetResource}
           />
         </AdminPanel>
       ) : null}
