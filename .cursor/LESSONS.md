@@ -30,6 +30,7 @@
 | **Moe 养成内容包（角色+家具+装饰）** | `docs/dev/moe-pet-content-pack.md` |
 | Moe Avatar 角色 Spec | `moe-avatar/` · `docs/dev/moe-avatar-admin.md` |
 | Pet Spine（远期） | `docs/dev/pet-spine-avatar.md` |
+| CodeGraph 开发导航 | `docs/dev/codegraph.md` |
 | Code Review | `code_review.md` |
 
 ## 交付

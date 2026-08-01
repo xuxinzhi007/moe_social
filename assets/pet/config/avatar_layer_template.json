@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "templateId": "moe-chibi-grid-v1",
+  "comment": "Moe Avatar 分层 sheet 生产模板 SSOT。见 docs/dev/pet-avatar-layer-template.md",
+  "cellSize": 64,
+  "directionRows": ["up", "left", "down", "right"],
+  "animations": {
+    "walk": { "cols": 9, "rows": 4 },
+    "idle": { "cols": 2, "rows": 4 }
+  },
+  "anchors": {
+    "origin": { "x": 32, "y": 58, "note": "脚底中心 · down 行 idle 帧0" },
+    "headCenter": { "x": 32, "y": 16 },
+    "torsoCenter": { "x": 32, "y": 34 }
+  },
+  "baseStyle": {
+    "target": "soft_chibi",
+    "officialMannequin": "assets/pet/character/",
+    "forbiddenSource": "lpc_ulpc_pixel_base",
+    "transitionNote": "当前 public pack 为 LPC 64px 过渡；正式包须换官方底模或 128 格软 Q 重绘"
+  },
+  "composeOrder": ["body", "bottom", "top", "shoes", "head", "face", "hat", "hair"],
+  "layerRules": {
+    "body": {
+      "label": "素体·身体",
+      "group": "base",
+      "paintRect": { "x0": 0.12, "y0": 0.22, "x1": 0.88, "y1": 0.92 },
+      "mustPaint": true,
+      "hint": "躯干+腿 · 无脸无发型"
+    },
+    "head": {
+      "label": "素体·头型",
+      "group": "base",
+      "paintRect": { "x0": 0.18, "y0": 0.02, "x1": 0.82, "y1": 0.38 },
+      "mustPaint": true,
+      "hint": "头型轮廓 · 无表情"
+    },
+    "face": {
+      "label": "素体·表情",
+      "group": "base",
+      "paintRect": { "x0": 0.22, "y0": 0.08, "x1": 0.78, "y1": 0.32 },
+      "mustPaint": true,
+      "hint": "眼嘴腮红 · 透明底"
+    },
+    "hair": {
+      "label": "素体·发型",
+      "group": "base",
+      "paintRect": { "x0": 0.1, "y0": 0, "x1": 0.9, "y1": 0.42 },
+      "mustPaint": true,
+      "hint": "可盖住部分头型 · 不画身体"
+    },
+    "top": {
+      "label": "槽位·上衣",
+      "group": "slot",
+      "paintRect": { "x0": 0.14, "y0": 0.24, "x1": 0.86, "y1": 0.62 },
+      "mustPaint": false,
+      "hint": "仅躯干上衣区 · 禁止整格铺满 · 禁止画头/裤/鞋"
+    },
+    "bottom": {
+      "label": "槽位·下装",
+      "group": "slot",
+      "paintRect": { "x0": 0.16, "y0": 0.48, "x1": 0.84, "y1": 0.88 },
+      "mustPaint": false,
+      "hint": "腰以下裤裙 · 不画鞋"
+    },
+    "shoes": {
+      "label": "槽位·鞋",
+      "group": "slot",
+      "paintRect": { "x0": 0.18, "y0": 0.78, "x1": 0.82, "y1": 0.98 },
+      "mustPaint": false,
+      "hint": "仅脚部区域"
+    },
+    "hat": {
+      "label": "槽位·帽",
+      "group": "slot",
+      "paintRect": { "x0": 0.08, "y0": 0, "x1": 0.92, "y1": 0.28 },
+      "mustPaint": false,
+      "hint": "头顶帽饰 · 不画脸"
+    }
+  },
+  "exportRules": {
+    "walkSize": "576x256",
+    "idleSize": "128x256",
+    "alphaRequired": true,
+    "thumbFrom": "idle.down.col0",
+    "maxAnchorDeviationPx": 2
+  },
+  "pipeline": {
+    "templateValidate": "moe-admin",
+    "batchAlign": "scripts/pet/align_layer_to_template.py",
+    "aiGenerateOptional": "local_fooocus",
+    "publishStore": "go_backend_p4"
+  }
+}

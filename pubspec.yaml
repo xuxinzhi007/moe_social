@@ -144,6 +144,11 @@ flutter:
     - assets/pet/character/
     - assets/pet/clothes/
     - assets/pet/furniture/
+    - assets/pet/moe_content/
+    - assets/pet/moe_content/avatar/
+    - assets/pet/moe_content/avatar/layers/
+    - assets/pet/moe_content/avatar/layers/base/
+    - assets/pet/moe_content/avatar/layers/slots/
     - assets/pet/adventure/
     - assets/pet/spine/
 

@@ -39,24 +39,44 @@
 
 | 阶段 | App |
 |------|-----|
-| 现在 | 仍用 `petLpcPrototype` + `lpc_catalog.json` |
-| 下一竖切 | `FeatureFlags.petMoeAvatar` + 读 `assets/pet/moe_avatar/manifest.json` |
+| **现在** | `FeatureFlags.petMoeAvatar=true` · `PetMoeAvatarComposer` 读 `assets/pet/moe_content/avatar/manifest.json` · 换衣间 + 小家走动 |
+| 回滚 | `petMoeAvatar=false` · `petLpcPrototype=true` 或 PNG |
 
-## 5. MVP 已做 / 待做
+## 5. 两种形象模式（重要）
+
+| 模式 | 配置 | 身体 | 换装 |
+|------|------|------|------|
+| **格线 sheet（本页 · 过渡）** | `petMoeAvatar=true` | 64px walk/idle 四方向格 · LPC 原型素体 | 各槽 **整张 sheet 叠层**；PNG 只画该部位、其余透明 |
+| **官方锚点模型（App 目标）** | `petMoeAvatar=false` | `assets/pet/character/` 头/躯干/腿/臂 + `avatar_stack.json` | 帽/衣/裤/鞋 **wearAnchors** 定位，分部位贴合 |
+
+- 用户预期的「头/帽/身/腿/脚各就各位」= **锚点模型**（见 [pet-layered-avatar.md](./pet-layered-avatar.md)），不是本页格线 sheet。
+- 本页 sheet 仅为 walk/idle 动画 **生产过渡**；正式美术应产出锚点分片或 Spine（[pet-spine-avatar.md](./pet-spine-avatar.md)）。
+- manifest 中**每个单品 id 必须有独立文件路径**（如 `top_hoodie_walk.png`），禁止多 id 共用一路径。
+
+## 6. 完整闭环（admin → App）
+
+```text
+1. admin /biz/pet/avatar → 生产编辑
+2. 下载 walk/idle 格线模板 → 按格绘制各部位 sheet
+3. 素体 base + 槽位单品：上传 PNG（自动校验尺寸）
+4. 实时合成预览 → 导出官方包 zip
+5. 解压到 assets/pet/moe_content/avatar/（覆盖 manifest + layers）
+6. flutter run → 换衣间任意组合 · 小家 walk/idle
+```
 
 | 已做 | 待做 |
 |------|------|
-| Canvas **实时合成**（上传后立即刷新） | cellSize 128 正式软 Q 美术 |
-| **单品生产**：新建 id · 上传 walk/idle · 删单品 | 后端上传 pack / admin 持久化 |
-| zip 导出 manifest/layers/thumbs/baked | 与 Flutter composer 联调 |
-| manifest JSON 高级编辑 Tab | 格线模板 PNG 下载 |
+| 格线模板下载 · 上传尺寸校验 · **智能裁剪（原图 _originals/）** | cellSize 128 正式软 Q 美术 |
+| 素体 base + 槽位单品生产 · 分层 zip 导出 | admin 服务端持久化 |
+| **Flutter 闭环**：换衣间 + 小家 compose | 远程 pack 热更新 |
+| manifest JSON 高级编辑 | 部件 rail 读 manifest label |
 
-## 6. 依赖
+## 7. 依赖
 
 - `jszip` — 官方包 zip（已加入 `moe-admin/package.json`）
 - 原生 `<canvas>` — 无需额外 UI 库
 
-## 7. 相关文档
+## 8. 相关文档
 
 - [moe-avatar/README.md](../../moe-avatar/README.md)
 - [moe-avatar/spec/editor-vision.md](../../moe-avatar/spec/editor-vision.md)

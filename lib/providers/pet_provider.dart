@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/pet_state.dart';
 import '../services/pet_career_config.dart';
 import '../services/pet_service.dart';
+import '../game/pet/pet_content_registry.dart';
 
 /// 养成状态：优先 API，失败本地持久化（保证可完整体验）。
 class PetProvider extends ChangeNotifier {
@@ -44,6 +45,8 @@ class PetProvider extends ChangeNotifier {
   Future<void> load() async {
     _busy = true;
     notifyListeners();
+    // P1：统一 manifest 只读加载；缺失时静默 legacy 路径。
+    unawaited(PetContentRegistry.loadIfPresent());
     final remote = await _service.fetchState();
     if (remote != null) {
       _profile = remote.copyWith(

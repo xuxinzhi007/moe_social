@@ -3,13 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants/feature_flags.dart';
 import '../../game/pet/pet_art.dart';
+import '../../game/pet/pet_avatar_backend.dart';
 import '../../game/pet/pet_avatar_stack.dart';
 import '../../game/pet/pet_labels.dart';
-import '../../game/pet/pet_lpc_composer.dart';
 import '../../game/pet/pet_lpc_item_thumb.dart';
 import '../../game/pet/pet_lpc_sheet.dart';
+import '../../game/pet/pet_moe_item_thumb.dart';
+import '../../game/pet/pet_sheet_avatar.dart';
 import '../../models/pet_state.dart';
 import '../../providers/pet_provider.dart';
 
@@ -70,7 +71,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
   String _activeSlot = 'top';
   var _saving = false;
   var _fineTune = false;
-  PetLpcComposer? _lpcComposer;
+  final Map<String, List<String>> _sheetCatalog = {};
 
   static const _canonicalHats = [
     'hat_cap',
@@ -115,13 +116,21 @@ class _PetDressingPageState extends State<PetDressingPage> {
     _shoesId = p.shoesId;
     _layout = p.wearLayout;
     _loadAnchors();
-    if (_lpcMode) _loadLpcComposer();
+    if (_sheetMode) _loadSheetCatalog();
   }
 
-  Future<void> _loadLpcComposer() async {
-    final composer = await PetLpcComposer.load();
+  Future<void> _loadSheetCatalog() async {
+    const slots = ['hat', 'top', 'bottom', 'shoes'];
+    final m = <String, List<String>>{};
+    for (final s in slots) {
+      m[s] = await PetSheetAvatar.itemIdsForSlot(s);
+    }
     if (!mounted) return;
-    setState(() => _lpcComposer = composer);
+    setState(() {
+      _sheetCatalog
+        ..clear()
+        ..addAll(m);
+    });
   }
 
   Future<void> _loadAnchors() async {
@@ -137,8 +146,8 @@ class _PetDressingPageState extends State<PetDressingPage> {
         _ => _shoes,
       };
 
-  List<String> _lpcIds(String slot) {
-    final catalog = _lpcComposer?.itemIdsForSlot(slot) ?? const [];
+  List<String> _sheetIds(String slot) {
+    final catalog = _sheetCatalog[slot] ?? const [];
     if (catalog.isEmpty) return const [''];
     final canon = switch (slot) {
       'hat' => _canonicalHats,
@@ -157,7 +166,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
   }
 
   List<String> get _activeIds =>
-      _lpcMode ? _lpcIds(_activeSlot) : _legacyIds(_activeSlot);
+      _sheetMode ? _sheetIds(_activeSlot) : _legacyIds(_activeSlot);
 
   String get _activeId => switch (_activeSlot) {
         'hat' => _hatId,
@@ -221,7 +230,9 @@ class _PetDressingPageState extends State<PetDressingPage> {
 
   static const _railPad = 12.0;
 
-  bool get _lpcMode => FeatureFlags.petLpcPrototype;
+  bool get _sheetMode => PetSheetAvatar.isActive;
+
+  bool get _moeMode => resolvePetAvatarBackend() == PetAvatarBackend.moe;
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +275,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
                   shoesId: _shoesId,
                   layout: _layout,
                   activeSlot: _activeSlot,
-                  fineTune: !_lpcMode && _fineTune && _activeId.isNotEmpty,
+                  fineTune: !_sheetMode && _fineTune && _activeId.isNotEmpty,
                   onUpdateActive: _updateLayer,
                 ),
               ),
@@ -275,10 +286,10 @@ class _PetDressingPageState extends State<PetDressingPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      _lpcMode
+                      _sheetMode
                           ? (_activeId.isEmpty
-                              ? 'LPC · 未穿 · 部件由 catalog 维护'
-                              : 'LPC · ${PetLabels.of(_activeId)} · 同套 sheet 叠层')
+                              ? '${_moeMode ? 'Moe' : 'LPC'} · 未穿 · manifest 槽位'
+                              : '${_moeMode ? 'Moe' : 'LPC'} · ${PetLabels.of(_activeId)} · 分层叠穿')
                           : (_activeId.isEmpty
                               ? '未穿 · 点「无」可脱下'
                               : '${PetLabels.of(_activeId)} · '
@@ -291,7 +302,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
                       ),
                     ),
                   ),
-                  if (!_lpcMode && _fineTune)
+                  if (!_sheetMode && _fineTune)
                     TextButton(
                       onPressed:
                           _activeId.isEmpty ? null : _resetActiveToAnchor,
@@ -301,7 +312,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
                       ),
                       child: const Text('复位'),
                     ),
-                  if (!_lpcMode)
+                  if (!_sheetMode)
                     FilterChip(
                       label: const Text('微调'),
                       selected: _fineTune,
@@ -341,7 +352,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
                 itemBuilder: (_, i) {
                   final id = _activeIds[i];
                   final on = id == _activeId;
-                  final asset = _lpcMode ? null : _asset(_activeSlot, id);
+                  final asset = _sheetMode ? null : _asset(_activeSlot, id);
                   return Material(
                     color: on
                         ? const Color(0xFFFFE4EC)
@@ -373,15 +384,20 @@ class _PetDressingPageState extends State<PetDressingPage> {
                                       Icons.block,
                                       color: Color(0xFFB0A090),
                                     )
-                                  : _lpcMode
-                                      ? PetLpcItemThumb(
-                                          slot: _activeSlot,
-                                          itemId: id,
-                                          hatId: _hatId,
-                                          topId: _topId,
-                                          bottomId: _bottomId,
-                                          shoesId: _shoesId,
-                                        )
+                                  : _sheetMode
+                                      ? (_moeMode
+                                          ? PetMoeItemThumb(
+                                              slot: _activeSlot,
+                                              itemId: id,
+                                            )
+                                          : PetLpcItemThumb(
+                                              slot: _activeSlot,
+                                              itemId: id,
+                                              hatId: _hatId,
+                                              topId: _topId,
+                                              bottomId: _bottomId,
+                                              shoesId: _shoesId,
+                                            ))
                                       : Image.asset(
                                           asset ?? '',
                                           fit: BoxFit.contain,
@@ -532,7 +548,7 @@ class _DressPreviewState extends State<_DressPreview>
   late final AnimationController _idleCtrl;
   var _idleFrame = 0;
 
-  bool get _lpcMode => FeatureFlags.petLpcPrototype;
+  bool get _sheetMode => PetSheetAvatar.isActive;
 
   @override
   void initState() {
@@ -542,7 +558,7 @@ class _DressPreviewState extends State<_DressPreview>
       duration: const Duration(milliseconds: 900),
     )..repeat();
     _idleCtrl.addListener(() {
-      if (!_lpcMode || !mounted) return;
+      if (!_sheetMode || !mounted) return;
       final f = (_idleCtrl.value * PetLpcSheet.idleCols).floor() %
           PetLpcSheet.idleCols;
       if (f != _idleFrame) setState(() => _idleFrame = f);
@@ -568,9 +584,8 @@ class _DressPreviewState extends State<_DressPreview>
     final key =
         '${widget.hatId}|${widget.topId}|${widget.bottomId}|${widget.shoesId}';
     _key = key;
-    if (_lpcMode) {
-      final composer = await PetLpcComposer.load();
-      final sheet = await composer.composeOutfit(
+    if (_sheetMode) {
+      final sheet = await PetSheetAvatar.composeOutfit(
         hatId: widget.hatId,
         topId: widget.topId,
         bottomId: widget.bottomId,

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AdminPanel } from '../ui/AdminPanel'
 import { ListPageLayout } from '../ui'
 import { exportUnifiedPetPack } from '../features/moe-content/exportUnifiedPetPack'
+import { PetContentMaturityPanel } from '../features/moe-content/PetContentMaturityPanel'
 
 const SECTIONS = [
   {
@@ -45,10 +46,12 @@ export function PetContentHubPage() {
   return (
     <ListPageLayout
       title="养成 · 内容编辑器"
-      description="官方内容包平台 · 角色 / 世界对象 / 场景（长期 SSOT: docs/dev/moe-pet-world-object.md)"
+      description="官方内容包平台 · 角色 / 世界对象 / 场景（成熟度 SSOT: docs/dev/pet-content-pack-maturity.md)"
     >
+      <PetContentMaturityPanel />
       <p className="muted" style={{ marginTop: 0 }}>
-        SSOT：<code>docs/dev/moe-pet-content-pack.md</code>
+        规范 SSOT：<code>docs/dev/moe-pet-content-pack.md</code> ·{' '}
+        <code>petContentPackTypes.ts</code>
       </p>
 
       <AdminPanel title="统一内容包（v1）">

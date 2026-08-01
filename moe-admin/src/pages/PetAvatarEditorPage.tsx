@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdminPanel } from '../ui/AdminPanel'
 import { ListPageLayout } from '../ui'
+import { AssetFolderPanel } from '../features/moe-avatar/components/AssetFolderPanel'
+import { AvatarArchitectureNotice } from '../features/moe-avatar/components/AvatarArchitectureNotice'
 import { AvatarPreviewCanvas } from '../features/moe-avatar/components/AvatarPreviewCanvas'
+import { BaseLayerProductionPanel } from '../features/moe-avatar/components/BaseLayerProductionPanel'
 import { SlotItemProductionPanel } from '../features/moe-avatar/components/SlotItemProductionPanel'
 import { SlotItemThumb } from '../features/moe-avatar/components/SlotItemThumb'
 import { AvatarAssetStore } from '../features/moe-avatar/assetStore'
@@ -37,7 +40,8 @@ const SLOTS: { id: WearSlot; label: string }[] = [
   { id: 'shoes', label: '鞋' },
 ]
 
-type Tab = 'editor' | 'manifest'
+type Tab = 'editor' | 'assets' | 'manifest'
+type ProduceTarget = 'base' | 'slot'
 
 /** 养成 · Moe Avatar 生产编辑器 */
 export function PetAvatarEditorPage() {
@@ -54,6 +58,7 @@ export function PetAvatarEditorPage() {
   const [message, setMessage] = useState('')
   const [outfit, setOutfit] = useState<OutfitSelection>(DEFAULT_OUTFIT)
   const [activeSlot, setActiveSlot] = useState<WearSlot>('top')
+  const [produceTarget, setProduceTarget] = useState<ProduceTarget>('slot')
   const [exporting, setExporting] = useState(false)
   const [assetRevision, setAssetRevision] = useState(0)
 
@@ -84,6 +89,13 @@ export function PetAvatarEditorPage() {
   }
 
   const bumpAssets = () => setAssetRevision((n) => n + 1)
+
+  const revertAsset = (relPath: string) => {
+    assetStore.revoke(relPath)
+    bumpAssets()
+    setMessage(`已恢复官方包 · ${relPath}`)
+    setParseError('')
+  }
 
   const activeItems = useMemo(() => {
     if (!manifest) return ['']
@@ -160,15 +172,23 @@ export function PetAvatarEditorPage() {
         </button>
         <button
           type="button"
+          className={`btn${tab === 'assets' ? ' primary' : ''}`}
+          onClick={() => setTab('assets')}
+        >
+          当前资产包
+        </button>
+        <button
+          type="button"
           className={`btn${tab === 'manifest' ? ' primary' : ''}`}
           onClick={() => setTab('manifest')}
         >
           manifest JSON
         </button>
       </div>
-
       {parseError ? <p style={{ color: 'crimson' }}>{parseError}</p> : null}
       {message ? <p className="muted">{message}</p> : null}
+
+      {manifest ? <AvatarArchitectureNotice manifest={manifest} /> : null}
 
       {tab === 'editor' && manifest ? (
         <div
@@ -179,20 +199,61 @@ export function PetAvatarEditorPage() {
             alignItems: 'start',
           }}
         >
-          <AdminPanel title="单品生产">
-            <SlotItemProductionPanel
-              manifest={manifest}
-              slot={activeSlot}
-              itemId={activeId}
-              assetStore={assetStore}
-              onManifestChange={handleManifestChange}
-              onSelectItem={setSlotId}
-              onError={(msg) => {
-                setParseError(msg)
-                setMessage('')
-              }}
-              onAssetUploaded={bumpAssets}
-            />
+          <AdminPanel title="生产">
+            <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+              <button
+                type="button"
+                className={`btn${produceTarget === 'base' ? ' primary' : ''}`}
+                onClick={() => setProduceTarget('base')}
+              >
+                素体 base
+              </button>
+              <button
+                type="button"
+                className={`btn${produceTarget === 'slot' ? ' primary' : ''}`}
+                onClick={() => setProduceTarget('slot')}
+              >
+                槽位单品
+              </button>
+            </div>
+            {produceTarget === 'base' ? (
+              <BaseLayerProductionPanel
+                manifest={manifest}
+                assetStore={assetStore}
+                assetRevision={assetRevision}
+                packBaseUrl={MOE_AVATAR_PACK_BASE}
+                onManifestChange={handleManifestChange}
+                onAssetUploaded={bumpAssets}
+                onError={(msg) => {
+                  setParseError(msg)
+                  setMessage('')
+                }}
+                onMessage={(msg) => {
+                  setParseError('')
+                  setMessage(msg)
+                }}
+              />
+            ) : (
+              <SlotItemProductionPanel
+                manifest={manifest}
+                slot={activeSlot}
+                itemId={activeId}
+                assetStore={assetStore}
+                assetRevision={assetRevision}
+                packBaseUrl={MOE_AVATAR_PACK_BASE}
+                onManifestChange={handleManifestChange}
+                onSelectItem={setSlotId}
+                onError={(msg) => {
+                  setParseError(msg)
+                  setMessage('')
+                }}
+                onMessage={(msg) => {
+                  setParseError('')
+                  setMessage(msg)
+                }}
+                onAssetUploaded={bumpAssets}
+              />
+            )}
           </AdminPanel>
 
           <AdminPanel title="实时合成（App 同款叠层）">
@@ -205,8 +266,8 @@ export function PetAvatarEditorPage() {
                 assetRevision={assetRevision}
               />
             </div>
-            <p className="muted" style={{ fontSize: 12, margin: 0 }}>
-              {manifest.displayName} · cell {manifest.cellSize}px
+            <p className="muted" style={{ fontSize: 12, margin: 0, textAlign: 'center' }}>
+              {manifest.displayName} · cell {manifest.cellSize}px · 切换 walk 可看行走
             </p>
           </AdminPanel>
 
@@ -271,6 +332,21 @@ export function PetAvatarEditorPage() {
             </div>
           </AdminPanel>
         </div>
+      ) : null}
+
+      {tab === 'assets' && manifest ? (
+        <AdminPanel title="当前资产包 · manifest 引用文件">
+          <AssetFolderPanel
+            manifest={manifest}
+            packBaseUrl={MOE_AVATAR_PACK_BASE}
+            assetStore={assetStore}
+            assetRevision={assetRevision}
+            outfit={outfit}
+            focusSlot={activeSlot}
+            focusItemId={activeId}
+            onRevert={revertAsset}
+          />
+        </AdminPanel>
       ) : null}
 
       {tab === 'manifest' ? (

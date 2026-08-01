@@ -42,6 +42,7 @@ import { PlatformPage } from './pages/PlatformPage'
 import { PetAvatarEditorPage } from './pages/PetAvatarEditorPage'
 import { PetContentHubPage, PetDecorEditorPage } from './pages/PetContentHubPage'
 import { PetFurnitureEditorPage } from './pages/PetFurnitureEditorPage'
+import { CodeGraphPage } from './pages/CodeGraphPage'
 
 function PlatformTabRedirect({ tab }: { tab: string }) {
   return <Navigate to={`/infra/platform?tab=${tab}`} replace />
@@ -121,6 +122,7 @@ export default function App() {
                 <Route path="infra/build" element={<BuildPage />} />
                 <Route path="infra/release" element={<ReleasePage />} />
                 <Route path="infra/jobs" element={<JobsPage />} />
+                <Route path="infra/dev/codegraph" element={<CodeGraphPage />} />
                 <Route path="infra/data" element={<PlatformTabRedirect tab="data" />} />
                 <Route path="infra/app-config" element={<PlatformTabRedirect tab="config" />} />
 

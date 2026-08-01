@@ -35,6 +35,7 @@
 /* feature (cross-page; was planned as domains/) */
 @import './feature/brain.css';
 @import './feature/data-domain-map.css';
+@import './feature/codegraph.css';
 
 /* pages — login shell first, soft-particles overrides hero */
 @import './pages/login.css';

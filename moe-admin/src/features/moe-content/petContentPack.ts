@@ -4,7 +4,22 @@
  */
 
 import type { MoeAvatarManifest, MoeAvatarSection } from '../moe-avatar/types'
+import type {
+  PetContentPackManifestV1,
+  PetContentPackPublish,
+} from './petContentPackTypes'
+import { validatePackManifest } from './petContentPackTypes'
 import type { WorldObjectDef } from './worldObject'
+
+export type {
+  PetContentPackManifest,
+  PetContentPackManifestV1,
+  PetContentPackManifestV2,
+  PetContentPackPublish,
+  ScenePreset,
+  ScenePresetInstance,
+} from './petContentPackTypes'
+export { isPackManifestV2, validatePackManifest } from './petContentPackTypes'
 
 /** 动画由 Moe 在 manifest 注册；App 只播放 catalog 内 key，不依赖 ULPC 全集 */
 export type MoeAnimationPolicy = {
@@ -38,14 +53,6 @@ export type LegacyFurnitureManifest = {
   items: Record<string, LegacyFurnitureItem>
 }
 
-/** 统一内容包 v1（当前实现） */
-export type PetContentPackManifestV1 = {
-  specVersion: '1'
-  packId: string
-  displayName: string
-  avatar: MoeAvatarSection
-  objects: Record<string, WorldObjectDef>
-}
 
 const DEFAULT_OBJECT_INTERACTION: NonNullable<WorldObjectDef['interaction']> = {
   draggable: true,
@@ -98,15 +105,28 @@ export function avatarManifestToSection(
 export function buildUnifiedManifest(
   avatarManifest: MoeAvatarManifest,
   furnitureManifest: LegacyFurnitureManifest,
-  options?: { packId?: string; displayName?: string },
+  options?: {
+    packId?: string
+    displayName?: string
+    publish?: PetContentPackPublish
+  },
 ): PetContentPackManifestV1 {
-  return {
+  const manifest: PetContentPackManifestV1 = {
     specVersion: '1',
     packId: options?.packId ?? 'moe-official-pet-v1',
     displayName: options?.displayName ?? 'Moe 官方养成包',
+    publish: options?.publish ?? {
+      version: '1.0.0',
+      builtAt: new Date().toISOString(),
+    },
     avatar: avatarManifestToSection(avatarManifest),
     objects: furnitureItemsToObjects(furnitureManifest.items),
   }
+  const errors = validatePackManifest(manifest)
+  if (errors.length > 0) {
+    console.warn('pack manifest validation:', errors)
+  }
+  return manifest
 }
 
 /** 收集 avatar 子包内相对路径（layers/...） */

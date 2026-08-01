@@ -202,6 +202,22 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
         { kind: 'item', to: '/infra/jobs', label: '任务审计', title: 'Deploy Agent 任务列表' },
       ],
     },
+    {
+      kind: 'group',
+      id: 'infra-dev',
+      label: '开发工具',
+      icon: 'data',
+      caption: 'CodeGraph · 只读导航',
+      defaultOpen: false,
+      children: [
+        {
+          kind: 'item',
+          to: '/infra/dev/codegraph',
+          label: 'CodeGraph',
+          title: '跨栈依赖导航图谱（自动生成）',
+        },
+      ],
+    },
   ],
 }
 
