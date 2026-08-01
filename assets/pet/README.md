@@ -36,12 +36,28 @@
 | `room/yard_bg.png` | 仍缺（1×1 占位 → Canvas） |
 | `room/bedroom_bg.png` | 仍缺（1×1 占位 → Canvas） |
 
+## 装扮 A 方案（主路径）
+
+身体拆层 + 服装插槽，深度表见 `docs/dev/pet-layered-avatar.md`。
+
+深度表配置：`config/avatar_stack.json`（改 `order` 即可）。  
+已备：`torso.png`（无脸身体）、`head.png`（头）。可选再补 `legs` / `arms`、外套 `_back/_front`。
+
+Spine（C）仅远期：`assets/pet/spine/` · `docs/dev/pet-spine-avatar.md`。
+
+## LPC 短跑（个人流水线）
+
+Flag：`petLpcPrototype` · 文档：`docs/dev/pet-lpc-pipeline.md`  
+Sheet：`lpc/hero_walk.png`、`lpc/hero_idle.png`（可用本机 Universal LPC Generator 覆盖）。
+
 ## 仍缺（P0）
 
 | 路径 | 说明 |
 |------|------|
 | 服装变体 ×6 | 现仅各 1 套基础款；装扮面板其它 ID 回落 `*_basic` / `hat_cap` |
-| `head` / `face` 独立层 | 现合并在 `body` + `ear` |
+| `character/head.png` | **关键**：无则合体模式（鞋裤在下、衣帽在上） |
+| `legs` / `torso` / `arms` | 分层增强；缺则用 model 充躯干 |
+| `{top_id}_back/_front` | 外套前后片（可选） |
 
 ## 缺图策略
 

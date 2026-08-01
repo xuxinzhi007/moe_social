@@ -39,6 +39,9 @@ import { AdminAccountsPage } from './pages/AdminAccountsPage'
 import { AuditLogsPage } from './pages/AuditLogsPage'
 import { MediaGalleryPage } from './pages/MediaGalleryPage'
 import { PlatformPage } from './pages/PlatformPage'
+import { PetAvatarEditorPage } from './pages/PetAvatarEditorPage'
+import { PetContentHubPage, PetDecorEditorPage } from './pages/PetContentHubPage'
+import { PetFurnitureEditorPage } from './pages/PetFurnitureEditorPage'
 
 function PlatformTabRedirect({ tab }: { tab: string }) {
   return <Navigate to={`/infra/platform?tab=${tab}`} replace />
@@ -87,6 +90,11 @@ export default function App() {
                 <Route path="biz/content/community" element={<CommunityGroupsPage />} />
                 <Route path="biz/content/reports" element={<ReportsPage />} />
                 <Route path="biz/growth" element={<GrowthPage />} />
+                <Route path="biz/pet/content" element={<PetContentHubPage />} />
+                <Route path="biz/pet/avatar" element={<PetAvatarEditorPage />} />
+                <Route path="biz/pet/furniture" element={<PetFurnitureEditorPage />} />
+                <Route path="biz/pet/decor" element={<PetDecorEditorPage />} />
+                <Route path="biz/pet/lpc" element={<Navigate to="/biz/pet/avatar" replace />} />
                 <Route path="biz/announcements" element={<AnnouncementsPage />} />
                 <Route path="biz/update" element={<AppReleasePage />} />
                 <Route path="biz/notify" element={<NotifyPage />} />

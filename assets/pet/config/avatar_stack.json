@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "comment": "正式分层穿搭：order=深度；wearAnchors=相对模型的默认锚点。见 docs/dev/pet-layered-avatar.md",
+  "body": {
+    "legs": "assets/pet/character/legs.png",
+    "torso": "assets/pet/character/torso.png",
+    "arms": "assets/pet/character/arms.png",
+    "head": "assets/pet/character/head.png",
+    "ear": "assets/pet/character/ear.png",
+    "fallbackWhole": "assets/pet/character/model.png"
+  },
+  "order": [
+    "shoes",
+    "bottom",
+    "legs",
+    "torso",
+    "top_back",
+    "arms",
+    "top_front",
+    "head",
+    "hat"
+  ],
+  "wearAnchors": {
+    "hat": { "ox": 0, "oy": -0.30, "scale": 0.42, "rot": 0 },
+    "top": { "ox": 0, "oy": 0.06, "scale": 0.58, "rot": 0 },
+    "bottom": { "ox": 0, "oy": 0.28, "scale": 0.50, "rot": 0 },
+    "shoes": { "ox": 0, "oy": 0.42, "scale": 0.40, "rot": 0 }
+  }
+}

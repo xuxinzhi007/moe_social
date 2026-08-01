@@ -27,6 +27,7 @@ description: >-
 - 反模式 → [references/anti-patterns.md](references/anti-patterns.md)
 - **Life / 小世界** → 必须叠加 [digital-life](../digital-life/SKILL.md)（勿只读本 skill）
 - **Flame / GameWidget / `lib/game/life/`** → 再叠加 [flame-life-world](../flame-life-world/SKILL.md)（相机手势 SSOT）
+- **Pet 小家（顺手养）** → 见下方 §0.7；装扮 A：`docs/dev/pet-layered-avatar.md`；LPC 短跑：`docs/dev/pet-lpc-pipeline.md`
 - 动画 / Ticker 踩坑 → 见下方 §1.1（`flutter analyze` **抓不到**）
 
 改动幅度：始终叠加 [implementation-guardrails](../implementation-guardrails/SKILL.md)。
@@ -41,6 +42,22 @@ description: >-
 - 主 Tab ≤4；实验无入口、无假开放路由（Flag=false 时）。
 - SSOT：`docs/product/product-positioning.md` + `lib/constants/feature_flags.dart`。
 - 目录：`lib/pages/<domain>/` · `widgets/` · `services/` · `providers/` · `app/app_routes.dart`（重页 deferred）。
+
+---
+
+## 0.7 Pet「社交 App 里顺手养」（体验条）
+
+养成是 Companion 旁路，不是独立游戏大厅。改 `lib/pages/pet/`、`lib/game/pet/` 时：
+
+| 条 | 必须 |
+|----|------|
+| **进门角色感** | 第一眼是完整角色，不是拼贴调试台；诊断 UI 默认收起 |
+| **移动** | 优先「房间内自主走动 + 可拖拽打断」；不要只有死拖放 |
+| **换衣** | 模型锚点 / 同画布 sheet，不是自由贴纸；「无」可脱 |
+| **主循环** | 喂食/照料有可见反馈；空壳九宫格勿抢戏 |
+| **后端切换** | `resolvePetAvatarBackend()`：Spine → LPC 短跑 Flag → PNG；Flag 可回滚 |
+
+**LPC 短跑**（`petLpcPrototype`）：用 Universal LPC Generator 打通 sheet 流水线；换装先在 Generator 完成再覆盖 `assets/pet/lpc/`。正式萌宠画风未定时，勿删 A 方案代码。
 
 ---
 

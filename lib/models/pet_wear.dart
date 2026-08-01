@@ -65,11 +65,12 @@ class PetWearLayout {
   final PetWearLayer bottom;
   final PetWearLayer shoes;
 
+  /// 相对角色模型的默认锚点（与 `avatar_stack.json` wearAnchors 对齐）。
   static const defaults = PetWearLayout(
-    hat: PetWearLayer(ox: 0, oy: -0.34, scale: 0.4),
-    top: PetWearLayer(ox: 0, oy: 0.02, scale: 0.52),
-    bottom: PetWearLayer(ox: 0, oy: 0.22, scale: 0.48),
-    shoes: PetWearLayer(ox: 0, oy: 0.38, scale: 0.38),
+    hat: PetWearLayer(ox: 0, oy: -0.30, scale: 0.42),
+    top: PetWearLayer(ox: 0, oy: 0.06, scale: 0.58),
+    bottom: PetWearLayer(ox: 0, oy: 0.28, scale: 0.50),
+    shoes: PetWearLayer(ox: 0, oy: 0.42, scale: 0.40),
   );
 
   PetWearLayer slot(String name) => switch (name) {
