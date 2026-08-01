@@ -10,7 +10,7 @@ import '../../models/pet_state.dart';
 import 'pet_art.dart';
 import 'pet_avatar_backend.dart';
 import 'pet_avatar_stack.dart';
-import 'pet_lpc_composer.dart';
+import 'pet_sheet_avatar.dart';
 import 'pet_lpc_sheet.dart';
 
 /// 养成小家 Room：固定竖屏舞台；布置模式拖家具/旋转；角色可缩小拖动。
@@ -267,12 +267,13 @@ class _PetActor extends PositionComponent
   int _dir = 2; // down
   bool _moving = false;
 
-  bool get _useLpc => resolvePetAvatarBackend() == PetAvatarBackend.lpc;
+  bool get _useSheet {
+    final b = resolvePetAvatarBackend();
+    return b == PetAvatarBackend.lpc || b == PetAvatarBackend.moe;
+  }
 
-  double get normX =>
-      (position.x / PetRoomGame.worldWidth).clamp(0.12, 0.88);
-  double get normY =>
-      (position.y / PetRoomGame.worldHeight).clamp(0.35, 0.88);
+  double get normX => (position.x / PetRoomGame.worldWidth).clamp(0.12, 0.88);
+  double get normY => (position.y / PetRoomGame.worldHeight).clamp(0.35, 0.88);
 
   void apply(PetProfile profile, {bool forcePosition = true}) {
     _profile = profile;
@@ -280,7 +281,7 @@ class _PetActor extends PositionComponent
       if (!_placed) {
         _placeFromNorm(profile.actorX, profile.actorY);
         _placed = true;
-      } else if (!_useLpc && forcePosition) {
+      } else if (!_useSheet && forcePosition) {
         // PNG 模式：跟随存档坐标；LPC 闲逛中勿每帧拽回。
         _placeFromNorm(profile.actorX, profile.actorY);
       }
@@ -299,12 +300,11 @@ class _PetActor extends PositionComponent
     // LPC：服装 id 变化时重合成；PNG：仅 id 变化重载栈。
     final key =
         '${_profile.hatId}|${_profile.topId}|${_profile.bottomId}|${_profile.shoesId}';
-    if (_useLpc) {
+    if (_useSheet) {
       size = Vector2(lpcSize, lpcSize);
       if (key == _wearKey && _lpc != null) return;
       _wearKey = key;
-      final composer = await PetLpcComposer.load();
-      _lpc = await composer.composeOutfit(
+      _lpc = await PetSheetAvatar.composeOutfit(
         hatId: _profile.hatId,
         topId: _profile.topId,
         bottomId: _profile.bottomId,
@@ -325,7 +325,7 @@ class _PetActor extends PositionComponent
 
   @override
   Future<void> onLoad() async {
-    size = Vector2(_useLpc ? lpcSize : pngW, _useLpc ? lpcSize : pngH);
+    size = Vector2(_useSheet ? lpcSize : pngW, _useSheet ? lpcSize : pngH);
     anchor = Anchor.center;
     priority = 20;
     _placeFromNorm(_profile.actorX, _profile.actorY);
@@ -336,7 +336,7 @@ class _PetActor extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
-    if (!_useLpc || _lpc == null || decorateMode || dragging) {
+    if (!_useSheet || _lpc == null || decorateMode || dragging) {
       _moving = false;
       return;
     }
@@ -386,7 +386,7 @@ class _PetActor extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    if (_useLpc) {
+    if (_useSheet) {
       final sheet = _lpc;
       if (sheet != null) {
         sheet.paint(
@@ -502,10 +502,8 @@ class _FurniturePiece extends PositionComponent
   int get rotation => _item.rotation;
   double get itemScale => _item.scale;
 
-  double get normX =>
-      (position.x / PetRoomGame.worldWidth).clamp(0.08, 0.92);
-  double get normY =>
-      (position.y / PetRoomGame.worldHeight).clamp(0.18, 0.92);
+  double get normX => (position.x / PetRoomGame.worldWidth).clamp(0.08, 0.92);
+  double get normY => (position.y / PetRoomGame.worldHeight).clamp(0.18, 0.92);
 
   void nudgeNormalized(double dx, double dy) {
     _placeFromNorm(normX + dx, normY + dy);

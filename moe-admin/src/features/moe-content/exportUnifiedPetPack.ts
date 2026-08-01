@@ -16,8 +16,16 @@ import {
   collectAvatarAssetPaths,
   type LegacyFurnitureManifest,
 } from './petContentPack'
+import { validatePackManifest } from './petContentPackTypes'
 
-/** 导出完整养成内容包：manifest.json + avatar/* + objects/* */
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(buf)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/** 导出完整养成内容包：manifest.json + avatar/* + objects/*（校验失败即阻断） */
 export async function exportUnifiedPetPack(): Promise<void> {
   const [avatarRes, furnitureRes] = await Promise.all([
     fetch(MOE_AVATAR_MANIFEST_URL),
@@ -33,10 +41,33 @@ export async function exportUnifiedPetPack(): Promise<void> {
   const avatarManifest = (await avatarRes.json()) as MoeAvatarManifest
   const furnitureManifest =
     (await furnitureRes.json()) as LegacyFurnitureManifest
-  const manifest = buildUnifiedManifest(avatarManifest, furnitureManifest)
+
+  const builtAt = new Date().toISOString()
+  let manifest = buildUnifiedManifest(avatarManifest, furnitureManifest, {
+    publish: {
+      version: '1.0.0',
+      builtAt,
+    },
+  })
+
+  const manifestJson = JSON.stringify(manifest, null, 2)
+  const errors = validatePackManifest(manifest, { strictPublish: true })
+  if (errors.length > 0) {
+    throw new Error(`pack 校验失败：\n${errors.join('\n')}`)
+  }
+
+  const contentHash = await sha256Hex(manifestJson)
+  manifest = {
+    ...manifest,
+    publish: {
+      ...manifest.publish!,
+      contentHash,
+    },
+  }
+  const finalJson = JSON.stringify(manifest, null, 2)
 
   const zip = new JSZip()
-  zip.file('manifest.json', JSON.stringify(manifest, null, 2))
+  zip.file('manifest.json', finalJson)
 
   const avatarPaths = collectAvatarAssetPaths(avatarManifest)
   for (const rel of avatarPaths) {

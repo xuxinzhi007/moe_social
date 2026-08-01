@@ -2,6 +2,11 @@
   "specVersion": "1",
   "packId": "moe-official-pet-v1",
   "displayName": "Moe 官方养成包",
+  "publish": {
+    "version": "1.0.0",
+    "builtAt": "2026-08-01T00:00:00.000Z",
+    "minAppVersion": "1.0.0"
+  },
   "avatar": {
     "cellSize": 64,
     "style": "soft_chibi",

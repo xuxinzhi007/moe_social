@@ -5,6 +5,9 @@ enum PetAvatarBackend {
   /// 现网：分层 PNG + wear_layout。
   png,
 
+  /// Moe 官方 avatar 分层 pack（manifest compose · 任意槽位组合）。
+  moe,
+
   /// LPC spritesheet 短跑（同画布 + walk/idle）。
   lpc,
 
@@ -14,12 +17,15 @@ enum PetAvatarBackend {
 
 /// 解析当前应使用的形象后端。
 ///
-/// 优先级：Spine（Flag+资源）→ LPC 短跑 Flag → PNG。
+/// 优先级：Spine（Flag+资源）→ Moe 官方包 → LPC 短跑 → PNG。
 PetAvatarBackend resolvePetAvatarBackend({
   bool spineAssetsReady = false,
 }) {
   if (FeatureFlags.petSpineAvatar && spineAssetsReady) {
     return PetAvatarBackend.spine;
+  }
+  if (FeatureFlags.petMoeAvatar) {
+    return PetAvatarBackend.moe;
   }
   if (FeatureFlags.petLpcPrototype) {
     return PetAvatarBackend.lpc;

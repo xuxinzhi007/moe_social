@@ -37,10 +37,12 @@ class FeatureFlags {
   /// 见 `docs/dev/pet-spine-avatar.md`。开启前需 Spine Editor 授权 + `assets/pet/spine/`。
   static const bool petSpineAvatar = false;
 
-  /// LPC 流水线短跑：小家角色用同画布 spritesheet + 自主走动（仍可拖拽打断）。
-  /// 关则回退分层 PNG / 贴纸。见 `docs/dev/pet-lpc-pipeline.md`。
-  /// 个人非商用原型；上架前需处理 LPC 署名与画风是否正式采用。
-  static const bool petLpcPrototype = true;
+  /// Moe 官方 avatar 分层 pack（admin 生产 → assets/pet/moe_content/avatar/）。
+  /// 见 `docs/dev/moe-pet-content-pack.md` · `docs/dev/moe-avatar-admin.md`。
+  static const bool petMoeAvatar = true;
+
+  /// LPC 流水线短跑：关则优先 [petMoeAvatar] 或 PNG。见 `docs/dev/pet-lpc-pipeline.md`。
+  static const bool petLpcPrototype = false;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 

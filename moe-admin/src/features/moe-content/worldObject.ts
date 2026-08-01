@@ -1,6 +1,9 @@
 /**
- * World Object 定义（v2 草案 · 尚未接入 runtime）
- * SSOT：docs/dev/moe-pet-world-object.md
+ * World Object 定义 — **规范层 Spec**
+ *
+ * SSOT 文档：docs/dev/moe-pet-world-object.md
+ * Pack manifest 类型：./petContentPackTypes.ts（勿在此重复定义）
+ * 成熟度：docs/dev/pet-content-pack-maturity.md
  */
 
 export type WorldObjectKind = 'furniture' | 'decor' | 'pickup' | 'prop'
@@ -31,25 +34,11 @@ export type WorldObjectDef = {
   placement?: 'floor' | 'wall' | 'hanging'
 }
 
-/** 统一内容包 v1（当前） */
-export type PetContentPackManifestV1 = {
-  specVersion: '1'
-  packId: string
-  displayName: string
-  avatar?: import('../moe-avatar/types').MoeAvatarSection
-  objects: Record<string, WorldObjectDef>
-}
-
-/** 统一内容包 v2（规划 · 含场景 preset） */
-export type PetContentPackManifest = {
-  specVersion: '2'
-  packId: string
-  displayName: string
-  avatar?: import('../moe-avatar/types').MoeAvatarSection
-  objects: Record<string, WorldObjectDef>
-  /** 可选：官方房间预设布局 */
-  scenePresets?: Record<
-    string,
-    { scene: string; objects: Array<{ id: string; x: number; y: number; rotation?: number; scale?: number }> }
-  >
-}
+export type {
+  PetContentPackManifest,
+  PetContentPackManifestV1,
+  PetContentPackManifestV2,
+  PetContentPackPublish,
+  ScenePreset,
+  ScenePresetInstance,
+} from './petContentPackTypes'

@@ -1,7 +1,8 @@
 # Moe 养成 · World Object 与内容包长期架构
 
 > **日期**：2026-08-01  
-> **状态**：架构 SSOT · admin MVP 进行中  
+> **状态**：架构 SSOT · admin MVP 进行中 · **运行层未闭环**  
+> **成熟度对照**：[pet-content-pack-maturity.md](./pet-content-pack-maturity.md)  
 > **前置**：[moe-pet-content-pack.md](./moe-pet-content-pack.md)
 
 ## 1. 结论（对齐你的分析）
@@ -81,20 +82,25 @@ type WorldObjectDef = {
 
 **原则**：App **不得**硬编码 ULPC 动画全集；新动作 = 官方 sheet + manifest 注册 + App 播放器支持该 key。
 
-### 2.2 admin — 场景编辑器（未做）
+### 2.2 admin — 场景编辑器（P2 · 未做）
 
-在「单品 manifest」之上增加：
+**参考范式**：`BotFlowCanvas`（`moe-admin/src/components/bot-flow/BotFlowCanvas.tsx`）
+
+- 中心画布（房间底图 + 对象层）
+- 右侧/上方工具栏（从 manifest 拖入 WorldObject）
+- 可拖拽实例 · 变换 · 交互开关
+- 保存 preset · 缩放 · 小地图
+
+**不要**把 `PetAvatarEditorPage` 做成场景编辑器——角色页只做 sheet 生产 + compose 预览 + 导出。
 
 ```text
-SceneEditorPage
+SceneEditorPage（P2）
   ├── 房间底图（living_bg.png）
-  ├── 对象层（拖入 manifest 里的 WorldObject）
+  ├── 对象层（manifest.objects）
   ├── 变换：位置 / 旋转 / 缩放 / zIndex
-  ├── 交互开关：可拾取 · 可 use · 碰撞
-  └── 导出：preset 布局 JSON（可选）+ 仍导出 object 定义
+  ├── 交互：pickupable · useAction · collision
+  └── 导出 → manifest.scenePresets
 ```
-
-这与 LPC「选层预览」互补：**LPC 管角色 sheet；Scene Editor 管房间里摆什么、怎么交互。**
 
 ### 2.3 runtime — 拾取与状态
 
@@ -128,13 +134,32 @@ PetContentPack.load(manifest)
 
 不要复刻 LPC 全量；要复刻 **「模板 + 导出 + 可扩展 catalog」** 思路。
 
-## 5. 代码落点（规划）
+## 7. 当前缺口（三项优先 · 2026-08 评审）
+
+架构方向正确，落地需盯住：
+
+| # | 缺口 | 现状 | 下一步 |
+|---|------|------|--------|
+| **1** | **类型 SSOT** | ~~`worldObject.ts` / `petContentPack.ts` 重复 pack 类型~~ | ✅ 收拢至 `petContentPackTypes.ts` |
+| **2** | **Flutter runtime** | `PetProfile` / `PetFurniture` 老链路；Moe avatar compose 已接 | `WorldObjectRegistry` · `pickupable` / `inventory` / `useAction` |
+| **3** | **发布链路** | manifest 为导出生成物 | `publish.version` · hash 校验 · 回滚 · OSS 同步策略 |
+
+## 8. 编辑器形态（勿混）
+
+| 页面 | 形态 | 参考 |
+|------|------|------|
+| **PetAvatarEditorPage** | 资源生产 + 预览 + 导出 | 保持现状，**不是**场景编辑器 |
+| **PetSceneEditorPage**（P2） | 房间摆对象 + preset | `moe-admin/src/components/bot-flow/BotFlowCanvas.tsx`：中心画布 · 工具栏 · 拖拽 · 保存 · 缩放 · 小地图 |
+| **PetContentHubPage** | 总览 + 统一 zip 导出 | 角色 + 物件同一 pack |
+
+## 5. 代码落点
 
 | 层 | 路径 |
 |----|------|
 | SSOT 文档 | `docs/dev/moe-pet-content-pack.md` · 本文 |
-| admin 类型 | `moe-admin/src/features/moe-content/petContentPack.ts` · `worldObject.ts` |
-| admin 统一导出 | `exportUnifiedPetPack.ts` · 总览页「导出完整内容包」 |
+| admin 类型 SSOT | `moe-admin/src/features/moe-content/petContentPackTypes.ts` |
+| WorldObject 字段 | `worldObject.ts` |
+| 合并/导出 | `petContentPack.ts` · `exportUnifiedPetPack.ts` |
 | admin 场景编辑 | `moe-admin/src/pages/PetSceneEditorPage.tsx`（P2） |
 | Flutter registry | `lib/game/pet/pet_content_registry.dart`（P1） |
 | 背包/拾取 | `lib/models/pet_inventory.dart` · `PetProvider`（P3） |

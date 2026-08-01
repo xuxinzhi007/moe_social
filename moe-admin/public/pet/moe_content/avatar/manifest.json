@@ -37,35 +37,42 @@
     "top": {
       "top_basic": {
         "walk": "layers/slots/top_basic_walk.png",
-        "idle": "layers/slots/top_basic_idle.png"
+        "idle": "layers/slots/top_basic_idle.png",
+        "label": "基础上衣"
       },
       "top_hoodie": {
-        "walk": "layers/slots/top_basic_walk.png",
-        "idle": "layers/slots/top_basic_idle.png"
+        "walk": "layers/slots/top_hoodie_walk.png",
+        "idle": "layers/slots/top_hoodie_idle.png",
+        "label": "连帽衫"
       },
       "top_tee": {
-        "walk": "layers/slots/top_basic_walk.png",
-        "idle": "layers/slots/top_basic_idle.png"
+        "walk": "layers/slots/top_tee_walk.png",
+        "idle": "layers/slots/top_tee_idle.png",
+        "label": "T恤"
       }
     },
     "bottom": {
       "bottom_basic": {
         "walk": "layers/slots/bottom_basic_walk.png",
-        "idle": "layers/slots/bottom_basic_idle.png"
+        "idle": "layers/slots/bottom_basic_idle.png",
+        "label": "基础下装"
       },
       "bottom_jeans": {
-        "walk": "layers/slots/bottom_basic_walk.png",
-        "idle": "layers/slots/bottom_basic_idle.png"
+        "walk": "layers/slots/bottom_jeans_walk.png",
+        "idle": "layers/slots/bottom_jeans_idle.png",
+        "label": "牛仔裤"
       }
     },
     "shoes": {
       "shoes_basic": {
         "walk": "layers/slots/shoes_basic_walk.png",
-        "idle": "layers/slots/shoes_basic_idle.png"
+        "idle": "layers/slots/shoes_basic_idle.png",
+        "label": "基础鞋"
       },
       "shoes_sneaker": {
-        "walk": "layers/slots/shoes_basic_walk.png",
-        "idle": "layers/slots/shoes_basic_idle.png"
+        "walk": "layers/slots/shoes_sneaker_walk.png",
+        "idle": "layers/slots/shoes_sneaker_idle.png",
+        "label": "运动鞋"
       }
     }
   }

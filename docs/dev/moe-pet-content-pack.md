@@ -1,12 +1,17 @@
 # Moe 养成内容包（Pet Content Pack）
 
 > **日期**：2026-08-01  
-> **状态**：Spec v1 · 角色 MVP 在 admin · 家具 MVP 起步  
+> **状态**：Spec v1 · **中间态**（非官方完全闭环）  
+> **成熟度对照**：**[pet-content-pack-maturity.md](./pet-content-pack-maturity.md)** ← 官方标准 / 现状 / 待补齐  
 > **编辑器**：`moe-admin` → 运营 → **养成内容**
 
 ## 1. 定位
 
-管理台 **养成内容编辑器** 不只产角色，而是统一产出 App 可消费的 **官方内容包**：
+**不是「角色换装页」**，而是 **官方养成资产生产平台**：admin 产 pack → App 消费。
+
+> **三层边界**（规范 / 兼容 / 运行）与 capability 矩阵见 [pet-content-pack-maturity.md](./pet-content-pack-maturity.md)。
+
+管理台统一产出 App 可消费的 **官方内容包**：
 
 | 类型 | `kind` | App 用途 | 资源形态 |
 |------|--------|----------|----------|
@@ -27,6 +32,11 @@
   "specVersion": "1",
   "packId": "moe-official-pet-v1",
   "displayName": "Moe 官方养成包",
+  "publish": {
+    "version": "1.0.0",
+    "builtAt": "2026-08-01T00:00:00.000Z",
+    "minAppVersion": "1.0.0"
+  },
   "avatar": {
     "cellSize": 64,
     "directionRows": ["up", "left", "down", "right"],
@@ -86,8 +96,10 @@
 
 | 路径 | 职责 |
 |------|------|
-| `src/features/moe-avatar/` | 角色 composer / Canvas |
-| `src/features/moe-content/` | 家具/装饰 manifest · 通用 zip 导出 |
+| `moe-admin/src/features/moe-content/petContentPackTypes.ts` | **Pack 类型 SSOT**（manifest · publish · scenePreset） |
+| `src/features/moe-avatar/` | 角色 composer / 生产编辑器 |
+| `src/features/moe-content/worldObject.ts` | WorldObjectDef 字段 |
+| `src/features/moe-content/petContentPack.ts` | 合并 manifest · 导出 helpers |
 | `src/pages/PetContentHubPage.tsx` | 总览 |
 | `public/pet/moe_content/` | 开发用资源 |
 

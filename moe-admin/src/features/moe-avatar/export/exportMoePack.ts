@@ -64,6 +64,13 @@ export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob
     }
   }
 
+  if (assetStore) {
+    for (const origKey of assetStore.originalPaths()) {
+      const blob = assetStore.get(origKey)
+      if (blob) zip.file(origKey, blob)
+    }
+  }
+
   const manifestOut = structuredClone(manifest)
   for (const [, items] of Object.entries(manifestOut.slots)) {
     for (const [itemId, layers] of Object.entries(items)) {
