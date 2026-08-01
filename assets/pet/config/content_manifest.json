@@ -2,7 +2,7 @@
   "specVersion": "1",
   "packId": "moe-pet-paper-v1",
   "displayName": "Moe 小家 · Paper 内容清单",
-  "comment": "仅登记真实存在的资产。换衣间/商店可读此文件；缺失时客户端应静默回落。",
+  "comment": "货架唯一清单。绑定步骤见 docs/dev/pet-binding-skeleton-ssot.md。只登记真实 PNG。",
   "pattern": "paper",
   "clothes": {
     "hat": [

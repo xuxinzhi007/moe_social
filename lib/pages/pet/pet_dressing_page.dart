@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../game/pet/pet_art.dart';
 import '../../game/pet/pet_avatar_backend.dart';
 import '../../game/pet/pet_avatar_stack.dart';
+import '../../game/pet/pet_content_catalog.dart';
 import '../../game/pet/pet_labels.dart';
 import '../../game/pet/pet_lpc_item_thumb.dart';
 import '../../game/pet/pet_lpc_sheet.dart';
@@ -16,7 +17,8 @@ import '../../providers/pet_provider.dart';
 
 /// 换衣间：模型锚点穿搭 + 大预览；可选微调位移/缩放/旋转。
 ///
-/// SSOT：`docs/dev/pet-layered-avatar.md`、`assets/pet/config/avatar_stack.json`。
+/// 货架 SSOT：`content_manifest.json`（[PetContentCatalog]）。
+/// 锚点：`avatar_stack.json` · `docs/dev/pet-binding-skeleton-ssot.md`。
 class PetDressingPage extends StatefulWidget {
   const PetDressingPage({super.key});
 
@@ -25,43 +27,6 @@ class PetDressingPage extends StatefulWidget {
 }
 
 class _PetDressingPageState extends State<PetDressingPage> {
-  static const _hats = [
-    '',
-    'hat_cap',
-    'hat_beret',
-    'hat_crown',
-    'hat_bow',
-    'hat_earmuff',
-    'hat_vip_star',
-  ];
-  static const _tops = [
-    '',
-    'top_basic',
-    'top_hoodie',
-    'top_tee',
-    'top_coat',
-    'top_dress',
-    'top_vest',
-  ];
-  static const _bottoms = [
-    '',
-    'bottom_basic',
-    'bottom_skirt',
-    'bottom_jeans',
-    'bottom_shorts',
-    'bottom_pants',
-    'bottom_overall',
-  ];
-  static const _shoes = [
-    '',
-    'shoes_basic',
-    'shoes_sneaker',
-    'shoes_boot',
-    'shoes_sandal',
-    'shoes_slipper',
-    'shoes_heel',
-  ];
-
   late String _hatId;
   late String _topId;
   late String _bottomId;
@@ -73,39 +38,6 @@ class _PetDressingPageState extends State<PetDressingPage> {
   var _fineTune = false;
   final Map<String, List<String>> _sheetCatalog = {};
 
-  static const _canonicalHats = [
-    'hat_cap',
-    'hat_beret',
-    'hat_crown',
-    'hat_bow',
-    'hat_earmuff',
-    'hat_vip_star',
-  ];
-  static const _canonicalTops = [
-    'top_basic',
-    'top_hoodie',
-    'top_tee',
-    'top_coat',
-    'top_dress',
-    'top_vest',
-  ];
-  static const _canonicalBottoms = [
-    'bottom_basic',
-    'bottom_skirt',
-    'bottom_jeans',
-    'bottom_shorts',
-    'bottom_pants',
-    'bottom_overall',
-  ];
-  static const _canonicalShoes = [
-    'shoes_basic',
-    'shoes_sneaker',
-    'shoes_boot',
-    'shoes_sandal',
-    'shoes_slipper',
-    'shoes_heel',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -116,21 +48,27 @@ class _PetDressingPageState extends State<PetDressingPage> {
     _shoesId = p.shoesId;
     _layout = p.wearLayout;
     _loadAnchors();
-    if (_sheetMode) _loadSheetCatalog();
+    _loadCatalog();
   }
 
-  Future<void> _loadSheetCatalog() async {
-    const slots = ['hat', 'top', 'bottom', 'shoes'];
-    final m = <String, List<String>>{};
-    for (final s in slots) {
-      m[s] = await PetSheetAvatar.itemIdsForSlot(s);
+  Future<void> _loadCatalog() async {
+    await PetContentCatalog.load();
+    if (_sheetMode) {
+      const slots = ['hat', 'top', 'bottom', 'shoes'];
+      final m = <String, List<String>>{};
+      for (final s in slots) {
+        m[s] = await PetSheetAvatar.itemIdsForSlot(s);
+      }
+      if (!mounted) return;
+      setState(() {
+        _sheetCatalog
+          ..clear()
+          ..addAll(m);
+      });
+      return;
     }
     if (!mounted) return;
-    setState(() {
-      _sheetCatalog
-        ..clear()
-        ..addAll(m);
-    });
+    setState(() {});
   }
 
   Future<void> _loadAnchors() async {
@@ -139,34 +77,14 @@ class _PetDressingPageState extends State<PetDressingPage> {
     setState(() => _anchors = cfg.wearAnchors);
   }
 
-  List<String> _legacyIds(String slot) => switch (slot) {
-        'hat' => _hats,
-        'top' => _tops,
-        'bottom' => _bottoms,
-        _ => _shoes,
-      };
-
-  List<String> _sheetIds(String slot) {
-    final catalog = _sheetCatalog[slot] ?? const [];
-    if (catalog.isEmpty) return const [''];
-    final canon = switch (slot) {
-      'hat' => _canonicalHats,
-      'top' => _canonicalTops,
-      'bottom' => _canonicalBottoms,
-      _ => _canonicalShoes,
-    };
-    final out = <String>[''];
-    for (final id in canon) {
-      if (catalog.contains(id)) out.add(id);
+  /// LPC：lpc_catalog 槽位；Paper：content_manifest。均含「无」。
+  List<String> get _activeIds {
+    if (_sheetMode) {
+      final ids = _sheetCatalog[_activeSlot] ?? const <String>[];
+      return ['', ...ids];
     }
-    for (final id in catalog) {
-      if (!out.contains(id)) out.add(id);
-    }
-    return out;
+    return PetContentCatalog.clothesIds(_activeSlot);
   }
-
-  List<String> get _activeIds =>
-      _sheetMode ? _sheetIds(_activeSlot) : _legacyIds(_activeSlot);
 
   String get _activeId => switch (_activeSlot) {
         'hat' => _hatId,

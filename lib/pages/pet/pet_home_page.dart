@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/feature_flags.dart';
 import '../../game/pet/pet_adventure_game.dart';
+import '../../game/pet/pet_art.dart';
+import '../../game/pet/pet_content_catalog.dart';
 import '../../game/pet/pet_labels.dart';
 import '../../game/pet/pet_room_game.dart';
 import '../../models/pet_state.dart';
@@ -248,81 +250,84 @@ class _PetHomePageState extends State<PetHomePage> {
     );
   }
 
-  void _showFurnitureSheet() {
-    const catalog = <(String id, String asset)>[
-      ('bed_cozy', 'assets/pet/furniture/bed_basic.png'),
-      ('table_wood', 'assets/pet/furniture/table_wood.png'),
-      ('lamp_soft', 'assets/pet/furniture/lamp_basic.png'),
-      ('rug_heart', 'assets/pet/furniture/rug_basic.png'),
-      ('window_lace', 'assets/pet/furniture/window_lace.png'),
-    ];
+  Future<void> _showFurnitureSheet() async {
+    await PetContentCatalog.load();
+    if (!mounted) return;
+    final catalog = PetContentCatalog.furniture(scene: pet.profile.sceneId);
     _showScrollSheet(
       title: '布置家具',
       children: [
         Text(
           '点选添加后布置：拖动 · 四角缩放 · 顶柄旋转。'
-          '每房间最多 ${PetFurniture.maxPerScene} 件，同款最多 ${PetFurniture.maxSameIdPerScene} 件。',
+          '每房间最多 ${PetFurniture.maxPerScene} 件，同款最多 ${PetFurniture.maxSameIdPerScene} 件。'
+          '货架来自 content_manifest（见绑定骨架文档）。',
           style: const TextStyle(fontSize: 12, color: Colors.black54),
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.85,
-          children: [
-            for (final e in catalog)
-              InkWell(
-                onTap: () async {
-                  final before = pet.profile.furniture.length;
-                  await pet.placeFurniture(
-                    PetFurniture(
-                      id: e.$1,
-                      x: 0.5,
-                      y: 0.62,
-                      scene: pet.profile.sceneId,
+        if (catalog.isEmpty)
+          const Text('当前场景暂无已登记家具，请先在 content_manifest 绑定。')
+        else
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.85,
+            children: [
+              for (final e in catalog)
+                InkWell(
+                  onTap: () async {
+                    final before = pet.profile.furniture.length;
+                    await pet.placeFurniture(
+                      PetFurniture(
+                        id: e.id,
+                        x: 0.5,
+                        y: 0.62,
+                        scene: pet.profile.sceneId,
+                        scale: PetContentCatalog.furnitureDefaultScale(e.id),
+                      ),
+                    );
+                    if (!mounted) return;
+                    _toast();
+                    if (pet.profile.furniture.length <= before) return;
+                    Navigator.pop(context);
+                    final idx = pet.profile.furniture.length - 1;
+                    _setDecorateMode(true);
+                    setState(() => _selectedFurn = idx);
+                    _game.selectFurniture(idx);
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F0EA),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x22000000)),
                     ),
-                  );
-                  if (!mounted) return;
-                  _toast();
-                  if (pet.profile.furniture.length <= before) return;
-                  Navigator.pop(context);
-                  final idx = pet.profile.furniture.length - 1;
-                  _setDecorateMode(true);
-                  setState(() => _selectedFurn = idx);
-                  _game.selectFurniture(idx);
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F0EA),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0x22000000)),
-                  ),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Image.asset(
-                          e.$2,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.chair_rounded, size: 40),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Image.asset(
+                            e.asset.isNotEmpty
+                                ? e.asset
+                                : PetArt.resolveFurniture(e.id),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.chair_rounded, size: 40),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        PetLabels.of(e.$1),
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ],
+                        const SizedBox(height: 6),
+                        Text(
+                          e.label,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: () {
@@ -561,22 +566,27 @@ class _PetHomePageState extends State<PetHomePage> {
     );
   }
 
-  void _showShopSheet() {
-    const items = ['hat_crown', 'top_hoodie', 'bed_cozy', 'lamp_soft'];
+  Future<void> _showShopSheet() async {
+    await PetContentCatalog.load();
+    if (!mounted) return;
+    final items = PetContentCatalog.shopItems();
     _showScrollSheet(
       title: '商店 · ${pet.profile.coins} 币',
       children: [
-        for (final id in items)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(PetLabels.of(id)),
-            subtitle: const Text('40 币'),
-            onTap: () async {
-              await pet.buySoft(id);
-              if (mounted) Navigator.pop(context);
-              _toast();
-            },
-          ),
+        if (items.isEmpty)
+          const Text('商店清单为空：请在 shop_catalog.json 登记已有资产。')
+        else
+          for (final e in items)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(e.label),
+              subtitle: Text('${e.price ?? 40} 币 · ${e.kind}'),
+              onTap: () async {
+                await pet.buySoft(e.id);
+                if (mounted) Navigator.pop(context);
+                _toast();
+              },
+            ),
       ],
     );
   }

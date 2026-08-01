@@ -3,10 +3,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
+import 'pet_content_catalog.dart';
+
 /// 养成美术路径与缺图探测。
 ///
-/// 正式资源在 `assets/pet/`（英文蛇形）。源素材可放在
-/// `assets/avatars/flutter角色图/`，再同步到本目录。
+/// 正式资源在 `assets/pet/`（英文蛇形）。绑定契约见
+/// `docs/dev/pet-binding-skeleton-ssot.md`。
 class PetArt {
   const PetArt._();
 
@@ -40,8 +42,11 @@ class PetArt {
   static const coin = 'assets/pet/ui/coin.png';
 
   /// 装扮 ID → 实际文件。空 ID =「无」，不回落基础款。
+  /// 优先 content_manifest 登记路径。
   static String resolveClothes(String slot, String id) {
     if (id.isEmpty) return '';
+    final fromCatalog = PetContentCatalog.assetOf(id);
+    if (fromCatalog != null && fromCatalog.isNotEmpty) return fromCatalog;
     return clothes(id);
   }
 
@@ -61,25 +66,23 @@ class PetArt {
     return null;
   }
 
-  /// 家具 ID → 资源路径（未知 ID 按前缀回落）。
+  /// 家具 ID → 资源路径（优先 manifest；未知 ID 按前缀回落真实图）。
   static String resolveFurniture(String id) {
-    const known = {
+    final fromCatalog = PetContentCatalog.assetOf(id);
+    if (fromCatalog != null && fromCatalog.isNotEmpty) return fromCatalog;
+    const alias = {
+      'bed_cozy': 'bed_basic',
+      'lamp_soft': 'lamp_basic',
+      'rug_heart': 'rug_basic',
+    };
+    final file = alias[id] ?? id;
+    if (const {
       'bed_basic',
-      'bed_cozy',
       'table_wood',
       'lamp_basic',
-      'lamp_soft',
       'rug_basic',
-      'rug_heart',
       'window_lace',
-    };
-    if (known.contains(id)) {
-      final file = switch (id) {
-        'bed_cozy' => 'bed_basic',
-        'lamp_soft' => 'lamp_basic',
-        'rug_heart' => 'rug_basic',
-        _ => id,
-      };
+    }.contains(file)) {
       return furniture(file);
     }
     final prefix = id.split('_').first;

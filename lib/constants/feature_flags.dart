@@ -42,8 +42,9 @@ class FeatureFlags {
   /// 调研时再开；见 `docs/dev/moe-pet-content-pack.md`。
   static const bool petMoeAvatar = false;
 
-  /// LPC 流水线短跑：关则优先 [petMoeAvatar] 或 PNG。见 `docs/dev/pet-lpc-pipeline.md`。
-  static const bool petLpcPrototype = false;
+  /// LPC 流水线：同画布 sheet + 走动（小家当前默认显示轨）。
+  /// Moe 保持 false。见 `docs/dev/pet-lpc-pipeline.md`。
+  static const bool petLpcPrototype = true;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 
