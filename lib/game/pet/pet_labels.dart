@@ -1,4 +1,7 @@
+import 'pet_content_catalog.dart';
+
 /// 养成 UI 文案（内部 ID → 中文展示）。
+/// 优先 [PetContentCatalog] 登记名，再回落本表。
 class PetLabels {
   const PetLabels._();
 
@@ -38,5 +41,6 @@ class PetLabels {
     'window_lace': '窗饰',
   };
 
-  static String of(String id) => item[id] ?? id;
+  static String of(String id) =>
+      PetContentCatalog.labelOf(id) ?? item[id] ?? id;
 }

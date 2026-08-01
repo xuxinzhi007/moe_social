@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/pet_state.dart';
 import '../services/pet_career_config.dart';
 import '../services/pet_service.dart';
+import '../game/pet/pet_content_catalog.dart';
 import '../game/pet/pet_content_registry.dart';
 
 /// 养成状态：优先 API，失败本地持久化（保证可完整体验）。
@@ -45,13 +46,16 @@ class PetProvider extends ChangeNotifier {
   Future<void> load() async {
     _busy = true;
     notifyListeners();
-    // P1：统一 manifest 只读加载；缺失时静默 legacy 路径。
+    // Paper 内容骨架（manifest / 构图 / 商店）；缺失静默回落。
+    await PetContentCatalog.load();
     unawaited(PetContentRegistry.loadIfPresent());
     final remote = await _service.fetchState();
     if (remote != null) {
-      _profile = remote.copyWith(
-        furniture: PetFurniture.sanitize(remote.furniture),
-      );
+      var furn = PetFurniture.sanitize(remote.furniture);
+      if (furn.isEmpty) {
+        furn = PetContentCatalog.starterFurniture();
+      }
+      _profile = remote.copyWith(furniture: furn);
     } else {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_prefsKey);
@@ -60,15 +64,21 @@ class PetProvider extends ChangeNotifier {
           Map<String, dynamic>.from(jsonDecode(raw) as Map),
         );
       } else {
-        _profile = PetProfile.fresh();
+        _profile = PetProfile.fresh().copyWith(
+          furniture: PetContentCatalog.starterFurniture(),
+        );
       }
     }
-    // 清理历史刷爆的家具
-    final cleaned = PetFurniture.sanitize(_profile.furniture);
-    if (cleaned.length != _profile.furniture.length) {
-      _profile = _profile.copyWith(furniture: cleaned);
+    // 清理历史刷爆的家具；仍空则补构图包。
+    final beforeCount = _profile.furniture.length;
+    var cleaned = PetFurniture.sanitize(_profile.furniture);
+    if (cleaned.isEmpty) {
+      cleaned = PetContentCatalog.starterFurniture();
+      _flashMessage('已为小家摆上起步家具');
+    } else if (cleaned.length != beforeCount) {
       _flashMessage('已整理超量家具');
     }
+    _profile = _profile.copyWith(furniture: cleaned);
     _loaded = true;
     _busy = false;
     notifyListeners();
@@ -210,11 +220,13 @@ class PetProvider extends ChangeNotifier {
       );
       return;
     }
-    // 自动错开落点，避免叠在同一坐标。
+    // 自动错开落点；默认尺度读 room_composition。
     final offset = sameId * 0.06;
+    final defaultScale = PetContentCatalog.furnitureDefaultScale(item.id);
     final placed = item.copyWith(
       x: (item.x + offset).clamp(0.08, 0.92),
       y: (item.y + offset * 0.5).clamp(0.18, 0.92),
+      scale: item.scale == 1.0 ? defaultScale : item.scale,
     );
     final next = [..._profile.furniture, placed];
     await _apply(null, _profile.copyWith(furniture: next));

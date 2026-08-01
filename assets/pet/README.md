@@ -2,6 +2,9 @@
 
 规范：竖屏概念；PNG 透明分层；统一 Q 版；运行时路径用**英文蛇形**。
 
+**绑定骨架（加图必读）**：[`docs/dev/pet-binding-skeleton-ssot.md`](../../docs/dev/pet-binding-skeleton-ssot.md)  
+货架唯一清单：`config/content_manifest.json` · 构图：`config/room_composition.json` · 锚点：`config/avatar_stack.json`
+
 ## 源素材 → 运行时映射
 
 你补齐的源目录：`assets/avatars/flutter角色图/`（中文文件名，保留不动）。
