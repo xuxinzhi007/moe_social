@@ -85,7 +85,7 @@ class ThemeProvider with ChangeNotifier {
     final moeTheme = isDark
         ? MoeTheme.dark(primary: _primaryColor)
         : MoeTheme.light(primary: _primaryColor);
-    final surfaceColor = isDark ? Colors.grey[800]! : Colors.white;
+    final surfaceColor = isDark ? Colors.grey[800]! : MoeTokens.surface1;
     final scaffoldBg = moeTheme.pageBackground;
 
     // Material 3 默认 Typography 会注入 Roboto；显式指定 platform 后用系统字体
@@ -127,7 +127,7 @@ class ThemeProvider with ChangeNotifier {
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
         filled: true,
-        fillColor: isDark ? Colors.grey[800] : Colors.grey[50],
+        fillColor: isDark ? Colors.grey[800] : MoeTokens.softChipBg,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       ),
@@ -139,13 +139,15 @@ class ThemeProvider with ChangeNotifier {
       //   shadowColor: Colors.black.withValues(alpha: 0.1),
       // ),
       appBarTheme: AppBarTheme(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        backgroundColor: isDark ? Colors.grey[900] : MoeTokens.surface1,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: textTheme.titleLarge?.copyWith(
-          color: isDark ? Colors.white : Colors.black87,
+          color: isDark ? Colors.white : MoeTokens.titleText,
         ),
-        iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black87),
+        iconTheme: IconThemeData(
+          color: isDark ? Colors.white : MoeTokens.titleText,
+        ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,

@@ -11,13 +11,13 @@ class LikeButton extends StatefulWidget {
   final Function(bool, int)? onLikeChanged;
 
   const LikeButton({
-    Key? key,
+    super.key,
     required this.postId,
     required this.userId,
     required this.isLiked,
     required this.likeCount,
     this.onLikeChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<LikeButton> createState() => _LikeButtonState();
@@ -77,6 +77,7 @@ class _LikeButtonState extends State<LikeButton>
     try {
       final updatedPost =
           await PostService.toggleLike(widget.postId, widget.userId);
+      if (!mounted) return;
       // LikeStateManager 已由 PostService 更新，本地跟服务端对齐
       setState(() {
         _isLiked = updatedPost.isLiked;
@@ -89,11 +90,9 @@ class _LikeButtonState extends State<LikeButton>
       }
       widget.onLikeChanged?.call(_isLiked, _likeCount);
     } catch (e) {
-      MoeToast.show(context, '操作失败，请稍后重试');
+      if (mounted) MoeToast.show(context, '操作失败，请稍后重试');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

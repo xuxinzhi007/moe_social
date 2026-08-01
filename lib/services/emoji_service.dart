@@ -1,6 +1,7 @@
 import '../emoji/emoji_data.dart';
 import '../services/api_service.dart';
 import 'api_response.dart';
+import 'enhanced_logger.dart';
 
 class EmojiService {
   // 获取表情包包列表
@@ -24,7 +25,7 @@ class EmojiService {
           .map((e) => EmojiPack.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      print('Error getting emoji packs: $e');
+      EnhancedLogger().error('获取表情包列表失败', category: LogCategory.network);
       return null;
     }
   }
@@ -37,7 +38,7 @@ class EmojiService {
         ApiResponse.object(response, keys: const ['pack']),
       );
     } catch (e) {
-      print('Error getting emoji pack: $e');
+      EnhancedLogger().error('获取表情包详情失败', category: LogCategory.network);
       return null;
     }
   }
@@ -52,7 +53,7 @@ class EmojiService {
       return ApiResponse.stringField(response, 'order_id') ??
           ApiResponse.stringField(response, 'message');
     } catch (e) {
-      print('Error purchasing emoji pack: $e');
+      EnhancedLogger().error('购买表情包失败', category: LogCategory.network);
       return null;
     }
   }
@@ -68,7 +69,7 @@ class EmojiService {
           .map((e) => EmojiPack.fromJson(Map<String, dynamic>.from(e)))
           .toList();
     } catch (e) {
-      print('Error getting user emoji packs: $e');
+      EnhancedLogger().error('获取用户表情包失败', category: LogCategory.network);
       return null;
     }
   }
@@ -82,7 +83,7 @@ class EmojiService {
       );
       return true;
     } catch (e) {
-      print('Error favoriting emoji pack: $e');
+      EnhancedLogger().error('收藏表情包失败', category: LogCategory.network);
       return false;
     }
   }

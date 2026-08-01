@@ -12,6 +12,7 @@ import '../auth_service.dart';
 import 'api_service.dart';
 import 'push_notification_service.dart';
 import 'ws_channel_connector.dart';
+import 'enhanced_logger.dart';
 
 class RemoteControlService {
   static WebSocketChannel? _channel;
@@ -134,22 +135,33 @@ class RemoteControlService {
         }
       }
 
-      print('WebSocket连接: $uri');
-      print(
-          'Authorization: ${headers.containsKey('Authorization') ? '已设置' : '未设置'}');
+      EnhancedLogger().debug(
+        '建立远程控制 WebSocket 连接',
+        category: LogCategory.network,
+        metadata: {
+          'authorization':
+              headers.containsKey('Authorization') ? 'configured' : 'missing',
+        },
+      );
 
       final channel = connectMoeWebSocket(uri, headers: headers);
       _channel = channel;
       _subscription = channel.stream.listen(
         _handleMessage,
         onError: (error) {
-          print('WebSocket错误: $error');
+          EnhancedLogger().error(
+            '远程控制 WebSocket 错误',
+            category: LogCategory.network,
+          );
           _channel = null;
           _subscription?.cancel();
           _subscription = null;
         },
         onDone: () {
-          print('WebSocket连接关闭');
+          EnhancedLogger().info(
+            '远程控制 WebSocket 已关闭',
+            category: LogCategory.network,
+          );
           _channel = null;
           _subscription?.cancel();
           _subscription = null;
@@ -157,7 +169,10 @@ class RemoteControlService {
         cancelOnError: true,
       );
     } catch (e) {
-      print('WebSocket连接异常: $e');
+      EnhancedLogger().error(
+        '远程控制 WebSocket 连接异常',
+        category: LogCategory.network,
+      );
     }
   }
 
@@ -258,7 +273,10 @@ class RemoteControlService {
 
   static Future<void> _handleNotification(Map<String, dynamic> map) async {
     // 处理推送通知，调用 PushNotificationService 来处理
-    print('收到推送通知: ${json.encode(map)}');
+    EnhancedLogger().debug(
+      '收到远程推送通知',
+      category: LogCategory.network,
+    );
     // 提取通知数据
     final notificationData = map['data'] as Map<String, dynamic>? ?? {};
     // 调用 PushNotificationService 处理通知

@@ -113,7 +113,8 @@ class AdaptivePageScaffold extends StatelessWidget {
         child: _wrapMaxWidth(
           maxWidth: maxContentWidth ?? 600,
           child: Padding(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+            padding: padding ??
+                const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
             child: body ?? const SizedBox.shrink(),
           ),
         ),
@@ -153,7 +154,8 @@ class AdaptivePageScaffold extends StatelessWidget {
         child: _wrapMaxWidth(
           maxWidth: maxContentWidth ?? 600,
           child: Padding(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
+            padding: padding ??
+                const EdgeInsets.symmetric(horizontal: MoeTokens.spaceLg),
             child: body ?? const SizedBox.shrink(),
           ),
         ),
@@ -201,8 +203,12 @@ class AdaptivePageScaffold extends StatelessWidget {
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: appBarBackgroundColor ?? MoeTokens.pageBackground,
+      backgroundColor: appBarBackgroundColor ?? MoeTokens.surface1,
       foregroundColor: appBarForegroundColor ?? MoeTokens.titleText,
+      surfaceTintColor: Colors.transparent,
+      shape: const Border(
+        bottom: BorderSide(color: MoeTokens.surfaceBorder),
+      ),
       bottom: appBarBottom,
     );
   }

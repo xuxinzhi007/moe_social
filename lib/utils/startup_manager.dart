@@ -18,11 +18,11 @@ class StartupManager {
   factory StartupManager() => _instance;
   StartupManager._internal();
 
-  List<StartupTask> _tasks = [];
+  final List<StartupTask> _tasks = [];
   Completer<void>? _completer;
   bool _isRunning = false;
-  Map<String, bool> _taskResults = {};
-  Map<String, dynamic> _taskErrors = {};
+  final Map<String, bool> _taskResults = {};
+  final Map<String, dynamic> _taskErrors = {};
 
   void addTask(StartupTask task) {
     if (_isRunning) {

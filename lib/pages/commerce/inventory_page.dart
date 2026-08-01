@@ -6,6 +6,7 @@ import '../../widgets/dynamic_avatar.dart';
 import '../../services/user_service.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
+import '../../services/enhanced_logger.dart';
 
 class InventoryPage extends StatefulWidget {
   final User user;
@@ -104,7 +105,7 @@ class _InventoryPageState extends State<InventoryPage> {
         MoeToast.success(context, '已卸下头像框');
       }
     } catch (e) {
-      print('卸下失败: $e');
+      EnhancedLogger().error('卸下头像框失败', category: LogCategory.network);
       if (!mounted) return;
       MoeToast.error(context, '卸下失败: $e');
     }

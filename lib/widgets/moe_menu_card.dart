@@ -32,8 +32,9 @@ class MoeMenuCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
+        border: Border.all(color: MoeTokens.surfaceBorder),
         boxShadow: MoeTokens.cardShadow(),
       ),
       child: Column(
@@ -51,7 +52,8 @@ class MoeMenuCard extends StatelessWidget {
                   bottomRight: isLast ? const Radius.circular(24) : Radius.zero,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Row(
                     children: [
                       Container(
@@ -73,8 +75,8 @@ class MoeMenuCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
                                 color: item.isDestructive
-                                    ? Colors.redAccent
-                                    : const Color(0xFF333333),
+                                    ? MoeTokens.danger
+                                    : MoeTokens.titleText,
                               ),
                             ),
                             if (item.subtitle != null) ...[
@@ -83,7 +85,7 @@ class MoeMenuCard extends StatelessWidget {
                                 item.subtitle!,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey[400],
+                                  color: MoeTokens.hintText,
                                 ),
                               ),
                             ],
@@ -95,7 +97,7 @@ class MoeMenuCard extends StatelessWidget {
                       else
                         Icon(
                           Icons.arrow_forward_ios_rounded,
-                          color: Colors.grey[300],
+                          color: MoeTokens.hintText.withValues(alpha: 0.55),
                           size: 16,
                         ),
                     ],
@@ -105,8 +107,7 @@ class MoeMenuCard extends StatelessWidget {
               if (!isLast)
                 Padding(
                   padding: const EdgeInsets.only(left: 68, right: 20),
-                  child: Divider(
-                      height: 1, color: Colors.grey.withValues(alpha: 0.1)),
+                  child: Divider(height: 1, color: MoeTokens.surfaceBorder),
                 ),
             ],
           );

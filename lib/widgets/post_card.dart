@@ -74,21 +74,20 @@ class _PostCardState extends State<PostCard> {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: MoeTokens.surface1,
-        borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         border: Border.all(color: MoeTokens.surfaceBorder, width: 1),
-        boxShadow: MoeTokens.shadowCard(),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           onTap: widget.onCardTap,
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -102,10 +101,14 @@ class _PostCardState extends State<PostCard> {
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: MoeTokens.gradientSoft,
-                            boxShadow: MoeTokens.shadowGlow(MoeTokens.primary),
+                            border: Border.all(
+                              color: widget.post.authorIsBot
+                                  ? MoeTokens.primary.withValues(alpha: 0.45)
+                                  : MoeTokens.surfaceBorder,
+                              width: 1.5,
+                            ),
                           ),
-                          padding: const EdgeInsets.all(2),
+                          padding: const EdgeInsets.all(1.5),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -590,10 +593,10 @@ $link''';
       onTap: onTap,
       pressedScale: 0.85,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -746,18 +749,18 @@ $link''';
         alignment: PlaceholderAlignment.middle,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 2),
-            child: CachedNetworkImage(
-              imageUrl: emojiUrl,
-              width: 24,
-              height: 24,
-              fit: BoxFit.cover,
-              memCacheWidth: 48,
-              memCacheHeight: 48,
-              maxWidthDiskCache: 48,
-              maxHeightDiskCache: 48,
-            ),
+          child: CachedNetworkImage(
+            imageUrl: emojiUrl,
+            width: 24,
+            height: 24,
+            fit: BoxFit.cover,
+            memCacheWidth: 48,
+            memCacheHeight: 48,
+            maxWidthDiskCache: 48,
+            maxHeightDiskCache: 48,
           ),
-        ));
+        ),
+      ));
 
       lastIndex = match.end;
     }

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../pages/chat/voice_call_receiving_page.dart';
+import 'enhanced_logger.dart';
 
 class PushNotificationService {
   static late GlobalKey<NavigatorState> navigatorKey;
 
   static Future<void> initialize(GlobalKey<NavigatorState> key) async {
     navigatorKey = key;
-    print('推送通知服务初始化 - WebSocket模式');
+    EnhancedLogger().info('推送通知服务已初始化', category: LogCategory.network);
     // 现在使用WebSocket接收推送通知
   }
 
@@ -36,12 +37,16 @@ class PushNotificationService {
 
   // 处理来自WebSocket的通知
   static void handleWebSocketNotification(Map<String, dynamic> data) {
-    print('处理WebSocket推送通知: ${data['type']}');
+    EnhancedLogger().debug(
+      '收到 WebSocket 通知',
+      category: LogCategory.network,
+      metadata: {'type': data['type']?.toString() ?? 'unknown'},
+    );
     _handleMessage(data);
   }
 
   static Future<String> getToken() async {
-    print('获取推送令牌 - WebSocket模式');
+    EnhancedLogger().debug('获取 WebSocket 推送令牌', category: LogCategory.network);
     // 在WebSocket模式下，我们不需要Firebase token
     return 'websocket_token';
   }
@@ -49,7 +54,7 @@ class PushNotificationService {
   // 模拟接收到来电通知
   static void simulateIncomingCall(
       String callerId, String callerName, String callerAvatar, String callId) {
-    print('模拟收到来电通知');
+    EnhancedLogger().debug('模拟收到来电通知', category: LogCategory.network);
     _handleMessage({
       'type': 'incoming_call',
       'caller_id': callerId,

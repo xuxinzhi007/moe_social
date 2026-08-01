@@ -9,6 +9,7 @@ import '../../widgets/app_message_widget.dart';
 import '../../providers/loading_provider.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
+import '../../services/enhanced_logger.dart';
 
 class RechargePage extends StatefulWidget {
   const RechargePage({super.key});
@@ -50,7 +51,7 @@ class _RechargePageState extends State<RechargePage> {
         });
       }
     } catch (e) {
-      print('加载用户信息失败: $e');
+      EnhancedLogger().error('加载用户信息失败', category: LogCategory.network);
     }
   }
 
@@ -92,7 +93,7 @@ class _RechargePageState extends State<RechargePage> {
         _selectedAmount = null;
       });
     } catch (e) {
-      print('充值失败: $e');
+      EnhancedLogger().error('充值失败', category: LogCategory.network);
       _showError('充值失败: ${e.toString()}');
     } finally {
       if (mounted) {

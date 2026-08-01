@@ -59,9 +59,10 @@ class _ScanPageState extends State<ScanPage>
 
   Future<void> _initScanner() async {
     // 请求相机权限
+    if (!mounted) return;
     final hasPermission =
         await CameraPermissionService.handleCameraPermission(context);
-    if (hasPermission) {
+    if (hasPermission && mounted) {
       setState(() {
         _hasPermission = true;
         _controller = MobileScannerController(
@@ -81,7 +82,7 @@ class _ScanPageState extends State<ScanPage>
         imageQuality: 80,
       );
 
-      if (pickedFile != null) {
+      if (pickedFile != null && mounted) {
         MoeToast.info(context, '图片选择成功，正在识别二维码...');
 
         // 使用 mobile_scanner 库的 analyzeImage 方法识别二维码
@@ -93,6 +94,7 @@ class _ScanPageState extends State<ScanPage>
             final bool success = await _controller!.analyzeImage(
               pickedFile.path,
             );
+            if (!mounted) return;
 
             if (!success) {
               MoeToast.error(context, '未识别到二维码');
@@ -102,11 +104,11 @@ class _ScanPageState extends State<ScanPage>
             MoeToast.error(context, '扫码控制器未初始化');
           }
         } catch (e) {
-          MoeToast.error(context, '识别二维码失败: $e');
+          if (mounted) MoeToast.error(context, '识别二维码失败: $e');
         }
       }
     } catch (e) {
-      MoeToast.error(context, '选择图片失败: $e');
+      if (mounted) MoeToast.error(context, '选择图片失败: $e');
     }
   }
 
@@ -128,17 +130,20 @@ class _ScanPageState extends State<ScanPage>
           });
           // 延迟一段时间后处理扫描结果
           await Future.delayed(const Duration(milliseconds: 500));
+          if (!mounted) return;
           await _processScanResult(rawValue);
           break;
         }
       }
     } catch (e) {
-      MoeToast.error(context, '处理扫码结果失败: $e');
+      if (mounted) MoeToast.error(context, '处理扫码结果失败: $e');
     } finally {
-      setState(() {
-        _isProcessing = false;
-        _isScanSuccess = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _isScanSuccess = false;
+        });
+      }
     }
   }
 

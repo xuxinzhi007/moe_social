@@ -167,11 +167,15 @@ class _SettingsPageState extends State<SettingsPage> {
           padding: const EdgeInsets.symmetric(vertical: 40),
           child: Column(
             children: [
-              const Icon(Icons.search_off, size: 64, color: Colors.grey),
+              const Icon(
+                Icons.search_off,
+                size: 64,
+                color: MoeTokens.hintText,
+              ),
               const SizedBox(height: 16),
               Text(
                 '未找到与「$_searchQuery」相关的设置',
-                style: const TextStyle(color: Colors.grey),
+                style: const TextStyle(color: MoeTokens.hintText),
               ),
             ],
           ),
@@ -195,9 +199,9 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Text(
                 moduleName,
                 style: const TextStyle(
-                  color: Color(0xFF555555),
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  color: MoeTokens.titleText,
+                  fontSize: MoeTokens.textMd,
+                  fontWeight: MoeTokens.fontWeightSubtitle,
                 ),
               ),
             ),
@@ -713,13 +717,13 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildSectionTitle(String title, {Key? key}) {
     return Padding(
       key: key,
-      padding: const EdgeInsets.only(left: 12, bottom: 10),
+      padding: const EdgeInsets.only(left: 8, bottom: 10),
       child: Text(
         title,
         style: const TextStyle(
-          color: Color(0xFF555555),
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
+          color: MoeTokens.titleText,
+          fontSize: MoeTokens.textMd,
+          fontWeight: MoeTokens.fontWeightSubtitle,
         ),
       ),
     );

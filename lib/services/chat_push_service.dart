@@ -8,6 +8,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'api_service.dart';
 import 'friend_request_sync.dart';
 import 'notification_service.dart';
+import 'enhanced_logger.dart';
 import 'ws_channel_connector.dart';
 import '../auth_service.dart';
 import '../models/gift.dart';
@@ -329,9 +330,11 @@ class ChatPushService {
       return;
     }
 
-    // 打印接收到的消息，用于调试
-    print(
-        'ChatPushService: Received message from $from: $content, senderName: $senderName, avatarUrl: $avatarUrl');
+    EnhancedLogger().debug(
+      '收到私信推送',
+      category: LogCategory.network,
+      metadata: {'has_content': content.isNotEmpty},
+    );
 
     // Broadcast message to listeners
     _incomingController.add(map);
@@ -412,11 +415,10 @@ class ChatPushService {
   }
 
   static void _handleGiftReceived(Map<String, dynamic> map) {
-    final senderName = map['sender_name']?.toString() ??
-        map['senderName']?.toString() ??
-        '用户';
-    final avatarUrl = map['sender_avatar']?.toString() ??
-        map['senderAvatar']?.toString();
+    final senderName =
+        map['sender_name']?.toString() ?? map['senderName']?.toString() ?? '用户';
+    final avatarUrl =
+        map['sender_avatar']?.toString() ?? map['senderAvatar']?.toString();
 
     final rawGift = map['gift'];
     if (rawGift is! Map) return;

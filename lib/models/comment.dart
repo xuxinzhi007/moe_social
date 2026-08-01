@@ -1,5 +1,6 @@
 import '../utils/api_datetime.dart';
 import '../utils/api_json.dart';
+import '../services/enhanced_logger.dart';
 
 class Comment {
   final String id;
@@ -113,10 +114,11 @@ class Comment {
         authorBotAgentKey:
             apiString(json, 'author_bot_agent_key', 'authorBotAgentKey'),
       );
-    } catch (e, stackTrace) {
-      print('❌ Comment.fromJson错误: $e');
-      print('❌ JSON数据: $json');
-      print('❌ 堆栈跟踪: $stackTrace');
+    } catch (e) {
+      EnhancedLogger().error(
+        '评论数据解析失败',
+        category: LogCategory.network,
+      );
       rethrow;
     }
   }

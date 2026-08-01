@@ -290,31 +290,32 @@ class _HomePageState extends State<HomePage>
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              gradient: MoeTokens.gradientPrimary,
+              color: MoeTokens.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(22),
             ),
             child: const Icon(
               Icons.favorite_rounded,
-              color: Colors.white,
+              color: MoeTokens.primary,
               size: 18,
             ),
           ),
           const SizedBox(width: 8),
-          ShaderMask(
-            shaderCallback: (bounds) =>
-                MoeTokens.gradientText.createShader(bounds),
-            child: const Text(
-              'Moe Social',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
-                color: Colors.white,
-              ),
+          const Text(
+            'Moe Social',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.2,
+              color: MoeTokens.titleText,
             ),
           ),
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.forum_outlined, color: MoeTokens.titleText),
+          onPressed: () => Navigator.pushNamed(context, '/community'),
+          tooltip: '发现同好',
+        ),
         IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded,
               color: MoeTokens.titleText),
@@ -414,33 +415,26 @@ class _HomePageState extends State<HomePage>
     final wantsYou = context.watch<CompanionPresenceProvider>().hasAttention;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
       child: MoePressable(
         onTap: () => context.read<MainNavController>().requestTab(2),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            color: MoeTokens.surface1,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             border: Border.all(
               color: wantsYou
                   ? const Color(0xFFE97891).withValues(alpha: 0.35)
                   : MoeTokens.primary.withValues(alpha: 0.12),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
           ),
           child: Row(
             children: [
               CompanionAvatar(
                 emoji: profile.emoji,
                 avatarUrl: profile.avatarUrl,
-                size: 40,
+                size: 34,
                 borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
                 backgroundColor: MoeTokens.surface0,
               ),
@@ -455,7 +449,7 @@ class _HomePageState extends State<HomePage>
                           child: Text(
                             name,
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: MoeTokens.titleText,
                             ),
@@ -468,13 +462,13 @@ class _HomePageState extends State<HomePage>
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: Colors.pink.shade400,
+                              color: MoeTokens.pastelPink,
                             ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       greeting,
                       maxLines: 1,
@@ -482,14 +476,17 @@ class _HomePageState extends State<HomePage>
                       style: TextStyle(
                         fontSize: 12,
                         height: 1.25,
-                        color: Colors.grey.shade700,
+                        color: MoeTokens.hintText,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: Colors.grey.shade400, size: 22),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: MoeTokens.hintText,
+                size: 22,
+              ),
             ],
           ),
         ),
@@ -532,8 +529,9 @@ class _HomePageState extends State<HomePage>
                       curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        gradient: isSelected ? MoeTokens.gradientPrimary : null,
-                        color: isSelected ? null : Colors.transparent,
+                        color: isSelected
+                            ? MoeTokens.primary.withValues(alpha: 0.12)
+                            : Colors.transparent,
                         borderRadius:
                             BorderRadius.circular(MoeTokens.radiusFull),
                       ),
@@ -543,8 +541,9 @@ class _HomePageState extends State<HomePage>
                           Icon(
                             tab.icon,
                             size: 14,
-                            color:
-                                isSelected ? Colors.white : MoeTokens.hintText,
+                            color: isSelected
+                                ? MoeTokens.primary
+                                : MoeTokens.hintText,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -555,7 +554,7 @@ class _HomePageState extends State<HomePage>
                                   ? FontWeight.w700
                                   : FontWeight.w500,
                               color: isSelected
-                                  ? Colors.white
+                                  ? MoeTokens.primary
                                   : MoeTokens.hintText,
                             ),
                           ),
@@ -581,9 +580,8 @@ class _HomePageState extends State<HomePage>
                 width: 48,
                 height: 44,
                 decoration: BoxDecoration(
-                  gradient: MoeTokens.gradientPrimary,
+                  color: MoeTokens.primary,
                   borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                  boxShadow: MoeTokens.shadowGlow(MoeTokens.primary),
                 ),
                 child: const Icon(Icons.add_rounded, color: Colors.white),
               ),

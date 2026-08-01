@@ -529,6 +529,8 @@ class _UserLevelPageState extends State<UserLevelPage>
               color: Colors.transparent,
               child: InkWell(
                 onTap: () async {
+                  final levelProvider = context.read<UserLevelProvider>();
+                  final checkInProvider = context.read<CheckInProvider>();
                   await Navigator.push<void>(
                     context,
                     MaterialPageRoute<void>(
@@ -536,12 +538,9 @@ class _UserLevelPageState extends State<UserLevelPage>
                     ),
                   );
                   if (!context.mounted) return;
-                  await context
-                      .read<UserLevelProvider>()
-                      .loadUserLevel(widget.userId);
-                  await context
-                      .read<CheckInProvider>()
-                      .loadCheckInStatus(widget.userId);
+                  await levelProvider.loadUserLevel(widget.userId);
+                  if (!context.mounted) return;
+                  await checkInProvider.loadCheckInStatus(widget.userId);
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
@@ -936,7 +935,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   ],
                 ),
               );
-            }).toList(),
+            }),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
@@ -1283,7 +1282,7 @@ class _UserLevelPageState extends State<UserLevelPage>
                   ),
                 ),
               );
-            }).toList(),
+            }),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
