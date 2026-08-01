@@ -1,15 +1,19 @@
 import type { MoeAvatarManifest, PreviewAnimation } from '../types'
 import { downloadBlob } from '../../moe-content/exportPack'
 import { layerRuleForKey, paintRectPx, type PaintRect } from './layerTemplate'
+import { composeMannequinCell } from '../composer/composeMannequin'
+import type { AvatarAssetStore } from '../assetStore'
 
 const DIR_LABELS = ['up', 'left', 'down', 'right']
 
-/** 生成 walk/idle 格线模板 PNG（美术按格绘制各部位 sheet） */
-export function buildGridTemplateCanvas(
+/** 生成 walk/idle 模板 PNG（带人偶基准和格线，而不是纯显示框） */
+export async function buildGridTemplateCanvas(
   manifest: MoeAvatarManifest,
   anim: PreviewAnimation,
   layerKey?: string,
-): HTMLCanvasElement {
+  packBaseUrl = '/pet/moe_avatar',
+  assetStore?: AvatarAssetStore,
+): Promise<HTMLCanvasElement> {
   const grid = manifest.animations[anim]
   const cell = manifest.cellSize
   const w = grid.cols * cell
@@ -20,15 +24,24 @@ export function buildGridTemplateCanvas(
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
 
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = '#fbf7f2'
   ctx.fillRect(0, 0, w, h)
+
+  const mannequinRows = await Promise.all(
+    Array.from({ length: grid.rows }, (_, row) =>
+      composeMannequinCell(manifest, packBaseUrl, assetStore, anim, row, 0),
+    ),
+  )
 
   for (let row = 0; row < grid.rows; row++) {
     for (let col = 0; col < grid.cols; col++) {
       const x = col * cell
       const y = row * cell
-      ctx.fillStyle = (row + col) % 2 === 0 ? '#f8f4ff' : '#fff0f5'
-      ctx.fillRect(x, y, cell, cell)
+      ctx.save()
+      ctx.globalAlpha = row === 2 ? 1 : 0.86
+      const mannequin = mannequinRows[row]
+      if (mannequin) ctx.drawImage(mannequin, x, y)
+      ctx.restore()
       const rule = layerKey ? layerRuleForKey(layerKey) : undefined
       if (rule?.paintRect) {
         drawPaintRectInCell(ctx, rule.paintRect, x, y, cell)
@@ -88,8 +101,10 @@ export async function downloadGridTemplate(
   manifest: MoeAvatarManifest,
   anim: PreviewAnimation,
   layerKey?: string,
+  packBaseUrl = '/pet/moe_avatar',
+  assetStore?: AvatarAssetStore,
 ): Promise<void> {
-  const canvas = buildGridTemplateCanvas(manifest, anim, layerKey)
+  const canvas = await buildGridTemplateCanvas(manifest, anim, layerKey, packBaseUrl, assetStore)
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob'))), 'image/png')
   })

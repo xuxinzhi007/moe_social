@@ -312,19 +312,20 @@ export function SlotItemProductionPanel({
         </button>
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-
-          <button type="button" className="btn" onClick={() => void downloadGridTemplate(manifest, 'walk')}>
-
-            walk 模板
-
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void downloadGridTemplate(manifest, 'walk', undefined, packBaseUrl, assetStore)}
+          >
+            walk 完整模板
           </button>
-
-          <button type="button" className="btn" onClick={() => void downloadGridTemplate(manifest, 'idle')}>
-
-            idle 模板
-
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void downloadGridTemplate(manifest, 'idle', undefined, packBaseUrl, assetStore)}
+          >
+            idle 完整模板
           </button>
-
         </div>
 
       </div>

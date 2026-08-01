@@ -26,6 +26,10 @@ export function AvatarPreviewCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [anim, setAnim] = useState<PreviewAnimation>('idle')
   const [frame, setFrame] = useState(0)
+  const [direction, setDirection] = useState(() => {
+    const downIndex = manifest.directionRows.indexOf('down')
+    return downIndex >= 0 ? downIndex : Math.min(DIR_DOWN, manifest.directionRows.length - 1)
+  })
   const [sheet, setSheet] = useState<HTMLCanvasElement | null>(null)
 
   const overrideCount = resolveLayerPaths(manifest, outfit, anim).filter((p) =>
@@ -47,6 +51,10 @@ export function AvatarPreviewCanvas({
   }, [anim, outfit, assetRevision])
 
   useEffect(() => {
+    setDirection((current) => Math.min(current, Math.max(0, manifest.directionRows.length - 1)))
+  }, [manifest.directionRows.length])
+
+  useEffect(() => {
     const cols = manifest.animations[anim].cols
     const ms = anim === 'walk' ? 120 : 450
     const t = window.setInterval(() => {
@@ -61,8 +69,8 @@ export function AvatarPreviewCanvas({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    drawSheetFrame(ctx, sheet, manifest, anim, DIR_DOWN, frame, 0, 0, size)
-  }, [frame, sheet, manifest, anim, size])
+    drawSheetFrame(ctx, sheet, manifest, anim, direction, frame, 0, 0, size)
+  }, [frame, sheet, manifest, anim, direction, size])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -76,6 +84,19 @@ export function AvatarPreviewCanvas({
             onClick={() => setAnim(a)}
           >
             {a}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {manifest.directionRows.map((label, row) => (
+          <button
+            key={label}
+            type="button"
+            className={`btn${direction === row ? ' primary' : ''}`}
+            style={{ fontSize: 11, padding: '4px 8px' }}
+            onClick={() => setDirection(row)}
+          >
+            {label}
           </button>
         ))}
       </div>
@@ -94,7 +115,7 @@ export function AvatarPreviewCanvas({
       />
       {overrideCount > 0 ? (
         <p style={{ margin: 0, fontSize: 10, color: '#c45' }}>
-          {overrideCount} 层为会话覆盖 · 切换 {anim} 查看效果
+          {overrideCount} 层为会话覆盖 · 切换 {anim} / {manifest.directionRows[direction] ?? direction} 查看效果
         </p>
       ) : null}
     </div>

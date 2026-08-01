@@ -61,6 +61,24 @@ class CompanionProfileData {
   bool get isWorldBindMissing =>
       lifeEntityId > 0 && worldBindStatus == 'bound_missing';
 
+  double get relationshipProgress =>
+      (intimacyScore / 100).clamp(0.0, 1.0);
+
+  String get relationshipStageLabel {
+    final score = intimacyScore.clamp(0.0, 100.0);
+    if (score < 10) return '初识';
+    if (score < 25) return '熟悉中';
+    if (score < 45) return '开始依赖';
+    if (score < 70) return '彼此习惯';
+    if (score < 90) return '很懂彼此';
+    return '特别亲近';
+  }
+
+  String get relationshipProgressLabel {
+    final level = relationshipLevel.clamp(1, 10);
+    return 'Lv.$level · ${intimacyScore.round()}%';
+  }
+
   factory CompanionProfileData.fromMap(Map<String, dynamic> m) {
     final lifeEntityId = (m['life_entity_id'] as num?)?.toInt() ?? 0;
     var status = m['world_bind_status']?.toString() ??

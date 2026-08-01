@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1152" height="512" viewBox="0 0 1152 512">
+  <defs>
+    <pattern id="p" width="128" height="128" patternUnits="userSpaceOnUse">
+      <g transform="translate(20 10)">
+        <rect x="54" y="12" width="10" height="92" rx="5" fill="#8b5a2b"/>
+        <circle cx="59" cy="18" r="16" fill="#d6b15a"/>
+        <path d="M39 44 L24 62 L43 70 Z" fill="#6a7fb8"/>
+        <path d="M79 44 L94 62 L75 70 Z" fill="#6a7fb8"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="1152" height="512" fill="url(#p)"/>
+</svg>

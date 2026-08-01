@@ -656,11 +656,59 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                 children: [
-                  if (context.watch<CompanionPresenceProvider>().hasAttention)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _AttentionBanner(onChat: _openChat),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final hasAttention =
+                          context.watch<CompanionPresenceProvider>().hasAttention;
+                      final leadItem = _hub.latestDailyItem;
+                      final pulse = CompanionHubViewModel.buildPulseData(
+                        profile: _hub.profile,
+                        state: _hub.state,
+                        dailyItems: _hub.dailyItems,
+                        hasAttention: hasAttention,
+                      );
+
+                      void openPulse() {
+                        if (hasAttention) {
+                          unawaited(_openChat());
+                          return;
+                        }
+                        switch (leadItem?.kind) {
+                          case 'memory':
+                            unawaited(
+                              _openMemories(
+                                focusMemoryId: leadItem?.memoryId,
+                              ),
+                            );
+                            return;
+                          case 'world':
+                          case 'moment':
+                            unawaited(_openLifeWorld());
+                            return;
+                          case 'post':
+                            if (leadItem != null) {
+                              unawaited(_openDailyPost(leadItem));
+                              return;
+                            }
+                            break;
+                          case 'chat':
+                            unawaited(_openChat());
+                            return;
+                          default:
+                            break;
+                        }
+                        unawaited(_openChat());
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _CompanionPulseCard(
+                          pulse: pulse,
+                          onTap: openPulse,
+                        ),
+                      );
+                    },
+                  ),
                   _HeroCard(
                     profile: _hub.profile,
                     state: _hub.state,
@@ -858,16 +906,11 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _MiniChip('关系', 'Lv.${profile.relationshipLevel}'),
-              _MiniChip('亲密', '${profile.intimacyScore.round()}%'),
-              if (state.activityLabel.trim().isNotEmpty)
-                _MiniChip('近况', state.activityLabel.trim()),
-            ],
-          ),
+          _RelationshipProgressCard(profile: profile),
+          if (state.activityLabel.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _MiniChip('近况', state.activityLabel.trim()),
+          ],
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onChat,
@@ -877,6 +920,78 @@ class _HeroCard extends StatelessWidget {
               minimumSize: const Size.fromHeight(48),
               backgroundColor: AiBrandTokens.primary,
               foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RelationshipProgressCard extends StatelessWidget {
+  const _RelationshipProgressCard({required this.profile});
+
+  final CompanionProfileData profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final stage = profile.relationshipStageLabel;
+    final progress = profile.relationshipProgress;
+    final progressLabel = profile.relationshipProgressLabel;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.favorite_rounded,
+                  size: 18, color: Color(0xFFE97891)),
+              const SizedBox(width: 8),
+              const Text(
+                '关系进程',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AiBrandTokens.titleColor,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                stage,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFFE97891),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              minHeight: 8,
+              value: progress,
+              backgroundColor: const Color(0xFFF2E9F4),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFE97891),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$progressLabel · 关系在持续生长中',
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: Color(0xFF6B4A52),
             ),
           ),
         ],

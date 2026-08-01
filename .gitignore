@@ -148,3 +148,7 @@ backend/rpc/.../
 backend/.codex-tmp/
 moe_social_mcp_server/
 .qoder
+
+# Avatar generated artifacts
+moe-admin/public/pet/moe_avatar/
+moe-avatar/node_modules/

@@ -1,0 +1,12 @@
+{
+  "name": "moe-avatar-workspace",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "core",
+    "editor"
+  ],
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}

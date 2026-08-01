@@ -35,6 +35,24 @@ class CompanionDailyItem {
   final int? memoryId;
 }
 
+class CompanionPulseData {
+  const CompanionPulseData({
+    required this.title,
+    required this.body,
+    required this.ctaLabel,
+    required this.kind,
+    this.memoryId,
+    this.postId,
+  });
+
+  final String title;
+  final String body;
+  final String ctaLabel;
+  final String kind;
+  final int? memoryId;
+  final String? postId;
+}
+
 /// AI 伙伴关系首页状态（陪伴为主，世界/动态为日常流）。
 class CompanionHubViewModel extends ChangeNotifier {
   CompanionHubViewModel({CompanionService? companionService})
@@ -57,6 +75,8 @@ class CompanionHubViewModel extends ChangeNotifier {
   CompanionProfileData get profile => _profile;
   CompanionStateData get state => _state;
   List<CompanionDailyItem> get dailyItems => _dailyItems;
+  CompanionDailyItem? get latestDailyItem =>
+      _dailyItems.isNotEmpty ? _dailyItems.first : null;
   String get worldSummaryLine => _worldSummaryLine;
 
   /// 是否已绑定世界居民（以 profile.life_entity_id > 0 为准）。
@@ -67,6 +87,87 @@ class CompanionHubViewModel extends ChangeNotifier {
 
   bool get worldBindMissing =>
       _worldBound && _worldBindStatus == 'bound_missing';
+
+  static CompanionPulseData buildPulseData({
+    required CompanionProfileData profile,
+    required CompanionStateData state,
+    required List<CompanionDailyItem> dailyItems,
+    required bool hasAttention,
+  }) {
+    final leadItem = dailyItems.isNotEmpty ? dailyItems.first : null;
+    final greeting = state.greeting.trim();
+    final mood = state.moodThought.trim();
+    final activity = state.activityLabel.trim();
+
+    if (hasAttention) {
+      final body = greeting.isNotEmpty
+          ? greeting
+          : (mood.isNotEmpty ? mood : 'TA 正在等你来聊聊。');
+      return CompanionPulseData(
+        title: 'TA 想你了',
+        body: body,
+        ctaLabel: '去聊天',
+        kind: 'attention',
+      );
+    }
+
+    if (leadItem == null) {
+      final fallback = greeting.isNotEmpty
+          ? greeting
+          : (mood.isNotEmpty
+              ? mood
+              : '今天先陪 TA 说说话，或者去看看最近的变化。');
+      return CompanionPulseData(
+        title: '今天的 TA',
+        body: fallback,
+        ctaLabel: '开始聊天',
+        kind: 'idle',
+      );
+    }
+
+    switch (leadItem.kind) {
+      case 'memory':
+        return CompanionPulseData(
+          title: 'TA 记得的事',
+          body: leadItem.body,
+          ctaLabel: '看记忆',
+          kind: leadItem.kind,
+          memoryId: leadItem.memoryId,
+        );
+      case 'world':
+      case 'moment':
+        return CompanionPulseData(
+          title: activity.isNotEmpty ? activity : 'TA 的近况',
+          body: leadItem.body,
+          ctaLabel: '去世界',
+          kind: leadItem.kind,
+        );
+      case 'post':
+        return CompanionPulseData(
+          title: 'TA 刚发了动态',
+          body: leadItem.body,
+          ctaLabel: '看动态',
+          kind: leadItem.kind,
+          postId: leadItem.postId,
+        );
+      case 'chat':
+        return CompanionPulseData(
+          title: '刚聊过的话',
+          body: leadItem.body,
+          ctaLabel: '继续聊天',
+          kind: leadItem.kind,
+        );
+      default:
+        return CompanionPulseData(
+          title: '今天的 TA',
+          body: leadItem.body,
+          ctaLabel: '继续陪伴',
+          kind: leadItem.kind,
+          memoryId: leadItem.memoryId,
+          postId: leadItem.postId,
+        );
+    }
+  }
 
   Future<void> loadDashboard() async {
     _isLoading = true;

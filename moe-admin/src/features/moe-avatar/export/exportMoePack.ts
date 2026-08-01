@@ -44,20 +44,13 @@ export type ExportPackOptions = {
 
 /** 导出官方包 zip：manifest + 各部位分层 PNG + 部件 thumbs */
 export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob> {
-  const {
-    manifest,
-    packBaseUrl,
-    assetStore,
-    previewOutfit,
-    includeBaked = false,
-  } = options
+  const { manifest, packBaseUrl, assetStore, previewOutfit, includeBaked = false } = options
   const zip = new JSZip()
   const paths = collectAssetPaths(manifest)
 
   for (const rel of paths) {
     try {
-      const blob =
-        assetStore?.get(rel) ?? (await fetchBlob(assetUrl(packBaseUrl, rel)))
+      const blob = assetStore?.get(rel) ?? (await fetchBlob(assetUrl(packBaseUrl, rel)))
       zip.file(rel, blob)
     } catch (e) {
       console.warn('skip layer', rel, e)
@@ -89,20 +82,8 @@ export async function exportMoePackZip(options: ExportPackOptions): Promise<Blob
   }
 
   if (includeBaked && previewOutfit) {
-    const walk = await composeSheet(
-      manifestOut,
-      previewOutfit,
-      'walk',
-      packBaseUrl,
-      assetStore,
-    )
-    const idle = await composeSheet(
-      manifestOut,
-      previewOutfit,
-      'idle',
-      packBaseUrl,
-      assetStore,
-    )
+    const walk = await composeSheet(manifestOut, previewOutfit, 'walk', packBaseUrl, assetStore)
+    const idle = await composeSheet(manifestOut, previewOutfit, 'idle', packBaseUrl, assetStore)
     if (walk) zip.file('baked/hero_walk.png', await canvasToPngBlob(walk))
     if (idle) zip.file('baked/hero_idle.png', await canvasToPngBlob(idle))
   }
