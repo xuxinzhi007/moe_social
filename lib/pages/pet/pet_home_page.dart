@@ -592,42 +592,27 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   Future<void> _openAdventure() async {
-    final power = pet.profile.sport +
-        pet.profile.labor +
-        (pet.profile.mood ~/ 10);
+    final p = pet.profile;
+    final power = p.sport + p.labor + (p.mood ~/ 10);
     final adv = PetAdventureGame(
       playerPower: power,
       stageLabel: '小院试炼',
+      hatId: p.hatId,
+      topId: p.topId,
+      bottomId: p.bottomId,
+      shoesId: p.shoesId,
     );
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          backgroundColor: const Color(0xFF2E3A4A),
-          appBar: AppBar(
-            title: const Text('轻冒险'),
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-          ),
-          body: Stack(
-            children: [
-              GameWidget(game: adv),
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 28,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await pet.adventure();
-                    if (mounted) {
-                      Navigator.pop(context);
-                      _toast();
-                    }
-                  },
-                  child: const Text('结算并返回'),
-                ),
-              ),
-            ],
-          ),
+        builder: (_) => _PetAdventurePage(
+          game: adv,
+          onSettle: () async {
+            await pet.adventure();
+            if (mounted) {
+              Navigator.pop(context);
+              _toast();
+            }
+          },
         ),
       ),
     );
@@ -1239,6 +1224,98 @@ class _MoreGrid extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 轻冒险页壳：与小家同色板，避免深夜蓝 + 系统默认按钮。
+class _PetAdventurePage extends StatefulWidget {
+  const _PetAdventurePage({
+    required this.game,
+    required this.onSettle,
+  });
+
+  final PetAdventureGame game;
+  final Future<void> Function() onSettle;
+
+  @override
+  State<_PetAdventurePage> createState() => _PetAdventurePageState();
+}
+
+class _PetAdventurePageState extends State<_PetAdventurePage> {
+  static const _ink = Color(0xFF5A4638);
+  static const _rose = Color(0xFFE97891);
+  static const _cream = Color(0xFFFFF6EE);
+
+  var _done = false;
+  var _settling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.game.onFinished = (_) {
+      if (mounted) setState(() => _done = true);
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _cream,
+      appBar: AppBar(
+        title: Text(
+          '轻冒险 · ${widget.game.stageLabel}',
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            color: _ink,
+            fontSize: 17,
+          ),
+        ),
+        backgroundColor: const Color(0xFFFFF8F2),
+        foregroundColor: _ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          GameWidget(game: widget.game),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 28,
+            child: SafeArea(
+              top: false,
+              child: FilledButton(
+                onPressed: !_done || _settling
+                    ? null
+                    : () async {
+                        setState(() => _settling = true);
+                        await widget.onSettle();
+                      },
+                style: FilledButton.styleFrom(
+                  backgroundColor: _rose,
+                  disabledBackgroundColor: const Color(0xFFE8D5C4),
+                  foregroundColor: Colors.white,
+                  disabledForegroundColor: _ink.withValues(alpha: 0.45),
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  _done ? (_settling ? '结算中…' : '结算并返回') : '对战中…',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

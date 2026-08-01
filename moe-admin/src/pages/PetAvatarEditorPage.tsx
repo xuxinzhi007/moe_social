@@ -129,11 +129,11 @@ export function PetAvatarEditorPage() {
         manifest,
         packBaseUrl: MOE_AVATAR_PACK_BASE,
         assetStore,
-        includeBaked: false,
+        includeBaked: true,
       })
       downloadBlob(blob, `${manifest.packId}.zip`)
       setMessage(
-        '已导出分层包（各部位 walk/idle sheet + manifest）→ assets/pet/moe_content/avatar/ · App 运行时任意槽位组合',
+        '已导出分层包（各部位 walk/idle sheet + baked 预览 + manifest）→ assets/pet/moe_content/avatar/ · App 运行时任意槽位组合',
       )
     } catch (e) {
       setParseError(e instanceof Error ? e.message : '导出失败')

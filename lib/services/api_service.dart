@@ -161,7 +161,7 @@ class ApiService {
   static const bool _enableApiLog = true;
 
   /// 是否输出完整请求/响应体（默认关闭，避免 Console 刷屏）
-  static const bool _verboseApiLog = false;
+  static final bool _verboseApiLog = kDebugMode;
 
   // 与 [moe_launch_config.AppConfig] 同源；[initRemoteProductionBaseUrl] 内会再做规范化。
   static String _configuredOnlineUrl =

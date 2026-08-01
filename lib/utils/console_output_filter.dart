@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart';
+
 bool shouldSuppressConsoleLine(String line) {
+  if (kDebugMode) return false;
+
   final trimmed = line.trim();
   if (trimmed.isEmpty) return true;
 

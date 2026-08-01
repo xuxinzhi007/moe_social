@@ -12,7 +12,7 @@ Moe Social 养成域的 **自研角色模板 + 官方资源包**，替代长期�
 |------|------|
 | **Spec（模板）** | 画布格数、方向、动画、槽位、z 序、锚点 — 技术契约 |
 | **官方包（Official Pack）** | 符合 Spec 的 `manifest.json` + 层 PNG + 缩略图 |
-| **编辑器（远期独立仓）** | 选部件 / 导入自定义图 → 对齐模板 → 导出官方包 |
+| **编辑器（当前壳）** | 选模板 / 选部件 / 导入自定义图 → 对齐模板 → 导出官方包 |
 
 ## 文档
 
@@ -30,17 +30,21 @@ Moe Social 养成域的 **自研角色模板 + 官方资源包**，替代长期�
 
 ```text
 moe-avatar/
+├── core/           # 开源核心：协议 / 校验 / 解析 / 模板注册 / 导出前置逻辑
+├── editor/         # 独立编辑器壳（可直接运行）
 ├── spec/           # SSOT 文档
 ├── schema/         # manifest 示例 / 未来 JSON Schema
 ├── packs/official/ # 官方包产出目录（zip 或拷贝到 assets）
 └── reference/      # ULPC 等外部参考笔记
 ```
 
-## 编辑器（moe-admin）
+## 编辑器（当前壳）
 
 **入口**：`/ops/biz/pet/avatar`（旧 `/biz/pet/lpc` 已重定向）
 
 实现：`moe-admin/src/features/moe-avatar/` · 文档 [spec/editor-vision.md](spec/editor-vision.md) · [docs/dev/moe-avatar-admin.md](../docs/dev/moe-avatar-admin.md)
+
+当前管理台直接源码引用 `core/`；独立编辑器已在 `editor/`，后续可继续把 admin 壳剥离，不动核心协议。
 
 ## 与 moe-social 的关系
 

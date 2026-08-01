@@ -1,0 +1,18 @@
+{
+  "name": "@moe-avatar/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open-source avatar core for Moe Social",
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./labels": "./src/labels.ts",
+    "./resolveLayers": "./src/resolveLayers.ts",
+    "./collectManifestAssets": "./src/collectManifestAssets.ts",
+    "./manifestIntegrity": "./src/manifestIntegrity.ts"
+  }
+}

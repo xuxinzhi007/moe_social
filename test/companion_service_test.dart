@@ -39,4 +39,15 @@ void main() {
     expect(updated.intimacyScore, 25);
     expect(updated.agentId, 'agent-1');
   });
+
+  test('CompanionProfileData derives relationship progress', () {
+    const profile = CompanionProfileData(
+      relationshipLevel: 6,
+      intimacyScore: 68,
+    );
+
+    expect(profile.relationshipStageLabel, '彼此习惯');
+    expect(profile.relationshipProgressLabel, 'Lv.6 · 68%');
+    expect(profile.relationshipProgress, 0.68);
+  });
 }
