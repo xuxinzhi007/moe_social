@@ -60,7 +60,7 @@ class _ChatPageState extends State<ChatPage> {
   List<AiChatMessage> _messages = [];
   final Set<String> _revealedMessageIds = {};
   double _temperature = 0.85;
-  bool _terminalModeEnabled = false;
+  final bool _terminalModeEnabled = false;
   String _systemPrompt = '';
   String _userPersona = '';
 

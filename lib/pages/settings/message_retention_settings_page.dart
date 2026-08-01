@@ -110,51 +110,37 @@ class _MessageRetentionSettingsPageState
                   ),
                 ),
                 const SizedBox(height: 16),
-                Card(
-                  elevation: 0,
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        title: const Text('自动'),
-                        subtitle: const Text('跟随会员与系统默认策略'),
-                        value: 'auto',
-                        groupValue: _value,
-                        onChanged: _saving
-                            ? null
-                            : (v) {
-                                if (v == null) return;
-                                setState(() => _value = v);
-                              },
-                      ),
-                      const Divider(height: 1),
-                      RadioListTile<String>(
-                        title: const Text('至少保留 7 天'),
-                        value: '7',
-                        groupValue: _value,
-                        onChanged: _saving
-                            ? null
-                            : (v) {
-                                if (v == null) return;
-                                setState(() => _value = v);
-                              },
-                      ),
-                      const Divider(height: 1),
-                      RadioListTile<String>(
-                        title: const Text('至少保留 30 天'),
-                        value: '30',
-                        groupValue: _value,
-                        onChanged: _saving
-                            ? null
-                            : (v) {
-                                if (v == null) return;
-                                setState(() => _value = v);
-                              },
-                      ),
-                    ],
+                RadioGroup<String>(
+                  groupValue: _value,
+                  onChanged: (value) {
+                    if (_saving || value == null) return;
+                    setState(() => _value = value);
+                  },
+                  child: Card(
+                    elevation: 0,
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('自动'),
+                          subtitle: const Text('跟随会员与系统默认策略'),
+                          value: 'auto',
+                        ),
+                        const Divider(height: 1),
+                        RadioListTile<String>(
+                          title: const Text('至少保留 7 天'),
+                          value: '7',
+                        ),
+                        const Divider(height: 1),
+                        RadioListTile<String>(
+                          title: const Text('至少保留 30 天'),
+                          value: '30',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

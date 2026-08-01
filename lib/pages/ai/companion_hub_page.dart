@@ -176,58 +176,63 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     final action = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AiBrandTokens.pageBackground,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  '伙伴工具',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AiBrandTokens.titleColor,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '伙伴工具',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AiBrandTokens.titleColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  leading: const Icon(Icons.psychology_alt_rounded),
-                  title: const Text('TA 记得的事'),
-                  subtitle: const Text('查看和管理你们共同留下的记忆'),
-                  onTap: () => Navigator.pop(sheetContext, 'memories'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.edit_note_rounded),
-                  title: const Text('编辑伙伴资料'),
-                  subtitle: const Text('调整名字、性格和陪伴方式'),
-                  onTap: () => Navigator.pop(sheetContext, 'profile'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.tune_rounded),
-                  title: const Text('模型服务配置'),
-                  subtitle: const Text('选择模型和服务提供方'),
-                  onTap: () => Navigator.pop(sheetContext, 'provider'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.refresh_rounded),
-                  title: const Text('刷新近况'),
-                  subtitle: const Text('重新加载伙伴状态和今日摘要'),
-                  onTap: () => Navigator.pop(sheetContext, 'refresh'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.notifications_none_rounded),
-                  title: const Text('主动陪伴设置'),
-                  subtitle: const Text('控制主动消息、免打扰时间和时区'),
-                  onTap: () => Navigator.pop(sheetContext, 'proactive'),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  ListTile(
+                    leading: const Icon(Icons.psychology_alt_rounded),
+                    title: const Text('TA 记得的事'),
+                    subtitle: const Text('查看和管理你们共同留下的记忆'),
+                    onTap: () => Navigator.pop(sheetContext, 'memories'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.edit_note_rounded),
+                    title: const Text('编辑伙伴资料'),
+                    subtitle: const Text('调整名字、性格和陪伴方式'),
+                    onTap: () => Navigator.pop(sheetContext, 'profile'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.tune_rounded),
+                    title: const Text('模型服务配置'),
+                    subtitle: const Text('选择模型和服务提供方'),
+                    onTap: () => Navigator.pop(sheetContext, 'provider'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.refresh_rounded),
+                    title: const Text('刷新近况'),
+                    subtitle: const Text('重新加载伙伴状态和今日摘要'),
+                    onTap: () => Navigator.pop(sheetContext, 'refresh'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.notifications_none_rounded),
+                    title: const Text('主动陪伴设置'),
+                    subtitle: const Text('控制主动消息、免打扰时间和时区'),
+                    onTap: () => Navigator.pop(sheetContext, 'proactive'),
+                  ),
+                ],
+              ),
             ),
           ),
         );

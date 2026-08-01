@@ -44,16 +44,17 @@ class MoeErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = switch (variant) {
-        MoeErrorVariant.card => _buildCard(context),
-        MoeErrorVariant.plain => _buildPlain(context),
-      };
+      MoeErrorVariant.card => _buildCard(context),
+      MoeErrorVariant.plain => _buildPlain(context),
+    };
     return animate ? MoeReveal(child: content) : content;
   }
 
   Widget _buildCard(BuildContext context) {
     final moe = MoeTheme.of(context);
     return Padding(
-      padding: padding ?? const EdgeInsets.symmetric(horizontal: MoeTokens.space2xl),
+      padding:
+          padding ?? const EdgeInsets.symmetric(horizontal: MoeTokens.space2xl),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(
@@ -65,6 +66,7 @@ class MoeErrorState extends StatelessWidget {
         decoration: BoxDecoration(
           color: MoeTokens.cardBackground,
           borderRadius: BorderRadius.circular(MoeTokens.radiusCardLarge),
+          border: Border.all(color: MoeTokens.surfaceBorder),
           boxShadow: MoeTokens.shadowMd(),
         ),
         child: Column(

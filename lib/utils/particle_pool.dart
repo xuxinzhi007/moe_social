@@ -37,7 +37,7 @@ class Particle {
     this.position = position;
     this.velocity = velocity;
     this.life = life;
-    this.maxLife = life;
+    maxLife = life;
     this.color = color;
     this.size = size;
   }

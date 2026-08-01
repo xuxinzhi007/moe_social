@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import '../services/enhanced_logger.dart';
 import '../utils/moe_error_copy.dart';
 import '../widgets/moe_toast.dart';
 
@@ -49,6 +50,9 @@ class ErrorHandler {
     MoeErrorScene scene = MoeErrorScene.generic,
   }) {
     showError(context, MoeErrorCopy.toast(e, scene: scene));
-    print('Unknown error: $e');
+    EnhancedLogger().error(
+      '未分类错误',
+      category: LogCategory.system,
+    );
   }
 }

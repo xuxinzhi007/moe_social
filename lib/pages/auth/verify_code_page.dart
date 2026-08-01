@@ -47,16 +47,17 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
 
     try {
       await AuthFlowService.sendResetPasswordCode(widget.email);
+      if (!mounted) return;
       _showCustomSnackBar(context, '验证码已重新发送', isError: false);
       _startCountdown();
     } on ApiException catch (e) {
-      _showCustomSnackBar(context, e.message, isError: true);
+      if (mounted) _showCustomSnackBar(context, e.message, isError: true);
     } catch (e) {
-      _showCustomSnackBar(context, '发送失败，请稍后重试', isError: true);
+      if (mounted) {
+        _showCustomSnackBar(context, '发送失败，请稍后重试', isError: true);
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -69,6 +70,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
       try {
         await AuthFlowService.verifyResetCode(
             widget.email, _codeController.text);
+        if (!mounted) return;
         _showCustomSnackBar(context, '验证成功！(≧∇≦)/', isError: false);
 
         Navigator.push(
@@ -81,13 +83,13 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
           ),
         );
       } on ApiException catch (e) {
-        _showCustomSnackBar(context, e.message, isError: true);
+        if (mounted) _showCustomSnackBar(context, e.message, isError: true);
       } catch (e) {
-        _showCustomSnackBar(context, '验证失败，请稍后重试', isError: true);
+        if (mounted) {
+          _showCustomSnackBar(context, '验证失败，请稍后重试', isError: true);
+        }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

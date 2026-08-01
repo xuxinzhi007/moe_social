@@ -10,6 +10,7 @@ import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../widgets/moe_loading.dart';
 import '../../theme/moe_tokens.dart';
+import '../../services/enhanced_logger.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -48,7 +49,7 @@ class _WalletPageState extends State<WalletPage> {
         });
       }
     } catch (e) {
-      print('加载钱包信息失败: $e');
+      EnhancedLogger().error('加载钱包信息失败', category: LogCategory.network);
     }
   }
 
@@ -102,7 +103,7 @@ class _WalletPageState extends State<WalletPage> {
         });
       }
     } catch (e) {
-      print('加载交易记录失败: $e');
+      EnhancedLogger().error('加载交易记录失败', category: LogCategory.network);
       if (mounted) {
         MoeToast.error(context, '加载交易记录失败，请检查网络');
       }

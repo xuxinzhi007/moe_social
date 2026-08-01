@@ -33,7 +33,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   bool _isFetching = false;
   bool _isMutating = false;
   int _currentPage = 1;
-  int _pageSize = 15;
+  final int _pageSize = 15;
   int _total = 0;
   bool _hasMore = true;
   final ImagePicker _picker = ImagePicker();
@@ -94,6 +94,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
   Future<void> _loadQuota() async {
     try {
       final data = await GalleryService.getQuota();
+      if (!mounted) return;
       if (data.isNotEmpty) {
         final used = data['used_bytes'];
         final max = data['max_bytes'];
@@ -118,6 +119,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         page: _currentPage,
         pageSize: _pageSize,
       );
+      if (!mounted) return;
       if (ApiResponse.isSuccess(result)) {
         final images =
             ApiResponse.listOf(result, keys: const ['images', 'data']);
@@ -139,14 +141,14 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
           _currentPage++;
         });
       } else {
-        ErrorHandler.showError(context, result['message'] ?? '加载图片失败');
+        if (mounted) {
+          ErrorHandler.showError(context, result['message'] ?? '加载图片失败');
+        }
       }
     } catch (e) {
-      ErrorHandler.showError(context, '加载图片失败: $e');
+      if (mounted) ErrorHandler.showError(context, '加载图片失败: $e');
     } finally {
-      setState(() {
-        _isFetching = false;
-      });
+      if (mounted) setState(() => _isFetching = false);
     }
   }
 
@@ -386,7 +388,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
       _loadQuota();
       ErrorHandler.showSuccess(context, '上传成功');
     } catch (e) {
-      ErrorHandler.showError(context, '上传失败: $e');
+      if (mounted) ErrorHandler.showError(context, '上传失败: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -634,8 +636,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(compact ? 18 : 28),
+                        borderRadius: BorderRadius.circular(compact ? 18 : 28),
                       ),
                       child: Icon(
                         Icons.add_photo_alternate_rounded,
@@ -673,8 +674,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: MoeTokens.primary,
                         foregroundColor: Colors.white,
-                        minimumSize:
-                            Size(double.infinity, compact ? 46 : 52),
+                        minimumSize: Size(double.infinity, compact ? 46 : 52),
                         padding: EdgeInsets.symmetric(
                           horizontal: compact ? 20 : 28,
                           vertical: compact ? 12 : 14,
@@ -860,7 +860,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                                       ],
                                     ),
                                     clipBehavior: Clip.antiAlias,
-                                      child: CachedNetworkImage(
+                                    child: CachedNetworkImage(
                                       imageUrl: displayUrl,
                                       fit: BoxFit.cover,
                                       memCacheWidth: 400,

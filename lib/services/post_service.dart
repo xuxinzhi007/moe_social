@@ -9,6 +9,7 @@ import 'api_client.dart';
 import 'api_service.dart';
 import '../auth_service.dart';
 import 'like_state_manager.dart';
+import 'enhanced_logger.dart';
 
 class PostService {
   // 获取所有帖子（支持分页），并同步全局状态
@@ -58,7 +59,10 @@ class PostService {
       LikeStateManager().syncState(post.id, post.isLiked, post.likes);
       return post;
     } catch (e) {
-      print('Failed to get post: $e');
+      EnhancedLogger().error(
+        '获取帖子失败',
+        category: LogCategory.network,
+      );
       return null;
     }
   }
@@ -167,8 +171,7 @@ class PostService {
     );
   }
 
-  static Future<String> uploadImage(File image) =>
-      ApiClient.uploadImage(image);
+  static Future<String> uploadImage(File image) => ApiClient.uploadImage(image);
 
   static Future<String> uploadImageBytes(
     Uint8List bytes, {
@@ -192,7 +195,7 @@ class PostService {
     String postId, {
     String? viewerUserId,
   }) =>
-      ApiService.getPostHandDraw(postId, viewerUserId: viewerUserId);
+          ApiService.getPostHandDraw(postId, viewerUserId: viewerUserId);
 
   // 点赞/取消点赞评论
   static Future<Comment> toggleCommentLike(

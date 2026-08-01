@@ -79,9 +79,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       // 确保AuthService已经初始化，恢复登录状态
       await AuthService.init();
 
-      print('🔍 AuthService.isLoggedIn: ${AuthService.isLoggedIn}');
-      print('🔍 AuthService.currentUser: ${AuthService.currentUser}');
-
       final user = await UserService.getUserInfo(widget.userId);
       // 加载用户徽章
       final userBadges = _achievementService.getUserBadges(widget.userId);
@@ -92,28 +89,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
         final currentUserId = AuthService.currentUser;
         if (currentUserId != null) {
           // 确保参数顺序正确：followerId（当前用户）在前，followingId（被关注用户）在后
-          print('🔍 检查关注状态：当前用户ID = $currentUserId，被关注用户ID = ${widget.userId}');
           try {
             isFollowing =
                 await UserService.checkFollow(currentUserId, widget.userId);
-            print('🔍 关注状态检查结果：$isFollowing');
           } catch (e) {
-            print('❌ 检查关注状态失败: $e');
             // 尝试通过followUser API的错误信息来判断关注状态
             try {
               // 尝试关注，如果返回重复错误则说明已经关注
               final result =
                   await UserService.followUser(currentUserId, widget.userId);
-              print('🔍 尝试关注结果: $result');
               if (result['success']) {
                 isFollowing = true;
-                print('🔍 关注成功，状态更新为true');
               }
             } catch (followError) {
-              print('🔍 尝试关注失败: $followError');
               if (followError.toString().contains('Duplicate entry')) {
                 isFollowing = true;
-                print('🔍 检测到重复关注，状态更新为true');
               }
             }
           }
@@ -137,10 +127,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _isFollowing = isFollowing;
           _friendRelation = friendRel;
         });
-        print('🔍 最终关注状态: $_isFollowing');
       }
     } catch (e) {
-      print('后台加载用户数据失败: $e');
+      debugPrint('后台加载用户数据失败: $e');
     }
   }
 
@@ -189,7 +178,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         });
       }
     } catch (e) {
-      print('加载关注统计数据失败: $e');
+      debugPrint('加载关注统计数据失败: $e');
       if (mounted) {
         setState(() {
           _isLoadingStats = false;
@@ -708,6 +697,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       final result = _isFollowing
           ? await UserService.unfollowUser(currentUserId, widget.userId)
           : await UserService.followUser(currentUserId, widget.userId);
+      if (!mounted) return;
 
       if (result['success']) {
         setState(() {
@@ -717,15 +707,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
         // 刷新关注统计数据
         _loadFollowStats();
 
-        MoeToast.success(context, _isFollowing ? '已关注' : '已取消关注');
+        if (mounted) {
+          MoeToast.success(context, _isFollowing ? '已关注' : '已取消关注');
+        }
       } else {
-        MoeToast.error(context, result['message'] ?? '操作失败');
+        if (mounted) MoeToast.error(context, result['message'] ?? '操作失败');
       }
     } catch (e) {
-      print('关注操作失败: $e');
-
       // 处理重复关注的情况
       String errorMessage = _isFollowing ? '取消关注失败' : '关注失败';
+      if (!mounted) return;
       if (e.toString().contains('Duplicate entry') ||
           e.toString().contains('already exists')) {
         errorMessage = '您已经关注了该用户';
@@ -739,7 +730,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         errorMessage = '关注的用户不存在';
       }
 
-      MoeToast.error(context, errorMessage);
+      if (mounted) MoeToast.error(context, errorMessage);
     }
   }
 

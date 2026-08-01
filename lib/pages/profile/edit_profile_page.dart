@@ -140,12 +140,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         maxWidth: 1024, // 限制图片宽度
         maxHeight: 1024, // 限制图片高度
       );
-      if (pickedFile != null) {
+      if (pickedFile != null && mounted) {
         // 上传图片到云端
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
           final imageUrl = await UserService.uploadImage(file);
+          if (!mounted) return;
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
@@ -166,7 +167,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       }
     } catch (e) {
-      MoeToast.error(context, '选择图片失败: $e');
+      if (mounted) MoeToast.error(context, '选择图片失败: $e');
     }
   }
 
@@ -178,12 +179,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         maxWidth: 1024, // 限制图片宽度
         maxHeight: 1024, // 限制图片高度
       );
-      if (pickedFile != null) {
+      if (pickedFile != null && mounted) {
         // 上传图片到云端
         MoeToast.info(context, '正在上传头像...');
         try {
           final file = File(pickedFile.path);
           final imageUrl = await UserService.uploadImage(file);
+          if (!mounted) return;
           // 为了避免缓存问题，添加时间戳参数
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final imageUrlWithTimestamp = '$imageUrl?t=$timestamp';
@@ -204,7 +206,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         }
       }
     } catch (e) {
-      MoeToast.error(context, '选择图片失败: $e');
+      if (mounted) MoeToast.error(context, '选择图片失败: $e');
     }
   }
 
@@ -400,9 +402,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         avatar: avatarText.isEmpty ? null : avatarText,
         signature: _signature.trim(),
         gender: _gender,
-        birthday: _birthday != null
-            ? _birthday!.toIso8601String().substring(0, 10)
-            : null,
+        birthday: _birthday?.toIso8601String().substring(0, 10),
       );
       await AuthService.replaceUserProfileCache(updated);
 
@@ -433,10 +433,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     return PopScope(
       canPop: !_hasUnsavedChanges,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final shouldPop = await _showUnsavedChangesDialog();
-        if (shouldPop && mounted) {
+        if (shouldPop && context.mounted) {
           Navigator.of(context).pop();
         }
       },
@@ -794,12 +794,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 operationKey: LoadingKeys.updateProfile,
                 onPressed: _hasUnsavedChanges && !saving ? _saveProfile : null,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceLg),
-                  backgroundColor:
-                      _hasUnsavedChanges ? moe.primary : MoeTokens.hintText.withValues(alpha: 0.25),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: MoeTokens.spaceLg),
+                  backgroundColor: _hasUnsavedChanges
+                      ? moe.primary
+                      : MoeTokens.hintText.withValues(alpha: 0.25),
                   foregroundColor:
                       _hasUnsavedChanges ? Colors.white : MoeTokens.hintText,
-                  disabledBackgroundColor: MoeTokens.hintText.withValues(alpha: 0.25),
+                  disabledBackgroundColor:
+                      MoeTokens.hintText.withValues(alpha: 0.25),
                   disabledForegroundColor: MoeTokens.hintText,
                   elevation: _hasUnsavedChanges ? 4 : 0,
                   shadowColor: moe.primary.withValues(alpha: 0.45),

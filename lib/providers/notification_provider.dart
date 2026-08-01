@@ -16,6 +16,7 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _pollingTimer;
   bool _pushListening = false;
   bool _lifecycleListening = false;
+  bool _isRefreshingUnread = false;
   DateTime? _lastResumeSyncAt;
 
   List<NotificationItem> get notifications => _notifications;
@@ -89,10 +90,11 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   void _onPushUnreadUpdated() {
     final nextDmBySender = _mergeDmUnreadBySender(_notifications);
-    final nextDmUnread = nextDmBySender.values.fold<int>(0, (sum, v) => sum + v);
+    final nextDmUnread =
+        nextDmBySender.values.fold<int>(0, (sum, v) => sum + v);
     final nextUnreadTotal = _activityUnreadCount + nextDmUnread;
-    final changed =
-        !_mapEquals(_unreadDmBySender, nextDmBySender) || _unreadCount != nextUnreadTotal;
+    final changed = !_mapEquals(_unreadDmBySender, nextDmBySender) ||
+        _unreadCount != nextUnreadTotal;
     _unreadDmBySender = nextDmBySender;
     _unreadCount = nextUnreadTotal;
     if (changed) {
@@ -101,11 +103,16 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> refreshUnreadState() async {
+    if (_isRefreshingUnread || !AuthService.isLoggedIn) return;
+    _isRefreshingUnread = true;
     try {
-      final list = await NotificationService.getNotifications(page: 1, pageSize: 100);
+      final list =
+          await NotificationService.getNotifications(page: 1, pageSize: 100);
       _applyNotifications(list, replaceList: false);
     } catch (e) {
       debugPrint('Failed to refresh unread state: $e');
+    } finally {
+      _isRefreshingUnread = false;
     }
   }
 
@@ -116,7 +123,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
 
     try {
-      final list = await NotificationService.getNotifications(page: 1, pageSize: 100);
+      final list =
+          await NotificationService.getNotifications(page: 1, pageSize: 100);
       _applyNotifications(list, replaceList: true);
     } catch (e) {
       debugPrint('Failed to fetch notifications: $e');
@@ -134,8 +142,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_unreadDmBySender.containsKey(senderId)) {
       final nextDm = Map<String, int>.from(_unreadDmBySender)..remove(senderId);
       _unreadDmBySender = nextDm;
-      _unreadCount =
-          _activityUnreadCount + nextDm.values.fold<int>(0, (sum, v) => sum + v);
+      _unreadCount = _activityUnreadCount +
+          nextDm.values.fold<int>(0, (sum, v) => sum + v);
       notifyListeners();
     }
 
@@ -255,13 +263,13 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       return !n.isRead && n.type != NotificationModel.directMessage;
     }).length;
     final dmUnread = _mergeDmUnreadBySender(list);
-    final unreadTotal =
-        activityUnread + dmUnread.values.fold<int>(0, (sum, value) => sum + value);
+    final unreadTotal = activityUnread +
+        dmUnread.values.fold<int>(0, (sum, value) => sum + value);
     final changed =
         (replaceList && !_sameNotificationList(_notifications, list)) ||
-        !_mapEquals(_unreadDmBySender, dmUnread) ||
-        _unreadCount != unreadTotal ||
-        _activityUnreadCount != activityUnread;
+            !_mapEquals(_unreadDmBySender, dmUnread) ||
+            _unreadCount != unreadTotal ||
+            _activityUnreadCount != activityUnread;
 
     if (!changed) return;
 
@@ -303,7 +311,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     return true;
   }
 
-  bool _sameNotificationList(List<NotificationItem> a, List<NotificationItem> b) {
+  bool _sameNotificationList(
+      List<NotificationItem> a, List<NotificationItem> b) {
     if (identical(a, b)) return true;
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {

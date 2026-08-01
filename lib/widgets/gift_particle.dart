@@ -15,7 +15,7 @@ class OptimizedParticle {
     required this.life,
     required this.color,
     this.size = 4.0,
-  })  : maxLife = life;
+  }) : maxLife = life;
 
   void update(double deltaTime, {double gravity = 0.5}) {
     position += velocity * deltaTime * 60;
@@ -37,7 +37,7 @@ class OptimizedParticle {
     this.position = position;
     this.velocity = velocity;
     this.life = life;
-    this.maxLife = life;
+    maxLife = life;
     this.color = color;
     this.size = size;
   }
@@ -83,7 +83,8 @@ class ParticlePool {
     _activeParticles.clear();
   }
 
-  List<OptimizedParticle> get activeParticles => List.unmodifiable(_activeParticles);
+  List<OptimizedParticle> get activeParticles =>
+      List.unmodifiable(_activeParticles);
 
   int get poolSize => _pool.length;
   int get activeCount => _activeParticles.length;
@@ -110,7 +111,8 @@ class OptimizedParticleSystem extends StatefulWidget {
   });
 
   @override
-  State<OptimizedParticleSystem> createState() => _OptimizedParticleSystemState();
+  State<OptimizedParticleSystem> createState() =>
+      _OptimizedParticleSystemState();
 }
 
 class _OptimizedParticleSystemState extends State<OptimizedParticleSystem>

@@ -37,17 +37,18 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           widget.code,
           _newPasswordController.text,
         );
+        if (!mounted) return;
         _showCustomSnackBar(context, '密码重置成功，请重新登录 (｡♥‿♥｡)', isError: false);
 
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       } on ApiException catch (e) {
-        _showCustomSnackBar(context, e.message, isError: true);
+        if (mounted) _showCustomSnackBar(context, e.message, isError: true);
       } catch (e) {
-        _showCustomSnackBar(context, '重置失败，请稍后重试', isError: true);
+        if (mounted) {
+          _showCustomSnackBar(context, '重置失败，请稍后重试', isError: true);
+        }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

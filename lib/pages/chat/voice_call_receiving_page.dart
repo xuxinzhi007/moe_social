@@ -25,6 +25,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
     try {
       // 调用后端API接听呼叫
       await ChatService.answerCall(callId);
+      if (!context.mounted) return;
 
       // 跳转到通话页面
       ChatPushService.clearActiveIncomingCall();
@@ -35,7 +36,7 @@ class VoiceCallReceivingPage extends StatelessWidget {
         userAvatar: callerAvatar,
       );
     } catch (e) {
-      _showError(context, '接听呼叫失败: $e');
+      if (context.mounted) _showError(context, '接听呼叫失败: $e');
     }
   }
 
@@ -46,13 +47,13 @@ class VoiceCallReceivingPage extends StatelessWidget {
       ChatPushService.clearActiveIncomingCall();
       if (context.mounted) Navigator.pop(context);
     } catch (e) {
-      _showError(context, '拒绝呼叫失败: $e');
-      Navigator.pop(context);
+      if (context.mounted) _showError(context, '拒绝呼叫失败: $e');
+      if (context.mounted) Navigator.pop(context);
     }
   }
 
   void _showError(BuildContext context, String message) {
-    MoeToast.error(context, message);
+    if (context.mounted) MoeToast.error(context, message);
   }
 
   @override

@@ -213,13 +213,8 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         decoration: BoxDecoration(
           color: scheme.surface,
           borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border:
+              Border.all(color: scheme.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: TabBar(
           controller: _tabController,
@@ -270,13 +265,6 @@ class _CommunityHomePageState extends State<CommunityHomePage>
           color: MoeTokens.surface1,
           borderRadius: BorderRadius.circular(MoeTokens.radiusCard),
           border: Border.all(color: MoeTokens.primary.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
           children: [

@@ -37,6 +37,7 @@ import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
 import 'services/wechat_sdk_service.dart';
 import 'widgets/splash_screen.dart';
+import 'theme/moe_tokens.dart';
 
 String _platformLabel() {
   if (kIsWeb) return 'web';
@@ -172,8 +173,11 @@ class SplashScreenWrapper extends StatelessWidget {
       title: 'Moe Social',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.purple,
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: MoeTokens.primary,
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: MoeTokens.pageBackground,
       ),
       home: SplashScreen(
         onInit: _initializeApp,

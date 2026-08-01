@@ -141,38 +141,42 @@ class UserListSkeleton extends StatelessWidget {
   }
 
   Widget _buildItem() {
-    return Container(
-      margin: EdgeInsets.only(bottom: MoeTokens.spaceMd),
-      padding: const EdgeInsets.symmetric(
-        horizontal: MoeTokens.spaceLg,
-        vertical: MoeTokens.spaceMd,
-      ),
-      decoration: BoxDecoration(
-        color: MoeTokens.cardBackground,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        boxShadow: MoeTokens.shadowSm(),
-      ),
-      child: _SkeletonBase.shimmer(
-        child: Row(
-          children: [
-            _SkeletonBase.circle(size: 48),
-            SizedBox(width: MoeTokens.spaceMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SkeletonBase.line(width: 100),
-                  SizedBox(height: MoeTokens.spaceSm),
-                  _SkeletonBase.line(width: 160),
-                ],
-              ),
+    return Padding(
+      padding: EdgeInsets.only(bottom: MoeTokens.spaceMd),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: MoeTokens.cardBackground,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          boxShadow: MoeTokens.shadowSm(),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceLg,
+            vertical: MoeTokens.spaceMd,
+          ),
+          child: _SkeletonBase.shimmer(
+            child: Row(
+              children: [
+                _SkeletonBase.circle(size: 48),
+                SizedBox(width: MoeTokens.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SkeletonBase.line(width: 100),
+                      SizedBox(height: MoeTokens.spaceSm),
+                      _SkeletonBase.line(width: 160),
+                    ],
+                  ),
+                ),
+                _SkeletonBase.rect(
+                  width: 64,
+                  height: 32,
+                  radius: MoeTokens.radiusButton,
+                ),
+              ],
             ),
-            _SkeletonBase.rect(
-              width: 64,
-              height: 32,
-              radius: MoeTokens.radiusButton,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -201,39 +205,43 @@ class MessageSkeleton extends StatelessWidget {
   }
 
   Widget _buildItem() {
-    return Container(
-      margin: EdgeInsets.only(bottom: MoeTokens.spaceMd),
-      padding: const EdgeInsets.all(MoeTokens.spaceLg),
-      decoration: BoxDecoration(
-        color: MoeTokens.cardBackground,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-        boxShadow: MoeTokens.shadowSm(),
-      ),
-      child: _SkeletonBase.shimmer(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SkeletonBase.circle(size: 44),
-            SizedBox(width: MoeTokens.spaceLg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Padding(
+      padding: EdgeInsets.only(bottom: MoeTokens.spaceMd),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: MoeTokens.cardBackground,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+          boxShadow: MoeTokens.shadowSm(),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(MoeTokens.spaceLg),
+          child: _SkeletonBase.shimmer(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _SkeletonBase.circle(size: 44),
+                SizedBox(width: MoeTokens.spaceLg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SkeletonBase.line(width: 120),
-                      _SkeletonBase.line(width: 50),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SkeletonBase.line(width: 120),
+                          _SkeletonBase.line(width: 50),
+                        ],
+                      ),
+                      SizedBox(height: MoeTokens.spaceSm),
+                      _SkeletonBase.line(),
+                      SizedBox(height: MoeTokens.spaceXs),
+                      _SkeletonBase.line(width: 180),
                     ],
                   ),
-                  SizedBox(height: MoeTokens.spaceSm),
-                  _SkeletonBase.line(),
-                  SizedBox(height: MoeTokens.spaceXs),
-                  _SkeletonBase.line(width: 180),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

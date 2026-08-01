@@ -18,15 +18,6 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
   List<User> _followings = [];
   bool _isLoading = true;
 
-  static const _ringGradients = [
-    [Color(0xFF7F7FD5), Color(0xFFF093FB)],
-    [Color(0xFFFF6B6B), Color(0xFFFFB347)],
-    [Color(0xFF4ECDC4), Color(0xFF44A08D)],
-    [Color(0xFF86A8E7), Color(0xFF7F7FD5)],
-    [Color(0xFFFFCA28), Color(0xFFFF8F00)],
-    [Color(0xFFAB47BC), Color(0xFF7B1FA2)],
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -80,9 +71,6 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
   }
 
   Widget _buildUserItem(BuildContext context, User user, ColorScheme scheme) {
-    final gradientIdx = user.id.hashCode.abs() % _ringGradients.length;
-    final gradient = _ringGradients[gradientIdx];
-
     return Padding(
       padding: const EdgeInsets.only(right: 14),
       child: Material(
@@ -107,25 +95,17 @@ class _HomeStoriesBarState extends State<HomeStoriesBar> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      colors: gradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: scheme.primary.withValues(alpha: 0.32),
+                      width: 1.5,
                     ),
                   ),
                   padding: const EdgeInsets.all(2),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: scheme.surface,
-                    ),
-                    padding: const EdgeInsets.all(1.5),
-                    child: NetworkAvatarImage(
-                      imageUrl: user.avatar,
-                      radius: 18,
-                      backgroundColor: scheme.surfaceContainerHighest,
-                    ),
+                  child: NetworkAvatarImage(
+                    imageUrl: user.avatar,
+                    radius: 20,
+                    backgroundColor: scheme.surfaceContainerHighest,
                   ),
                 ),
                 const SizedBox(height: 4),
