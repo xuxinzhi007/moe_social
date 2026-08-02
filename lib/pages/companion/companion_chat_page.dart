@@ -391,25 +391,53 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   Future<void> _refreshReplyUsage(int replyIndex, double? quotaBefore) async {
     final provider = _activeProvider;
-    if (provider == null || quotaBefore == null) return;
+    if (provider == null) return;
     final apiKey = await AiProviderService().readApiKey(provider.id);
-    final usage =
-        await AiProviderUsageService().fetchTokenUsage(provider, apiKey);
-    if (!mounted || usage == null || replyIndex >= _items.length) return;
+    final usageService = AiProviderUsageService();
+    final startedAt =
+        DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000 - 120;
+    final log = await usageService.fetchLatestTokenLog(
+      provider,
+      apiKey,
+      notBeforeUnix: startedAt,
+    );
+    final usage = await usageService.fetchTokenUsage(provider, apiKey);
+    if (!mounted || replyIndex >= _items.length) return;
     final reply = _items[replyIndex];
     if (reply.role != 'assistant') return;
-    final spent = (quotaBefore - usage.totalAvailable)
-        .clamp(0, double.infinity)
-        .toDouble();
+
+    // Prefer Key 日志里的真实 quota；无日志时才回退额度差。
+    // 不把 quota 点换算成人民币，也不伪造 prompt/completion。
+    double? spent = log?.quota;
+    if ((spent == null || spent <= 0) && quotaBefore != null && usage != null) {
+      spent = (quotaBefore - usage.totalAvailable)
+          .clamp(0, double.infinity)
+          .toDouble();
+    }
+    if (spent == null) return;
+
+    final detail = <String>[];
+    if (log?.promptTokens != null || log?.completionTokens != null) {
+      detail.add(
+        'token ${(log?.promptTokens ?? 0)}+${(log?.completionTokens ?? 0)}',
+      );
+    }
+    final remain =
+        usage == null ? null : '剩余 ${_quotaLabel(usage.totalAvailable)}';
+    final meta = [
+      '本次消耗 ${_quotaLabel(spent)}',
+      ...detail,
+      if (remain != null) remain,
+    ].join(' · ');
+
     setState(() {
-      _providerUsage = usage;
+      if (usage != null) _providerUsage = usage;
       _items[replyIndex] = _ChatItem(
         role: reply.role,
         content: reply.content,
         isStreaming: reply.isStreaming,
         isError: reply.isError,
-        meta:
-            '本次消耗 ${_quotaLabel(spent)} · 剩余 ${_quotaLabel(usage.totalAvailable)}',
+        meta: meta,
       );
     });
   }

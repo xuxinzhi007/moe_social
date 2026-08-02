@@ -121,6 +121,27 @@ class PetProfile {
     );
   }
 
+  /// 云端回写合并：数值用服务器，舞台态（场景/坐标/家具/穿着）保留本地。
+  ///
+  /// 避免喂食/陪伴把整包 remote 盖上来 → 院子被打回客厅、像「整页重载」。
+  PetProfile assimilateCloud(
+    PetProfile cloud, {
+    bool preferRemoteFurniture = false,
+  }) {
+    final furn = preferRemoteFurniture && cloud.furniture.isNotEmpty
+        ? cloud.furniture
+        : (furniture.isNotEmpty ? furniture : cloud.furniture);
+    return cloud.copyWith(
+      sceneId: sceneId,
+      actorX: actorX,
+      actorY: actorY,
+      furniture: furn,
+      roomBoundaries:
+          roomBoundaries.isNotEmpty ? roomBoundaries : cloud.roomBoundaries,
+      wearLayout: wearLayout,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'name': name,
         'species': species,

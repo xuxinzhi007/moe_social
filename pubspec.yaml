@@ -150,6 +150,7 @@ flutter:
     - assets/pet/moe_content/avatar/layers/base/
     - assets/pet/moe_content/avatar/layers/slots/
     - assets/pet/adventure/
+    - assets/pet/farm/
     - assets/pet/spine/
 
   # An image asset can refer to one or more resolution-specific "variants", see

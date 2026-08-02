@@ -20,6 +20,23 @@ class PetArt {
   static const babyHead = 'assets/pet/character/baby_head.png';
   static const monsterHead = 'assets/pet/adventure/monster_head.png';
 
+  /// 院子种菜像素素材（`assets/pet/farm/`）。
+  static const farmSoil = 'assets/pet/farm/soil_plot.png';
+  static const farmGrass = 'assets/pet/farm/grass_tile.png';
+  static const farmSeedBag = 'assets/pet/farm/seed_bag.png';
+  static const farmSeedShop = 'assets/pet/farm/seed_shop.png';
+  static const farmYardPlots = 'assets/pet/farm/yard_plots.png';
+  static const farmCropSprout = 'assets/pet/farm/crop_sprout.png';
+  static const farmCropGrow = 'assets/pet/farm/crop_grow.png';
+  static const farmCropRipe = 'assets/pet/farm/crop_ripe.png';
+
+  static String farmCropStage(String stage) => switch (stage) {
+        'seed' => farmCropSprout,
+        'sprout' => farmCropGrow,
+        'ripe' => farmCropRipe,
+        _ => '',
+      };
+
   /// A 方案身体拆层；见 `docs/dev/pet-layered-avatar.md`。
   static const legs = 'assets/pet/character/legs.png';
   static const torso = 'assets/pet/character/torso.png';

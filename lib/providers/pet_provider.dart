@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/pet_crop.dart';
 import '../models/pet_state.dart';
 import '../models/pet_care_item.dart';
 import '../services/pet_career_config.dart';
@@ -19,17 +20,26 @@ class PetProvider extends ChangeNotifier {
   PetProvider({PetService? service}) : _service = service ?? PetService();
 
   static const _prefsKey = 'pet_life_sim_profile_v1';
+
+  /// v2：4×3 网格地块（兼容读旧 v1，多出来的格补空）。
+  static const _cropsKey = 'pet_yard_crops_v2';
+  static const _cropsKeyLegacy = 'pet_yard_crops_v1';
   static const _msgHold = Duration(seconds: 2);
 
   final PetService _service;
   PetProfile _profile = PetProfile.fresh();
+  List<PetCropSlot> _crops = PetCropSlot.freshPlots();
   String? _lastMessage;
   bool _busy = false;
   bool _loaded = false;
   PetSyncStatus _syncStatus = PetSyncStatus.syncing;
   Timer? _msgTimer;
+  Timer? _furnitureSyncTimer;
+  Timer? _boundarySyncTimer;
+  Timer? _cropGrowTimer;
 
   PetProfile get profile => _profile;
+  List<PetCropSlot> get crops => List.unmodifiable(_crops);
   String? get lastMessage => _lastMessage;
   bool get busy => _busy;
   bool get loaded => _loaded;
@@ -76,25 +86,30 @@ class PetProvider extends ChangeNotifier {
         );
       }
     }
-    // 清理历史刷爆的家具；仍空则补构图包。
+    // 清理超量 + 场景穿帮（旧存档院子里的台灯/木桌）。
     final beforeCount = _profile.furniture.length;
-    var cleaned = PetFurniture.sanitize(_profile.furniture);
+    var cleaned = PetContentCatalog.pruneFurnitureScenes(_profile.furniture);
     if (cleaned.isEmpty) {
       cleaned = PetContentCatalog.starterFurniture();
       _flashMessage('已为小家摆上起步家具');
     } else if (cleaned.length != beforeCount) {
-      _flashMessage('已整理超量家具');
+      _flashMessage('已整理错放家具');
     }
     _profile = _profile.copyWith(furniture: cleaned);
+    await _loadCrops();
     _loaded = true;
     _busy = false;
     notifyListeners();
     await _persist();
+    _ensureCropGrowTicker();
   }
 
   @override
   void dispose() {
     _msgTimer?.cancel();
+    _furnitureSyncTimer?.cancel();
+    _boundarySyncTimer?.cancel();
+    _cropGrowTimer?.cancel();
     super.dispose();
   }
 
@@ -103,28 +118,207 @@ class PetProvider extends ChangeNotifier {
     await prefs.setString(_prefsKey, jsonEncode(_profile.toJson()));
   }
 
-  /// 本地落盘后异步写库（失败不影响本地布置）。
-  Future<void> _syncFurnitureToServer() async {
-    final remote = await _service.saveFurniture(_profile.furniture);
-    if (remote == null) return;
-    _syncStatus = PetSyncStatus.cloudSynced;
-    // 保留本地 actor 坐标与穿着；家具以服务端回写为准（已 sanitize）。
-    final slots = PetFurniture.sanitize(
-      remote.furniture.isNotEmpty ? remote.furniture : _profile.furniture,
-    );
-    // 若服务端只回 furniture_json 字符串，fromJson 已解析；空则保持本地。
-    if (slots.isNotEmpty || _profile.furniture.isEmpty) {
-      _profile = _profile.copyWith(
-          furniture: slots.isEmpty ? _profile.furniture : slots);
-      notifyListeners();
-      await _persist();
+  Future<void> _loadCrops() async {
+    final prefs = await SharedPreferences.getInstance();
+    var raw = prefs.getString(_cropsKey);
+    raw ??= prefs.getString(_cropsKeyLegacy);
+    if (raw == null || raw.isEmpty) {
+      _crops = PetCropSlot.freshPlots();
+      return;
+    }
+    try {
+      final list = jsonDecode(raw);
+      if (list is! List) {
+        _crops = PetCropSlot.freshPlots();
+        return;
+      }
+      final now = DateTime.now();
+      final next = <PetCropSlot>[];
+      for (var i = 0; i < PetCropSlot.plotCount; i++) {
+        PetCropSlot slot = PetCropSlot(index: i, stage: PetCropStage.empty);
+        if (i < list.length && list[i] is Map) {
+          final parsed =
+              PetCropSlot.fromJson(Map<String, dynamic>.from(list[i] as Map));
+          slot = PetCropSlot(
+            index: i,
+            stage: parsed.stage,
+            cropId: parsed.cropId,
+            plantedAtMs: parsed.plantedAtMs,
+            waterCount: parsed.waterCount,
+          );
+        }
+        next.add(slot.advanced(now));
+      }
+      _crops = next;
+      // 从旧 key 迁到网格存档。
+      await _persistCrops();
+    } catch (_) {
+      _crops = PetCropSlot.freshPlots();
     }
   }
 
-  Future<void> _apply(PetProfile? remote, PetProfile local) async {
-    _profile = remote ?? local;
-    _syncStatus =
-        remote == null ? PetSyncStatus.localOnly : PetSyncStatus.cloudSynced;
+  Future<void> _persistCrops() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _cropsKey,
+      jsonEncode([for (final c in _crops) c.toJson()]),
+    );
+  }
+
+  void _ensureCropGrowTicker() {
+    _cropGrowTimer ??= Timer.periodic(const Duration(milliseconds: 500), (_) {
+      _tickCrops();
+    });
+  }
+
+  void _tickCrops() {
+    final now = DateTime.now();
+    var changed = false;
+    final next = <PetCropSlot>[];
+    for (final c in _crops) {
+      final advanced = c.advanced(now);
+      if (advanced.stage != c.stage) changed = true;
+      next.add(advanced);
+    }
+    if (!changed) return;
+    _crops = next;
+    notifyListeners();
+    unawaited(_persistCrops());
+  }
+
+  /// 点空地：随机种一种菜。
+  Future<PetCropSlot?> plantCrop(int index) async {
+    if (index < 0 || index >= _crops.length) return null;
+    final slot = _crops[index];
+    if (!slot.isEmpty) return null;
+    final kind = PetCropKind.all[math.Random().nextInt(PetCropKind.all.length)];
+    final planted = PetCropSlot(
+      index: index,
+      stage: PetCropStage.seed,
+      cropId: kind.id,
+      plantedAtMs: DateTime.now().millisecondsSinceEpoch,
+    );
+    _crops = [..._crops]..[index] = planted;
+    _flashMessage('种下了${kind.label}！');
+    notifyListeners();
+    await _persistCrops();
+    _ensureCropGrowTicker();
+    return planted;
+  }
+
+  /// 浇水加速一档成长。
+  Future<PetCropSlot?> waterCrop(int index) async {
+    if (index < 0 || index >= _crops.length) return null;
+    final slot = _crops[index];
+    if (!slot.canWater || slot.waterCount >= 2) return null;
+    final next =
+        slot.copyWith(waterCount: slot.waterCount + 1).advanced(DateTime.now());
+    _crops = [..._crops]..[index] = next;
+    _flashMessage('浇水！长得更快啦');
+    notifyListeners();
+    await _persistCrops();
+    return next;
+  }
+
+  /// 收获：硬币 + 心情，返回奖励（给 Juice 用）。
+  Future<({int coins, int mood, PetCropKind kind, int comboHint})?> harvestCrop(
+    int index, {
+    int combo = 1,
+  }) async {
+    if (index < 0 || index >= _crops.length) return null;
+    final slot = _crops[index];
+    if (!slot.isRipe) return null;
+    final kind = slot.kind;
+    final comboBonus = math.min(8, (combo - 1) * 2);
+    final coins = kind.coinReward + comboBonus;
+    final mood = kind.moodReward;
+    _crops = [..._crops]..[index] =
+        PetCropSlot(index: index, stage: PetCropStage.empty);
+    _profile = _profile.copyWith(
+      coins: _profile.coins + coins,
+      mood: math.min(100, _profile.mood + mood),
+      labor: _profile.labor + (combo >= 3 ? 1 : 0),
+      energy: math.max(0, _profile.energy - 2),
+    );
+    _flashMessage('收获${kind.label}！+$coins 币');
+    notifyListeners();
+    await _persist();
+    await _persistCrops();
+    return (coins: coins, mood: mood, kind: kind, comboHint: combo);
+  }
+
+  /// 本地落盘后异步写库（失败不影响本地布置）。
+  Future<void> _syncFurnitureToServer() async {
+    final localSnapshot = List<PetFurniture>.from(_profile.furniture);
+    final remote = await _service.saveFurniture(localSnapshot);
+    if (remote == null) return;
+    _syncStatus = PetSyncStatus.cloudSynced;
+    // 若拖放期间本地又变了，不要用旧回写覆盖，避免「复制/回跳」。
+    if (!_furnitureListEquals(_profile.furniture, localSnapshot)) {
+      await _persist();
+      return;
+    }
+    final slots = PetFurniture.sanitize(
+      remote.furniture.isNotEmpty ? remote.furniture : localSnapshot,
+    );
+    if (slots.isEmpty && _profile.furniture.isNotEmpty) return;
+    if (_furnitureListEquals(_profile.furniture, slots)) {
+      await _persist();
+      return;
+    }
+    _profile = _profile.copyWith(furniture: slots);
+    notifyListeners();
+    await _persist();
+  }
+
+  bool _furnitureListEquals(List<PetFurniture> a, List<PetFurniture> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.id != y.id ||
+          x.scene != y.scene ||
+          x.rotation != y.rotation ||
+          (x.x - y.x).abs() > 0.0001 ||
+          (x.y - y.y).abs() > 0.0001 ||
+          (x.scale - y.scale).abs() > 0.0001) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _scheduleFurnitureServerSync() {
+    _furnitureSyncTimer?.cancel();
+    _furnitureSyncTimer = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_syncFurnitureToServer());
+    });
+  }
+
+  Future<void> _apply(
+    PetProfile? remote,
+    PetProfile local, {
+    bool preferRemoteFurniture = false,
+  }) async {
+    if (remote == null) {
+      _profile = local;
+      _syncStatus = PetSyncStatus.localOnly;
+    } else {
+      final merged = local.assimilateCloud(
+        remote,
+        preferRemoteFurniture: preferRemoteFurniture,
+      );
+      _profile = merged.copyWith(
+        furniture: PetContentCatalog.pruneFurnitureScenes(merged.furniture),
+      );
+      _syncStatus = PetSyncStatus.cloudSynced;
+      // 服务端场景漂移时纠偏，避免下次冷启动又弹回客厅。
+      if (remote.sceneId != local.sceneId &&
+          const {'living', 'yard', 'bedroom'}.contains(local.sceneId)) {
+        unawaited(_service.setScene(local.sceneId));
+      }
+    }
     _busy = false;
     notifyListeners();
     await _persist();
@@ -133,32 +327,68 @@ class PetProvider extends ChangeNotifier {
   Future<void> feed(PetCareItem item) async {
     if (_busy) return;
     _busy = true;
-    notifyListeners();
-    final remote = await _service.feed(item.id);
     final local = _profile.copyWith(
       hunger: math.min(100, _profile.hunger + item.hungerGain),
       mood: math.min(100, _profile.mood + item.moodGain),
     );
+    _profile = local;
     _flashMessage('好好吃！');
+    notifyListeners();
+    final remote = await _service.feed(item.id);
     await _apply(remote, local);
   }
 
   Future<void> care() async {
     if (_busy) return;
     _busy = true;
-    notifyListeners();
-    final remote = await _service.care();
     final local = _profile.copyWith(
       mood: math.min(100, _profile.mood + 14),
       energy: math.min(100, _profile.energy + 6),
     );
+    _profile = local;
     _flashMessage('最喜欢你了～');
+    notifyListeners();
+    final remote = await _service.care();
     await _apply(remote, local);
   }
 
+  /// 点床睡觉：本地回精力（规则互动，不需要模型 / 专用 API）。
+  Future<void> restAtBed() async {
+    final local = _profile.copyWith(
+      energy: math.min(100, _profile.energy + 18),
+      mood: math.min(100, _profile.mood + 4),
+    );
+    _flashMessage('睡了一觉，精神好多了～');
+    await _apply(null, local);
+  }
+
   Future<void> setScene(String scene) async {
+    const allowed = {'living', 'yard', 'bedroom'};
+    if (!allowed.contains(scene) || scene == _profile.sceneId) return;
+    // 本地先切：等网再改会表现为「点院子没反应」。
+    final local = _profile.copyWith(sceneId: scene);
+    _profile = local;
+    _syncStatus = PetSyncStatus.syncing;
+    notifyListeners();
+    await _persist();
     final remote = await _service.setScene(scene);
-    await _apply(remote, _profile.copyWith(sceneId: scene));
+    if (remote != null) {
+      final mergedFurn =
+          remote.furniture.isNotEmpty ? remote.furniture : local.furniture;
+      // 云端缺字段时不回退场景；角色坐标服务端未存，保留本地。
+      _profile = remote.copyWith(
+        sceneId: scene,
+        actorX: local.actorX,
+        actorY: local.actorY,
+        furniture: PetContentCatalog.pruneFurnitureScenes(mergedFurn),
+        wearLayout: local.wearLayout,
+      );
+      _syncStatus = PetSyncStatus.cloudSynced;
+    } else {
+      _syncStatus = PetSyncStatus.localOnly;
+    }
+    notifyListeners();
+    await _persist();
   }
 
   Future<void> dress({
@@ -242,7 +472,7 @@ class PetProvider extends ChangeNotifier {
     final next = [..._profile.furniture, placed];
     await _apply(null, _profile.copyWith(furniture: next));
     _flashMessage('已添加，可拖动 / 旋转摆放');
-    await _syncFurnitureToServer();
+    _scheduleFurnitureServerSync();
   }
 
   /// 更新家具坐标 / 旋转 / 缩放（拖放 · 四角 · 旋转柄）。
@@ -265,7 +495,7 @@ class PetProvider extends ChangeNotifier {
     _profile = _profile.copyWith(furniture: list);
     notifyListeners();
     await _persist();
-    await _syncFurnitureToServer();
+    _scheduleFurnitureServerSync();
   }
 
   Future<void> rotateFurniture(int index) async {
@@ -285,7 +515,7 @@ class PetProvider extends ChangeNotifier {
     final list = List<PetFurniture>.from(_profile.furniture)..removeAt(index);
     await _apply(null, _profile.copyWith(furniture: list));
     _flashMessage('已移除家具');
-    await _syncFurnitureToServer();
+    _scheduleFurnitureServerSync();
   }
 
   Future<void> moveActor(double x, double y) async {
@@ -302,18 +532,53 @@ class PetProvider extends ChangeNotifier {
     _profile = _profile.copyWith(roomBoundaries: clean);
     notifyListeners();
     await _persist();
+    _boundarySyncTimer?.cancel();
+    _boundarySyncTimer = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_syncRoomBoundariesToServer(clean));
+    });
+  }
+
+  Future<void> _syncRoomBoundariesToServer(List<PetRoomBoundary> clean) async {
     final remote = await _service.saveRoomBoundaries(clean);
     if (remote == null) return;
     _syncStatus = PetSyncStatus.cloudSynced;
+    // 拖墙期间本地可能已再改；只更新同步状态，避免用旧回写打断手感。
+    if (!_boundaryListEquals(_profile.roomBoundaries, clean)) {
+      await _persist();
+      return;
+    }
+    final remoteBounds = remote.roomBoundaries;
+    if (_boundaryListEquals(_profile.roomBoundaries, remoteBounds)) {
+      await _persist();
+      return;
+    }
     _profile = remote.copyWith(
       furniture: _profile.furniture,
-      roomBoundaries: remote.roomBoundaries,
+      roomBoundaries: remoteBounds,
       actorX: _profile.actorX,
       actorY: _profile.actorY,
       wearLayout: _profile.wearLayout,
     );
     notifyListeners();
     await _persist();
+  }
+
+  bool _boundaryListEquals(List<PetRoomBoundary> a, List<PetRoomBoundary> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.id != y.id ||
+          x.scene != y.scene ||
+          (x.x - y.x).abs() > 0.0001 ||
+          (x.y - y.y).abs() > 0.0001 ||
+          (x.width - y.width).abs() > 0.0001 ||
+          (x.height - y.height).abs() > 0.0001) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> study(String subject) async {
@@ -454,25 +719,31 @@ class PetProvider extends ChangeNotifier {
     _flashMessage('家里添丁啦！');
   }
 
-  Future<void> adventure() async {
+  /// 小院试炼结算。
+  ///
+  /// [forcedWin] 与舞台演出结果对齐，避免 UI 判胜但本地再掷一次。
+  /// 返回是否完成结算（精力不足时为 false）。
+  Future<bool> adventure({bool? forcedWin}) async {
+    if (_profile.energy < 25) {
+      _flashMessage('精力不足，先喂食或睡觉再出发');
+      return false;
+    }
     final remote = await _service.adventure();
     if (remote.profile != null) {
-      _flashMessage(remote.message);
+      _flashMessage(remote.message.isEmpty
+          ? (remote.win ? '胜利！' : '惜败，休息后再来')
+          : remote.message);
       await _apply(remote.profile, _profile);
-      return;
-    }
-    if (_profile.energy < 25) {
-      _flashMessage('精力不足');
-      return;
+      return true;
     }
     final power = _profile.sport + _profile.labor + (_profile.mood ~/ 10);
-    final win = power >= 28;
+    final win = forcedWin ?? power >= 28;
     if (win) {
       final gain = 30 + _profile.sport;
       await _apply(
         null,
         _profile.copyWith(
-          energy: _profile.energy - 20,
+          energy: math.max(0, _profile.energy - 20),
           coins: _profile.coins + gain,
           mood: math.min(100, _profile.mood + 8),
         ),
@@ -482,19 +753,31 @@ class PetProvider extends ChangeNotifier {
       await _apply(
         null,
         _profile.copyWith(
-          energy: _profile.energy - 20,
+          energy: math.max(0, _profile.energy - 20),
           mood: math.max(0, _profile.mood - 6),
         ),
       );
       _flashMessage('惜败，休息后再来');
     }
+    return true;
+  }
+
+  /// 连击小奖励：连击 ≥3 时额外心情（纯本地 Juice）。
+  Future<void> juiceComboBonus(int streak) async {
+    if (streak < 3) return;
+    final bonus = math.min(6, 2 + (streak - 3));
+    await _apply(
+      null,
+      _profile.copyWith(mood: math.min(100, _profile.mood + bonus)),
+    );
+    _flashMessage('连击×$streak！心情+$bonus');
   }
 
   Future<void> buySoft(String itemId) async {
     final remote = await _service.buy(itemId);
     if (remote != null) {
       _flashMessage('购买成功');
-      await _apply(remote, _profile);
+      await _apply(remote, _profile, preferRemoteFurniture: true);
       return;
     }
     const price = 40;
@@ -508,6 +791,10 @@ class PetProvider extends ChangeNotifier {
     } else if (itemId.startsWith('top_')) {
       p = p.copyWith(topId: itemId);
     } else {
+      if (!PetContentCatalog.furnitureAllowedInScene(itemId, p.sceneId)) {
+        _flashMessage('这件家具不能放在当前场景');
+        return;
+      }
       p = p.copyWith(
         furniture: [
           ...p.furniture,
