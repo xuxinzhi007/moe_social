@@ -8,8 +8,8 @@ import { PetContentMaturityPanel } from '../features/moe-content/PetContentMatur
 const SECTIONS = [
   {
     to: '/biz/pet/avatar',
-    title: 'AI 精灵资源',
-    desc: '导入 PNG · 模板对齐 · 锚点校准 · sprite 草稿',
+    title: '序列帧工作台',
+    desc: '导入 AI 帧 · 统一画布 · 动画编排 · Sheet 导出',
     status: 'MVP',
   },
   {
