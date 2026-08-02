@@ -21,6 +21,7 @@ type chatStreamRequest struct {
 	ProviderAPIKey   string `json:"provider_api_key"`
 	ProviderTimeout  int    `json:"provider_timeout_seconds"`
 	Scene            string `json:"scene"`
+	InputMode        string `json:"input_mode"`
 }
 
 const maxChatStreamBodyBytes = 32 << 10
@@ -70,7 +71,7 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 	common.InitSSEHeaders(w)
 	_ = common.WriteSSE(w, "start", map[string]string{})
 
-	fullReply, err := app.ChatStreamWithInference(r.Context(), userID, req.Message, override, req.Scene, func(chunk string) error {
+	fullReply, err := app.ChatStreamWithInputMode(r.Context(), userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
 		return common.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {

@@ -40,7 +40,8 @@ import '../pages/companion/companion_memories_page.dart'
 import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
 import '../pages/pet/pet_home_page.dart';
-import '../pages/notifications/notification_center_page.dart' deferred as notification_center;
+import '../pages/notifications/notification_center_page.dart'
+    deferred as notification_center;
 import '../pages/profile/edit_profile_page.dart';
 import '../pages/profile/friends_page.dart';
 import '../pages/profile/profile_page.dart' deferred as profile_page;
@@ -273,10 +274,14 @@ Map<String, WidgetBuilder> buildAppRoutes() {
           message_center.loadLibrary,
           () => message_center.MessageCenterPage(),
         ),
-    '/ai-chat': (context) => _deferred(
-          companion_chat.loadLibrary,
-          () => companion_chat.CompanionChatPage(),
-        ),
+    '/ai-chat': (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final draft = args is Map ? args['draft']?.toString() : null;
+      return _deferred(
+        companion_chat.loadLibrary,
+        () => companion_chat.CompanionChatPage(initialDraft: draft),
+      );
+    },
     '/ai-memories': (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       int? focusId;

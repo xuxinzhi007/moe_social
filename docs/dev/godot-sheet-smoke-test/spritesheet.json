@@ -1,0 +1,265 @@
+{
+  "formatVersion": "sprite-animation-v1",
+  "schemaVersion": 1,
+  "kind": "sprite_sheet",
+  "image": "spritesheet.png",
+  "format": "RGBA8888",
+  "canvas": {
+    "width": 4032,
+    "height": 305
+  },
+  "anchor": {
+    "x": 111,
+    "y": 154
+  },
+  "frameLayout": {
+    "mode": "animation_grid",
+    "frameWidth": 224,
+    "frameHeight": 305,
+    "columns": 18,
+    "rows": 1
+  },
+  "meta": {
+    "app": "Moe Animation Sheet Workbench",
+    "version": 1,
+    "documentVersion": 1,
+    "size": {
+      "w": 4032,
+      "h": 305
+    },
+    "canvas": {
+      "width": 224,
+      "height": 305,
+      "originX": 111,
+      "originY": 154
+    }
+  },
+  "animations": [
+    {
+      "id": "sequence_1",
+      "label": "未命名序列",
+      "row": 0,
+      "fps": 12,
+      "loop": true,
+      "frameCount": 18
+    }
+  ],
+  "frames": {
+    "sequence_1_0001.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 0,
+      "animation": "sequence_1",
+      "outputFrameIndex": 0
+    },
+    "sequence_1_0002.png": {
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 1,
+      "animation": "sequence_1",
+      "outputFrameIndex": 1
+    },
+    "sequence_1_0003.png": {
+      "frame": {
+        "x": 448,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 2,
+      "animation": "sequence_1",
+      "outputFrameIndex": 2
+    },
+    "sequence_1_0004.png": {
+      "frame": {
+        "x": 672,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 3,
+      "animation": "sequence_1",
+      "outputFrameIndex": 3
+    },
+    "sequence_1_0005.png": {
+      "frame": {
+        "x": 896,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 4,
+      "animation": "sequence_1",
+      "outputFrameIndex": 4
+    },
+    "sequence_1_0006.png": {
+      "frame": {
+        "x": 1120,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 5,
+      "animation": "sequence_1",
+      "outputFrameIndex": 5
+    },
+    "sequence_1_0007.png": {
+      "frame": {
+        "x": 1344,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 6,
+      "animation": "sequence_1",
+      "outputFrameIndex": 6
+    },
+    "sequence_1_0008.png": {
+      "frame": {
+        "x": 1568,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 7,
+      "animation": "sequence_1",
+      "outputFrameIndex": 7
+    },
+    "sequence_1_0009.png": {
+      "frame": {
+        "x": 1792,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 8,
+      "animation": "sequence_1",
+      "outputFrameIndex": 8
+    },
+    "sequence_1_0010.png": {
+      "frame": {
+        "x": 2016,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 9,
+      "animation": "sequence_1",
+      "outputFrameIndex": 9
+    },
+    "sequence_1_0011.png": {
+      "frame": {
+        "x": 2240,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 10,
+      "animation": "sequence_1",
+      "outputFrameIndex": 10
+    },
+    "sequence_1_0012.png": {
+      "frame": {
+        "x": 2464,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 11,
+      "animation": "sequence_1",
+      "outputFrameIndex": 11
+    },
+    "sequence_1_0013.png": {
+      "frame": {
+        "x": 2688,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 12,
+      "animation": "sequence_1",
+      "outputFrameIndex": 12
+    },
+    "sequence_1_0014.png": {
+      "frame": {
+        "x": 2912,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 13,
+      "animation": "sequence_1",
+      "outputFrameIndex": 13
+    },
+    "sequence_1_0015.png": {
+      "frame": {
+        "x": 3136,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 14,
+      "animation": "sequence_1",
+      "outputFrameIndex": 14
+    },
+    "sequence_1_0016.png": {
+      "frame": {
+        "x": 3360,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 15,
+      "animation": "sequence_1",
+      "outputFrameIndex": 15
+    },
+    "sequence_1_0017.png": {
+      "frame": {
+        "x": 3584,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 16,
+      "animation": "sequence_1",
+      "outputFrameIndex": 16
+    },
+    "sequence_1_0018.png": {
+      "frame": {
+        "x": 3808,
+        "y": 0,
+        "w": 224,
+        "h": 305
+      },
+      "duration": 83,
+      "sourceFrameIndex": 17,
+      "animation": "sequence_1",
+      "outputFrameIndex": 17
+    }
+  }
+}

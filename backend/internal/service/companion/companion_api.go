@@ -10,9 +10,11 @@ import (
 
 	companionv1 "backend/api/companion/v1"
 	companionbiz "backend/internal/biz/companion"
+	"backend/model"
 	"backend/pkg/llminference"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
+	"gorm.io/gorm"
 )
 
 const (
@@ -201,6 +203,47 @@ func (s *AppService) ConfirmMemory(ctx context.Context, userID uint, in *compani
 	}, nil
 }
 
+func (s *AppService) ListMemoryConflicts(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ListMemoryConflictsRequest,
+) (*companionv1.ListMemoryConflictsReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	conflicts, err := engine.ListMemoryConflicts(ctx, userID, clampLimit(in.GetLimit()))
+	if err != nil {
+		return nil, err
+	}
+	return &companionv1.ListMemoryConflictsReply{
+		Conflicts: toProtoMemoryConflicts(conflicts),
+	}, nil
+}
+
+func (s *AppService) ResolveMemoryConflict(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ResolveMemoryConflictRequest,
+) (*companionv1.ResolveMemoryConflictReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	if err := engine.ResolveMemoryConflict(ctx, userID, uint(in.GetConflictId()), in.GetResolution()); err != nil {
+		switch {
+		case errors.Is(err, companionbiz.ErrMemoryConflictNotFound),
+			errors.Is(err, companionbiz.ErrMemoryNotFound):
+			return nil, kerrors.NotFound("COMPANION_MEMORY_CONFLICT_NOT_FOUND", "记忆冲突不存在")
+		case errors.Is(err, companionbiz.ErrMemoryConflictResolved):
+			return nil, kerrors.Conflict("COMPANION_MEMORY_CONFLICT_RESOLVED", "记忆冲突已处理")
+		default:
+			return nil, err
+		}
+	}
+	return &companionv1.ResolveMemoryConflictReply{}, nil
+}
+
 func (s *AppService) ListChatHistory(ctx context.Context, userID uint, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
@@ -233,6 +276,175 @@ func (s *AppService) ListRelationshipEvents(
 	}, nil
 }
 
+func (s *AppService) ListEvents(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ListEventsRequest,
+) (*companionv1.ListEventsReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	events, err := engine.ListEvents(ctx, userID, clampLimit(in.GetLimit()))
+	if err != nil {
+		return nil, err
+	}
+	return &companionv1.ListEventsReply{Events: toProtoEvents(events)}, nil
+}
+
+func (s *AppService) GetTimeline(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ListEventsRequest,
+) (*companionv1.ListEventsReply, error) {
+	return s.ListEvents(ctx, userID, in)
+}
+
+// GetContextPreview returns safe metadata for the canonical companion context.
+func (s *AppService) GetContextPreview(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ContextPreviewRequest,
+) (*companionv1.ContextPreviewReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	scene := strings.TrimSpace(in.GetScene())
+	snapshot, err := engine.BuildContext(ctx, userID, scene)
+	if err != nil {
+		return nil, err
+	}
+	reply := &companionv1.ContextPreviewReply{
+		Scene:                  snapshot.Scene,
+		HistoryCount:           int32(len(snapshot.History)),
+		MemoryCount:            int32(len(snapshot.Memories)),
+		RelationshipEventCount: int32(len(snapshot.RelationshipEvents)),
+		UnfinishedTopicCount:   int32(len(snapshot.UnfinishedTopics)),
+		FirstChat:              snapshot.IsFirstChat,
+	}
+	if snapshot.Profile != nil {
+		reply.RelationshipLevel = int32(snapshot.Profile.RelationshipLevel)
+		reply.IntimacyScore = snapshot.Profile.IntimacyScore
+		reply.WorldBindStatus = snapshot.Profile.WorldBindStatus
+	}
+	return reply, nil
+}
+
+// ListProactiveDeliveries returns rebuildable proactive delivery states.
+func (s *AppService) ListProactiveDeliveries(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.ListProactiveDeliveriesRequest,
+) (*companionv1.ListProactiveDeliveriesReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	deliveries, err := engine.ListProactiveDeliveries(ctx, userID, clampLimit(in.GetLimit()))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*companionv1.CompanionProactiveDeliveryMsg, 0, len(deliveries))
+	for _, delivery := range deliveries {
+		item := &companionv1.CompanionProactiveDeliveryMsg{
+			DeliveryKey:    delivery.DeliveryKey,
+			NotificationId: uint64(delivery.NotificationID),
+			Status:         delivery.Status,
+			Reason:         delivery.Reason,
+			Priority:       int32(delivery.Priority),
+			ScheduledAt:    delivery.ScheduledAt.Format(time.RFC3339),
+		}
+		if delivery.DeliveredAt != nil {
+			item.DeliveredAt = delivery.DeliveredAt.Format(time.RFC3339)
+		}
+		if delivery.ReadAt != nil {
+			item.ReadAt = delivery.ReadAt.Format(time.RFC3339)
+		}
+		if delivery.ExpiresAt != nil {
+			item.ExpiresAt = delivery.ExpiresAt.Format(time.RFC3339)
+		}
+		if delivery.RevokedAt != nil {
+			item.RevokedAt = delivery.RevokedAt.Format(time.RFC3339)
+		}
+		out = append(out, item)
+	}
+	return &companionv1.ListProactiveDeliveriesReply{Deliveries: out}, nil
+}
+
+// RevokeProactiveDelivery records a user-scoped withdrawal of a proactive delivery.
+func (s *AppService) RevokeProactiveDelivery(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.RevokeProactiveDeliveryRequest,
+) (*companionv1.RevokeProactiveDeliveryReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	deliveryKey := strings.TrimSpace(in.GetDeliveryKey())
+	if deliveryKey == "" {
+		return nil, kerrors.BadRequest("COMPANION_PROACTIVE_DELIVERY_INVALID", "delivery key is required")
+	}
+	if err := engine.RevokeProactiveDelivery(ctx, userID, deliveryKey, in.GetReason()); err != nil {
+		return nil, err
+	}
+	return &companionv1.RevokeProactiveDeliveryReply{}, nil
+}
+
+func (s *AppService) MarkProactiveRead(
+	ctx context.Context,
+	userID uint,
+	in *companionv1.MarkProactiveReadRequest,
+) (*companionv1.MarkProactiveReadReply, error) {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return nil, err
+	}
+	if s.db == nil {
+		return nil, kerrors.ServiceUnavailable("COMPANION_UNAVAILABLE", "浼欎即鏈嶅姟鏆備笉鍙敤")
+	}
+	notificationID := uint(in.GetNotificationId())
+	if notificationID == 0 {
+		return nil, kerrors.BadRequest("COMPANION_PROACTIVE_NOTIFICATION_INVALID", "涓诲姩娑堟伅 ID 鏃犳晥")
+	}
+	var notice model.Notification
+	if err := s.db.WithContext(ctx).
+		Where("id = ? AND user_id = ? AND type = ?", notificationID, userID, 9).
+		First(&notice).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, kerrors.NotFound("COMPANION_PROACTIVE_NOT_FOUND", "涓诲姩娑堟伅涓嶅瓨鍦ㄦ垨鏃犳潈闄")
+		}
+		return nil, err
+	}
+	if !notice.IsRead {
+		if err := s.db.WithContext(ctx).Model(&model.Notification{}).
+			Where("id = ? AND user_id = ? AND type = ?", notificationID, userID, 9).
+			Update("is_read", true).Error; err != nil {
+			return nil, err
+		}
+	}
+	if err := engine.RecordProactiveRead(ctx, userID, notificationID); err != nil {
+		return nil, err
+	}
+	return &companionv1.MarkProactiveReadReply{}, nil
+}
+
+// RecordSocialEvent projects a successful social action into CompanionEvent.
+func (s *AppService) RecordSocialEvent(
+	ctx context.Context,
+	userID uint,
+	eventType string,
+	sourceID uint,
+	payload map[string]interface{},
+) error {
+	engine, err := s.requireEngine()
+	if err != nil {
+		return err
+	}
+	return engine.RecordSocialEvent(ctx, userID, eventType, sourceID, payload)
+}
+
 // ChatStream streams one authenticated user's companion response.
 func (s *AppService) ChatStream(
 	ctx context.Context,
@@ -252,6 +464,19 @@ func (s *AppService) ChatStreamWithInference(
 	scene string,
 	onChunk llminference.StreamHandler,
 ) (string, error) {
+	return s.ChatStreamWithInputMode(ctx, userID, message, override, scene, "text", onChunk)
+}
+
+// ChatStreamWithInputMode streams one turn and records its input channel.
+func (s *AppService) ChatStreamWithInputMode(
+	ctx context.Context,
+	userID uint,
+	message string,
+	override *llminference.Config,
+	scene string,
+	inputMode string,
+	onChunk llminference.StreamHandler,
+) (string, error) {
 	engine, err := s.requireEngine()
 	if err != nil {
 		return "", err
@@ -263,7 +488,7 @@ func (s *AppService) ChatStreamWithInference(
 	if utf8.RuneCountInString(message) > maxCompanionMessageRunes {
 		return "", kerrors.BadRequest("MESSAGE_TOO_LONG", "消息长度不能超过 4000 个字符")
 	}
-	return engine.ChatStream(ctx, userID, message, onChunk, scene, override)
+	return engine.ChatStreamWithInputMode(ctx, userID, message, onChunk, scene, inputMode, override)
 }
 
 func clampLimit(raw int32) int {
@@ -410,6 +635,24 @@ func toProtoMemories(memories []companionbiz.Memory) []*companionv1.CompanionMem
 	return out
 }
 
+func toProtoMemoryConflicts(conflicts []companionbiz.MemoryConflict) []*companionv1.CompanionMemoryConflictMsg {
+	out := make([]*companionv1.CompanionMemoryConflictMsg, 0, len(conflicts))
+	for _, conflict := range conflicts {
+		out = append(out, &companionv1.CompanionMemoryConflictMsg{
+			Id:               uint64(conflict.ID),
+			MemoryId:         uint64(conflict.MemoryID),
+			MemoryType:       conflict.MemoryType,
+			MemoryKey:        conflict.MemoryKey,
+			CandidateContent: conflict.CandidateContent,
+			Confidence:       conflict.Confidence,
+			Status:           conflict.Status,
+			CreatedAt:        conflict.CreatedAt.Format("2006-01-02 15:04:05"),
+			ResolvedAt:       formatOptionalTime(conflict.ResolvedAt),
+		})
+	}
+	return out
+}
+
 func toProtoMemory(m companionbiz.Memory) *companionv1.CompanionMemoryMsg {
 	return &companionv1.CompanionMemoryMsg{
 		Id:            uint64(m.ID),
@@ -456,6 +699,26 @@ func toProtoRelationshipEvents(events []companionbiz.RelationshipEvent) []*compa
 			RelationshipLevel: int32(event.RelationshipLevel),
 			IntimacyScore:     event.IntimacyScore,
 			CreatedAt:         event.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return out
+}
+
+func toProtoEvents(events []companionbiz.Event) []*companionv1.CompanionEventMsg {
+	out := make([]*companionv1.CompanionEventMsg, 0, len(events))
+	for _, event := range events {
+		out = append(out, &companionv1.CompanionEventMsg{
+			Id:                uint64(event.ID),
+			EventType:         event.EventType,
+			SourceDomain:      event.SourceDomain,
+			SourceId:          uint64(event.SourceID),
+			DedupeKey:         event.DedupeKey,
+			PayloadJson:       event.PayloadJSON,
+			Visibility:        event.Visibility,
+			Sensitivity:       event.Sensitivity,
+			RelationshipDelta: event.RelationshipDelta,
+			OccurredAt:        event.OccurredAt.Format(time.RFC3339),
+			CreatedAt:         event.CreatedAt.Format(time.RFC3339),
 		})
 	}
 	return out

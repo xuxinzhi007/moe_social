@@ -47,6 +47,14 @@ func (s *AppService) CreatePost(ctx context.Context, in *postv1.CreatePostReques
 	if _, err := checkinbiz.GrantDailyExpOnce(ctx, s.checkinStore, in.GetUserId(), checkinbiz.DailyExpActionPost); err != nil {
 		moelog.Warnf("grant daily exp for post failed user_id=%s err=%v", in.GetUserId(), err)
 	}
+	if s.companionEventRecorder != nil {
+		_ = s.companionEventRecorder(ctx, result.Post.UserID, "post_created", result.Post.ID, map[string]interface{}{
+			"topic_tag_count": result.TopicTagCount,
+			"image_count":     result.ImageCount,
+			"mood_tag":        result.Post.MoodTag,
+			"has_hand_draw":   result.Post.HandDrawCard != "",
+		})
+	}
 
 	post := postbiz.BuildPostV1ForDetail(result.Post, result.User, false)
 	post.Images = result.Images

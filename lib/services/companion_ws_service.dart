@@ -14,6 +14,7 @@ class CompanionPresenceEvent {
     this.greeting = '',
     this.moodThought = '',
     this.activityLabel = '',
+    this.notificationId = 0,
   });
 
   /// `state_snapshot` | `greeting` | `proactive`
@@ -21,6 +22,33 @@ class CompanionPresenceEvent {
   final String greeting;
   final String moodThought;
   final String activityLabel;
+  final int notificationId;
+}
+
+class CompanionWsEvent {
+  const CompanionWsEvent({
+    required this.eventType,
+    required this.eventId,
+    required this.sourceDomain,
+    required this.sourceId,
+    required this.dedupeKey,
+    required this.payloadJson,
+    required this.visibility,
+    required this.sensitivity,
+    required this.relationshipDelta,
+    required this.occurredAt,
+  });
+
+  final String eventType;
+  final int eventId;
+  final String sourceDomain;
+  final int sourceId;
+  final String dedupeKey;
+  final String payloadJson;
+  final String visibility;
+  final String sensitivity;
+  final double relationshipDelta;
+  final DateTime? occurredAt;
 }
 
 /// 伙伴 WebSocket：连接 / 心跳 / 指数退避重连（模式对齐 [LifeWsService]）。
@@ -40,6 +68,7 @@ class CompanionWsService {
   int _reconnectAttempts = 0;
 
   void Function(CompanionPresenceEvent event)? onPresence;
+  void Function(CompanionWsEvent event)? onEvent;
   void Function()? onConnected;
   void Function()? onDisconnected;
 
@@ -173,7 +202,29 @@ class CompanionWsService {
           type: type,
           greeting: map['greeting']?.toString() ?? '',
           moodThought: map['mood']?.toString() ?? '',
-          activityLabel: map['activity']?.toString() ?? '',
+          activityLabel:
+              map['activity']?.toString() ?? map['reason']?.toString() ?? '',
+          notificationId: (map['notification_id'] as num?)?.toInt() ?? 0,
+        ),
+      );
+      return;
+    }
+    if (type == 'companion_event') {
+      onEvent?.call(
+        CompanionWsEvent(
+          eventType: map['event_type']?.toString() ?? '',
+          eventId: (map['event_id'] as num?)?.toInt() ?? 0,
+          sourceDomain: map['source_domain']?.toString() ?? '',
+          sourceId: (map['source_id'] as num?)?.toInt() ?? 0,
+          dedupeKey: map['dedupe_key']?.toString() ?? '',
+          payloadJson: map['payload_json']?.toString() ?? '',
+          visibility: map['visibility']?.toString() ?? 'private',
+          sensitivity: map['sensitivity']?.toString() ?? 'normal',
+          relationshipDelta:
+              (map['relationship_delta'] as num?)?.toDouble() ?? 0,
+          occurredAt: DateTime.tryParse(
+            map['occurred_at']?.toString() ?? '',
+          ),
         ),
       );
     }

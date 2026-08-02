@@ -146,6 +146,30 @@ func (s *Server) UpdateMemory(ctx context.Context, in *companionv1.UpdateMemoryR
 	return app.UpdateMemory(ctx, userID, in)
 }
 
+func (s *Server) ListMemoryConflicts(ctx context.Context, in *companionv1.ListMemoryConflictsRequest) (*companionv1.ListMemoryConflictsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListMemoryConflicts(ctx, userID, in)
+}
+
+func (s *Server) ResolveMemoryConflict(ctx context.Context, in *companionv1.ResolveMemoryConflictRequest) (*companionv1.ResolveMemoryConflictReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ResolveMemoryConflict(ctx, userID, in)
+}
+
 func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHistoryRequest) (*companionv1.ListChatHistoryReply, error) {
 	app, err := s.requireApp()
 	if err != nil {
@@ -156,4 +180,52 @@ func (s *Server) ListChatHistory(ctx context.Context, in *companionv1.ListChatHi
 		return nil, err
 	}
 	return app.ListChatHistory(ctx, userID, in)
+}
+
+func (s *Server) ListRelationshipEvents(ctx context.Context, in *companionv1.ListRelationshipEventsRequest) (*companionv1.ListRelationshipEventsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListRelationshipEvents(ctx, userID, in)
+}
+
+func (s *Server) ListEvents(ctx context.Context, in *companionv1.ListEventsRequest) (*companionv1.ListEventsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListEvents(ctx, userID, in)
+}
+
+func (s *Server) GetTimeline(ctx context.Context, in *companionv1.ListEventsRequest) (*companionv1.ListEventsReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.GetTimeline(ctx, userID, in)
+}
+
+func (s *Server) MarkProactiveRead(ctx context.Context, in *companionv1.MarkProactiveReadRequest) (*companionv1.MarkProactiveReadReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.MarkProactiveRead(ctx, userID, in)
 }

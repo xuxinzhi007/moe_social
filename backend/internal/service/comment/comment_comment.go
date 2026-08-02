@@ -6,6 +6,7 @@ import (
 	"backend/internal/platform/socialhook"
 	"backend/pkg/achievement"
 	"context"
+	"strconv"
 )
 
 func (s *AppService) GetPostComments(ctx context.Context, in *commentv1.GetPostCommentsRequest) (*commentv1.GetPostCommentsReply, error) {
@@ -32,6 +33,12 @@ func (s *AppService) CreateComment(ctx context.Context, in *commentv1.CreateComm
 	if !result.Comment.User.IsBot {
 		achUnlocks = socialhook.ApplyCommentCreatedAchievements(s.store.Raw(), result.Comment.UserID)
 	}
+	if s.companionEventRecorder != nil {
+		_ = s.companionEventRecorder(ctx, result.Comment.UserID, "comment_created", result.Comment.ID, map[string]interface{}{
+			"post_id":   result.Comment.PostID,
+			"parent_id": result.Comment.ParentID,
+		})
+	}
 
 	return &commentv1.CreateCommentReply{
 		Comment: commentbiz.BuildCommentV1(
@@ -45,6 +52,13 @@ func (s *AppService) LikeComment(ctx context.Context, in *commentv1.LikeCommentR
 	result, err := commentbiz.Like(ctx, s.store, in.GetCommentId(), in.GetUserId())
 	if err != nil {
 		return nil, err
+	}
+	if result.IsLiked && s.companionEventRecorder != nil {
+		userID, _ := strconv.ParseUint(in.GetUserId(), 10, 32)
+		_ = s.companionEventRecorder(ctx, uint(userID), "comment_liked", result.Comment.ID, map[string]interface{}{
+			"post_id":    result.Comment.PostID,
+			"like_count": result.Comment.Likes,
+		})
 	}
 	return &commentv1.LikeCommentReply{
 		Comment: commentbiz.BuildCommentV1(result.Comment, result.User, result.IsLiked, ""),

@@ -55,4 +55,8 @@ func TestBumpIntimacyRecordsLevelUpEvent(t *testing.T) {
 	if event.EventType != "level_up" || event.RelationshipLevel != 2 {
 		t.Fatalf("event=%+v, want level_up at level 2", event)
 	}
+	if len(store.companionEvents) != 1 ||
+		store.companionEvents[0].RelationshipDelta != IntimacyDeltaChat {
+		t.Fatalf("companion events=%+v, want relationship delta %v", store.companionEvents, IntimacyDeltaChat)
+	}
 }

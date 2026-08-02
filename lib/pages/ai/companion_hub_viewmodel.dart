@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../../constants/feature_flags.dart';
 import '../../models/life_state.dart';
 import '../../models/post.dart';
 import '../../services/companion_service.dart';
+import '../../services/companion_interaction_coordinator.dart';
 import '../../services/life_service.dart';
 import '../../services/post_service.dart';
 
@@ -19,7 +23,7 @@ class CompanionDailyItem {
     this.memoryId,
   });
 
-  /// `world` | `moment` | `post` | `chat` | `memory` | `relationship`
+  /// `world` | `moment` | `post` | `chat` | `memory` | `relationship` | `topic`
   final String kind;
   final String title;
   final String body;
@@ -69,10 +73,18 @@ class CompanionDailySummaryData {
 
 /// AI 伙伴关系首页状态（陪伴为主，世界/动态为日常流）。
 class CompanionHubViewModel extends ChangeNotifier {
-  CompanionHubViewModel({CompanionService? companionService})
-      : _companion = companionService ?? CompanionService();
+  CompanionHubViewModel({
+    CompanionService? companionService,
+    CompanionInteractionCoordinator? coordinator,
+  })  : _companion = companionService ?? CompanionService(),
+        _coordinator = coordinator ?? CompanionInteractionCoordinator.instance {
+    _interactionSubscription = _coordinator.events.listen(_onInteraction);
+  }
 
   final CompanionService _companion;
+  final CompanionInteractionCoordinator _coordinator;
+  late final StreamSubscription<CompanionInteractionEvent>
+      _interactionSubscription;
 
   bool _isLoading = true;
   String? _loadError;
@@ -84,6 +96,10 @@ class CompanionHubViewModel extends ChangeNotifier {
   bool _worldBound = false;
   String _worldBindStatus = 'unbound';
   bool _disposed = false;
+  bool _refreshQueued = false;
+  bool _dashboardRequestInFlight = false;
+  bool _refreshAfterDashboard = false;
+  Timer? _interactionRefreshTimer;
 
   bool get isLoading => _isLoading;
   String? get loadError => _loadError;
@@ -172,6 +188,13 @@ class CompanionHubViewModel extends ChangeNotifier {
           ctaLabel: '继续聊天',
           kind: leadItem.kind,
         );
+      case 'topic':
+        return CompanionPulseData(
+          title: '鏈畬鎴愮殑璇濋',
+          body: leadItem.body,
+          ctaLabel: '缁х画鑱婂ぉ',
+          kind: leadItem.kind,
+        );
       default:
         return CompanionPulseData(
           title: '今天的 TA',
@@ -185,6 +208,11 @@ class CompanionHubViewModel extends ChangeNotifier {
   }
 
   Future<void> loadDashboard() async {
+    if (_dashboardRequestInFlight) {
+      _refreshAfterDashboard = true;
+      return;
+    }
+    _dashboardRequestInFlight = true;
     _isLoading = true;
     _loadError = null;
     _notify();
@@ -276,6 +304,7 @@ class CompanionHubViewModel extends ChangeNotifier {
       try {
         final history = await _companion.listChatHistory(limit: 12);
         daily.addAll(_chatHighlightItems(history));
+        daily.addAll(_unfinishedTopicItems(history));
       } catch (_) {}
 
       try {
@@ -284,8 +313,8 @@ class CompanionHubViewModel extends ChangeNotifier {
       } catch (_) {}
 
       try {
-        final events = await _companion.listRelationshipEvents(limit: 6);
-        daily.addAll(_relationshipEventDailyItems(events));
+        final events = await _companion.listTimeline(limit: 12);
+        daily.addAll(_unifiedEventDailyItems(events));
       } catch (_) {}
 
       daily.sort((a, b) {
@@ -315,7 +344,30 @@ class CompanionHubViewModel extends ChangeNotifier {
       _loadError = e.toString().replaceFirst('Exception: ', '');
       _isLoading = false;
       _notify();
+    } finally {
+      _dashboardRequestInFlight = false;
+      if (_refreshAfterDashboard && !_disposed) {
+        _refreshAfterDashboard = false;
+        _scheduleInteractionRefresh();
+      }
     }
+  }
+
+  void _onInteraction(CompanionInteractionEvent event) {
+    if (_disposed || event.type == CompanionInteractionType.presenceChanged) {
+      return;
+    }
+    if (_refreshQueued) return;
+    _refreshQueued = true;
+    _scheduleInteractionRefresh();
+  }
+
+  void _scheduleInteractionRefresh() {
+    _interactionRefreshTimer?.cancel();
+    _interactionRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+      _refreshQueued = false;
+      if (!_disposed) unawaited(loadDashboard());
+    });
   }
 
   Future<void> applyUpdatedProfile(CompanionProfileData profile) async {
@@ -460,6 +512,51 @@ class CompanionHubViewModel extends ChangeNotifier {
     }).toList(growable: false);
   }
 
+  static List<CompanionDailyItem> _unfinishedTopicItems(
+    List<CompanionChatLogData> history,
+  ) {
+    final seen = <String>{};
+    final items = <CompanionDailyItem>[];
+    for (var index = history.length - 1;
+        index >= 0 && items.length < 3;
+        index--) {
+      final entry = history[index];
+      if (entry.role != 'user') continue;
+      final text = entry.content.trim();
+      if (text.isEmpty || !_hasUnfinishedTopicMarker(text)) continue;
+      final key = text.toLowerCase();
+      if (!seen.add(key)) continue;
+      items.add(
+        CompanionDailyItem(
+          kind: 'topic',
+          title: '鏈畬鎴愮殑璇濋',
+          body: _clip(text, 96),
+          fullBody: text,
+          at: DateTime.tryParse(entry.createdAt),
+        ),
+      );
+    }
+    return items;
+  }
+
+  static bool _hasUnfinishedTopicMarker(String value) {
+    const markers = <String>[
+      '下次',
+      '之后',
+      '以后',
+      '继续',
+      '还没',
+      '未完',
+      '计划',
+      '准备',
+      '打算',
+      'todo',
+      'follow up',
+    ];
+    final normalized = value.toLowerCase();
+    return markers.any(normalized.contains);
+  }
+
   static List<CompanionDailyItem> _memoryDailyItems(
     List<CompanionMemoryData> memories,
   ) {
@@ -478,22 +575,134 @@ class CompanionHubViewModel extends ChangeNotifier {
     ).toList(growable: false);
   }
 
-  static List<CompanionDailyItem> _relationshipEventDailyItems(
-    List<CompanionRelationshipEventData> events,
+  static List<CompanionDailyItem> _unifiedEventDailyItems(
+    List<CompanionEventData> events,
   ) {
     return events
-        .where((event) => event.title.trim().isNotEmpty)
-        .take(4)
-        .map(
-          (event) => CompanionDailyItem(
-            kind: 'relationship',
-            title: event.title.trim(),
-            body: event.content.trim(),
-            at: DateTime.tryParse(event.createdAt),
-            fullBody: event.content.trim(),
-          ),
-        )
+        .take(6)
+        .map((event) {
+          final payload = _decodeEventPayload(event.payloadJson);
+          final relationshipTitle = payload['title']?.toString().trim() ?? '';
+          final relationshipBody = payload['content']?.toString().trim() ?? '';
+          final eventType = event.eventType;
+          String kind;
+          String title;
+          String body;
+          switch (eventType) {
+            case 'first_chat':
+            case 'level_up':
+            case 'relationship_level_up':
+              kind = 'relationship';
+              title = relationshipTitle.isEmpty ? '关系有新变化' : relationshipTitle;
+              body = relationshipBody;
+              break;
+            case 'chat_turn_completed':
+              kind = 'chat';
+              title = '刚聊过的事';
+              body = payload['input_mode']?.toString() == 'voice'
+                  ? '语音对话已完成'
+                  : '对话已完成';
+              break;
+            case 'voice_turn_completed':
+              kind = 'chat';
+              title = '语音陪伴';
+              body = '语音互动已完成';
+              break;
+            case 'memory_created':
+            case 'memory_updated':
+            case 'memory_confirmed':
+            case 'memory_corrected':
+            case 'memory_pinned_changed':
+            case 'memory_deleted':
+            case 'memory_conflict_detected':
+            case 'memory_conflict_resolved':
+              kind = 'memory';
+              title = '记忆有更新';
+              body = payload['memory_key']?.toString().trim() ?? '';
+              if (body.isEmpty) body = eventType.replaceAll('_', ' ');
+              break;
+            case 'life_moment_created':
+            case 'life_care_completed':
+              kind = 'world';
+              title = 'Life 有新动态';
+              body = payload['description']?.toString().trim() ?? '';
+              if (body.isEmpty) {
+                body = payload['life_event_type']?.toString().trim() ?? '';
+              }
+              break;
+            case 'post_created':
+            case 'post_liked':
+            case 'comment_created':
+            case 'comment_liked':
+              kind = 'post';
+              title = '社交有新动态';
+              body = eventType.replaceAll('_', ' ');
+              break;
+            case 'friend_request_sent':
+              kind = 'relationship';
+              title = '发出了好友申请';
+              body = '等待对方回应';
+              break;
+            case 'friend_request_received':
+              kind = 'relationship';
+              title = '收到好友申请';
+              body = '去好友页查看';
+              break;
+            case 'friend_request_accepted':
+              kind = 'relationship';
+              title = '好友申请已接受';
+              body = '关系有了新的进展';
+              break;
+            case 'friend_request_rejected':
+              kind = 'relationship';
+              title = '好友申请已处理';
+              body = '关系状态已同步';
+              break;
+            case 'follow_created':
+              kind = 'relationship';
+              title = '你关注了一位用户';
+              body = '已写入关系时间线';
+              break;
+            case 'follow_removed':
+              kind = 'relationship';
+              title = '你取消了关注';
+              body = '关系状态已同步';
+              break;
+            case 'proactive_delivered':
+              kind = 'relationship';
+              title = 'TA 主动联系你了';
+              body = payload['reason']?.toString().trim() ?? '';
+              break;
+            default:
+              return null;
+          }
+          if (title.isEmpty && body.isEmpty) return null;
+          return CompanionDailyItem(
+            kind: kind,
+            title: title,
+            body: body,
+            at: DateTime.tryParse(
+              event.occurredAt.isNotEmpty ? event.occurredAt : event.createdAt,
+            ),
+            fullBody: body,
+            memoryId:
+                kind == 'memory' && event.sourceId > 0 ? event.sourceId : null,
+          );
+        })
+        .whereType<CompanionDailyItem>()
         .toList(growable: false);
+  }
+
+  static Map<String, dynamic> _decodeEventPayload(String value) {
+    if (value.trim().isEmpty) return const <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map
+          ? Map<String, dynamic>.from(decoded)
+          : const <String, dynamic>{};
+    } catch (_) {
+      return const <String, dynamic>{};
+    }
   }
 
   static CompanionDailySummaryData? _buildDailySummary({
@@ -531,6 +740,13 @@ class CompanionHubViewModel extends ChangeNotifier {
       sceneLabel: _companionSceneLabel(DateTime.now(), state.mood),
       continuationHint: continuation,
     );
+  }
+
+  @visibleForTesting
+  static List<CompanionDailyItem> unifiedEventDailyItemsForTest(
+    List<CompanionEventData> events,
+  ) {
+    return _unifiedEventDailyItems(events);
   }
 
   @visibleForTesting
@@ -636,6 +852,8 @@ class CompanionHubViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _interactionRefreshTimer?.cancel();
+    _interactionSubscription.cancel();
     super.dispose();
   }
 }

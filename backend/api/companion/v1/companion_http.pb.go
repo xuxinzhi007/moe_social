@@ -22,12 +22,20 @@ const _ = http.SupportPackageIsVersion1
 const OperationCompanionConfirmMemory = "/companion.v1.Companion/ConfirmMemory"
 const OperationCompanionDeleteMemory = "/companion.v1.Companion/DeleteMemory"
 const OperationCompanionGetCommunityIdentity = "/companion.v1.Companion/GetCommunityIdentity"
+const OperationCompanionGetContextPreview = "/companion.v1.Companion/GetContextPreview"
 const OperationCompanionGetProactiveSettings = "/companion.v1.Companion/GetProactiveSettings"
 const OperationCompanionGetProfile = "/companion.v1.Companion/GetProfile"
 const OperationCompanionGetState = "/companion.v1.Companion/GetState"
+const OperationCompanionGetTimeline = "/companion.v1.Companion/GetTimeline"
 const OperationCompanionListChatHistory = "/companion.v1.Companion/ListChatHistory"
+const OperationCompanionListEvents = "/companion.v1.Companion/ListEvents"
 const OperationCompanionListMemories = "/companion.v1.Companion/ListMemories"
+const OperationCompanionListMemoryConflicts = "/companion.v1.Companion/ListMemoryConflicts"
+const OperationCompanionListProactiveDeliveries = "/companion.v1.Companion/ListProactiveDeliveries"
 const OperationCompanionListRelationshipEvents = "/companion.v1.Companion/ListRelationshipEvents"
+const OperationCompanionMarkProactiveRead = "/companion.v1.Companion/MarkProactiveRead"
+const OperationCompanionResolveMemoryConflict = "/companion.v1.Companion/ResolveMemoryConflict"
+const OperationCompanionRevokeProactiveDelivery = "/companion.v1.Companion/RevokeProactiveDelivery"
 const OperationCompanionSetMemoryPinned = "/companion.v1.Companion/SetMemoryPinned"
 const OperationCompanionUpdateMemory = "/companion.v1.Companion/UpdateMemory"
 const OperationCompanionUpdateProactiveSettings = "/companion.v1.Companion/UpdateProactiveSettings"
@@ -37,16 +45,24 @@ type CompanionHTTPServer interface {
 	ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error)
 	DeleteMemory(context.Context, *DeleteMemoryRequest) (*DeleteMemoryReply, error)
 	GetCommunityIdentity(context.Context, *GetCommunityIdentityRequest) (*GetCommunityIdentityReply, error)
+	GetContextPreview(context.Context, *ContextPreviewRequest) (*ContextPreviewReply, error)
 	GetProactiveSettings(context.Context, *GetProactiveSettingsRequest) (*GetProactiveSettingsReply, error)
 	// GetProfile Profile
 	GetProfile(context.Context, *GetProfileRequest) (*GetProfileReply, error)
 	// GetState State（当前状态，含人格化表达 + 动态）
 	GetState(context.Context, *GetStateRequest) (*GetStateReply, error)
+	GetTimeline(context.Context, *ListEventsRequest) (*ListEventsReply, error)
 	// ListChatHistory Chat History
 	ListChatHistory(context.Context, *ListChatHistoryRequest) (*ListChatHistoryReply, error)
+	ListEvents(context.Context, *ListEventsRequest) (*ListEventsReply, error)
 	// ListMemories Memory
 	ListMemories(context.Context, *ListMemoriesRequest) (*ListMemoriesReply, error)
+	ListMemoryConflicts(context.Context, *ListMemoryConflictsRequest) (*ListMemoryConflictsReply, error)
+	ListProactiveDeliveries(context.Context, *ListProactiveDeliveriesRequest) (*ListProactiveDeliveriesReply, error)
 	ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error)
+	MarkProactiveRead(context.Context, *MarkProactiveReadRequest) (*MarkProactiveReadReply, error)
+	ResolveMemoryConflict(context.Context, *ResolveMemoryConflictRequest) (*ResolveMemoryConflictReply, error)
+	RevokeProactiveDelivery(context.Context, *RevokeProactiveDeliveryRequest) (*RevokeProactiveDeliveryReply, error)
 	SetMemoryPinned(context.Context, *SetMemoryPinnedRequest) (*SetMemoryPinnedReply, error)
 	UpdateMemory(context.Context, *UpdateMemoryRequest) (*UpdateMemoryReply, error)
 	UpdateProactiveSettings(context.Context, *UpdateProactiveSettingsRequest) (*UpdateProactiveSettingsReply, error)
@@ -67,7 +83,15 @@ func RegisterCompanionHTTPServer(s *http.Server, srv CompanionHTTPServer) {
 	r.GET("/api/companion/proactive-settings", _Companion_GetProactiveSettings0_HTTP_Handler(srv))
 	r.PUT("/api/companion/proactive-settings", _Companion_UpdateProactiveSettings0_HTTP_Handler(srv))
 	r.POST("/api/companion/memories/{memory_id}/confirm", _Companion_ConfirmMemory0_HTTP_Handler(srv))
+	r.GET("/api/companion/memory-conflicts", _Companion_ListMemoryConflicts0_HTTP_Handler(srv))
+	r.POST("/api/companion/memory-conflicts/{conflict_id}/resolve", _Companion_ResolveMemoryConflict0_HTTP_Handler(srv))
 	r.GET("/api/companion/relationship-events", _Companion_ListRelationshipEvents0_HTTP_Handler(srv))
+	r.GET("/api/companion/events", _Companion_ListEvents0_HTTP_Handler(srv))
+	r.GET("/api/companion/timeline", _Companion_GetTimeline0_HTTP_Handler(srv))
+	r.GET("/api/companion/context/preview", _Companion_GetContextPreview0_HTTP_Handler(srv))
+	r.GET("/api/companion/proactive-deliveries", _Companion_ListProactiveDeliveries0_HTTP_Handler(srv))
+	r.POST("/api/companion/proactive/revoke", _Companion_RevokeProactiveDelivery0_HTTP_Handler(srv))
+	r.POST("/api/companion/proactive/{notification_id}/read", _Companion_MarkProactiveRead0_HTTP_Handler(srv))
 }
 
 func _Companion_GetProfile0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
@@ -325,6 +349,50 @@ func _Companion_ConfirmMemory0_HTTP_Handler(srv CompanionHTTPServer) func(ctx ht
 	}
 }
 
+func _Companion_ListMemoryConflicts0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListMemoryConflictsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionListMemoryConflicts)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListMemoryConflicts(ctx, req.(*ListMemoryConflictsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListMemoryConflictsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_ResolveMemoryConflict0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ResolveMemoryConflictRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionResolveMemoryConflict)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ResolveMemoryConflict(ctx, req.(*ResolveMemoryConflictRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ResolveMemoryConflictReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 func _Companion_ListRelationshipEvents0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ListRelationshipEventsRequest
@@ -344,20 +412,151 @@ func _Companion_ListRelationshipEvents0_HTTP_Handler(srv CompanionHTTPServer) fu
 	}
 }
 
+func _Companion_ListEvents0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListEventsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionListEvents)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListEvents(ctx, req.(*ListEventsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListEventsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_GetTimeline0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListEventsRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionGetTimeline)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetTimeline(ctx, req.(*ListEventsRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListEventsReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_GetContextPreview0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ContextPreviewRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionGetContextPreview)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetContextPreview(ctx, req.(*ContextPreviewRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ContextPreviewReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_ListProactiveDeliveries0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListProactiveDeliveriesRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionListProactiveDeliveries)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListProactiveDeliveries(ctx, req.(*ListProactiveDeliveriesRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListProactiveDeliveriesReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_RevokeProactiveDelivery0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in RevokeProactiveDeliveryRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionRevokeProactiveDelivery)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.RevokeProactiveDelivery(ctx, req.(*RevokeProactiveDeliveryRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*RevokeProactiveDeliveryReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Companion_MarkProactiveRead0_HTTP_Handler(srv CompanionHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in MarkProactiveReadRequest
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationCompanionMarkProactiveRead)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.MarkProactiveRead(ctx, req.(*MarkProactiveReadRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*MarkProactiveReadReply)
+		return ctx.Result(200, reply)
+	}
+}
+
 type CompanionHTTPClient interface {
 	ConfirmMemory(ctx context.Context, req *ConfirmMemoryRequest, opts ...http.CallOption) (rsp *ConfirmMemoryReply, err error)
 	DeleteMemory(ctx context.Context, req *DeleteMemoryRequest, opts ...http.CallOption) (rsp *DeleteMemoryReply, err error)
 	GetCommunityIdentity(ctx context.Context, req *GetCommunityIdentityRequest, opts ...http.CallOption) (rsp *GetCommunityIdentityReply, err error)
+	GetContextPreview(ctx context.Context, req *ContextPreviewRequest, opts ...http.CallOption) (rsp *ContextPreviewReply, err error)
 	GetProactiveSettings(ctx context.Context, req *GetProactiveSettingsRequest, opts ...http.CallOption) (rsp *GetProactiveSettingsReply, err error)
 	// GetProfile Profile
 	GetProfile(ctx context.Context, req *GetProfileRequest, opts ...http.CallOption) (rsp *GetProfileReply, err error)
 	// GetState State（当前状态，含人格化表达 + 动态）
 	GetState(ctx context.Context, req *GetStateRequest, opts ...http.CallOption) (rsp *GetStateReply, err error)
+	GetTimeline(ctx context.Context, req *ListEventsRequest, opts ...http.CallOption) (rsp *ListEventsReply, err error)
 	// ListChatHistory Chat History
 	ListChatHistory(ctx context.Context, req *ListChatHistoryRequest, opts ...http.CallOption) (rsp *ListChatHistoryReply, err error)
+	ListEvents(ctx context.Context, req *ListEventsRequest, opts ...http.CallOption) (rsp *ListEventsReply, err error)
 	// ListMemories Memory
 	ListMemories(ctx context.Context, req *ListMemoriesRequest, opts ...http.CallOption) (rsp *ListMemoriesReply, err error)
+	ListMemoryConflicts(ctx context.Context, req *ListMemoryConflictsRequest, opts ...http.CallOption) (rsp *ListMemoryConflictsReply, err error)
+	ListProactiveDeliveries(ctx context.Context, req *ListProactiveDeliveriesRequest, opts ...http.CallOption) (rsp *ListProactiveDeliveriesReply, err error)
 	ListRelationshipEvents(ctx context.Context, req *ListRelationshipEventsRequest, opts ...http.CallOption) (rsp *ListRelationshipEventsReply, err error)
+	MarkProactiveRead(ctx context.Context, req *MarkProactiveReadRequest, opts ...http.CallOption) (rsp *MarkProactiveReadReply, err error)
+	ResolveMemoryConflict(ctx context.Context, req *ResolveMemoryConflictRequest, opts ...http.CallOption) (rsp *ResolveMemoryConflictReply, err error)
+	RevokeProactiveDelivery(ctx context.Context, req *RevokeProactiveDeliveryRequest, opts ...http.CallOption) (rsp *RevokeProactiveDeliveryReply, err error)
 	SetMemoryPinned(ctx context.Context, req *SetMemoryPinnedRequest, opts ...http.CallOption) (rsp *SetMemoryPinnedReply, err error)
 	UpdateMemory(ctx context.Context, req *UpdateMemoryRequest, opts ...http.CallOption) (rsp *UpdateMemoryReply, err error)
 	UpdateProactiveSettings(ctx context.Context, req *UpdateProactiveSettingsRequest, opts ...http.CallOption) (rsp *UpdateProactiveSettingsReply, err error)
@@ -411,6 +610,19 @@ func (c *CompanionHTTPClientImpl) GetCommunityIdentity(ctx context.Context, in *
 	return &out, nil
 }
 
+func (c *CompanionHTTPClientImpl) GetContextPreview(ctx context.Context, in *ContextPreviewRequest, opts ...http.CallOption) (*ContextPreviewReply, error) {
+	var out ContextPreviewReply
+	pattern := "/api/companion/context/preview"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionGetContextPreview))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CompanionHTTPClientImpl) GetProactiveSettings(ctx context.Context, in *GetProactiveSettingsRequest, opts ...http.CallOption) (*GetProactiveSettingsReply, error) {
 	var out GetProactiveSettingsReply
 	pattern := "/api/companion/proactive-settings"
@@ -452,12 +664,38 @@ func (c *CompanionHTTPClientImpl) GetState(ctx context.Context, in *GetStateRequ
 	return &out, nil
 }
 
+func (c *CompanionHTTPClientImpl) GetTimeline(ctx context.Context, in *ListEventsRequest, opts ...http.CallOption) (*ListEventsReply, error) {
+	var out ListEventsReply
+	pattern := "/api/companion/timeline"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionGetTimeline))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // ListChatHistory Chat History
 func (c *CompanionHTTPClientImpl) ListChatHistory(ctx context.Context, in *ListChatHistoryRequest, opts ...http.CallOption) (*ListChatHistoryReply, error) {
 	var out ListChatHistoryReply
 	pattern := "/api/companion/chat/history"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationCompanionListChatHistory))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) ListEvents(ctx context.Context, in *ListEventsRequest, opts ...http.CallOption) (*ListEventsReply, error) {
+	var out ListEventsReply
+	pattern := "/api/companion/events"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionListEvents))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -480,6 +718,32 @@ func (c *CompanionHTTPClientImpl) ListMemories(ctx context.Context, in *ListMemo
 	return &out, nil
 }
 
+func (c *CompanionHTTPClientImpl) ListMemoryConflicts(ctx context.Context, in *ListMemoryConflictsRequest, opts ...http.CallOption) (*ListMemoryConflictsReply, error) {
+	var out ListMemoryConflictsReply
+	pattern := "/api/companion/memory-conflicts"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionListMemoryConflicts))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) ListProactiveDeliveries(ctx context.Context, in *ListProactiveDeliveriesRequest, opts ...http.CallOption) (*ListProactiveDeliveriesReply, error) {
+	var out ListProactiveDeliveriesReply
+	pattern := "/api/companion/proactive-deliveries"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationCompanionListProactiveDeliveries))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *CompanionHTTPClientImpl) ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...http.CallOption) (*ListRelationshipEventsReply, error) {
 	var out ListRelationshipEventsReply
 	pattern := "/api/companion/relationship-events"
@@ -487,6 +751,45 @@ func (c *CompanionHTTPClientImpl) ListRelationshipEvents(ctx context.Context, in
 	opts = append(opts, http.Operation(OperationCompanionListRelationshipEvents))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) MarkProactiveRead(ctx context.Context, in *MarkProactiveReadRequest, opts ...http.CallOption) (*MarkProactiveReadReply, error) {
+	var out MarkProactiveReadReply
+	pattern := "/api/companion/proactive/{notification_id}/read"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionMarkProactiveRead))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) ResolveMemoryConflict(ctx context.Context, in *ResolveMemoryConflictRequest, opts ...http.CallOption) (*ResolveMemoryConflictReply, error) {
+	var out ResolveMemoryConflictReply
+	pattern := "/api/companion/memory-conflicts/{conflict_id}/resolve"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionResolveMemoryConflict))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *CompanionHTTPClientImpl) RevokeProactiveDelivery(ctx context.Context, in *RevokeProactiveDeliveryRequest, opts ...http.CallOption) (*RevokeProactiveDeliveryReply, error) {
+	var out RevokeProactiveDeliveryReply
+	pattern := "/api/companion/proactive/revoke"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationCompanionRevokeProactiveDelivery))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

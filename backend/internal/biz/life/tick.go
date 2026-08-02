@@ -77,7 +77,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	worldEventDiffs := engine.worldEventEngine.Step(grid, int(oldSnap.TickCount), func(evt *model.LifeEventLog) {
 		evt.WorldID = engine.config.WorldName
 		evt.Importance = eventImportance(evt.EventType)
-		engine.persistence.EnqueueEvent(evt)
+		engine.enqueueEvent(ctx, evt)
 	})
 
 	boundIDs := engine.loadBoundEntityIDs(ctx)
@@ -129,7 +129,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				CreatedAt:   time.Now(),
 			}
 			evt.Importance = eventImportance(evt.EventType)
-			engine.persistence.EnqueueEvent(evt)
+			engine.enqueueEvent(ctx, evt)
 			eventDiffs = append(eventDiffs, EventDiff{
 				EntityID:   entity.ID,
 				EntityType: entity.Name,
@@ -167,7 +167,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 					CreatedAt:   time.Now(),
 				}
 				evt.Importance = eventImportance(evt.EventType)
-				engine.persistence.EnqueueEvent(evt)
+				engine.enqueueEvent(ctx, evt)
 				eventDiffs = append(eventDiffs, EventDiff{
 					EntityID:   entity.ID,
 					EntityType: entity.Name,
@@ -209,7 +209,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 						CreatedAt:   time.Now(),
 					}
 					evt.Importance = eventImportance(evt.EventType)
-					engine.persistence.EnqueueEvent(evt)
+					engine.enqueueEvent(ctx, evt)
 					eventDiffs = append(eventDiffs, EventDiff{
 						EntityID:   entity.ID,
 						EntityType: entity.Name,
@@ -283,7 +283,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 					CreatedAt:   time.Now(),
 				}
 				evt.Importance = eventImportance(evt.EventType)
-				engine.persistence.EnqueueEvent(evt)
+				engine.enqueueEvent(ctx, evt)
 				eventDiffs = append(eventDiffs, EventDiff{
 					EntityID:   entity.ID,
 					EntityType: entity.Name,
@@ -329,7 +329,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 				CreatedAt:   now,
 			}
 			birthEvt.Importance = eventImportance(birthEvt.EventType)
-			engine.persistence.EnqueueEvent(birthEvt)
+			engine.enqueueEvent(ctx, birthEvt)
 			eventDiffs = append(eventDiffs, EventDiff{
 				EntityID:   child.ID,
 				EntityType: child.Name,
@@ -370,7 +370,7 @@ func RunLifeTick(ctx context.Context, engine *LifeEngine) {
 	var removedRelDiffs []RemovedRelationship
 	for _, evt := range socialEvents {
 		evt.Importance = eventImportance(evt.EventType)
-		engine.persistence.EnqueueEvent(evt)
+		engine.enqueueEvent(ctx, evt)
 		eventDiffs = append(eventDiffs, EventDiff{
 			EntityID:   evt.EntityID,
 			EntityType: evt.EntityType,

@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"backend/internal/platform/moelog"
+	"backend/model"
 )
 
 var companionUpgrader = websocket.Upgrader{
@@ -183,10 +184,30 @@ func (h *CompanionWSHub) BroadcastGreeting(userID uint, greeting, moodThought, a
 }
 
 // BroadcastProactive sends a user-specific proactive message.
-func (h *CompanionWSHub) BroadcastProactive(userID uint, message, reason string) {
+func (h *CompanionWSHub) BroadcastProactive(userID uint, message, reason string, notificationID uint) {
 	h.Broadcast(userID, "proactive", map[string]interface{}{
-		"greeting": message,
-		"reason":   reason,
+		"greeting":        message,
+		"reason":          reason,
+		"notification_id": notificationID,
+	})
+}
+
+// BroadcastCompanionEvent sends a durable event without exposing chat content.
+func (h *CompanionWSHub) BroadcastCompanionEvent(userID uint, event *model.CompanionEvent) {
+	if event == nil {
+		return
+	}
+	h.Broadcast(userID, "companion_event", map[string]interface{}{
+		"event_id":           event.ID,
+		"event_type":         event.EventType,
+		"source_domain":      event.SourceDomain,
+		"source_id":          event.SourceID,
+		"dedupe_key":         event.DedupeKey,
+		"payload_json":       event.PayloadJSON,
+		"visibility":         event.Visibility,
+		"sensitivity":        event.Sensitivity,
+		"relationship_delta": event.RelationshipDelta,
+		"occurred_at":        event.OccurredAt.Format(time.RFC3339),
 	})
 }
 

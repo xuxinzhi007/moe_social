@@ -40,6 +40,58 @@ func TestRelationshipGuidanceSetsHealthyBoundary(t *testing.T) {
 	}
 }
 
+func TestSystemPromptSeparatesConfirmedMemoryFromCandidates(t *testing.T) {
+	prompt := buildSystemPrompt(
+		&Profile{Name: "Mochi"},
+		nil,
+		[]Memory{
+			{Content: "confirmed fact", UserConfirmed: true},
+			{Content: "candidate fact"},
+		},
+	)
+	if !strings.Contains(prompt, "confirmed fact") || !strings.Contains(prompt, "candidate fact") {
+		t.Fatalf("prompt omitted memory content: %s", prompt)
+	}
+	if !strings.Contains(prompt, "[unconfirmed memory candidates]") {
+		t.Fatalf("prompt omitted candidate boundary: %s", prompt)
+	}
+}
+
+func TestSystemPromptIncludesRelationshipEvents(t *testing.T) {
+	prompt := buildSystemPromptWithRelationshipEvents(
+		&Profile{Name: "Mochi"},
+		nil,
+		nil,
+		[]RelationshipEvent{{Title: "第一次聊天", Content: "你们开始了第一次对话"}},
+	)
+	if !strings.Contains(prompt, "[最近的关系进展]") ||
+		!strings.Contains(prompt, "第一次聊天：你们开始了第一次对话") {
+		t.Fatalf("prompt omitted relationship event: %s", prompt)
+	}
+}
+
+func TestSystemPromptIncludesUnfinishedTopics(t *testing.T) {
+	prompt := buildSystemPromptWithContext(
+		&Profile{Name: "Mochi"},
+		nil,
+		nil,
+		nil,
+		[]string{"下次继续聊我的旅行计划"},
+	)
+	if !strings.Contains(prompt, "[未完成话题]") ||
+		!strings.Contains(prompt, "下次继续聊我的旅行计划") {
+		t.Fatalf("prompt omitted unfinished topic: %s", prompt)
+	}
+}
+
+func TestLegacyMessageBuilderRemainsCompatible(t *testing.T) {
+	legacy := buildMessages(&Profile{Name: "Mochi"}, nil, nil, nil, "hello")
+	current := buildMessagesWithRelationshipEvents(&Profile{Name: "Mochi"}, nil, nil, nil, nil, "hello")
+	if len(legacy) != len(current) || legacy[0].Content != current[0].Content {
+		t.Fatalf("legacy and current message builders diverged: legacy=%+v current=%+v", legacy, current)
+	}
+}
+
 func TestSceneGuidanceSupportsComfortAndRepair(t *testing.T) {
 	guidance := sceneGuidance(
 		time.Date(2026, time.December, 25, 23, 0, 0, 0, time.Local),

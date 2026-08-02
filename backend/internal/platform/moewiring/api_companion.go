@@ -49,6 +49,7 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 	// 绑定居民免死：Life tick 查询 companion_profiles.life_entity_id。
 	if lifeApp != nil && lifeApp.Engine() != nil {
 		lifeApp.Engine().SetBoundEntitySource(&companionBoundEntitySource{db: db})
+		lifeApp.Engine().SetEventObserver(engine.ObserveLifeEvent)
 	}
 	return companionapp.New(engine, hub, db), nil
 }

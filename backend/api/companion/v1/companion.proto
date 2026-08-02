@@ -82,6 +82,18 @@ message CompanionMemoryMsg {
   double confidence = 10;
 }
 
+message CompanionMemoryConflictMsg {
+  uint64 id = 1;
+  uint64 memory_id = 2;
+  string memory_type = 3;
+  string memory_key = 4;
+  string candidate_content = 5;
+  double confidence = 6;
+  string status = 7;
+  string created_at = 8;
+  string resolved_at = 9;
+}
+
 message CompanionChatLogMsg {
   uint64 id = 1;
   string role = 2;
@@ -97,6 +109,20 @@ message CompanionRelationshipEventMsg {
   int32 relationship_level = 5;
   double intimacy_score = 6;
   string created_at = 7;
+}
+
+message CompanionEventMsg {
+  uint64 id = 1;
+  string event_type = 2;
+  string source_domain = 3;
+  uint64 source_id = 4;
+  string dedupe_key = 5;
+  string payload_json = 6;
+  string visibility = 7;
+  string sensitivity = 8;
+  double relationship_delta = 9;
+  string occurred_at = 10;
+  string created_at = 11;
 }
 
 // ── Request / Reply ──
@@ -194,6 +220,21 @@ message ConfirmMemoryReply {
   CompanionMemoryMsg memory = 1;
 }
 
+message ListMemoryConflictsRequest {
+  int32 limit = 1;
+}
+
+message ListMemoryConflictsReply {
+  repeated CompanionMemoryConflictMsg conflicts = 1;
+}
+
+message ResolveMemoryConflictRequest {
+  uint64 conflict_id = 1;
+  string resolution = 2;
+}
+
+message ResolveMemoryConflictReply {}
+
 message ListChatHistoryRequest {
   int32 limit = 1;
 }
@@ -209,6 +250,64 @@ message ListRelationshipEventsRequest {
 message ListRelationshipEventsReply {
   repeated CompanionRelationshipEventMsg events = 1;
 }
+
+message ListEventsRequest {
+  int32 limit = 1;
+}
+
+message ListEventsReply {
+  repeated CompanionEventMsg events = 1;
+}
+
+message ContextPreviewRequest {
+  string scene = 1;
+}
+
+message ContextPreviewReply {
+  string scene = 1;
+  int32 history_count = 2;
+  int32 memory_count = 3;
+  int32 relationship_level = 4;
+  double intimacy_score = 5;
+  string world_bind_status = 6;
+  bool first_chat = 7;
+  int32 relationship_event_count = 8;
+  int32 unfinished_topic_count = 9;
+}
+
+message CompanionProactiveDeliveryMsg {
+  string delivery_key = 1;
+  uint64 notification_id = 2;
+  string status = 3;
+  string reason = 4;
+  int32 priority = 5;
+  string scheduled_at = 6;
+  string delivered_at = 7;
+  string read_at = 8;
+  string expires_at = 9;
+  string revoked_at = 10;
+}
+
+message ListProactiveDeliveriesRequest {
+  int32 limit = 1;
+}
+
+message ListProactiveDeliveriesReply {
+  repeated CompanionProactiveDeliveryMsg deliveries = 1;
+}
+
+message RevokeProactiveDeliveryRequest {
+  string delivery_key = 1;
+  string reason = 2;
+}
+
+message RevokeProactiveDeliveryReply {}
+
+message MarkProactiveReadRequest {
+  uint64 notification_id = 1;
+}
+
+message MarkProactiveReadReply {}
 
 // ── Service ──
 
@@ -273,8 +372,44 @@ service Companion {
     };
   }
 
+  rpc ListMemoryConflicts(ListMemoryConflictsRequest) returns (ListMemoryConflictsReply) {
+    option (google.api.http) = {get: "/api/companion/memory-conflicts"};
+  }
+  rpc ResolveMemoryConflict(ResolveMemoryConflictRequest) returns (ResolveMemoryConflictReply) {
+    option (google.api.http) = {
+      post: "/api/companion/memory-conflicts/{conflict_id}/resolve"
+      body: "*"
+    };
+  }
+
   rpc ListRelationshipEvents(ListRelationshipEventsRequest) returns (ListRelationshipEventsReply) {
     option (google.api.http) = {get: "/api/companion/relationship-events"};
+  }
+
+  rpc ListEvents(ListEventsRequest) returns (ListEventsReply) {
+    option (google.api.http) = {get: "/api/companion/events"};
+  }
+  rpc GetTimeline(ListEventsRequest) returns (ListEventsReply) {
+    option (google.api.http) = {get: "/api/companion/timeline"};
+  }
+  rpc GetContextPreview(ContextPreviewRequest) returns (ContextPreviewReply) {
+    option (google.api.http) = {get: "/api/companion/context/preview"};
+  }
+  rpc ListProactiveDeliveries(ListProactiveDeliveriesRequest) returns (ListProactiveDeliveriesReply) {
+    option (google.api.http) = {get: "/api/companion/proactive-deliveries"};
+  }
+  rpc RevokeProactiveDelivery(RevokeProactiveDeliveryRequest) returns (RevokeProactiveDeliveryReply) {
+    option (google.api.http) = {
+      post: "/api/companion/proactive/revoke"
+      body: "*"
+    };
+  }
+
+  rpc MarkProactiveRead(MarkProactiveReadRequest) returns (MarkProactiveReadReply) {
+    option (google.api.http) = {
+      post: "/api/companion/proactive/{notification_id}/read"
+      body: "*"
+    };
   }
 
   // 注意：Chat SSE 流式端点通过 RegisterChatStreamRoute 手工注册（参照 game 模块）

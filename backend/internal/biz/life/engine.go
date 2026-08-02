@@ -14,6 +14,9 @@ import (
 // BroadcastFunc 广播回调类型
 type BroadcastFunc func(msg TickBroadcast)
 
+// EventObserver receives Life events for optional cross-domain projections.
+type EventObserver func(ctx context.Context, event *model.LifeEventLog)
+
 // BoundEntitySource 查询哪些 Life 实体被 Companion 绑定（绑定居民免死）。
 // 由 wiring 注入；未注入时视为无绑定。
 type BoundEntitySource interface {
@@ -31,10 +34,12 @@ type LifeEngine struct {
 	config           LifeConfig
 	broadcastMu      sync.RWMutex
 	broadcastFn      BroadcastFunc
+	eventObserverMu  sync.RWMutex
+	eventObserver    EventObserver
 	boundSrcMu       sync.RWMutex
 	boundSrc         BoundEntitySource
-	actionCooldowns  map[uint]time.Time                // 实体 ID→冷却到期时间
-	eventCooldowns   map[uint]map[string]time.Time      // entityID → eventType → cooldown expiry
+	actionCooldowns  map[uint]time.Time            // 实体 ID→冷却到期时间
+	eventCooldowns   map[uint]map[string]time.Time // entityID → eventType → cooldown expiry
 	cooldownMu       sync.Mutex
 }
 
@@ -92,6 +97,50 @@ func (e *LifeEngine) SetBroadcastFunc(fn BroadcastFunc) {
 	e.broadcastMu.Lock()
 	defer e.broadcastMu.Unlock()
 	e.broadcastFn = fn
+}
+
+// SetEventObserver enables an optional projection of Life events into another domain.
+func (e *LifeEngine) SetEventObserver(observer EventObserver) {
+	e.eventObserverMu.Lock()
+	defer e.eventObserverMu.Unlock()
+	e.eventObserver = observer
+}
+
+func (e *LifeEngine) enqueueEvent(_ context.Context, event *model.LifeEventLog) {
+	if event == nil {
+		return
+	}
+	e.persistence.EnqueueEvent(event)
+	e.eventObserverMu.RLock()
+	observer := e.eventObserver
+	e.eventObserverMu.RUnlock()
+	if observer == nil {
+		return
+	}
+	eventCopy := *event
+	go func() {
+		observerCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		observer(observerCtx, &eventCopy)
+	}()
+}
+
+func (e *LifeEngine) observeEvent(_ context.Context, event *model.LifeEventLog) {
+	if event == nil {
+		return
+	}
+	e.eventObserverMu.RLock()
+	observer := e.eventObserver
+	e.eventObserverMu.RUnlock()
+	if observer == nil {
+		return
+	}
+	eventCopy := *event
+	go func() {
+		observerCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		observer(observerCtx, &eventCopy)
+	}()
 }
 
 // SetBoundEntitySource 注入 Companion 绑定查询（可运行时注入）。
@@ -231,6 +280,7 @@ func (e *LifeEngine) ApplyUserAction(worldName string, entityID uint, action str
 		moelog.Errorf("life: sync persist user action event: %v", err)
 		e.persistence.EnqueueEvent(evt)
 	}
+	e.observeEvent(context.Background(), evt)
 
 	return ActionResult{
 		Success: true,
@@ -307,7 +357,7 @@ func (e *LifeEngine) UseItem(worldName, userID string, entityID, itemID uint) er
 		CreatedAt:   now,
 		Importance:  1,
 	}
-	e.persistence.EnqueueEvent(evt)
+	e.enqueueEvent(ctx, evt)
 
 	return nil
 }

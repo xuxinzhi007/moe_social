@@ -22,9 +22,30 @@ function edgeIndex(index: number, width: number, height: number) {
   return x === 0 || y === 0 || x === width - 1 || y === height - 1
 }
 
-function isBackgroundPixel(data: Uint8ClampedArray, index: number, background: RgbColor, threshold: number) {
+function isBackgroundPixel(data: Uint8ClampedArray, index: number, backgrounds: readonly RgbColor[], threshold: number) {
   const alpha = data[index + 3]
-  return alpha === 0 || colorDistance(data[index], data[index + 1], data[index + 2], background) <= threshold
+  return alpha === 0 || backgrounds.some((background) => colorDistance(data[index], data[index + 1], data[index + 2], background) <= threshold)
+}
+
+function sampleBackgroundColors(data: Uint8ClampedArray, width: number, height: number, threshold: number, configuredColor?: RgbColor) {
+  if (configuredColor) return [configuredColor]
+  const candidates = [
+    0,
+    width - 1,
+    (height - 1) * width,
+    height * width - 1,
+    Math.floor(width / 2),
+    (height - 1) * width + Math.floor(width / 2),
+    Math.floor(height / 2) * width,
+    Math.floor(height / 2) * width + width - 1,
+  ]
+  const backgrounds: RgbColor[] = []
+  for (const pixelIndex of candidates) {
+    const index = pixelIndex * 4
+    const candidate: RgbColor = [data[index], data[index + 1], data[index + 2]]
+    if (!backgrounds.some((background) => colorDistance(candidate[0], candidate[1], candidate[2], background) <= Math.max(1, threshold / 2))) backgrounds.push(candidate)
+  }
+  return backgrounds
 }
 
 export function removeBackgroundFromImageData(
@@ -37,12 +58,12 @@ export function removeBackgroundFromImageData(
   const threshold = Math.max(0, options.colorDistance ?? DEFAULT_COLOR_DISTANCE)
   const outputAlpha = Math.max(0, Math.min(255, options.outputAlpha ?? 0))
   const speckleSize = Math.max(0, Math.floor(options.speckleSize ?? DEFAULT_SPECKLE_SIZE))
-  const background = options.backgroundColor ?? [data[0], data[1], data[2]]
+  const backgrounds = sampleBackgroundColors(data, width, height, threshold, options.backgroundColor)
   const visited = new Uint8Array(width * height)
   const queue: number[] = []
 
   for (let index = 0; index < width * height; index += 1) {
-    if (edgeIndex(index, width, height) && isBackgroundPixel(data, index * 4, background, threshold)) {
+    if (edgeIndex(index, width, height) && isBackgroundPixel(data, index * 4, backgrounds, threshold)) {
       visited[index] = 1
       queue.push(index)
     }
@@ -61,7 +82,7 @@ export function removeBackgroundFromImageData(
     ]
 
     for (const neighbor of neighbors) {
-      if (neighbor >= 0 && visited[neighbor] === 0 && isBackgroundPixel(data, neighbor * 4, background, threshold)) {
+      if (neighbor >= 0 && visited[neighbor] === 0 && isBackgroundPixel(data, neighbor * 4, backgrounds, threshold)) {
         visited[neighbor] = 1
         queue.push(neighbor)
       }
@@ -70,7 +91,7 @@ export function removeBackgroundFromImageData(
 
   if (speckleSize > 0) {
     for (let start = 0; start < width * height; start += 1) {
-      if (visited[start] || !isBackgroundPixel(data, start * 4, background, threshold)) continue
+      if (visited[start] || !isBackgroundPixel(data, start * 4, backgrounds, threshold)) continue
       const component: number[] = [start]
       let touchesForeground = false
       visited[start] = 1
@@ -80,8 +101,8 @@ export function removeBackgroundFromImageData(
         const y = Math.floor(index / width)
         const neighbors = [x > 0 ? index - 1 : -1, x + 1 < width ? index + 1 : -1, y > 0 ? index - width : -1, y + 1 < height ? index + width : -1]
         for (const neighbor of neighbors) {
-          if (neighbor >= 0 && !isBackgroundPixel(data, neighbor * 4, background, threshold)) touchesForeground = true
-          if (neighbor >= 0 && visited[neighbor] === 0 && isBackgroundPixel(data, neighbor * 4, background, threshold)) {
+          if (neighbor >= 0 && !isBackgroundPixel(data, neighbor * 4, backgrounds, threshold)) touchesForeground = true
+          if (neighbor >= 0 && visited[neighbor] === 0 && isBackgroundPixel(data, neighbor * 4, backgrounds, threshold)) {
             visited[neighbor] = 1
             component.push(neighbor)
           }
@@ -91,6 +112,20 @@ export function removeBackgroundFromImageData(
     }
   }
 
+  return imageData
+}
+
+export function applyAlphaBrush(imageData: ImageData, originalImageData: ImageData, centerX: number, centerY: number, radius: number, mode: 'erase' | 'restore'): ImageData {
+  const brushRadius = Math.max(1, radius)
+  const left = Math.max(0, Math.floor(centerX - brushRadius))
+  const right = Math.min(imageData.width - 1, Math.ceil(centerX + brushRadius))
+  const top = Math.max(0, Math.floor(centerY - brushRadius))
+  const bottom = Math.min(imageData.height - 1, Math.ceil(centerY + brushRadius))
+  for (let y = top; y <= bottom; y += 1) for (let x = left; x <= right; x += 1) {
+    if (Math.hypot(x - centerX, y - centerY) > brushRadius) continue
+    const offset = (y * imageData.width + x) * 4 + 3
+    imageData.data[offset] = mode === 'erase' ? 0 : originalImageData.data[offset]
+  }
   return imageData
 }
 

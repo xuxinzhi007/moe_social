@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../moe_toast.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_rich_message_body.dart';
+import '../motion/moe_motion.dart';
 
 // 消息内容类型
 enum MessageContentType {
@@ -406,6 +407,18 @@ class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
 
   @override
   Widget build(BuildContext context) {
+    if (moeReduceMotion(context)) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Dot(),
+          SizedBox(width: 4),
+          Dot(),
+          SizedBox(width: 4),
+          Dot(),
+        ],
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

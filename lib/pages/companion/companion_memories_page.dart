@@ -10,6 +10,7 @@ import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import 'companion_memories_viewmodel.dart';
+import 'memory_conflict_card.dart';
 
 /// TA 记得的事 — 记忆列表（从关系首页进入）。
 class CompanionMemoriesPage extends StatefulWidget {
@@ -138,6 +139,24 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
       await _vm.confirmMemory(memory);
       if (!mounted) return;
       MoeToast.success(context, '已确认，TA 会更放心地记住这件事');
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+  }
+
+  Future<void> _resolveConflict(
+    CompanionMemoryConflictData conflict,
+    String resolution,
+  ) async {
+    try {
+      await _vm.resolveConflict(conflict, resolution);
+      if (!mounted) return;
+      MoeToast.success(
+        context,
+        resolution == 'accepted' ? '已采用这条新记忆' : '已保留原有记忆',
+      );
     } catch (e) {
       if (mounted) {
         MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
@@ -369,7 +388,7 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
     if (_vm.isLoading && _vm.items.isEmpty) {
       return const Center(child: MoeLoading());
     }
-    if (_vm.items.isEmpty) {
+    if (_vm.items.isEmpty && _vm.conflicts.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -403,24 +422,45 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
       );
     }
 
+    final unconfirmedCount =
+        _vm.items.where((memory) => !memory.userConfirmed).length;
     return RefreshIndicator(
       onRefresh: _vm.load,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        itemCount: _vm.items.length + 1,
+        itemCount: _vm.items.length + _vm.conflicts.length + 1,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           if (index == 0) {
-            return Text(
-              '这些是 TA 从聊天里留下的印象，会用于下次对话。',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: Colors.grey.shade600,
-              ),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _MemoryTrustBanner(
+                  pendingCount: unconfirmedCount,
+                  conflictCount: _vm.conflicts.length,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '这些是 TA 从聊天里留下的印象，会用于下次对话。',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
             );
           }
-          final memory = _vm.items[index - 1];
+          final conflictIndex = index - 1;
+          if (conflictIndex < _vm.conflicts.length) {
+            final conflict = _vm.conflicts[conflictIndex];
+            return MemoryConflictCard(
+              conflict: conflict,
+              onAccept: () => _resolveConflict(conflict, 'accepted'),
+              onReject: () => _resolveConflict(conflict, 'rejected'),
+            );
+          }
+          final memory = _vm.items[conflictIndex - _vm.conflicts.length];
           final key = _itemKeys.putIfAbsent(memory.id, GlobalKey.new);
           final focused =
               widget.focusMemoryId != null && widget.focusMemoryId == memory.id;
@@ -513,9 +553,74 @@ class _MemoryCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 7),
+              Text(
+                memory.userConfirmed
+                    ? '已由你确认 · TA 会按这条记住'
+                    : '等待你确认 · 确认后 TA 会更放心地使用它',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: memory.userConfirmed
+                      ? const Color(0xFF4C9A82)
+                      : const Color(0xFFB46B00),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MemoryTrustBanner extends StatelessWidget {
+  const _MemoryTrustBanner({
+    required this.pendingCount,
+    required this.conflictCount,
+  });
+
+  final int pendingCount;
+  final int conflictCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasReview = pendingCount > 0 || conflictCount > 0;
+    final message = conflictCount > 0
+        ? '有 $conflictCount 条记忆需要你决定以哪种说法为准。'
+        : pendingCount > 0
+            ? '有 $pendingCount 条新记忆，确认后 TA 才会放心地记住。'
+            : '你可以随时查看、更正或让 TA 忘记这些内容。';
+    final color = hasReview ? const Color(0xFFB46B00) : const Color(0xFF4C9A82);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: hasReview ? const Color(0xFFFFF8EC) : const Color(0xFFF0FAF5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasReview ? Icons.fact_check_rounded : Icons.verified_user_rounded,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

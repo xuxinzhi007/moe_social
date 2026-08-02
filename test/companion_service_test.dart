@@ -3,6 +3,63 @@ import 'package:moe_social/services/companion_service.dart';
 import 'package:moe_social/pages/ai/companion_hub_viewmodel.dart';
 
 void main() {
+  test('CompanionMemoryConflictData parses candidate resolution fields', () {
+    final conflict = CompanionMemoryConflictData.fromMap({
+      'id': 9,
+      'memory_id': 3,
+      'memory_type': 'preference',
+      'memory_key': 'favorite_color',
+      'candidate_content': '喜欢绿色',
+      'confidence': 0.86,
+      'status': 'pending',
+    });
+
+    expect(conflict.id, 9);
+    expect(conflict.memoryId, 3);
+    expect(conflict.candidateContent, '喜欢绿色');
+    expect(conflict.status, 'pending');
+  });
+
+  test('CompanionContextPreviewData parses canonical context metadata', () {
+    final preview = CompanionContextPreviewData.fromMap({
+      'scene': 'study',
+      'history_count': 6,
+      'memory_count': 3,
+      'relationship_level': 4,
+      'intimacy_score': 38.5,
+      'world_bind_status': 'bound_ok',
+      'first_chat': false,
+      'relationship_event_count': 3,
+      'unfinished_topic_count': 2,
+    });
+
+    expect(preview.scene, 'study');
+    expect(preview.historyCount, 6);
+    expect(preview.memoryCount, 3);
+    expect(preview.relationshipLevel, 4);
+    expect(preview.intimacyScore, 38.5);
+    expect(preview.worldBindStatus, 'bound_ok');
+    expect(preview.firstChat, isFalse);
+    expect(preview.relationshipEventCount, 3);
+    expect(preview.unfinishedTopicCount, 2);
+  });
+
+  test('CompanionProactiveDeliveryData parses durable status fields', () {
+    final delivery = CompanionProactiveDeliveryData.fromMap({
+      'delivery_key': 'proactive:7:2026-08-02:1:100',
+      'notification_id': 42,
+      'status': 'read',
+      'reason': 'follow-up',
+      'scheduled_at': '2026-08-02T10:00:00Z',
+      'delivered_at': '2026-08-02T10:01:00Z',
+      'read_at': '2026-08-02T10:02:00Z',
+    });
+
+    expect(delivery.notificationId, 42);
+    expect(delivery.status, 'read');
+    expect(delivery.readAt, '2026-08-02T10:02:00Z');
+  });
+
   test('CompanionProfileData parses and serializes binding fields', () {
     final profile = CompanionProfileData.fromMap({
       'name': 'Moe',
@@ -91,6 +148,24 @@ void main() {
     expect(pulse.memoryId, 9);
   });
 
+  test('Companion pulse routes unfinished topics back to chat', () {
+    final pulse = CompanionHubViewModel.buildPulseData(
+      profile: const CompanionProfileData(name: 'Moe'),
+      state: const CompanionStateData(),
+      dailyItems: const [
+        CompanionDailyItem(
+          kind: 'topic',
+          title: '未完成的话题',
+          body: '下次继续聊旅行计划',
+        ),
+      ],
+      hasAttention: false,
+    );
+
+    expect(pulse.kind, 'topic');
+    expect(pulse.ctaLabel, '缁х画鑱婂ぉ');
+  });
+
   test('Companion daily items compress same-day duplicates', () {
     final compressed = CompanionHubViewModel.compressDailyItemsForTest(
       [
@@ -113,6 +188,55 @@ void main() {
 
     expect(compressed.length, 1);
     expect(compressed.first.body, '你喜欢热茶 · 你今天有点累');
+  });
+
+  test('Companion unified events project cross-domain activity', () {
+    final items = CompanionHubViewModel.unifiedEventDailyItemsForTest([
+      const CompanionEventData(
+        id: 1,
+        eventType: 'life_care_completed',
+        sourceDomain: 'life',
+        sourceId: 8,
+        dedupeKey: 'life:8:user_feed:1',
+        payloadJson: '{"description":"你照顾了小伙伴"}',
+        visibility: 'private',
+        sensitivity: 'normal',
+        relationshipDelta: 0,
+        occurredAt: '2026-08-02T10:00:00Z',
+        createdAt: '2026-08-02T10:00:00Z',
+      ),
+      const CompanionEventData(
+        id: 2,
+        eventType: 'chat_turn_completed',
+        sourceDomain: 'chat',
+        sourceId: 0,
+        dedupeKey: 'chat:2',
+        payloadJson: '{"input_mode":"voice"}',
+        visibility: 'private',
+        sensitivity: 'normal',
+        relationshipDelta: 0,
+        occurredAt: '2026-08-02T11:00:00Z',
+        createdAt: '2026-08-02T11:00:00Z',
+      ),
+      const CompanionEventData(
+        id: 3,
+        eventType: 'friend_request_received',
+        sourceDomain: 'social',
+        sourceId: 42,
+        dedupeKey: 'friend_request_received:3',
+        payloadJson: '{"status":"pending"}',
+        visibility: 'private',
+        sensitivity: 'normal',
+        relationshipDelta: 0,
+        occurredAt: '2026-08-02T12:00:00Z',
+        createdAt: '2026-08-02T12:00:00Z',
+      ),
+    ]);
+
+    expect(items.map((item) => item.kind), ['world', 'chat', 'relationship']);
+    expect(items.first.body, '你照顾了小伙伴');
+    expect(items[1].body, '语音对话已完成');
+    expect(items.last.body, '去好友页查看');
   });
 
   test('Companion relationship event parses milestone fields', () {

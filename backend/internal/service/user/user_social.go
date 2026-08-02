@@ -3,8 +3,11 @@ package userapp
 
 import (
 	"context"
-	userbiz "backend/internal/biz/user"
+	"strconv"
+
 	userv1 "backend/api/user/v1"
+	userbiz "backend/internal/biz/user"
+	"backend/model"
 )
 
 // Package userapp 关注与好友关系。
@@ -18,6 +21,9 @@ func (s *AppService) Follow(ctx context.Context, in *userv1.FollowUserReq) (*use
 	if err := userbiz.Follow(ctx, s.store, followerID, followingID); err != nil {
 		return nil, err
 	}
+	s.recordCompanionEvent(ctx, followerID, "follow_created", strconv.FormatUint(uint64(followingID), 10), map[string]interface{}{
+		"following_user_id": followingID,
+	})
 	return &userv1.FollowUserResp{Success: true}, nil
 }
 
@@ -30,6 +36,9 @@ func (s *AppService) Unfollow(ctx context.Context, in *userv1.UnfollowUserReq) (
 	if err := userbiz.Unfollow(ctx, s.store, followerID, followingID); err != nil {
 		return nil, err
 	}
+	s.recordCompanionEvent(ctx, followerID, "follow_removed", strconv.FormatUint(uint64(followingID), 10), map[string]interface{}{
+		"following_user_id": followingID,
+	})
 	return &userv1.FollowUserResp{Success: true}, nil
 }
 
@@ -85,6 +94,22 @@ func (s *AppService) SendFriendRequest(ctx context.Context, in *userv1.SendFrien
 		return nil, err
 	}
 	pushIncomingFriendRequest(view)
+	if view != nil {
+		fromID, _ := userbiz.ParseActorUserID(in.GetActorUserId())
+		toID := uint(0)
+		if view.GetToUser() != nil {
+			toID, _ = userbiz.ParseActorUserID(view.GetToUser().GetId())
+		}
+		requestID := view.GetId()
+		s.recordCompanionEvent(ctx, fromID, "friend_request_sent", requestID, map[string]interface{}{
+			"target_user_id": toID,
+			"status":         "pending",
+		})
+		s.recordCompanionEvent(ctx, toID, "friend_request_received", requestID, map[string]interface{}{
+			"from_user_id": fromID,
+			"status":       "pending",
+		})
+	}
 	return userbiz.SendFriendRequestRespV1(view), nil
 }
 
@@ -125,6 +150,7 @@ func (s *AppService) AcceptFriendRequest(ctx context.Context, in *userv1.AcceptF
 		return nil, err
 	}
 	pushFriendRequestResolved(fr, friendRequestEventAccepted)
+	s.recordFriendRequestResolution(ctx, fr, "accepted")
 	return &userv1.AcceptFriendRequestResp{Ok: true}, nil
 }
 
@@ -139,7 +165,26 @@ func (s *AppService) RejectFriendRequest(ctx context.Context, in *userv1.RejectF
 		return nil, err
 	}
 	pushFriendRequestResolved(fr, friendRequestEventRejected)
+	s.recordFriendRequestResolution(ctx, fr, "rejected")
 	return &userv1.RejectFriendRequestResp{Ok: true}, nil
+}
+
+func (s *AppService) recordFriendRequestResolution(
+	ctx context.Context,
+	fr *model.FriendRequest,
+	status string,
+) {
+	if fr == nil {
+		return
+	}
+	payload := map[string]interface{}{
+		"status":       status,
+		"from_user_id": fr.FromUserID,
+		"to_user_id":   fr.ToUserID,
+	}
+	requestID := strconv.FormatUint(uint64(fr.ID), 10)
+	s.recordCompanionEvent(ctx, fr.FromUserID, "friend_request_"+status, requestID, payload)
+	s.recordCompanionEvent(ctx, fr.ToUserID, "friend_request_"+status, requestID, payload)
 }
 
 // ListFriends 好友列表。

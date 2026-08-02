@@ -6,13 +6,35 @@ import '../models/life_state.dart';
 import '../services/life_cache_service.dart';
 import '../services/life_service.dart';
 import '../services/life_ws_service.dart';
+import '../services/companion_interaction_coordinator.dart';
 
 /// 数字生命状态管理 Provider
 ///
 /// 持有 [LifeWsService] 实例，维护实体 Map、最近事件列表和 Tick 计数。
 /// 由页面在 initState 中调用 [startListening] 建立连接。
 class LifeProvider extends ChangeNotifier {
+  static const _companionLifeEventTypes = <String>{
+    'birth',
+    'death',
+    'growth',
+    'mate_formed',
+    'mate_broken',
+    'friend_made',
+    'rival_formed',
+    'relation_dissolved',
+    'world_weather_rain',
+    'world_weather_drought',
+    'world_disaster_storm',
+    'world_resource_depletion',
+    'world_weather_heatwave',
+    'world_weather_fog',
+    'world_resource_abundance',
+    'world_event_migration',
+  };
+
   final LifeWsService _wsService = LifeWsService();
+  final CompanionInteractionCoordinator _interactionCoordinator =
+      CompanionInteractionCoordinator.instance;
 
   bool _disposed = false;
   bool _isBootstrapping = false;
@@ -266,6 +288,19 @@ class LifeProvider extends ChangeNotifier {
       _isInitialized = true;
     }
     notifyListeners();
+    final hasCompanionLifeEvent = update.events.any(
+      (event) =>
+          event.isImportant ||
+          event.type.startsWith('user_') ||
+          _companionLifeEventTypes.contains(event.type),
+    );
+    if (hasCompanionLifeEvent ||
+        update.worldEvents.isNotEmpty ||
+        update.relationshipChanges.isNotEmpty ||
+        update.removedEntityIds.isNotEmpty ||
+        update.removedRelationships.isNotEmpty) {
+      _interactionCoordinator.publishLifeMomentChanged();
+    }
 
     // debounce 缓存写入（30 秒内无新更新才写入）
     _cacheDebounceTimer?.cancel();
@@ -360,6 +395,7 @@ class LifeProvider extends ChangeNotifier {
       _recentEvents.insert(0, localEvent);
       if (_recentEvents.length > 50) _recentEvents.removeLast();
       notifyListeners();
+      _interactionCoordinator.publishLifeMomentChanged(eventType: eventName);
       return true;
     } on LifeActionCooldownException catch (e) {
       // 回滚乐观更新
@@ -454,6 +490,8 @@ class LifeProvider extends ChangeNotifier {
       _recentEvents.insert(0, localEvent);
       if (_recentEvents.length > 50) _recentEvents.removeLast();
       notifyListeners();
+      _interactionCoordinator.publishLifeMomentChanged(
+          eventType: 'user_use_item');
       return true;
     } catch (e) {
       // 回滚乐观更新
@@ -476,6 +514,8 @@ class LifeProvider extends ChangeNotifier {
       // 放行可能尚未结束的首屏加载，确保签到后背包能刷新。
       _inventoryLoading = false;
       await fetchInventory();
+      _interactionCoordinator.publishLifeMomentChanged(
+          eventType: 'daily_claim');
       return result;
     } catch (e) {
       debugPrint('claimItems error: $e');
