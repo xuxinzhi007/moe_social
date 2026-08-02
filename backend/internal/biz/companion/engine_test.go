@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,6 +36,91 @@ func TestGetProfileCreatesStableLifeBinding(t *testing.T) {
 	}
 	if again.LifeEntityID != profile.LifeEntityID {
 		t.Fatalf("GetProfile() binding changed from %d to %d", profile.LifeEntityID, again.LifeEntityID)
+	}
+}
+
+func TestBuildContextUsesOneCanonicalSnapshot(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{Name: "Mochi"})
+	store.memories = []model.CompanionMemory{{
+		ID:         1,
+		UserID:     7,
+		MemoryType: "fact",
+		Content:    "likes tea",
+	}}
+	store.logs = []model.CompanionChatLog{{
+		ID:      1,
+		UserID:  7,
+		Role:    "user",
+		Content: "hello",
+	}}
+	store.logs = append(store.logs, model.CompanionChatLog{
+		ID:      2,
+		UserID:  7,
+		Role:    "user",
+		Content: "下次继续聊我的旅行计划",
+	})
+	store.relationshipEvents = []model.CompanionRelationshipEvent{{
+		ID:                2,
+		UserID:            7,
+		EventType:         "first_chat",
+		Title:             "第一次聊天",
+		Content:           "你们开始了第一次对话",
+		RelationshipLevel: 1,
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	snapshot, err := engine.BuildContext(context.Background(), 7, "morning")
+	if err != nil {
+		t.Fatalf("BuildContext() error = %v", err)
+	}
+	if snapshot.Profile.Name != "Mochi" || snapshot.Scene != "morning" {
+		t.Fatalf("snapshot identity = (%q, %q)", snapshot.Profile.Name, snapshot.Scene)
+	}
+	if len(snapshot.Memories) != 1 || len(snapshot.History) != 2 || snapshot.IsFirstChat {
+		t.Fatalf("snapshot data = memories=%d history=%d first=%v", len(snapshot.Memories), len(snapshot.History), snapshot.IsFirstChat)
+	}
+	if len(snapshot.RelationshipEvents) != 1 || snapshot.RelationshipEvents[0].Title != "第一次聊天" {
+		t.Fatalf("snapshot relationship events = %+v", snapshot.RelationshipEvents)
+	}
+	if len(snapshot.UnfinishedTopics) != 1 || snapshot.UnfinishedTopics[0] != "下次继续聊我的旅行计划" {
+		t.Fatalf("snapshot unfinished topics = %+v", snapshot.UnfinishedTopics)
+	}
+}
+
+func TestExtractUnfinishedTopicsOnlyUsesExplicitMarkers(t *testing.T) {
+	topics := extractUnfinishedTopics([]ChatLog{
+		{Role: "user", Content: "今天的天气不错"},
+		{Role: "user", Content: "之后继续聊这本书"},
+		{Role: "user", Content: "之后继续聊这本书"},
+	})
+	if len(topics) != 1 || topics[0] != "之后继续聊这本书" {
+		t.Fatalf("extractUnfinishedTopics() = %+v", topics)
+	}
+}
+
+func TestVoiceChatTurnProducesVoiceEvent(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if _, err := engine.ChatStreamWithInputMode(
+		context.Background(), 7, "voice hello", nil, "comfort", "voice",
+	); err != nil {
+		t.Fatalf("ChatStreamWithInputMode() error = %v", err)
+	}
+
+	foundVoice := false
+	foundChatInputMode := false
+	for _, event := range store.companionEvents {
+		if event.EventType == "voice_turn_completed" {
+			foundVoice = true
+		}
+		if event.EventType == "chat_turn_completed" && strings.Contains(event.PayloadJSON, `"input_mode":"voice"`) {
+			foundChatInputMode = true
+		}
+	}
+	if !foundVoice || !foundChatInputMode {
+		t.Fatalf("events = %+v, want voice and voice-mode chat events", store.companionEvents)
 	}
 }
 
@@ -199,7 +285,7 @@ func TestDeleteAndPinMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UpdateMemoryContent: %v", err)
 	}
-	if edited.Content != "其实更喜欢狗" {
+	if edited.Content != "其实更喜欢狗" || !edited.UserConfirmed || edited.ConfirmedAt == nil {
 		t.Fatalf("content = %q", edited.Content)
 	}
 	confirmed, err := engine.ConfirmMemory(context.Background(), 7, 1)
@@ -226,6 +312,199 @@ func TestMemoryDedupeKeyNormalizesWhitespaceAndCase(t *testing.T) {
 	}
 }
 
+func TestListEventsIsolatesUsersAndPreservesPayload(t *testing.T) {
+	store := newFakeStore()
+	store.companionEvents = []model.CompanionEvent{
+		{
+			ID:          1,
+			UserID:      7,
+			EventType:   "relationship_level_up",
+			PayloadJSON: `{"title":"level up"}`,
+			OccurredAt:  time.Now(),
+		},
+		{ID: 2, UserID: 8, EventType: "chat_turn_completed", OccurredAt: time.Now()},
+	}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	events, err := engine.ListEvents(context.Background(), 7, 10)
+	if err != nil {
+		t.Fatalf("ListEvents() error = %v", err)
+	}
+	if len(events) != 1 || events[0].UserID != 7 {
+		t.Fatalf("ListEvents() = %+v, want only user 7", events)
+	}
+	if events[0].PayloadJSON != `{"title":"level up"}` {
+		t.Fatalf("payload = %q, want preserved JSON", events[0].PayloadJSON)
+	}
+}
+
+func TestObserveLifeEventProjectsOnlyBoundUsers(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{LifeEntityID: 42})
+	store.profiles[8] = profileToModel(8, &Profile{LifeEntityID: 99})
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	engine.ObserveLifeEvent(context.Background(), &model.LifeEventLog{
+		ID:          12,
+		WorldID:     "default",
+		EntityID:    42,
+		EventType:   "growth",
+		Description: "grew up",
+		CreatedAt:   time.Now(),
+	})
+
+	if len(store.companionEvents) != 1 || store.companionEvents[0].UserID != 7 {
+		t.Fatalf("projected events = %+v, want only user 7", store.companionEvents)
+	}
+	if store.companionEvents[0].EventType != "life_moment_created" {
+		t.Fatalf("event type = %q, want life_moment_created", store.companionEvents[0].EventType)
+	}
+}
+
+func TestObserveLifeEventSkipsRoutineLifeEvents(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{LifeEntityID: 42})
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	engine.ObserveLifeEvent(context.Background(), &model.LifeEventLog{
+		ID:        13,
+		EntityID:  42,
+		EventType: "eating",
+		CreatedAt: time.Now(),
+	})
+
+	if len(store.companionEvents) != 0 {
+		t.Fatalf("projected routine events = %+v, want none", store.companionEvents)
+	}
+}
+
+func TestObserveLifeCareEventUsesCareEventType(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{LifeEntityID: 42})
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	engine.ObserveLifeEvent(context.Background(), &model.LifeEventLog{
+		ID:        14,
+		EntityID:  42,
+		EventType: "user_feed",
+		CreatedAt: time.Now(),
+	})
+
+	if len(store.companionEvents) != 1 || store.companionEvents[0].EventType != "life_care_completed" {
+		t.Fatalf("projected care events = %+v, want life_care_completed", store.companionEvents)
+	}
+}
+
+func TestRecordProactiveReadPersistsUnifiedEvent(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if err := engine.RecordProactiveRead(context.Background(), 7, 42); err != nil {
+		t.Fatalf("RecordProactiveRead() error = %v", err)
+	}
+	if len(store.companionEvents) != 1 {
+		t.Fatalf("companion events=%d, want 1", len(store.companionEvents))
+	}
+	event := store.companionEvents[0]
+	if event.EventType != "proactive_read" || event.SourceID != 42 ||
+		event.DedupeKey != "proactive_read:42" {
+		t.Fatalf("event=%+v, want proactive read acknowledgement", event)
+	}
+}
+
+func TestRecordProactiveReadIsIdempotent(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	eventCount := 0
+	engine.OnEvent = func(_ uint, _ *model.CompanionEvent) {
+		eventCount++
+	}
+
+	for range 2 {
+		if err := engine.RecordProactiveRead(context.Background(), 7, 42); err != nil {
+			t.Fatalf("RecordProactiveRead() error = %v", err)
+		}
+	}
+	if len(store.companionEvents) != 1 || eventCount != 1 {
+		t.Fatalf("events=%d broadcasts=%d, want one idempotent event", len(store.companionEvents), eventCount)
+	}
+}
+
+func TestRecordSocialEventKeepsMetadataOnlyPayload(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if err := engine.RecordSocialEvent(context.Background(), 7, "post_created", 42, map[string]interface{}{
+		"topic_tag_count": 2,
+	}); err != nil {
+		t.Fatalf("RecordSocialEvent() error = %v", err)
+	}
+	if len(store.companionEvents) != 1 {
+		t.Fatalf("companion events=%d, want 1", len(store.companionEvents))
+	}
+	event := store.companionEvents[0]
+	if event.SourceDomain != "social" || event.SourceID != 42 ||
+		event.PayloadJSON != `{"topic_tag_count":2}` {
+		t.Fatalf("event=%+v, want social metadata event", event)
+	}
+}
+
+func TestRecordMemoryConflictDoesNotExposeCandidateContent(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	previous := model.CompanionMemory{
+		ID:            9,
+		MemoryType:    "preference",
+		MemoryKey:     "favorite_color",
+		Content:       "用户喜欢蓝色",
+		UserConfirmed: true,
+	}
+	candidate := extractedMemory{
+		MemoryType: "preference",
+		MemoryKey:  "favorite_color",
+		Content:    "用户喜欢绿色",
+		Confidence: 0.8,
+	}
+
+	engine.recordMemoryConflict(context.Background(), 7, previous, candidate)
+	engine.recordMemoryConflict(context.Background(), 7, previous, candidate)
+	if len(store.companionEvents) != 1 {
+		t.Fatalf("companion events=%d, want 1", len(store.companionEvents))
+	}
+	event := store.companionEvents[0]
+	if event.EventType != "memory_conflict_detected" ||
+		strings.Contains(event.PayloadJSON, candidate.Content) {
+		t.Fatalf("event=%+v, want metadata-only conflict event", event)
+	}
+	if len(store.conflicts) != 1 || store.conflicts[0].CandidateContent != candidate.Content {
+		t.Fatalf("conflicts=%+v, want user-owned candidate", store.conflicts)
+	}
+}
+
+func TestResolveMemoryConflictAcceptsCandidateAndIsIdempotent(t *testing.T) {
+	store := newFakeStore()
+	store.memories = []model.CompanionMemory{{
+		ID: 1, UserID: 7, MemoryType: "preference", MemoryKey: "favorite_color",
+		Content: "喜欢蓝色", UserConfirmed: true,
+	}}
+	store.conflicts = []model.CompanionMemoryConflict{{
+		ID: 3, UserID: 7, MemoryID: 1, MemoryType: "preference",
+		MemoryKey: "favorite_color", CandidateContent: "喜欢绿色", Confidence: 0.9,
+		Status: "pending",
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if err := engine.ResolveMemoryConflict(context.Background(), 7, 3, "accepted"); err != nil {
+		t.Fatalf("ResolveMemoryConflict() error = %v", err)
+	}
+	if store.memories[0].Content != "喜欢绿色" || store.conflicts[0].Status != "accepted" {
+		t.Fatalf("memory=%+v conflict=%+v, want accepted candidate", store.memories[0], store.conflicts[0])
+	}
+	if err := engine.ResolveMemoryConflict(context.Background(), 7, 3, "accepted"); !errors.Is(err, ErrMemoryConflictResolved) {
+		t.Fatalf("second resolve error = %v, want ErrMemoryConflictResolved", err)
+	}
+}
+
 func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
 	store := newFakeStore()
 	store.logs = []model.CompanionChatLog{
@@ -238,8 +517,9 @@ func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
 	}
 	engine := NewEngine(store, nil, llminference.Config{}, "")
 	messages := make([]string, 0, 2)
-	engine.OnProactive = func(_ uint, message, _ string) {
+	engine.OnProactive = func(_ uint, message, _ string) (uint, bool) {
 		messages = append(messages, message)
+		return 42, true
 	}
 
 	engine.pushProactive(7)
@@ -248,6 +528,370 @@ func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
 	if len(messages) != 1 || !strings.Contains(messages[0], "面试") {
 		t.Fatalf("messages=%v, want one interview follow-up", messages)
 	}
+	var delivered *model.CompanionEvent
+	for index := range store.companionEvents {
+		if store.companionEvents[index].EventType == "proactive_delivered" {
+			delivered = &store.companionEvents[index]
+		}
+	}
+	if delivered == nil || delivered.SourceID != 42 || !strings.Contains(delivered.PayloadJSON, `"notification_id":42`) {
+		t.Fatalf("delivered event=%+v, want notification correlation", delivered)
+	}
+}
+
+func TestPushProactiveHonorsConfiguredDailyLimitAboveOne(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     2,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{{
+		UserID:    7,
+		Role:      "user",
+		Content:   "old topic",
+		CreatedAt: time.Now().Add(-25 * time.Hour),
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	delivered := 0
+	engine.OnProactive = func(_ uint, _, _ string) (uint, bool) {
+		delivered++
+		return uint(delivered), true
+	}
+
+	engine.pushProactive(7)
+	engine.pushProactive(7)
+	engine.pushProactive(7)
+
+	if delivered != 2 {
+		t.Fatalf("delivered = %d, want configured daily limit of two", delivered)
+	}
+}
+
+func TestPushProactiveResumesPendingScheduledDelivery(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     1,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{{
+		UserID:    7,
+		Role:      "user",
+		Content:   "pending topic",
+		CreatedAt: time.Now().Add(-25 * time.Hour),
+	}}
+	const deliveryKey = "proactive:7:2026-08-02:1:pending"
+	store.companionEvents = []model.CompanionEvent{{
+		ID:           1,
+		UserID:       7,
+		SourceDomain: "proactive",
+		EventType:    "proactive_scheduled",
+		DedupeKey:    deliveryKey,
+		PayloadJSON:  `{"reason":"follow-up","priority":50,"expires_at":"2099-08-02T10:00:00Z"}`,
+		OccurredAt:   time.Now().Add(-time.Minute),
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	delivered := 0
+	engine.OnProactive = func(_ uint, _, _ string) (uint, bool) {
+		delivered++
+		return 42, true
+	}
+
+	engine.pushProactive(7)
+
+	if delivered != 1 {
+		t.Fatalf("delivered = %d, want pending scheduled delivery resumed", delivered)
+	}
+	for _, event := range store.companionEvents {
+		if event.EventType == "proactive_delivered" && event.DedupeKey == deliveryKey+":delivered" {
+			return
+		}
+	}
+	t.Fatalf("events=%+v, want delivered event for pending key", store.companionEvents)
+}
+
+func TestPushProactiveRestoresPersistedDailyLimit(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     1,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{{
+		UserID:    7,
+		Role:      "user",
+		Content:   "old topic",
+		CreatedAt: time.Now().Add(-25 * time.Hour),
+	}}
+	store.companionEvents = []model.CompanionEvent{{
+		UserID:     7,
+		EventType:  "proactive_delivered",
+		OccurredAt: time.Now().UTC(),
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	delivered := 0
+	engine.OnProactive = func(_ uint, _, _ string) (uint, bool) {
+		delivered++
+		return 42, true
+	}
+
+	engine.pushProactive(7)
+
+	if delivered != 0 {
+		t.Fatalf("delivered = %d, want persisted daily limit to block duplicate", delivered)
+	}
+}
+
+func TestPushProactiveDoesNotRecordDeliveryWhenCallbackFails(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     1,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{{
+		UserID:    7,
+		Role:      "user",
+		Content:   "old topic",
+		CreatedAt: time.Now().Add(-25 * time.Hour),
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	attempts := 0
+	engine.OnProactive = func(_ uint, _, _ string) (uint, bool) {
+		attempts++
+		return 0, false
+	}
+
+	engine.pushProactive(7)
+	engine.pushProactive(7)
+
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want failed delivery to release the limit", attempts)
+	}
+	for _, event := range store.companionEvents {
+		if event.EventType == "proactive_delivered" {
+			t.Fatal("failed callback must not record proactive_delivered")
+		}
+	}
+}
+
+func TestPushProactiveFailureOnlyReleasesItsOwnReservation(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     2,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{{
+		UserID:    7,
+		Role:      "user",
+		Content:   "old topic",
+		CreatedAt: time.Now().Add(-25 * time.Hour),
+	}}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	var callbackMu sync.Mutex
+	callbackCount := 0
+	firstEntered := make(chan struct{})
+	secondEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	engine.OnProactive = func(_ uint, _, _ string) (uint, bool) {
+		callbackMu.Lock()
+		callbackCount++
+		current := callbackCount
+		callbackMu.Unlock()
+		if current == 1 {
+			close(firstEntered)
+			<-releaseFirst
+			return 0, false
+		}
+		if current == 2 {
+			close(secondEntered)
+		}
+		return 42, true
+	}
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		engine.pushProactive(7)
+	}()
+	<-firstEntered
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		engine.pushProactive(7)
+	}()
+	<-secondEntered
+	close(releaseFirst)
+	waitGroup.Wait()
+
+	engine.pushProactive(7)
+	engine.pushProactive(7)
+	callbackMu.Lock()
+	defer callbackMu.Unlock()
+	if callbackCount != 3 {
+		t.Fatalf("callback count = %d, want two reservations plus one available retry", callbackCount)
+	}
+}
+
+func TestUpdateProactiveSettingsClampsPersistedValues(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	settings, err := engine.UpdateProactiveSettings(context.Background(), 7, ProactiveSettings{
+		Enabled:        true,
+		DailyLimit:     99,
+		QuietStart:     -10,
+		QuietEnd:       2000,
+		TimezoneOffset: -2000,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProactiveSettings() error = %v", err)
+	}
+	if settings.DailyLimit != 3 || settings.QuietStart != 0 || settings.QuietEnd != 1439 || settings.TimezoneOffset != -840 {
+		t.Fatalf("settings = %+v, want clamped values", settings)
+	}
+
+	profile, err := engine.GetProfile(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetProfile() error = %v", err)
+	}
+	if profile.ProactiveDailyLimit != 3 || profile.ProactiveQuietStart != 0 || profile.ProactiveQuietEnd != 1439 || profile.ProactiveTimezoneOffset != -840 {
+		t.Fatalf("profile = %+v, want clamped values persisted", profile)
+	}
+}
+
+func TestUpsertProfileDoesNotResetProactiveSettings(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		Name:                    "Existing",
+		ProactiveEnabled:        false,
+		ProactiveDailyLimit:     2,
+		ProactiveQuietStart:     60,
+		ProactiveQuietEnd:       120,
+		ProactiveTimezoneOffset: 480,
+	})
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	if _, err := engine.UpsertProfile(context.Background(), 7, &Profile{Name: "Renamed"}); err != nil {
+		t.Fatalf("UpsertProfile() error = %v", err)
+	}
+	profile, err := engine.GetProfile(context.Background(), 7)
+	if err != nil {
+		t.Fatalf("GetProfile() error = %v", err)
+	}
+	if profile.ProactiveEnabled || profile.ProactiveDailyLimit != 2 ||
+		profile.ProactiveQuietStart != 60 || profile.ProactiveQuietEnd != 120 ||
+		profile.ProactiveTimezoneOffset != 480 {
+		t.Fatalf("profile proactive settings = %+v, want unchanged settings", profile)
+	}
+}
+
+func TestListProactiveDeliveriesRebuildsReadState(t *testing.T) {
+	store := newFakeStore()
+	scheduledAt := time.Now().Add(-3 * time.Minute)
+	deliveredAt := time.Now().Add(-2 * time.Minute)
+	readAt := time.Now().Add(-time.Minute)
+	store.companionEvents = []model.CompanionEvent{
+		{
+			ID:           1,
+			UserID:       7,
+			SourceDomain: "proactive",
+			DedupeKey:    "proactive:7:2026-08-02:1:100",
+			PayloadJSON:  `{"reason":"follow-up","priority":75,"expires_at":"2099-08-02T10:00:00Z"}`,
+			OccurredAt:   scheduledAt,
+		},
+		{
+			ID:           2,
+			UserID:       7,
+			SourceDomain: "proactive",
+			SourceID:     42,
+			DedupeKey:    "proactive:7:2026-08-02:1:100:delivered",
+			PayloadJSON:  `{"reason":"follow-up","notification_id":42}`,
+			OccurredAt:   deliveredAt,
+		},
+		{
+			ID:           3,
+			UserID:       7,
+			SourceDomain: "proactive",
+			SourceID:     42,
+			EventType:    "proactive_read",
+			DedupeKey:    "proactive_read:42",
+			PayloadJSON:  `{"notification_id":42}`,
+			OccurredAt:   readAt,
+		},
+	}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	deliveries, err := engine.ListProactiveDeliveries(context.Background(), 7, 10)
+	if err != nil {
+		t.Fatalf("ListProactiveDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 {
+		t.Fatalf("deliveries=%+v, want one delivery", deliveries)
+	}
+	delivery := deliveries[0]
+	if delivery.Status != "read" || delivery.NotificationID != 42 || delivery.Priority != 75 ||
+		delivery.ExpiresAt == nil || delivery.ReadAt == nil {
+		t.Fatalf("delivery=%+v, want rebuilt read state", delivery)
+	}
+}
+
+func TestListProactiveDeliveriesPrioritizesUrgentItems(t *testing.T) {
+	store := newFakeStore()
+	store.companionEvents = []model.CompanionEvent{
+		{
+			ID:           1,
+			UserID:       7,
+			SourceDomain: "proactive",
+			DedupeKey:    "proactive:7:2026-08-02:1:low",
+			PayloadJSON:  `{"reason":"routine","priority":20}`,
+			OccurredAt:   time.Now().Add(-time.Minute),
+		},
+		{
+			ID:           2,
+			UserID:       7,
+			SourceDomain: "proactive",
+			DedupeKey:    "proactive:7:2026-08-02:2:urgent",
+			PayloadJSON:  `{"reason":"urgent","priority":90}`,
+			OccurredAt:   time.Now().Add(-2 * time.Minute),
+		},
+	}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	deliveries, err := engine.ListProactiveDeliveries(context.Background(), 7, 1)
+	if err != nil {
+		t.Fatalf("ListProactiveDeliveries() error = %v", err)
+	}
+	if len(deliveries) != 1 || deliveries[0].Priority != 90 {
+		t.Fatalf("deliveries=%+v, want highest-priority item", deliveries)
+	}
+}
+
+func TestRevokeProactiveDeliveryWritesAuditableEvent(t *testing.T) {
+	store := newFakeStore()
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	deliveryKey := "proactive:7:2026-08-02:1:100"
+
+	if err := engine.RevokeProactiveDelivery(context.Background(), 7, deliveryKey, "expired context"); err != nil {
+		t.Fatalf("RevokeProactiveDelivery() error = %v", err)
+	}
+	if len(store.companionEvents) != 1 || store.companionEvents[0].EventType != "proactive_revoked" ||
+		!strings.Contains(store.companionEvents[0].PayloadJSON, deliveryKey) {
+		t.Fatalf("events=%+v, want auditable revoke event", store.companionEvents)
+	}
 }
 
 type fakeStore struct {
@@ -255,6 +899,8 @@ type fakeStore struct {
 	memories           []model.CompanionMemory
 	logs               []model.CompanionChatLog
 	relationshipEvents []model.CompanionRelationshipEvent
+	companionEvents    []model.CompanionEvent
+	conflicts          []model.CompanionMemoryConflict
 }
 
 func newFakeStore() *fakeStore {
@@ -272,8 +918,37 @@ func (s *fakeStore) GetProfileByUserID(_ context.Context, userID uint) (*model.C
 
 func (s *fakeStore) UpsertProfile(_ context.Context, profile *model.CompanionProfile) error {
 	profileCopy := *profile
-	profileCopy.ID = uint(len(s.profiles) + 1)
+	if existing := s.profiles[profile.UserID]; existing != nil {
+		profileCopy.ID = existing.ID
+		profileCopy.RelationshipLevel = existing.RelationshipLevel
+		profileCopy.IntimacyScore = existing.IntimacyScore
+		profileCopy.ProactiveEnabled = existing.ProactiveEnabled
+		profileCopy.ProactiveDailyLimit = existing.ProactiveDailyLimit
+		profileCopy.ProactiveQuietStart = existing.ProactiveQuietStart
+		profileCopy.ProactiveQuietEnd = existing.ProactiveQuietEnd
+		profileCopy.ProactiveTimezoneOffset = existing.ProactiveTimezoneOffset
+	} else {
+		profileCopy.ID = uint(len(s.profiles) + 1)
+	}
 	s.profiles[profile.UserID] = &profileCopy
+	return nil
+}
+
+func (s *fakeStore) UpdateProactiveSettings(
+	_ context.Context,
+	userID uint,
+	enabled bool,
+	dailyLimit, quietStart, quietEnd, timezoneOffset int,
+) error {
+	row := s.profiles[userID]
+	if row == nil {
+		return nil
+	}
+	row.ProactiveEnabled = enabled
+	row.ProactiveDailyLimit = dailyLimit
+	row.ProactiveQuietStart = quietStart
+	row.ProactiveQuietEnd = quietEnd
+	row.ProactiveTimezoneOffset = timezoneOffset
 	return nil
 }
 
@@ -291,6 +966,16 @@ func (s *fakeStore) ListProfileUserIDs(_ context.Context) ([]uint, error) {
 	userIDs := make([]uint, 0, len(s.profiles))
 	for userID := range s.profiles {
 		userIDs = append(userIDs, userID)
+	}
+	return userIDs, nil
+}
+
+func (s *fakeStore) ListProfileUserIDsByLifeEntityID(_ context.Context, entityID uint) ([]uint, error) {
+	userIDs := make([]uint, 0)
+	for userID, profile := range s.profiles {
+		if profile.LifeEntityID == int(entityID) {
+			userIDs = append(userIDs, userID)
+		}
 	}
 	return userIDs, nil
 }
@@ -352,10 +1037,17 @@ func (s *fakeStore) UpdateMemoryPinned(
 	return gorm.ErrRecordNotFound
 }
 
-func (s *fakeStore) UpdateMemoryContent(_ context.Context, userID, memoryID uint, content string) error {
+func (s *fakeStore) CorrectMemoryContent(
+	_ context.Context,
+	userID, memoryID uint,
+	content string,
+	confirmedAt time.Time,
+) error {
 	for i := range s.memories {
 		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
 			s.memories[i].Content = content
+			s.memories[i].UserConfirmed = true
+			s.memories[i].ConfirmedAt = &confirmedAt
 			return nil
 		}
 	}
@@ -400,6 +1092,51 @@ func (s *fakeStore) CleanupExpiredMemories(_ context.Context) (int64, error) {
 	return 0, nil
 }
 
+func (s *fakeStore) CreateMemoryConflict(_ context.Context, conflict *model.CompanionMemoryConflict) error {
+	for _, existing := range s.conflicts {
+		if existing.DedupeKey == conflict.DedupeKey {
+			return gorm.ErrDuplicatedKey
+		}
+	}
+	conflict.ID = uint(len(s.conflicts) + 1)
+	s.conflicts = append(s.conflicts, *conflict)
+	return nil
+}
+
+func (s *fakeStore) ListMemoryConflicts(_ context.Context, userID uint, limit int) ([]model.CompanionMemoryConflict, error) {
+	out := make([]model.CompanionMemoryConflict, 0, len(s.conflicts))
+	for _, conflict := range s.conflicts {
+		if conflict.UserID == userID && conflict.Status == "pending" {
+			out = append(out, conflict)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) GetMemoryConflict(_ context.Context, userID, conflictID uint) (*model.CompanionMemoryConflict, error) {
+	for index := range s.conflicts {
+		if s.conflicts[index].ID == conflictID && s.conflicts[index].UserID == userID {
+			row := s.conflicts[index]
+			return &row, nil
+		}
+	}
+	return nil, nil
+}
+
+func (s *fakeStore) ResolveMemoryConflict(_ context.Context, userID, conflictID uint, status string, resolvedAt time.Time) error {
+	for index := range s.conflicts {
+		if s.conflicts[index].ID == conflictID && s.conflicts[index].UserID == userID && s.conflicts[index].Status == "pending" {
+			s.conflicts[index].Status = status
+			s.conflicts[index].ResolvedAt = &resolvedAt
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
 func (s *fakeStore) AppendChatLog(_ context.Context, chatLog *model.CompanionChatLog) error {
 	s.logs = append(s.logs, *chatLog)
 	return nil
@@ -435,6 +1172,35 @@ func (s *fakeStore) ListRelationshipEvents(
 	out := make([]model.CompanionRelationshipEvent, 0, len(s.relationshipEvents))
 	for index := len(s.relationshipEvents) - 1; index >= 0; index-- {
 		event := s.relationshipEvents[index]
+		if event.UserID == userID {
+			out = append(out, event)
+		}
+	}
+	if limit > 0 && len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (s *fakeStore) CreateCompanionEvent(_ context.Context, event *model.CompanionEvent) error {
+	for _, existing := range s.companionEvents {
+		if existing.DedupeKey == event.DedupeKey {
+			return nil
+		}
+	}
+	event.ID = uint(len(s.companionEvents) + 1)
+	s.companionEvents = append(s.companionEvents, *event)
+	return nil
+}
+
+func (s *fakeStore) ListCompanionEvents(
+	_ context.Context,
+	userID uint,
+	limit int,
+) ([]model.CompanionEvent, error) {
+	out := make([]model.CompanionEvent, 0, len(s.companionEvents))
+	for index := len(s.companionEvents) - 1; index >= 0; index-- {
+		event := s.companionEvents[index]
 		if event.UserID == userID {
 			out = append(out, event)
 		}

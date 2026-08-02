@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../pages/chat/voice_call_receiving_page.dart';
 import 'enhanced_logger.dart';
+import 'push_delivery_capabilities.dart';
 
 class PushNotificationService {
   static late GlobalKey<NavigatorState> navigatorKey;
+
+  static const PushDeliveryCapabilities capabilities =
+      PushDeliveryCapabilities.current;
 
   static Future<void> initialize(GlobalKey<NavigatorState> key) async {
     navigatorKey = key;

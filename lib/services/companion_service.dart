@@ -382,6 +382,44 @@ class CompanionMemoryData {
   }
 }
 
+class CompanionMemoryConflictData {
+  final int id;
+  final int memoryId;
+  final String memoryType;
+  final String memoryKey;
+  final String candidateContent;
+  final double confidence;
+  final String status;
+  final String createdAt;
+  final String resolvedAt;
+
+  const CompanionMemoryConflictData({
+    required this.id,
+    required this.memoryId,
+    required this.memoryType,
+    required this.memoryKey,
+    required this.candidateContent,
+    required this.confidence,
+    required this.status,
+    required this.createdAt,
+    required this.resolvedAt,
+  });
+
+  factory CompanionMemoryConflictData.fromMap(Map<String, dynamic> m) {
+    return CompanionMemoryConflictData(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      memoryId: (m['memory_id'] as num?)?.toInt() ?? 0,
+      memoryType: m['memory_type']?.toString() ?? '',
+      memoryKey: m['memory_key']?.toString() ?? '',
+      candidateContent: m['candidate_content']?.toString() ?? '',
+      confidence: (m['confidence'] as num?)?.toDouble() ?? 0.5,
+      status: m['status']?.toString() ?? 'pending',
+      createdAt: m['created_at']?.toString() ?? '',
+      resolvedAt: m['resolved_at']?.toString() ?? '',
+    );
+  }
+}
+
 class CompanionChatLogData {
   final int id;
   final String role;
@@ -433,6 +471,131 @@ class CompanionRelationshipEventData {
       relationshipLevel: (m['relationship_level'] as num?)?.toInt() ?? 1,
       intimacyScore: (m['intimacy_score'] as num?)?.toDouble() ?? 0,
       createdAt: m['created_at']?.toString() ?? '',
+    );
+  }
+}
+
+class CompanionEventData {
+  final int id;
+  final String eventType;
+  final String sourceDomain;
+  final int sourceId;
+  final String dedupeKey;
+  final String payloadJson;
+  final String visibility;
+  final String sensitivity;
+  final double relationshipDelta;
+  final String occurredAt;
+  final String createdAt;
+
+  const CompanionEventData({
+    required this.id,
+    required this.eventType,
+    required this.sourceDomain,
+    required this.sourceId,
+    required this.dedupeKey,
+    required this.payloadJson,
+    required this.visibility,
+    required this.sensitivity,
+    required this.relationshipDelta,
+    required this.occurredAt,
+    required this.createdAt,
+  });
+
+  factory CompanionEventData.fromMap(Map<String, dynamic> m) {
+    return CompanionEventData(
+      id: (m['id'] as num?)?.toInt() ?? 0,
+      eventType: m['event_type']?.toString() ?? '',
+      sourceDomain: m['source_domain']?.toString() ?? '',
+      sourceId: (m['source_id'] as num?)?.toInt() ?? 0,
+      dedupeKey: m['dedupe_key']?.toString() ?? '',
+      payloadJson: m['payload_json']?.toString() ?? '',
+      visibility: m['visibility']?.toString() ?? 'private',
+      sensitivity: m['sensitivity']?.toString() ?? 'normal',
+      relationshipDelta: (m['relationship_delta'] as num?)?.toDouble() ?? 0,
+      occurredAt: m['occurred_at']?.toString() ?? '',
+      createdAt: m['created_at']?.toString() ?? '',
+    );
+  }
+}
+
+class CompanionContextPreviewData {
+  final String scene;
+  final int historyCount;
+  final int memoryCount;
+  final int relationshipLevel;
+  final double intimacyScore;
+  final String worldBindStatus;
+  final bool firstChat;
+  final int relationshipEventCount;
+  final int unfinishedTopicCount;
+
+  const CompanionContextPreviewData({
+    required this.scene,
+    required this.historyCount,
+    required this.memoryCount,
+    required this.relationshipLevel,
+    required this.intimacyScore,
+    required this.worldBindStatus,
+    required this.firstChat,
+    required this.relationshipEventCount,
+    required this.unfinishedTopicCount,
+  });
+
+  factory CompanionContextPreviewData.fromMap(Map<String, dynamic> map) {
+    return CompanionContextPreviewData(
+      scene: map['scene']?.toString() ?? '',
+      historyCount: (map['history_count'] as num?)?.toInt() ?? 0,
+      memoryCount: (map['memory_count'] as num?)?.toInt() ?? 0,
+      relationshipLevel: (map['relationship_level'] as num?)?.toInt() ?? 0,
+      intimacyScore: (map['intimacy_score'] as num?)?.toDouble() ?? 0,
+      worldBindStatus: map['world_bind_status']?.toString() ?? 'unbound',
+      firstChat: map['first_chat'] == true,
+      relationshipEventCount:
+          (map['relationship_event_count'] as num?)?.toInt() ?? 0,
+      unfinishedTopicCount:
+          (map['unfinished_topic_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class CompanionProactiveDeliveryData {
+  final String deliveryKey;
+  final int notificationId;
+  final String status;
+  final String reason;
+  final int priority;
+  final String scheduledAt;
+  final String deliveredAt;
+  final String readAt;
+  final String expiresAt;
+  final String revokedAt;
+
+  const CompanionProactiveDeliveryData({
+    required this.deliveryKey,
+    required this.notificationId,
+    required this.status,
+    required this.reason,
+    required this.priority,
+    required this.scheduledAt,
+    required this.deliveredAt,
+    required this.readAt,
+    required this.expiresAt,
+    required this.revokedAt,
+  });
+
+  factory CompanionProactiveDeliveryData.fromMap(Map<String, dynamic> map) {
+    return CompanionProactiveDeliveryData(
+      deliveryKey: map['delivery_key']?.toString() ?? '',
+      notificationId: (map['notification_id'] as num?)?.toInt() ?? 0,
+      status: map['status']?.toString() ?? 'scheduled',
+      reason: map['reason']?.toString() ?? '',
+      priority: (map['priority'] as num?)?.toInt() ?? 0,
+      scheduledAt: map['scheduled_at']?.toString() ?? '',
+      deliveredAt: map['delivered_at']?.toString() ?? '',
+      readAt: map['read_at']?.toString() ?? '',
+      expiresAt: map['expires_at']?.toString() ?? '',
+      revokedAt: map['revoked_at']?.toString() ?? '',
     );
   }
 }
@@ -548,6 +711,40 @@ class CompanionService {
         .toList(growable: false);
   }
 
+  Future<List<CompanionMemoryConflictData>> listMemoryConflicts({
+    int limit = 20,
+  }) async {
+    _requireUserId();
+    final result = await ApiService.get(
+      '/api/companion/memory-conflicts?limit=$limit',
+    );
+    final items = ApiResponse.listOf(result, keys: const ['conflicts']);
+    return items
+        .whereType<Map>()
+        .map((item) => CompanionMemoryConflictData.fromMap(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<void> resolveMemoryConflict({
+    required int conflictId,
+    required String resolution,
+  }) async {
+    _requireUserId();
+    if (conflictId <= 0) {
+      throw Exception('invalid memory conflict');
+    }
+    final normalized = resolution.trim().toLowerCase();
+    if (normalized != 'accepted' && normalized != 'rejected') {
+      throw Exception('invalid memory conflict resolution');
+    }
+    await ApiService.post(
+      '/api/companion/memory-conflicts/$conflictId/resolve',
+      body: <String, dynamic>{'resolution': normalized},
+    );
+  }
+
   Future<List<CompanionRelationshipEventData>> listRelationshipEvents({
     int limit = 8,
   }) async {
@@ -562,6 +759,98 @@ class CompanionService {
               Map<String, dynamic>.from(item),
             ))
         .toList(growable: false);
+  }
+
+  Future<List<CompanionEventData>> listEvents({int limit = 20}) async {
+    _requireUserId();
+    final result = await ApiService.get(
+      '/api/companion/events?limit=$limit',
+    );
+    final items = ApiResponse.listOf(result, keys: const ['events']);
+    return items
+        .whereType<Map>()
+        .map((item) => CompanionEventData.fromMap(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<List<CompanionEventData>> listTimeline({int limit = 20}) async {
+    _requireUserId();
+    try {
+      final result = await ApiService.get(
+        '/api/companion/timeline?limit=$limit',
+      );
+      final items = ApiResponse.listOf(result, keys: const ['events']);
+      return items
+          .whereType<Map>()
+          .map((item) => CompanionEventData.fromMap(
+                Map<String, dynamic>.from(item),
+              ))
+          .toList(growable: false);
+    } catch (_) {
+      return listEvents(limit: limit);
+    }
+  }
+
+  Future<CompanionContextPreviewData> getContextPreview({String? scene}) async {
+    _requireUserId();
+    final normalizedScene = scene?.trim() ?? '';
+    final query = normalizedScene.isEmpty
+        ? ''
+        : '?scene=${Uri.encodeQueryComponent(normalizedScene)}';
+    final result = await ApiService.get(
+      '/api/companion/context/preview$query',
+    );
+    return CompanionContextPreviewData.fromMap(
+      ApiResponse.object(result),
+    );
+  }
+
+  Future<List<CompanionProactiveDeliveryData>> listProactiveDeliveries({
+    int limit = 20,
+  }) async {
+    _requireUserId();
+    final result = await ApiService.get(
+      '/api/companion/proactive-deliveries?limit=$limit',
+    );
+    final items = ApiResponse.listOf(result, keys: const ['deliveries']);
+    return items
+        .whereType<Map>()
+        .map((item) => CompanionProactiveDeliveryData.fromMap(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<void> markProactiveRead(String notificationId) async {
+    _requireUserId();
+    final id = int.tryParse(notificationId.trim());
+    if (id == null || id <= 0) {
+      throw Exception('鏃犳晥鐨勪富鍔ㄦ秷鎭湴鍧€');
+    }
+    await ApiService.post(
+      '/api/companion/proactive/$id/read',
+      body: const <String, dynamic>{},
+    );
+  }
+
+  Future<void> revokeProactiveDelivery({
+    required String deliveryKey,
+    String reason = '',
+  }) async {
+    _requireUserId();
+    final normalizedKey = deliveryKey.trim();
+    if (normalizedKey.isEmpty) {
+      throw Exception('invalid proactive delivery key');
+    }
+    await ApiService.post(
+      '/api/companion/proactive/revoke',
+      body: <String, dynamic>{
+        'delivery_key': normalizedKey,
+        if (reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
   }
 
   Future<void> deleteMemory(int memoryId) async {
@@ -660,6 +949,7 @@ class CompanionService {
   Stream<CompanionChatEvent> chatStream(
     String message, {
     String? scene,
+    String inputMode = 'text',
   }) async* {
     _requireUserId();
     final uri = Uri.parse('${ApiService.baseUrl}/api/companion/chat/stream');
@@ -675,6 +965,9 @@ class CompanionService {
     final body = <String, dynamic>{'message': message};
     if (scene != null && scene.trim().isNotEmpty) {
       body['scene'] = scene.trim();
+    }
+    if (inputMode.trim().isNotEmpty && inputMode.trim() != 'text') {
+      body['input_mode'] = inputMode.trim();
     }
     try {
       final selectedId = await AiProviderService().readLastSelectedProfileId();

@@ -31,7 +31,15 @@ const (
 	Companion_GetProactiveSettings_FullMethodName    = "/companion.v1.Companion/GetProactiveSettings"
 	Companion_UpdateProactiveSettings_FullMethodName = "/companion.v1.Companion/UpdateProactiveSettings"
 	Companion_ConfirmMemory_FullMethodName           = "/companion.v1.Companion/ConfirmMemory"
+	Companion_ListMemoryConflicts_FullMethodName     = "/companion.v1.Companion/ListMemoryConflicts"
+	Companion_ResolveMemoryConflict_FullMethodName   = "/companion.v1.Companion/ResolveMemoryConflict"
 	Companion_ListRelationshipEvents_FullMethodName  = "/companion.v1.Companion/ListRelationshipEvents"
+	Companion_ListEvents_FullMethodName              = "/companion.v1.Companion/ListEvents"
+	Companion_GetTimeline_FullMethodName             = "/companion.v1.Companion/GetTimeline"
+	Companion_GetContextPreview_FullMethodName       = "/companion.v1.Companion/GetContextPreview"
+	Companion_ListProactiveDeliveries_FullMethodName = "/companion.v1.Companion/ListProactiveDeliveries"
+	Companion_RevokeProactiveDelivery_FullMethodName = "/companion.v1.Companion/RevokeProactiveDelivery"
+	Companion_MarkProactiveRead_FullMethodName       = "/companion.v1.Companion/MarkProactiveRead"
 )
 
 // CompanionClient is the client API for Companion service.
@@ -54,7 +62,15 @@ type CompanionClient interface {
 	GetProactiveSettings(ctx context.Context, in *GetProactiveSettingsRequest, opts ...grpc.CallOption) (*GetProactiveSettingsReply, error)
 	UpdateProactiveSettings(ctx context.Context, in *UpdateProactiveSettingsRequest, opts ...grpc.CallOption) (*UpdateProactiveSettingsReply, error)
 	ConfirmMemory(ctx context.Context, in *ConfirmMemoryRequest, opts ...grpc.CallOption) (*ConfirmMemoryReply, error)
+	ListMemoryConflicts(ctx context.Context, in *ListMemoryConflictsRequest, opts ...grpc.CallOption) (*ListMemoryConflictsReply, error)
+	ResolveMemoryConflict(ctx context.Context, in *ResolveMemoryConflictRequest, opts ...grpc.CallOption) (*ResolveMemoryConflictReply, error)
 	ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...grpc.CallOption) (*ListRelationshipEventsReply, error)
+	ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsReply, error)
+	GetTimeline(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsReply, error)
+	GetContextPreview(ctx context.Context, in *ContextPreviewRequest, opts ...grpc.CallOption) (*ContextPreviewReply, error)
+	ListProactiveDeliveries(ctx context.Context, in *ListProactiveDeliveriesRequest, opts ...grpc.CallOption) (*ListProactiveDeliveriesReply, error)
+	RevokeProactiveDelivery(ctx context.Context, in *RevokeProactiveDeliveryRequest, opts ...grpc.CallOption) (*RevokeProactiveDeliveryReply, error)
+	MarkProactiveRead(ctx context.Context, in *MarkProactiveReadRequest, opts ...grpc.CallOption) (*MarkProactiveReadReply, error)
 }
 
 type companionClient struct {
@@ -185,10 +201,90 @@ func (c *companionClient) ConfirmMemory(ctx context.Context, in *ConfirmMemoryRe
 	return out, nil
 }
 
+func (c *companionClient) ListMemoryConflicts(ctx context.Context, in *ListMemoryConflictsRequest, opts ...grpc.CallOption) (*ListMemoryConflictsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMemoryConflictsReply)
+	err := c.cc.Invoke(ctx, Companion_ListMemoryConflicts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) ResolveMemoryConflict(ctx context.Context, in *ResolveMemoryConflictRequest, opts ...grpc.CallOption) (*ResolveMemoryConflictReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveMemoryConflictReply)
+	err := c.cc.Invoke(ctx, Companion_ResolveMemoryConflict_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *companionClient) ListRelationshipEvents(ctx context.Context, in *ListRelationshipEventsRequest, opts ...grpc.CallOption) (*ListRelationshipEventsReply, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListRelationshipEventsReply)
 	err := c.cc.Invoke(ctx, Companion_ListRelationshipEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListEventsReply)
+	err := c.cc.Invoke(ctx, Companion_ListEvents_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) GetTimeline(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListEventsReply)
+	err := c.cc.Invoke(ctx, Companion_GetTimeline_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) GetContextPreview(ctx context.Context, in *ContextPreviewRequest, opts ...grpc.CallOption) (*ContextPreviewReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ContextPreviewReply)
+	err := c.cc.Invoke(ctx, Companion_GetContextPreview_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) ListProactiveDeliveries(ctx context.Context, in *ListProactiveDeliveriesRequest, opts ...grpc.CallOption) (*ListProactiveDeliveriesReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListProactiveDeliveriesReply)
+	err := c.cc.Invoke(ctx, Companion_ListProactiveDeliveries_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) RevokeProactiveDelivery(ctx context.Context, in *RevokeProactiveDeliveryRequest, opts ...grpc.CallOption) (*RevokeProactiveDeliveryReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeProactiveDeliveryReply)
+	err := c.cc.Invoke(ctx, Companion_RevokeProactiveDelivery_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *companionClient) MarkProactiveRead(ctx context.Context, in *MarkProactiveReadRequest, opts ...grpc.CallOption) (*MarkProactiveReadReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarkProactiveReadReply)
+	err := c.cc.Invoke(ctx, Companion_MarkProactiveRead_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +311,15 @@ type CompanionServer interface {
 	GetProactiveSettings(context.Context, *GetProactiveSettingsRequest) (*GetProactiveSettingsReply, error)
 	UpdateProactiveSettings(context.Context, *UpdateProactiveSettingsRequest) (*UpdateProactiveSettingsReply, error)
 	ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error)
+	ListMemoryConflicts(context.Context, *ListMemoryConflictsRequest) (*ListMemoryConflictsReply, error)
+	ResolveMemoryConflict(context.Context, *ResolveMemoryConflictRequest) (*ResolveMemoryConflictReply, error)
 	ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error)
+	ListEvents(context.Context, *ListEventsRequest) (*ListEventsReply, error)
+	GetTimeline(context.Context, *ListEventsRequest) (*ListEventsReply, error)
+	GetContextPreview(context.Context, *ContextPreviewRequest) (*ContextPreviewReply, error)
+	ListProactiveDeliveries(context.Context, *ListProactiveDeliveriesRequest) (*ListProactiveDeliveriesReply, error)
+	RevokeProactiveDelivery(context.Context, *RevokeProactiveDeliveryRequest) (*RevokeProactiveDeliveryReply, error)
+	MarkProactiveRead(context.Context, *MarkProactiveReadRequest) (*MarkProactiveReadReply, error)
 	mustEmbedUnimplementedCompanionServer()
 }
 
@@ -262,8 +366,32 @@ func (UnimplementedCompanionServer) UpdateProactiveSettings(context.Context, *Up
 func (UnimplementedCompanionServer) ConfirmMemory(context.Context, *ConfirmMemoryRequest) (*ConfirmMemoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ConfirmMemory not implemented")
 }
+func (UnimplementedCompanionServer) ListMemoryConflicts(context.Context, *ListMemoryConflictsRequest) (*ListMemoryConflictsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListMemoryConflicts not implemented")
+}
+func (UnimplementedCompanionServer) ResolveMemoryConflict(context.Context, *ResolveMemoryConflictRequest) (*ResolveMemoryConflictReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveMemoryConflict not implemented")
+}
 func (UnimplementedCompanionServer) ListRelationshipEvents(context.Context, *ListRelationshipEventsRequest) (*ListRelationshipEventsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListRelationshipEvents not implemented")
+}
+func (UnimplementedCompanionServer) ListEvents(context.Context, *ListEventsRequest) (*ListEventsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListEvents not implemented")
+}
+func (UnimplementedCompanionServer) GetTimeline(context.Context, *ListEventsRequest) (*ListEventsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTimeline not implemented")
+}
+func (UnimplementedCompanionServer) GetContextPreview(context.Context, *ContextPreviewRequest) (*ContextPreviewReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetContextPreview not implemented")
+}
+func (UnimplementedCompanionServer) ListProactiveDeliveries(context.Context, *ListProactiveDeliveriesRequest) (*ListProactiveDeliveriesReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListProactiveDeliveries not implemented")
+}
+func (UnimplementedCompanionServer) RevokeProactiveDelivery(context.Context, *RevokeProactiveDeliveryRequest) (*RevokeProactiveDeliveryReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeProactiveDelivery not implemented")
+}
+func (UnimplementedCompanionServer) MarkProactiveRead(context.Context, *MarkProactiveReadRequest) (*MarkProactiveReadReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkProactiveRead not implemented")
 }
 func (UnimplementedCompanionServer) mustEmbedUnimplementedCompanionServer() {}
 func (UnimplementedCompanionServer) testEmbeddedByValue()                   {}
@@ -502,6 +630,42 @@ func _Companion_ConfirmMemory_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Companion_ListMemoryConflicts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMemoryConflictsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ListMemoryConflicts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ListMemoryConflicts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ListMemoryConflicts(ctx, req.(*ListMemoryConflictsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_ResolveMemoryConflict_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveMemoryConflictRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ResolveMemoryConflict(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ResolveMemoryConflict_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ResolveMemoryConflict(ctx, req.(*ResolveMemoryConflictRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Companion_ListRelationshipEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRelationshipEventsRequest)
 	if err := dec(in); err != nil {
@@ -516,6 +680,114 @@ func _Companion_ListRelationshipEvents_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CompanionServer).ListRelationshipEvents(ctx, req.(*ListRelationshipEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_ListEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ListEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ListEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ListEvents(ctx, req.(*ListEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_GetTimeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).GetTimeline(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_GetTimeline_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).GetTimeline(ctx, req.(*ListEventsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_GetContextPreview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ContextPreviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).GetContextPreview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_GetContextPreview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).GetContextPreview(ctx, req.(*ContextPreviewRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_ListProactiveDeliveries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProactiveDeliveriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).ListProactiveDeliveries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_ListProactiveDeliveries_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).ListProactiveDeliveries(ctx, req.(*ListProactiveDeliveriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_RevokeProactiveDelivery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeProactiveDeliveryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).RevokeProactiveDelivery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_RevokeProactiveDelivery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).RevokeProactiveDelivery(ctx, req.(*RevokeProactiveDeliveryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Companion_MarkProactiveRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkProactiveReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CompanionServer).MarkProactiveRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Companion_MarkProactiveRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CompanionServer).MarkProactiveRead(ctx, req.(*MarkProactiveReadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -576,8 +848,40 @@ var Companion_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Companion_ConfirmMemory_Handler,
 		},
 		{
+			MethodName: "ListMemoryConflicts",
+			Handler:    _Companion_ListMemoryConflicts_Handler,
+		},
+		{
+			MethodName: "ResolveMemoryConflict",
+			Handler:    _Companion_ResolveMemoryConflict_Handler,
+		},
+		{
 			MethodName: "ListRelationshipEvents",
 			Handler:    _Companion_ListRelationshipEvents_Handler,
+		},
+		{
+			MethodName: "ListEvents",
+			Handler:    _Companion_ListEvents_Handler,
+		},
+		{
+			MethodName: "GetTimeline",
+			Handler:    _Companion_GetTimeline_Handler,
+		},
+		{
+			MethodName: "GetContextPreview",
+			Handler:    _Companion_GetContextPreview_Handler,
+		},
+		{
+			MethodName: "ListProactiveDeliveries",
+			Handler:    _Companion_ListProactiveDeliveries_Handler,
+		},
+		{
+			MethodName: "RevokeProactiveDelivery",
+			Handler:    _Companion_RevokeProactiveDelivery_Handler,
+		},
+		{
+			MethodName: "MarkProactiveRead",
+			Handler:    _Companion_MarkProactiveRead_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

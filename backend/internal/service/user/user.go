@@ -2,23 +2,27 @@
 package userapp
 
 import (
+	notifybiz "backend/internal/biz/notify"
+	userbiz "backend/internal/biz/user"
+	notifydata "backend/internal/data/notify"
+	userdata "backend/internal/data/user"
+	"backend/model"
 	"context"
 	"gorm.io/gorm"
-	"backend/model"
-	notifybiz "backend/internal/biz/notify"
-	notifydata "backend/internal/data/notify"
-	userbiz "backend/internal/biz/user"
-	userdata "backend/internal/data/user"
+	"strconv"
 )
 
 // Package userapp User 域应用服务基础定义。
 
 // AppService User 应用服务。
 type AppService struct {
-	db    *gorm.DB
-	store userbiz.UserStore
-	notify notifybiz.NotifyStore
+	db                     *gorm.DB
+	store                  userbiz.UserStore
+	notify                 notifybiz.NotifyStore
+	companionEventRecorder CompanionEventRecorder
 }
+
+type CompanionEventRecorder func(context.Context, uint, string, uint, map[string]interface{}) error
 
 // New 构造 AppService。
 func New(db *gorm.DB) *AppService {
@@ -47,4 +51,24 @@ func (s *AppService) Notify() notifybiz.NotifyStore {
 // EnsureUser 加载用户（供扩展）。
 func (s *AppService) EnsureUser(ctx context.Context, userID uint) (model.User, error) {
 	return userbiz.GetByID(ctx, s.store, userID)
+}
+
+func (s *AppService) SetCompanionEventRecorder(recorder CompanionEventRecorder) {
+	if s == nil {
+		return
+	}
+	s.companionEventRecorder = recorder
+}
+
+func (s *AppService) recordCompanionEvent(
+	ctx context.Context,
+	userID uint,
+	eventType, requestID string,
+	payload map[string]interface{},
+) {
+	if s == nil || s.companionEventRecorder == nil || userID == 0 {
+		return
+	}
+	requestIDValue, _ := strconv.ParseUint(requestID, 10, 32)
+	_ = s.companionEventRecorder(ctx, userID, eventType, uint(requestIDValue), payload)
 }

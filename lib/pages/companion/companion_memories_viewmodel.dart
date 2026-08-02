@@ -1,15 +1,24 @@
 import 'package:flutter/foundation.dart';
 
+import 'dart:async';
+
 import '../../services/companion_service.dart';
+import '../../services/companion_interaction_coordinator.dart';
 
 /// TA 记得的事 — 列表状态。
 class CompanionMemoriesViewModel extends ChangeNotifier {
   CompanionMemoriesViewModel({
     CompanionService? companionService,
     this.focusMemoryId,
-  }) : _companion = companionService ?? CompanionService();
+  }) : _companion = companionService ?? CompanionService() {
+    _interactionSubscription = _coordinator.events.listen(_onInteraction);
+  }
 
   final CompanionService _companion;
+  final CompanionInteractionCoordinator _coordinator =
+      CompanionInteractionCoordinator.instance;
+  StreamSubscription<CompanionInteractionEvent>? _interactionSubscription;
+  Timer? _interactionRefreshTimer;
 
   /// 从日常流点进时滚动/高亮的记忆 id。
   final int? focusMemoryId;
@@ -18,12 +27,38 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
   bool _mutating = false;
   String? _error;
   List<CompanionMemoryData> _items = const [];
+  List<CompanionMemoryConflictData> _conflicts = const [];
   bool _disposed = false;
 
   bool get isLoading => _loading;
   bool get isMutating => _mutating;
   String? get error => _error;
   List<CompanionMemoryData> get items => _items;
+  List<CompanionMemoryConflictData> get conflicts => _conflicts;
+
+  void _onInteraction(CompanionInteractionEvent event) {
+    if (_disposed ||
+        _mutating ||
+        event.type != CompanionInteractionType.companionEvent) {
+      return;
+    }
+    final eventType = event.payload['event_type']?.toString() ?? '';
+    const memoryEvents = <String>{
+      'memory_created',
+      'memory_updated',
+      'memory_corrected',
+      'memory_confirmed',
+      'memory_deleted',
+      'memory_pinned_changed',
+      'memory_conflict_detected',
+      'memory_conflict_resolved',
+    };
+    if (!memoryEvents.contains(eventType)) return;
+    _interactionRefreshTimer?.cancel();
+    _interactionRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!_disposed && !_mutating) unawaited(load());
+    });
+  }
 
   Future<void> load() async {
     _loading = true;
@@ -33,6 +68,11 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       final list = await _companion.listMemories(limit: 40);
       if (_disposed) return;
       _items = list;
+      try {
+        _conflicts = await _companion.listMemoryConflicts(limit: 40);
+      } catch (_) {
+        _conflicts = const [];
+      }
       _loading = false;
       _notify();
     } catch (e) {
@@ -40,6 +80,38 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       _error = e.toString().replaceFirst('Exception: ', '');
       _loading = false;
       _notify();
+    }
+  }
+
+  Future<void> resolveConflict(
+    CompanionMemoryConflictData conflict,
+    String resolution,
+  ) async {
+    if (_mutating || conflict.id <= 0) return;
+    _mutating = true;
+    _notify();
+    try {
+      await _companion.resolveMemoryConflict(
+        conflictId: conflict.id,
+        resolution: resolution,
+      );
+      if (_disposed) return;
+      _conflicts = _conflicts
+          .where((item) => item.id != conflict.id)
+          .toList(growable: false);
+      if (resolution == 'accepted') {
+        final memories = await _companion.listMemories(limit: 40);
+        if (!_disposed) _items = memories;
+      }
+      _coordinator.publishMemoryChanged(
+        action: 'conflict_$resolution',
+        memoryId: conflict.memoryId,
+      );
+    } finally {
+      if (!_disposed) {
+        _mutating = false;
+        _notify();
+      }
     }
   }
 
@@ -51,6 +123,7 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       await _companion.deleteMemory(memoryId);
       if (_disposed) return;
       _items = _items.where((m) => m.id != memoryId).toList(growable: false);
+      _coordinator.publishMemoryChanged(action: 'deleted', memoryId: memoryId);
     } finally {
       if (!_disposed) {
         _mutating = false;
@@ -72,6 +145,10 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       );
       if (_disposed) return updated;
       _replaceAndSort(updated);
+      _coordinator.publishMemoryChanged(
+        action: updated.pinned ? 'pinned' : 'unpinned',
+        memoryId: updated.id,
+      );
       return updated;
     } finally {
       if (!_disposed) {
@@ -97,6 +174,8 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       );
       if (_disposed) return updated;
       _replaceAndSort(updated);
+      _coordinator.publishMemoryChanged(
+          action: 'updated', memoryId: updated.id);
       return updated;
     } finally {
       if (!_disposed) {
@@ -116,6 +195,8 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
       final updated = await _companion.confirmMemory(memory.id);
       if (_disposed) return updated;
       _replaceAndSort(updated);
+      _coordinator.publishMemoryChanged(
+          action: 'confirmed', memoryId: updated.id);
       return updated;
     } finally {
       if (!_disposed) {
@@ -146,6 +227,8 @@ class CompanionMemoriesViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _interactionRefreshTimer?.cancel();
+    _interactionSubscription?.cancel();
     super.dispose();
   }
 }

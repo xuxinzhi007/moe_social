@@ -31,7 +31,8 @@ type Engine struct {
 
 	// WebSocket 广播回调（可选，nil 时不广播）
 	OnGreeting  func(userID uint, greeting string)
-	OnProactive func(userID uint, message, reason string)
+	OnProactive func(userID uint, message, reason string) (notificationID uint, delivered bool)
+	OnEvent     func(userID uint, event *model.CompanionEvent)
 
 	// 内部
 	cancelCleanup  context.CancelFunc
@@ -128,44 +129,151 @@ func (e *Engine) pushProactive(userID uint) {
 	if e.OnProactive == nil {
 		return
 	}
-	profile, err := e.GetProfile(context.Background(), userID)
-	if err != nil || profile == nil || !profile.ProactiveEnabled {
+	companionContext, err := e.BuildContext(context.Background(), userID, "proactive")
+	if err != nil || companionContext == nil || companionContext.Profile == nil || !companionContext.Profile.ProactiveEnabled {
 		return
 	}
+	profile := companionContext.Profile
 	now := time.Now().UTC().Add(time.Duration(profile.ProactiveTimezoneOffset) * time.Minute)
 	minuteOfDay := now.Hour()*60 + now.Minute()
 	if inQuietHours(minuteOfDay, profile.ProactiveQuietStart, profile.ProactiveQuietEnd) {
 		return
 	}
-	history, err := e.ListChatHistory(context.Background(), userID, 8)
-	if err != nil || len(history) == 0 {
+	history := companionContext.History
+	if len(history) == 0 {
 		return
 	}
 	last := history[len(history)-1]
 	if last.CreatedAt.IsZero() || time.Since(last.CreatedAt) < 24*time.Hour {
 		return
 	}
+	pendingDeliveryKey := ""
+	if deliveries, listErr := e.ListProactiveDeliveries(context.Background(), userID, 100); listErr != nil {
+		log.Printf("[companion] list pending proactive deliveries user=%d: %v", userID, listErr)
+	} else {
+		for _, delivery := range deliveries {
+			if delivery.Status != "scheduled" || delivery.DeliveryKey == "" {
+				continue
+			}
+			if delivery.ExpiresAt != nil && time.Now().UTC().After(*delivery.ExpiresAt) {
+				continue
+			}
+			pendingDeliveryKey = delivery.DeliveryKey
+			break
+		}
+	}
 
 	e.proactiveMu.Lock()
+	reserved := false
 	localDate := now.Format("2006-01-02")
-	delivery := e.lastProactive[userID]
-	if delivery.localDate == localDate && delivery.count >= profile.ProactiveDailyLimit {
-		e.proactiveMu.Unlock()
-		return
+	persistedCount, persistedErr := e.countProactiveDeliveries(
+		context.Background(), userID, localDate, profile.ProactiveTimezoneOffset,
+	)
+	if persistedErr != nil {
+		log.Printf("[companion] count proactive deliveries user=%d: %v", userID, persistedErr)
 	}
-	delivery.localDate = localDate
-	delivery.count++
+	delivery := e.lastProactive[userID]
+	if delivery.localDate != localDate {
+		delivery.count = persistedCount
+	} else if delivery.count < persistedCount {
+		delivery.count = persistedCount
+	}
+	deliveryKey := pendingDeliveryKey
+	if deliveryKey == "" {
+		dailyLimit := profile.ProactiveDailyLimit
+		if dailyLimit <= 0 {
+			dailyLimit = 1
+		}
+		if delivery.count >= dailyLimit {
+			e.proactiveMu.Unlock()
+			return
+		}
+		delivery.localDate = localDate
+		delivery.count++
+		reserved = true
+		deliveryKey = fmt.Sprintf("proactive:%d:%s:%d:%d", userID, localDate, delivery.count, time.Now().UnixNano())
+	} else {
+		delivery.localDate = localDate
+	}
 	e.lastProactive[userID] = delivery
 	e.proactiveMu.Unlock()
 
 	message := "有一阵子没见到你了，最近过得怎么样？"
-	for index := len(history) - 1; index >= 0; index-- {
-		if history[index].Role == "user" && strings.TrimSpace(history[index].Content) != "" {
-			message = fmt.Sprintf("我还记得你之前提到的「%s」，最近有新进展吗？", clipProactiveText(history[index].Content))
-			break
+	if len(companionContext.UnfinishedTopics) > 0 {
+		message = fmt.Sprintf("我还记得你想继续的话题：『%s』，最近有新进展吗？", companionContext.UnfinishedTopics[0])
+	} else {
+		for index := len(history) - 1; index >= 0; index-- {
+			if history[index].Role == "user" && strings.TrimSpace(history[index].Content) != "" {
+				message = fmt.Sprintf("我还记得你之前提到的「%s」，最近有新进展吗？", clipProactiveText(history[index].Content))
+				break
+			}
 		}
 	}
-	e.OnProactive(userID, message, "久未聊天回访")
+	reason := "久未聊天回访"
+	priority := 50
+	expiresAt := time.Now().UTC().Add(72 * time.Hour)
+	e.recordCompanionEvent(context.Background(), userID, "proactive_scheduled", "proactive", 0,
+		deliveryKey, map[string]interface{}{
+			"reason":     reason,
+			"priority":   priority,
+			"expires_at": expiresAt.Format(time.RFC3339),
+		})
+	notificationID, delivered := e.OnProactive(userID, message, reason)
+	if !delivered {
+		if reserved {
+			e.proactiveMu.Lock()
+			current := e.lastProactive[userID]
+			if current.localDate == localDate && current.count > 0 {
+				current.count--
+				e.lastProactive[userID] = current
+			}
+			e.proactiveMu.Unlock()
+		}
+		e.recordCompanionEvent(context.Background(), userID, "proactive_delivery_failed", "proactive", notificationID,
+			deliveryKey+":failed", map[string]interface{}{
+				"reason":          reason,
+				"priority":        priority,
+				"notification_id": notificationID,
+				"expires_at":      expiresAt.Format(time.RFC3339),
+			})
+		return
+	}
+	e.recordCompanionEvent(context.Background(), userID, "proactive_delivered", "proactive", notificationID,
+		deliveryKey+":delivered", map[string]interface{}{
+			"reason":          reason,
+			"priority":        priority,
+			"notification_id": notificationID,
+			"expires_at":      expiresAt.Format(time.RFC3339),
+		})
+}
+
+func (e *Engine) countProactiveDeliveries(
+	ctx context.Context,
+	userID uint,
+	localDate string,
+	timezoneOffset int,
+) (int, error) {
+	events, err := e.store.ListCompanionEvents(ctx, userID, 100)
+	if err != nil {
+		return 0, err
+	}
+	count := 0
+	for _, event := range events {
+		if event.EventType != "proactive_delivered" {
+			continue
+		}
+		occurredAt := event.OccurredAt
+		if occurredAt.IsZero() {
+			occurredAt = event.CreatedAt
+		}
+		if occurredAt.IsZero() {
+			continue
+		}
+		if occurredAt.UTC().Add(time.Duration(timezoneOffset)*time.Minute).Format("2006-01-02") == localDate {
+			count++
+		}
+	}
+	return count, nil
 }
 
 func inQuietHours(minute, start, end int) bool {
@@ -276,7 +384,7 @@ func (e *Engine) GetProactiveSettings(ctx context.Context, userID uint) (*Proact
 }
 
 func (e *Engine) UpdateProactiveSettings(ctx context.Context, userID uint, settings ProactiveSettings) (*ProactiveSettings, error) {
-	profile, err := e.GetProfile(ctx, userID)
+	_, err := e.GetProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -284,13 +392,16 @@ func (e *Engine) UpdateProactiveSettings(ctx context.Context, userID uint, setti
 	settings.QuietStart = clampInt(settings.QuietStart, 0, 1439)
 	settings.QuietEnd = clampInt(settings.QuietEnd, 0, 1439)
 	settings.TimezoneOffset = clampInt(settings.TimezoneOffset, -840, 840)
-	profile.ProactiveEnabled = settings.Enabled
-	profile.ProactiveDailyLimit = settings.DailyLimit
-	profile.ProactiveQuietStart = settings.QuietStart
-	profile.ProactiveQuietEnd = settings.QuietEnd
-	profile.ProactiveTimezoneOffset = settings.TimezoneOffset
-	if _, err := e.UpsertProfile(ctx, userID, profile); err != nil {
-		return nil, err
+	if err := e.store.UpdateProactiveSettings(
+		ctx,
+		userID,
+		settings.Enabled,
+		settings.DailyLimit,
+		settings.QuietStart,
+		settings.QuietEnd,
+		settings.TimezoneOffset,
+	); err != nil {
+		return nil, fmt.Errorf("update proactive settings for user %d: %w", userID, err)
 	}
 	return &settings, nil
 }
@@ -348,6 +459,37 @@ func (e *Engine) GetState(ctx context.Context, userID uint) (*State, *Profile, e
 	return state, profile, nil
 }
 
+// BuildContext loads the canonical companion input snapshot for one interaction.
+func (e *Engine) BuildContext(ctx context.Context, userID uint, scene string) (*ContextSnapshot, error) {
+	state, profile, err := e.GetState(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("build companion context state: %w", err)
+	}
+	memories, err := e.ListMemories(ctx, userID, e.MaxMemories)
+	if err != nil {
+		return nil, fmt.Errorf("build companion context memories: %w", err)
+	}
+	history, err := e.ListChatHistory(ctx, userID, e.MaxHistoryTurns)
+	if err != nil {
+		return nil, fmt.Errorf("build companion context history: %w", err)
+	}
+	relationshipEvents, err := e.ListRelationshipEvents(ctx, userID, 3)
+	if err != nil {
+		return nil, fmt.Errorf("build companion context relationship events: %w", err)
+	}
+	unfinishedTopics := extractUnfinishedTopics(history)
+	return &ContextSnapshot{
+		Profile:            profile,
+		State:              state,
+		Memories:           memories,
+		History:            history,
+		RelationshipEvents: relationshipEvents,
+		UnfinishedTopics:   unfinishedTopics,
+		Scene:              strings.TrimSpace(scene),
+		IsFirstChat:        len(history) == 0,
+	}, nil
+}
+
 // ── Memory ──
 
 func (e *Engine) ListMemories(ctx context.Context, userID uint, limit int) ([]Memory, error) {
@@ -379,6 +521,7 @@ func (e *Engine) DeleteMemory(ctx context.Context, userID, memoryID uint) error 
 		}
 		return fmt.Errorf("delete memory %d user %d: %w", memoryID, userID, err)
 	}
+	e.recordMemoryEvent(ctx, userID, "memory_deleted", memoryID, map[string]interface{}{})
 	return nil
 }
 
@@ -414,6 +557,9 @@ func (e *Engine) SetMemoryPinned(ctx context.Context, userID, memoryID uint, pin
 	row.Pinned = pinned
 	row.Importance = importance
 	row.ExpiresAt = expiresAt
+	e.recordMemoryEvent(ctx, userID, "memory_pinned_changed", memoryID, map[string]interface{}{
+		"pinned": pinned,
+	})
 	out := modelToMemory(row)
 	return &out, nil
 }
@@ -441,13 +587,21 @@ func (e *Engine) UpdateMemoryContent(ctx context.Context, userID, memoryID uint,
 	if row == nil {
 		return nil, ErrMemoryNotFound
 	}
-	if err := e.store.UpdateMemoryContent(ctx, userID, memoryID, content); err != nil {
+	confirmedAt := time.Now()
+	if err := e.store.CorrectMemoryContent(ctx, userID, memoryID, content, confirmedAt); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrMemoryNotFound
 		}
 		return nil, fmt.Errorf("update memory content %d: %w", memoryID, err)
 	}
 	row.Content = content
+	row.UserConfirmed = true
+	row.ConfirmedAt = &confirmedAt
+	e.recordMemoryEvent(ctx, userID, "memory_corrected", memoryID, map[string]interface{}{
+		"memory_type": row.MemoryType,
+		"memory_key":  row.MemoryKey,
+		"confirmed":   true,
+	})
 	out := modelToMemory(row)
 	return &out, nil
 }
@@ -473,6 +627,7 @@ func (e *Engine) ConfirmMemory(ctx context.Context, userID, memoryID uint) (*Mem
 	}
 	row.UserConfirmed = true
 	row.ConfirmedAt = &confirmedAt
+	e.recordMemoryEvent(ctx, userID, "memory_confirmed", memoryID, map[string]interface{}{})
 	out := modelToMemory(row)
 	return &out, nil
 }
@@ -507,6 +662,253 @@ func (e *Engine) ListRelationshipEvents(ctx context.Context, userID uint, limit 
 	return out, nil
 }
 
+// ListEvents returns the newest cross-domain companion events first.
+func (e *Engine) ListEvents(ctx context.Context, userID uint, limit int) ([]Event, error) {
+	rows, err := e.store.ListCompanionEvents(ctx, userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list companion events for user %d: %w", userID, err)
+	}
+	out := make([]Event, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, modelToEvent(&row))
+	}
+	return out, nil
+}
+
+// ListProactiveDeliveries rebuilds proactive delivery state from durable events.
+func (e *Engine) ListProactiveDeliveries(
+	ctx context.Context,
+	userID uint,
+	limit int,
+) ([]ProactiveDelivery, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	rows, err := e.store.ListCompanionEvents(ctx, userID, limit*4)
+	if err != nil {
+		return nil, fmt.Errorf("list proactive events for user %d: %w", userID, err)
+	}
+	deliveries := make(map[string]*ProactiveDelivery, len(rows))
+	orderedKeys := make([]string, 0, len(rows))
+	readByNotification := make(map[uint]time.Time)
+	revokedByKey := make(map[string]time.Time)
+	for _, row := range rows {
+		if row.SourceDomain != "proactive" {
+			continue
+		}
+		payload := make(map[string]interface{})
+		if strings.TrimSpace(row.PayloadJSON) != "" {
+			if err := json.Unmarshal([]byte(row.PayloadJSON), &payload); err != nil {
+				log.Printf("[companion] decode proactive event id=%d: %v", row.ID, err)
+				continue
+			}
+		}
+		deliveryKey, status := proactiveEventState(row.EventType, row.DedupeKey, payload)
+		if status == "" {
+			continue
+		}
+		if status == "read" {
+			notificationID := proactivePayloadID(payload, row.SourceID)
+			readAt := eventTime(row)
+			readByNotification[notificationID] = readAt
+			for _, delivery := range deliveries {
+				if delivery.NotificationID == notificationID && notificationID != 0 {
+					delivery.ReadAt = &readAt
+					delivery.Status = "read"
+				}
+			}
+			continue
+		}
+		if status == "revoked" {
+			revokedAt := eventTime(row)
+			if delivery := deliveries[deliveryKey]; delivery != nil {
+				delivery.Status = "revoked"
+				delivery.RevokedAt = &revokedAt
+			} else {
+				revokedByKey[deliveryKey] = revokedAt
+			}
+			continue
+		}
+		if deliveryKey == "" {
+			continue
+		}
+		if existing, exists := deliveries[deliveryKey]; exists {
+			if existing.Reason == "" {
+				existing.Reason = proactivePayloadString(payload, "reason")
+			}
+			if existing.Priority == 0 {
+				existing.Priority = proactivePayloadInt(payload, "priority")
+			}
+			if existing.ExpiresAt == nil {
+				existing.ExpiresAt = proactivePayloadTime(payload, "expires_at")
+			}
+			if status == "scheduled" {
+				existing.ScheduledAt = eventTime(row)
+			}
+			continue
+		}
+		delivery := &ProactiveDelivery{
+			DeliveryKey: deliveryKey,
+			Status:      status,
+			Reason:      proactivePayloadString(payload, "reason"),
+			Priority:    proactivePayloadInt(payload, "priority"),
+			ScheduledAt: eventTime(row),
+		}
+		notificationID := proactivePayloadID(payload, row.SourceID)
+		delivery.NotificationID = notificationID
+		if status == "delivered" {
+			deliveredAt := eventTime(row)
+			delivery.DeliveredAt = &deliveredAt
+		}
+		if readAt, exists := readByNotification[notificationID]; exists {
+			delivery.ReadAt = &readAt
+			delivery.Status = "read"
+		}
+		delivery.ExpiresAt = proactivePayloadTime(payload, "expires_at")
+		if revokedAt, exists := revokedByKey[deliveryKey]; exists {
+			delivery.Status = "revoked"
+			delivery.RevokedAt = &revokedAt
+		}
+		deliveries[deliveryKey] = delivery
+		orderedKeys = append(orderedKeys, deliveryKey)
+	}
+	out := make([]ProactiveDelivery, 0, len(orderedKeys))
+	for _, key := range orderedKeys {
+		if delivery := deliveries[key]; delivery != nil {
+			if delivery.ExpiresAt != nil && time.Now().UTC().After(*delivery.ExpiresAt) &&
+				delivery.Status != "read" && delivery.Status != "revoked" && delivery.Status != "failed" {
+				delivery.Status = "expired"
+			}
+			out = append(out, *delivery)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Priority != out[j].Priority {
+			return out[i].Priority > out[j].Priority
+		}
+		if !out[i].ScheduledAt.Equal(out[j].ScheduledAt) {
+			return out[i].ScheduledAt.After(out[j].ScheduledAt)
+		}
+		return out[i].DeliveryKey < out[j].DeliveryKey
+	})
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func proactiveEventState(eventType, dedupeKey string, payload map[string]interface{}) (string, string) {
+	if dedupeKey == "" {
+		if eventType != "proactive_revoked" {
+			return "", ""
+		}
+	}
+	if eventType == "proactive_read" || strings.HasPrefix(dedupeKey, "proactive_read:") {
+		return "", "read"
+	}
+	if eventType == "proactive_revoked" {
+		return proactivePayloadString(payload, "delivery_key"), "revoked"
+	}
+	for _, suffix := range []string{":delivered", ":failed"} {
+		if strings.HasSuffix(dedupeKey, suffix) {
+			return strings.TrimSuffix(dedupeKey, suffix), strings.TrimPrefix(suffix, ":")
+		}
+	}
+	if strings.HasPrefix(dedupeKey, "proactive:") {
+		return dedupeKey, "scheduled"
+	}
+	return "", ""
+}
+
+func proactivePayloadID(payload map[string]interface{}, fallback uint) uint {
+	if value, ok := payload["notification_id"].(float64); ok && value > 0 {
+		return uint(value)
+	}
+	return fallback
+}
+
+func proactivePayloadString(payload map[string]interface{}, key string) string {
+	value, _ := payload[key].(string)
+	return value
+}
+
+func proactivePayloadInt(payload map[string]interface{}, key string) int {
+	value, _ := payload[key].(float64)
+	return int(value)
+}
+
+func proactivePayloadTime(payload map[string]interface{}, key string) *time.Time {
+	value := proactivePayloadString(payload, key)
+	if value == "" {
+		return nil
+	}
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}
+
+func eventTime(event model.CompanionEvent) time.Time {
+	if !event.OccurredAt.IsZero() {
+		return event.OccurredAt
+	}
+	return event.CreatedAt
+}
+
+func minInt(left, right int) int {
+	if left < right {
+		return left
+	}
+	return right
+}
+
+// RecordProactiveRead records the user's read acknowledgement for a proactive delivery.
+func (e *Engine) RecordProactiveRead(ctx context.Context, userID, notificationID uint) error {
+	if e == nil || e.store == nil || userID == 0 || notificationID == 0 {
+		return fmt.Errorf("record proactive read: invalid identity")
+	}
+	return e.recordCompanionEvent(ctx, userID, "proactive_read", "proactive", notificationID,
+		fmt.Sprintf("proactive_read:%d", notificationID), map[string]interface{}{
+			"notification_id": notificationID,
+		})
+}
+
+// RecordSocialEvent projects a social-domain action into the companion timeline.
+// RevokeProactiveDelivery records an auditable withdrawal without deleting history.
+func (e *Engine) RevokeProactiveDelivery(
+	ctx context.Context,
+	userID uint,
+	deliveryKey string,
+	reason string,
+) error {
+	if e == nil || e.store == nil || userID == 0 || !strings.HasPrefix(deliveryKey, "proactive:") {
+		return fmt.Errorf("revoke proactive delivery: invalid delivery key")
+	}
+	return e.recordCompanionEvent(ctx, userID, "proactive_revoked", "proactive", 0,
+		"proactive_revoked:"+deliveryKey, map[string]interface{}{
+			"delivery_key": deliveryKey,
+			"reason":       strings.TrimSpace(reason),
+		})
+}
+
+func (e *Engine) RecordSocialEvent(
+	ctx context.Context,
+	userID uint,
+	eventType string,
+	sourceID uint,
+	payload map[string]interface{},
+) error {
+	if e == nil || e.store == nil || userID == 0 || strings.TrimSpace(eventType) == "" {
+		return fmt.Errorf("record social event: invalid identity")
+	}
+	return e.recordCompanionEvent(ctx, userID, eventType, "social", sourceID,
+		fmt.Sprintf("%s:%d:%d", eventType, userID, sourceID), payload)
+}
+
 // ── Chat (流式) ──
 
 func (e *Engine) ChatStream(
@@ -517,6 +919,19 @@ func (e *Engine) ChatStream(
 	scene string,
 	overrides ...*ChatInferenceOverride,
 ) (string, error) {
+	return e.ChatStreamWithInputMode(ctx, userID, userMessage, onChunk, scene, "text", overrides...)
+}
+
+// ChatStreamWithInputMode streams one turn while preserving its input channel metadata.
+func (e *Engine) ChatStreamWithInputMode(
+	ctx context.Context,
+	userID uint,
+	userMessage string,
+	onChunk llminference.StreamHandler,
+	scene string,
+	inputMode string,
+	overrides ...*ChatInferenceOverride,
+) (string, error) {
 	config := e.llmCfg
 	modelName := e.model
 	if len(overrides) > 0 && overrides[0] != nil {
@@ -524,20 +939,22 @@ func (e *Engine) ChatStream(
 		modelName = config.DefaultModel
 	}
 	// 1. 获取 profile + state
-	state, profile, err := e.GetState(ctx, userID)
+	companionContext, err := e.BuildContext(ctx, userID, scene)
 	if err != nil {
-		return "", fmt.Errorf("companion: get state: %w", err)
+		return "", fmt.Errorf("companion: build context: %w", err)
 	}
+	state := companionContext.State
+	profile := companionContext.Profile
 	if profile == nil {
 		profile = defaultProfile(userID)
 	}
 
 	// 2. 获取记忆
-	memories, _ := e.ListMemories(ctx, userID, e.MaxMemories)
+	memories := companionContext.Memories
 
 	// 3. 获取聊天历史
-	history, _ := e.ListChatHistory(ctx, userID, e.MaxHistoryTurns)
-	isFirstChat := len(history) == 0
+	history := companionContext.History
+	isFirstChat := companionContext.IsFirstChat
 
 	// 4. 保存用户消息
 	_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
@@ -547,7 +964,16 @@ func (e *Engine) ChatStream(
 	})
 
 	// 5. 构建 messages 并流式调用 LLM
-	msgs := buildMessages(profile, state, memories, history, userMessage, scene)
+	msgs := buildMessagesWithContext(
+		profile,
+		state,
+		memories,
+		history,
+		companionContext.RelationshipEvents,
+		companionContext.UnfinishedTopics,
+		userMessage,
+		companionContext.Scene,
+	)
 
 	if !config.Ready() {
 		// LLM 不可用，返回兜底回复
@@ -566,6 +992,7 @@ func (e *Engine) ChatStream(
 		if isFirstChat {
 			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 		}
+		e.recordChatCompletedEvent(ctx, userID, scene, "fallback", inputMode)
 		return fallback, nil
 	}
 
@@ -577,6 +1004,13 @@ func (e *Engine) ChatStream(
 				Role:    "assistant",
 				Content: fullReply,
 			})
+			if bumpErr := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); bumpErr != nil {
+				log.Printf("[companion] bump intimacy after partial chat user=%d: %v", userID, bumpErr)
+			}
+			if isFirstChat {
+				e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
+			}
+			e.recordChatCompletedEvent(ctx, userID, scene, "partial", inputMode)
 			return fullReply, nil
 		}
 		// LLM 调用失败，返回兜底
@@ -595,6 +1029,7 @@ func (e *Engine) ChatStream(
 		if isFirstChat {
 			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 		}
+		e.recordChatCompletedEvent(ctx, userID, scene, "error_fallback", inputMode)
 		return fallback, nil
 	}
 
@@ -615,6 +1050,7 @@ func (e *Engine) ChatStream(
 	if isFirstChat {
 		e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 	}
+	e.recordChatCompletedEvent(ctx, userID, scene, "llm", inputMode)
 
 	return fullReply, nil
 }
@@ -648,6 +1084,7 @@ func (e *Engine) BumpIntimacy(ctx context.Context, userID uint, delta float64) e
 			"level_up",
 			fmt.Sprintf("关系升级到 Lv.%d", level),
 			fmt.Sprintf("你们的关系进入了新的阶段：Lv.%d", level),
+			score-row.IntimacyScore,
 		)
 	}
 	return nil
@@ -657,6 +1094,7 @@ func (e *Engine) recordRelationshipEvent(
 	ctx context.Context,
 	userID uint,
 	eventType, title, content string,
+	relationshipDelta ...float64,
 ) {
 	profile, err := e.store.GetProfileByUserID(ctx, userID)
 	if err != nil || profile == nil {
@@ -673,6 +1111,126 @@ func (e *Engine) recordRelationshipEvent(
 	if err := e.store.CreateRelationshipEvent(ctx, event); err != nil {
 		log.Printf("[companion] save relationship event user=%d type=%s: %v", userID, eventType, err)
 	}
+	e.recordCompanionEvent(ctx, userID, eventType, "relationship", event.ID,
+		fmt.Sprintf("%s:%d:%d", eventType, userID, profile.RelationshipLevel), map[string]interface{}{
+			"title":              title,
+			"content":            content,
+			"relationship_level": profile.RelationshipLevel,
+			"intimacy_score":     profile.IntimacyScore,
+		}, relationshipDelta...)
+}
+
+func (e *Engine) recordChatCompletedEvent(ctx context.Context, userID uint, scene, mode, inputMode string) {
+	inputMode = strings.ToLower(strings.TrimSpace(inputMode))
+	if inputMode != "voice" {
+		inputMode = "text"
+	}
+	e.recordCompanionEvent(ctx, userID, "chat_turn_completed", "chat", 0,
+		fmt.Sprintf("chat_turn_completed:%d:%d", userID, time.Now().UnixNano()), map[string]interface{}{
+			"scene":      scene,
+			"mode":       mode,
+			"input_mode": inputMode,
+		})
+	if inputMode == "voice" {
+		e.recordCompanionEvent(ctx, userID, "voice_turn_completed", "voice", 0,
+			fmt.Sprintf("voice_turn_completed:%d:%d", userID, time.Now().UnixNano()), map[string]interface{}{
+				"scene": scene,
+				"mode":  mode,
+			})
+	}
+}
+
+func (e *Engine) recordMemoryEvent(ctx context.Context, userID uint, eventType string, memoryID uint, payload map[string]interface{}) {
+	e.recordCompanionEvent(ctx, userID, eventType, "memory", memoryID,
+		fmt.Sprintf("%s:%d:%d", eventType, memoryID, time.Now().UnixNano()), payload)
+}
+
+// ObserveLifeEvent projects a Life event to every companion bound to its entity.
+func (e *Engine) ObserveLifeEvent(ctx context.Context, event *model.LifeEventLog) {
+	if e == nil || e.store == nil || event == nil || event.EntityID == 0 {
+		return
+	}
+	if !shouldProjectLifeEvent(event) {
+		return
+	}
+	userIDs, err := e.store.ListProfileUserIDsByLifeEntityID(ctx, event.EntityID)
+	if err != nil {
+		log.Printf("[companion] list Life event users entity=%d: %v", event.EntityID, err)
+		return
+	}
+	for _, userID := range userIDs {
+		if userID == 0 {
+			continue
+		}
+		companionEventType := "life_moment_created"
+		if strings.HasPrefix(event.EventType, "user_") {
+			companionEventType = "life_care_completed"
+		}
+		e.recordCompanionEvent(ctx, userID, companionEventType, "life", event.ID,
+			fmt.Sprintf("life:%d:%s:%d", event.EntityID, event.EventType, event.CreatedAt.UnixNano()), map[string]interface{}{
+				"life_event_type": event.EventType,
+				"entity_id":       event.EntityID,
+				"world_id":        event.WorldID,
+			})
+	}
+}
+
+func shouldProjectLifeEvent(event *model.LifeEventLog) bool {
+	if event == nil {
+		return false
+	}
+	if event.Importance >= 1 || strings.HasPrefix(event.EventType, "user_") {
+		return true
+	}
+	switch event.EventType {
+	case "birth", "death", "growth", "mate_formed", "mate_broken",
+		"friend_made", "rival_formed", "relation_dissolved",
+		"world_weather_rain", "world_weather_drought", "world_disaster_storm",
+		"world_resource_depletion", "world_weather_heatwave", "world_weather_fog",
+		"world_resource_abundance", "world_event_migration":
+		return true
+	default:
+		return false
+	}
+}
+
+func (e *Engine) recordCompanionEvent(
+	ctx context.Context,
+	userID uint,
+	eventType, sourceDomain string,
+	sourceID uint,
+	dedupeKey string,
+	payload map[string]interface{},
+	relationshipDelta ...float64,
+) error {
+	payload = sanitizeCompanionEventPayload(sourceDomain, eventType, payload)
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[companion] encode event user=%d type=%s: %v", userID, eventType, err)
+		return err
+	}
+	event := &model.CompanionEvent{
+		UserID:       userID,
+		EventType:    eventType,
+		SourceDomain: sourceDomain,
+		SourceID:     sourceID,
+		DedupeKey:    dedupeKey,
+		PayloadJSON:  string(payloadJSON),
+		Visibility:   "private",
+		Sensitivity:  companionEventSensitivity(sourceDomain, eventType),
+		OccurredAt:   time.Now(),
+	}
+	if len(relationshipDelta) > 0 {
+		event.RelationshipDelta = relationshipDelta[0]
+	}
+	if err := e.store.CreateCompanionEvent(ctx, event); err != nil {
+		log.Printf("[companion] save unified event user=%d type=%s: %v", userID, eventType, err)
+		return err
+	}
+	if event.ID != 0 && e.OnEvent != nil {
+		e.OnEvent(userID, event)
+	}
+	return nil
 }
 
 // asyncExtractMemory 异步从对话中提取记忆并持久化。
@@ -734,6 +1292,7 @@ func (e *Engine) asyncExtractMemory(
 		if memoryKey != "" {
 			if previous, exists := existingByMemoryKey[memoryKey]; exists {
 				if previous.UserConfirmed {
+					e.recordMemoryConflict(ctx, userID, previous, m)
 					continue
 				}
 				if err := e.store.UpdateMemoryRecord(
@@ -747,6 +1306,11 @@ func (e *Engine) asyncExtractMemory(
 					memoryExpiresAt(importance),
 					confidence,
 				); err == nil {
+					e.recordCompanionEvent(ctx, userID, "memory_updated", "memory", previous.ID,
+						fmt.Sprintf("memory_updated:%d", previous.ID), map[string]interface{}{
+							"memory_type": m.MemoryType,
+							"memory_key":  memoryKey,
+						})
 					existingByMemoryKey[memoryKey] = model.CompanionMemory{
 						ID:         previous.ID,
 						UserID:     userID,
@@ -775,6 +1339,11 @@ func (e *Engine) asyncExtractMemory(
 			log.Printf("[companion] save extracted memory: %v", err)
 			continue
 		}
+		e.recordCompanionEvent(ctx, userID, "memory_created", "memory", mem.ID,
+			fmt.Sprintf("memory_created:%d", mem.ID), map[string]interface{}{
+				"memory_type": mem.MemoryType,
+				"memory_key":  mem.MemoryKey,
+			})
 		seen[key] = struct{}{}
 		if memoryKey != "" {
 			existingByMemoryKey[memoryKey] = *mem
@@ -783,9 +1352,108 @@ func (e *Engine) asyncExtractMemory(
 	log.Printf("[companion] extracted %d memories for user %d", len(extracted), userID)
 }
 
+func (e *Engine) recordMemoryConflict(
+	ctx context.Context,
+	userID uint,
+	previous model.CompanionMemory,
+	candidate extractedMemory,
+) {
+	if normalizeMemoryContent(previous.Content) == normalizeMemoryContent(candidate.Content) {
+		return
+	}
+	conflict := &model.CompanionMemoryConflict{
+		UserID:     userID,
+		MemoryID:   previous.ID,
+		MemoryType: previous.MemoryType,
+		MemoryKey:  previous.MemoryKey,
+		DedupeKey: fmt.Sprintf("memory_conflict:%d:%s", previous.ID,
+			normalizeMemoryContent(candidate.Content)),
+		CandidateContent: candidate.Content,
+		Confidence:       candidate.Confidence,
+		Status:           "pending",
+	}
+	if err := e.store.CreateMemoryConflict(ctx, conflict); err != nil {
+		if !errors.Is(err, gorm.ErrDuplicatedKey) {
+			log.Printf("[companion] save memory conflict user=%d memory=%d: %v", userID, previous.ID, err)
+		}
+	}
+	e.recordCompanionEvent(ctx, userID, "memory_conflict_detected", "memory", previous.ID,
+		conflict.DedupeKey, map[string]interface{}{
+			"memory_id":            previous.ID,
+			"memory_type":          previous.MemoryType,
+			"memory_key":           previous.MemoryKey,
+			"candidate_confidence": candidate.Confidence,
+		})
+}
+
+var ErrMemoryConflictNotFound = fmt.Errorf("companion memory conflict not found")
+var ErrMemoryConflictResolved = fmt.Errorf("companion memory conflict already resolved")
+
+func (e *Engine) ListMemoryConflicts(ctx context.Context, userID uint, limit int) ([]MemoryConflict, error) {
+	rows, err := e.store.ListMemoryConflicts(ctx, userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list memory conflicts for user %d: %w", userID, err)
+	}
+	out := make([]MemoryConflict, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, modelToMemoryConflict(&row))
+	}
+	return out, nil
+}
+
+func (e *Engine) ResolveMemoryConflict(
+	ctx context.Context,
+	userID, conflictID uint,
+	resolution string,
+) error {
+	if conflictID == 0 {
+		return fmt.Errorf("resolve memory conflict: invalid id")
+	}
+	resolution = strings.ToLower(strings.TrimSpace(resolution))
+	if resolution != "accepted" && resolution != "rejected" {
+		return fmt.Errorf("resolve memory conflict: invalid resolution")
+	}
+	conflict, err := e.store.GetMemoryConflict(ctx, userID, conflictID)
+	if err != nil {
+		return fmt.Errorf("get memory conflict %d: %w", conflictID, err)
+	}
+	if conflict == nil {
+		return ErrMemoryConflictNotFound
+	}
+	if conflict.Status != "pending" {
+		return ErrMemoryConflictResolved
+	}
+	if resolution == "accepted" {
+		if err := e.store.CorrectMemoryContent(
+			ctx, userID, conflict.MemoryID, conflict.CandidateContent, time.Now(),
+		); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrMemoryNotFound
+			}
+			return fmt.Errorf("accept memory conflict %d: %w", conflictID, err)
+		}
+	}
+	resolvedAt := time.Now()
+	if err := e.store.ResolveMemoryConflict(ctx, userID, conflictID, resolution, resolvedAt); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrMemoryConflictResolved
+		}
+		return fmt.Errorf("resolve memory conflict %d: %w", conflictID, err)
+	}
+	e.recordMemoryEvent(ctx, userID, "memory_conflict_resolved", conflict.MemoryID, map[string]interface{}{
+		"conflict_id": conflictID,
+		"resolution":  resolution,
+	})
+	return nil
+}
+
 func memoryDedupeKey(memoryType, content string) string {
-	normalizedContent := strings.ToLower(strings.Join(strings.Fields(content), " "))
+	normalizedContent := normalizeMemoryContent(content)
 	return strings.ToLower(strings.TrimSpace(memoryType)) + "\x00" + normalizedContent
+}
+
+func normalizeMemoryContent(content string) string {
+	return strings.ToLower(strings.Join(strings.Fields(content), " "))
 }
 
 func normalizeMemoryKey(value string) string {
@@ -998,6 +1666,20 @@ func modelToMemory(m *model.CompanionMemory) Memory {
 	}
 }
 
+func modelToMemoryConflict(m *model.CompanionMemoryConflict) MemoryConflict {
+	return MemoryConflict{
+		ID:               m.ID,
+		MemoryID:         m.MemoryID,
+		MemoryType:       m.MemoryType,
+		MemoryKey:        m.MemoryKey,
+		CandidateContent: m.CandidateContent,
+		Confidence:       m.Confidence,
+		Status:           m.Status,
+		CreatedAt:        m.CreatedAt,
+		ResolvedAt:       m.ResolvedAt,
+	}
+}
+
 func modelToChatLog(m *model.CompanionChatLog) ChatLog {
 	return ChatLog{
 		ID:        m.ID,
@@ -1017,6 +1699,23 @@ func modelToRelationshipEvent(m *model.CompanionRelationshipEvent) RelationshipE
 		Content:           m.Content,
 		RelationshipLevel: m.RelationshipLevel,
 		IntimacyScore:     m.IntimacyScore,
+		CreatedAt:         m.CreatedAt,
+	}
+}
+
+func modelToEvent(m *model.CompanionEvent) Event {
+	return Event{
+		ID:                m.ID,
+		UserID:            m.UserID,
+		EventType:         m.EventType,
+		SourceDomain:      m.SourceDomain,
+		SourceID:          m.SourceID,
+		DedupeKey:         m.DedupeKey,
+		PayloadJSON:       m.PayloadJSON,
+		Visibility:        m.Visibility,
+		Sensitivity:       m.Sensitivity,
+		RelationshipDelta: m.RelationshipDelta,
+		OccurredAt:        m.OccurredAt,
 		CreatedAt:         m.CreatedAt,
 	}
 }

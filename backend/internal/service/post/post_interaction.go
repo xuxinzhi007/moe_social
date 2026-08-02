@@ -1,10 +1,11 @@
 package postapp
 
 import (
-	"context"
-	"backend/internal/platform/socialhook"
 	postv1 "backend/api/post/v1"
 	postbiz "backend/internal/biz/post"
+	"backend/internal/platform/socialhook"
+	"context"
+	"strconv"
 )
 
 func (s *AppService) LikePost(ctx context.Context, in *postv1.LikePostRequest) (*postv1.LikePostReply, error) {
@@ -17,6 +18,13 @@ func (s *AppService) LikePost(ctx context.Context, in *postv1.LikePostRequest) (
 			PostAuthorUserID: result.Post.UserID,
 			PostLikeCount:    result.LikeCount,
 		})
+		if s.companionEventRecorder != nil {
+			userID, _ := strconv.ParseUint(in.GetUserId(), 10, 32)
+			_ = s.companionEventRecorder(ctx, uint(userID), "post_liked", result.Post.ID, map[string]interface{}{
+				"post_author_user_id": result.Post.UserID,
+				"like_count":          result.LikeCount,
+			})
+		}
 	}
 	return &postv1.LikePostReply{
 		Post: postbiz.BuildPostV1(result.Post, result.User, result.IsLiked),

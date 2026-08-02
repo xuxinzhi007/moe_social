@@ -1,15 +1,21 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../auth_service.dart';
 import '../models/notification.dart';
 import 'api_service.dart';
 import 'api_response.dart';
+import 'companion_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
   static bool _localInitialized = false;
+  static String? _pendingCompanionNotificationPayload;
+  static Timer? _pendingNotificationTimer;
+  static int _pendingNotificationAttempts = 0;
 
   /// WS 推送公告/系统通知时触发，供 [NotificationProvider] 刷新未读。
   static VoidCallback? onRealtimeRefresh;
@@ -25,8 +31,51 @@ class NotificationService {
     const initSettings =
         InitializationSettings(android: androidSettings, iOS: iosSettings);
 
-    await _localNotifications.initialize(initSettings);
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _handleLocalNotificationResponse,
+    );
     _localInitialized = true;
+  }
+
+  static void _handleLocalNotificationResponse(
+    NotificationResponse response,
+  ) {
+    final payload = response.payload?.trim() ?? '';
+    if (payload.isEmpty || !payload.startsWith('companion')) return;
+    _pendingCompanionNotificationPayload = payload;
+    _flushPendingCompanionNotification();
+  }
+
+  static void _flushPendingCompanionNotification() {
+    _pendingNotificationTimer?.cancel();
+    _pendingNotificationTimer = null;
+    final navigator = AuthService.navigatorKey.currentState;
+    if (navigator == null) {
+      if (_pendingNotificationAttempts++ >= 20) {
+        _pendingCompanionNotificationPayload = null;
+        _pendingNotificationAttempts = 0;
+        return;
+      }
+      _pendingNotificationTimer = Timer(
+        const Duration(milliseconds: 200),
+        _flushPendingCompanionNotification,
+      );
+      return;
+    }
+
+    final payload = _pendingCompanionNotificationPayload;
+    _pendingCompanionNotificationPayload = null;
+    _pendingNotificationAttempts = 0;
+    navigator.pushNamed('/ai-chat');
+    final notificationId = payload?.startsWith('companion:') == true
+        ? payload!.substring('companion:'.length).trim()
+        : '';
+    if (notificationId.isNotEmpty) {
+      unawaited(
+        CompanionService().markProactiveRead(notificationId).catchError((_) {}),
+      );
+    }
   }
 
   static Future<void> showPrivateMessageNotification({
@@ -65,6 +114,40 @@ class NotificationService {
       title,
       body,
       details,
+    );
+  }
+
+  static Future<void> showCompanionProactiveNotification({
+    required String message,
+    String reason = '',
+    int notificationId = 0,
+  }) async {
+    if (kIsWeb) return;
+    if (!_localInitialized) await initLocalNotifications();
+
+    const androidDetails = AndroidNotificationDetails(
+      'companion_proactive_channel',
+      'AI 伙伴主动陪伴',
+      channelDescription: 'AI 伙伴主动消息',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(presentSound: true),
+    );
+    final body = message.trim().isNotEmpty ? message.trim() : reason.trim();
+    if (body.isEmpty) return;
+    final localId = notificationId > 0
+        ? 100000000 + notificationId.remainder(100000000)
+        : 100000001;
+    await _localNotifications.show(
+      localId,
+      'AI 伙伴想和你聊聊',
+      body,
+      details,
+      payload: notificationId > 0 ? 'companion:$notificationId' : 'companion',
     );
   }
 

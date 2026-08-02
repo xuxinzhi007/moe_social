@@ -37,6 +37,7 @@ func wireServiceContext(opts Options) (config.Config, *svc.ServiceContext, error
 	wireGameServices(rep, ctx)
 	wireLifeServices(rep, ctx)
 	wireCompanionServices(rep, ctx)
+	wireCompanionSocialEvents(ctx)
 	wirePetServices(rep, ctx)
 	ctx.SyncDomains()
 	reportWiredDomains(rep, ctx)

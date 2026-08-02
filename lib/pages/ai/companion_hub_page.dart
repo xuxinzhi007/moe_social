@@ -23,6 +23,7 @@ import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/motion/moe_pressable.dart';
+import '../../widgets/motion/moe_motion.dart';
 
 /// AI 伙伴关系首页（产品叙事：长期陪伴；正式主路径入口）。
 ///
@@ -71,11 +72,11 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     super.dispose();
   }
 
-  Future<void> _openChat() async {
+  Future<void> _openChat({String? draft}) async {
     if (_isChatLoading) return;
     setState(() => _isChatLoading = true);
     try {
-      await CompanionChatLauncher.openChat(context);
+      await CompanionChatLauncher.openChat(context, draft: draft);
       if (mounted) {
         unawaited(_presence.markCompanionChatSeen());
         unawaited(_hub.loadDashboard());
@@ -93,6 +94,12 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     switch (item.kind) {
       case 'chat':
         await _openChat();
+        return;
+      case 'topic':
+        final topic = item.fullBody?.trim().isNotEmpty == true
+            ? item.fullBody!.trim()
+            : item.body.trim();
+        await _openChat(draft: '我们接着聊聊这件事：$topic');
         return;
       case 'world':
       case 'moment':
@@ -756,10 +763,38 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                         profile: _hub.profile,
                         state: _hub.state,
                         pulse: pulse,
+                        hasAttention: hasAttention,
                         onChat: _openChat,
                         onCustomize: _isSavingProfile ? null : _editProfile,
                       );
                     },
+                  ),
+                  Builder(
+                    builder: (context) {
+                      final presence =
+                          context.watch<CompanionPresenceProvider>();
+                      if (!presence.hasAttention) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: _CompanionMessageCard(
+                          name: _hub.profile.name,
+                          message: presence.greeting.isNotEmpty
+                              ? presence.greeting
+                              : _hub.state.greeting,
+                          reason: presence.activityLabel.isNotEmpty
+                              ? presence.activityLabel
+                              : presence.moodThought,
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _CompanionQuickActions(
+                    onChat: _openChat,
+                    onMemories: () => _openMemories(),
+                    onLife: FeatureFlags.showLifeEngine ? _openLifeWorld : null,
                   ),
                   if (FeatureFlags.showLifeEngine) ...[
                     const SizedBox(height: 14),
@@ -810,6 +845,7 @@ class _HeroCard extends StatelessWidget {
     required this.profile,
     required this.state,
     required this.pulse,
+    required this.hasAttention,
     required this.onChat,
     this.onCustomize,
   });
@@ -817,6 +853,7 @@ class _HeroCard extends StatelessWidget {
   final CompanionProfileData profile;
   final CompanionStateData state;
   final CompanionPulseData pulse;
+  final bool hasAttention;
   final VoidCallback onChat;
   final VoidCallback? onCustomize;
 
@@ -826,7 +863,12 @@ class _HeroCard extends StatelessWidget {
     final hasPersona = profile.persona.trim().isNotEmpty;
     final persona = hasPersona ? profile.persona.trim() : '会长期陪着你、慢慢懂你的虚拟伙伴。';
 
-    return Container(
+    final isAttention = pulse.kind == 'attention';
+    final reduceMotion = moeReduceMotion(context);
+    return AnimatedContainer(
+      duration:
+          reduceMotion ? Duration.zero : const Duration(milliseconds: 420),
+      curve: Curves.easeOutCubic,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -835,12 +877,17 @@ class _HeroCard extends StatelessWidget {
           colors: [Color(0xFFEFE7FF), Color(0xFFFBE8F0), Color(0xFFF8F3E7)],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.65)),
-        boxShadow: const [
+        border: Border.all(
+          color: isAttention
+              ? const Color(0xFFFFB2C1)
+              : Colors.white.withValues(alpha: 0.65),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A8A2387),
-            blurRadius: 24,
-            offset: Offset(0, 10),
+            color:
+                isAttention ? const Color(0x33E97891) : const Color(0x1A8A2387),
+            blurRadius: isAttention ? 30 : 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -950,13 +997,13 @@ class _HeroCard extends StatelessWidget {
                   color: AiBrandTokens.primary,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.chat_bubble_rounded, color: Colors.white),
                     SizedBox(width: 8),
                     Text(
-                      '开始聊天',
+                      hasAttention ? '回复 TA' : '开始聊天',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
@@ -968,6 +1015,97 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CompanionMessageCard extends StatelessWidget {
+  const _CompanionMessageCard({
+    required this.name,
+    required this.message,
+    required this.reason,
+  });
+
+  final String name;
+  final String message;
+  final String reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final companionName = name.trim().isEmpty ? 'TA' : name.trim();
+    final content = message.trim().isEmpty
+        ? '$companionName 留下了一句话，正在等你回来。'
+        : message.trim();
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: '$companionName 想和你说：$content',
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF5F8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFFFC8D4)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE0E8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.favorite_rounded,
+                size: 18,
+                color: Color(0xFFE97891),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$companionName 想和你说',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AiBrandTokens.titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    content,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      color: Color(0xFF5D4E6E),
+                    ),
+                  ),
+                  if (reason.trim().isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      reason.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFB86A7C),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1005,6 +1143,7 @@ class _CompanionSummaryBlock extends StatelessWidget {
       icon = Icons.chat_bubble_rounded;
     }
 
+    final reduceMotion = moeReduceMotion(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -1015,15 +1154,32 @@ class _CompanionSummaryBlock extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.92, end: 1),
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 900),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) {
+              return Transform.scale(scale: scale, child: child);
+            },
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.16),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: accent, size: 16),
             ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: accent, size: 16),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1056,14 +1212,23 @@ class _CompanionSummaryBlock extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  pulse.body,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.2,
-                    color: Colors.grey.shade700,
+                AnimatedSwitcher(
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 240),
+                  child: Align(
+                    key: ValueKey(pulse.body),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      pulse.body,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        height: 1.2,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -1095,6 +1260,105 @@ class _CompanionSummaryBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CompanionQuickActions extends StatelessWidget {
+  const _CompanionQuickActions({
+    required this.onChat,
+    required this.onMemories,
+    this.onLife,
+  });
+
+  final VoidCallback onChat;
+  final VoidCallback onMemories;
+  final VoidCallback? onLife;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.chat_bubble_outline_rounded,
+            label: '继续聊天',
+            tint: AiBrandTokens.primary,
+            onTap: onChat,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _QuickAction(
+            icon: Icons.psychology_alt_rounded,
+            label: '记忆',
+            tint: const Color(0xFF8A62B8),
+            onTap: onMemories,
+          ),
+        ),
+        if (onLife != null) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: _QuickAction(
+              icon: Icons.public_rounded,
+              label: 'Life 世界',
+              tint: const Color(0xFF4C9A82),
+              onTap: onLife!,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.tint,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color tint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: tint.withValues(alpha: 0.16)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: tint),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: tint,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1502,6 +1766,8 @@ class _DailyTile extends StatelessWidget {
         icon: Icons.chat_bubble_outline_rounded,
         bg: const Color(0xFFE8F4FF)
       );
+    case 'topic':
+      return (icon: Icons.forum_outlined, bg: const Color(0xFFE8F4FF));
     case 'memory':
       return (icon: Icons.psychology_alt_rounded, bg: const Color(0xFFF3E8FF));
     case 'relationship':

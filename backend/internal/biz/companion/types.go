@@ -51,6 +51,18 @@ type Memory struct {
 	CreatedAt       time.Time
 }
 
+type MemoryConflict struct {
+	ID               uint
+	MemoryID         uint
+	MemoryType       string
+	MemoryKey        string
+	CandidateContent string
+	Confidence       float64
+	Status           string
+	CreatedAt        time.Time
+	ResolvedAt       *time.Time
+}
+
 // State 伙伴当前人格化状态（前端直接展示）。
 type State struct {
 	MoodThought     string // "今天心情不错，想找人聊天"
@@ -90,6 +102,50 @@ type RelationshipEvent struct {
 	RelationshipLevel int
 	IntimacyScore     float64
 	CreatedAt         time.Time
+}
+
+// Event is a cross-domain entry in the companion timeline.
+type Event struct {
+	ID                uint
+	UserID            uint
+	EventType         string
+	SourceDomain      string
+	SourceID          uint
+	DedupeKey         string
+	PayloadJSON       string
+	Visibility        string
+	Sensitivity       string
+	RelationshipDelta float64
+	OccurredAt        time.Time
+	CreatedAt         time.Time
+}
+
+// ContextSnapshot is the single backend-owned input snapshot for companion behavior.
+// It is shared by chat and proactive flows so they apply identical memory and history rules.
+type ContextSnapshot struct {
+	Profile            *Profile
+	State              *State
+	Memories           []Memory
+	History            []ChatLog
+	RelationshipEvents []RelationshipEvent
+	UnfinishedTopics   []string
+	Scene              string
+	IsFirstChat        bool
+}
+
+// ProactiveDelivery is the durable state projection of one proactive attempt.
+// Its source of truth remains CompanionEvent so the projection is rebuildable.
+type ProactiveDelivery struct {
+	DeliveryKey    string
+	NotificationID uint
+	Status         string
+	Reason         string
+	Priority       int
+	ScheduledAt    time.Time
+	DeliveredAt    *time.Time
+	ReadAt         *time.Time
+	ExpiresAt      *time.Time
+	RevokedAt      *time.Time
 }
 
 // memoryExpiresAt 根据 importance 计算记忆过期时间。

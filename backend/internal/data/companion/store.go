@@ -50,7 +50,40 @@ func (s *store) UpsertProfile(ctx context.Context, p *model.CompanionProfile) er
 		Create(p).Error
 }
 
+func (s *store) UpdateProactiveSettings(
+	ctx context.Context,
+	userID uint,
+	enabled bool,
+	dailyLimit, quietStart, quietEnd, timezoneOffset int,
+) error {
+	var existing model.CompanionProfile
+	if err := s.db.WithContext(ctx).
+		Select("id").
+		Where("user_id = ?", userID).
+		First(&existing).Error; err != nil {
+		return err
+	}
+	return s.db.WithContext(ctx).
+		Model(&model.CompanionProfile{}).
+		Where("user_id = ?", userID).
+		Updates(map[string]interface{}{
+			"proactive_enabled":         enabled,
+			"proactive_daily_limit":     dailyLimit,
+			"proactive_quiet_start":     quietStart,
+			"proactive_quiet_end":       quietEnd,
+			"proactive_timezone_offset": timezoneOffset,
+			"updated_at":                time.Now(),
+		}).Error
+}
+
 func (s *store) UpdateIntimacy(ctx context.Context, userID uint, intimacy float64, level int) error {
+	var existing model.CompanionProfile
+	if err := s.db.WithContext(ctx).
+		Select("id").
+		Where("user_id = ?", userID).
+		First(&existing).Error; err != nil {
+		return err
+	}
 	return s.db.WithContext(ctx).
 		Model(&model.CompanionProfile{}).
 		Where("user_id = ?", userID).
@@ -66,6 +99,18 @@ func (s *store) ListProfileUserIDs(ctx context.Context) ([]uint, error) {
 	err := s.db.WithContext(ctx).
 		Model(&model.CompanionProfile{}).
 		Order("user_id ASC").
+		Pluck("user_id", &userIDs).Error
+	return userIDs, err
+}
+
+func (s *store) ListProfileUserIDsByLifeEntityID(ctx context.Context, entityID uint) ([]uint, error) {
+	if entityID == 0 {
+		return nil, nil
+	}
+	var userIDs []uint
+	err := s.db.WithContext(ctx).
+		Model(&model.CompanionProfile{}).
+		Where("life_entity_id = ?", entityID).
 		Pluck("user_id", &userIDs).Error
 	return userIDs, err
 }
@@ -140,11 +185,20 @@ func (s *store) UpdateMemoryPinned(
 	return nil
 }
 
-func (s *store) UpdateMemoryContent(ctx context.Context, userID, memoryID uint, content string) error {
+func (s *store) CorrectMemoryContent(
+	ctx context.Context,
+	userID, memoryID uint,
+	content string,
+	confirmedAt time.Time,
+) error {
 	result := s.db.WithContext(ctx).
 		Model(&model.CompanionMemory{}).
 		Where("id = ? AND user_id = ?", memoryID, userID).
-		Update("content", content)
+		Updates(map[string]interface{}{
+			"content":        content,
+			"user_confirmed": true,
+			"confirmed_at":   confirmedAt,
+		})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -208,6 +262,66 @@ func (s *store) CleanupExpiredMemories(ctx context.Context) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
+func (s *store) CreateMemoryConflict(ctx context.Context, conflict *model.CompanionMemoryConflict) error {
+	return s.db.WithContext(ctx).Create(conflict).Error
+}
+
+func (s *store) ListMemoryConflicts(
+	ctx context.Context,
+	userID uint,
+	limit int,
+) ([]model.CompanionMemoryConflict, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	var rows []model.CompanionMemoryConflict
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND status = ?", userID, "pending").
+		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) GetMemoryConflict(
+	ctx context.Context,
+	userID, conflictID uint,
+) (*model.CompanionMemoryConflict, error) {
+	var row model.CompanionMemoryConflict
+	err := s.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", conflictID, userID).
+		First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+func (s *store) ResolveMemoryConflict(
+	ctx context.Context,
+	userID, conflictID uint,
+	status string,
+	resolvedAt time.Time,
+) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryConflict{}).
+		Where("id = ? AND user_id = ? AND status = ?", conflictID, userID, "pending").
+		Updates(map[string]interface{}{
+			"status":      status,
+			"resolved_at": resolvedAt,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // ── Chat Log ──
 
 func (s *store) AppendChatLog(ctx context.Context, log *model.CompanionChatLog) error {
@@ -248,6 +362,27 @@ func (s *store) ListRelationshipEvents(ctx context.Context, userID uint, limit i
 	err := s.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC, id DESC").
+		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+// CreateCompanionEvent persists one cross-domain companion event.
+func (s *store) CreateCompanionEvent(ctx context.Context, event *model.CompanionEvent) error {
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(event).Error
+}
+
+// ListCompanionEvents returns the newest unified events first.
+func (s *store) ListCompanionEvents(ctx context.Context, userID uint, limit int) ([]model.CompanionEvent, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	var rows []model.CompanionEvent
+	err := s.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("occurred_at DESC, id DESC").
 		Limit(limit).
 		Find(&rows).Error
 	return rows, err

@@ -2,7 +2,6 @@ package companionapp
 
 import (
 	"context"
-	"time"
 
 	companionbiz "backend/internal/biz/companion"
 	"backend/model"
@@ -32,14 +31,8 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 				hub.BroadcastGreeting(userID, greeting, state.MoodThought, state.ActivityLabel)
 			}
 		}
-		engine.OnProactive = func(userID uint, message, reason string) {
+		engine.OnProactive = func(userID uint, message, reason string) (uint, bool) {
 			if db != nil {
-				var recent model.Notification
-				if err := db.WithContext(context.Background()).
-					Where("user_id = ? AND type = ? AND created_at >= ?", userID, 9, time.Now().Add(-24*time.Hour)).
-					Order("created_at DESC").First(&recent).Error; err == nil {
-					return
-				}
 				notice := &model.Notification{
 					UserID:  userID,
 					Type:    9,
@@ -47,10 +40,15 @@ func New(engine *companionbiz.Engine, hub *companionbiz.CompanionWSHub, db *gorm
 				}
 				if err := db.WithContext(context.Background()).Create(notice).Error; err != nil {
 					// WS delivery still proceeds when the inbox write is unavailable.
+				} else {
+					hub.BroadcastProactive(userID, message, reason, notice.ID)
+					return notice.ID, true
 				}
 			}
-			hub.BroadcastProactive(userID, message, reason)
+			hub.BroadcastProactive(userID, message, reason, 0)
+			return 0, true
 		}
+		engine.OnEvent = hub.BroadcastCompanionEvent
 	}
 
 	return &AppService{engine: engine, hub: hub, db: db}

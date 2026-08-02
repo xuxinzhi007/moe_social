@@ -6,6 +6,8 @@ import '../models/notification.dart';
 import '../auth_service.dart';
 import '../services/chat_push_service.dart';
 import '../services/presence_service.dart';
+import '../services/companion_interaction_coordinator.dart';
+import '../services/companion_service.dart';
 
 class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   List<NotificationItem> _notifications = [];
@@ -18,6 +20,9 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _lifecycleListening = false;
   bool _isRefreshingUnread = false;
   DateTime? _lastResumeSyncAt;
+  StreamSubscription<CompanionInteractionEvent>? _interactionSubscription;
+  Timer? _companionRefreshTimer;
+  final CompanionService _companionService = CompanionService();
 
   List<NotificationItem> get notifications => _notifications;
   List<NotificationItem> get activityNotifications => _notifications
@@ -34,6 +39,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (!AuthService.isLoggedIn) return;
 
     NotificationService.onRealtimeRefresh = refreshUnreadState;
+    _interactionSubscription ??= CompanionInteractionCoordinator.instance.events
+        .listen(_onCompanionInteraction);
     refreshUnreadState();
 
     if (!_pushListening) {
@@ -60,7 +67,27 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (_lifecycleListening) {
       WidgetsBinding.instance.removeObserver(this);
     }
+    _companionRefreshTimer?.cancel();
+    _interactionSubscription?.cancel();
     super.dispose();
+  }
+
+  void _onCompanionInteraction(CompanionInteractionEvent event) {
+    final eventType = event.payload['event_type']?.toString() ?? '';
+    final shouldRefresh =
+        event.type == CompanionInteractionType.companionEvent &&
+            (eventType == 'proactive_delivered' ||
+                eventType == 'proactive_revoked' ||
+                eventType == 'proactive_read');
+    final isProactivePresence =
+        event.type == CompanionInteractionType.presenceChanged &&
+            eventType == 'proactive';
+    if (!shouldRefresh && !isProactivePresence) return;
+
+    _companionRefreshTimer?.cancel();
+    _companionRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+      if (AuthService.isLoggedIn) unawaited(refreshUnreadState());
+    });
   }
 
   @override
@@ -108,7 +135,10 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final list =
           await NotificationService.getNotifications(page: 1, pageSize: 100);
-      _applyNotifications(list, replaceList: false);
+      _applyNotifications(
+        await _filterInactiveProactiveNotifications(list),
+        replaceList: false,
+      );
     } catch (e) {
       debugPrint('Failed to refresh unread state: $e');
     } finally {
@@ -125,7 +155,10 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final list =
           await NotificationService.getNotifications(page: 1, pageSize: 100);
-      _applyNotifications(list, replaceList: true);
+      _applyNotifications(
+        await _filterInactiveProactiveNotifications(list),
+        replaceList: true,
+      );
     } catch (e) {
       debugPrint('Failed to fetch notifications: $e');
     } finally {
@@ -194,6 +227,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (!ok) {
       next[index] = target;
       _applyNotifications(next, replaceList: true);
+    } else {
+      unawaited(_acknowledgeProactive(target));
     }
   }
 
@@ -217,6 +252,8 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
       final ok = await NotificationService.markAsRead(notification.id);
       if (!ok) {
         shouldRefresh = true;
+      } else {
+        unawaited(_acknowledgeProactive(notification));
       }
     }
 
@@ -226,12 +263,29 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> markAllAsRead() async {
+    final proactiveTargets = _notifications
+        .where(
+            (n) => !n.isRead && n.type == NotificationModel.companionProactive)
+        .toList(growable: false);
     final next = _notifications.map((n) => n.copyWith(isRead: true)).toList();
     _applyNotifications(next, replaceList: true);
 
     final ok = await NotificationService.markAllAsRead();
     if (!ok) {
       await fetchNotifications();
+    } else {
+      for (final notification in proactiveTargets) {
+        unawaited(_acknowledgeProactive(notification));
+      }
+    }
+  }
+
+  Future<void> _acknowledgeProactive(NotificationItem notification) async {
+    if (notification.type != NotificationModel.companionProactive) return;
+    try {
+      await _companionService.markProactiveRead(notification.id);
+    } catch (e) {
+      debugPrint('Failed to acknowledge proactive event: $e');
     }
   }
 
@@ -280,6 +334,33 @@ class NotificationProvider extends ChangeNotifier with WidgetsBindingObserver {
     _activityUnreadCount = activityUnread;
     _unreadCount = unreadTotal;
     notifyListeners();
+  }
+
+  Future<List<NotificationItem>> _filterInactiveProactiveNotifications(
+    List<NotificationItem> list,
+  ) async {
+    if (!list.any((item) => item.type == NotificationModel.companionProactive)) {
+      return list;
+    }
+    try {
+      final deliveries = await _companionService.listProactiveDeliveries(
+        limit: 100,
+      );
+      final inactiveIDs = deliveries
+          .where((delivery) =>
+              delivery.status == 'expired' || delivery.status == 'revoked')
+          .map((delivery) => delivery.notificationId.toString())
+          .where((id) => id != '0')
+          .toSet();
+      if (inactiveIDs.isEmpty) return list;
+      return list
+          .where((item) =>
+              item.type != NotificationModel.companionProactive ||
+              !inactiveIDs.contains(item.id))
+          .toList(growable: false);
+    } catch (_) {
+      return list;
+    }
   }
 
   Map<String, int> _mergeDmUnreadBySender(List<NotificationItem> list) {

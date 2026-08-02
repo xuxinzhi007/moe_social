@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../services/companion_service.dart';
+import '../services/companion_interaction_coordinator.dart';
 import '../services/companion_ws_service.dart';
+import '../services/notification_service.dart';
 
 /// 全局伙伴存在感：WS 问候/状态 + 「TA 想你了」角标。
 ///
@@ -16,6 +18,8 @@ class CompanionPresenceProvider extends ChangeNotifier {
 
   final CompanionWsService _ws = CompanionWsService();
   final CompanionService _companion = CompanionService();
+  final CompanionInteractionCoordinator _coordinator =
+      CompanionInteractionCoordinator.instance;
 
   String _greeting = '';
   String _moodThought = '';
@@ -23,6 +27,7 @@ class CompanionPresenceProvider extends ChangeNotifier {
   int _attentionCount = 0;
   bool _started = false;
   bool _viewingCompanion = false;
+  bool _syncingRecentEvents = false;
 
   String get greeting => _greeting;
   String get moodThought => _moodThought;
@@ -36,6 +41,8 @@ class CompanionPresenceProvider extends ChangeNotifier {
     if (_started) return;
     _started = true;
     _ws.onPresence = _onPresence;
+    _ws.onEvent = _onEvent;
+    _ws.onConnected = _onConnected;
     _ws.connect();
     unawaited(_syncUnreadFromHistory());
   }
@@ -99,7 +106,69 @@ class CompanionPresenceProvider extends ChangeNotifier {
       }
     }
 
+    if (event.type == 'proactive' && !_viewingCompanion) {
+      unawaited(
+        NotificationService.showCompanionProactiveNotification(
+          message: event.greeting,
+          reason: event.activityLabel,
+          notificationId: event.notificationId,
+        ),
+      );
+    }
+
     if (changed) notifyListeners();
+    if (changed) {
+      _coordinator.publishPresenceChanged(eventType: event.type);
+    }
+  }
+
+  void _onEvent(CompanionWsEvent event) {
+    _coordinator.publishBackendEvent(
+      eventType: event.eventType,
+      sourceDomain: event.sourceDomain,
+      eventId: event.eventId,
+      sourceId: event.sourceId,
+      dedupeKey: event.dedupeKey,
+      payloadJson: event.payloadJson,
+      visibility: event.visibility,
+      sensitivity: event.sensitivity,
+      relationshipDelta: event.relationshipDelta,
+      occurredAt: event.occurredAt,
+    );
+  }
+
+  void _onConnected() {
+    _coordinator.publishBackendEvent(
+      eventType: 'connection_restored',
+      sourceDomain: 'companion_ws',
+    );
+    unawaited(_syncRecentEvents());
+  }
+
+  Future<void> _syncRecentEvents() async {
+    if (_syncingRecentEvents || !_started) return;
+    _syncingRecentEvents = true;
+    try {
+      final events = await _companion.listEvents(limit: 32);
+      if (!_started) return;
+      for (final event in events.reversed) {
+        _coordinator.publishBackendEvent(
+          eventType: event.eventType,
+          sourceDomain: event.sourceDomain,
+          eventId: event.id,
+          sourceId: event.sourceId,
+          dedupeKey: event.dedupeKey,
+          payloadJson: event.payloadJson,
+          visibility: event.visibility,
+          sensitivity: event.sensitivity,
+          relationshipDelta: event.relationshipDelta,
+          occurredAt: DateTime.tryParse(event.occurredAt),
+        );
+      }
+    } catch (_) {
+    } finally {
+      _syncingRecentEvents = false;
+    }
   }
 
   Future<void> _syncUnreadFromHistory() async {

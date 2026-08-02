@@ -8,6 +8,7 @@ import '../../constants/feature_flags.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../services/companion_service.dart';
+import '../../services/companion_interaction_coordinator.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
@@ -16,7 +17,10 @@ import '../../widgets/moe_toast.dart';
 
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
-  const CompanionChatPage({super.key});
+  const CompanionChatPage({super.key, this.initialDraft});
+
+  /// 从关系首页继续未完成话题时预填的用户草稿，不自动发送。
+  final String? initialDraft;
 
   @override
   State<CompanionChatPage> createState() => _CompanionChatPageState();
@@ -44,6 +48,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   bool _speechAvailable = false;
   bool _listening = false;
   bool _autoSpeak = false;
+  bool _voiceInputPending = false;
   bool _isSpeaking = false;
   int? _speakingIndex;
 
@@ -147,6 +152,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         _isLoading = false;
         _loadError = null;
       });
+      _applyInitialDraft();
       unawaited(CompanionPresenceProvider.instance.markCompanionChatSeen());
       _scrollToBottom();
     } catch (e) {
@@ -178,9 +184,24 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     }
   }
 
+  void _applyInitialDraft() {
+    final draft = widget.initialDraft?.trim();
+    if (draft == null || draft.isEmpty || _controller.text.isNotEmpty) return;
+    _controller.value = TextEditingValue(
+      text: draft,
+      selection: TextSelection.collapsed(offset: draft.length),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) return;
+
+    final wasVoiceInput = _voiceInputPending;
+    _voiceInputPending = false;
 
     _controller.clear();
     setState(() {
@@ -200,6 +221,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
       await for (final event in CompanionService().chatStream(
         text,
         scene: _activeScene,
+        inputMode: wasVoiceInput ? 'voice' : 'text',
       )) {
         if (!mounted) return;
         switch (event.type) {
@@ -232,6 +254,13 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             unawaited(
                 CompanionPresenceProvider.instance.markCompanionChatSeen());
             unawaited(_refreshPresenceState());
+            CompanionInteractionCoordinator.instance.publishChatCompleted(
+              scene: _activeScene,
+            );
+            if (wasVoiceInput) {
+              CompanionInteractionCoordinator.instance
+                  .publishVoiceTurnCompleted(scene: _activeScene);
+            }
             if (_voiceEnabled && _autoSpeak) {
               unawaited(_speakAt(_items.length - 1, spoken));
             }
@@ -309,6 +338,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             TextPosition(offset: _controller.text.length),
           );
           if (result.finalResult) {
+            _voiceInputPending = true;
             setState(() => _listening = false);
           }
         },
@@ -494,6 +524,21 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 isLoading: item.isStreaming,
                 agentLabel: isAssistant ? _profile.name : null,
               ),
+              if (isAssistant && item.isStreaming && item.content.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 40, top: 1),
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      '${_profile.name.isEmpty ? 'TA' : _profile.name} 正在继续回应',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                ),
               if (_voiceEnabled &&
                   isAssistant &&
                   !item.isStreaming &&
@@ -709,6 +754,23 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_listening || _isSending)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, bottom: 5),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        _listening ? '正在听你说…' : 'TA 正在组织回应…',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _listening
+                              ? AiBrandTokens.primary
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                  ),
                 if (!_isSending && !hasError)
                   SizedBox(
                     height: 34,

@@ -18,6 +18,31 @@ import (
 // [4] 行为规则
 // [5] 用户自定义 system_prompt_override（如有）
 func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forcedScene ...string) string {
+	return buildSystemPromptWithRelationshipEvents(
+		profile, state, memories, nil, forcedScene...,
+	)
+}
+
+func buildSystemPromptWithRelationshipEvents(
+	profile *Profile,
+	state *State,
+	memories []Memory,
+	relationshipEvents []RelationshipEvent,
+	forcedScene ...string,
+) string {
+	return buildSystemPromptWithContext(
+		profile, state, memories, relationshipEvents, nil, forcedScene...,
+	)
+}
+
+func buildSystemPromptWithContext(
+	profile *Profile,
+	state *State,
+	memories []Memory,
+	relationshipEvents []RelationshipEvent,
+	unfinishedTopics []string,
+	forcedScene ...string,
+) string {
 	var b strings.Builder
 
 	// [1] 角色人格
@@ -47,16 +72,63 @@ func buildSystemPrompt(profile *Profile, state *State, memories []Memory, forced
 	}
 
 	// [3] 记忆上下文（置顶优先且显式标注，聊天时更「记得牢」）
-	if len(memories) > 0 {
+	confirmedMemories := make([]Memory, 0, len(memories))
+	candidateMemories := make([]Memory, 0, len(memories))
+	for _, memory := range memories {
+		if memory.Pinned || memory.UserConfirmed {
+			confirmedMemories = append(confirmedMemories, memory)
+		} else {
+			candidateMemories = append(candidateMemories, memory)
+		}
+	}
+	if len(confirmedMemories) > 0 {
 		b.WriteString("\n\n[你记得的事]")
 		b.WriteString("\n（标【置顶】的是用户特别强调、务必记住的事）")
-		for _, m := range memories {
+		for _, m := range confirmedMemories {
 			if m.Pinned {
 				b.WriteString("\n- 【置顶】")
 			} else {
 				b.WriteString("\n- ")
 			}
 			b.WriteString(m.Content)
+		}
+	}
+	if len(candidateMemories) > 0 {
+		b.WriteString("\n\n[unconfirmed memory candidates]")
+		b.WriteString("\nTreat these as hypotheses only; do not state them as facts unless the user confirms them.")
+		for _, m := range candidateMemories {
+			b.WriteString("\n- ")
+			b.WriteString(m.Content)
+		}
+	}
+	if len(relationshipEvents) > 0 {
+		b.WriteString("\n\n[最近的关系进展]")
+		for _, event := range relationshipEvents {
+			title := strings.TrimSpace(event.Title)
+			content := strings.TrimSpace(event.Content)
+			if title == "" && content == "" {
+				continue
+			}
+			b.WriteString("\n- ")
+			if title != "" {
+				b.WriteString(title)
+			}
+			if title != "" && content != "" {
+				b.WriteString("：")
+			}
+			if content != "" {
+				b.WriteString(content)
+			}
+		}
+	}
+	if len(unfinishedTopics) > 0 {
+		b.WriteString("\n\n[未完成话题]")
+		b.WriteString("\n这些是用户明确表达过、适合自然延续的话题；不要强行追问，也不要把它们当作事实记忆。")
+		for _, topic := range unfinishedTopics {
+			if topic = strings.TrimSpace(topic); topic != "" {
+				b.WriteString("\n- ")
+				b.WriteString(topic)
+			}
 		}
 	}
 
@@ -185,7 +257,38 @@ func holidayLabel(now time.Time) string {
 
 // buildMessages 构建完整对话消息列表。
 func buildMessages(profile *Profile, state *State, memories []Memory, history []ChatLog, userMessage string, forcedScene ...string) []llminference.Message {
-	systemPrompt := buildSystemPrompt(profile, state, memories, forcedScene...)
+	return buildMessagesWithRelationshipEvents(
+		profile, state, memories, history, nil, userMessage, forcedScene...,
+	)
+}
+
+func buildMessagesWithRelationshipEvents(
+	profile *Profile,
+	state *State,
+	memories []Memory,
+	history []ChatLog,
+	relationshipEvents []RelationshipEvent,
+	userMessage string,
+	forcedScene ...string,
+) []llminference.Message {
+	return buildMessagesWithContext(
+		profile, state, memories, history, relationshipEvents, nil, userMessage, forcedScene...,
+	)
+}
+
+func buildMessagesWithContext(
+	profile *Profile,
+	state *State,
+	memories []Memory,
+	history []ChatLog,
+	relationshipEvents []RelationshipEvent,
+	unfinishedTopics []string,
+	userMessage string,
+	forcedScene ...string,
+) []llminference.Message {
+	systemPrompt := buildSystemPromptWithContext(
+		profile, state, memories, relationshipEvents, unfinishedTopics, forcedScene...,
+	)
 	msgs := make([]llminference.Message, 0, 2+len(history)+1)
 
 	// System message

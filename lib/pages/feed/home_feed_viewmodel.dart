@@ -6,6 +6,7 @@ import '../../auth_service.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/companion_service.dart';
+import '../../services/companion_interaction_coordinator.dart';
 import '../../services/like_state_manager.dart';
 import '../../services/post_service.dart';
 import '../../utils/moe_error_copy.dart';
@@ -44,12 +45,20 @@ class HomeFeedViewModel extends ChangeNotifier {
   HomeFeedViewModel({
     LikeStateManager? likeManager,
     CompanionService? companionService,
+    CompanionInteractionCoordinator? interactionCoordinator,
     this.pageSize = 10,
   })  : _likeManager = likeManager ?? LikeStateManager(),
-        _companionService = companionService ?? CompanionService();
+        _companionService = companionService ?? CompanionService(),
+        _interactionCoordinator =
+            interactionCoordinator ?? CompanionInteractionCoordinator.instance {
+    _interactionSubscription = _interactionCoordinator.events.listen(
+      _onCompanionInteraction,
+    );
+  }
 
   final LikeStateManager _likeManager;
   final CompanionService _companionService;
+  final CompanionInteractionCoordinator _interactionCoordinator;
   final int pageSize;
 
   List<Post> _allPosts = [];
@@ -72,6 +81,10 @@ class HomeFeedViewModel extends ChangeNotifier {
   TopicTag? _activeTopic;
   List<TopicTag> _availableTags = TopicTag.officialTags.take(12).toList();
   bool _disposed = false;
+  StreamSubscription<CompanionInteractionEvent>? _interactionSubscription;
+  Timer? _companionRefreshTimer;
+  bool _companionRequestInFlight = false;
+  bool _companionRefreshQueued = false;
 
   LikeStateManager get likeManager => _likeManager;
   List<Post> get allPosts => _allPosts;
@@ -114,6 +127,11 @@ class HomeFeedViewModel extends ChangeNotifier {
   }
 
   Future<void> loadCompanionPresence() async {
+    if (_companionRequestInFlight) {
+      _companionRefreshQueued = true;
+      return;
+    }
+    _companionRequestInFlight = true;
     try {
       final snapshot = await _companionService.getSnapshot();
       CompanionCommunityIdentityData? identity;
@@ -131,7 +149,39 @@ class HomeFeedViewModel extends ChangeNotifier {
       _companionSnapshot = null;
       _communityIdentity = null;
       notifyListeners();
+    } finally {
+      _companionRequestInFlight = false;
+      if (_companionRefreshQueued && !_disposed) {
+        _companionRefreshQueued = false;
+        _scheduleCompanionRefresh();
+      }
     }
+  }
+
+  void _onCompanionInteraction(CompanionInteractionEvent event) {
+    if (_disposed || !_shouldRefreshCompanion(event)) return;
+    _scheduleCompanionRefresh();
+  }
+
+  bool _shouldRefreshCompanion(CompanionInteractionEvent event) {
+    switch (event.type) {
+      case CompanionInteractionType.chatCompleted:
+      case CompanionInteractionType.memoryChanged:
+      case CompanionInteractionType.companionEvent:
+      case CompanionInteractionType.voiceTurnCompleted:
+        return true;
+      case CompanionInteractionType.relationshipChanged:
+      case CompanionInteractionType.lifeMomentChanged:
+      case CompanionInteractionType.presenceChanged:
+        return false;
+    }
+  }
+
+  void _scheduleCompanionRefresh() {
+    _companionRefreshTimer?.cancel();
+    _companionRefreshTimer = Timer(const Duration(milliseconds: 250), () {
+      if (!_disposed) unawaited(loadCompanionPresence());
+    });
   }
 
   /// Companion WS 推送：刷新首页轻卡问候/心情。
@@ -406,6 +456,8 @@ class HomeFeedViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _companionRefreshTimer?.cancel();
+    _interactionSubscription?.cancel();
     super.dispose();
   }
 }
