@@ -10,11 +10,15 @@ import '../../game/pet/pet_art.dart';
 import '../../game/pet/pet_content_catalog.dart';
 import '../../game/pet/pet_labels.dart';
 import '../../game/pet/pet_room_game.dart';
+import '../../models/pet_crop.dart';
 import '../../models/pet_state.dart';
 import '../../models/pet_care_item.dart';
 import '../../providers/pet_provider.dart';
 import '../../services/companion_service.dart';
-import '../../widgets/pet/virtual_joystick.dart';
+import '../../services/pet_career_config.dart';
+import '../../widgets/motion/moe_vfx_profile.dart';
+import '../../widgets/pet/pet_care_juice_overlay.dart';
+import 'pet_adventure_page.dart';
 import 'pet_dressing_page.dart';
 
 /// 养成主页：Flame Room + 照料 HUD + 轻量换装/布置体验。
@@ -29,12 +33,15 @@ class _PetHomePageState extends State<PetHomePage> {
   static const _hintPrefsKey = 'pet_home_move_hint_dismissed_v1';
 
   late final PetRoomGame _game;
+  final _juice = PetCareJuiceController();
   PetProvider? _pet;
   var _ownsProvider = false;
   var _bootstrapped = false;
   var _decorateMode = false;
   int? _selectedFurn;
+  double? _scalePreview;
   var _showMoveHint = false;
+  var _foodPickerOpen = false;
   Timer? _hintTimer;
   CompanionProfileData? _companion;
 
@@ -53,7 +60,10 @@ class _PetHomePageState extends State<PetHomePage> {
       },
       onFurnitureSelected: (index) {
         if (!mounted) return;
-        setState(() => _selectedFurn = index);
+        setState(() {
+          _selectedFurn = index;
+          _scalePreview = null;
+        });
       },
       onActorMoved: (x, y) {
         _dismissMoveHint();
@@ -62,13 +72,88 @@ class _PetHomePageState extends State<PetHomePage> {
       onRoomBoundariesChanged: (boundaries) {
         _pet?.saveRoomBoundaries(boundaries);
       },
+      onFurnitureInteracted: (furnitureId) {
+        if (furnitureId.startsWith('bed')) {
+          unawaited(_onBedRest());
+        }
+      },
+      onCropTapped: (index, slot) {
+        unawaited(_onCropTapped(index, slot));
+      },
     );
+  }
+
+  Future<void> _onCropTapped(int index, PetCropSlot slot) async {
+    if (_decorateMode) return;
+    final profile = MoeVfxProfile.fromContext(context);
+    if (slot.isEmpty) {
+      final planted = await pet.plantCrop(index);
+      if (!mounted || planted == null) return;
+      _juice.register(
+        PetJuiceKind.farm,
+        label: '种下 ${planted.kind.emoji}',
+        color: const Color(0xFF6B9B76),
+        origin: const Offset(0.5, 0.48),
+        profile: profile,
+      );
+      _speakBubble('开始种菜啦！', emoji: planted.kind.emoji);
+      return;
+    }
+    if (slot.canWater) {
+      final watered = await pet.waterCrop(index);
+      if (!mounted || watered == null) return;
+      _juice.register(
+        PetJuiceKind.farm,
+        label: '浇水 💧',
+        color: const Color(0xFF5C9EAD),
+        origin: const Offset(0.5, 0.48),
+        profile: profile,
+      );
+      _speakBubble('快快长大～', emoji: '💧');
+      return;
+    }
+    if (slot.isRipe) {
+      final reward = await pet.harvestCrop(index, combo: _juice.nextCombo);
+      if (!mounted || reward == null) return;
+      final streak = _juice.register(
+        PetJuiceKind.farm,
+        label: '+${reward.coins} 币 ${reward.kind.emoji}',
+        color: const Color(0xFFE97891),
+        origin: const Offset(0.5, 0.42),
+        profile: profile,
+      );
+      _speakBubble(
+        streak > 1 ? '连收×$streak！太爽了～' : '收获${reward.kind.label}！',
+        emoji: reward.kind.emoji,
+      );
+    }
+  }
+
+  /// 反馈只走角色气泡（不做飘字 / SnackBar / 底栏文案）。
+  void _speakBubble(
+    String dialogue, {
+    String emoji = '💬',
+    PetCarePerformance kind = PetCarePerformance.care,
+  }) {
+    _game.playCarePerformance(
+      kind: kind,
+      itemEmoji: emoji,
+      dialogue: dialogue,
+    );
+  }
+
+  Future<void> _onBedRest() async {
+    // 睡觉演出由 Flame 到达床铺时播放；这里只结算属性，不叠第二层反馈。
+    await _pet?.restAtBed();
   }
 
   void _setDecorateMode(bool on) {
     setState(() {
       _decorateMode = on;
-      if (!on) _selectedFurn = null;
+      if (!on) {
+        _selectedFurn = null;
+        _scalePreview = null;
+      }
     });
     _game.setDecorateMode(on);
     if (on) _dismissMoveHint();
@@ -95,6 +180,7 @@ class _PetHomePageState extends State<PetHomePage> {
     _pet!.load().then((_) {
       if (!mounted) return;
       _game.syncProfile(_pet!.profile);
+      _game.syncCrops(_pet!.crops);
       _maybeShowMoveHint();
     });
     _loadCompanion();
@@ -131,62 +217,174 @@ class _PetHomePageState extends State<PetHomePage> {
   void _onPet() {
     if (!mounted || _pet == null) return;
     _game.syncProfile(pet.profile);
+    _game.syncCrops(pet.crops);
     setState(() {});
   }
 
   @override
   void dispose() {
     _hintTimer?.cancel();
+    _juice.dispose();
     _pet?.removeListener(_onPet);
     if (_ownsProvider) _pet?.dispose();
     super.dispose();
   }
 
-  Future<void> _feed() async {
+  void _toggleFoodPicker() {
+    setState(() => _foodPickerOpen = !_foodPickerOpen);
+  }
+
+  Future<void> _feedItem(PetCareItem item) async {
+    setState(() => _foodPickerOpen = false);
+    await pet.feed(item);
+    if (!mounted) return;
+    _speakBubble(
+      '谢谢你，${item.name}好香！',
+      emoji: item.emoji,
+      kind: PetCarePerformance.feed,
+    );
+  }
+
+  Future<void> _care() async {
+    setState(() => _foodPickerOpen = false);
+    await pet.care();
+    if (!mounted) return;
+    _speakBubble(
+      _companion?.name.isNotEmpty == true
+          ? '和${_companion!.name}一起，好开心！'
+          : '有你陪着，好开心！',
+      emoji: '♥',
+    );
+  }
+
+  Future<void> _runAndSpeak(
+    Future<void> Function() action, {
+    String emoji = '✨',
+  }) async {
+    await action();
+    if (!mounted) return;
+    final msg = pet.lastMessage;
+    if (msg != null && msg.isNotEmpty) {
+      _speakBubble(msg, emoji: emoji);
+    }
+  }
+
+  void _openAdventure() {
+    if (pet.profile.energy < 25) {
+      _speakBubble('精力不足，先喂食或点床睡觉再出发', emoji: '😮‍💨');
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: pet,
+          child: const PetAdventurePage(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openStudy() async {
+    final cfg = await PetCareerConfig.load();
+    if (!mounted) return;
     await _showScrollSheet(
-      title: '选择要喂的食物',
+      title: '去上学（${pet.profile.ageYears} 岁）',
       children: [
-        const Text('食物会在云端结算后送到 TA 面前。'),
+        Text(
+          '满 ${cfg.minSchoolAge} 岁可上课，提升五维属性。',
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
         const SizedBox(height: 12),
-        for (final item in PetCareItem.foods)
-          _FoodChoice(
-            item: item,
-            onTap: () async {
+        for (final s in cfg.subjects)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading:
+                const Icon(Icons.menu_book_rounded, color: Color(0xFFE97891)),
+            title: Text(s.name,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text('+${s.gain} ${s.stat}'),
+            onTap: () {
               Navigator.pop(context);
-              await pet.feed(item);
-              if (!mounted) return;
-              _game.playCarePerformance(
-                kind: PetCarePerformance.feed,
-                itemEmoji: item.emoji,
-                dialogue: '谢谢你，${item.name}好香！',
-              );
-              _toast();
+              unawaited(_runAndSpeak(() => pet.study(s.id), emoji: '📚'));
             },
           ),
       ],
     );
   }
 
-  Future<void> _care() async {
-    await pet.care();
-    _game.playCarePerformance(
-      kind: PetCarePerformance.care,
-      itemEmoji: '♥',
-      dialogue: _companion?.name.isNotEmpty == true
-          ? '和${_companion!.name}一起，好开心！'
-          : '有你陪着，好开心！',
+  Future<void> _openWork() async {
+    final cfg = await PetCareerConfig.load();
+    if (!mounted) return;
+    await _showScrollSheet(
+      title: '去打工',
+      children: [
+        Text(
+          '满 ${cfg.minWorkAge} 岁、能力达标可赚钱。',
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 12),
+        for (final j in cfg.jobs)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.work_rounded, color: Color(0xFF7E8CE0)),
+            title: Text(j.name,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text('底薪 ${j.basePay} · 均属性≥${j.minAvgStat}'),
+            onTap: () {
+              Navigator.pop(context);
+              unawaited(_runAndSpeak(() => pet.work(jobId: j.id), emoji: '💼'));
+            },
+          ),
+      ],
     );
-    _toast();
+  }
+
+  Future<void> _openShop() async {
+    await PetContentCatalog.load();
+    if (!mounted) return;
+    final items = PetContentCatalog.shopItems();
+    await _showScrollSheet(
+      title: '软通货商店',
+      children: [
+        Text(
+          '当前硬币 ${pet.profile.coins}',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        if (items.isEmpty)
+          const Text('商店暂无商品')
+        else
+          for (final e in items)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Text(e.kind == 'furniture' ? '🪑' : '👕',
+                  style: const TextStyle(fontSize: 22)),
+              title: Text(e.label,
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+              trailing: Text('${e.price ?? 40} 币',
+                  style: const TextStyle(
+                      color: Color(0xFFE97891), fontWeight: FontWeight.w800)),
+              onTap: () {
+                Navigator.pop(context);
+                unawaited(_runAndSpeak(() => pet.buySoft(e.id), emoji: '🛒'));
+              },
+            ),
+      ],
+    );
   }
 
   void _openMore() {
+    setState(() => _foodPickerOpen = false);
+    final p = pet.profile;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFFFFF8F2),
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => _MoreGrid(
+        ageYears: p.ageYears,
         onDress: () {
           Navigator.pop(ctx);
           _showDressSheet();
@@ -199,15 +397,43 @@ class _PetHomePageState extends State<PetHomePage> {
           Navigator.pop(ctx);
           _setDecorateMode(true);
         },
+        onAdventure: () {
+          Navigator.pop(ctx);
+          _openAdventure();
+        },
+        onStudy: () {
+          Navigator.pop(ctx);
+          unawaited(_openStudy());
+        },
+        onWork: () {
+          Navigator.pop(ctx);
+          unawaited(_openWork());
+        },
+        onShop: () {
+          Navigator.pop(ctx);
+          unawaited(_openShop());
+        },
+        onAgeUp: () {
+          Navigator.pop(ctx);
+          unawaited(_runAndSpeak(pet.ageUp, emoji: '🎂'));
+        },
+        onFriend: () {
+          Navigator.pop(ctx);
+          unawaited(
+            _runAndSpeak(() => pet.addFriend('neighbor_xiaoke'), emoji: '👋'),
+          );
+        },
+        onMarry: () {
+          Navigator.pop(ctx);
+          unawaited(
+            _runAndSpeak(() => pet.marry('neighbor_xiaoke'), emoji: '💍'),
+          );
+        },
+        onBaby: () {
+          Navigator.pop(ctx);
+          unawaited(_runAndSpeak(pet.haveBaby, emoji: '👶'));
+        },
       ),
-    );
-  }
-
-  void _toast() {
-    final msg = pet.lastMessage;
-    if (msg == null || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -307,8 +533,10 @@ class _PetHomePageState extends State<PetHomePage> {
                       ),
                     );
                     if (!mounted) return;
-                    _toast();
-                    if (pet.profile.furniture.length <= before) return;
+                    if (pet.profile.furniture.length <= before) {
+                      _speakBubble(pet.lastMessage ?? '放不下更多家具啦', emoji: '🪑');
+                      return;
+                    }
                     Navigator.pop(context);
                     final idx = pet.profile.furniture.length - 1;
                     _setDecorateMode(true);
@@ -361,12 +589,14 @@ class _PetHomePageState extends State<PetHomePage> {
 
   Widget _decorateBar() {
     final idx = _selectedFurn;
-    String title = '布置：拖动 · 四角缩放 · 顶柄旋转';
-    if (idx != null && idx >= 0 && idx < pet.profile.furniture.length) {
-      final f = pet.profile.furniture[idx];
-      title =
-          '${PetLabels.of(f.id)} · ${f.rotation}° · ${(f.scale * 100).round()}%';
-    }
+    final hasSelection =
+        idx != null && idx >= 0 && idx < pet.profile.furniture.length;
+    final selected = hasSelection ? pet.profile.furniture[idx] : null;
+    final liveScale =
+        (_scalePreview ?? selected?.scale ?? 1).clamp(0.35, 2.2).toDouble();
+    final title = selected == null
+        ? '布置：拖动家具 · 滑条缩放 · 顶柄旋转'
+        : '${PetLabels.of(selected.id)} · ${selected.rotation}° · ${(liveScale * 100).round()}%';
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
@@ -393,17 +623,73 @@ class _PetHomePageState extends State<PetHomePage> {
                 color: Color(0xFF5A4638),
               ),
             ),
-            const SizedBox(height: 10),
+            if (selected != null) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Text(
+                    '大小',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF8A7364),
+                    ),
+                  ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 4,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 9,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 16,
+                        ),
+                        activeTrackColor: const Color(0xFFE97891),
+                        inactiveTrackColor: const Color(0x33E97891),
+                        thumbColor: const Color(0xFFE97891),
+                      ),
+                      child: Slider(
+                        value: liveScale,
+                        min: 0.35,
+                        max: 2.2,
+                        onChanged: (v) {
+                          final i = idx;
+                          if (i == null) return;
+                          // 滑条连续调：只改本地 Flame，松手再落库。
+                          _game.scaleSelectedTo(v);
+                          setState(() => _scalePreview = v);
+                        },
+                        onChangeEnd: (v) {
+                          final i = idx;
+                          if (i == null) return;
+                          final f = pet.profile.furniture[i];
+                          pet.moveFurniture(
+                            i,
+                            f.x,
+                            f.y,
+                            rotation: f.rotation,
+                            scale: v,
+                          );
+                          setState(() => _scalePreview = null);
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${(liveScale * 100).round()}%',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF5A4638),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(
-                  child: _DecorToolBtn(
-                    icon: Icons.zoom_out_map_rounded,
-                    label: '缩小',
-                    onTap: () => _game.scaleSelected(-0.08),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: _DecorToolBtn(
                     icon: Icons.wallpaper_rounded,
@@ -414,25 +700,13 @@ class _PetHomePageState extends State<PetHomePage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _DecorToolBtn(
-                    icon: Icons.zoom_in_rounded,
-                    label: '放大',
-                    onTap: () => _game.scaleSelected(0.08),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _DecorToolBtn(
                     icon: Icons.rotate_right_rounded,
                     label: '转90°',
                     onTap: () => _game.rotateSelected(),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (idx != null)
+                if (hasSelection) ...[
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _DecorToolBtn(
                       icon: Icons.delete_outline_rounded,
@@ -446,7 +720,8 @@ class _PetHomePageState extends State<PetHomePage> {
                       },
                     ),
                   ),
-                if (idx != null) const SizedBox(width: 8),
+                ],
+                const SizedBox(width: 8),
                 Expanded(
                   child: _DecorToolBtn(
                     icon: Icons.check_rounded,
@@ -481,53 +756,74 @@ class _PetHomePageState extends State<PetHomePage> {
           children: [
             GameWidget(game: _game),
             if (!_decorateMode)
-              Positioned(
-                left: 18,
-                bottom: 158,
-                child: VirtualJoystick(
-                  onChanged: (value) =>
-                      _game.setActorMoveInput(value.dx, value.dy),
-                  onEnd: _game.stopActorMoveInput,
-                ),
+              PetCareJuiceOverlay(
+                controller: _juice,
+                profile: MoeVfxProfile.fromContext(context),
               ),
             SafeArea(
               child: Column(
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 4, 12, 0),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.maybePop(context),
-                          icon: const Icon(Icons.arrow_back_rounded),
-                          color: const Color(0xFF5A4638),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0x33E8A0B0),
                         ),
-                        Expanded(
-                          child: Text(
-                            '${p.name}的小家',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF5A4638),
-                            ),
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 2, 10, 6),
+                        child: Row(
                           children: [
-                            _CoinPill(coins: p.coins),
-                            const SizedBox(height: 4),
-                            _SyncPill(status: pet.syncStatus),
+                            IconButton(
+                              onPressed: () => Navigator.maybePop(context),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              color: const Color(0xFF5A4638),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${p.name}的小家',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF5A4638),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${p.ageYears} 岁 · 德${p.virtue} 智${p.intel} 体${p.sport}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF5A4638)
+                                          .withValues(alpha: 0.65),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                _CoinPill(coins: p.coins),
+                                const SizedBox(height: 4),
+                                _SyncPill(status: pet.syncStatus),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                     child: _SceneTabs(
                       sceneId: p.sceneId,
-                      onSelect: pet.setScene,
+                      onSelect: (id) => unawaited(pet.setScene(id)),
                     ),
                   ),
                   if (_companion?.name.isNotEmpty == true)
@@ -545,20 +841,36 @@ class _PetHomePageState extends State<PetHomePage> {
                       ),
                     ),
                   ),
-                  const Spacer(),
+                  // 中间透传手势给 Flame；勿用裸 Spacer 吞掉点击。
+                  const Expanded(
+                    child: IgnorePointer(child: SizedBox.expand()),
+                  ),
                   if (_decorateMode) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                       child: _decorateBar(),
                     ),
                   ] else ...[
-                    if (_showMoveHint)
+                    if (p.sceneId == 'yard')
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          '点格子种菜 · 浇水加速 · 成熟连收',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color:
+                                const Color(0xFF4E7A55).withValues(alpha: 0.9),
+                          ),
+                        ),
+                      )
+                    else if (_showMoveHint)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: GestureDetector(
                           onTap: _dismissMoveHint,
                           child: Text(
-                            '拖角色可在房间走动 · 布置模式调家具',
+                            '点地面走路 · 点床睡觉 · 院子可种菜',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -568,28 +880,19 @@ class _PetHomePageState extends State<PetHomePage> {
                           ),
                         ),
                       ),
-                    if (pet.lastMessage != null)
+                    if (_foodPickerOpen)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Material(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              pet.lastMessage!,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                          ),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: _FoodBubbleRow(
+                          foods: PetCareItem.foods,
+                          onPick: _feedItem,
+                          onClose: () =>
+                              setState(() => _foodPickerOpen = false),
                         ),
                       ),
                     _CareBar(
                       busy: pet.busy,
-                      onFeed: _feed,
+                      onFeed: _toggleFoodPicker,
                       onCare: _care,
                       onMore: _openMore,
                     ),
@@ -970,14 +1273,32 @@ class _DecorToolBtn extends StatelessWidget {
 
 class _MoreGrid extends StatelessWidget {
   const _MoreGrid({
+    required this.ageYears,
     required this.onDress,
     required this.onFurniture,
     required this.onDecorate,
+    required this.onAdventure,
+    required this.onStudy,
+    required this.onWork,
+    required this.onShop,
+    required this.onAgeUp,
+    required this.onFriend,
+    required this.onMarry,
+    required this.onBaby,
   });
 
+  final int ageYears;
   final VoidCallback onDress;
   final VoidCallback onFurniture;
   final VoidCallback onDecorate;
+  final VoidCallback onAdventure;
+  final VoidCallback onStudy;
+  final VoidCallback onWork;
+  final VoidCallback onShop;
+  final VoidCallback onAgeUp;
+  final VoidCallback onFriend;
+  final VoidCallback onMarry;
+  final VoidCallback onBaby;
 
   @override
   Widget build(BuildContext context) {
@@ -985,6 +1306,14 @@ class _MoreGrid extends StatelessWidget {
       (Icons.checkroom_rounded, '换衣间', onDress),
       (Icons.chair_rounded, '布置', onFurniture),
       (Icons.tune_rounded, '调整摆放', onDecorate),
+      (Icons.storefront_rounded, '商店', onShop),
+      (Icons.menu_book_rounded, '上学', onStudy),
+      (Icons.work_rounded, '打工', onWork),
+      (Icons.cake_rounded, '长大一岁', onAgeUp),
+      (Icons.forest_rounded, '小院试炼', onAdventure),
+      (Icons.person_add_alt_1_rounded, '交友', onFriend),
+      (Icons.favorite_rounded, '结婚', onMarry),
+      (Icons.child_care_rounded, '宝宝', onBaby),
     ];
     return SafeArea(
       child: Padding(
@@ -992,37 +1321,152 @@ class _MoreGrid extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('小家',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 16),
+            Text(
+              '小家生涯 · $ageYears 岁',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '对标宠我一生能力面：装扮 / 生涯 / 社交 / 轻冒险',
+              style: TextStyle(fontSize: 11, color: Colors.black54),
+            ),
+            const SizedBox(height: 14),
             GridView.count(
               shrinkWrap: true,
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 3,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.05,
               children: [
                 for (final it in items)
                   InkWell(
                     onTap: it.$3,
                     borderRadius: BorderRadius.circular(14),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: const Color(0xFFFFE8EE),
-                          child: Icon(it.$1, color: const Color(0xFFE97891)),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(it.$2,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF2E8),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: const Color(0xFFFFE8EE),
+                            child: Icon(it.$1, color: const Color(0xFFE97891)),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            it.$2,
                             style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w700)),
-                      ],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FoodBubbleRow extends StatelessWidget {
+  const _FoodBubbleRow({
+    required this.foods,
+    required this.onPick,
+    required this.onClose,
+  });
+
+  final List<PetCareItem> foods;
+  final ValueChanged<PetCareItem> onPick;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.96),
+      elevation: 6,
+      shadowColor: const Color(0x33E97891),
+      borderRadius: BorderRadius.circular(22),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final item in foods) ...[
+                      _FoodChip(item: item, onTap: () => onPick(item)),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: onClose,
+              icon: const Icon(Icons.close_rounded, size: 20),
+              color: const Color(0xFF8A735F),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FoodChip extends StatelessWidget {
+  const _FoodChip({required this.item, required this.onTap});
+
+  final PetCareItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFFFF2E8),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(item.emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 6),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                      color: Color(0xFF5A4638),
+                    ),
+                  ),
+                  Text(
+                    '+${item.hungerGain} 饱食',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFE97891),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1086,53 +1530,6 @@ class _CompanionLinkPill extends StatelessWidget {
               color: Color(0xFF69548F),
               fontSize: 11,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FoodChoice extends StatelessWidget {
-  const _FoodChoice({required this.item, required this.onTap});
-
-  final PetCareItem item;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: const Color(0xFFFFF2E8),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Text(item.emoji, style: const TextStyle(fontSize: 32)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.name,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
-                      Text(item.description,
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.black54)),
-                    ],
-                  ),
-                ),
-                Text('+${item.hungerGain}',
-                    style: const TextStyle(
-                        color: Color(0xFFE97891), fontWeight: FontWeight.w800)),
-              ],
             ),
           ),
         ),

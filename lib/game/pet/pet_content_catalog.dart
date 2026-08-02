@@ -101,6 +101,24 @@ abstract final class PetContentCatalog {
         .toList(growable: false);
   }
 
+  /// 家具是否允许出现在该场景（院子不放室内灯/桌等）。
+  static bool furnitureAllowedInScene(String id, String scene) {
+    for (final e in _furniture) {
+      if (e.id != id) continue;
+      if (e.scenes.isEmpty) return true;
+      return e.scenes.contains(scene);
+    }
+    // 未知家具：只留室内，避免院子穿帮。
+    return scene == 'living' || scene == 'bedroom';
+  }
+
+  /// 清掉「场景不允许」的家具（修复旧存档院子里的台灯/木桌）。
+  static List<PetFurniture> pruneFurnitureScenes(List<PetFurniture> input) {
+    return PetFurniture.sanitize(
+      input.where((f) => furnitureAllowedInScene(f.id, f.scene)).toList(),
+    );
+  }
+
   static List<PetContentItem> shopItems() => List.unmodifiable(_shop);
 
   static String? labelOf(String id) {
@@ -173,8 +191,8 @@ abstract final class PetContentCatalog {
               id: '${e['id'] ?? ''}',
               label: '${e['label'] ?? e['id'] ?? ''}',
               asset: '${e['asset'] ?? ''}',
-              scenes: (e['scenes'] as List?)?.map((x) => '$x').toList() ??
-                  const [],
+              scenes:
+                  (e['scenes'] as List?)?.map((x) => '$x').toList() ?? const [],
               kind: 'furniture',
             ),
       ].where((e) => e.id.isNotEmpty && e.asset.isNotEmpty).toList();
@@ -211,9 +229,8 @@ abstract final class PetContentCatalog {
       final actor = json['actor'];
       if (actor is Map) {
         _actorFootY = (actor['footY'] as num?)?.toDouble() ?? _actorFootY;
-        _actorHeightNorm =
-            (actor['displayHeightNorm'] as num?)?.toDouble() ??
-                _actorHeightNorm;
+        _actorHeightNorm = (actor['displayHeightNorm'] as num?)?.toDouble() ??
+            _actorHeightNorm;
       }
       final defaults = json['furnitureDefaults'];
       if (defaults is Map) {
@@ -307,7 +324,7 @@ abstract final class PetContentCatalog {
         id: 'table_wood',
         label: '木桌',
         asset: 'assets/pet/furniture/table_wood.png',
-        scenes: ['living', 'yard'],
+        scenes: ['living'],
         kind: 'furniture',
       ),
       PetContentItem(
@@ -321,7 +338,7 @@ abstract final class PetContentCatalog {
         id: 'rug_basic',
         label: '地毯',
         asset: 'assets/pet/furniture/rug_basic.png',
-        scenes: ['living', 'bedroom', 'yard'],
+        scenes: ['living', 'bedroom'],
         kind: 'furniture',
       ),
       PetContentItem(
@@ -338,10 +355,12 @@ abstract final class PetContentCatalog {
   }
 
   static const _builtinStarter = <PetFurniture>[
-    PetFurniture(id: 'rug_basic', x: 0.50, y: 0.76, scene: 'living', scale: 1.55),
+    PetFurniture(
+        id: 'rug_basic', x: 0.50, y: 0.76, scene: 'living', scale: 1.55),
     PetFurniture(
         id: 'window_lace', x: 0.76, y: 0.26, scene: 'living', scale: 1.3),
-    PetFurniture(id: 'bed_basic', x: 0.22, y: 0.54, scene: 'living', scale: 1.2),
+    PetFurniture(
+        id: 'bed_basic', x: 0.22, y: 0.54, scene: 'living', scale: 1.2),
     PetFurniture(
         id: 'table_wood', x: 0.58, y: 0.60, scene: 'living', scale: 1.1),
     PetFurniture(
@@ -352,7 +371,6 @@ abstract final class PetContentCatalog {
         id: 'bed_basic', x: 0.30, y: 0.55, scene: 'bedroom', scale: 1.25),
     PetFurniture(
         id: 'lamp_basic', x: 0.74, y: 0.48, scene: 'bedroom', scale: 1.05),
-    PetFurniture(id: 'rug_basic', x: 0.48, y: 0.72, scene: 'yard', scale: 1.35),
-    PetFurniture(id: 'table_wood', x: 0.60, y: 0.58, scene: 'yard', scale: 1.1),
+    // yard：无室内家具起步槽，菜地/商店由 Flame 种菜层绘制。
   ];
 }

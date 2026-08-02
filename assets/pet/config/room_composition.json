@@ -31,11 +31,8 @@
     },
     "yard": {
       "preset": "default",
-      "slots": [
-        { "id": "rug_basic", "x": 0.48, "y": 0.72, "scale": 1.35 },
-        { "id": "table_wood", "x": 0.60, "y": 0.58, "scale": 1.1 },
-        { "id": "lamp_basic", "x": 0.28, "y": 0.52, "scale": 0.95 }
-      ]
+      "comment": "院子以种菜层为主，不放室内家具（灯/桌/地毯会穿帮）",
+      "slots": []
     }
   }
 }
