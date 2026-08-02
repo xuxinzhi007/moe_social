@@ -11,7 +11,9 @@
     "codegraph:gen": "node ../scripts/codegraph/gen_all.mjs"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@xyflow/react": "^12.10.2",
+    "gsap": "^3.15.0",
     "jszip": "^3.10.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
