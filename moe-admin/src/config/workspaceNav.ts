@@ -89,8 +89,8 @@ export const NAV_BY_WORKSPACE: Record<WorkspaceId, NavEntry[]> = {
         {
           kind: 'item',
           to: '/biz/pet/avatar',
-           label: 'AI 精灵资源',
-           title: 'PNG 模板校准 · sprite 导出',
+           label: '序列帧工作台',
+           title: 'AI 序列帧整理 · 网格 Sheet 导出',
         },
         {
           kind: 'item',
