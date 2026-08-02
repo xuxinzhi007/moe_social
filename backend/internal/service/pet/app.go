@@ -21,8 +21,8 @@ func (a *AppService) Get(ctx context.Context, userID string) (*model.PetProfile,
 	return a.uc.EnsureProfile(ctx, userID)
 }
 
-func (a *AppService) Feed(ctx context.Context, userID string) (*model.PetProfile, error) {
-	return a.uc.Feed(ctx, userID)
+func (a *AppService) Feed(ctx context.Context, userID, itemID string) (*model.PetProfile, error) {
+	return a.uc.Feed(ctx, userID, itemID)
 }
 
 func (a *AppService) Pet(ctx context.Context, userID string) (*model.PetProfile, error) {
@@ -39,6 +39,10 @@ func (a *AppService) SetScene(ctx context.Context, userID, scene string) (*model
 
 func (a *AppService) PlaceFurniture(ctx context.Context, userID string, slots []petbiz.FurnitureSlot) (*model.PetProfile, error) {
 	return a.uc.PlaceFurniture(ctx, userID, slots)
+}
+
+func (a *AppService) SaveRoomBoundaries(ctx context.Context, userID string, boundaries []petbiz.RoomBoundary) (*model.PetProfile, error) {
+	return a.uc.SaveRoomBoundaries(ctx, userID, boundaries)
 }
 
 func (a *AppService) Study(ctx context.Context, userID, subject string) (*model.PetProfile, string, error) {

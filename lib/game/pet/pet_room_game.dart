@@ -13,12 +13,15 @@ import 'pet_avatar_stack.dart';
 import 'pet_sheet_avatar.dart';
 import 'pet_lpc_sheet.dart';
 
+enum PetCarePerformance { feed, care }
+
 /// 养成小家 Room：固定竖屏舞台；布置模式拖家具/旋转；角色可缩小拖动。
 class PetRoomGame extends FlameGame {
   PetRoomGame({
     this.onFurnitureMoved,
     this.onFurnitureSelected,
     this.onActorMoved,
+    this.onRoomBoundariesChanged,
   });
 
   static const double worldWidth = 720;
@@ -33,6 +36,8 @@ class PetRoomGame extends FlameGame {
   )? onFurnitureMoved;
   final void Function(int index)? onFurnitureSelected;
   final void Function(double x, double y)? onActorMoved;
+  final void Function(List<PetRoomBoundary> boundaries)?
+      onRoomBoundariesChanged;
 
   PetProfile _profile = PetProfile.fresh();
   String? _fxLabel;
@@ -43,12 +48,15 @@ class PetRoomGame extends FlameGame {
   _RoomBackdrop? _backdrop;
   _PetActor? _actor;
   final Map<int, _FurniturePiece> _pieces = {};
+  _RoomBoundaryLayer? _boundaryLayer;
 
   void syncProfile(PetProfile profile) {
     _profile = profile;
     _backdrop?.apply(profile);
     _actor?.apply(profile, forcePosition: !_actorDragging);
     _syncFurniture();
+    _boundaryLayer?.apply(
+        profile.roomBoundaries, profile.sceneId, decorateMode);
   }
 
   bool get _actorDragging => _actor?.dragging == true;
@@ -61,6 +69,7 @@ class PetRoomGame extends FlameGame {
       p.decorateMode = enabled;
       p.selected = selectedFurnitureIndex == p.listIndex;
     }
+    _boundaryLayer?.setDecorateMode(enabled);
   }
 
   void selectFurniture(int? index) {
@@ -103,6 +112,26 @@ class PetRoomGame extends FlameGame {
     _fxT = 1.2;
   }
 
+  void playCarePerformance({
+    required PetCarePerformance kind,
+    required String itemEmoji,
+    required String dialogue,
+  }) {
+    _actor?.performCare(
+      kind: kind,
+      itemEmoji: itemEmoji,
+      dialogue: dialogue,
+    );
+  }
+
+  void setActorMoveInput(double x, double y) {
+    _actor?.setMoveInput(Vector2(x, y));
+  }
+
+  void stopActorMoveInput() {
+    _actor?.setMoveInput(Vector2.zero());
+  }
+
   @override
   Color backgroundColor() => const Color(0xFFF3E7D8);
 
@@ -115,9 +144,27 @@ class PetRoomGame extends FlameGame {
     _actor = _PetActor(
       onMoved: (x, y) => onActorMoved?.call(x, y),
     );
+    _boundaryLayer = _RoomBoundaryLayer(
+      onChanged: (boundaries) => onRoomBoundariesChanged?.call(boundaries),
+    );
     await world.add(_backdrop!);
+    await world.add(_boundaryLayer!);
     await world.add(_actor!);
     syncProfile(_profile);
+  }
+
+  void addRoomBoundary() {
+    final next = [..._profile.roomBoundaries];
+    next.add(PetRoomBoundary(
+      id: 'wall_${DateTime.now().microsecondsSinceEpoch}',
+      scene: _profile.sceneId,
+      x: .5,
+      y: .5,
+      width: .24,
+      height: .06,
+    ));
+    _boundaryLayer?.apply(next, _profile.sceneId, true);
+    onRoomBoundariesChanged?.call(next);
   }
 
   @override
@@ -266,6 +313,34 @@ class _PetActor extends PositionComponent
   int _frame = 0;
   int _dir = 2; // down
   bool _moving = false;
+  Vector2 _moveInput = Vector2.zero();
+  PetCarePerformance? _carePerformance;
+  String _careEmoji = '';
+  String _careDialogue = '';
+  double _careT = 0;
+
+  void performCare({
+    required PetCarePerformance kind,
+    required String itemEmoji,
+    required String dialogue,
+  }) {
+    _carePerformance = kind;
+    _careEmoji = itemEmoji;
+    _careDialogue = dialogue;
+    _careT = 1.8;
+    _wanderTarget = null;
+  }
+
+  void setMoveInput(Vector2 input) {
+    final wasMoving = _moveInput.length2 > 0.0001;
+    _moveInput = input.length2 > 1 ? input.normalized() : input;
+    if (_moveInput.length2 > 0.0001) {
+      _wanderTarget = null;
+      _idleWait = 1.0;
+    } else if (wasMoving) {
+      onMoved(normX, normY);
+    }
+  }
 
   bool get _useSheet {
     final b = resolvePetAvatarBackend();
@@ -294,6 +369,31 @@ class _PetActor extends PositionComponent
       nx.clamp(0.12, 0.88) * PetRoomGame.worldWidth,
       ny.clamp(0.35, 0.88) * PetRoomGame.worldHeight,
     );
+  }
+
+  bool _canOccupy(Vector2 candidate) {
+    final radius = _useSheet ? lpcSize * .2 : pngW * .12;
+    for (final boundary in _profile.roomBoundaries) {
+      if (boundary.scene != _profile.sceneId) continue;
+      final rect = Rect.fromCenter(
+        center: Offset(
+          boundary.x * PetRoomGame.worldWidth,
+          boundary.y * PetRoomGame.worldHeight,
+        ),
+        width: boundary.width * PetRoomGame.worldWidth + radius * 2,
+        height: boundary.height * PetRoomGame.worldHeight + radius * 2,
+      );
+      if (rect.contains(Offset(candidate.x, candidate.y))) return false;
+    }
+    return true;
+  }
+
+  void _moveWithinRoom(Vector2 delta) {
+    final horizontal = Vector2(position.x + delta.x, position.y);
+    if (_canOccupy(horizontal)) position.x = horizontal.x;
+    final vertical = Vector2(position.x, position.y + delta.y);
+    if (_canOccupy(vertical)) position.y = vertical.y;
+    _placeFromNorm(normX, normY);
   }
 
   Future<void> _load() async {
@@ -340,32 +440,45 @@ class _PetActor extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
-    if (!_useSheet || _lpc == null || decorateMode || dragging) {
+    if (_careT > 0) {
+      _careT = math.max(0, _careT - dt);
+      if (_careT == 0) _carePerformance = null;
+    }
+    if (decorateMode || dragging) {
       _moving = false;
       return;
     }
 
-    if (_wanderTarget == null) {
-      _idleWait -= dt;
+    if (_moveInput.length2 > 0.0001) {
+      final delta = _moveInput.normalized() * (_walkSpeed * 1.35 * dt);
+      _moveWithinRoom(delta);
+      _dir = PetLpcSheet.dirFromVelocity(delta.x, delta.y);
+      _moving = true;
+    } else if (!_useSheet || _lpc == null) {
       _moving = false;
-      if (_idleWait <= 0) {
-        _pickWanderTarget();
-      }
+      return;
     } else {
-      final to = _wanderTarget! - position;
-      final dist = to.length;
-      if (dist < 4) {
-        _wanderTarget = null;
-        _idleWait = 1.2 + _rng.nextDouble() * 2.4;
+      if (_wanderTarget == null) {
+        _idleWait -= dt;
         _moving = false;
-        onMoved(normX, normY);
+        if (_idleWait <= 0) {
+          _pickWanderTarget();
+        }
       } else {
-        final step = math.min(_walkSpeed * dt, dist);
-        final delta = to.normalized() * step;
-        position += delta;
-        _placeFromNorm(normX, normY);
-        _dir = PetLpcSheet.dirFromVelocity(delta.x, delta.y);
-        _moving = true;
+        final to = _wanderTarget! - position;
+        final dist = to.length;
+        if (dist < 4) {
+          _wanderTarget = null;
+          _idleWait = 1.2 + _rng.nextDouble() * 2.4;
+          _moving = false;
+          onMoved(normX, normY);
+        } else {
+          final step = math.min(_walkSpeed * dt, dist);
+          final delta = to.normalized() * step;
+          _moveWithinRoom(delta);
+          _dir = PetLpcSheet.dirFromVelocity(delta.x, delta.y);
+          _moving = true;
+        }
       }
     }
 
@@ -390,6 +503,11 @@ class _PetActor extends PositionComponent
 
   @override
   void render(Canvas canvas) {
+    final careProgress = (1 - _careT / 1.8).clamp(0.0, 1.0);
+    final isEating = _carePerformance == PetCarePerformance.feed;
+    final bob = _careT > 0 ? math.sin(careProgress * math.pi * 4) * 5 : 0.0;
+    canvas.save();
+    canvas.translate(0, bob);
     final sheet = _lpc;
     if (sheet != null) {
       sheet.paint(
@@ -427,6 +545,56 @@ class _PetActor extends PositionComponent
       textDirection: TextDirection.ltr,
     )..layout();
     name.paint(canvas, Offset((size.x - name.width) / 2, size.y - 2));
+    canvas.restore();
+
+    if (_careT <= 0) return;
+    if (isEating) {
+      final food = TextPainter(
+        text: TextSpan(text: _careEmoji, style: const TextStyle(fontSize: 28)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final fromX = size.x + 16;
+      final toX = size.x * 0.58;
+      food.paint(
+        canvas,
+        Offset(fromX + (toX - fromX) * careProgress, size.y * 0.34),
+      );
+    }
+    _paintSpeechBubble(canvas);
+  }
+
+  void _paintSpeechBubble(Canvas canvas) {
+    final bubble = TextPainter(
+      text: TextSpan(
+        text: _careDialogue,
+        style: const TextStyle(
+          color: Color(0xFF5A4638),
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: 170);
+    final rect = Rect.fromLTWH(
+      (size.x - bubble.width) / 2 - 11,
+      -bubble.height - 42,
+      bubble.width + 22,
+      bubble.height + 18,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(14)),
+      Paint()..color = Colors.white.withValues(alpha: 0.94),
+    );
+    final tail = Path()
+      ..moveTo(size.x * 0.48, rect.bottom)
+      ..lineTo(size.x * 0.58, rect.bottom)
+      ..lineTo(size.x * 0.53, rect.bottom + 9)
+      ..close();
+    canvas.drawPath(
+        tail, Paint()..color = Colors.white.withValues(alpha: 0.94));
+    bubble.paint(canvas, Offset(rect.left + 11, rect.top + 8));
   }
 
   @override
@@ -446,8 +614,7 @@ class _PetActor extends PositionComponent
   void onDragUpdate(DragUpdateEvent event) {
     super.onDragUpdate(event);
     if (decorateMode || !dragging) return;
-    position += event.localDelta;
-    _placeFromNorm(normX, normY);
+    _moveWithinRoom(event.localDelta);
     final d = event.localDelta;
     if (d.x.abs() + d.y.abs() > 0.5) {
       _dir = PetLpcSheet.dirFromVelocity(d.x, d.y);
@@ -470,6 +637,169 @@ class _PetActor extends PositionComponent
     dragging = false;
     priority = 20;
   }
+}
+
+class _RoomBoundaryLayer extends PositionComponent
+    with HasGameReference<PetRoomGame> {
+  _RoomBoundaryLayer({required this.onChanged});
+
+  final void Function(List<PetRoomBoundary> boundaries) onChanged;
+  List<PetRoomBoundary> _boundaries = const [];
+  String _scene = 'living';
+  bool _decorateMode = false;
+  final List<_RoomBoundaryPiece> _pieces = [];
+
+  @override
+  Future<void> onLoad() async {
+    size = Vector2(PetRoomGame.worldWidth, PetRoomGame.worldHeight);
+    priority = 25;
+  }
+
+  void setDecorateMode(bool value) {
+    _decorateMode = value;
+    for (final piece in _pieces) {
+      piece.decorateMode = value;
+    }
+  }
+
+  void apply(
+      List<PetRoomBoundary> boundaries, String scene, bool decorateMode) {
+    _boundaries = List.of(boundaries);
+    _scene = scene;
+    _decorateMode = decorateMode;
+    _rebuild();
+  }
+
+  void _rebuild() {
+    for (final piece in _pieces) {
+      piece.removeFromParent();
+    }
+    _pieces.clear();
+    for (final boundary in _boundaries.where((item) => item.scene == _scene)) {
+      final piece = _RoomBoundaryPiece(
+        boundary: boundary,
+        decorateMode: _decorateMode,
+        onChanged: _update,
+      );
+      _pieces.add(piece);
+      add(piece);
+    }
+  }
+
+  void _update(PetRoomBoundary next) {
+    final index = _boundaries.indexWhere((item) => item.id == next.id);
+    if (index < 0) return;
+    _boundaries[index] = next;
+    onChanged(List.of(_boundaries));
+  }
+}
+
+enum _BoundaryDragMode { move, resize }
+
+class _RoomBoundaryPiece extends PositionComponent with DragCallbacks {
+  _RoomBoundaryPiece({
+    required this.boundary,
+    required this.decorateMode,
+    required this.onChanged,
+  });
+
+  PetRoomBoundary boundary;
+  bool decorateMode;
+  final void Function(PetRoomBoundary boundary) onChanged;
+  _BoundaryDragMode _mode = _BoundaryDragMode.move;
+
+  static const double _handleSize = 26;
+
+  @override
+  Future<void> onLoad() async {
+    anchor = Anchor.center;
+    _applyBoundary();
+  }
+
+  void _applyBoundary() {
+    position = Vector2(
+      boundary.x * PetRoomGame.worldWidth,
+      boundary.y * PetRoomGame.worldHeight,
+    );
+    size = Vector2(
+      boundary.width * PetRoomGame.worldWidth,
+      boundary.height * PetRoomGame.worldHeight,
+    );
+  }
+
+  void _save() {
+    boundary = boundary.copyWith(
+      x: (position.x / PetRoomGame.worldWidth).clamp(.04, .96),
+      y: (position.y / PetRoomGame.worldHeight).clamp(.12, .94),
+      width: (size.x / PetRoomGame.worldWidth).clamp(.03, .9),
+      height: (size.y / PetRoomGame.worldHeight).clamp(.03, .8),
+    );
+    _applyBoundary();
+    onChanged(boundary);
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (!decorateMode) return;
+    final rect = size.toRect();
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+      Paint()..color = const Color(0xFF966A55).withValues(alpha: .22),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+      Paint()
+        ..color = const Color(0xFF8A5D49).withValues(alpha: .8)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+    final handle = Rect.fromCenter(
+      center: Offset(size.x, size.y),
+      width: _handleSize,
+      height: _handleSize,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(handle, const Radius.circular(5)),
+      Paint()..color = const Color(0xFF8A5D49),
+    );
+  }
+
+  @override
+  bool containsLocalPoint(Vector2 point) {
+    if (!decorateMode) return false;
+    return point.x >= -_handleSize / 2 &&
+        point.y >= -_handleSize / 2 &&
+        point.x <= size.x + _handleSize / 2 &&
+        point.y <= size.y + _handleSize / 2;
+  }
+
+  @override
+  void onDragStart(DragStartEvent event) {
+    if (!decorateMode) return;
+    final local = event.localPosition;
+    _mode = local.x > size.x - _handleSize && local.y > size.y - _handleSize
+        ? _BoundaryDragMode.resize
+        : _BoundaryDragMode.move;
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    if (!decorateMode) return;
+    if (_mode == _BoundaryDragMode.resize) {
+      size += event.localDelta;
+      size.x = size.x.clamp(24, PetRoomGame.worldWidth * .9);
+      size.y = size.y.clamp(24, PetRoomGame.worldHeight * .8);
+    } else {
+      position += event.localDelta;
+    }
+    _save();
+  }
+
+  @override
+  void onDragEnd(DragEndEvent event) => _save();
+
+  @override
+  void onDragCancel(DragCancelEvent event) => _save();
 }
 
 enum _FurnDragMode { move, scale, rotate }

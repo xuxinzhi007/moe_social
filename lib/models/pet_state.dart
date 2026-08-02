@@ -25,6 +25,7 @@ class PetProfile {
     required this.shoesId,
     required this.sceneId,
     required this.furniture,
+    this.roomBoundaries = const [],
     required this.spouseId,
     required this.hasBaby,
     required this.friends,
@@ -51,6 +52,9 @@ class PetProfile {
   final String shoesId;
   final String sceneId;
   final List<PetFurniture> furniture;
+
+  /// 房间内不可通行的矩形区域，按场景保存，用于墙壁和大型固定结构。
+  final List<PetRoomBoundary> roomBoundaries;
   final String spouseId;
   final bool hasBaby;
   final List<String> friends;
@@ -80,6 +84,7 @@ class PetProfile {
     String? shoesId,
     String? sceneId,
     List<PetFurniture>? furniture,
+    List<PetRoomBoundary>? roomBoundaries,
     String? spouseId,
     bool? hasBaby,
     List<String>? friends,
@@ -106,6 +111,7 @@ class PetProfile {
       shoesId: shoesId ?? this.shoesId,
       sceneId: sceneId ?? this.sceneId,
       furniture: furniture ?? this.furniture,
+      roomBoundaries: roomBoundaries ?? this.roomBoundaries,
       spouseId: spouseId ?? this.spouseId,
       hasBaby: hasBaby ?? this.hasBaby,
       friends: friends ?? this.friends,
@@ -134,6 +140,7 @@ class PetProfile {
         'shoes_id': shoesId,
         'scene_id': sceneId,
         'furniture': furniture.map((e) => e.toJson()).toList(),
+        'room_boundaries': roomBoundaries.map((e) => e.toJson()).toList(),
         'spouse_user_id': spouseId,
         'has_baby': hasBaby,
         'friends': friends,
@@ -161,10 +168,25 @@ class PetProfile {
           .toList();
     }
     furn = PetFurniture.sanitize(furn);
+    final boundariesRaw = json['room_layout_json'] ?? json['room_boundaries'];
+    List<PetRoomBoundary> boundaries = const [];
+    dynamic decodedBoundaries = boundariesRaw;
+    if (decodedBoundaries is String && decodedBoundaries.isNotEmpty) {
+      try {
+        decodedBoundaries = jsonDecode(decodedBoundaries);
+      } catch (_) {
+        decodedBoundaries = const [];
+      }
+    }
+    if (decodedBoundaries is List) {
+      boundaries = decodedBoundaries
+          .whereType<Map>()
+          .map((e) => PetRoomBoundary.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
     final friendsRaw = json['friends'];
-    final friends = friendsRaw is List
-        ? friendsRaw.map((e) => '$e').toList()
-        : <String>[];
+    final friends =
+        friendsRaw is List ? friendsRaw.map((e) => '$e').toList() : <String>[];
     dynamic wearRaw = json['wear_layout'] ?? json['outfit_json'];
     if (wearRaw is String && wearRaw.isNotEmpty) {
       try {
@@ -192,6 +214,7 @@ class PetProfile {
       shoesId: '${json['shoes_id'] ?? 'shoes_basic'}',
       sceneId: '${json['scene_id'] ?? 'living'}',
       furniture: furn,
+      roomBoundaries: PetRoomBoundary.sanitize(boundaries),
       spouseId: '${json['spouse_user_id'] ?? ''}',
       hasBaby: json['has_baby'] == true,
       friends: friends,
@@ -224,6 +247,7 @@ class PetProfile {
           PetFurniture(id: 'lamp_basic', x: 0.78, y: 0.48, scene: 'living'),
           PetFurniture(id: 'rug_basic', x: 0.5, y: 0.78, scene: 'living'),
         ],
+        roomBoundaries: const [],
         spouseId: '',
         hasBaby: false,
         friends: const [],
@@ -231,6 +255,77 @@ class PetProfile {
         actorY: 0.64,
         wearLayout: PetWearLayout.defaults,
       );
+}
+
+class PetRoomBoundary {
+  const PetRoomBoundary({
+    required this.id,
+    required this.scene,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+  });
+
+  final String id;
+  final String scene;
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+
+  PetRoomBoundary copyWith({
+    String? scene,
+    double? x,
+    double? y,
+    double? width,
+    double? height,
+  }) =>
+      PetRoomBoundary(
+        id: id,
+        scene: scene ?? this.scene,
+        x: x ?? this.x,
+        y: y ?? this.y,
+        width: width ?? this.width,
+        height: height ?? this.height,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'scene': scene,
+        'x': x,
+        'y': y,
+        'width': width,
+        'height': height,
+      };
+
+  factory PetRoomBoundary.fromJson(Map<String, dynamic> json) =>
+      PetRoomBoundary(
+        id: '${json['id'] ?? ''}',
+        scene: '${json['scene'] ?? 'living'}',
+        x: (json['x'] as num?)?.toDouble() ?? .5,
+        y: (json['y'] as num?)?.toDouble() ?? .5,
+        width: (json['width'] as num?)?.toDouble() ?? .16,
+        height: (json['height'] as num?)?.toDouble() ?? .08,
+      );
+
+  static List<PetRoomBoundary> sanitize(List<PetRoomBoundary> values) {
+    final ids = <String>{};
+    return values
+        .where((item) {
+          if (item.id.isEmpty || item.scene.isEmpty || ids.contains(item.id))
+            return false;
+          ids.add(item.id);
+          return item.width > 0 && item.height > 0;
+        })
+        .map((item) => item.copyWith(
+              x: item.x.clamp(.04, .96),
+              y: item.y.clamp(.12, .94),
+              width: item.width.clamp(.03, .9),
+              height: item.height.clamp(.03, .8),
+            ))
+        .toList();
+  }
 }
 
 class PetFurniture {

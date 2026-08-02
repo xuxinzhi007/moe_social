@@ -23,6 +23,7 @@ func RegisterRoutes(s *khttp.Server, app *petapp.AppService) {
 	r.POST("/api/pet/dress", wrap(app, handleDress))
 	r.POST("/api/pet/scene", wrap(app, handleScene))
 	r.POST("/api/pet/furniture", wrap(app, handleFurniture))
+	r.POST("/api/pet/room-layout", wrap(app, handleRoomLayout))
 	r.POST("/api/pet/study", wrap(app, handleStudy))
 	r.POST("/api/pet/work", wrap(app, handleWork))
 	r.POST("/api/pet/age-up", wrap(app, handleAgeUp))
@@ -69,7 +70,13 @@ func handleFeed(app *petapp.AppService, ctx khttp.Context) error {
 	if err != nil || uid == "" {
 		return writeErr(ctx, http.StatusUnauthorized, "unauthorized")
 	}
-	p, err := app.Feed(ctx.Request().Context(), uid)
+	var body struct {
+		ItemID string `json:"item_id"`
+	}
+	if err := json.NewDecoder(ctx.Request().Body).Decode(&body); err != nil {
+		return writeErr(ctx, http.StatusBadRequest, "bad json")
+	}
+	p, err := app.Feed(ctx.Request().Context(), uid, body.ItemID)
 	if err != nil {
 		return writeErr(ctx, http.StatusBadRequest, err.Error())
 	}
@@ -89,12 +96,12 @@ func handleCare(app *petapp.AppService, ctx khttp.Context) error {
 }
 
 type dressBody struct {
-	Hat         string          `json:"hat_id"`
-	Top         string          `json:"top_id"`
-	Bottom      string          `json:"bottom_id"`
-	Shoes       string          `json:"shoes_id"`
-	WearLayout  json.RawMessage `json:"wear_layout"`
-	OutfitJSON  json.RawMessage `json:"outfit_json"`
+	Hat        string          `json:"hat_id"`
+	Top        string          `json:"top_id"`
+	Bottom     string          `json:"bottom_id"`
+	Shoes      string          `json:"shoes_id"`
+	WearLayout json.RawMessage `json:"wear_layout"`
+	OutfitJSON json.RawMessage `json:"outfit_json"`
 }
 
 func handleDress(app *petapp.AppService, ctx khttp.Context) error {
@@ -147,6 +154,26 @@ func handleFurniture(app *petapp.AppService, ctx khttp.Context) error {
 	var body furnitureBody
 	_ = json.NewDecoder(ctx.Request().Body).Decode(&body)
 	p, err := app.PlaceFurniture(ctx.Request().Context(), uid, body.Slots)
+	if err != nil {
+		return writeErr(ctx, http.StatusBadRequest, err.Error())
+	}
+	return writeOK(ctx, p)
+}
+
+type roomLayoutBody struct {
+	Boundaries []petbiz.RoomBoundary `json:"boundaries"`
+}
+
+func handleRoomLayout(app *petapp.AppService, ctx khttp.Context) error {
+	uid, err := actorID(ctx)
+	if err != nil || uid == "" {
+		return writeErr(ctx, http.StatusUnauthorized, "unauthorized")
+	}
+	var body roomLayoutBody
+	if err := json.NewDecoder(ctx.Request().Body).Decode(&body); err != nil {
+		return writeErr(ctx, http.StatusBadRequest, "bad json")
+	}
+	p, err := app.SaveRoomBoundaries(ctx.Request().Context(), uid, body.Boundaries)
 	if err != nil {
 		return writeErr(ctx, http.StatusBadRequest, err.Error())
 	}

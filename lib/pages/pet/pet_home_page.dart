@@ -11,7 +11,10 @@ import '../../game/pet/pet_content_catalog.dart';
 import '../../game/pet/pet_labels.dart';
 import '../../game/pet/pet_room_game.dart';
 import '../../models/pet_state.dart';
+import '../../models/pet_care_item.dart';
 import '../../providers/pet_provider.dart';
+import '../../services/companion_service.dart';
+import '../../widgets/pet/virtual_joystick.dart';
 import 'pet_dressing_page.dart';
 
 /// 养成主页：Flame Room + 照料 HUD + 轻量换装/布置体验。
@@ -33,6 +36,7 @@ class _PetHomePageState extends State<PetHomePage> {
   int? _selectedFurn;
   var _showMoveHint = false;
   Timer? _hintTimer;
+  CompanionProfileData? _companion;
 
   @override
   void initState() {
@@ -54,6 +58,9 @@ class _PetHomePageState extends State<PetHomePage> {
       onActorMoved: (x, y) {
         _dismissMoveHint();
         _pet?.moveActor(x, y);
+      },
+      onRoomBoundariesChanged: (boundaries) {
+        _pet?.saveRoomBoundaries(boundaries);
       },
     );
   }
@@ -90,6 +97,16 @@ class _PetHomePageState extends State<PetHomePage> {
       _game.syncProfile(_pet!.profile);
       _maybeShowMoveHint();
     });
+    _loadCompanion();
+  }
+
+  Future<void> _loadCompanion() async {
+    try {
+      final snapshot = await CompanionService().getSnapshot();
+      if (mounted) setState(() => _companion = snapshot.profile);
+    } catch (_) {
+      // Pet home stays available when the companion snapshot is offline.
+    }
   }
 
   PetProvider get pet => _pet!;
@@ -126,13 +143,40 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   Future<void> _feed() async {
-    await pet.feed();
-    _game.playCareFx('喂食 +');
+    await _showScrollSheet(
+      title: '选择要喂的食物',
+      children: [
+        const Text('食物会在云端结算后送到 TA 面前。'),
+        const SizedBox(height: 12),
+        for (final item in PetCareItem.foods)
+          _FoodChoice(
+            item: item,
+            onTap: () async {
+              Navigator.pop(context);
+              await pet.feed(item);
+              if (!mounted) return;
+              _game.playCarePerformance(
+                kind: PetCarePerformance.feed,
+                itemEmoji: item.emoji,
+                dialogue: '谢谢你，${item.name}好香！',
+              );
+              _toast();
+            },
+          ),
+      ],
+    );
   }
 
   Future<void> _care() async {
     await pet.care();
-    _game.playCareFx('陪伴 ♥');
+    _game.playCarePerformance(
+      kind: PetCarePerformance.care,
+      itemEmoji: '♥',
+      dialogue: _companion?.name.isNotEmpty == true
+          ? '和${_companion!.name}一起，好开心！'
+          : '有你陪着，好开心！',
+    );
+    _toast();
   }
 
   void _openMore() {
@@ -150,6 +194,10 @@ class _PetHomePageState extends State<PetHomePage> {
         onFurniture: () {
           Navigator.pop(ctx);
           _showFurnitureSheet();
+        },
+        onDecorate: () {
+          Navigator.pop(ctx);
+          _setDecorateMode(true);
         },
       ),
     );
@@ -358,6 +406,14 @@ class _PetHomePageState extends State<PetHomePage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _DecorToolBtn(
+                    icon: Icons.wallpaper_rounded,
+                    label: '加墙壁',
+                    onTap: _game.addRoomBoundary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _DecorToolBtn(
                     icon: Icons.zoom_in_rounded,
                     label: '放大',
                     onTap: () => _game.scaleSelected(0.08),
@@ -424,6 +480,16 @@ class _PetHomePageState extends State<PetHomePage> {
           fit: StackFit.expand,
           children: [
             GameWidget(game: _game),
+            if (!_decorateMode)
+              Positioned(
+                left: 18,
+                bottom: 158,
+                child: VirtualJoystick(
+                  onChanged: (value) =>
+                      _game.setActorMoveInput(value.dx, value.dy),
+                  onEnd: _game.stopActorMoveInput,
+                ),
+              ),
             SafeArea(
               child: Column(
                 children: [
@@ -446,7 +512,14 @@ class _PetHomePageState extends State<PetHomePage> {
                             ),
                           ),
                         ),
-                        _CoinPill(coins: p.coins),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _CoinPill(coins: p.coins),
+                            const SizedBox(height: 4),
+                            _SyncPill(status: pet.syncStatus),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -457,6 +530,11 @@ class _PetHomePageState extends State<PetHomePage> {
                       onSelect: pet.setScene,
                     ),
                   ),
+                  if (_companion?.name.isNotEmpty == true)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 7, 16, 0),
+                      child: _CompanionLinkPill(companion: _companion!),
+                    ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Padding(
@@ -690,8 +768,8 @@ class _StatusBars extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 36,
-            child: Text(label,
+            width: 64,
+            child: Text('$label ${v.round()}/100',
                 style:
                     const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
@@ -894,16 +972,19 @@ class _MoreGrid extends StatelessWidget {
   const _MoreGrid({
     required this.onDress,
     required this.onFurniture,
+    required this.onDecorate,
   });
 
   final VoidCallback onDress;
   final VoidCallback onFurniture;
+  final VoidCallback onDecorate;
 
   @override
   Widget build(BuildContext context) {
     final items = <(IconData, String, VoidCallback)>[
       (Icons.checkroom_rounded, '换衣间', onDress),
       (Icons.chair_rounded, '布置', onFurniture),
+      (Icons.tune_rounded, '调整摆放', onDecorate),
     ];
     return SafeArea(
       child: Padding(
@@ -942,6 +1023,118 @@ class _MoreGrid extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SyncPill extends StatelessWidget {
+  const _SyncPill({required this.status});
+
+  final PetSyncStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCloud = status == PetSyncStatus.cloudSynced;
+    final isSyncing = status == PetSyncStatus.syncing;
+    final color = isCloud ? const Color(0xFF4E9F78) : const Color(0xFF9A7651);
+    final label = isCloud ? '云端已同步' : (isSyncing ? '正在同步' : '本地保存，待同步');
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(isCloud ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                size: 13, color: color),
+            const SizedBox(width: 3),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10, color: color, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompanionLinkPill extends StatelessWidget {
+  const _CompanionLinkPill({required this.companion});
+
+  final CompanionProfileData companion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3E9FF).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0x338E7CC3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          child: Text(
+            '${companion.emoji} 与 ${companion.name} 同步的小家',
+            style: const TextStyle(
+              color: Color(0xFF69548F),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FoodChoice extends StatelessWidget {
+  const _FoodChoice({required this.item, required this.onTap});
+
+  final PetCareItem item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: const Color(0xFFFFF2E8),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Text(item.emoji, style: const TextStyle(fontSize: 32)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.name,
+                          style: const TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 2),
+                      Text(item.description,
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54)),
+                    ],
+                  ),
+                ),
+                Text('+${item.hungerGain}',
+                    style: const TextStyle(
+                        color: Color(0xFFE97891), fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
         ),
       ),
     );

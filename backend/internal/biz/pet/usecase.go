@@ -24,6 +24,18 @@ type Usecase struct {
 	repo ProfileRepo
 }
 
+type feedEffect struct {
+	hunger float64
+	mood   float64
+}
+
+var feedEffects = map[string]feedEffect{
+	"":             {hunger: 18, mood: 4},
+	"home_meal":    {hunger: 18, mood: 4},
+	"fruit_yogurt": {hunger: 12, mood: 10},
+	"energy_soup":  {hunger: 24, mood: 5},
+}
+
 // NewUsecase 创建养成用例。
 func NewUsecase(repo ProfileRepo) *Usecase {
 	return &Usecase{repo: repo}
@@ -37,6 +49,16 @@ type FurnitureSlot struct {
 	Scene    string  `json:"scene"`
 	Rotation int     `json:"rotation"` // 角度（度）
 	Scale    float64 `json:"scale"`    // 相对尺寸，默认 1
+}
+
+// RoomBoundary 房间内不可通行的墙壁/固定结构矩形，坐标均为归一化值。
+type RoomBoundary struct {
+	ID     string  `json:"id"`
+	Scene  string  `json:"scene"`
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }
 
 // EnsureProfile 确保用户有宠物档案。
@@ -82,13 +104,17 @@ func (u *Usecase) EnsureProfile(ctx context.Context, userID string) (*model.PetP
 }
 
 // Feed 喂食。
-func (u *Usecase) Feed(ctx context.Context, userID string) (*model.PetProfile, error) {
+func (u *Usecase) Feed(ctx context.Context, userID, itemID string) (*model.PetProfile, error) {
+	effect, ok := feedEffects[strings.TrimSpace(itemID)]
+	if !ok {
+		return nil, fmt.Errorf("pet feed: unsupported item")
+	}
 	p, err := u.EnsureProfile(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	p.Hunger = math.Min(100, p.Hunger+18)
-	p.Mood = math.Min(100, p.Mood+4)
+	p.Hunger = math.Min(100, p.Hunger+effect.hunger)
+	p.Mood = math.Min(100, p.Mood+effect.mood)
 	p.UpdatedAt = time.Now()
 	if err := u.repo.Save(ctx, p); err != nil {
 		return nil, fmt.Errorf("pet feed: %w", err)
@@ -166,6 +192,36 @@ func (u *Usecase) PlaceFurniture(ctx context.Context, userID string, slots []Fur
 	p.UpdatedAt = time.Now()
 	if err := u.repo.Save(ctx, p); err != nil {
 		return nil, fmt.Errorf("pet furniture: %w", err)
+	}
+	return p, nil
+}
+
+// SaveRoomBoundaries 覆盖保存房间阻挡区。边界独立于家具，不能混入 FurnitureJSON。
+func (u *Usecase) SaveRoomBoundaries(ctx context.Context, userID string, boundaries []RoomBoundary) (*model.PetProfile, error) {
+	p, err := u.EnsureProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	clean := make([]RoomBoundary, 0, len(boundaries))
+	seen := make(map[string]struct{}, len(boundaries))
+	for _, item := range boundaries {
+		if item.ID == "" || item.Scene == "" || item.Width <= 0 || item.Height <= 0 {
+			continue
+		}
+		if _, ok := seen[item.ID]; ok {
+			continue
+		}
+		seen[item.ID] = struct{}{}
+		item.X = math.Max(0.04, math.Min(0.96, item.X))
+		item.Y = math.Max(0.12, math.Min(0.94, item.Y))
+		item.Width = math.Max(0.03, math.Min(0.90, item.Width))
+		item.Height = math.Max(0.03, math.Min(0.80, item.Height))
+		clean = append(clean, item)
+	}
+	p.RoomLayoutJSON = mustJSON(clean)
+	p.UpdatedAt = time.Now()
+	if err := u.repo.Save(ctx, p); err != nil {
+		return nil, fmt.Errorf("pet room layout: %w", err)
 	}
 	return p, nil
 }

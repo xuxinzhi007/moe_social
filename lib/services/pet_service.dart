@@ -15,7 +15,18 @@ class PetService {
     return null;
   }
 
-  Future<PetProfile?> feed() => _postProfile('/api/pet/feed');
+  Future<PetProfile?> feed(String itemId) async {
+    try {
+      final res = await ApiService.post(
+        '/api/pet/feed',
+        body: {'item_id': itemId},
+      );
+      return _profileFrom(res);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<PetProfile?> care() => _postProfile('/api/pet/care');
 
   Future<PetProfile?> setScene(String sceneId) async {
@@ -74,6 +85,19 @@ class PetService {
               )
               .toList(),
         },
+      );
+      return _profileFrom(res);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<PetProfile?> saveRoomBoundaries(
+      List<PetRoomBoundary> boundaries) async {
+    try {
+      final res = await ApiService.post(
+        '/api/pet/room-layout',
+        body: {'boundaries': boundaries.map((e) => e.toJson()).toList()},
       );
       return _profileFrom(res);
     } catch (_) {
