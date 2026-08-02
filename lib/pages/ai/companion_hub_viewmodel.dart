@@ -132,11 +132,12 @@ class CompanionHubViewModel extends ChangeNotifier {
     final activity = state.activityLabel.trim();
 
     if (hasAttention) {
+      final who = profile.name.trim().isNotEmpty ? profile.name.trim() : 'TA';
       final body = greeting.isNotEmpty
           ? greeting
           : (mood.isNotEmpty ? mood : 'TA 正在等你来聊聊。');
       return CompanionPulseData(
-        title: 'TA 想你了',
+        title: '$who 想和你说',
         body: body,
         ctaLabel: '去聊天',
         kind: 'attention',

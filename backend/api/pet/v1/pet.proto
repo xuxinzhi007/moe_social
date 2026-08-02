@@ -50,6 +50,10 @@ message GetPetStateReply {
 }
 
 message EmptyPetRequest {}
+message FeedRequest {
+  // Kept optional for compatibility with clients that used the default meal.
+  string item_id = 1;
+}
 message PetProfileReply {
   PetProfile profile = 1;
 }
@@ -97,7 +101,7 @@ service PetLifeSim {
   rpc GetState(GetPetStateRequest) returns (GetPetStateReply) {
     option (google.api.http) = { get: "/api/pet/state" };
   }
-  rpc Feed(EmptyPetRequest) returns (PetProfileReply) {
+  rpc Feed(FeedRequest) returns (PetProfileReply) {
     option (google.api.http) = { post: "/api/pet/feed" body: "*" };
   }
   rpc Care(EmptyPetRequest) returns (PetProfileReply) {

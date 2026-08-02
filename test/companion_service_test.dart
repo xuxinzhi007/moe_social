@@ -123,7 +123,7 @@ void main() {
       hasAttention: true,
     );
 
-    expect(pulse.title, 'TA 想你了');
+    expect(pulse.title, 'Moe 想和你说');
     expect(pulse.ctaLabel, '去聊天');
     expect(pulse.kind, 'attention');
   });

@@ -6,12 +6,15 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/pet_state.dart';
+import '../models/pet_care_item.dart';
 import '../services/pet_career_config.dart';
 import '../services/pet_service.dart';
 import '../game/pet/pet_content_catalog.dart';
 import '../game/pet/pet_content_registry.dart';
 
 /// 养成状态：优先 API，失败本地持久化（保证可完整体验）。
+enum PetSyncStatus { syncing, cloudSynced, localOnly }
+
 class PetProvider extends ChangeNotifier {
   PetProvider({PetService? service}) : _service = service ?? PetService();
 
@@ -23,12 +26,14 @@ class PetProvider extends ChangeNotifier {
   String? _lastMessage;
   bool _busy = false;
   bool _loaded = false;
+  PetSyncStatus _syncStatus = PetSyncStatus.syncing;
   Timer? _msgTimer;
 
   PetProfile get profile => _profile;
   String? get lastMessage => _lastMessage;
   bool get busy => _busy;
   bool get loaded => _loaded;
+  PetSyncStatus get syncStatus => _syncStatus;
 
   /// Toast 文案短暂展示后自动清空，避免「换好啦！」等提示常驻。
   void _flashMessage(String msg) {
@@ -51,12 +56,14 @@ class PetProvider extends ChangeNotifier {
     unawaited(PetContentRegistry.loadIfPresent());
     final remote = await _service.fetchState();
     if (remote != null) {
+      _syncStatus = PetSyncStatus.cloudSynced;
       var furn = PetFurniture.sanitize(remote.furniture);
       if (furn.isEmpty) {
         furn = PetContentCatalog.starterFurniture();
       }
       _profile = remote.copyWith(furniture: furn);
     } else {
+      _syncStatus = PetSyncStatus.localOnly;
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_prefsKey);
       if (raw != null && raw.isNotEmpty) {
@@ -100,32 +107,37 @@ class PetProvider extends ChangeNotifier {
   Future<void> _syncFurnitureToServer() async {
     final remote = await _service.saveFurniture(_profile.furniture);
     if (remote == null) return;
+    _syncStatus = PetSyncStatus.cloudSynced;
     // 保留本地 actor 坐标与穿着；家具以服务端回写为准（已 sanitize）。
     final slots = PetFurniture.sanitize(
       remote.furniture.isNotEmpty ? remote.furniture : _profile.furniture,
     );
     // 若服务端只回 furniture_json 字符串，fromJson 已解析；空则保持本地。
     if (slots.isNotEmpty || _profile.furniture.isEmpty) {
-      _profile = _profile.copyWith(furniture: slots.isEmpty ? _profile.furniture : slots);
+      _profile = _profile.copyWith(
+          furniture: slots.isEmpty ? _profile.furniture : slots);
+      notifyListeners();
       await _persist();
     }
   }
 
   Future<void> _apply(PetProfile? remote, PetProfile local) async {
     _profile = remote ?? local;
+    _syncStatus =
+        remote == null ? PetSyncStatus.localOnly : PetSyncStatus.cloudSynced;
     _busy = false;
     notifyListeners();
     await _persist();
   }
 
-  Future<void> feed() async {
+  Future<void> feed(PetCareItem item) async {
     if (_busy) return;
     _busy = true;
     notifyListeners();
-    final remote = await _service.feed();
+    final remote = await _service.feed(item.id);
     final local = _profile.copyWith(
-      hunger: math.min(100, _profile.hunger + 18),
-      mood: math.min(100, _profile.mood + 4),
+      hunger: math.min(100, _profile.hunger + item.hungerGain),
+      mood: math.min(100, _profile.mood + item.moodGain),
     );
     _flashMessage('好好吃！');
     await _apply(remote, local);
@@ -212,8 +224,7 @@ class PetProvider extends ChangeNotifier {
       );
       return;
     }
-    final sameId =
-        sceneItems.where((f) => f.id == item.id).length;
+    final sameId = sceneItems.where((f) => f.id == item.id).length;
     if (sameId >= PetFurniture.maxSameIdPerScene) {
       _flashMessage(
         '「同款」最多 ${PetFurniture.maxSameIdPerScene} 件，请先调整已有摆件',
@@ -281,6 +292,25 @@ class PetProvider extends ChangeNotifier {
     _profile = _profile.copyWith(
       actorX: x.clamp(0.12, 0.88),
       actorY: y.clamp(0.35, 0.88),
+    );
+    notifyListeners();
+    await _persist();
+  }
+
+  Future<void> saveRoomBoundaries(List<PetRoomBoundary> boundaries) async {
+    final clean = PetRoomBoundary.sanitize(boundaries);
+    _profile = _profile.copyWith(roomBoundaries: clean);
+    notifyListeners();
+    await _persist();
+    final remote = await _service.saveRoomBoundaries(clean);
+    if (remote == null) return;
+    _syncStatus = PetSyncStatus.cloudSynced;
+    _profile = remote.copyWith(
+      furniture: _profile.furniture,
+      roomBoundaries: remote.roomBoundaries,
+      actorX: _profile.actorX,
+      actorY: _profile.actorY,
+      wearLayout: _profile.wearLayout,
     );
     notifyListeners();
     await _persist();

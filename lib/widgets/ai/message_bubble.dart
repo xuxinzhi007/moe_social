@@ -21,6 +21,8 @@ class AiMessageBubble extends StatefulWidget {
   final bool isLoading;
   final VoidCallback? onContentExpanded;
   final String? agentLabel;
+  final Widget? assistantAvatar;
+  final Widget? bubbleAction;
   final bool richFormat;
   final bool hideAvatar;
   final bool compactTop;
@@ -34,6 +36,8 @@ class AiMessageBubble extends StatefulWidget {
     this.isLoading = false,
     this.onContentExpanded,
     this.agentLabel,
+    this.assistantAvatar,
+    this.bubbleAction,
     this.richFormat = false,
     this.hideAvatar = false,
     this.compactTop = false,
@@ -67,6 +71,7 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
   }
 
   Widget _buildAssistantAvatar() {
+    if (widget.assistantAvatar != null) return widget.assistantAvatar!;
     final label = widget.agentLabel?.trim();
     if (label != null && label.isNotEmpty) {
       return Container(
@@ -336,15 +341,32 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                               ),
                             ],
                     ),
-                    child: (!widget.isUser &&
-                            widget.isLoading &&
-                            widget.content.trim().isEmpty)
-                        ? _renderThinkingContent()
-                        : widget.contentType == MessageContentType.text
-                            ? _renderTextContent()
-                            : widget.contentType == MessageContentType.thinking
-                                ? _renderThinkingContent()
-                                : _renderCodeContent(),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(
+                            right: widget.bubbleAction == null ? 0 : 34,
+                          ),
+                          child: (!widget.isUser &&
+                                  widget.isLoading &&
+                                  widget.content.trim().isEmpty)
+                              ? _renderThinkingContent()
+                              : widget.contentType == MessageContentType.text
+                                  ? _renderTextContent()
+                                  : widget.contentType ==
+                                          MessageContentType.thinking
+                                      ? _renderThinkingContent()
+                                      : _renderCodeContent(),
+                        ),
+                        if (widget.bubbleAction != null)
+                          Positioned(
+                            top: -7,
+                            right: -8,
+                            child: widget.bubbleAction!,
+                          ),
+                      ],
+                    ),
                   ),
                 ],
               ),

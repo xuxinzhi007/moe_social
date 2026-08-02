@@ -179,6 +179,8 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
     );
   }
 
+  // Kept temporarily for a backward-compatible internal entry point.
+  // ignore: unused_element
   Future<void> _openCompanionTools() async {
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -722,13 +724,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: AiBrandTokens.titleColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: '伙伴工具',
-            icon: const Icon(Icons.more_horiz_rounded),
-            onPressed: _openCompanionTools,
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -766,27 +761,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                         hasAttention: hasAttention,
                         onChat: _openChat,
                         onCustomize: _isSavingProfile ? null : _editProfile,
-                      );
-                    },
-                  ),
-                  Builder(
-                    builder: (context) {
-                      final presence =
-                          context.watch<CompanionPresenceProvider>();
-                      if (!presence.hasAttention) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: _CompanionMessageCard(
-                          name: _hub.profile.name,
-                          message: presence.greeting.isNotEmpty
-                              ? presence.greeting
-                              : _hub.state.greeting,
-                          reason: presence.activityLabel.isNotEmpty
-                              ? presence.activityLabel
-                              : presence.moodThought,
-                        ),
                       );
                     },
                   ),
@@ -1020,6 +994,7 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _CompanionMessageCard extends StatelessWidget {
   const _CompanionMessageCard({
     required this.name,

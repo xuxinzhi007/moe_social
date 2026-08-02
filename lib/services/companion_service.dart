@@ -1000,9 +1000,10 @@ class CompanionService {
       }
 
       var dataBuffer = StringBuffer();
+      var receivedTerminalEvent = false;
       await for (final chunk in response.stream.transform(utf8.decoder)) {
         dataBuffer.write(chunk);
-        var buffer = dataBuffer.toString();
+        var buffer = dataBuffer.toString().replaceAll('\r\n', '\n');
         while (true) {
           final sep = buffer.indexOf('\n\n');
           if (sep < 0) break;
@@ -1010,6 +1011,9 @@ class CompanionService {
           buffer = buffer.substring(sep + 2);
           final event = _parseSseBlock(block);
           if (event != null) {
+            receivedTerminalEvent = receivedTerminalEvent ||
+                event.type == 'done' ||
+                event.type == 'error';
             yield event;
           }
         }
@@ -1020,8 +1024,17 @@ class CompanionService {
       if (trailing.isNotEmpty) {
         final event = _parseSseBlock(trailing);
         if (event != null) {
+          receivedTerminalEvent = receivedTerminalEvent ||
+              event.type == 'done' ||
+              event.type == 'error';
           yield event;
         }
+      }
+      if (!receivedTerminalEvent) {
+        yield const CompanionChatEvent(
+          type: 'error',
+          text: '模型服务在返回完整结果前断开。请测试 API Key、模型 ID 与流式支持。',
+        );
       }
     } finally {
       client.close();
