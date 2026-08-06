@@ -8,8 +8,8 @@ import (
 
 	adminv1 "backend/api/admin/v1"
 	aiv1 "backend/api/ai/v1"
-	"backend/internal/apilegacy/common"
 	adminbiz "backend/internal/biz/admin"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -53,7 +53,7 @@ func (s *Server) AdminMe(ctx context.Context, _ *adminv1.AdminMeReq) (*adminv1.A
 	if !ok {
 		return nil, errAdminUnauthorized
 	}
-	claims, br := common.RequireAdminToken(req)
+	claims, br := apicomm.RequireAdminToken(req)
 	if br != nil {
 		return nil, status.Error(codes.Unauthenticated, br.Message)
 	}

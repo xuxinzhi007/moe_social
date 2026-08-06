@@ -3,7 +3,7 @@ package adminapphttp
 import (
 	"context"
 
-	"backend/internal/apilegacy/common"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/internal/platform/svc"
 	aiapp "backend/internal/service/ai"
 )
@@ -51,7 +51,7 @@ func DepsFromServiceContext(svcCtx *svc.ServiceContext) Deps {
 		AIApp:   svcCtx.Domains.AI.AIApp,
 		Runtime: runtime,
 		RecordAudit: func(ctx context.Context, action, resource, resourceID, detail string) {
-			common.TryRecordAdminAudit(ctx, svcCtx, action, resource, resourceID, detail)
+			apicomm.TryRecordAdminAudit(ctx, svcCtx, action, resource, resourceID, detail)
 		},
 	}
 }

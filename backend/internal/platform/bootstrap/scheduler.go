@@ -6,11 +6,11 @@ import (
 	"backend/internal/adapter/moeconfig"
 	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
+	"backend/internal/platform/appdb"
 	"backend/internal/platform/moewiring"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/runtime"
-	"backend/utils"
 
 	"gorm.io/gorm"
 )
@@ -21,8 +21,8 @@ func StartDreamScheduler(parent context.Context, deps Deps) {
 	if appPort == nil {
 		return
 	}
-	db := utils.GetDB()
-	if db == nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return
 	}
 	inf := moeconfig.InferenceFromViper()
@@ -37,8 +37,8 @@ func StartMoeBotScheduler(parent context.Context, deps Deps) {
 	if appPort == nil {
 		return
 	}
-	db := utils.GetDB()
-	if db == nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return
 	}
 	inf := moeconfig.InferenceFromViper()

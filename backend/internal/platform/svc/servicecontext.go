@@ -1,7 +1,7 @@
 package svc
 
 import (
-	"backend/internal/apilegacy/config"
+	"backend/internal/platform/apiconfig"
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
@@ -13,13 +13,13 @@ import (
 	companionapp "backend/internal/service/companion"
 	gameapp "backend/internal/service/game"
 	giftapp "backend/internal/service/gift"
-	lifeapp "backend/internal/service/life"
 	landingapp "backend/internal/service/landing"
-	petapp "backend/internal/service/pet"
+	lifeapp "backend/internal/service/life"
 	llmapp "backend/internal/service/llm"
 	mediaapp "backend/internal/service/media"
 	moeadmin "backend/internal/service/moe"
 	notifyapp "backend/internal/service/notify"
+	petapp "backend/internal/service/pet"
 	postapp "backend/internal/service/post"
 	userapp "backend/internal/service/user"
 	vipadmin "backend/internal/service/vip"
@@ -78,7 +78,7 @@ type ServiceDomains struct {
 }
 
 type ServiceContext struct {
-	Config         config.Config
+	Config         apiconfig.Config
 	Domains        ServiceDomains
 	MoeAdmin       *moeadmin.AdminService
 	LandingApp     *landingapp.AppService
@@ -104,7 +104,7 @@ type ServiceContext struct {
 	ModelCache     *utils.ModelCache
 }
 
-func NewServiceContext(c config.Config) *ServiceContext {
+func NewServiceContext(c apiconfig.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:     c,
 		ModelCache: utils.NewModelCache(),

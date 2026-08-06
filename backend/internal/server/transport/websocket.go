@@ -1,8 +1,8 @@
 package transport
 
 import (
-	"backend/internal/apilegacy/common"
 	chatbiz "backend/internal/biz/chat"
+	apicomm "backend/internal/platform/apicomm"
 	companionapp "backend/internal/service/companion"
 	lifeapp "backend/internal/service/life"
 
@@ -65,7 +65,7 @@ func companionWSHandler(app *companionapp.AppService) func(khttp.Context) error 
 			kctx.Response().WriteHeader(501)
 			return nil
 		}
-		userID, err := common.UserIDUint(kctx.Request().Context())
+		userID, err := apicomm.UserIDUint(kctx.Request().Context())
 		if err != nil || userID == 0 {
 			return kerrors.Unauthorized("UNAUTHORIZED", "请先登录")
 		}

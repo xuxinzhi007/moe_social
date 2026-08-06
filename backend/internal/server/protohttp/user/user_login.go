@@ -3,8 +3,8 @@ package userhttp
 import (
 	"context"
 
-	userbiz "backend/internal/biz/user"
 	userv1 "backend/api/user/v1"
+	userbiz "backend/internal/biz/user"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"

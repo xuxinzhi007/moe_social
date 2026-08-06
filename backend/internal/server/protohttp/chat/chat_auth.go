@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"backend/internal/apilegacy/common"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -16,7 +16,7 @@ import (
 var errUnauthorized = errors.New("unauthorized")
 
 func actorUserID(ctx context.Context) (string, error) {
-	if s, err := common.UserIDString(ctx); err == nil && strings.TrimSpace(s) != "" {
+	if s, err := apicomm.UserIDString(ctx); err == nil && strings.TrimSpace(s) != "" {
 		return strings.TrimSpace(s), nil
 	}
 	req, ok := khttp.RequestFromServerContext(ctx)

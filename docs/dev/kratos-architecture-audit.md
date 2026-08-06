@@ -1,5 +1,7 @@
 # Kratos 架构整理 — 结论与现存问题
 
+> **归档（勿当现状）**：本文反映 2026-05-27 迁移收尾快照；compat / httplegacy / rpc 等描述已过期。  
+> **现行 SSOT**：[kratos-migration.md](./kratos-migration.md) · [backend/LAYOUT.md](../../backend/LAYOUT.md) · [kratos-migration-status.md](./kratos-migration-status.md)  
 > **日期：2026-05-27（P0/P1 收口）**  
 > **范围**：`backend/` 从 go-zero 单栈迁移到 Kratos 官方布局的收尾审计  
 > **关联**：[kratos-directory-ssot.md](./kratos-directory-ssot.md) · [kratos-migration-status.md](./kratos-migration-status.md)

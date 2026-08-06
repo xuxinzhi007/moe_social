@@ -3,13 +3,14 @@ package bootstrap
 import (
 	"context"
 
+	"backend/internal/platform/appdb"
 	"backend/utils"
 )
 
 // AfterWire starts in-process background tasks after HTTP wiring completes.
 func AfterWire(parent context.Context, deps Deps) {
 	RegisterSocialAchievementHooks()
-	if db := utils.GetDB(); db != nil {
+	if db, err := appdb.Open(); err == nil {
 		utils.StartPrivateMessageCleanup(db)
 	}
 	StartMoeBotScheduler(parent, deps)

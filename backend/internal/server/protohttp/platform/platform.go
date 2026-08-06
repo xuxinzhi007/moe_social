@@ -10,11 +10,11 @@ import (
 
 	platformv1 "backend/api/platform/v1"
 	userv1 "backend/api/user/v1"
-	"backend/internal/apilegacy/common"
 	contentbiz "backend/internal/biz/content"
 	llmbiz "backend/internal/biz/llm"
 	moebiz "backend/internal/biz/moe"
 	voicebiz "backend/internal/biz/voice"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/internal/platform/svc"
 	adminapp "backend/internal/service/admin"
 	appcfgapp "backend/internal/service/appcfg"
@@ -223,7 +223,7 @@ func (r *voiceUserResolver) ResolveVoiceUserDisplay(ctx context.Context, userID 
 }
 
 func actorUserIDString(ctx context.Context) (string, error) {
-	if s, err := common.UserIDString(ctx); err == nil {
+	if s, err := apicomm.UserIDString(ctx); err == nil {
 		return s, nil
 	}
 	req, ok := khttp.RequestFromServerContext(ctx)

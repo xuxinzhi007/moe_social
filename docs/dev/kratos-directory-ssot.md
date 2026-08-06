@@ -1,5 +1,7 @@
 # Kratos 目录 SSOT（对齐官网 · Moe 改造）
 
+> **归档（勿当现状）**：文中 `make gen-api`、`httplegacy`、compat 条数等为迁移期记录，已过期。  
+> **现行 SSOT**：[kratos-migration.md](./kratos-migration.md) · [backend/LAYOUT.md](../../backend/LAYOUT.md)  
 > **权威参考**：[Kratos 项目布局](https://go-kratos.dev/zh-cn/docs/intro/layout/)  
 > **状态板**：[kratos-migration-status.md](./kratos-migration-status.md)  
 > **上次更新**：2026-05-29 · 迁移完成（HTTP-only）

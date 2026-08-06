@@ -3,14 +3,14 @@ package llmhttp
 import (
 	"context"
 
-	"backend/internal/apilegacy/common"
 	llmv1 "backend/api/llm/v1"
+	apicomm "backend/internal/platform/apicomm"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
 func actorUserID(ctx context.Context) (string, error) {
-	if s, err := common.UserIDString(ctx); err == nil {
+	if s, err := apicomm.UserIDString(ctx); err == nil {
 		return s, nil
 	}
 	req, ok := khttp.RequestFromServerContext(ctx)

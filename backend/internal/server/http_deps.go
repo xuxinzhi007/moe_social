@@ -3,7 +3,7 @@ package server
 import (
 	"strings"
 
-	admincfg "backend/internal/apilegacy/config"
+	admincfg "backend/internal/platform/apiconfig"
 	"backend/internal/platform/chatdelivery"
 	"backend/internal/platform/svc"
 	moeadminhttp "backend/internal/server/protohttp"

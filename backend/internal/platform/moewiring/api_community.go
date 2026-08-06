@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	communityapp "backend/internal/service/community"
-	"backend/utils"
 )
 
 func CommunityAPIInProcessEnabled() bool {
@@ -13,12 +13,9 @@ func NewAPICommunityService() (*communityapp.AppService, error) {
 	if !CommunityAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return communityapp.New(db), nil
 }

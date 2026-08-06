@@ -22,7 +22,7 @@ import (
 	postv1 "backend/api/post/v1"
 	userv1 "backend/api/user/v1"
 	vipv1 "backend/api/vip/v1"
-	admincfg "backend/internal/apilegacy/config"
+	admincfg "backend/internal/platform/apiconfig"
 	moeadminhttp "backend/internal/server/protohttp"
 	achievementhttp "backend/internal/server/protohttp/achievement"
 	adminapphttp "backend/internal/server/protohttp/adminapp"

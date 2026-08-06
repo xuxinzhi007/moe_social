@@ -1,30 +1,23 @@
-# apilegacy 保留清单
+# apilegacy 退役说明
 
-Kratos 迁移已完成，`internal/apilegacy/` 仍承担**运行时兼容层**，暂不可整包删除。
+> **2026-08-06**：`internal/apilegacy/` 已物理删除；能力迁入下列包。
 
-## 仍被引用的模块
+| 原路径 | 新路径 | 包名 |
+|--------|--------|------|
+| `apilegacy/config/` | `internal/platform/apiconfig/` | `apiconfig` |
+| `apilegacy/common/` | `internal/platform/apicomm/` | `apicomm` |
+| `apilegacy/moebridge/` | `internal/biz/moe/moebridge/` | `moebridge` |
+| `apilegacy/swaggerdoc/` | `internal/server/swaggerdoc/` | `doc` |
+| `apilegacy/presence/` | 删除（直用 `internal/pkg/presence`） | — |
 
-| 路径 | 用途 | 迁移方向 |
-|------|------|----------|
-| `config/` | 启动期 `Config` 结构体，与 `config/config.yaml` 合并 | 逐步迁入 `internal/platform/yamlconf` |
-| `common/jwtctx.go` | JWT 上下文辅助 | 迁入 `internal/server/auth` |
-| `common/llm_inference_client.go` | LLM 推理 HTTP 客户端 | 迁入 `internal/biz/llm` |
-| `common/local_models.go` | 本地模型目录 | 迁入 `internal/biz/llm` |
-| `common/admin_*.go` | 管理端转换/审计辅助 | 迁入 `internal/biz/admin` |
-| `moebridge/` | proto 与 biz 结构转换 | 与 `internal/biz/admin/adminv1_out.go` 合并 |
-| `swaggerdoc/` | Swagger UI 静态页 | 保留或迁至 `internal/server/http_docs.go` |
-| `presence/` | 在线状态（chat 兼容） | 迁入 `internal/biz/chat` |
-
-## 配置统一
+## 配置
 
 - **SSOT**：`backend/config/config.yaml`
-- **合并入口**：`internal/platform/wiring/config_override.go` → `apilegacy/config.Config`
-- **待移除**：`utils/db.go` 内独立 viper 路径（已去掉硬编码绝对路径；新代码禁止 `utils.GetDB()`）
+- **API 片段**：`api/etc/moe.yaml` → `apiconfig.Config`（经 `yamlconf` + `wiring.ApplyUnifiedConfigOverrides`）
+- **DB 访问**：生产 wiring / bootstrap 使用 `internal/platform/appdb.Open()`；禁止新代码调用 `utils.GetDB()`
 
-## 删除条件
+## 后续可继续收敛
 
-当以下条件全部满足时可删 `apilegacy/`：
-
-1. 启动只读 `yamlconf` / Kratos config，不再构造 `apilegacy/config.Config`
-2. protohttp 不再 import `apilegacy/common`
-3. `grep -r apilegacy backend/internal` 仅剩文档引用
+- `apicomm` 中 JWT/admin 辅助可再迁入 `internal/server/auth` / `internal/biz/admin`
+- LLM client / local models 可再迁入 `internal/biz/llm`
+- `utils/db.go` 全局单例可再收口到 data 层显式注入

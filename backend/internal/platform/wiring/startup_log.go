@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"backend/internal/apilegacy/config"
+	"backend/internal/platform/apiconfig"
 )
 
 type wireReporter struct {
@@ -38,7 +38,7 @@ func (r *wireReporter) domainWarn(name, route, warn string) {
 	r.domains = append(r.domains, domainWire{name: name, route: route, warn: warn})
 }
 
-func logWireSummary(r *wireReporter, c *config.Config) {
+func logWireSummary(r *wireReporter, c *apiconfig.Config) {
 	if r == nil {
 		return
 	}

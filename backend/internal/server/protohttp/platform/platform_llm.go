@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 
 	platformv1 "backend/api/platform/v1"
-	"backend/internal/apilegacy/config"
 	llmbiz "backend/internal/biz/llm"
+	"backend/internal/platform/apiconfig"
 	"backend/pkg/llminference"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -124,12 +124,12 @@ func (s *Server) LlmDownloadModel(ctx context.Context, in *platformv1.LlmDownloa
 	return platformWriteToBaseResp(result), nil
 }
 
-func platformInferenceCfgFromConfig(c config.Config) llminference.Config {
+func platformInferenceCfgFromConfig(c apiconfig.Config) llminference.Config {
 	inf := c.LLMInference
 	return llminference.ConfigFrom(inf.BaseUrl, inf.ApiStyle, inf.TimeoutSeconds, inf.MemoryModel, inf.ApiKey)
 }
 
-func platformConfigSnapshotFromConfig(c config.Config) llmbiz.ConfigSnapshot {
+func platformConfigSnapshotFromConfig(c apiconfig.Config) llmbiz.ConfigSnapshot {
 	inf := c.LLMInference
 	return llmbiz.ConfigSnapshot{InferenceBaseURL: inf.BaseUrl, InferenceAPIStyle: inf.ApiStyle, InferenceTimeoutSec: inf.TimeoutSeconds, MemoryModel: inf.MemoryModel, HasSummaryPrompt: inf.MemorySummaryPrompt != "", HasExtractPrompt: inf.MemoryExtractPrompt != "", LocalModelsStorageDir: c.LocalModels.StorageDir, LocalModelsCatalogSize: len(c.LocalModels.Catalog), MemoryBudget: llmbiz.DefaultMemoryBudget()}
 }

@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	chatapp "backend/internal/service/chat"
-	"backend/utils"
 )
 
 // ChatAPIInProcessEnabled config.yaml: moe.chat_api_in_process
@@ -15,12 +15,9 @@ func NewAPIChatService() (*chatapp.AppService, error) {
 	if !ChatAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return chatapp.New(db), nil
 }

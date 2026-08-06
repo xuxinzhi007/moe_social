@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	adminapp "backend/internal/service/admin"
-	"backend/utils"
 )
 
 // AdminReadonlyAPIInProcessEnabled config.yaml: moe.admin_readonly_api_in_process
@@ -15,12 +15,9 @@ func NewAPIAdminReadonlyService() (*adminapp.AppService, error) {
 	if !AdminReadonlyAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return adminapp.New(db), nil
 }

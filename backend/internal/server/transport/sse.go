@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"backend/internal/apilegacy/common"
-	"backend/internal/apilegacy/moebridge"
+	"backend/internal/biz/moe/moebridge"
 	"backend/internal/legacy/types"
+	apicomm "backend/internal/platform/apicomm"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/runtime"
 
@@ -32,31 +32,31 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 		}
 		agentKey := req.AgentKey
 		if agentKey == "" {
-			_ = common.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
-				BaseResp: common.HandleError(fmt.Errorf("agent_key is required")),
+			_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+				BaseResp: apicomm.HandleError(fmt.Errorf("agent_key is required")),
 			})
 			return nil
 		}
 		if admin == nil {
-			_ = common.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+			_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
 				BaseResp: moeAdminUnavailable(),
 			})
 			return nil
 		}
 
-		common.InitSSEHeaders(w)
+		apicomm.InitSSEHeaders(w)
 		w.WriteHeader(http.StatusOK)
 
 		send := func() bool {
 			snap, err := admin.GetBrainPipeline(r.Context(), agentKey)
 			if err != nil {
-				_ = common.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
-					BaseResp: common.HandleError(err),
+				_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
+					BaseResp: apicomm.HandleError(err),
 				})
 				return false
 			}
-			if err := common.WriteSSE(w, "pipeline", types.AdminGetMoeBrainPipelineResp{
-				BaseResp: common.HandleError(nil),
+			if err := apicomm.WriteSSE(w, "pipeline", types.AdminGetMoeBrainPipelineResp{
+				BaseResp: apicomm.HandleError(nil),
 				Data:     moebridge.PipelineDataFromBiz(snap),
 			}); err != nil {
 				return false
@@ -65,7 +65,7 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 		}
 
 		if send() {
-			_ = common.WriteSSE(w, "done", map[string]bool{"ok": true})
+			_ = apicomm.WriteSSE(w, "done", map[string]bool{"ok": true})
 			return nil
 		}
 
@@ -80,7 +80,7 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 			case <-r.Context().Done():
 				return nil
 			case <-heartbeat.C:
-				if err := common.WriteSSE(w, "ping", map[string]string{"t": "ok"}); err != nil {
+				if err := apicomm.WriteSSE(w, "ping", map[string]string{"t": "ok"}); err != nil {
 					return nil
 				}
 			case _, open := <-updates:
@@ -88,7 +88,7 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 					return nil
 				}
 				if send() {
-					_ = common.WriteSSE(w, "done", map[string]bool{"ok": true})
+					_ = apicomm.WriteSSE(w, "done", map[string]bool{"ok": true})
 					return nil
 				}
 			}

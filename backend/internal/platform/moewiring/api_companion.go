@@ -7,10 +7,10 @@ import (
 	companionbiz "backend/internal/biz/companion"
 	lifebiz "backend/internal/biz/life"
 	companiondata "backend/internal/data/companion"
+	"backend/internal/platform/appdb"
 	companionapp "backend/internal/service/companion"
 	lifeapp "backend/internal/service/life"
 	"backend/pkg/llminference"
-	"backend/utils"
 )
 
 // CompanionAPIInProcessEnabled reports whether the companion service should run in-process.
@@ -23,12 +23,9 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 	if !CompanionAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	// 复用全局 LLM 推理配置
 	inf := moeconfig.InferenceFromViper()

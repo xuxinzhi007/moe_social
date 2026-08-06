@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"backend/internal/apilegacy/common"
+	apicomm "backend/internal/platform/apicomm"
 	companionapp "backend/internal/service/companion"
 	"backend/pkg/llminference"
 
@@ -68,17 +68,17 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		override = &config
 	}
 
-	common.InitSSEHeaders(w)
-	_ = common.WriteSSE(w, "start", map[string]string{})
+	apicomm.InitSSEHeaders(w)
+	_ = apicomm.WriteSSE(w, "start", map[string]string{})
 
 	fullReply, err := app.ChatStreamWithInputMode(r.Context(), userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
-		return common.WriteSSE(w, "delta", map[string]string{"text": chunk})
+		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
-		_ = common.WriteSSE(w, "error", map[string]string{"message": err.Error()})
+		_ = apicomm.WriteSSE(w, "error", map[string]string{"message": err.Error()})
 		return nil
 	}
 
-	_ = common.WriteSSE(w, "done", map[string]string{"text": strings.TrimSpace(fullReply)})
+	_ = apicomm.WriteSSE(w, "done", map[string]string{"text": strings.TrimSpace(fullReply)})
 	return nil
 }

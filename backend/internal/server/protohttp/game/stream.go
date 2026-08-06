@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	gameapp "backend/internal/service/game"
-	"backend/internal/apilegacy/common"
 	gamebiz "backend/internal/biz/game"
+	apicomm "backend/internal/platform/apicomm"
+	gameapp "backend/internal/service/game"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
@@ -33,7 +33,7 @@ func RegisterStreamRoute(s *khttp.Server, app *gameapp.AppService) {
 func handleActStream(ctx khttp.Context, app *gameapp.AppService) error {
 	w := ctx.Response()
 	r := ctx.Request()
-	common.InitSSEHeaders(w)
+	apicomm.InitSSEHeaders(w)
 
 	var req actStreamRequest
 	body, _ := io.ReadAll(r.Body)
@@ -49,19 +49,19 @@ func handleActStream(ctx khttp.Context, app *gameapp.AppService) error {
 		}
 	}
 	if strings.TrimSpace(req.Action) == "" {
-		_ = common.WriteSSE(w, "error", map[string]string{"message": "action required"})
+		_ = apicomm.WriteSSE(w, "error", map[string]string{"message": "action required"})
 		return nil
 	}
 
-	_ = common.WriteSSE(w, "start", map[string]string{"action": req.Action})
+	_ = apicomm.WriteSSE(w, "start", map[string]string{"action": req.Action})
 
 	var streamedProse strings.Builder
 	result, err := app.RunActStream(r.Context(), req.UserID, req.SessionID, req.Action, func(chunk string) error {
 		streamedProse.WriteString(chunk)
-		return common.WriteSSE(w, "delta", map[string]string{"text": chunk})
+		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
-		_ = common.WriteSSE(w, "error", map[string]string{"message": err.Error()})
+		_ = apicomm.WriteSSE(w, "error", map[string]string{"message": err.Error()})
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func handleActStream(ctx khttp.Context, app *gameapp.AppService) error {
 		"inventory":            toStreamItems(result.Inventory),
 		"npcs":                 toStreamNpcs(result.Npcs),
 	}
-	_ = common.WriteSSE(w, "done", donePayload)
+	_ = apicomm.WriteSSE(w, "done", donePayload)
 	return nil
 }
 

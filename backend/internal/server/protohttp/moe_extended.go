@@ -9,8 +9,8 @@ import (
 	"time"
 
 	moev1pb "backend/api/moe/v1"
-	"backend/internal/apilegacy/common"
 	moebiz "backend/internal/biz/moe"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/model"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/core"
@@ -70,7 +70,7 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := common.InferenceFromLLMConf(s.inferenceCfg)
+	cfg, err := apicomm.InferenceFromLLMConf(s.inferenceCfg)
 	deps := runtime.Deps{Inference: runtime.LoadInferenceFromViper()}
 	preferred := runtime.ConfiguredPostModel(deps, model.MoeAgentRuntime{})
 
@@ -92,10 +92,10 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 	defer cancel()
 
 	client := utils.NewHTTPClient(cfg.TimeoutSeconds)
-	models, listErr := common.ListModelNames(inferCtx, client, cfg)
+	models, listErr := apicomm.ListModelNames(inferCtx, client, cfg)
 	if listErr != nil {
 		out.Message = listErr.Error()
-		out.Online = common.ProbeInferenceEndpoint(inferCtx, client, cfg)
+		out.Online = apicomm.ProbeInferenceEndpoint(inferCtx, client, cfg)
 	} else {
 		out.Online = true
 		out.Models = models
@@ -132,7 +132,7 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 		out.Message = fmt.Sprintf("inference service is online, but model %s was not found", preferred)
 	}
 
-	slot := common.FetchInferenceSlotInfo(inferCtx, client, cfg.BaseURL)
+	slot := apicomm.FetchInferenceSlotInfo(inferCtx, client, cfg.BaseURL)
 	out.ContextLimit = int32(slot.ContextLimit)
 	out.ContextSource = slot.Source
 	return out, nil

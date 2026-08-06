@@ -247,6 +247,33 @@ class PetProvider extends ChangeNotifier {
     return (coins: coins, mood: mood, kind: kind, comboHint: combo);
   }
 
+  /// 金币增减公共入口（农场等衍生模块共用宠物 coins）。
+  /// [spendCoins] 余额不足返回 false 且不扣款。
+  void addCoins(int amount) {
+    if (amount <= 0) return;
+    _profile = _profile.copyWith(coins: _profile.coins + amount);
+    notifyListeners();
+    unawaited(_persist());
+  }
+
+  bool spendCoins(int amount) {
+    if (amount <= 0 || _profile.coins < amount) return false;
+    _profile = _profile.copyWith(coins: _profile.coins - amount);
+    notifyListeners();
+    unawaited(_persist());
+    return true;
+  }
+
+  /// 心情小幅提升（农场收获等联动）。
+  void boostMood(int amount) {
+    if (amount <= 0) return;
+    _profile = _profile.copyWith(
+      mood: math.min(100, _profile.mood + amount),
+    );
+    notifyListeners();
+    unawaited(_persist());
+  }
+
   /// 本地落盘后异步写库（失败不影响本地布置）。
   Future<void> _syncFurnitureToServer() async {
     final localSnapshot = List<PetFurniture>.from(_profile.furniture);

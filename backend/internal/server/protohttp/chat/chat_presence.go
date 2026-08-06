@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	chatv1 "backend/api/chat/v1"
-	"backend/internal/apilegacy/presence"
+	"backend/internal/pkg/presence"
 )
 
 // PresenceServer 实现 chat.v1.ChatPresenceService HTTP。

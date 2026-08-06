@@ -36,7 +36,6 @@ var publicPaths = []string{
 
 	// 文档与运维
 	"/health",
-	"/migration",
 	"/swagger",
 	"/doc",
 	"/api/doc",
@@ -59,7 +58,7 @@ var publicPaths = []string{
 }
 
 // jwtAuthFilter 解析 Authorization: Bearer <token> 并将 userId 注入到请求 context 中。
-// 写入 "userId" 和 "user_id" 两个 key，兼容 common.UserIDString 和 llm platform_chat_memory。
+// 写入 "userId" 和 "user_id" 两个 key，兼容 apicomm.UserIDString 和 llm platform_chat_memory。
 // 对 publicPaths 中的 GET 路径跳过认证；所有写操作（POST/PUT/PATCH/DELETE）强制认证。
 func jwtAuthFilter(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

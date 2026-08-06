@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	notifyapp "backend/internal/service/notify"
-	"backend/utils"
 )
 
 // NotifyAPIInProcessEnabled config.yaml: moe.notify_api_in_process
@@ -15,12 +15,9 @@ func NewAPINotifyService() (*notifyapp.AppService, error) {
 	if !NotifyAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return notifyapp.New(db), nil
 }
