@@ -3,15 +3,15 @@ package moewiring
 import (
 	petbiz "backend/internal/biz/pet"
 	petdata "backend/internal/data/pet"
+	"backend/internal/platform/appdb"
 	petapp "backend/internal/service/pet"
-	"backend/utils"
 )
 
 // NewAPIPetService 装配养成服务。
 func NewAPIPetService() (*petapp.AppService, error) {
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
+	db, err := appdb.Open()
+	if err != nil {
+		return nil, err
 	}
 	repo := petdata.NewRepo(db)
 	uc := petbiz.NewUsecase(repo)

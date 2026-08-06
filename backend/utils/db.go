@@ -152,7 +152,7 @@ func EnsureAchievementSeeds(db *gorm.DB) error {
 	return SeedAchievementDefinitions(db)
 }
 
-// GetDB 获取数据库实例，并确保连接有效。
+// GetDB 获取数据库实例（遗留；生产 wiring 请用 internal/platform/appdb.Open）。
 func GetDB() *gorm.DB {
 	if DB == nil {
 		_ = InitDB(false)

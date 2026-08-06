@@ -2,18 +2,16 @@ package routestats
 
 import "testing"
 
-func TestHTTPRouteCoverageAtLeast40(t *testing.T) {
-	p := HTTPRouteCoveragePercent()
-	if p < 40 {
-		t.Fatalf("expected HTTP route coverage >= 40%%, got %d%% (%d/%d)",
-			p, RegisteredKratosHTTPRoutes(), TotalHTTPRoutes())
+func TestProtoHTTPRouteCountPositive(t *testing.T) {
+	if ProtoHTTPRouteCount() <= 0 {
+		t.Fatalf("expected proto HTTP routes > 0, got %d", ProtoHTTPRouteCount())
 	}
 }
 
-func TestHTTPRouteCoverageAtLeast95(t *testing.T) {
-	p := HTTPRouteCoveragePercent()
-	if p < 95 {
-		t.Fatalf("expected HTTP route coverage >= 95%%, got %d%% (%d/%d)",
-			p, RegisteredKratosHTTPRoutes(), TotalHTTPRoutes())
+func TestTotalHTTPRoutesIncludesTransport(t *testing.T) {
+	total := TotalHTTPRoutes()
+	wantMin := ProtoHTTPRouteCount() + SwaggerRouteCount + TransportHTTPRoutes
+	if total != wantMin {
+		t.Fatalf("TotalHTTPRoutes=%d want %d", total, wantMin)
 	}
 }

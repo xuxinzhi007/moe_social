@@ -4,8 +4,8 @@ import (
 	"context"
 
 	platformv1 "backend/api/platform/v1"
-	"backend/internal/apilegacy/common"
 	moebiz "backend/internal/biz/moe"
+	apicomm "backend/internal/platform/apicomm"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 )
@@ -48,12 +48,12 @@ func (s *Server) MoeExecuteTool(ctx context.Context, in *platformv1.MoeToolExecu
 		IdempotencyKey: in.GetIdempotencyKey(),
 	})
 	if execErr != nil {
-		br := common.HandleRPCError(execErr, "")
+		br := apicomm.HandleRPCError(execErr, "")
 		return &platformv1.MoeToolExecuteResp{
 			Code: int32(br.Code), Message: br.Message, Success: br.Success,
 		}, nil
 	}
-	br := common.HandleRPCError(nil, "ok")
+	br := apicomm.HandleRPCError(nil, "ok")
 	return &platformv1.MoeToolExecuteResp{
 		Code: int32(br.Code), Message: br.Message, Success: br.Success,
 		Data: &platformv1.MoeToolExecuteData{

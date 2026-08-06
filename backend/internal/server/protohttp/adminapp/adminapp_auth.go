@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"backend/common/errorcode"
-	"backend/internal/apilegacy/common"
+	apicomm "backend/internal/platform/apicomm"
 	"backend/utils"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -31,9 +31,9 @@ func adminContext(ctx context.Context) (context.Context, error) {
 		if err != nil {
 			return ctx, status.Error(codes.Code(errorcode.E_UNAUTHORIZED), "登录已过期，请重新登录")
 		}
-		return common.WithAdminActor(ctx, claims, common.ClientIP(req)), nil
+		return apicomm.WithAdminActor(ctx, claims, apicomm.ClientIP(req)), nil
 	}
-	claims, br := common.RequireAdminToken(req)
+	claims, br := apicomm.RequireAdminToken(req)
 	if br != nil {
 		msg := br.Message
 		if msg == "" {
@@ -41,7 +41,7 @@ func adminContext(ctx context.Context) (context.Context, error) {
 		}
 		return ctx, status.Error(codes.Code(errorcode.E_UNAUTHORIZED), msg)
 	}
-	return common.WithAdminActor(ctx, claims, common.ClientIP(req)), nil
+	return apicomm.WithAdminActor(ctx, claims, apicomm.ClientIP(req)), nil
 }
 
 func requireAdminContext(ctx context.Context) (context.Context, error) {
@@ -52,7 +52,7 @@ func requireAdminContext(ctx context.Context) (context.Context, error) {
 	if err != nil {
 		return ctx, err
 	}
-	if _, ok := common.AdminActorFromContext(actx); !ok {
+	if _, ok := apicomm.AdminActorFromContext(actx); !ok {
 		return ctx, errors.New("admin actor missing")
 	}
 	return actx, nil

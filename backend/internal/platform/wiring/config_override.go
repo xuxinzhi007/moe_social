@@ -4,14 +4,14 @@ import (
 	"os"
 	"strings"
 
-	"backend/internal/apilegacy/config"
+	"backend/internal/platform/apiconfig"
 	"backend/utils"
 
 	"github.com/spf13/viper"
 )
 
 // ApplyUnifiedConfigOverrides 从 backend/config/config.yaml 合并 llm、RPC、鉴权等配置。
-func ApplyUnifiedConfigOverrides(c *config.Config) {
+func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 	v := viper.New()
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")
@@ -53,7 +53,7 @@ func ApplyUnifiedConfigOverrides(c *config.Config) {
 		c.LocalModels.StorageDir = dir
 	}
 	if v.IsSet("local_models.catalog") {
-		var entries []config.LocalModelCatalogEntry
+		var entries []apiconfig.LocalModelCatalogEntry
 		if err := v.UnmarshalKey("local_models.catalog", &entries); err == nil && len(entries) > 0 {
 			c.LocalModels.Catalog = entries
 		}

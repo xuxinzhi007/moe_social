@@ -1,7 +1,7 @@
 package server
 
 import (
-	hdoc "backend/internal/apilegacy/swaggerdoc"
+	hdoc "backend/internal/server/swaggerdoc"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )

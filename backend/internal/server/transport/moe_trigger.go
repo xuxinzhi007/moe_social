@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"backend/internal/apilegacy/common"
 	"backend/internal/legacy/types"
+	apicomm "backend/internal/platform/apicomm"
 	moeadmin "backend/internal/service/moe"
 	"backend/model"
 
@@ -40,7 +40,7 @@ func triggerMoeRuntime(admin *moeadmin.AdminService) func(khttp.Context) error {
 			})
 		}
 
-		actorUID, err := common.UserIDUint(ctx.Request().Context())
+		actorUID, err := apicomm.UserIDUint(ctx.Request().Context())
 		if err != nil {
 			return ctx.Result(http.StatusUnauthorized, &types.AdminRunMoeAgentResp{
 				BaseResp: types.BaseResp{Code: -1, Message: "login required", Success: false},
@@ -50,7 +50,7 @@ func triggerMoeRuntime(admin *moeadmin.AdminService) func(khttp.Context) error {
 		rt, err := admin.FindRuntimeByAgentKey(ctx.Request().Context(), agentKey)
 		if err != nil {
 			return ctx.Result(http.StatusInternalServerError, &types.AdminRunMoeAgentResp{
-				BaseResp: common.HandleError(err),
+				BaseResp: apicomm.HandleError(err),
 			})
 		}
 		if rt == nil {
@@ -67,12 +67,12 @@ func triggerMoeRuntime(admin *moeadmin.AdminService) func(khttp.Context) error {
 		out, err := admin.RunAgentOnce(ctx.Request().Context(), agentKey, true)
 		if err != nil {
 			return ctx.Result(http.StatusInternalServerError, &types.AdminRunMoeAgentResp{
-				BaseResp: common.HandleError(err),
+				BaseResp: apicomm.HandleError(err),
 			})
 		}
 
 		return ctx.Result(http.StatusOK, &types.AdminRunMoeAgentResp{
-			BaseResp: common.HandleError(nil),
+			BaseResp: apicomm.HandleError(nil),
 			Data: types.AdminRunMoeAgentData{
 				AgentKey:       agentKey,
 				Ok:             out.Accepted || out.AlreadyRunning,

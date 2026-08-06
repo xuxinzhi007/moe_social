@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"backend/internal/platform/appdb"
 	apirun "backend/internal/platform/wiring"
 	"backend/internal/server"
-	"backend/utils"
 )
 
 func httpServerDepsFromAPI(res *apirun.StartResult) server.HTTPServerDeps {
 	deps := server.HTTPServerDepsFromServiceContext(res.Svc)
-	if db := utils.GetDB(); db != nil {
+	if db, err := appdb.Open(); err == nil {
 		deps.Ops.DB = db
 	}
 	return deps

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"backend/internal/apilegacy/common"
 	petbiz "backend/internal/biz/pet"
+	apicomm "backend/internal/platform/apicomm"
 	petapp "backend/internal/service/pet"
 
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -50,7 +50,7 @@ func writeErr(ctx khttp.Context, status int, msg string) error {
 }
 
 func actorID(ctx khttp.Context) (string, error) {
-	return common.UserIDString(ctx.Request().Context())
+	return apicomm.UserIDString(ctx.Request().Context())
 }
 
 func handleGet(app *petapp.AppService, ctx khttp.Context) error {

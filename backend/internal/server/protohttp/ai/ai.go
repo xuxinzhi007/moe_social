@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	aiv1 "backend/api/ai/v1"
-	"backend/internal/apilegacy/common"
+	apicomm "backend/internal/platform/apicomm"
 	aiapp "backend/internal/service/ai"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
@@ -30,7 +30,7 @@ func (s *Server) requireApp() (*aiapp.AppService, error) {
 }
 
 func actorUserID(ctx context.Context) (string, error) {
-	userID, err := common.UserIDUint(ctx)
+	userID, err := apicomm.UserIDUint(ctx)
 	if err != nil || userID == 0 {
 		return "", kerrors.Unauthorized("UNAUTHORIZED", "invalid authentication context")
 	}

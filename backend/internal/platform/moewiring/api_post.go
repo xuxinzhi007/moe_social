@@ -2,9 +2,9 @@ package moewiring
 
 import (
 	mediabiz "backend/internal/biz/media"
+	"backend/internal/platform/appdb"
 	commentapp "backend/internal/service/comment"
 	postapp "backend/internal/service/post"
-	"backend/utils"
 )
 
 func imageConfigFromMoe() mediabiz.ImageConfig {
@@ -30,12 +30,9 @@ func NewAPIPostService() (*postapp.AppService, error) {
 	if !PostAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return postapp.New(db, handDrawRequireModeration(), imageConfigFromMoe()), nil
 }
@@ -48,12 +45,9 @@ func NewAPICommentService() (*commentapp.AppService, error) {
 	if !CommentAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return commentapp.New(db), nil
 }

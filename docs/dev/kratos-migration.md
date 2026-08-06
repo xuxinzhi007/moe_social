@@ -41,7 +41,9 @@ protohttp/<domain> → internal/service → internal/biz → internal/data
 | `api/<domain>/v1/*.proto` | 契约 SSOT |
 | `openapi.yaml` | `make gen` 产出 |
 | `internal/server/protohttp/` | proto HTTP 适配层 |
-| `internal/platform/{svc,wiring,bootstrap,moesocial}/` | 装配与启动 |
+| `internal/platform/{svc,wiring,bootstrap,moesocial,apiconfig,apicomm,appdb}/` | 装配与启动 |
+| `internal/server/swaggerdoc/` | Swagger UI |
+| `internal/biz/moe/moebridge/` | Moe proto↔biz 转换 |
 
 ---
 

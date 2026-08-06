@@ -5,8 +5,8 @@ import (
 	"time"
 
 	moev1pb "backend/api/moe/v1"
-	"backend/internal/apilegacy/config"
 	moebiz "backend/internal/biz/moe"
+	"backend/internal/platform/apiconfig"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/brain"
 )
@@ -15,7 +15,7 @@ import (
 type Server struct {
 	moev1pb.UnimplementedMoeAdminServer
 	admin        *moeadmin.AdminService
-	inferenceCfg config.LLMInferenceConf
+	inferenceCfg apiconfig.LLMInferenceConf
 }
 
 // New 构造 Moe v1 gRPC 服务。

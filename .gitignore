@@ -58,6 +58,9 @@ backend/deploy/.moe-build-cache/
 .pub/
 /build/
 /coverage/
+backend/cover.out
+backend/coverage.html
+*.coverprofile
 
 # React ops console
 ops-console/node_modules/

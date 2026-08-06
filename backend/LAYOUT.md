@@ -1,13 +1,13 @@
 # Backend 布局（Kratos 生产）
 
-> **更新：2026-05-29**  
-> SSOT：[docs/dev/kratos-directory-ssot.md](../docs/dev/kratos-directory-ssot.md) · 状态板：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)
+> **更新：2026-08-06**  
+> SSOT：[docs/dev/kratos-migration.md](../docs/dev/kratos-migration.md) · 状态：[docs/dev/kratos-migration-status.md](../docs/dev/kratos-migration-status.md)
 
 ## 运行
 
 ```bash
 make moe-social    # 单进程 Kratos HTTP :8888
-make gen           # proto + conf + HTTP 路由计数
+make gen           # proto + conf + HTTP 路由计数（含 openapi.yaml）
 ```
 
 ---
@@ -29,19 +29,19 @@ internal/service/<domain>/          # {domain}.go + {domain}_{feature}.go
 internal/server/
   http.go                            # NewHTTPServer（唯一装配入口）
   http_proto.go                      # Register*HTTPServer
-  http_transport.go                  # OAuth / WS / SSE
   http_docs.go                       # /swagger
   protohttp/<domain>/                # {domain}.go + {domain}_{feature}.go
-  transport/                         # 非 JSON transport handlers
-  routestats/                        # /migration 路由指标
+  transport/                         # OAuth / WS / SSE（非 JSON）
+  routestats/                        # proto HTTP 路由计数（make gen）
 
 internal/platform/
   svc/                               # ServiceContext
   wiring/                            # 启动装配
   bootstrap/                         # 成就钩子、Bot 调度
   moesocial/                         # 生产启动
+  apiconfig/                         # API 片段配置（原 apilegacy/config）
+  apicomm/                           # HTTP/JWT/LLM 辅助（原 apilegacy/common）
 
-internal/apilegacy/swaggerdoc/       # Swagger UI
 internal/legacy/types/               # OAuth/SSE 类型（待 proto 化）
 
 third_party/google/api/
@@ -64,7 +64,7 @@ third_party/google/api/
 
 ```text
 NewHTTPServer
-  → corsFilter + EnvelopeResponseEncoder
+  → corsFilter + jwtAuthFilter + EnvelopeResponseEncoder
   → RegisterOpsHTTP
   → RegisterProtoHTTP
   → RegisterDocsHTTP

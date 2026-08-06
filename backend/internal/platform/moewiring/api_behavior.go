@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	behaviorapp "backend/internal/service/behavior"
-	"backend/utils"
 )
 
 // BehaviorAPIInProcessEnabled config.yaml: moe.behavior_api_in_process
@@ -15,12 +15,9 @@ func NewAPIBehaviorService() (*behaviorapp.AppService, error) {
 	if !BehaviorAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return behaviorapp.New(db), nil
 }

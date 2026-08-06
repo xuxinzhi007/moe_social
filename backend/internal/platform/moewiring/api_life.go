@@ -1,8 +1,8 @@
 package moewiring
 
 import (
+	"backend/internal/platform/appdb"
 	lifeapp "backend/internal/service/life"
-	"backend/utils"
 )
 
 // LifeAPIInProcessEnabled reports whether the life engine should run in-process.
@@ -15,12 +15,9 @@ func NewAPILifeService() (*lifeapp.AppService, error) {
 	if !LifeAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	// moeconfig import reserved for future LLM config
 	return lifeapp.New(db, lifeapp.Config{

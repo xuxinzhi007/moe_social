@@ -11,14 +11,12 @@ make gen    # proto pb/grpc/http + openapi.yaml + 路由计数
 
 | 命令 | 用途 |
 |------|------|
-| **`make gen`** | 域 proto → `*.pb.go`、`*_http.pb.go`、`openapi.yaml`、路由计数 |
-| `make gen-swagger` | 仅重生 `openapi.yaml` |
+| **`make gen`** | 域 proto → `*.pb.go`、`*_http.pb.go`、路由计数；`gen-moe-proto` 末尾会调用 `openapi.sh` 更新 `openapi.yaml` |
+| `make gen-swagger` | 仅重生 `openapi.yaml`（调试用；日常已被 `make gen` 覆盖） |
 | `make init-proto-tools` | 新机器安装 protoc 插件 |
 | `make check` | 编译 `cmd/moe-social` + 核心单测 |
 
-已退役：`make gen-api`、`make gen-legacy-goctl`（执行会报错并提示用 proto）。
-
-OpenAPI / Apifox：[docs/dev/openapi-apifox.md](../docs/dev/openapi-apifox.md)
+OpenAPI / Apifox：[docs/dev/openapi-apifox.md](../../docs/dev/openapi-apifox.md)
 
 ## 活跃目录
 
@@ -30,4 +28,4 @@ scripts/gen/
   proto-route-count/
 ```
 
-历史 goctl / FS-8 脚本 → `scripts/archive/`
+历史 goctl / FS-8 脚本 → `scripts/archive/`（灾难回滚用，日常勿跑）

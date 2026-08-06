@@ -6,13 +6,13 @@ import (
 	"strings"
 	"time"
 
-	"backend/internal/apilegacy/common"
-	"backend/internal/apilegacy/moebridge"
+	"backend/internal/biz/moe/moebridge"
+	apicomm "backend/internal/platform/apicomm"
 	moeadmin "backend/internal/service/moe"
 	"backend/pkg/moe/runtime"
 
-	"github.com/gorilla/websocket"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/gorilla/websocket"
 )
 
 var brainPipelineWSUpgrader = websocket.Upgrader{
@@ -38,7 +38,7 @@ func brainPipelineWSHandler(admin *moeadmin.AdminService) func(khttp.Context) er
 }
 
 func serveBrainPipelineWS(w http.ResponseWriter, r *http.Request, admin *moeadmin.AdminService) {
-	if _, errResp := common.RequireAdminToken(r); errResp != nil {
+	if _, errResp := apicomm.RequireAdminToken(r); errResp != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(brainPipelineWSMsg{

@@ -2,8 +2,8 @@ package moewiring
 
 import (
 	"backend/internal/adapter/moeconfig"
+	"backend/internal/platform/appdb"
 	llmapp "backend/internal/service/llm"
-	"backend/utils"
 )
 
 func LLMAPIInProcessEnabled() bool {
@@ -14,12 +14,9 @@ func NewAPILLMService() (*llmapp.AppService, error) {
 	if !LLMAPIInProcessEnabled() {
 		return nil, nil
 	}
-	if err := utils.EnsureDB(); err != nil {
+	db, err := appdb.Open()
+	if err != nil {
 		return nil, err
-	}
-	db := utils.GetDB()
-	if db == nil {
-		return nil, nil
 	}
 	return llmapp.New(db, llmapp.Deps{
 		Inference: moeconfig.InferenceFromViper(),

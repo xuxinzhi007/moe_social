@@ -20,6 +20,7 @@ import '../../widgets/motion/moe_vfx_profile.dart';
 import '../../widgets/pet/pet_care_juice_overlay.dart';
 import 'pet_adventure_page.dart';
 import 'pet_dressing_page.dart';
+import 'farm_page.dart';
 
 /// 养成主页：Flame Room + 照料 HUD + 轻量换装/布置体验。
 class PetHomePage extends StatefulWidget {
@@ -373,6 +374,13 @@ class _PetHomePageState extends State<PetHomePage> {
     );
   }
 
+  /// 进入独立全屏萌农场（QQ 农场玩法）。
+  void _openFarm() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const FarmPage()),
+    );
+  }
+
   void _openMore() {
     setState(() => _foodPickerOpen = false);
     final p = pet.profile;
@@ -412,6 +420,10 @@ class _PetHomePageState extends State<PetHomePage> {
         onShop: () {
           Navigator.pop(ctx);
           unawaited(_openShop());
+        },
+        onFarm: () {
+          Navigator.pop(ctx);
+          _openFarm();
         },
         onAgeUp: () {
           Navigator.pop(ctx);
@@ -1281,6 +1293,7 @@ class _MoreGrid extends StatelessWidget {
     required this.onStudy,
     required this.onWork,
     required this.onShop,
+    required this.onFarm,
     required this.onAgeUp,
     required this.onFriend,
     required this.onMarry,
@@ -1295,6 +1308,7 @@ class _MoreGrid extends StatelessWidget {
   final VoidCallback onStudy;
   final VoidCallback onWork;
   final VoidCallback onShop;
+  final VoidCallback onFarm;
   final VoidCallback onAgeUp;
   final VoidCallback onFriend;
   final VoidCallback onMarry;
@@ -1307,6 +1321,7 @@ class _MoreGrid extends StatelessWidget {
       (Icons.chair_rounded, '布置', onFurniture),
       (Icons.tune_rounded, '调整摆放', onDecorate),
       (Icons.storefront_rounded, '商店', onShop),
+      (Icons.grass_rounded, '萌农场', onFarm),
       (Icons.menu_book_rounded, '上学', onStudy),
       (Icons.work_rounded, '打工', onWork),
       (Icons.cake_rounded, '长大一岁', onAgeUp),
