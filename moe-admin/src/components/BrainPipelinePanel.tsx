@@ -23,6 +23,7 @@ type Props = {
   refreshKey?: number
   /** 本页试跑进行中（仅本地状态，不用跨页 session） */
   running?: boolean
+  stabilityScore?: number
 }
 
 function phaseTone(status: PhaseStatus): TagTone {
@@ -137,7 +138,7 @@ function PhaseDetail({
 }
 
 /** Bot 试跑流水线：阶段脉冲时间线 + 折叠重试明细 */
-export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }: Props) {
+export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, stabilityScore }: Props) {
   const { client } = useAdminAuth()
   const [data, setData] = useState<MoeBrainPipelineData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -213,10 +214,18 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.run_at, data?.ok, data?.current_phase, serverRunning])
 
-  const empty = !showRunning && !hasRun && steps.every((s) => normStepStatus(s.status) === 'skip')
+  const empty = !showRunning && !hasRun
   const selected = phases.find((p) => p.id === selectedId) ?? phases[0]
   const hm = data?.host_metrics
   const genAttempts = data?.generate_attempts ?? []
+  const effectiveStability = data?.stability_score && data.stability_score > 0 ? data.stability_score : stabilityScore
+  const policyText = effectiveStability
+    ? effectiveStability < 50
+      ? '低稳定度：仅使用质量 80+ 的自传，最多试 3 次，严格质检后才会发布。'
+      : effectiveStability < 65
+        ? '观察期：仅使用质量 70+ 的自传，最多试 4 次，严格质检后才会发布。'
+        : '稳定：使用质量 60+ 的自传，最多试 5 次；仅在非重复时允许放宽质检。'
+    : ''
   const generateMs = steps
     .filter((s) => s.key.startsWith('gen_attempt') || s.key === 'generate')
     .reduce((sum, s) => sum + (s.duration_ms ?? 0), 0)
@@ -251,7 +260,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
       <header className="platform-section-head brain-pipeline-head">
         <div>
           <h3>发帖流水线</h3>
-          <p className="muted">WebSocket 实时推送 · 6 步脉冲视图；生成重试折叠在「生成」内。</p>
+          <p className="muted">仅展示服务端记录的阶段、耗时和结果。</p>
         </div>
         {data && hasRun ? (
           <label className="brain-pulse-tech-toggle">
@@ -271,33 +280,15 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
       {(data && !loading) || showRunning ? (
         <>
           <div className="brain-pulse-summary">
-            <div
-              className={`brain-pulse-ring ${showRunning ? 'brain-pulse-ring--run-active' : ''}`}
-              role={showRunning ? 'status' : undefined}
-              aria-label={showRunning ? '试跑进行中' : undefined}
-            >
-              <span className={`brain-pulse-ring-inner ${showRunning ? 'brain-pulse-ring-inner--run' : ''}`}>
-                {showRunning
-                  ? '试跑'
-                  : data && data.stability_score !== undefined && data.stability_score > 0
-                    ? data.stability_score
-                    : '—'}
-              </span>
-              {!showRunning && data && data.stability_delta !== undefined && data.stability_delta !== 0 ? (
-                <span
-                  className={`brain-pulse-delta ${data.stability_delta > 0 ? 'brain-pulse-delta--up' : 'brain-pulse-delta--down'}`}
-                >
-                  {data.stability_delta > 0 ? '+' : ''}
-                  {data.stability_delta}
-                </span>
-              ) : null}
+            <div className={`brain-pipeline-status-marker brain-pipeline-status-marker--${pulseClass.replace('brain-pulse--', '')}`} aria-hidden>
+              <span />
             </div>
             <div className="brain-pulse-summary-main">
               {showRunning ? (
                 <div className="brain-pulse-run-banner">
                   <span className="brain-pulse-run-dot" aria-hidden />
                   <span>
-                    试跑进行中
+                    正在执行
                     {runPhaseLabel ? ` · ${runPhaseLabel}` : ''}
                     …
                   </span>
@@ -329,9 +320,13 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
                   </>
                 ) : null}
               </div>
-              {!showRunning && data?.run_feedback ? (
-                <p className="brain-pipeline-feedback">{data.run_feedback}</p>
-              ) : null}
+                {!showRunning && data?.run_feedback ? (
+                  <p className="brain-pipeline-feedback">{data.run_feedback}</p>
+                ) : null}
+                {!showRunning && data?.detail ? (
+                  <p className="brain-pipeline-detail">{data.detail}</p>
+                ) : null}
+                {policyText ? <p className="brain-pipeline-policy">{policyText}</p> : null}
               {!showRunning && data?.post_id ? (
                 <p className="muted brain-pulse-post-id">
                   帖子 <code>{data.post_id}</code>
@@ -342,8 +337,9 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false }
 
           {empty && !showRunning ? (
             <div className="brain-pipeline-empty">
-              <p>尚无试跑记录。请先在本页点击「试跑发帖」。</p>
-              <p className="muted">推理服务需已启动（llm-server）。</p>
+              <p>当前 Bot 尚无试跑记录。</p>
+              {policyText ? <p className="brain-pipeline-policy">{policyText}</p> : null}
+              <p className="muted">点击“试跑发帖”后，这里才会出现真实阶段与结果。</p>
             </div>
           ) : (
             <>

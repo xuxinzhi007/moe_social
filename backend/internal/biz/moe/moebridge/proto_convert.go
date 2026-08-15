@@ -51,7 +51,7 @@ func RuntimeModelFromProtoList(items []*moepb.AgentRuntime, agentKey string) *mo
 
 func PipelineDataFromProto(d *moepb.GetBrainPipelineReply) types.AdminGetMoeBrainPipelineData {
 	if d == nil {
-		return types.AdminGetMoeBrainPipelineData{Steps: DefaultPipelineStepTypes()}
+		return types.AdminGetMoeBrainPipelineData{}
 	}
 	data := types.AdminGetMoeBrainPipelineData{
 		AgentKey:        d.GetAgentKey(),
@@ -85,9 +85,6 @@ func PipelineDataFromProto(d *moepb.GetBrainPipelineReply) types.AdminGetMoeBrai
 			Detail:     s.GetDetail(),
 			DurationMs: s.GetDurationMs(),
 		})
-	}
-	if len(data.Steps) == 0 {
-		data.Steps = DefaultPipelineStepTypes()
 	}
 	return data
 }

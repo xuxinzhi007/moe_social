@@ -18,7 +18,7 @@ func pipelineFromLive(ctx context.Context, st MoeStore, agentKey string, live ru
 		CurrentPhase:  live.CurrentPhase,
 		RunStartedAt:  live.StartedAt,
 		ActiveStepKey: live.ActiveKey,
-		Steps:         defaultPipelineSteps(),
+		Steps:         nil,
 	}
 	steps := runtime.LiveRuns.PipelineStepsForAgent(agentKey)
 	if len(steps) > 0 {
@@ -113,23 +113,13 @@ type PipelineSnapshot struct {
 	ActiveStepKey string
 }
 
-func defaultPipelineSteps() []PipelineStep {
-	return []PipelineStep{
-		{Key: "load_runtime", Label: "加载 Bot 配置", Status: "skip", Detail: "尚无试跑记录"},
-		{Key: "gather_memory", Label: "检索记忆与社区脉搏", Status: "skip"},
-		{Key: "generate", Label: "LLM 生成正文", Status: "skip"},
-		{Key: "post_create", Label: "发布动态", Status: "skip"},
-		{Key: "record_episode", Label: "写入自传", Status: "skip"},
-	}
-}
-
-// GetBrainPipeline 返回指定 agent 最近一次试跑流水线；无记录时返回默认占位步骤。
+// GetBrainPipeline 返回指定 agent 最近一次试跑流水线；无记录时 steps 为空。
 func GetBrainPipeline(ctx context.Context, st MoeStore, agentKey string) (PipelineSnapshot, error) {
 	db := dbFromStore(ctx, st)
 	key := strings.TrimSpace(agentKey)
 	out := PipelineSnapshot{
 		AgentKey: key,
-		Steps:    defaultPipelineSteps(),
+		Steps:    nil,
 	}
 	if key == "" {
 		return out, nil

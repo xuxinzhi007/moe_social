@@ -21,4 +21,5 @@
 .avatar-composer-item-thumb { display: grid; place-items: center; width: 64px; height: 48px; overflow: hidden; background: repeating-conic-gradient(#f0eff4 0 25%, #fafafd 0 50%) 50% / 8px 8px; }
 .avatar-composer-item-thumb canvas { width: 48px; height: 48px; image-rendering: pixelated; }
 .avatar-composer-empty span { display: grid; place-items: center; width: 48px; height: 48px; color: #aaa5b7; font-size: 22px; }
+.avatar-composer-manifest-panel { grid-column: 1 / -1; border: 1px solid #e1dfea; background: #fff; padding: 16px; }.avatar-composer-manifest-panel summary { color: #6b5fc1; cursor: pointer; font-size: 12px; font-weight: 700; }.avatar-composer-manifest-panel p { margin: 10px 0; color: #747485; font-size: 11px; line-height: 1.5; }.avatar-composer-manifest-panel textarea { box-sizing: border-box; width: 100%; min-height: 230px; margin-bottom: 10px; border: 1px solid #d5d2e0; padding: 10px; color: #222331; background: #fbfaff; font: 11px/1.5 ui-monospace, Consolas, monospace; resize: vertical; }
 @media (max-width: 560px) { .avatar-composer-export-actions { display: grid; grid-template-columns: 1fr 1fr; } }

@@ -126,70 +126,37 @@
   gap: 16px;
   margin-bottom: 16px;
   padding: 12px 14px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(127, 127, 213, 0.08), rgba(134, 168, 231, 0.12));
+  border-radius: 8px;
+  background: var(--panel2, rgba(127, 127, 213, 0.05));
+  border: 1px solid var(--border);
 }
 
-.brain-pulse-ring {
-  position: relative;
+.brain-pipeline-status-marker {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: conic-gradient(
-    from 180deg,
-    rgba(127, 127, 213, 0.9),
-    rgba(145, 234, 228, 0.85),
-    rgba(127, 127, 213, 0.9)
-  );
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: brain-pulse-ring-spin 8s linear infinite;
+  margin-top: 5px;
+  background: rgba(127, 127, 213, 0.35);
+  box-shadow: 0 0 0 4px rgba(127, 127, 213, 0.1);
 }
 
-.brain-pulse-ring--run-active {
-  animation: brain-pulse-ring-spin 1.05s linear infinite;
-  background: conic-gradient(
-    from 0deg,
-    #7f7fd5,
-    #91eae4,
-    #86a8e7,
-    #ffb347,
-    #ff8a8a,
-    #7f7fd5
-  );
-  box-shadow: 0 0 18px rgba(127, 127, 213, 0.35);
+.brain-pipeline-status-marker--running {
+  background: #ffb347;
+  box-shadow: 0 0 0 4px rgba(255, 182, 72, 0.16);
 }
 
-.brain-pulse--fail .brain-pulse-ring {
-  background: conic-gradient(
-    from 0deg,
-    rgba(255, 107, 107, 0.85),
-    rgba(127, 127, 213, 0.5),
-    rgba(255, 107, 107, 0.85)
-  );
+.brain-pipeline-status-marker--ok {
+  background: #34c38f;
+  box-shadow: 0 0 0 4px rgba(52, 195, 143, 0.14);
 }
 
-.brain-pulse-ring-inner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--panel, #fff);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 700;
-  color: #5c5c8a;
-  animation: brain-pulse-ring-spin 8s linear infinite reverse;
-}
-
-.brain-pulse-ring-inner--run {
-  animation: none;
-  font-size: 11px;
-  letter-spacing: 0.02em;
-  color: #7f7fd5;
+.brain-pipeline-status-marker--fail {
+  background: #ff6b6b;
+  box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.12);
 }
 
 .brain-pulse-run-banner {
@@ -198,8 +165,8 @@
   gap: 8px;
   margin-bottom: 8px;
   padding: 6px 12px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, rgba(127, 127, 213, 0.1), rgba(255, 182, 72, 0.14));
+  border-radius: 6px;
+  background: rgba(255, 182, 72, 0.11);
   font-size: 13px;
   line-height: 1.35;
 }
@@ -210,8 +177,7 @@
   height: 8px;
   border-radius: 50%;
   background: #ffb347;
-  box-shadow: 0 0 10px rgba(255, 182, 72, 0.75);
-  animation: brain-pulse-run-dot 0.85s ease-in-out infinite;
+  box-shadow: none;
 }
 
 .brain-pulse-delta {
@@ -259,6 +225,23 @@
 .brain-pipeline-feedback {
   margin: 8px 0 0;
   font-size: 13px;
+  line-height: 1.45;
+}
+
+.brain-pipeline-detail {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.brain-pipeline-policy {
+  margin: 8px 0 0;
+  padding-left: 9px;
+  border-left: 2px solid rgba(127, 127, 213, 0.45);
+  color: var(--muted);
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -353,12 +336,10 @@
 .brain-pulse-node-dot--error {
   background: rgba(255, 107, 107, 0.95);
   box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
-  animation: brain-pulse-dot-blink 1.4s ease-in-out infinite;
 }
 
 .brain-pulse-node-dot--running {
   background: rgba(255, 182, 72, 0.95);
-  animation: brain-pulse-dot-blink 0.9s ease-in-out infinite;
 }
 
 .brain-pulse-node-summary {
@@ -569,22 +550,6 @@
   line-height: 1.45;
 }
 
-@keyframes brain-pulse-ring-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes brain-pulse-dot-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
-
 .bot-flow-run-banner {
   margin: 0 0 10px;
 }
@@ -592,18 +557,6 @@
 .bot-flow-run-active .react-flow__node .bot-flow-node--core {
   animation: bot-flow-core-run-pulse 1.15s ease-in-out infinite;
   box-shadow: 0 0 28px rgba(127, 127, 213, 0.5);
-}
-
-@keyframes brain-pulse-run-dot {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
 }
 
 @keyframes bot-flow-core-run-pulse {
@@ -617,12 +570,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brain-pulse-ring,
-  .brain-pulse-ring-inner,
-  .brain-pulse-ring--run-active,
-  .brain-pulse-run-dot,
-  .brain-pulse-node-dot--fail,
-  .brain-pulse-node-dot--running,
   .bot-flow-run-active .react-flow__node .bot-flow-node--core {
     animation: none;
   }

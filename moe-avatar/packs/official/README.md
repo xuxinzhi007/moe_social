@@ -12,7 +12,7 @@ official/
 接入 App：
 
 ```text
-复制到 moe-social/assets/pet/moe_avatar/
+复制到 moe-social/assets/pet/moe_content/avatar/
 ```
 
-当前 App 仍读 `assets/pet/lpc/`（短跑）；Spec v1 composer 落地后切换至此。
+Flutter 的 `PetMoeAvatarComposer` 已读取 `assets/pet/moe_content/avatar/manifest.json`；`assets/pet/lpc/` 仅保留为短跑原型回退。

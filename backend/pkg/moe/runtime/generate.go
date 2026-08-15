@@ -98,12 +98,13 @@ func generatePostContent(
 		rejectNovel string
 		attempts    []GenAttemptRecord
 	)
-	for attempt := 1; attempt <= maxGenerateAttempts; attempt++ {
+	stability := brain.EffectiveStabilityScore(rt)
+	policy := brain.GenerationPolicyForStability(stability)
+	for attempt := 1; attempt <= policy.MaxGenerateAttempts; attempt++ {
 		if rec != nil {
 			rec.BeginStep("generate", "LLM 生成正文")
 		}
 		attemptStart := time.Now()
-		stability := brain.EffectiveStabilityScore(rt)
 		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability)
 		if err != nil {
 			lastErr = err
@@ -192,20 +193,22 @@ func generatePostContent(
 		recordGenAttemptStep(rec, attempt, "fail", GenOutcomeNovel, genSnippet(gen.Content), fmt.Sprintf("剧本腔 %d", score), time.Since(attemptStart), attempts)
 	}
 
-	// 多次仍偏文艺：选得分最低且不与历史重复的一条发出，避免试跑永远失败
-	if best := pickBestNovelFallback(fallback, recent, episodes); best != nil {
-		best.gen.Source = fmt.Sprintf("llm#%d-relaxed", best.attempt)
-		attempts = append(attempts, GenAttemptRecord{
-			Attempt: best.attempt,
-			Outcome: GenOutcomeOK,
-			Snippet: genSnippet(best.gen.Content),
-			Note:    "放宽质检后采用",
-		})
-		if rec != nil {
-			rec.Add("generate_finalize", "生成质检汇总", "ok",
-				FormatGenStepDetail(attempts, true, best.gen.Source)+"（放宽）", time.Since(genPhaseStart))
+	// 仅稳定度足够时允许采用放宽质检的候选，低稳定度必须在严格质检下成功。
+	if policy.AllowRelaxedFallback {
+		if best := pickBestNovelFallback(fallback, recent, episodes); best != nil {
+			best.gen.Source = fmt.Sprintf("llm#%d-relaxed", best.attempt)
+			attempts = append(attempts, GenAttemptRecord{
+				Attempt: best.attempt,
+				Outcome: GenOutcomeOK,
+				Snippet: genSnippet(best.gen.Content),
+				Note:    "放宽质检后采用",
+			})
+			if rec != nil {
+				rec.Add("generate_finalize", "生成质检汇总", "ok",
+					FormatGenStepDetail(attempts, true, best.gen.Source)+"（放宽）", time.Since(genPhaseStart))
+			}
+			return best.gen, attempts, nil
 		}
-		return best.gen, attempts, nil
 	}
 	if rec != nil {
 		rec.Add("generate_finalize", "生成质检汇总", "fail",

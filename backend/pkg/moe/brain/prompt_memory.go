@@ -30,7 +30,13 @@ func BuildPostMemoryBlock(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort
 	if db == nil {
 		return ""
 	}
-	eps := ListRecentEpisodes(db, rt.AgentKey, 8)
+	all := ListRecentEpisodes(db, rt.AgentKey, 24)
+	eps := SelectGenerationEpisodes(
+		all,
+		ParseTagList(rt.ForbiddenTags),
+		GenerationPolicyForStability(EffectiveStabilityScore(rt)),
+		8,
+	)
 	return formatEpisodesForPrompt(eps)
 }
 
@@ -42,7 +48,12 @@ func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort,
 	}
 	epsInPrompt := 0
 	if db != nil {
-		n := len(ListRecentEpisodes(db, rt.AgentKey, 8))
+		n := len(SelectGenerationEpisodes(
+			ListRecentEpisodes(db, rt.AgentKey, 24),
+			ParseTagList(rt.ForbiddenTags),
+			GenerationPolicyForStability(EffectiveStabilityScore(rt)),
+			8,
+		))
 		if n > 8 {
 			epsInPrompt = 8
 		} else {

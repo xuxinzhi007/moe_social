@@ -12,7 +12,7 @@ moe-admin 角色装扮编辑器
 moe-avatar/packs/official/     （版本归档）
     │ 拷贝
     ▼
-moe-social/assets/pet/moe_avatar/
+moe-social/assets/pet/moe_content/avatar/
     │ FeatureFlags.petMoeAvatar（规划）
     ▼
 Flutter 换衣间 + 小家
@@ -23,19 +23,19 @@ Flutter 换衣间 + 小家
 1. `cd moe-admin && npm run dev`
 2. 运营 → **角色装扮编辑器**
 3. 调整装扮预览 → **导出官方包 zip**
-4. 解压覆盖 `assets/pet/moe_avatar/`（与 `public/pet/moe_avatar/` 结构一致）
+4. 解压覆盖 `assets/pet/moe_content/avatar/`（与 `public/pet/moe_content/avatar/` 结构一致）
 5. Flutter hot restart（composer 接入后）
 
 ## 3. 开发用资源同步
 
 管理台 dev 资源在：
 
-`moe-admin/public/pet/moe_avatar/layers/`
+`moe-admin/public/pet/moe_content/avatar/layers/`
 
 与 Flutter 原型层同步：
 
 ```powershell
-Copy-Item assets\pet\lpc\layers\*.png moe-admin\public\pet\moe_avatar\layers\base\  # 按命名规则
+Copy-Item assets\pet\moe_content\avatar\layers\*.png moe-admin\public\pet\moe_content\avatar\layers\  # 按命名规则
 ```
 
 正式美术应在编辑器内维护，不再依赖 `export_lpc_layers.ps1`（LPC 短跑脚本仅过渡）。

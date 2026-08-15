@@ -61,16 +61,10 @@ layers/slots/shoes_basic.svg
 当前管理台默认使用已有的 PNG 原型包：
 
 ```text
-moe-admin/public/pet/moe_avatar/
+moe-admin/public/pet/moe_content/avatar/
 ```
 
-新生成的 SVG 仅作为实验源稿，不作为正式默认资源：
-
-```text
-moe-admin/public/pet/moe_avatar_official/
-```
-
-正式官方素材需要真实绘制的逐帧 PNG；当前 SVG pack 只用于验证分层协议和资源替换流程。
+新生成的 SVG 仅作为实验源稿，不随管理台默认资源包发布。正式官方素材需要真实绘制的逐帧 PNG；当前 SVG 只用于验证分层协议和资源替换流程。
 
 ## Next Expansion
 

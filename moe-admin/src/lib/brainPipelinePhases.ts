@@ -32,27 +32,6 @@ export function phaseLabel(id: PhaseId): string {
   return PHASE_LABELS[id]
 }
 
-/** 试跑进行中：用模拟阶段覆盖展示（后端 run-once 为同步，无中间态） */
-export function applyRunOverlay(
-  phases: PipelinePhase[],
-  activePhaseId: PhaseId | null,
-  running: boolean,
-): PipelinePhase[] {
-  if (!running || !activePhaseId) return phases
-  const activeIdx = PHASE_ORDER.indexOf(activePhaseId)
-  if (activeIdx < 0) return phases
-  return phases.map((p) => {
-    const idx = PHASE_ORDER.indexOf(p.id)
-    if (idx < activeIdx) {
-      return { ...p, status: 'ok' as const, summary: '已完成' }
-    }
-    if (idx === activeIdx) {
-      return { ...p, status: 'running' as const, summary: '进行中…' }
-    }
-    return { ...p, status: 'skip' as const, summary: '等待' }
-  })
-}
-
 export function normStepStatus(raw: string): PhaseStatus {
   const s = raw.trim().toLowerCase()
   if (s === 'ok') return 'ok'
