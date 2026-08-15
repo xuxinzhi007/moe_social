@@ -103,5 +103,5 @@ packs/official/
 | 阶段 | 行为 |
 |------|------|
 | 现在 | `FeatureFlags.petLpcPrototype` + `lpc_catalog.json` |
-| 迁移 | 读 `assets/pet/moe_avatar/manifest.json`，composer 按本 Spec 叠层 |
+| 迁移 | 读 `assets/pet/moe_content/avatar/manifest.json`，composer 按本 Spec 叠层 |
 | 回滚 | Flag 关 → PNG A 方案（`avatar_stack.json`） |

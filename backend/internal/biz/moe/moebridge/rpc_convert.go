@@ -157,7 +157,7 @@ func ToolCallsFromRPC(d *adminv1.AdminListMoeToolCallsResp) types.AdminListMoeTo
 
 func PipelineDataFromSuper(d *adminv1.AdminGetMoeBrainPipelineResp) types.AdminGetMoeBrainPipelineData {
 	if d == nil {
-		return types.AdminGetMoeBrainPipelineData{Steps: DefaultPipelineStepTypes()}
+		return types.AdminGetMoeBrainPipelineData{}
 	}
 	data := types.AdminGetMoeBrainPipelineData{
 		AgentKey:        d.GetAgentKey(),
@@ -188,9 +188,6 @@ func PipelineDataFromSuper(d *adminv1.AdminGetMoeBrainPipelineResp) types.AdminG
 			Key: s.GetKey(), Label: s.GetLabel(), Status: s.GetStatus(),
 			Detail: s.GetDetail(), DurationMs: s.GetDurationMs(),
 		})
-	}
-	if len(data.Steps) == 0 {
-		data.Steps = DefaultPipelineStepTypes()
 	}
 	data.StabilityScore = int(d.GetStabilityScore())
 	data.StabilityDelta = int(d.GetStabilityDelta())

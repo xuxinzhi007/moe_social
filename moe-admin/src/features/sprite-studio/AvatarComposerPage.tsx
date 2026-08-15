@@ -16,7 +16,7 @@ import {
 
 import './avatar-composer.css'
 
-const PACK_BASE_URL = `${import.meta.env.BASE_URL}pet/moe_avatar`.replace(/\/$/, '')
+const PACK_BASE_URL = `${import.meta.env.BASE_URL}pet/moe_content/avatar`.replace(/\/$/, '')
 const DIRECTION_LABELS = ['上', '左', '下', '右']
 const SLOT_LABELS: Record<string, string> = {
   hat: '帽饰',
@@ -117,7 +117,9 @@ function DirectionCell({
 export function AvatarComposerPage() {
   const [assetStore] = useState(() => new AvatarAssetStore())
   const packInputRef = useRef<HTMLInputElement>(null)
+  const manifestInputRef = useRef<HTMLInputElement>(null)
   const [manifest, setManifest] = useState<MoeAvatarManifest | null>(null)
+  const [manifestDraft, setManifestDraft] = useState('')
   const [selection, setSelection] = useState<TemplateSelection>({})
   const [animation, setAnimation] = useState<PreviewAnimation>('idle')
   const [direction, setDirection] = useState(2)
@@ -142,12 +144,13 @@ export function AvatarComposerPage() {
       .then((nextManifest) => {
         if (!active) return
         setManifest(nextManifest)
+        setManifestDraft(JSON.stringify(nextManifest, null, 2))
         setSelection(createSelection(nextManifest))
         setLoading(false)
       })
       .catch(() => {
         if (!active) return
-         setError('自有角色素材包读取失败，请检查管理台基路径下的 pet/moe_avatar 资源。')
+        setError('自有角色素材包读取失败，请检查管理台基路径下的 pet/moe_content/avatar 资源。')
         setLoading(false)
       })
     return () => { active = false }
@@ -156,7 +159,7 @@ export function AvatarComposerPage() {
   useEffect(() => {
     if (!manifest) return
     let active = true
-     void composeTemplateSheet(manifest, selection, animation, PACK_BASE_URL, assetStore).then((nextSheet) => {
+    void composeTemplateSheet(manifest, selection, animation, PACK_BASE_URL, assetStore).then((nextSheet) => {
       if (active) setSheet(nextSheet)
     })
     return () => { active = false }
@@ -262,6 +265,7 @@ export function AvatarComposerPage() {
         assetStore.set(entry.name.replace(/^\//, ''), await entry.async('blob'))
       }
       setManifest(nextManifest)
+      setManifestDraft(JSON.stringify(nextManifest, null, 2))
       setSelection(createSelection(nextManifest))
       setAssetRevision((current) => current + 1)
       setLoading(false)
@@ -269,6 +273,36 @@ export function AvatarComposerPage() {
     } catch {
       setLoading(false)
       setError('素材包导入失败：ZIP 中需要包含根目录 manifest.json 和对应分层资源。')
+    }
+  }
+
+  async function importManifest(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setError('')
+    try {
+      const nextManifest = JSON.parse(await file.text()) as MoeAvatarManifest
+      setManifest(nextManifest)
+      setManifestDraft(JSON.stringify(nextManifest, null, 2))
+      setSelection(createSelection(nextManifest))
+      setFrame(0)
+      setMessage(`已导入 manifest：${nextManifest.displayName}`)
+    } catch {
+      setError('manifest 导入失败：请选择符合角色素材包协议的 JSON 文件。')
+    }
+  }
+
+  function applyManifestDraft() {
+    try {
+      const nextManifest = JSON.parse(manifestDraft) as MoeAvatarManifest
+      setManifest(nextManifest)
+      setSelection(createSelection(nextManifest))
+      setFrame(0)
+      setError('')
+      setMessage('manifest 配置已应用到当前预览。')
+    } catch {
+      setError('manifest JSON 格式无效，未应用修改。')
     }
   }
 
@@ -288,6 +322,8 @@ export function AvatarComposerPage() {
           <div className="avatar-composer-export-actions">
             <button type="button" className="avatar-composer-export secondary" onClick={() => packInputRef.current?.click()}>导入素材包 ZIP</button>
             <input ref={packInputRef} type="file" accept=".zip,application/zip" hidden onChange={(event) => void importPack(event)} />
+            <button type="button" className="avatar-composer-export secondary" onClick={() => manifestInputRef.current?.click()}>导入 Manifest</button>
+            <input ref={manifestInputRef} type="file" accept="application/json" hidden onChange={(event) => void importManifest(event)} />
             <button type="button" className="avatar-composer-export secondary" disabled={exporting} onClick={() => void exportSelectedCharacter()}>导出当前角色</button>
             <button type="button" className="avatar-composer-export" disabled={exporting} onClick={() => void exportCharacterPack()}>{exporting ? '导出中…' : '导出完整素材包'}</button>
           </div>
@@ -345,6 +381,12 @@ export function AvatarComposerPage() {
             <code>{manifest.packId}-character.zip</code>
             <p>导出包包含完整 manifest、分层素材、缩略图以及当前选择的 baked 行走/待机预览。</p>
           </div>
+          <details className="avatar-composer-manifest-panel">
+            <summary>高级 Manifest 配置</summary>
+            <p>修改后会立即用于预览和导出；素材路径需与当前素材包一致。</p>
+            <textarea value={manifestDraft} onChange={(event) => setManifestDraft(event.target.value)} spellCheck={false} />
+            <button type="button" className="avatar-composer-export secondary" onClick={applyManifestDraft}>应用配置</button>
+          </details>
         </section>
       </div>
     </main>

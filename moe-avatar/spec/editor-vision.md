@@ -7,7 +7,7 @@
 
 | 点 | 结论 |
 |----|------|
-| 我们做 **一种编辑器** | 是，独立 Web 工具（远期独立仓库，现 SSOT 在 `moe-avatar/`） |
+| 我们做 **一种编辑器** | 是，管理台内的生产力工具；未来对外开源时再考虑独立仓库 |
 | 和 LPC **类似但不完全一样** | 是：同 **分层 + 动画格 + z 序** 工作流；不同 **画风、manifest、导出目标、商品域** |
 | **更丰富** | 是：对准 Moe 槽位/id、缩略图、锚点校验、官方包 zip、可选预烘焙 |
 | **编辑器里调完直接导出就能用** | 是：导出 = `manifest.json` + `layers/` + `thumbs/` → 拷贝进 App，无需再跑 ULPC 脚本 |
@@ -98,7 +98,7 @@ sources/
 └─────────────────────────────────────────────────────────┘
          │
          ▼  「拷贝到 moe-social」或 CI
-  assets/pet/moe_avatar/
+  assets/pet/moe_content/avatar/
 ```
 
 | 能力 | ULPC | Moe Editor |
@@ -138,11 +138,11 @@ sources/
 
 ### P0 — 能替换现在手工脚本
 
-- [x] 加载 **Moe 官方底模**（base body/head/face/hair）— `public/pet/moe_avatar/`
+- [x] 加载 **Moe 官方底模**（base body/head/face/hair）— `public/pet/moe_content/avatar/`
 - [x] 四槽选择 + **Canvas** 预览 walk/idle（idle 循环）
 - [x] 导出 **官方包 zip**（manifest + layers + thumbs + baked）
 - [x] 管理台页面 `/biz/pet/avatar`（双 Tab：编辑 | manifest）
-- [ ] 解压说明一键复制到 Flutter `assets/pet/moe_avatar/`（composer 未接）
+- [x] 解压说明指向 Flutter `assets/pet/moe_content/avatar/`（`PetMoeAvatarComposer` 已接入）
 
 ### P1 — 比 ULPC 好用
 
@@ -183,7 +183,7 @@ moe-admin/src/features/moe-avatar/
 ├── components/        # 预览 Canvas、槽位面板、导入对话框
 ├── export/            # manifest + layers + thumbs → JSZip
 └── types/             # 对齐 moe-avatar/schema/manifest-v1
-public/pet/moe_avatar/ # 开发用底模 layer（与 Flutter assets 同步）
+public/pet/moe_content/avatar/ # 开发用底模 layer（与 Flutter assets 同步）
 ```
 
 **不要**：iframe 嵌 `localhost:5173` ULPC；**不要**把 ULPC 的 `spritesheets/` 打进 admin 包。

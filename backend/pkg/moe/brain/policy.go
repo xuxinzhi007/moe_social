@@ -18,6 +18,8 @@ func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode, db *gor
 	if len(forbidden) == 0 {
 		forbidden = []string{"risk:诗意腔", "tone:官方", "type:套路开场"}
 	}
+	policy := GenerationPolicyForStability(EffectiveStabilityScore(rt))
+	recent = SelectGenerationEpisodes(recent, forbidden, policy, 20)
 	stats := tagFrequency(recent, 30)
 	var overused []string
 	for tag, cnt := range stats {
@@ -34,7 +36,7 @@ func PolicyBlock(rt model.MoeAgentRuntime, recent []model.MoeBotEpisode, db *gor
 	}
 	sort.Strings(overused)
 
-	lines := []string{"【AI 大脑 · 标签策略】"}
+	lines := []string{fmt.Sprintf("【AI 大脑 · 标签策略】稳定度 %d：仅注入质量 ≥ %d 的自传记忆；最多生成 %d 次。", policy.StabilityScore, policy.MinMemoryQuality, policy.MaxGenerateAttempts)}
 	if len(forbidden) > 0 {
 		lines = append(lines, "禁止生成带有以下标签的内容："+strings.Join(forbidden, "、"))
 	}

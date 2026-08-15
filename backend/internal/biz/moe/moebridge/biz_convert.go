@@ -85,9 +85,6 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 			CreatedAt: t.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	if len(data.Steps) == 0 {
-		data.Steps = DefaultPipelineStepTypes()
-	}
 	data.StabilityScore = snap.StabilityScore
 	data.StabilityDelta = snap.StabilityDelta
 	data.RunFeedback = snap.RunFeedback
@@ -98,17 +95,6 @@ func PipelineDataFromBiz(snap moebiz.PipelineSnapshot) types.AdminGetMoeBrainPip
 		data.RunStartedAt = snap.RunStartedAt.Format("2006-01-02 15:04:05")
 	}
 	return data
-}
-
-// DefaultPipelineStepTypes 无试跑记录时的占位步骤。
-func DefaultPipelineStepTypes() []types.MoePipelineStepItem {
-	return []types.MoePipelineStepItem{
-		{Key: "load_runtime", Label: "加载 Bot 配置", Status: "skip", Detail: "尚无试跑记录"},
-		{Key: "gather_memory", Label: "检索记忆与社区脉搏", Status: "skip"},
-		{Key: "generate", Label: "LLM 生成正文", Status: "skip"},
-		{Key: "post_create", Label: "发布动态", Status: "skip"},
-		{Key: "record_episode", Label: "写入自传", Status: "skip"},
-	}
 }
 
 func BrainDataFromSnapshot(s *brain.Snapshot) types.AdminGetMoeBrainData {

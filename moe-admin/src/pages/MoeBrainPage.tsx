@@ -362,7 +362,12 @@ export function MoeBrainPage() {
       error={error || undefined}
     >
       <InferenceStatusBar agentKey={activeKey} refreshKey={opsRefresh} />
-      <BrainPipelinePanel agentKey={activeKey} refreshKey={opsRefresh} running={runningOnce} />
+      <BrainPipelinePanel
+        agentKey={activeKey}
+        refreshKey={opsRefresh}
+        running={runningOnce}
+        stabilityScore={stabilityScore}
+      />
       <MemoryInfluencePanel meta={brain?.generation_meta} />
       <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
 

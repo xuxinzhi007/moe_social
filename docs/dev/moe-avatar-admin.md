@@ -19,8 +19,8 @@
 
 | 路径 | 职责 |
 |------|------|
-| `moe-admin/src/pages/PetAvatarEditorPage.tsx` | 页面（双 Tab） |
-| `moe-admin/src/features/moe-avatar/` | composer · Canvas 组件 · zip 导出 |
+| `moe-admin/src/features/sprite-studio/SpriteStudioPage.tsx` | 页面入口（角色装扮 / 序列帧整理） |
+| `moe-admin/src/features/sprite-studio/AvatarComposerPage.tsx` | 角色包编辑、Canvas 预览、ZIP 导入导出与 manifest 高级编辑 |
 | `moe-admin/public/pet/moe_content/avatar/` | 开发用 manifest + 层 PNG |
 
 ## 3. 工作流
@@ -39,7 +39,7 @@
 
 | 阶段 | App |
 |------|-----|
-| **现在** | `FeatureFlags.petMoeAvatar=true` · `PetMoeAvatarComposer` 读 `assets/pet/moe_content/avatar/manifest.json` · 换衣间 + 小家走动 |
+| **现在** | `PetMoeAvatarComposer` 已接入 `assets/pet/moe_content/avatar/manifest.json`；`petMoeAvatar` 默认关闭，主路径仍走 LPC 原型 |
 | 回滚 | `petMoeAvatar=false` · `petLpcPrototype=true` 或 PNG |
 
 ## 5. 两种形象模式（重要）

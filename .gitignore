@@ -155,3 +155,4 @@ moe_social_mcp_server/
 # Avatar generated artifacts
 moe-admin/public/pet/moe_avatar/
 moe-avatar/node_modules/
+moe-avatar/editor/node_modules/
