@@ -6,7 +6,7 @@
 
 ## 1. 选型结论
 
-| 选项 | 结论 |
+| 选项 | 结论 |tter
 |------|------|
 | **Spine + `flame_spine`** | **主选**：官方 Flame 桥接，换装用 Skin / Slot 附件，遮挡由骨骼深度解决 |
 | Live2D | 不做：Companion 已否决形象大厅；Flame 生态弱于 Spine |

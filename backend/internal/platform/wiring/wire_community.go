@@ -57,6 +57,14 @@ func wireCommunityServices(rep *wireReporter, ctx *svc.ServiceContext) {
 			ctx.GiftApp = giftApp
 		}
 	}
+	if moewiring.BattleAPIInProcessEnabled() {
+		battleApp, err := moewiring.NewAPIBattleService()
+		if err != nil {
+			rep.domainWarn("battle", "db", err.Error())
+		} else if battleApp != nil {
+			ctx.BattleApp = battleApp
+		}
+	}
 	if moewiring.ChatAPIInProcessEnabled() {
 		chatApp, err := moewiring.NewAPIChatService()
 		if err != nil {

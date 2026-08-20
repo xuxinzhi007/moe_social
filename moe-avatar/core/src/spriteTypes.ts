@@ -22,6 +22,11 @@ export type SpriteFrameTransform = {
   offsetX: number
   offsetY: number
   scale: number
+  /** Optional non-uniform scale multipliers for frame-tuning tools. */
+  scaleX?: number
+  scaleY?: number
+  /** Clockwise rotation in degrees around the frame center. */
+  rotation?: number
   anchor?: SpriteAnchor
 }
 

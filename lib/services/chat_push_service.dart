@@ -195,13 +195,8 @@ class ChatPushService {
 
       final ch = connectMoeWebSocket(wsUri, headers: headers);
       _channel = ch;
-      connectionLive.value = true;
-      // 重连后补一次角标，避免离线期间漏掉的 friend_request 推送
-      unawaited(FriendRequestSync.refreshIncomingCount());
-      _heartbeatTimer?.cancel();
-      _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
-        ping();
-      });
+      connectionLive.value = false;
+      unawaited(_markConnectedWhenReady(ch));
       _subscription = ch.stream.listen(
         _handleMessage,
         onDone: _handleDisconnected,
@@ -231,6 +226,25 @@ class ChatPushService {
     }
   }
 
+  /// 仅在底层 WebSocket 握手完成后才向 UI 报告连接可用。
+  static Future<void> _markConnectedWhenReady(WebSocketChannel channel) async {
+    try {
+      await channel.ready;
+      if (!identical(_channel, channel)) return;
+      connectionLive.value = true;
+      // 重连后补一次角标，避免离线期间漏掉的 friend_request 推送。
+      unawaited(FriendRequestSync.refreshIncomingCount());
+      _heartbeatTimer?.cancel();
+      _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        ping();
+      });
+    } catch (_) {
+      if (identical(_channel, channel)) {
+        _handleDisconnected();
+      }
+    }
+  }
+
   static void _handleDisconnected() {
     _subscription?.cancel();
     _subscription = null;
@@ -253,6 +267,7 @@ class ChatPushService {
     if (data is! String) return;
     // 收到一条真实消息说明这条 WS 是健康的，重置退避计数。
     _reconnectAttempts = 0;
+    connectionLive.value = true;
 
     final Map<String, dynamic> map;
     try {

@@ -5,6 +5,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
+	battleapp "backend/internal/service/battle"
 	behaviorapp "backend/internal/service/behavior"
 	chatapp "backend/internal/service/chat"
 	checkinapp "backend/internal/service/checkin"
@@ -35,6 +36,7 @@ type AccessServices struct {
 }
 
 type CommunityServices struct {
+	BattleApp      *battleapp.AppService
 	BehaviorApp    *behaviorapp.AppService
 	PostApp        *postapp.AppService
 	CommentApp     *commentapp.AppService
@@ -91,6 +93,7 @@ type ServiceContext struct {
 	CheckInApp     *checkinapp.AppService
 	AchievementApp *achievementapp.AppService
 	GiftApp        *giftapp.AppService
+	BattleApp      *battleapp.AppService
 	GameApp        *gameapp.AppService
 	LifeApp        *lifeapp.AppService
 	CompanionApp   *companionapp.AppService
@@ -132,6 +135,7 @@ func (c *ServiceContext) SyncDomains() {
 		CheckInApp:     c.CheckInApp,
 		AchievementApp: c.AchievementApp,
 		GiftApp:        c.GiftApp,
+		BattleApp:      c.BattleApp,
 		ChatApp:        c.ChatApp,
 		NotifyApp:      c.NotifyApp,
 	}

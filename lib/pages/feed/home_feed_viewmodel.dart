@@ -40,15 +40,25 @@ extension HomeFeedModeX on HomeFeedMode {
   }
 }
 
+typedef HomeFeedPostsLoader = Future<Map<String, dynamic>> Function({
+  required int page,
+  required int pageSize,
+  String? viewerUserId,
+  String? feedMode,
+  String? topicTagId,
+});
+
 /// 首页 Feed 状态与加载逻辑（页面只负责 UI / 导航 / Scroll）。
 class HomeFeedViewModel extends ChangeNotifier {
   HomeFeedViewModel({
     LikeStateManager? likeManager,
     CompanionService? companionService,
     CompanionInteractionCoordinator? interactionCoordinator,
+    HomeFeedPostsLoader? postsLoader,
     this.pageSize = 10,
   })  : _likeManager = likeManager ?? LikeStateManager(),
         _companionService = companionService ?? CompanionService(),
+        _postsLoader = postsLoader ?? PostService.getPosts,
         _interactionCoordinator =
             interactionCoordinator ?? CompanionInteractionCoordinator.instance {
     _interactionSubscription = _interactionCoordinator.events.listen(
@@ -58,6 +68,7 @@ class HomeFeedViewModel extends ChangeNotifier {
 
   final LikeStateManager _likeManager;
   final CompanionService _companionService;
+  final HomeFeedPostsLoader _postsLoader;
   final CompanionInteractionCoordinator _interactionCoordinator;
   final int pageSize;
 
@@ -67,6 +78,7 @@ class HomeFeedViewModel extends ChangeNotifier {
   bool _isRefreshing = false;
   bool _isLoadingMore = false;
   int _currentPage = 1;
+  int _queryRevision = 0;
   bool _hasMore = true;
   Object? _feedError;
   String? _loadMoreErrorMessage;
@@ -219,6 +231,7 @@ class HomeFeedViewModel extends ChangeNotifier {
     if (_mode == mode && (!clearTopic || _activeTopic == null)) return;
     _mode = mode;
     if (clearTopic) _activeTopic = null;
+    _queryRevision++;
     notifyListeners();
     unawaited(fetchPosts(resetContent: true));
   }
@@ -231,6 +244,7 @@ class HomeFeedViewModel extends ChangeNotifier {
       _activeTopic = tag;
       if (tag != null) _mode = HomeFeedMode.topic;
     }
+    _queryRevision++;
     notifyListeners();
     unawaited(fetchPosts(resetContent: true));
   }
@@ -256,6 +270,9 @@ class HomeFeedViewModel extends ChangeNotifier {
       return;
     }
     _isPrimaryRequestInFlight = true;
+    final requestRevision = _queryRevision;
+    final requestMode = _mode;
+    final requestTopicTagId = _activeTopic?.id;
     final hasExistingPosts = _displayPosts.isNotEmpty;
     _feedError = null;
     _loadMoreErrorMessage = null;
@@ -271,13 +288,18 @@ class HomeFeedViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _fetchPostsForMode(page: 1);
-      if (_disposed) return;
-      _allPosts = result.posts;
-      _displayPosts = List<Post>.from(result.posts);
+      final result = await _fetchPostsForMode(
+        page: 1,
+        mode: requestMode,
+        topicTagId: requestTopicTagId,
+      );
+      if (_disposed || requestRevision != _queryRevision) return;
+      final posts = _uniquePosts(result.posts);
+      _allPosts = posts;
+      _displayPosts = List<Post>.from(posts);
       _currentPage = 1;
       _hasMore =
-          _mode.supportsPagination ? result.posts.length < result.total : false;
+          requestMode.supportsPagination ? posts.length < result.total : false;
       _feedError = null;
       _lastUpdatedAt = DateTime.now();
       _refreshAvailableTags(notify: false);
@@ -312,24 +334,32 @@ class HomeFeedViewModel extends ChangeNotifier {
       return;
     }
     _isLoadMoreRequestInFlight = true;
+    final requestRevision = _queryRevision;
+    final requestMode = _mode;
+    final requestTopicTagId = _activeTopic?.id;
     _isLoadingMore = true;
     _loadMoreErrorMessage = null;
     notifyListeners();
     try {
       final nextPage = _currentPage + 1;
-      final result = await _fetchPostsForMode(page: nextPage);
-      if (_disposed) return;
+      final result = await _fetchPostsForMode(
+        page: nextPage,
+        mode: requestMode,
+        topicTagId: requestTopicTagId,
+      );
+      if (_disposed || requestRevision != _queryRevision) return;
       if (result.posts.isEmpty) {
         _hasMore = false;
         _isLoadingMore = false;
         notifyListeners();
         return;
       }
-      _allPosts.addAll(result.posts);
+      _allPosts = _uniquePosts([..._allPosts, ...result.posts]);
       _displayPosts = List<Post>.from(_allPosts);
       _currentPage = nextPage;
-      _hasMore =
-          _mode.supportsPagination ? _allPosts.length < result.total : false;
+      _hasMore = requestMode.supportsPagination
+          ? _allPosts.length < result.total
+          : false;
       _loadMoreErrorMessage = null;
       _lastUpdatedAt = DateTime.now();
       _refreshAvailableTags(notify: false);
@@ -412,12 +442,16 @@ class HomeFeedViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<_PostPageResult> _fetchPostsForMode({required int page}) async {
-    final result = await PostService.getPosts(
+  Future<_PostPageResult> _fetchPostsForMode({
+    required int page,
+    required HomeFeedMode mode,
+    required String? topicTagId,
+  }) async {
+    final result = await _postsLoader(
       page: page,
       pageSize: pageSize,
-      feedMode: _mode.apiFeedMode,
-      topicTagId: _activeTopic?.id,
+      feedMode: mode.apiFeedMode,
+      topicTagId: topicTagId,
       viewerUserId: AuthService.isLoggedIn ? AuthService.currentUser : null,
     );
     final posts = result['posts'] as List<Post>;
@@ -425,6 +459,14 @@ class HomeFeedViewModel extends ChangeNotifier {
     final total =
         totalRaw is int ? totalRaw : (totalRaw is num ? totalRaw.toInt() : 0);
     return _PostPageResult(posts: posts, total: total);
+  }
+
+  List<Post> _uniquePosts(Iterable<Post> posts) {
+    final postIds = <String>{};
+    return [
+      for (final post in posts)
+        if (post.id.isEmpty || postIds.add(post.id)) post,
+    ];
   }
 
   void _refreshAvailableTags({bool notify = true}) {

@@ -46,6 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
   User? _user;
   bool _isLoading = true;
   bool _isLoadingDetails = false;
+  bool _hasDetailsError = false;
   Object? _loadError;
   bool _isVip = false;
   int _postCount = 0;
@@ -127,69 +128,90 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadProfileDetails(String userId) async {
-    try {
-      await _achievementService.initializeUserBadges(userId);
-      final results = await Future.wait([
-        CommerceService.getUserVipStatus(userId)
-            .timeout(const Duration(seconds: 5))
-            .catchError((_) => <String, dynamic>{}),
-        _getCount(
-            () => UserService.getFollowings(userId, page: 1, pageSize: 1)),
-        _getCount(() => UserService.getFollowers(userId, page: 1, pageSize: 1)),
-        _getPostCount(userId),
-      ]);
-      final vipStatus = results[0] as Map<String, dynamic>;
-      final userBadges = _achievementService.getUserBadges(userId);
+    final badges = _loadDetail(
+      () async {
+        await _achievementService.initializeUserBadges(userId);
+        return _achievementService.getUserBadges(userId);
+      },
+      const <AchievementBadge>[],
+    );
+    final vip = _loadDetail(
+      () => CommerceService.getUserVipStatus(userId)
+          .timeout(const Duration(seconds: 5)),
+      <String, dynamic>{},
+    );
+    final following = _loadDetail(
+      () => _getCount(
+        () => UserService.getFollowings(userId, page: 1, pageSize: 1),
+      ),
+      0,
+    );
+    final followers = _loadDetail(
+      () => _getCount(
+        () => UserService.getFollowers(userId, page: 1, pageSize: 1),
+      ),
+      0,
+    );
+    final posts = _loadDetail(() => _getPostCount(userId), 0);
 
-      if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          final lp = context.read<UserLevelProvider>();
-          if (lp.userLevel == null && !lp.isLoading) lp.loadUserLevel(userId);
-        }
-      });
+    final results =
+        await Future.wait([badges, vip, following, followers, posts]);
+    if (!mounted) return;
+
+    final badgesResult = results[0] as _ProfileDetail<List<AchievementBadge>>;
+    final vipResult = results[1] as _ProfileDetail<Map<String, dynamic>>;
+    final followingResult = results[2] as _ProfileDetail<int>;
+    final followersResult = results[3] as _ProfileDetail<int>;
+    final postsResult = results[4] as _ProfileDetail<int>;
+    final hasDetailsError = results.any((result) => !result.didLoad);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        setState(() {
-          _isVip = vipStatus['is_vip'] as bool? ?? false;
-          _followingCount = results[1] as int;
-          _followerCount = results[2] as int;
-          _postCount = results[3] as int;
-          _userBadges = userBadges;
-          _isLoadingDetails = false;
-        });
+        final lp = context.read<UserLevelProvider>();
+        if (lp.userLevel == null && !lp.isLoading) lp.loadUserLevel(userId);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoadingDetails = false);
+    });
+    setState(() {
+      if (vipResult.didLoad) {
+        _isVip = vipResult.value['is_vip'] as bool? ?? false;
       }
+      if (followingResult.didLoad) _followingCount = followingResult.value;
+      if (followersResult.didLoad) _followerCount = followersResult.value;
+      if (postsResult.didLoad) _postCount = postsResult.value;
+      if (badgesResult.didLoad) _userBadges = badgesResult.value;
+      _hasDetailsError = hasDetailsError;
+      _isLoadingDetails = false;
+    });
+  }
+
+  Future<_ProfileDetail<T>> _loadDetail<T>(
+    Future<T> Function() loader,
+    T fallback,
+  ) async {
+    try {
+      return _ProfileDetail(value: await loader(), didLoad: true);
+    } catch (_) {
+      return _ProfileDetail(value: fallback, didLoad: false);
     }
   }
 
   Future<int> _getCount(Future<Map<String, dynamic>> Function() fn) async {
-    try {
-      final r = await fn().timeout(const Duration(seconds: 5));
-      return r['total'] as int? ?? 0;
-    } catch (_) {
-      return 0;
-    }
+    final r = await fn().timeout(const Duration(seconds: 5));
+    return r['total'] as int? ?? 0;
   }
 
   Future<int> _getPostCount(String userId) async {
-    try {
-      final viewer = AuthService.currentUser ?? '';
-      final r = await PostService.getPosts(
-        page: 1,
-        pageSize: 1,
-        viewerUserId: viewer.isEmpty ? null : viewer,
-        authorUserId: userId,
-      ).timeout(const Duration(seconds: 8));
-      final t = r['total'];
-      if (t is int) return t;
-      if (t is num) return t.toInt();
-      return 0;
-    } catch (_) {
-      return 0;
-    }
+    final viewer = AuthService.currentUser ?? '';
+    final r = await PostService.getPosts(
+      page: 1,
+      pageSize: 1,
+      viewerUserId: viewer.isEmpty ? null : viewer,
+      authorUserId: userId,
+    ).timeout(const Duration(seconds: 8));
+    final total = r['total'];
+    if (total is int) return total;
+    if (total is num) return total.toInt();
+    return 0;
   }
 
   // ─── Navigation helpers ───────────────────────────────────────────────────
@@ -458,6 +480,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 18)),
+          if (_hasDetailsError) ...[
+            const SizedBox(width: 6),
+            const Text(
+              '资料待刷新',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
           if (_isLoadingDetails) ...[
             const SizedBox(width: 8),
             const SizedBox(
@@ -471,6 +504,17 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       centerTitle: true,
       actions: [
+        if (_hasDetailsError)
+          IconButton(
+            tooltip: '刷新资料明细',
+            onPressed: _isLoadingDetails || _user == null
+                ? null
+                : () {
+                    setState(() => _isLoadingDetails = true);
+                    unawaited(_loadProfileDetails(_user!.id));
+                  },
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+          ),
         IconButton(
           icon: const Icon(Icons.settings_outlined, color: Colors.white),
           onPressed: () {
@@ -1227,6 +1271,13 @@ class _QuickAction {
     this.isCta = false,
     this.badge,
   });
+}
+
+class _ProfileDetail<T> {
+  const _ProfileDetail({required this.value, required this.didLoad});
+
+  final T value;
+  final bool didLoad;
 }
 
 class _MenuItem {

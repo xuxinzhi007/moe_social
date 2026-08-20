@@ -35,7 +35,6 @@ import 'providers/pet_provider.dart';
 import 'providers/companion_presence_provider.dart';
 import 'utils/startup_manager.dart';
 import 'utils/webview_platform_init.dart';
-import 'services/wechat_sdk_service.dart';
 import 'widgets/splash_screen.dart';
 import 'theme/moe_tokens.dart';
 
@@ -202,11 +201,6 @@ class SplashScreenWrapper extends StatelessWidget {
         critical: true,
       ),
       StartupTask(
-        name: 'WeChat SDK',
-        task: () => WechatSdkService.instance.ensureRegistered(),
-        critical: false,
-      ),
-      StartupTask(
         name: 'Theme Provider',
         task: () async {
           final themeProvider = ThemeProvider();
@@ -286,7 +280,7 @@ class _MyAppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 版本检查改到主界面 MainPage 就绪后，避免抢登录/闪屏注意力。
       if (AuthService.isLoggedIn) {
-        unawaited(DailyGrowthService.instance.runAutoCheckIn(context));
+        DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
       }
     });
   }

@@ -21,6 +21,8 @@
 |------|------|
 | `moe-admin/src/features/sprite-studio/SpriteStudioPage.tsx` | 页面入口（角色装扮 / 序列帧整理） |
 | `moe-admin/src/features/sprite-studio/AvatarComposerPage.tsx` | 角色包编辑、Canvas 预览、ZIP 导入导出与 manifest 高级编辑 |
+| `moe-admin/src/features/sprite-studio/SpriteRepairPage.tsx` | 散帧/视频/Sheet 导入、动画调参、透明 Sheet 导出 |
+| `moe-admin/src/features/sprite-studio/animationTuner.ts` | 帧级缩放、旋转、偏移的可导出调参模型 |
 | `moe-admin/public/pet/moe_content/avatar/` | 开发用 manifest + 层 PNG |
 
 ## 3. 工作流
@@ -76,7 +78,13 @@
 - `jszip` — 官方包 zip（已加入 `moe-admin/package.json`）
 - 原生 `<canvas>` — 无需额外 UI 库
 
-## 8. 相关文档
+## 8. `moe-avatar` 的保留边界
+
+旧的 `moe-avatar/editor/` 是已经迁移的独立 Vite 编辑器，应删除其源码、`dist` 和误提交的 `node_modules`；不要再单独启动它。
+
+根目录 `moe-avatar/` 暂时保留为角色资源的协议与素材源：`core/` 提供 manifest、分层组合和 Sprite 校验，`spec/` 记录资源约定，`packs/official/` 保存官方素材包。管理台直接复用 `core`，Flutter 运行时继续消费导出的 manifest 和资源，因此在这些消费者改为明确包依赖或仓库级共享模块前，不能删除整个目录。
+
+## 9. 相关文档
 
 - [moe-avatar/README.md](../../moe-avatar/README.md)
 - [moe-avatar/spec/editor-vision.md](../../moe-avatar/spec/editor-vision.md)

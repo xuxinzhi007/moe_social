@@ -110,6 +110,14 @@ class _SettingsAdvancedSectionState extends State<SettingsAdvancedSection> {
                         );
                       },
                     ),
+                  if (FeatureFlags.liveGiftPk)
+                    MoeMenuItem(
+                      icon: Icons.sports_kabaddi_rounded,
+                      title: '礼物 PK 联调',
+                      subtitle: '创建双账号测试房间；仅开发期开关开启时可见',
+                      color: MoeTokens.accent,
+                      onTap: () => Navigator.of(context).pushNamed('/battle'),
+                    ),
                   MoeMenuItem(
                     icon: Icons.notifications_active_rounded,
                     title: '飞书通知',

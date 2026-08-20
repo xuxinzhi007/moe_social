@@ -25,6 +25,7 @@ func HTTPServerDepsFromServiceContext(s *svc.ServiceContext) HTTPServerDeps {
 		ChatWS:       chatdelivery.ChatWSDepsFrom(s),
 		LifeApp:      s.Domains.Life.LifeApp,
 		CompanionApp: s.Domains.Companion.CompanionApp,
+		BattleApp:    s.Domains.Community.BattleApp,
 	}
 	deps.Docs = DefaultDocsHTTPDeps()
 	return deps
@@ -40,6 +41,7 @@ func ProtoHTTPDepsFromServiceContext(s *svc.ServiceContext) ProtoHTTPDeps {
 	out.AchievementApp = s.Domains.Community.AchievementApp
 	out.PostApp = s.Domains.Community.PostApp
 	out.GiftApp = s.Domains.Community.GiftApp
+	out.BattleApp = s.Domains.Community.BattleApp
 	out.GameApp = s.Domains.Game.GameApp
 	out.LifeApp = s.Domains.Life.LifeApp
 	out.CompanionApp = s.Domains.Companion.CompanionApp

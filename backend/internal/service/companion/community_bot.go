@@ -44,12 +44,16 @@ func (s *AppService) ensureCommunityBot(
 		return nil, "", fmt.Errorf("lookup companion bot for agent %s: %w", agentID, err)
 	}
 
-	displayName := strings.TrimSpace(profile.Name)
-	if displayName == "" {
-		displayName = "AI伙伴"
-	}
 	username := fmt.Sprintf("bot_c_%d", ownerUserID)
 	email := fmt.Sprintf("companion-%d@bot.local", ownerUserID)
+	botUser, err = s.findCommunityBotByStableIdentity(ctx, agentID, username, email)
+	if err != nil {
+		return nil, "", err
+	}
+	if botUser.ID != 0 {
+		s.syncCommunityBotAppearance(ctx, &botUser, profile)
+		return &botUser, agentID, nil
+	}
 	avatar := strings.TrimSpace(profile.AvatarURL)
 
 	botUser = model.User{
@@ -63,17 +67,55 @@ func (s *AppService) ensureCommunityBot(
 		Role:        "user",
 	}
 	if err := s.db.WithContext(ctx).Create(&botUser).Error; err != nil {
-		// 并发创建时再查一次。
-		var existing model.User
-		if findErr := s.db.WithContext(ctx).
-			Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
-			First(&existing).Error; findErr == nil {
+		existing, findErr := s.findCommunityBotByStableIdentity(ctx, agentID, username, email)
+		if findErr != nil {
+			return nil, "", findErr
+		}
+		if existing.ID != 0 {
 			s.syncCommunityBotAppearance(ctx, &existing, profile)
 			return &existing, agentID, nil
 		}
 		return nil, "", fmt.Errorf("create companion bot for agent %s: %w", agentID, err)
 	}
 	return &botUser, agentID, nil
+}
+
+func (s *AppService) findCommunityBotByStableIdentity(
+	ctx context.Context,
+	agentID string,
+	username string,
+	email string,
+) (model.User, error) {
+	var botUser model.User
+	err := s.db.WithContext(ctx).
+		Where("is_bot = ? AND bot_agent_key = ?", true, agentID).
+		First(&botUser).Error
+	if err == nil {
+		return botUser, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.User{}, fmt.Errorf("lookup companion bot for agent %s: %w", agentID, err)
+	}
+
+	err = s.db.WithContext(ctx).
+		Where("is_bot = ? AND (username = ? OR email = ?)", true, username, email).
+		First(&botUser).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.User{}, nil
+	}
+	if err != nil {
+		return model.User{}, fmt.Errorf("lookup historical companion bot for agent %s: %w", agentID, err)
+	}
+	if strings.TrimSpace(botUser.BotAgentKey) == agentID {
+		return botUser, nil
+	}
+	if err := s.db.WithContext(ctx).
+		Model(&botUser).
+		Update("bot_agent_key", agentID).Error; err != nil {
+		return model.User{}, fmt.Errorf("rebind companion bot for agent %s: %w", agentID, err)
+	}
+	botUser.BotAgentKey = agentID
+	return botUser, nil
 }
 
 func (s *AppService) syncCommunityBotAppearance(

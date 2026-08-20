@@ -21,6 +21,15 @@ func NewStore(db *gorm.DB) giftbiz.GiftStore {
 	return &store{db: db}
 }
 
+// NewTransaction exposes the existing GiftTx implementation to a composed
+// cross-domain transaction without starting a nested database transaction.
+func NewTransaction(tx *gorm.DB) giftbiz.GiftTx {
+	if tx == nil {
+		return nil
+	}
+	return &giftTx{tx: tx}
+}
+
 func (s *store) Raw() *gorm.DB { return s.db }
 
 func (s *store) WithContext(ctx context.Context) giftbiz.GiftStore {

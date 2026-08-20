@@ -277,9 +277,13 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final err = await _chat.sendText(text);
     if (!mounted) return;
     if (err != null) {
+      if (_controller.text.trim().isEmpty) {
+        _controller.text = text;
+        setState(() => _hasDraft = true);
+      }
       MoeToast.show(
         context,
-        err,
+        '$err，内容已恢复，可直接重试',
         duration: const Duration(seconds: 4),
         icon: Icons.cloud_off_outlined,
       );

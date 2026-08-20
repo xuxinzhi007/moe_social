@@ -4,6 +4,7 @@ import (
 	achievementv1 "backend/api/achievement/v1"
 	adminv1 "backend/api/admin/v1"
 	aiv1 "backend/api/ai/v1"
+	battlev1 "backend/api/battle/v1"
 	behaviorv1 "backend/api/behavior/v1"
 	chatv1 "backend/api/chat/v1"
 	checkinv1 "backend/api/checkin/v1"
@@ -28,6 +29,7 @@ import (
 	adminapphttp "backend/internal/server/protohttp/adminapp"
 	admininsightshttp "backend/internal/server/protohttp/admininsights"
 	aihttp "backend/internal/server/protohttp/ai"
+	battlehttp "backend/internal/server/protohttp/battle"
 	behaviorhttp "backend/internal/server/protohttp/behavior"
 	chathttp "backend/internal/server/protohttp/chat"
 	checkinhttp "backend/internal/server/protohttp/checkin"
@@ -52,6 +54,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
+	battleapp "backend/internal/service/battle"
 	behaviorapp "backend/internal/service/behavior"
 	chatapp "backend/internal/service/chat"
 	checkinapp "backend/internal/service/checkin"
@@ -82,6 +85,7 @@ type ProtoHTTPDeps struct {
 	AchievementApp     *achievementapp.AppService
 	PostApp            *postapp.AppService
 	GiftApp            *giftapp.AppService
+	BattleApp          *battleapp.AppService
 	GameApp            *gameapp.AppService
 	LifeApp            *lifeapp.AppService
 	CompanionApp       *companionapp.AppService
@@ -121,6 +125,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.GiftApp != nil {
 		giftv1.RegisterGiftServiceHTTPServer(srv, gifthttp.New(d.GiftApp))
+	}
+	if d.BattleApp != nil {
+		battlev1.RegisterBattleServiceHTTPServer(srv, battlehttp.New(d.BattleApp))
 	}
 	if d.GameApp != nil {
 		gamev1.RegisterGameHTTPServer(srv, gamehttp.New(d.GameApp))

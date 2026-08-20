@@ -16,6 +16,8 @@ import '../pages/auth/register_page.dart';
 import '../pages/auth/reset_password_page.dart';
 import '../pages/auth/verify_code_page.dart';
 import '../pages/chat/direct_chat_page.dart';
+import '../pages/battle/live_pk_room_page.dart';
+import '../pages/battle/live_pk_lobby_page.dart';
 import '../pages/chat/message_center_page.dart' deferred as message_center;
 import '../pages/checkin/checkin_page.dart';
 import '../pages/commerce/gacha_page.dart' deferred as gacha;
@@ -73,6 +75,24 @@ Map<String, WidgetBuilder> buildAppRoutes() {
     '/login': (context) => const LoginPage(),
     '/register': (context) => const RegisterPage(),
     '/home': (context) => const MainPage(),
+    '/battle/room': (context) {
+      if (!FeatureFlags.liveGiftPk) {
+        return const Scaffold(body: Center(child: Text('该功能已下线')));
+      }
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final roomId =
+          args is Map ? args['roomId']?.toString() : args?.toString();
+      if (roomId == null || roomId.isEmpty) {
+        return const Scaffold(body: Center(child: Text('缺少 PK 房间 ID')));
+      }
+      return LivePkRoomPage(roomId: roomId);
+    },
+    '/battle': (context) {
+      if (!FeatureFlags.liveGiftPk) {
+        return const Scaffold(body: Center(child: Text('该功能已下线')));
+      }
+      return const LivePkLobbyPage();
+    },
     '/profile': (context) => _deferred(
           profile_page.loadLibrary,
           () => profile_page.ProfilePage(),

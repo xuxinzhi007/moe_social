@@ -315,7 +315,6 @@ class DirectChatViewModel extends ChangeNotifier {
           time: DateTime.now(),
         ),
       );
-      _isSending = false;
       await _saveMessages();
       _notify();
       onScrollToBottom?.call();
@@ -337,6 +336,7 @@ class DirectChatViewModel extends ChangeNotifier {
             serverId: _serverSlotFromWsId(saved.id, content),
           );
         }
+        _isSending = false;
         await _saveMessages();
         _notify();
         return null;

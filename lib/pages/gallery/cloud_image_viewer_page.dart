@@ -12,6 +12,17 @@ import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
 import '../../utils/public_download_directory.dart';
 
+/// Proto JSON uses strings for int64 values, while legacy media responses use numbers.
+int? parseCloudImageSize(Object? raw) {
+  if (raw is num) {
+    return raw.toInt();
+  }
+  if (raw is String) {
+    return int.tryParse(raw.trim());
+  }
+  return null;
+}
+
 class CloudImageViewerPage extends StatefulWidget {
   const CloudImageViewerPage({
     super.key,
@@ -114,7 +125,7 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
   @override
   Widget build(BuildContext context) {
     final currentImage = widget.images[_index] as Map;
-    final fileSize = currentImage['size'] as int?;
+    final fileSize = parseCloudImageSize(currentImage['size']);
     final filename = currentImage['filename']?.toString() ?? '';
 
     return Scaffold(
