@@ -27,7 +27,7 @@ class GiftAnimationManager {
 
   // Combo tracking
   int _comboCount = 0;
-  DateTime? _lastSendTime;
+  final Map<String, _ComboState> _comboStates = {};
   static const _comboWindow = Duration(seconds: 3);
   static const _minInterval = Duration(milliseconds: 150);
   DateTime? _lastEndTime;
@@ -50,10 +50,17 @@ class GiftAnimationManager {
     BuildContext context,
     Gift gift, {
     int comboCount = 1,
+    String? comboKey,
   }) {
     final overlay = resolveRootOverlay(context);
     if (overlay == null) return;
-    _enqueue(overlay, gift, comboCount: comboCount, context: context);
+    _enqueue(
+      overlay,
+      gift,
+      comboCount: comboCount,
+      comboKey: comboKey,
+      context: context,
+    );
   }
 
   /// 直接插入 root [OverlayState]（BottomSheet 关闭后推荐用这个）。
@@ -61,12 +68,14 @@ class GiftAnimationManager {
     OverlayState overlay,
     Gift gift, {
     int comboCount = 1,
+    String? comboKey,
     MoeVfxProfile? vfxProfile,
   }) {
     _enqueue(
       overlay,
       gift,
       comboCount: comboCount,
+      comboKey: comboKey,
       vfxProfile: vfxProfile,
     );
   }
@@ -81,20 +90,23 @@ class GiftAnimationManager {
     OverlayState overlay,
     Gift gift, {
     required int comboCount,
+    String? comboKey,
     BuildContext? context,
     MoeVfxProfile? vfxProfile,
   }) {
+    final resolvedComboKey = comboKey ?? gift.id;
     final now = DateTime.now();
-    if (_lastSendTime != null &&
-        now.difference(_lastSendTime!) < _comboWindow) {
-      _comboCount++;
+    final previous = _comboStates[resolvedComboKey];
+    if (previous != null &&
+        now.difference(previous.lastSendTime) < _comboWindow) {
+      _comboCount = previous.count + 1;
     } else {
       _comboCount = comboCount;
     }
-    _lastSendTime = now;
+    _comboStates[resolvedComboKey] = _ComboState(_comboCount, now);
 
     for (final task in _queue) {
-      if (task.gift.id == gift.id) {
+      if (task.comboKey == resolvedComboKey) {
         task.comboCount = _comboCount;
         GiftRunwayController().push(
           overlay,
@@ -124,6 +136,7 @@ class GiftAnimationManager {
       gift: gift,
       overlay: overlay,
       priority: _priorityOf(gift),
+      comboKey: resolvedComboKey,
       comboCount: _comboCount,
       vfxProfile: profile,
     );
@@ -247,12 +260,13 @@ class GiftAnimationManager {
     _currentEntry = null;
     _isPlaying = false;
     _comboCount = 0;
+    _comboStates.clear();
     GiftRunwayController().clear();
   }
 
   void resetCombo() {
     _comboCount = 0;
-    _lastSendTime = null;
+    _comboStates.clear();
   }
 
   Map<String, dynamic> getStats() => {
@@ -271,15 +285,24 @@ class _AnimTask {
   final OverlayState overlay;
   final int priority;
   final MoeVfxProfile vfxProfile;
+  final String comboKey;
   int comboCount;
 
   _AnimTask({
     required this.gift,
     required this.overlay,
     required this.priority,
+    required this.comboKey,
     required this.comboCount,
     required this.vfxProfile,
   });
+}
+
+class _ComboState {
+  const _ComboState(this.count, this.lastSendTime);
+
+  final int count;
+  final DateTime lastSendTime;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

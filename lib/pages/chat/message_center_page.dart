@@ -197,9 +197,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                         embedded: true,
                         showEmbeddedToolbar: false,
                         onEmptyFindFriends: () => _tabController.animateTo(1),
-                        onEmptyExplore: _showAddFriendSheet,
-                        emptyExploreLabel: '添加好友',
-                        emptyExploreIcon: Icons.person_add_rounded,
                       ),
                       FriendsPage(
                         contactsOnly: true,

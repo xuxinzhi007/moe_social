@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package battle.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/battle/v1;battlev1";
+
+enum BattleSide {
+  BATTLE_SIDE_UNSPECIFIED = 0;
+  BATTLE_SIDE_LEFT = 1;
+  BATTLE_SIDE_RIGHT = 2;
+}
+
+enum BattleRoomStatus {
+  BATTLE_ROOM_STATUS_UNSPECIFIED = 0;
+  BATTLE_ROOM_STATUS_DRAFT = 1;
+  BATTLE_ROOM_STATUS_RUNNING = 2;
+  BATTLE_ROOM_STATUS_FINISHED = 3;
+}
+
+message BattleParticipant {
+  uint64 user_id = 1;
+  string user_name = 2;
+  string avatar_url = 3;
+}
+
+message BattleScore {
+  BattleSide side = 1;
+  int64 score = 2;
+  int64 gift_value = 3;
+}
+
+message BattleRoomSnapshot {
+  uint64 room_id = 1;
+  BattleRoomStatus status = 2;
+  BattleParticipant left = 3;
+  BattleParticipant right = 4;
+  BattleScore left_score = 5;
+  BattleScore right_score = 6;
+  string started_at = 7;
+  string ends_at = 8;
+  string server_time = 9;
+  BattleSide winner_side = 10;
+  uint64 last_event_seq = 11;
+}
+
+message BattleGiftEvent {
+  uint64 event_id = 1;
+  uint64 event_seq = 2;
+  uint64 sender_user_id = 3;
+  BattleSide side = 4;
+  uint64 gift_id = 5;
+  string gift_name = 6;
+  string gift_icon = 7;
+  int32 quantity = 8;
+  int64 score_delta = 9;
+  BattleScore left_score = 10;
+  BattleScore right_score = 11;
+  string created_at = 12;
+}
+
+message CreateRoomRequest {
+  uint64 left_user_id = 1;
+  uint64 right_user_id = 2;
+}
+message GetRoomRequest { uint64 room_id = 1; }
+message StartRoomRequest { uint64 room_id = 1; }
+message FinishRoomRequest { uint64 room_id = 1; }
+message SendBattleGiftRequest {
+  uint64 room_id = 1;
+  BattleSide side = 2;
+  uint64 gift_id = 3;
+  int32 quantity = 4;
+  string request_id = 5;
+}
+
+message BattleRoomReply { BattleRoomSnapshot room = 1; }
+message SendBattleGiftReply {
+  BattleRoomSnapshot room = 1;
+  BattleGiftEvent event = 2;
+}
+
+service BattleService {
+  rpc CreateRoom(CreateRoomRequest) returns (BattleRoomReply) {
+    option (google.api.http) = { post: "/api/battles" body: "*" };
+  }
+  rpc GetRoom(GetRoomRequest) returns (BattleRoomReply) {
+    option (google.api.http) = { get: "/api/battles/{room_id}" };
+  }
+  rpc StartRoom(StartRoomRequest) returns (BattleRoomReply) {
+    option (google.api.http) = { post: "/api/battles/{room_id}/start" body: "*" };
+  }
+  rpc SendBattleGift(SendBattleGiftRequest) returns (SendBattleGiftReply) {
+    option (google.api.http) = { post: "/api/battles/{room_id}/gifts" body: "*" };
+  }
+  rpc FinishRoom(FinishRoomRequest) returns (BattleRoomReply) {
+    option (google.api.http) = { post: "/api/battles/{room_id}/finish" body: "*" };
+  }
+}

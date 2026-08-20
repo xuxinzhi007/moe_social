@@ -42,3 +42,59 @@ type GiftTx interface {
 	CreateGiftRecord(record *model.GiftRecord) error
 	UpdateReceiverGiftStats(toUserID uint, addCharm int, addValue float64) error
 }
+
+// SendInTransaction consumes a gift and creates its ordinary gift record in
+// a transaction supplied by a caller that owns a larger business operation.
+// It intentionally does not send notifications or trigger achievements; those
+// side effects must happen after the caller commits its transaction.
+func SendInTransaction(
+	tx GiftTx,
+	fromUserID, toUserID, giftID uint,
+	quantity int,
+	description string,
+) (model.GiftRecord, model.Gift, error) {
+	if tx == nil || fromUserID == 0 || toUserID == 0 || giftID == 0 || quantity <= 0 {
+		return model.GiftRecord{}, model.Gift{}, ErrInvalidGiftRequest
+	}
+
+	gift, err := tx.GetGift(giftID)
+	if err != nil {
+		return model.GiftRecord{}, model.Gift{}, err
+	}
+	sender, err := tx.GetUserForUpdate(fromUserID)
+	if err != nil {
+		return model.GiftRecord{}, model.Gift{}, err
+	}
+	if _, err := tx.GetUserForUpdate(toUserID); err != nil {
+		return model.GiftRecord{}, model.Gift{}, err
+	}
+
+	cost := float64(gift.Price * quantity)
+	stock, stockErr := tx.FindUserGiftStock(fromUserID, giftID)
+	if stockErr == nil && stock.Quantity >= quantity {
+		if err := tx.UpdateUserGiftStockQuantity(&stock, stock.Quantity-quantity); err != nil {
+			return model.GiftRecord{}, model.Gift{}, err
+		}
+	} else {
+		if sender.Balance < cost {
+			return model.GiftRecord{}, model.Gift{}, ErrInsufficientBal
+		}
+		if err := tx.DeductBalance(fromUserID, cost); err != nil {
+			return model.GiftRecord{}, model.Gift{}, err
+		}
+		if err := tx.CreateTransaction(&model.Transaction{
+			UserID: fromUserID, Amount: cost, Type: "consume", Status: "success", Description: description,
+		}); err != nil {
+			return model.GiftRecord{}, model.Gift{}, err
+		}
+	}
+
+	record := model.GiftRecord{FromUserID: fromUserID, ToUserID: toUserID, GiftID: giftID, Quantity: quantity}
+	if err := tx.CreateGiftRecord(&record); err != nil {
+		return model.GiftRecord{}, model.Gift{}, err
+	}
+	if err := tx.UpdateReceiverGiftStats(toUserID, gift.Price*quantity, cost); err != nil {
+		return model.GiftRecord{}, model.Gift{}, err
+	}
+	return record, gift, nil
+}

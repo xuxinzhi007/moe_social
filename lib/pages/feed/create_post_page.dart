@@ -50,9 +50,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final TextEditingController _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
+  Timer? _draftSaveTimer;
+  bool _draftRestoreFinished = false;
+
+  static const Duration _draftSaveDebounce = Duration(milliseconds: 700);
 
   void _onVmChanged() {
     if (mounted) setState(() {});
+    if (_draftRestoreFinished) {
+      _queueDraftSave();
+    }
+  }
+
+  void _queueDraftSave() {
+    if (_vm.isEditMode || _vm.isGroupPost || !_vm.hasUnsavedChanges) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(_draftSaveDebounce, () {
+      if (!mounted) return;
+      unawaited(_vm.saveDraft(_contentController.text));
+    });
   }
 
   void _showExitConfirmation() {
@@ -192,6 +208,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
       if (!_vm.hasUnsavedChanges) {
         _vm.markDirty();
       }
+      if (_draftRestoreFinished) {
+        _queueDraftSave();
+      }
     });
     final init = widget.initialPost;
     if (init != null) {
@@ -203,21 +222,26 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _bootstrapPage() async {
     await _vm.bootstrap();
-    if (!mounted || widget.initialPost != null) return;
-    final draftCaption = await _vm.restoreDraft();
-    if (!mounted || draftCaption == null) return;
-    final hasRestored = draftCaption.isNotEmpty ||
-        _vm.selectedImageUrls.isNotEmpty ||
-        _vm.selectedTopicTags.isNotEmpty ||
-        _vm.selectedMoodTag != null ||
-        _vm.handDrawCard != null;
-    if (!hasRestored) return;
-    if (draftCaption.isNotEmpty && _contentController.text.isEmpty) {
-      _contentController.text = draftCaption;
+    if (!mounted) return;
+    if (widget.initialPost == null) {
+      final draftCaption = await _vm.restoreDraft();
+      if (!mounted || draftCaption == null) {
+        _draftRestoreFinished = mounted;
+        return;
+      }
+      final hasRestored = draftCaption.isNotEmpty ||
+          _vm.selectedImageUrls.isNotEmpty ||
+          _vm.selectedTopicTags.isNotEmpty ||
+          _vm.selectedMoodTag != null ||
+          _vm.handDrawCard != null;
+      if (hasRestored) {
+        if (draftCaption.isNotEmpty && _contentController.text.isEmpty) {
+          _contentController.text = draftCaption;
+        }
+        MoeToast.info(context, '已恢复未发布的草稿');
+      }
     }
-    if (mounted) {
-      MoeToast.info(context, '已恢复未发布的草稿');
-    }
+    _draftRestoreFinished = true;
   }
 
   Future<void> _publishPost() async {
@@ -243,12 +267,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     if (!mounted) return;
 
+    await _vm.saveDraft(caption);
+    if (!mounted) return;
+
     final loadingProvider = context.read<LoadingProvider>();
     await loadingProvider.executeOperation<CreatePostPublishResult>(
       key: LoadingKeys.createPost,
       operation: () => _vm.publish(caption),
       onSuccess: (result) {
         if (!mounted) return;
+        _draftSaveTimer?.cancel();
         loadingProvider.clearMessages();
         final uid = AuthService.currentUser;
         final unlocks = result.newAchievements;
@@ -1068,7 +1096,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   void dispose() {
-    if (!_vm.isEditMode && !_vm.isGroupPost) {
+    _draftSaveTimer?.cancel();
+    if (!_vm.isEditMode && !_vm.isGroupPost && _vm.hasUnsavedChanges) {
       unawaited(_vm.saveDraft(_contentController.text));
     }
     _vm.removeListener(_onVmChanged);

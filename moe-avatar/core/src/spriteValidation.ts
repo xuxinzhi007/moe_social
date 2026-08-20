@@ -132,6 +132,9 @@ export function validateSpriteResource(resource: SpriteResource): SpriteValidati
       if (!isFiniteNumber(adjustment.offsetX)) issue(issues, 'frame-offset-invalid', 'offsetX must be finite', `${path}.offsetX`)
       if (!isFiniteNumber(adjustment.offsetY)) issue(issues, 'frame-offset-invalid', 'offsetY must be finite', `${path}.offsetY`)
       if (!isFiniteNumber(adjustment.scale) || adjustment.scale <= 0) issue(issues, 'frame-scale-invalid', 'scale must be a positive finite number', `${path}.scale`)
+      if (adjustment.scaleX !== undefined && (!isFiniteNumber(adjustment.scaleX) || adjustment.scaleX <= 0)) issue(issues, 'frame-scale-x-invalid', 'scaleX must be a positive finite number', `${path}.scaleX`)
+      if (adjustment.scaleY !== undefined && (!isFiniteNumber(adjustment.scaleY) || adjustment.scaleY <= 0)) issue(issues, 'frame-scale-y-invalid', 'scaleY must be a positive finite number', `${path}.scaleY`)
+      if (adjustment.rotation !== undefined && !isFiniteNumber(adjustment.rotation)) issue(issues, 'frame-rotation-invalid', 'rotation must be finite', `${path}.rotation`)
       if (adjustment.anchor !== undefined) {
         if (!isFiniteNumber(adjustment.anchor.x) || adjustment.anchor.x < 0 || adjustment.anchor.x > resource.frameLayout.frameWidth) {
           issue(issues, 'frame-anchor-out-of-bounds', 'anchor.x must be within a frame', `${path}.anchor.x`)

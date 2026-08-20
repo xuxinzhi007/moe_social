@@ -8,6 +8,7 @@ import { hasVisiblePixel, validateExportContract } from './spriteSheetContract'
 import { createAnimationSheetDocument, type AnimationSheetDocument, type DocumentLayer } from './animationSheetDocument'
 import { SpriteLayerPanel, type SpriteLayerEditorItem } from './SpriteLayerPanel'
 import { SpriteStudioToolsPanel, type MaskMode, type PreviewBackgroundOption } from './SpriteStudioToolsPanel'
+import { DEFAULT_FRAME_TRANSFORM, normalizeFrameTransform, type FrameTransform, updateFrameTransforms } from './animationTuner'
 import { SPRITE_TEMPLATES } from '../../../../moe-avatar/core/src/spriteTemplates'
 import { validateSpriteResource, type SpriteValidationResult } from '../../../../moe-avatar/core/src/spriteValidation'
 import type { SpriteResource } from '../../../../moe-avatar/core/src/spriteTypes'
@@ -20,7 +21,6 @@ import {
   readVideoMetadata,
 } from './videoFrameExtraction'
 
-type FrameTransform = { scale: number; offsetX: number; offsetY: number }
 type FrameAsset = {
   id: string
   name: string
@@ -43,11 +43,12 @@ type EffectLayer = { id: string; name: string; frames: FrameAsset[]; startFrame:
 type StoredEffectLayer = { id: string; name: string; frames: Array<{ name: string; dataUrl: string }>; startFrame: number; endFrame: number; offsetX: number; offsetY: number; scale: number; opacity: number; enabled: boolean }
 type StoredWorkspace = { sourceName: string; frames: StoredWorkspaceFrame[]; animations: AnimationClip[]; effectLayers?: StoredEffectLayer[]; frameTransforms?: FrameTransform[]; anchor?: { x: number; y: number }; previewTemplateId?: string; canvas: { width: number; height: number; originX: number; originY: number }; padding: number; fitMode: 'contain' | 'cover'; previewBackground: PreviewBackground }
 type RepairStage = 'source' | 'tune' | 'export'
+type TransformScope = 'frame' | 'enabled'
 type PreviewBackground = PreviewBackgroundOption
 type Bounds = { left: number; top: number; right: number; bottom: number }
 type Interaction = { kind: 'image' | 'anchor' | 'grid' | 'layer'; layerId?: string; startX: number; startY: number; offsetX: number; offsetY: number; anchorX: number; anchorY: number; gridX: number; gridY: number }
 
-const DEFAULT_TRANSFORM: FrameTransform = { scale: 100, offsetX: 0, offsetY: 0 }
+const DEFAULT_TRANSFORM = DEFAULT_FRAME_TRANSFORM
 const DEFAULT_FPS = 12
 const DEFAULT_PADDING = 24
 const PREVIEW_TEMPLATES = Object.values(SPRITE_TEMPLATES).map((template) => ({ ...template, canvas: { width: template.frameLayout.frameWidth, height: template.frameLayout.frameHeight } }))
@@ -243,11 +244,15 @@ function drawFrame(context: CanvasRenderingContext2D, frame: FrameAsset, transfo
   const baseScale = fit === 'contain'
     ? (imageRatio > canvasRatio ? canvasWidth / frame.width : canvasHeight / frame.height)
     : (imageRatio > canvasRatio ? canvasHeight / frame.height : canvasWidth / frame.width)
-  const scale = baseScale * transform.scale / 100
-  const x = originX - frame.width * scale / 2 + transform.offsetX
-  const y = originY - frame.height * scale / 2 + transform.offsetY
+  const normalized = normalizeFrameTransform(transform)
+  const scaleX = baseScale * normalized.scale * normalized.scaleX / 10000
+  const scaleY = baseScale * normalized.scale * normalized.scaleY / 10000
   context.imageSmoothingEnabled = false
-  context.drawImage(source, x, y, frame.width * scale, frame.height * scale)
+  context.save()
+  context.translate(originX + normalized.offsetX, originY + normalized.offsetY)
+  context.rotate(normalized.rotation * Math.PI / 180)
+  context.drawImage(source, -frame.width * scaleX / 2, -frame.height * scaleY / 2, frame.width * scaleX, frame.height * scaleY)
+  context.restore()
 }
 
 function drawPreviewBackground(context: CanvasRenderingContext2D, width: number, height: number, background: PreviewBackground) {
@@ -269,14 +274,19 @@ function calculateCanvasSize(frames: FrameAsset[], transforms: FrameTransform[],
   for (const [index, frame] of frames.entries()) {
     const raw = readAlphaBounds(frame)
     if (!raw) continue
-    const scale = (transforms[index]?.scale ?? 100) / 100
-    const transform = transforms[index] ?? DEFAULT_TRANSFORM
-    bounds = mergeBounds(bounds, {
-      left: -frame.width * scale / 2 + transform.offsetX + raw.left * scale,
-      top: -frame.height * scale / 2 + transform.offsetY + raw.top * scale,
-      right: -frame.width * scale / 2 + transform.offsetX + raw.right * scale,
-      bottom: -frame.height * scale / 2 + transform.offsetY + raw.bottom * scale,
-    })
+    const transform = normalizeFrameTransform(transforms[index])
+    const scaleX = transform.scale * transform.scaleX / 10000
+    const scaleY = transform.scale * transform.scaleY / 10000
+    const radians = transform.rotation * Math.PI / 180
+    const cosine = Math.cos(radians)
+    const sine = Math.sin(radians)
+    const corners = [
+      { x: (raw.left - frame.width / 2) * scaleX, y: (raw.top - frame.height / 2) * scaleY },
+      { x: (raw.right - frame.width / 2) * scaleX, y: (raw.top - frame.height / 2) * scaleY },
+      { x: (raw.left - frame.width / 2) * scaleX, y: (raw.bottom - frame.height / 2) * scaleY },
+      { x: (raw.right - frame.width / 2) * scaleX, y: (raw.bottom - frame.height / 2) * scaleY },
+    ].map(({ x, y }) => ({ x: x * cosine - y * sine + transform.offsetX, y: x * sine + y * cosine + transform.offsetY }))
+    bounds = mergeBounds(bounds, { left: Math.min(...corners.map((point) => point.x)), top: Math.min(...corners.map((point) => point.y)), right: Math.max(...corners.map((point) => point.x)), bottom: Math.max(...corners.map((point) => point.y)) })
   }
   if (!bounds) return { width: 256, height: 256, originX: 128, originY: 128 }
   return { width: Math.max(1, Math.ceil(bounds.right - bounds.left + padding * 2)), height: Math.max(1, Math.ceil(bounds.bottom - bounds.top + padding * 2)), originX: Math.ceil(-bounds.left + padding), originY: Math.ceil(-bounds.top + padding) }
@@ -292,6 +302,7 @@ export function SpriteRepairPage() {
   const [frames, setFrames] = useState<FrameAsset[]>([])
   const [frameTransforms, setFrameTransforms] = useState<FrameTransform[]>([])
   const [clips, setClips] = useState<AnimationClip[]>([])
+  const [activeClipId, setActiveClipId] = useState('sequence_1')
   const [effectLayers, setEffectLayers] = useState<EffectLayer[]>([])
   const [selectedEffectLayerId, setSelectedEffectLayerId] = useState<string | null>(null)
   const [activeFrame, setActiveFrame] = useState(0)
@@ -330,20 +341,21 @@ export function SpriteRepairPage() {
   const [maskBrushSize, setMaskBrushSize] = useState(4)
   const [maskRevision, setMaskRevision] = useState(0)
   const [anchor, setAnchor] = useState({ x: 128, y: 128 })
+  const [transformScope, setTransformScope] = useState<TransformScope>('frame')
 
   const source = frames[0]
-  const sequence = clips[0] ?? createClip(frames.length)
-  const playableFrames = frames.map((_, index) => index).filter((index) => !frames[index]?.disabled)
+  const sequence = clips.find((clip) => clip.id === activeClipId) ?? clips[0] ?? createClip(frames.length)
+  const playableFrames = sequence.frameIndices.filter((index) => Boolean(frames[index]) && !frames[index]?.disabled)
   const playableKey = playableFrames.join(',')
   const displayFrame = isPlaying ? playableFrames[playbackPosition] ?? activeFrame : activeFrame
   const currentFrame = frames[displayFrame]
-  const transform = frameTransforms[displayFrame] ?? DEFAULT_TRANSFORM
+  const transform = normalizeFrameTransform(frameTransforms[displayFrame])
   const sourceCapacity = MAX_VIDEO_FRAMES
   const videoLimit = videoDuration === null ? MAX_VIDEO_DURATION_SECONDS : Math.min(MAX_VIDEO_DURATION_SECONDS, videoDuration)
   const effectiveVideoEnd = Math.min(Math.max(videoEnd, videoStart), videoLimit)
   const requestedVideoFrames = Math.min(sourceCapacity, Math.max(1, Math.floor((effectiveVideoEnd - videoStart) * videoFps) + 1))
   const documentLayers = useMemo<DocumentLayer[]>(() => effectLayers.map((layer) => ({ id: layer.id, label: layer.name, frameCount: layer.frames.length, startFrame: layer.startFrame, endFrame: layer.endFrame, offsetX: layer.offsetX, offsetY: layer.offsetY, scale: layer.scale, opacity: layer.opacity, enabled: layer.enabled })), [effectLayers])
-  const documentModel = useMemo<AnimationSheetDocument>(() => createAnimationSheetDocument({ sourceName: sheetSourceName, frames: frames.map((frame, index) => ({ index, sourceFrameIndex: frame.sourceFrameIndex, durationMs: frame.durationMs, disabled: frame.disabled, transform: frameTransforms[index] ?? DEFAULT_TRANSFORM })), animations: [{ ...sequence, frameIndices: playableFrames }], layers: documentLayers, canvas: canvasSize, padding, fitMode, previewBackground }), [canvasSize, documentLayers, fitMode, frameTransforms, frames, padding, playableFrames, previewBackground, sequence, sheetSourceName])
+  const documentModel = useMemo<AnimationSheetDocument>(() => createAnimationSheetDocument({ sourceName: sheetSourceName, frames: frames.map((frame, index) => ({ index, sourceFrameIndex: frame.sourceFrameIndex, durationMs: frame.durationMs, disabled: frame.disabled, transform: frameTransforms[index] ?? DEFAULT_TRANSFORM })), animations: clips.map((clip) => ({ ...clip, frameIndices: clip.frameIndices.filter((index) => Boolean(frames[index]) && !frames[index]?.disabled) })), layers: documentLayers, canvas: canvasSize, padding, fitMode, previewBackground }), [canvasSize, clips, documentLayers, fitMode, frameTransforms, frames, padding, previewBackground, sheetSourceName])
 
   const enabledFrameCount = playableFrames.length
 
@@ -373,7 +385,10 @@ export function SpriteRepairPage() {
     frameLayout: { mode: 'animation_strip', frameWidth: canvasSize.width, frameHeight: canvasSize.height, columns: Math.max(1, enabledFrameCount), rows: 1 },
     source: { path: sheetSourceName, mimeType: source?.mimeType, width: source?.width, height: source?.height },
     generation: { mode: videoFile ? 'video_extracted' : 'source_frames' },
-    frameAdjustments: playableFrames.map((index, frame) => ({ frame, offsetX: frameTransforms[index]?.offsetX ?? 0, offsetY: frameTransforms[index]?.offsetY ?? 0, scale: (frameTransforms[index]?.scale ?? 100) / 100 })),
+    frameAdjustments: playableFrames.map((index, frame) => {
+      const adjustment = normalizeFrameTransform(frameTransforms[index])
+      return { frame, offsetX: adjustment.offsetX, offsetY: adjustment.offsetY, scale: adjustment.scale / 100, scaleX: adjustment.scaleX / 100, scaleY: adjustment.scaleY / 100, rotation: adjustment.rotation }
+    }),
   }), [anchor, canvasSize, enabledFrameCount, frameTransforms, playableFrames, previewTemplateId, sequence, sheetSourceName, source, videoFile])
   const validation: SpriteValidationResult = useMemo(() => validateSpriteResource(spriteResource), [spriteResource])
 
@@ -395,6 +410,7 @@ export function SpriteRepairPage() {
     const nextClip = importedClip ? { ...importedClip, frameIndices: Array.from({ length: next.length }, (_, index) => index) } : createClip(next.length)
     const nextClips = [nextClip]
     setClips(nextClips)
+    setActiveClipId(nextClip.id)
     setActiveFrame(0)
     setPreviewFrame(0)
     setPlaybackPosition(0)
@@ -420,8 +436,9 @@ export function SpriteRepairPage() {
       const next = await Promise.all(stored.frames.map(async (value, index) => { const image = await loadImage(value.workingDataUrl); const originalImage = await loadImage(value.originalDataUrl); const mask = value.maskDataUrl ? await maskFromDataUrl(value.maskDataUrl) : undefined; return { id: `restored_${Date.now()}_${index}`, name: value.name, url: value.workingDataUrl, width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, image, originalImage, mask, mimeType: 'image/png', durationMs: value.durationMs, disabled: value.disabled, sourceFrameIndex: value.sourceFrameIndex } }))
       const restoredLayers = await Promise.all((stored.effectLayers ?? []).map(async (layer) => ({ ...layer, frames: await Promise.all(layer.frames.map(async (frame, index) => { const image = await loadImage(frame.dataUrl); return { id: `restored_layer_${Date.now()}_${index}`, name: frame.name, url: frame.dataUrl, width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, image, originalImage: image, mimeType: 'image/png', durationMs: 1000 / DEFAULT_FPS, disabled: false, sourceFrameIndex: index } })) })))
       replaceFrames(next, stored.sourceName, stored.animations)
+      setActiveClipId(stored.animations[0]?.id ?? 'sequence_1')
       setEffectLayers(restoredLayers)
-      setCanvasSize(stored.canvas); setFrameTransforms(stored.frameTransforms?.slice(0, next.length).map((value) => ({ ...DEFAULT_TRANSFORM, ...value })) ?? next.map(() => ({ ...DEFAULT_TRANSFORM }))); setAnchor(stored.anchor ?? { x: stored.canvas.originX, y: stored.canvas.originY }); setPreviewTemplateId(stored.previewTemplateId ?? 'freeform'); setPadding(stored.padding); setFitMode(stored.fitMode); setPreviewBackground(stored.previewBackground ?? 'checker'); setActiveFrame(0); setPreviewFrame(0); setMessage(`已恢复工作区，共 ${next.length} 帧`)
+      setCanvasSize(stored.canvas); setFrameTransforms(stored.frameTransforms?.slice(0, next.length).map((value) => normalizeFrameTransform(value)) ?? next.map(() => ({ ...DEFAULT_TRANSFORM }))); setAnchor(stored.anchor ?? { x: stored.canvas.originX, y: stored.canvas.originY }); setPreviewTemplateId(stored.previewTemplateId ?? 'freeform'); setPadding(stored.padding); setFitMode(stored.fitMode); setPreviewBackground(stored.previewBackground ?? 'checker'); setActiveFrame(0); setPreviewFrame(0); setMessage(`已恢复工作区，共 ${next.length} 帧`)
     } catch { setMessage('工作区恢复失败，保存数据可能已损坏') }
   }
 
@@ -578,6 +595,7 @@ export function SpriteRepairPage() {
     const remap = (index: number) => index === from ? to : from < to && index > from && index <= to ? index - 1 : from > to && index >= to && index < from ? index + 1 : index
     setFrames((current) => { const next = [...current]; const [item] = next.splice(from, 1); next.splice(to, 0, item); return next })
     setFrameTransforms((current) => { const next = [...current]; const [item] = next.splice(from, 1); next.splice(to, 0, item ?? DEFAULT_TRANSFORM); return next })
+    setClips((current) => current.map((clip) => ({ ...clip, frameIndices: clip.frameIndices.map(remap) })))
     setActiveFrame(remap(activeFrame)); setPreviewFrame(remap(previewFrame))
   }
   function deleteFrame() {
@@ -587,10 +605,51 @@ export function SpriteRepairPage() {
     if (!remaining.some((frame) => frame.url === frames[deleted].url)) release([frames[deleted]])
     setFrames(remaining)
     setFrameTransforms((current) => current.filter((_, index) => index !== deleted))
+    setClips((current) => current.map((clip) => ({ ...clip, frameIndices: clip.frameIndices.filter((index) => index !== deleted).map((index) => index > deleted ? index - 1 : index) })))
     setActiveFrame((current) => Math.min(current, Math.max(0, frames.length - 2)))
     setPreviewFrame((current) => Math.min(current, Math.max(0, frames.length - 2)))
   }
-  function updateTransform(key: keyof FrameTransform, value: number) { setFrameTransforms((current) => current.map((transform, index) => index === activeFrame ? { ...(transform ?? DEFAULT_TRANSFORM), [key]: value } : transform ?? DEFAULT_TRANSFORM)) }
+  function updateTransform(key: keyof FrameTransform, value: number) {
+    const targets = transformScope === 'enabled' ? playableFrames : [activeFrame]
+    setFrameTransforms((current) => updateFrameTransforms(current, frames.length, targets, key, value))
+  }
+  function resetFrameTransforms() {
+    const targets = new Set(transformScope === 'enabled' ? playableFrames : [activeFrame])
+    setFrameTransforms((current) => current.map((value, index) => targets.has(index) ? { ...DEFAULT_TRANSFORM } : normalizeFrameTransform(value)))
+  }
+  function updateActiveClip(patch: Partial<AnimationClip>) {
+    setClips((current) => current.map((clip) => clip.id === sequence.id ? { ...clip, ...patch } : clip))
+  }
+  function addClip() {
+    const usedIds = new Set(clips.map((clip) => clip.id))
+    let number = clips.length + 1
+    while (usedIds.has(`sequence_${number}`)) number += 1
+    const next = { id: `sequence_${number}`, label: `新动作 ${number}`, frameIndices: [], fps: DEFAULT_FPS, loop: true }
+    setClips((current) => [...current, next])
+    setActiveClipId(next.id)
+    setIsPlaying(false)
+  }
+  function removeActiveClip() {
+    if (clips.length <= 1) return
+    const next = clips.filter((clip) => clip.id !== sequence.id)
+    setClips(next)
+    setActiveClipId(next[0]?.id ?? 'sequence_1')
+    setIsPlaying(false)
+  }
+  function toggleFrameInActiveClip(frameIndex: number) {
+    const frameIndices = sequence.frameIndices.includes(frameIndex)
+      ? sequence.frameIndices.filter((index) => index !== frameIndex)
+      : [...sequence.frameIndices, frameIndex]
+    updateActiveClip({ frameIndices })
+  }
+  function moveClipFrame(position: number, direction: -1 | 1) {
+    const target = position + direction
+    if (target < 0 || target >= sequence.frameIndices.length) return
+    const frameIndices = [...sequence.frameIndices]
+    const [frameIndex] = frameIndices.splice(position, 1)
+    frameIndices.splice(target, 0, frameIndex)
+    updateActiveClip({ frameIndices })
+  }
   function updateFrame(patch: Partial<FrameAsset>) { setFrames((current) => current.map((frame, index) => index === activeFrame ? { ...frame, ...patch } : frame)) }
 
   async function cleanupBackground() {
@@ -621,7 +680,8 @@ export function SpriteRepairPage() {
   }
 
   function resetPlacement() {
-    setFrameTransforms((current) => current.map(() => ({ ...DEFAULT_TRANSFORM })))
+    const targets = transformScope === 'enabled' ? new Set(playableFrames) : new Set([activeFrame])
+    setFrameTransforms((current) => current.map((value, index) => targets.has(index) ? { ...DEFAULT_TRANSFORM } : normalizeFrameTransform(value)))
     setAnchor({ x: canvasSize.originX, y: canvasSize.originY })
     setFitMode('contain')
   }
@@ -713,7 +773,7 @@ export function SpriteRepairPage() {
   useEffect(() => { if (currentFrame) return; const canvas = canvasRef.current; const context = canvas?.getContext('2d'); if (!canvas || !context) return; canvas.width = 720; canvas.height = 420; context.fillStyle = '#f7f7fa'; context.fillRect(0, 0, canvas.width, canvas.height); context.strokeStyle = '#d8d4e5'; context.setLineDash([7, 7]); context.strokeRect(20.5, 20.5, canvas.width - 41, canvas.height - 41); context.setLineDash([]); context.fillStyle = '#6b5fc1'; context.textAlign = 'center'; context.font = '700 18px ui-monospace, Consolas, monospace'; context.fillText('DROP A FRAME TO BEGIN', canvas.width / 2, canvas.height / 2 - 8); context.fillStyle = '#858194'; context.font = '12px ui-monospace, Consolas, monospace'; context.fillText('PNG sequence · Sheet + JSON · video', canvas.width / 2, canvas.height / 2 + 20); context.textAlign = 'start' }, [currentFrame])
   useEffect(() => { if (!source || frames.length !== 1) return; const availableWidth = Math.max(1, source.width - gridOffsetX - Math.max(0, gridColumns - 1) * gridGapX); const availableHeight = Math.max(1, source.height - gridOffsetY - Math.max(0, gridRows - 1) * gridGapY); const nextWidth = Math.max(1, Math.floor(availableWidth / Math.max(1, gridColumns))); const nextHeight = Math.max(1, Math.floor(availableHeight / Math.max(1, gridRows))); const frame = window.requestAnimationFrame(() => { setGridCellWidth((current) => current === nextWidth ? current : nextWidth); setGridCellHeight((current) => current === nextHeight ? current : nextHeight) }); return () => window.cancelAnimationFrame(frame) }, [gridColumns, gridGapX, gridGapY, gridOffsetX, gridOffsetY, gridRows, frames.length, source])
 
-  function maskImagePoint(canvas: HTMLCanvasElement, event: PointerEvent<HTMLCanvasElement>, frame: FrameAsset) { const rect = canvas.getBoundingClientRect(); const canvasX = (event.clientX - rect.left) * canvas.width / rect.width; const canvasY = (event.clientY - rect.top) * canvas.height / rect.height; if (frames.length === 1) return { x: canvasX, y: canvasY }; const imageRatio = frame.width / frame.height; const canvasRatio = canvasSize.width / canvasSize.height; const baseScale = fitMode === 'contain' ? (imageRatio > canvasRatio ? canvasSize.width / frame.width : canvasSize.height / frame.height) : (imageRatio > canvasRatio ? canvasSize.height / frame.height : canvasSize.width / frame.width); const scale = baseScale * transform.scale / 100; return { x: (canvasX - anchor.x - transform.offsetX) / scale + frame.width / 2, y: (canvasY - anchor.y - transform.offsetY) / scale + frame.height / 2 } }
+  function maskImagePoint(canvas: HTMLCanvasElement, event: PointerEvent<HTMLCanvasElement>, frame: FrameAsset) { const rect = canvas.getBoundingClientRect(); const canvasX = (event.clientX - rect.left) * canvas.width / rect.width; const canvasY = (event.clientY - rect.top) * canvas.height / rect.height; if (frames.length === 1) return { x: canvasX, y: canvasY }; const imageRatio = frame.width / frame.height; const canvasRatio = canvasSize.width / canvasSize.height; const baseScale = fitMode === 'contain' ? (imageRatio > canvasRatio ? canvasSize.width / frame.width : canvasSize.height / frame.height) : (imageRatio > canvasRatio ? canvasSize.height / frame.height : canvasSize.width / frame.width); const scaleX = baseScale * transform.scale * transform.scaleX / 10000; const scaleY = baseScale * transform.scale * transform.scaleY / 10000; const radians = -transform.rotation * Math.PI / 180; const translatedX = canvasX - anchor.x - transform.offsetX; const translatedY = canvasY - anchor.y - transform.offsetY; const unrotatedX = translatedX * Math.cos(radians) - translatedY * Math.sin(radians); const unrotatedY = translatedX * Math.sin(radians) + translatedY * Math.cos(radians); return { x: unrotatedX / scaleX + frame.width / 2, y: unrotatedY / scaleY + frame.height / 2 } }
   function paintMask(event: PointerEvent<HTMLCanvasElement>) { const edit = maskEditRef.current; const frame = frames[edit?.frameIndex ?? -1]; if (!edit || !frame || maskMode === 'off') return; const point = maskImagePoint(event.currentTarget, event, frame); const maskData = new ImageData(new Uint8ClampedArray(edit.mask.length * 4), edit.canvas.width, edit.canvas.height); const originalMask = new ImageData(new Uint8ClampedArray(edit.mask.length * 4), edit.canvas.width, edit.canvas.height); const originalAlpha = frame.originalAlphaMask ?? alphaMaskFromImage(frame.originalImage ?? frame.image); frame.originalAlphaMask = originalAlpha; for (let index = 0; index < edit.mask.length; index += 1) { maskData.data[index * 4 + 3] = edit.mask[index]; originalMask.data[index * 4 + 3] = originalAlpha[index] } applyAlphaBrush(maskData, originalMask, point.x, point.y, maskBrushSize, maskMode); for (let index = 0; index < edit.mask.length; index += 1) edit.mask[index] = maskData.data[index * 4 + 3]; applyMaskToCanvas(edit.canvas, frame.originalImage ?? frame.image, edit.mask); setMaskRevision((value) => value + 1) }
   function pointerDown(event: PointerEvent<HTMLCanvasElement>) { const canvas = event.currentTarget; if (!canvas || isPlaying) return; event.preventDefault(); if (maskMode !== 'off' && currentFrame && frames.length >= 1) { const editCanvas = document.createElement('canvas'); editCanvas.width = currentFrame.width; editCanvas.height = currentFrame.height; const editContext = editCanvas.getContext('2d'); if (editContext) { editContext.drawImage(currentFrame.image, 0, 0); const sessionId = maskSessionRef.current + 1; maskSessionRef.current = sessionId; maskEditRef.current = { frameIndex: displayFrame, frameId: currentFrame.id, sessionId, canvas: editCanvas, mask: new Uint8ClampedArray(currentFrame.mask ?? currentFrame.originalAlphaMask ?? alphaMaskFromImage(currentFrame.image)) }; paintMask(event); canvas.setPointerCapture(event.pointerId); return } } const rect = canvas.getBoundingClientRect(); const x = (event.clientX - rect.left) * canvas.width / rect.width; const y = (event.clientY - rect.top) * canvas.height / rect.height; const selectedLayer = selectedEffectLayerId ? effectLayers.find((layer) => layer.id === selectedEffectLayerId) : undefined; if (selectedLayer && frames.length > 1) { interactionRef.current = { kind: 'layer', layerId: selectedLayer.id, startX: x, startY: y, offsetX: selectedLayer.offsetX, offsetY: selectedLayer.offsetY, anchorX: anchor.x, anchorY: anchor.y, gridX: gridOffsetX, gridY: gridOffsetY }; canvas.setPointerCapture(event.pointerId); return } const kind = frames.length === 1 ? 'grid' : 'anchor'; interactionRef.current = { kind, startX: x, startY: y, offsetX: transform.offsetX, offsetY: transform.offsetY, anchorX: anchor.x, anchorY: anchor.y, gridX: gridOffsetX, gridY: gridOffsetY }; canvas.setPointerCapture(event.pointerId) }
   function pointerMove(event: PointerEvent<HTMLCanvasElement>) { if (maskEditRef.current) { event.preventDefault(); paintMask(event); return } const interaction = interactionRef.current; const canvas = event.currentTarget; if (!interaction || !canvas) return; event.preventDefault(); const rect = canvas.getBoundingClientRect(); const x = (event.clientX - rect.left) * canvas.width / rect.width; const y = (event.clientY - rect.top) * canvas.height / rect.height; if (interaction.kind === 'grid') { setGridOffsetX(Math.round(Math.max(0, interaction.gridX + x - interaction.startX))); setGridOffsetY(Math.round(Math.max(0, interaction.gridY + y - interaction.startY))) } else if (interaction.kind === 'layer' && interaction.layerId) { updateEffectLayer(interaction.layerId, { offsetX: Math.round(interaction.offsetX + x - interaction.startX), offsetY: Math.round(interaction.offsetY + y - interaction.startY) }) } else setAnchor({ x: Math.round(Math.max(0, Math.min(canvas.width, interaction.anchorX + x - interaction.startX))), y: Math.round(Math.max(0, Math.min(canvas.height, interaction.anchorY + y - interaction.startY))) }) }
@@ -731,8 +791,22 @@ export function SpriteRepairPage() {
       </details>
       <details className="sprite-collapsible sprite-export-panel" open><summary>导出设置</summary><label className="sprite-control"><span>预览模板（可选）</span><select value={previewTemplateId} onChange={(event) => selectPreviewTemplate(event.target.value)}><option value="freeform">自由画布</option>{PREVIEW_TEMPLATES.map((item) => <option key={item.id} value={item.id}>{item.label} · {item.canvas.width} × {item.canvas.height}</option>)}</select></label><label className="sprite-control"><span>Fit 模式</span><select value={fitMode} onChange={(event) => setFitMode(event.target.value as 'contain' | 'cover')}><option value="contain">Contain</option><option value="cover">Cover</option></select></label><label className="sprite-control"><span>透明边距 px</span><input type="number" min="0" max="1024" value={padding} onChange={(event) => setPadding(Math.max(0, Number(event.target.value) || 0))} /></label><div className="sprite-canvas-result"><span>统一画布</span><strong>{canvasSize.width} × {canvasSize.height} · 原点 {anchor.x},{anchor.y}</strong></div><button type="button" className="sprite-reset" onClick={resetPlacement}>恢复当前放置</button><button type="button" className="sprite-export" disabled={!frames.length || measuring} onClick={measureCanvas}>{measuring ? '计算中…' : '计算全角色统一画布'}</button><button type="button" className="sprite-export" disabled={!frames.length} onClick={() => void exportSheet()}>导出 Sheet + JSON</button>{!validation.ok ? <div className="sprite-validation-error">{validation.issues.map((issue) => <div key={`${issue.code}-${issue.path}`}>{issue.message}</div>)}</div> : <div className="sprite-validation-ok">SpriteResource 校验通过</div>}<p className="sprite-message" role="status">{message}</p></details>
     </aside><div className="sprite-workbench">
+      <section className="sprite-clip-board" aria-label="动画组编辑器">
+        <div className="sprite-panel-top"><div><span className="sprite-eyebrow">ANIMATION GROUPS</span><strong>自定义动作序列</strong></div><span className="sprite-fps">当前导出：{sequence.label}</span></div>
+        <div className="sprite-clip-board-body">
+          <div className="sprite-clip-board-groups" role="tablist" aria-label="动画组">
+            {clips.map((clip) => <button type="button" key={clip.id} role="tab" aria-selected={clip.id === sequence.id} className={clip.id === sequence.id ? 'active' : ''} onClick={() => { setActiveClipId(clip.id); setIsPlaying(false) }}><strong>{clip.label}</strong><small>{clip.frameIndices.length} 帧 · {clip.fps} FPS</small></button>)}
+            <button type="button" className="add" onClick={addClip}>+ 新建动作</button>
+          </div>
+          <div className="sprite-clip-board-sequence">
+            <div className="sprite-clip-board-settings"><label>名称 <input type="text" value={sequence.label} onChange={(event) => updateActiveClip({ label: event.target.value || sequence.id })} /></label><label>FPS <input type="number" min="1" max="60" value={sequence.fps} onChange={(event) => updateActiveClip({ fps: Math.max(1, Math.min(60, Number(event.target.value) || DEFAULT_FPS)) })} /></label><label className="sprite-clip-loop"><input type="checkbox" checked={sequence.loop} onChange={(event) => updateActiveClip({ loop: event.target.checked })} /> 循环</label><button type="button" disabled={clips.length <= 1} onClick={removeActiveClip}>删除动作</button></div>
+            <div className="sprite-clip-board-frame-list" aria-label="当前动作帧顺序">{sequence.frameIndices.length ? sequence.frameIndices.map((frameIndex, position) => { const frame = frames[frameIndex]; return frame ? <button type="button" key={`${frame.id}_${position}`} className={frameIndex === activeFrame ? 'active' : ''} onClick={() => { setActiveFrame(frameIndex); setPreviewFrame(frameIndex); setIsPlaying(false) }}><span>{position + 1}</span><img src={frame.url} alt={`动作帧 ${position + 1}`} /><i onClick={(event) => { event.stopPropagation(); toggleFrameInActiveClip(frameIndex) }}>×</i></button> : null }) : <em>从下方帧池点击帧，按需要组成当前动作。</em>}</div>
+            <div className="sprite-animation-row-actions"><span>{sequence.frameIndices.map((frameIndex, position) => <button type="button" key={`${frameIndex}_${position}`} title={`移动第 ${position + 1} 帧`} onClick={() => moveClipFrame(position, position === 0 ? 1 : -1)} disabled={sequence.frameIndices.length < 2}>{position === 0 ? '→' : '←'}</button>)}</span><em>帧池点击可加入或移出当前动作；动作内顺序独立于原始帧顺序。</em></div>
+          </div>
+        </div>
+      </section>
       <section className="sprite-canvas-panel"><div className="sprite-panel-top"><div><span className="sprite-eyebrow">实时画布</span><strong>{currentFrame ? `${frames.length === 1 ? `${currentFrame.width} × ${currentFrame.height}` : `${canvasSize.width} × ${canvasSize.height}`} · 第 ${displayFrame + 1} 帧` : '等待导入帧'}</strong></div><span className="sprite-guide-key">{frames.length === 1 ? '红框 = 切格 · 拖动 = 移动整套网格' : '青色 = 原点 · 紫色 = 统一画布'}</span></div><div className="sprite-canvas-wrap"><canvas ref={canvasRef} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={pointerUp} aria-label="Sprite preview" /></div><div className="sprite-canvas-caption"><span><i className="cyan-dot" /> {frames.length === 1 ? '拖动网格调整起点 X/Y；左侧数字可精确校准' : '拖动画布中的帧可以校准当前帧偏移'}</span><span><i className="violet-dot" /> {frames.length === 1 ? `当前偏移 ${gridOffsetX}, ${gridOffsetY}` : '所有动画导出共享同一尺寸和原点'}</span></div></section>
-      <section className="sprite-frame-panel"><div className="sprite-panel-top"><div><span className="sprite-eyebrow">FRAME STRIP</span><strong>{frames.length ? `${frames.length} 个原始帧` : '等待导入帧'}</strong></div><div className="sprite-frame-actions"><button type="button" className="play" disabled={playableFrames.length < 2} onClick={() => { const nextPlaying = !isPlaying; if (nextPlaying && playableFrames.length) { setPlaybackPosition(0); setActiveFrame(playableFrames[0]); setPreviewFrame(playableFrames[0]) }; setIsPlaying(nextPlaying) }}>{isPlaying ? '暂停' : '播放'}</button><button type="button" disabled={!frames.length || cleaning || Boolean(preCleanupFrames)} onClick={() => void cleanupBackground()}>{cleaning ? '处理中…' : '清理背景'}</button>{preCleanupFrames ? <button type="button" onClick={restoreCleanup}>恢复原始</button> : null}<button type="button" disabled={!frames[activeFrame]} onClick={deleteFrame}>删除当前帧</button></div></div><div className="sprite-frames">{frames.map((frame, index) => <button type="button" key={frame.id} draggable onDragStart={(event) => { setDragFrameIndex(index); event.dataTransfer.setData('text/plain', String(index)) }} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragFrameIndex !== null) reorderFrames(dragFrameIndex, index); setDragFrameIndex(null) }} onDragEnd={() => setDragFrameIndex(null)} className={`sprite-frame ${index === activeFrame ? 'active' : ''} ${index === previewFrame && isPlaying ? 'previewing' : ''} ${frame.disabled ? 'disabled' : ''} ${dragFrameIndex === index ? 'dragging' : ''}`} onClick={() => { setActiveFrame(index); setPreviewFrame(index); setIsPlaying(false) }}><span>{String(index + 1).padStart(2, '0')}</span><img src={frame.url} alt="" /><small>{Math.round(frame.durationMs)}ms{frame.disabled ? ' · OFF' : ''}</small></button>)}</div>{currentFrame ? <div className="sprite-frame-adjustments"><div className="sprite-adjustment-head"><span>第 {activeFrame + 1} 帧 · 源帧 {currentFrame.sourceFrameIndex + 1}</span><button type="button" onClick={() => setFrameTransforms((current) => current.map((value, index) => index === activeFrame ? { ...DEFAULT_TRANSFORM } : value))}>恢复当前帧</button></div><div className="sprite-adjustment-controls"><label className="sprite-control"><span>时长 ms</span><input type="number" min="1" max="60000" value={Math.round(currentFrame.durationMs)} onChange={(event) => updateFrame({ durationMs: Math.max(1, Number(event.target.value) || 1) })} /></label><label className="sprite-control"><span>缩放 <output>{transform.scale}%</output></span><input type="range" min="10" max="300" value={transform.scale} onChange={(event) => updateTransform('scale', Number(event.target.value))} /></label><label className="sprite-control"><span>偏移 X <output>{transform.offsetX}px</output></span><input type="range" min="-1024" max="1024" value={transform.offsetX} onChange={(event) => updateTransform('offsetX', Number(event.target.value))} /></label><label className="sprite-control"><span>偏移 Y <output>{transform.offsetY}px</output></span><input type="range" min="-1024" max="1024" value={transform.offsetY} onChange={(event) => updateTransform('offsetY', Number(event.target.value))} /></label><label className="sprite-loop-toggle"><input type="checkbox" checked={currentFrame.disabled} onChange={(event) => updateFrame({ disabled: event.target.checked })} /> 禁用此帧</label></div></div> : null}</section>
+      <section className="sprite-frame-panel"><div className="sprite-panel-top"><div><span className="sprite-eyebrow">FRAME STRIP</span><strong>{frames.length ? `${frames.length} 个原始帧` : '等待导入帧'}</strong></div><div className="sprite-frame-actions"><button type="button" className="play" disabled={playableFrames.length < 2} onClick={() => { const nextPlaying = !isPlaying; if (nextPlaying && playableFrames.length) { setPlaybackPosition(0); setActiveFrame(playableFrames[0]); setPreviewFrame(playableFrames[0]) }; setIsPlaying(nextPlaying) }}>{isPlaying ? '暂停' : '播放'}</button><button type="button" className="fill" disabled={!frames[activeFrame]} onClick={() => toggleFrameInActiveClip(activeFrame)}>{sequence.frameIndices.includes(activeFrame) ? '移出当前动作' : '加入当前动作'}</button><button type="button" disabled={!frames.length || cleaning || Boolean(preCleanupFrames)} onClick={() => void cleanupBackground()}>{cleaning ? '处理中…' : '清理背景'}</button>{preCleanupFrames ? <button type="button" onClick={restoreCleanup}>恢复原始</button> : null}<button type="button" disabled={!frames[activeFrame]} onClick={deleteFrame}>删除当前帧</button></div></div><div className="sprite-frames">{frames.map((frame, index) => <button type="button" key={frame.id} draggable onDragStart={(event) => { setDragFrameIndex(index); event.dataTransfer.setData('text/plain', String(index)) }} onDragOver={(event) => event.preventDefault()} onDrop={() => { if (dragFrameIndex !== null) reorderFrames(dragFrameIndex, index); setDragFrameIndex(null) }} onDragEnd={() => setDragFrameIndex(null)} className={`sprite-frame ${index === activeFrame ? 'active' : ''} ${index === previewFrame && isPlaying ? 'previewing' : ''} ${frame.disabled ? 'disabled' : ''} ${dragFrameIndex === index ? 'dragging' : ''}`} onClick={() => { setActiveFrame(index); setPreviewFrame(index); setIsPlaying(false) }}><span>{String(index + 1).padStart(2, '0')}</span><img src={frame.url} alt="" /><small>{Math.round(frame.durationMs)}ms{frame.disabled ? ' · OFF' : ''}</small></button>)}</div>{currentFrame ? <div className="sprite-frame-adjustments"><div className="sprite-adjustment-head"><span>第 {activeFrame + 1} 帧 · 源帧 {currentFrame.sourceFrameIndex + 1}</span><button type="button" onClick={resetFrameTransforms}>恢复{transformScope === 'enabled' ? '启用帧' : '当前帧'}</button></div><div className="sprite-adjustment-controls"><label className="sprite-control"><span>时长 ms</span><input type="number" min="1" max="60000" value={Math.round(currentFrame.durationMs)} onChange={(event) => updateFrame({ durationMs: Math.max(1, Number(event.target.value) || 1) })} /></label><label className="sprite-control"><span>作用范围</span><select value={transformScope} onChange={(event) => setTransformScope(event.target.value as TransformScope)}><option value="frame">当前帧</option><option value="enabled">所有启用帧</option></select></label><label className="sprite-control"><span>统一缩放 <output>{transform.scale}%</output></span><input type="range" min="10" max="300" value={transform.scale} onChange={(event) => updateTransform('scale', Number(event.target.value))} /></label><label className="sprite-control"><span>X 缩放 <output>{transform.scaleX}%</output></span><input type="range" min="10" max="300" value={transform.scaleX} onChange={(event) => updateTransform('scaleX', Number(event.target.value))} /></label><label className="sprite-control"><span>Y 缩放 <output>{transform.scaleY}%</output></span><input type="range" min="10" max="300" value={transform.scaleY} onChange={(event) => updateTransform('scaleY', Number(event.target.value))} /></label><label className="sprite-control"><span>旋转 <output>{transform.rotation}°</output></span><input type="range" min="-180" max="180" value={transform.rotation} onChange={(event) => updateTransform('rotation', Number(event.target.value))} /></label><label className="sprite-control"><span>偏移 X <output>{transform.offsetX}px</output></span><input type="range" min="-1024" max="1024" value={transform.offsetX} onChange={(event) => updateTransform('offsetX', Number(event.target.value))} /></label><label className="sprite-control"><span>偏移 Y <output>{transform.offsetY}px</output></span><input type="range" min="-1024" max="1024" value={transform.offsetY} onChange={(event) => updateTransform('offsetY', Number(event.target.value))} /></label><label className="sprite-loop-toggle"><input type="checkbox" checked={currentFrame.disabled} onChange={(event) => updateFrame({ disabled: event.target.checked })} /> 禁用此帧</label></div></div> : null}</section>
       <section className="sprite-manifest-panel"><div className="sprite-panel-top"><div><span className="sprite-eyebrow">RE-IMPORTABLE PACKAGE</span><strong>spritesheet.json</strong></div><span className="sprite-json-dot" /></div><pre>{JSON.stringify(manifest, null, 2)}</pre></section>
     </div></section>
     {showHelp ? <div className="sprite-help-backdrop" role="presentation" onClick={() => setShowHelp(false)}><section className="sprite-help-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}><div className="sprite-help-head"><div><span className="sprite-eyebrow">FRAME TUNER LITE MODEL</span><h3>先整理，再导出</h3></div><button type="button" onClick={() => setShowHelp(false)}>×</button></div><ol className="sprite-help-steps"><li>导入 PNG 序列，或先选择 Sheet PNG 再导入对应 JSON。</li><li>拖动帧条调整顺序；帧条从左到右就是播放与导出顺序。</li><li>在画布中统一校准锚点、缩放和透明画布，所有帧共享同一套设置。</li><li>清理背景后检查不同背景色下的边缘，再导出最终 Sheet。</li><li>导出的 `spritesheet.png` 和 `spritesheet.json` 可直接交给 Godot 的原生网格裁剪能力。</li></ol><p className="sprite-help-note">本工具只整理图片和导出标准资源，不替代 Godot 的动画编辑器。</p><button type="button" className="sprite-help-close" onClick={() => setShowHelp(false)}>开始使用</button></section></div> : null}

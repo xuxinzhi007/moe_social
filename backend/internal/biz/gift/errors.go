@@ -3,6 +3,7 @@ package giftbiz
 import "errors"
 
 var (
+	ErrInvalidGiftRequest = errors.New("invalid gift request")
 	ErrEmptyGiftID       = errors.New("empty gift id")
 	ErrInvalidGiftID     = errors.New("invalid gift id")
 	ErrInvalidUserID     = errors.New("invalid user id")

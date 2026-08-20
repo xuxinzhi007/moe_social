@@ -197,6 +197,8 @@ moe:
   checkin_api_in_process: true
   achievement_api_in_process: true
   gift_api_in_process: true
+  # 礼物 PK（V1）由 Kratos HTTP 进程内装配，供 Flutter 实时房间联调。
+  battle_api_in_process: true
   llm_api_in_process: true
   ai_api_in_process: true
   community_api_in_process: true

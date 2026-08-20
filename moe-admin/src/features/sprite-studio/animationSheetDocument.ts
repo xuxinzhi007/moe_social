@@ -3,7 +3,14 @@ export type DocumentFrame = {
   sourceFrameIndex: number
   durationMs: number
   disabled: boolean
-  transform: { scale: number; offsetX: number; offsetY: number }
+  transform: {
+    scale: number
+    scaleX: number
+    scaleY: number
+    rotation: number
+    offsetX: number
+    offsetY: number
+  }
 }
 
 export type DocumentAnimation = {

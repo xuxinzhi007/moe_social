@@ -60,4 +60,7 @@ class FeatureFlags {
   /// 礼物全屏动效走 Lottie 模板 + 左侧跑道；失败 / 无障碍降级粒子。
   /// 见 `docs/dev/lottie-achievement-gift-design.md`。
   static const bool useLottieGiftEffects = true;
+
+  /// 双人直播礼物 PK V1。开发期已开启；关闭后路由不可进入。
+  static const bool liveGiftPk = true;
 }

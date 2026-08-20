@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart'
-    show debugPrint, kIsWeb, defaultTargetPlatform, TargetPlatform;
+    show debugPrint, kDebugMode, kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../auth_service.dart';
@@ -17,6 +17,7 @@ class StartupUpdateService {
 
   /// 在主界面首帧之后调用；内部吞掉异常，不影响主流程。
   static Future<void> tryLaunchUpdateCheck() async {
+    if (kDebugMode) return;
     if (kIsWeb) return;
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
