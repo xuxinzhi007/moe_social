@@ -8,10 +8,6 @@ import (
 
 // WriteSSE 写入一条 Server-Sent Events 消息并 flush。
 func WriteSSE(w http.ResponseWriter, event string, payload any) error {
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		return fmt.Errorf("streaming unsupported")
-	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -24,7 +20,9 @@ func WriteSSE(w http.ResponseWriter, event string, payload any) error {
 	if _, err := fmt.Fprintf(w, "data: %s\n\n", raw); err != nil {
 		return err
 	}
-	flusher.Flush()
+	if err := http.NewResponseController(w).Flush(); err != nil {
+		return fmt.Errorf("flush sse response: %w", err)
+	}
 	return nil
 }
 

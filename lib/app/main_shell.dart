@@ -7,6 +7,7 @@ import 'deferred_route.dart';
 import '../pages/feed/home_page.dart';
 import '../pages/ai/companion_hub_page.dart' deferred as companion_hub;
 import '../pages/chat/message_center_page.dart' deferred as message_center;
+import '../pages/community/community_home_page.dart' deferred as community_home;
 import '../pages/profile/profile_page.dart' deferred as profile;
 import '../providers/companion_presence_provider.dart';
 import '../providers/main_nav_controller.dart';
@@ -38,6 +39,11 @@ class _MainPageState extends State<MainPage> {
           message: '正在加载 AI 伙伴…',
         ),
     () => DeferredRoute(
+          loadLibrary: community_home.loadLibrary,
+          builder: () => community_home.CommunityHomePage(),
+          message: '正在加载兴趣社区…',
+        ),
+    () => DeferredRoute(
           loadLibrary: profile.loadLibrary,
           builder: () => profile.ProfilePage(),
           message: '正在加载我的页面…',
@@ -53,8 +59,7 @@ class _MainPageState extends State<MainPage> {
     _mainNav.addListener(_onMainNavRequested);
     _loadedPages[_selectedIndex] = _pageBuilders[_selectedIndex]();
     CompanionPresenceProvider.instance.start();
-    CompanionPresenceProvider.instance
-        .setViewingCompanion(_selectedIndex == 2);
+    CompanionPresenceProvider.instance.setViewingCompanion(_selectedIndex == 2);
     // 主界面就绪后再静默检查更新（软更新可稍后；强制更新会拦截）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 800), () {
@@ -119,6 +124,7 @@ class _MainPageState extends State<MainPage> {
           // 在 AI 伙伴 Tab 内用 Hub 横幅提示，底栏角标隐藏避免重复。
           _selectedIndex == 2 ? 0 : companionAttention,
           0,
+          0,
         ],
         destinations: [
           const NavigationDestination(
@@ -135,6 +141,11 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.auto_awesome_outlined),
             selectedIcon: Icon(Icons.auto_awesome_rounded),
             label: 'AI伙伴',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.forum_outlined),
+            selectedIcon: Icon(Icons.forum_rounded),
+            label: '社区',
           ),
           const NavigationDestination(
             icon: Icon(Icons.person_outline),

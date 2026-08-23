@@ -17,8 +17,12 @@ abstract final class MoeTokens {
   static const Color lineSoft = Color(0xFFDFE6E9);
   static const Color softLavenderBg = Color(0xFFFAF8FF);
   static const Color softChipBg = Color(0xFFF2F4FB);
-  static const Color pageBackground = Color(0xFFF5F7FA);
-  static const Color cardBackground = Colors.white;
+
+  /// 带一点蓝色的雾面底色，避免大面积纯白造成视觉疲劳。
+  static const Color pageBackground = Color(0xFFF5F8FC);
+
+  /// 近白表面；与页面底色保留细微对比，不使用刺眼纯白。
+  static const Color cardBackground = Color(0xFFFBFCFE);
   static const Color titleText = Color(0xFF333333);
   static const Color bodyText = Colors.black87;
   static const Color caption = Color(0xFF3D3D50);
@@ -35,66 +39,91 @@ abstract final class MoeTokens {
   // ─── Spacing scale (4px grid) ────────────────────────────────────
   /// 4px — 极小间距，图标内边距等
   static const double spaceXs = 4.0;
+
   /// 8px — 小间距，紧凑元素间
   static const double spaceSm = 8.0;
+
   /// 12px — 中小间距
   static const double spaceMd = 12.0;
+
   /// 16px — 标准间距，卡片内边距
   static const double spaceLg = 16.0;
+
   /// 20px — 大间距
   static const double spaceXl = 20.0;
+
   /// 24px — 区块间距
   static const double space2xl = 24.0;
+
   /// 32px — 段落间距
   static const double space3xl = 32.0;
+
   /// 40px — 页面级大间距
   static const double space4xl = 40.0;
 
   // ─── Typography scale ────────────────────────────────────────────
   /// 11px — 辅助微文字（角标、徽标）
   static const double textXs = 11.0;
+
   /// 12px — 注释/时间戳
   static const double textSm = 12.0;
+
   /// 14px — 正文基准
   static const double textBase = 14.0;
+
   /// 15px — 稍大正文
   static const double textMd = 15.0;
+
   /// 18px — 小标题
   static const double textLg = 18.0;
+
   /// 20px — 标题
   static const double textXl = 20.0;
+
   /// 24px — 大标题
   static const double text2xl = 24.0;
+
   /// 28px — 展示级标题
   static const double text3xl = 28.0;
 
   // ─── Font weights ────────────────────────────────────────────────
   /// 展示级标题（Display）
   static const FontWeight fontWeightDisplay = FontWeight.w700;
+
   /// 标题（Title）
   static const FontWeight fontWeightTitle = FontWeight.w700;
+
   /// 副标题（Subtitle）
   static const FontWeight fontWeightSubtitle = FontWeight.w600;
+
   /// 正文（Body）
   static const FontWeight fontWeightBody = FontWeight.w400;
+
   /// 注释/标签（Caption）
   static const FontWeight fontWeightCaption = FontWeight.w400;
 
   // ─── Border radius scale ─────────────────────────────────────────
   /// 8px — 小圆角，标签/Badge
   static const double radiusSm = 8.0;
+
   /// 12px — 中圆角
   static const double radiusMd = 12.0;
+
   /// 16px — 大圆角，小组件
   static const double radiusLg = 16.0;
+
   /// 20px — 超大圆角
   static const double radiusXl = 20.0;
+
   /// 24px — 极大圆角
   static const double radius2xl = 24.0;
+
   /// 25px — 按钮圆角
   static const double radiusButton = 25.0;
+
   /// 15px — 输入框圆角
   static const double radiusInput = 15.0;
+
   /// 9999px — 胶囊/圆形
   static const double radiusFull = 9999.0;
 
@@ -105,10 +134,10 @@ abstract final class MoeTokens {
 
   // ─── Surface elevation system ────────────────────────────────────
   /// 4 级表面色，从底到顶逐渐变亮，用于分层视觉。
-  static const Color surface0 = Color(0xFFF5F7FA); // 页面背景（≈ pageBackground）
-  static const Color surface1 = Color(0xFFFFFFFF); // 卡片
-  static const Color surface2 = Color(0xFFFFFFFF); // 浮层 / Sheet（配合 blur）
-  static const Color surface3 = Color(0xFFFFFFFF); // 最高层 Tooltip / Dialog
+  static const Color surface0 = pageBackground; // 页面背景
+  static const Color surface1 = cardBackground; // 卡片
+  static const Color surface2 = Color(0xFFFCFDFF); // 浮层 / Sheet（配合 blur）
+  static const Color surface3 = Color(0xFFFEFFFF); // 最高层 Tooltip / Dialog
 
   /// 表面色对应的边框色（半透明描边用）。
   static const Color surfaceBorder = Color(0x147F7FD5); // primary @ ~8%
@@ -159,7 +188,7 @@ abstract final class MoeTokens {
 
   /// 页面背景微渐变。
   static const LinearGradient gradientPageBg = LinearGradient(
-    colors: [Color(0xFFFFFCFF), Color(0xFFF0F2FF), Color(0xFFF5F7FA)],
+    colors: [Color(0xFFFBFDFF), Color(0xFFF0F5FF), pageBackground],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
@@ -176,7 +205,7 @@ abstract final class MoeTokens {
   static List<BoxShadow> shadowSm() => [
         BoxShadow(
           color: const Color(0x147F7FD5), // opacity ≈ 0.08
-          blurRadius: 4,
+          blurRadius: 6,
           offset: const Offset(0, 2),
         ),
       ];
@@ -185,8 +214,8 @@ abstract final class MoeTokens {
   static List<BoxShadow> shadowMd() => [
         BoxShadow(
           color: const Color(0x147F7FD5), // opacity ≈ 0.08
-          blurRadius: 16,
-          offset: const Offset(0, 8),
+          blurRadius: 10,
+          offset: const Offset(0, 5),
         ),
       ];
 
@@ -209,7 +238,7 @@ abstract final class MoeTokens {
       ];
 
   /// Legacy — 使用 [shadowMd] 替代
-  static List<BoxShadow> cardShadow({Color? tint, double blur = 16}) {
+  static List<BoxShadow> cardShadow({Color? tint, double blur = 10}) {
     return [
       BoxShadow(
         color: (tint ?? primary).withValues(alpha: 0.08),
@@ -264,8 +293,10 @@ abstract final class MoeTokens {
   // ─── Glassmorphism / Blur ────────────────────────────────────────
   /// 重模糊 — 弹窗 / Sheet。
   static const double blurHeavy = 24.0;
+
   /// 中模糊 — 卡片。
   static const double blurMedium = 16.0;
+
   /// 轻模糊 — 导航栏。
   static const double blurLight = 8.0;
 

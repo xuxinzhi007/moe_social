@@ -18,6 +18,12 @@ func (w *loggingResponseWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
+// Unwrap exposes the underlying writer so ResponseController can flush SSE
+// responses through this logging wrapper.
+func (w *loggingResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 // Hijack 让 loggingResponseWriter 满足 http.Hijacker 接口，
 // 使 gorilla/websocket.Upgrader 能正常升级 WebSocket 连接。
 func (w *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {

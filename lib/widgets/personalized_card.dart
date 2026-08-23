@@ -34,7 +34,8 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       unawaited(_loadUserInfo());
       try {
-        final provider = Provider.of<DeviceInfoProvider>(context, listen: false);
+        final provider =
+            Provider.of<DeviceInfoProvider>(context, listen: false);
         await provider.refreshLocalDeviceContext(
           requestLocationPermission: true,
           includeNetworkAndBattery: false,
@@ -122,7 +123,7 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => context.read<MainNavController>().requestTab(3),
+            onTap: () => context.read<MainNavController>().requestTab(4),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -175,9 +176,8 @@ class _PersonalizedCardState extends State<PersonalizedCard> {
                   _WeatherChip(
                     loading: _isLoadingWeather,
                     emoji: _weatherData?.getWeatherEmoji() ?? '⛅',
-                    temp: _weatherData != null
-                        ? '${_weatherData!.temp}°'
-                        : '--',
+                    temp:
+                        _weatherData != null ? '${_weatherData!.temp}°' : '--',
                     city: _cityOf(deviceInfo),
                     onTap: () async {
                       try {

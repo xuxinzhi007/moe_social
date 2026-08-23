@@ -2,6 +2,7 @@ package companionhttp
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -69,16 +70,22 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 	}
 
 	apicomm.InitSSEHeaders(w)
-	_ = apicomm.WriteSSE(w, "start", map[string]string{})
+	if err := apicomm.WriteSSE(w, "start", map[string]string{}); err != nil {
+		return fmt.Errorf("write companion chat start: %w", err)
+	}
 
 	fullReply, err := app.ChatStreamWithInputMode(r.Context(), userID, req.Message, override, req.Scene, req.InputMode, func(chunk string) error {
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
-		_ = apicomm.WriteSSE(w, "error", map[string]string{"message": err.Error()})
+		if writeErr := apicomm.WriteSSE(w, "error", map[string]string{"message": err.Error()}); writeErr != nil {
+			return fmt.Errorf("write companion chat error: %w", writeErr)
+		}
 		return nil
 	}
 
-	_ = apicomm.WriteSSE(w, "done", map[string]string{"text": strings.TrimSpace(fullReply)})
+	if err := apicomm.WriteSSE(w, "done", map[string]string{"text": strings.TrimSpace(fullReply)}); err != nil {
+		return fmt.Errorf("write companion chat done: %w", err)
+	}
 	return nil
 }

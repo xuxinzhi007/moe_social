@@ -1,9 +1,15 @@
 package companionbiz
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"backend/pkg/llminference"
 )
 
 func TestRelationshipGuidanceTracksRelationshipLevel(t *testing.T) {
@@ -117,5 +123,51 @@ func TestSceneGuidanceMapsUserSceneIds(t *testing.T) {
 	guidance := sceneGuidance(time.Date(2026, time.August, 3, 14, 0, 0, 0, time.Local), nil, "study")
 	if !strings.Contains(guidance, "专注学习") || !strings.Contains(guidance, "小步骤") {
 		t.Fatalf("scene guidance = %s", guidance)
+	}
+}
+
+func TestStreamChatFallsBackWhenProviderStreamEndsWithoutContent(t *testing.T) {
+	var streamRequests int
+	var nonStreamRequests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Stream bool `json:"stream"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if request.Stream {
+			streamRequests++
+			_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{}}]}\n\ndata: [DONE]\n\n"))
+			return
+		}
+		nonStreamRequests++
+		_, _ = w.Write([]byte("{\"choices\":[{\"message\":{\"content\":\"我在，慢慢说。\"}}]}"))
+	}))
+	defer server.Close()
+
+	var chunks []string
+	reply, err := streamChat(
+		context.Background(),
+		llminference.Config{BaseURL: server.URL, DefaultModel: "test-model", Timeout: time.Second},
+		"test-model",
+		[]llminference.Message{{Role: "user", Content: "hello"}},
+		func(chunk string) error {
+			chunks = append(chunks, chunk)
+			return nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("streamChat() error = %v", err)
+	}
+	if reply != "我在，慢慢说。" {
+		t.Fatalf("streamChat() reply = %q", reply)
+	}
+	if streamRequests != 1 || nonStreamRequests != 1 {
+		t.Fatalf("requests = stream:%d non-stream:%d, want 1 each", streamRequests, nonStreamRequests)
+	}
+	if len(chunks) != 1 || chunks[0] != reply {
+		t.Fatalf("chunks = %#v, want fallback reply", chunks)
 	}
 }

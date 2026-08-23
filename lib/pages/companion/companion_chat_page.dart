@@ -1123,35 +1123,9 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                     onTap: () => Navigator.pop(sheetContext, 'profile')),
                 _ChatToolTile(
                     icon: Icons.tune_rounded,
-                    title: '模型服务配置',
+                    title: '模型设置',
                     subtitle: _providerLabel,
                     onTap: () => Navigator.pop(sheetContext, 'provider')),
-                _ChatToolTile(
-                    icon: Icons.swap_horiz_rounded,
-                    title: '切换当前模型',
-                    subtitle: _activeProvider?.defaultModel.isNotEmpty == true
-                        ? _activeProvider!.defaultModel
-                        : '先配置模型服务',
-                    onTap: () => Navigator.pop(sheetContext, 'model')),
-                _ChatToolTile(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: 'API Key 额度',
-                    subtitle: _providerUsage == null
-                        ? '此服务暂不支持读取，或尚未验证'
-                        : _providerUsage!.unlimitedQuota
-                            ? '不限额'
-                            : '剩余 ${_quotaLabel(_providerUsage!.totalAvailable)} 额度',
-                    onTap: () => Navigator.pop(sheetContext, 'model')),
-                _ChatToolTile(
-                    icon: Icons.refresh_rounded,
-                    title: '刷新近况',
-                    subtitle: '重新加载伙伴状态和模型状态',
-                    onTap: () => Navigator.pop(sheetContext, 'refresh')),
-                _ChatToolTile(
-                    icon: Icons.notifications_none_rounded,
-                    title: '主动陪伴设置',
-                    subtitle: '管理主动消息和免打扰时间',
-                    onTap: () => Navigator.pop(sheetContext, 'proactive')),
               ],
             ),
           ),
@@ -1166,99 +1140,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         await _showProfileEditor();
       case 'provider':
         await _openProviderSettings();
-      case 'model':
-        await _openModelControl();
-      case 'refresh':
-        unawaited(_loadInitialData());
-        unawaited(_loadProviderStatus());
-      case 'proactive':
-        await Navigator.of(context).pushNamed('/companion-settings');
     }
-  }
-
-  Future<void> _openModelControl() async {
-    final provider = _activeProvider;
-    if (provider == null) {
-      await _openProviderSettings();
-      return;
-    }
-    final modelIds = provider.effectiveModelIds;
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AiBrandTokens.pageBackground,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.72,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(provider.name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 4),
-                Text('当前模型：${provider.defaultModel}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: AiBrandTokens.companionInkMuted)),
-                const SizedBox(height: 16),
-                if (_providerUsage != null)
-                  _ProviderQuotaCard(usage: _providerUsage!),
-                if (_providerUsage != null) const SizedBox(height: 14),
-                if (modelIds.isEmpty)
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pop(sheetContext);
-                      _openProviderSettings();
-                    },
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('添加可用模型'),
-                  )
-                else
-                  RadioGroup<String>(
-                    groupValue: provider.defaultModel,
-                    onChanged: (selected) async {
-                      if (selected == null) return;
-                      await AiProviderService().saveProfile(
-                        provider.copyWith(defaultModel: selected),
-                      );
-                      if (!mounted || !sheetContext.mounted) return;
-                      Navigator.pop(sheetContext);
-                      await _loadProviderStatus();
-                      if (mounted) {
-                        MoeToast.success(context, '已切换到 $selected');
-                      }
-                    },
-                    child: Column(
-                      children: [
-                        for (final model in modelIds)
-                          RadioListTile<String>(
-                            value: model,
-                            title: Text(model),
-                          ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  '额度来自 Xbai 的 API Key 用量接口；账户钱包余额需要控制台登录凭据，不能用 API Key 读取。',
-                  style: const TextStyle(
-                      fontSize: 12, color: AiBrandTokens.companionInkMuted),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _showProfileEditor() async {
@@ -1393,58 +1275,6 @@ class _ModelSetupHint extends StatelessWidget {
                       fontSize: 12, fontWeight: FontWeight.w700)),
             ),
             TextButton(onPressed: onConfigure, child: const Text('去配置')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProviderQuotaCard extends StatelessWidget {
-  const _ProviderQuotaCard({required this.usage});
-
-  final ProviderTokenUsage usage;
-
-  String _format(double quota) {
-    if (quota >= 1000000) return '${(quota / 1000000).toStringAsFixed(2)}M';
-    if (quota >= 1000) return '${(quota / 1000).toStringAsFixed(1)}K';
-    return quota.toStringAsFixed(0);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final available =
-        usage.unlimitedQuota ? '不限额' : _format(usage.totalAvailable);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F9F5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            const Icon(Icons.account_balance_wallet_rounded,
-                color: Color(0xFF28A56A)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('API Key 剩余额度',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
-                  Text(usage.name.isEmpty ? 'New API 兼容服务' : usage.name,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: AiBrandTokens.companionInkMuted)),
-                ],
-              ),
-            ),
-            Text(available,
-                style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF168A55))),
           ],
         ),
       ),
