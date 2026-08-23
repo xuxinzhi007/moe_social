@@ -312,11 +312,6 @@ class _HomePageState extends State<HomePage>
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.forum_outlined, color: MoeTokens.titleText),
-          onPressed: () => Navigator.pushNamed(context, '/community'),
-          tooltip: '发现同好',
-        ),
-        IconButton(
           icon: const Icon(Icons.qr_code_scanner_rounded,
               color: MoeTokens.titleText),
           onPressed: () => Navigator.pushNamed(context, '/scan'),
@@ -413,6 +408,8 @@ class _HomePageState extends State<HomePage>
             ? state.moodThought.trim()
             : '想你了，去看看 TA 吧');
     final wantsYou = context.watch<CompanionPresenceProvider>().hasAttention;
+    // AI 是社交增强能力；只有伙伴确实需要用户回应时才打断动态流。
+    if (!wantsYou) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),

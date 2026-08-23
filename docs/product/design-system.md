@@ -53,8 +53,8 @@
 
 | Token 名 | CSS 变量 | Flutter 常量 | 色值 | 用途 |
 |---------|---------|-------------|------|------|
-| page-bg | `--color-page-bg` | `MoeTokens.pageBackground` | `#F5F7FA` | 页面背景 |
-| card-bg | `--color-card-bg` | `MoeTokens.cardBackground` | `#FFFFFF` | 卡片/弹窗背景 |
+| page-bg | `--color-page-bg` | `MoeTokens.pageBackground` | `#F5F8FC` | 带蓝雾面的页面背景 |
+| card-bg | `--color-card-bg` | `MoeTokens.cardBackground` | `#FBFCFE` | 近白卡片/弹窗表面 |
 | input-bg | `--color-input-bg` | — | `#FFFFFF` | 输入框背景 |
 | input-fill | `--color-input-fill` | — | `#F9F9F9` | 输入框填充 |
 | search-bg | `--color-search-bg` | — | `#F5F5F5` | 搜索栏背景 |
@@ -150,7 +150,7 @@
 
 | Token 名 | CSS 变量 | 定义 | 用途 |
 |---------|---------|------|------|
-| shadow-card | `--shadow-card` | `0 8px 24px rgba(127,127,213,0.08)` | 卡片默认阴影 |
+| shadow-card | `--shadow-card` | `0 5px 10px rgba(127,127,213,0.08)` | 卡片默认柔和阴影 |
 | shadow-card-lg | `--shadow-card-lg` | `0 10px 24px rgba(127,127,213,0.08)` | 大卡片阴影 |
 | shadow-card-hover | `--shadow-card-hover` | `0 12px 32px rgba(127,127,213,0.12)` | 卡片悬停阴影 |
 | shadow-button | `--shadow-button` | `0 4px 16px rgba(127,127,213,0.3)` | 按钮彩色投影 |

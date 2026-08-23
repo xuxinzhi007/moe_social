@@ -24,57 +24,68 @@ class WeatherData {
     required this.windSpeed,
   });
 
-  factory WeatherData.fromApiRow(Map<String, dynamic> row, String cityName) {
-    final weatherText = (row['tianqi'] ?? '').toString();
-    final temperatureText = (row['wendu'] ?? '').toString();
-    final windText = (row['fengdu'] ?? '').toString();
-    final (windDir, windSpeed) = _splitWindInfo(windText);
+  factory WeatherData.fromOpenMeteo(
+      Map<String, dynamic> response, String cityName) {
+    final current = response['current_weather'] ?? response['current'];
+    if (current is! Map) {
+      throw const FormatException('Open-Meteo response has no current weather');
+    }
+    final weatherCode =
+        _asInt(current['weathercode'] ?? current['weather_code']);
+    final humidity = _firstHourlyValue(response, 'relative_humidity_2m');
     return WeatherData(
       city: cityName,
-      temp: _extractDisplayTemp(temperatureText),
-      text: weatherText,
-      iconCode: _weatherTextToIconCode(weatherText),
-      humidity: (row['pm'] ?? '--').toString(),
-      windDir: windDir,
-      windSpeed: windSpeed,
+      temp: _formatNumber(current['temperature'], '°C'),
+      text: _weatherCodeText(weatherCode),
+      iconCode: _weatherCodeToIconCode(weatherCode),
+      humidity: humidity == null ? '--' : '$humidity%',
+      windDir: _formatNumber(
+          current['winddirection'] ?? current['wind_direction'], '°'),
+      windSpeed:
+          _formatNumber(current['windspeed'] ?? current['wind_speed'], 'km/h'),
     );
   }
 
-  static String _extractDisplayTemp(String raw) {
-    if (raw.contains('～')) {
-      final parts = raw.split('～');
-      if (parts.length >= 2) {
-        return parts.last.trim();
-      }
+  static int _asInt(dynamic value) =>
+      value is num ? value.round() : int.tryParse('$value') ?? -1;
+
+  static String? _firstHourlyValue(Map<String, dynamic> response, String key) {
+    final hourly = response['hourly'];
+    if (hourly is Map &&
+        hourly[key] is List &&
+        (hourly[key] as List).isNotEmpty) {
+      return '${(hourly[key] as List).first}';
     }
-    if (raw.contains('~')) {
-      final parts = raw.split('~');
-      if (parts.length >= 2) {
-        return parts.last.trim();
-      }
-    }
-    return raw.trim().isEmpty ? '--' : raw.trim();
+    return null;
   }
 
-  static (String, String) _splitWindInfo(String raw) {
-    final txt = raw.trim();
-    if (txt.isEmpty) return ('--', '--');
-    if (txt.contains('-')) {
-      final parts = txt.split('-');
-      if (parts.length >= 2) {
-        return (parts.first.trim(), parts.last.trim());
-      }
+  static String _formatNumber(dynamic value, String suffix) {
+    if (value is num) {
+      final formatted =
+          value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1);
+      return '$formatted$suffix';
     }
-    return (txt, '--');
+    return value == null ? '--' : '$value$suffix';
   }
 
-  static String _weatherTextToIconCode(String text) {
-    if (text.contains('雷')) return '303';
-    if (text.contains('雪')) return '400';
-    if (text.contains('雨')) return '305';
-    if (text.contains('阴') || text.contains('云')) return '101';
-    if (text.contains('晴')) return '100';
-    if (text.contains('雾') || text.contains('霾')) return '150';
+  static String _weatherCodeText(int code) {
+    if (code == 0) return '晴';
+    if (code <= 3) return '多云';
+    if (code == 45 || code == 48) return '雾';
+    if (code >= 51 && code <= 57) return '毛毛雨';
+    if (code >= 61 && code <= 67 || code >= 80 && code <= 82) return '雨';
+    if (code >= 71 && code <= 77 || code >= 85 && code <= 86) return '雪';
+    if (code >= 95) return '雷雨';
+    return '多云';
+  }
+
+  static String _weatherCodeToIconCode(int code) {
+    if (code == 0) return '100';
+    if (code <= 3) return '101';
+    if (code == 45 || code == 48) return '150';
+    if (code >= 71 && code <= 77 || code >= 85 && code <= 86) return '400';
+    if (code >= 95) return '303';
+    if (code >= 51 && code <= 67 || code >= 80 && code <= 82) return '305';
     return '101';
   }
 
@@ -130,8 +141,10 @@ class WeatherData {
 
 class WeatherService {
   // 免费天气接口（按城市查询，返回未来多日数据）。
-  static const String _weatherApiHost = 'v.api.aa1.cn';
-  static const String _weatherApiPath = '/api/api-tianqi-3/index.php';
+  static const String _weatherApiHost = 'api.open-meteo.com';
+  static const String _weatherApiPath = '/v1/forecast';
+  static const String _geocodingApiHost = 'geocoding-api.open-meteo.com';
+  static const String _geocodingApiPath = '/v1/search';
   static const Duration _cacheDuration = Duration(minutes: 30);
   static const String _defaultCity = '深圳';
 
@@ -147,53 +160,99 @@ class WeatherService {
         final cachedData = prefs.getString(cacheKey);
         if (cachedData != null) {
           final cached = jsonDecode(cachedData) as Map<String, dynamic>;
-          return WeatherData.fromApiRow(
-            cached,
-            normalizedCity,
-          );
+          return WeatherData.fromOpenMeteo(cached, normalizedCity);
         }
       }
 
-      final response = await http.get(
-        Uri.https(_weatherApiHost, _weatherApiPath, {
-          'msg': normalizedCity,
-          'type': '1',
-        }),
+      final location = await _geocodeCity(normalizedCity);
+      if (location == null) return null;
+      return _getWeatherAtCoordinates(
+        location.latitude,
+        location.longitude,
+        normalizedCity,
+        prefs,
+        cacheKey,
+        now,
       );
-      if (response.statusCode != 200) {
-        return null;
-      }
-      final apiData = jsonDecode(response.body) as Map<String, dynamic>;
-      if ((apiData['code'] ?? '').toString() != '1') {
-        return null;
-      }
-      final list = apiData['data'];
-      if (list is! List ||
-          list.isEmpty ||
-          list.first is! Map<String, dynamic>) {
-        return null;
-      }
-      final firstRow = list.first as Map<String, dynamic>;
-      await prefs.setString(cacheKey, jsonEncode(firstRow));
-      await prefs.setInt('${cacheKey}_time', now);
-      return WeatherData.fromApiRow(firstRow, normalizedCity);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
+  }
+
+  static Future<WeatherData?> _getWeatherAtCoordinates(
+      double latitude,
+      double longitude,
+      String cityName,
+      SharedPreferences prefs,
+      String cacheKey,
+      int now) async {
+    final response = await http
+        .get(
+          Uri.https(_weatherApiHost, _weatherApiPath, {
+            'latitude': '$latitude',
+            'longitude': '$longitude',
+            'current_weather': 'true',
+            'hourly': 'relative_humidity_2m',
+            'timezone': 'auto',
+            'forecast_days': '1',
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) {
+      return null;
+    }
+    final apiData = jsonDecode(response.body) as Map<String, dynamic>;
+    if (apiData['current_weather'] is! Map && apiData['current'] is! Map) {
+      return null;
+    }
+    await prefs.setString(cacheKey, jsonEncode(apiData));
+    await prefs.setInt('${cacheKey}_time', now);
+    return WeatherData.fromOpenMeteo(apiData, cityName);
+  }
+
+  static Future<({double latitude, double longitude})?> _geocodeCity(
+      String cityName) async {
+    final response = await http
+        .get(Uri.https(_geocodingApiHost, _geocodingApiPath, {
+          'name': cityName,
+          'count': '1',
+          'language': 'zh',
+          'format': 'json'
+        }))
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) {
+      return null;
+    }
+    final results =
+        (jsonDecode(response.body) as Map<String, dynamic>)['results'];
+    if (results is! List || results.isEmpty || results.first is! Map) {
+      return null;
+    }
+    final row = results.first as Map;
+    final latitude = (row['latitude'] as num?)?.toDouble();
+    final longitude = (row['longitude'] as num?)?.toDouble();
+    if (latitude == null || longitude == null) return null;
+    return (latitude: latitude, longitude: longitude);
   }
 
   static Future<WeatherData?> getWeatherByLocation(
       double lat, double lon) async {
     try {
       final cityName = _normalizeCityName(
-        await ReverseGeocode.cityName(
-          lat,
-          lon,
-          fallback: _defaultCity,
-        ),
+        await ReverseGeocode.cityName(lat, lon, fallback: _defaultCity),
       );
-      return getWeatherByCity(cityName);
-    } catch (e) {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'weather_$cityName';
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final cachedTime = prefs.getInt('${cacheKey}_time') ?? 0;
+      if (now - cachedTime < _cacheDuration.inMilliseconds) {
+        final cachedData = prefs.getString(cacheKey);
+        if (cachedData != null) {
+          return WeatherData.fromOpenMeteo(jsonDecode(cachedData), cityName);
+        }
+      }
+      return _getWeatherAtCoordinates(lat, lon, cityName, prefs, cacheKey, now);
+    } catch (_) {
       return null;
     }
   }

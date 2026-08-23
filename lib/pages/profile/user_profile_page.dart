@@ -22,6 +22,7 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/gift_selector.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/post_navigation.dart';
+import '../../theme/moe_tokens.dart';
 import '../feed/create_post_page.dart';
 import 'following_page.dart';
 import 'followers_page.dart';
@@ -745,7 +746,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         !_isSelf || _userBadges.where((badge) => badge.isUnlocked).isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: MoeTokens.pageBackground,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(_isSelf ? '我的主页' : '个人主页'),
@@ -766,15 +767,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: MoeTokens.cardBackground,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.07),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      boxShadow: MoeTokens.shadowCard(),
                     ),
                     child: Column(
                       children: [
@@ -888,14 +883,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                   onPressed: _toggleFollow,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: _isFollowing
-                                        ? Colors.grey[200]
-                                        : const Color(0xFF7F7FD5),
+                                        ? MoeTokens.softChipBg
+                                        : MoeTokens.primary,
                                     foregroundColor: _isFollowing
                                         ? Colors.black87
                                         : Colors.white,
                                     elevation: _isFollowing ? 0 : 4,
-                                    shadowColor: const Color(0xFF7F7FD5)
-                                        .withValues(alpha: 0.35),
+                                    shadowColor: MoeTokens.primary
+                                        .withValues(alpha: 0.24),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -948,9 +943,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     }();
                                   },
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF7F7FD5),
+                                    foregroundColor: MoeTokens.primary,
                                     side: const BorderSide(
-                                        color: Color(0xFF7F7FD5)),
+                                        color: MoeTokens.primary),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -978,9 +973,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     );
                                   },
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF7F7FD5),
+                                    foregroundColor: MoeTokens.primary,
                                     side: const BorderSide(
-                                        color: Color(0xFF7F7FD5)),
+                                        color: MoeTokens.primary),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -1007,11 +1002,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                         TextStyle(fontWeight: FontWeight.w500),
                                   ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.pink[400],
-                                    foregroundColor: Colors.white,
-                                    elevation: 4,
-                                    shadowColor:
-                                        Colors.pink.withValues(alpha: 0.35),
+                                    backgroundColor: MoeTokens.accent,
+                                    foregroundColor: MoeTokens.titleText,
+                                    elevation: 0,
+                                    shadowColor: MoeTokens.accent
+                                        .withValues(alpha: 0.24),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -1036,15 +1031,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 key: _postsSectionKey,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: MoeTokens.cardBackground,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  boxShadow: MoeTokens.shadowCard(),
                 ),
                 width: double.infinity,
                 child: Column(
@@ -1058,7 +1047,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             width: 4,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF7F7FD5),
+                              color: MoeTokens.primary,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),

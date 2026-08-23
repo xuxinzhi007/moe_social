@@ -163,6 +163,16 @@ Moe Social 的正式定位是萌系心情社交，核心是发动态、浏览互
 
 **已验证：** `flutter build apk --debug` 与 `git diff --check` 通过。已在 `emulator-5554` 安装 Dev 包并强制冷启动：约 5 秒截图显示紫色星标原生启动屏，约 17 秒截图可进入首页，未出现纯白等待。受当前 Android 编译 SDK 限制，未直接引用 Android 12 专用 `Theme.SplashScreen`，因此保持所有已支持 API 均可构建的资源实现。待真机验收：点击微信登录时仍应注册 SDK 并继续原授权流程。回滚只需恢复白色 `launch_background` 与微信启动任务。
 
+### P0-I：首页主线收束
+
+**问题证据：** 当前首页顶部同时提供社区、扫码加好友、通知三个动作；动态流上方还会常驻 AI 伙伴状态卡。产品定位已将动态浏览、发帖和关系建立定义为核心，而社区与 AI 属于增强能力；多个并列入口会让首页更像功能聚合页。现有代码位置为 `HomePage._buildSliverAppBar` 与 `_buildCompanionPresenceCard`。
+
+**产品研究：** [Mastodon README](https://github.com/mastodon/mastodon#features) 将实时时间线、媒体发布和关系发现作为核心，并把安全、API 等能力放在次级层；[Pixelfed README](https://github.com/pixelfed/pixelfed#introduction) 将产品边界收敛为照片分享；[Misskey README](https://github.com/misskey-dev/misskey#readme) 允许高度扩展，但复杂能力不等于默认主路径。由此采用“内容流优先、增强能力按需出现”的设计假设。
+
+**实现与非目标：** 移除首页顶部重复的“发现同好”入口，将“社区”提升为底部主导航 Tab，紧邻“AI伙伴”右侧；首页话题 Tag 行只保留内容筛选，避免入口与内容标签混排。社区仍可从好友/空态等关系场景进入。AI 伙伴卡仅在伙伴存在明确待回应状态时显示，普通浏览不被 AI 卡片打断。保留扫码加好友和通知入口，不修改路由、接口、FeatureFlag 或 AI 数据请求。
+
+**待验证与回滚：** `dart analyze lib/app/main_shell.dart lib/pages/feed/home_page.dart` 后在模拟器检查底栏五个 Tab 的窄屏布局、社区点击加载和 AI 角标行为；若五 Tab 在极窄屏拥挤，可将“好友”与“社区”合并为关系页内二级 Tab。若用户反馈 AI 存在感不足，可恢复原有卡片显示条件。
+
 ## 影响范围
 
 - Flutter：`lib/main.dart`、`lib/services/api_service.dart`、`lib/utils/config.dart`、启动与设置相关 UI。

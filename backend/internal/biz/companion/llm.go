@@ -3,6 +3,7 @@ package companionbiz
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -322,11 +323,28 @@ func streamChat(
 	messages []llminference.Message,
 	onChunk llminference.StreamHandler,
 ) (string, error) {
-	return llminference.ChatStream(ctx, cfg, modelName, messages,
+	reply, err := llminference.ChatStream(ctx, cfg, modelName, messages,
 		llminference.ChatOptions{
 			Temperature: 0.85,
 			MaxTokens:   480,
 		}, onChunk)
+	if err == nil || strings.TrimSpace(reply) != "" {
+		return reply, err
+	}
+
+	fallback, fallbackErr := nonStreamChat(ctx, cfg, modelName, messages)
+	if fallbackErr != nil {
+		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback failed: %v", err, fallbackErr)
+	}
+	if strings.TrimSpace(fallback) == "" {
+		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback returned empty reply", err)
+	}
+	if onChunk != nil {
+		if chunkErr := onChunk(fallback); chunkErr != nil {
+			return fallback, fmt.Errorf("write non-stream fallback: %w", chunkErr)
+		}
+	}
+	return fallback, nil
 }
 
 // nonStreamChat 非流式调用 LLM（备用）。
