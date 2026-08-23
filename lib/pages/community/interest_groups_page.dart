@@ -236,15 +236,9 @@ class InterestGroupsPageState extends State<InterestGroupsPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '试试换个关键词，或者新建一个兴趣群组。',
+                          '试试换个关键词，或者从顶部新建一个兴趣群组。',
                           style: TextStyle(color: Colors.grey[600]),
                           textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.icon(
-                          onPressed: _showCreateGroup,
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('新建群组'),
                         ),
                       ],
                     ),
