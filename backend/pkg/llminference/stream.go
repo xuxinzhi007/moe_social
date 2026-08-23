@@ -37,7 +37,76 @@ func ChatStream(
 	if cfg.APIStyle == APIOllama {
 		return streamOllamaChat(ctx, client, cfg.BaseURL, model, messages, opts, onChunk)
 	}
+	if usesResponsesAPI(model) {
+		return streamResponsesChat(ctx, client, cfg, model, messages, opts, onChunk)
+	}
 	return streamOpenAIChat(ctx, client, cfg, model, messages, opts, onChunk)
+}
+
+func streamResponsesChat(
+	ctx context.Context,
+	client *http.Client,
+	cfg Config,
+	model string,
+	messages []Message,
+	opts ChatOptions,
+	onChunk StreamHandler,
+) (string, error) {
+	body, err := json.Marshal(newResponsesRequest(model, messages, opts, true))
+	if err != nil {
+		return "", err
+	}
+	req, err := newResponsesRequestHTTP(ctx, cfg, body)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("responses stream failed: %d %s", resp.StatusCode, string(responseBody))
+	}
+	return readResponsesStream(resp.Body, onChunk)
+}
+
+func readResponsesStream(r io.Reader, onChunk StreamHandler) (string, error) {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	var full strings.Builder
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if !strings.HasPrefix(line, "data:") {
+			continue
+		}
+		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if payload == "[DONE]" {
+			break
+		}
+		var event struct {
+			Type  string `json:"type"`
+			Delta string `json:"delta"`
+		}
+		if err := json.Unmarshal([]byte(payload), &event); err != nil || event.Type != "response.output_text.delta" || event.Delta == "" {
+			continue
+		}
+		full.WriteString(event.Delta)
+		if onChunk != nil {
+			if err := onChunk(event.Delta); err != nil {
+				return full.String(), err
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return full.String(), err
+	}
+	if text := strings.TrimSpace(full.String()); text != "" {
+		return text, nil
+	}
+	return "", fmt.Errorf("responses stream empty")
 }
 
 func streamOpenAIChat(

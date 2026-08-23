@@ -224,7 +224,15 @@ func Chat(
 	if cfg.APIStyle == APIOllama {
 		return postOllamaChat(ctx, client, cfg.BaseURL, model, messages, opts)
 	}
+	if usesResponsesAPI(model) {
+		return postResponsesChat(ctx, client, cfg, model, messages, opts)
+	}
 	return postOpenAIChat(ctx, client, cfg, model, messages, opts)
+}
+
+func usesResponsesAPI(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	return strings.HasPrefix(model, "gpt-") || strings.Contains(model, "codex")
 }
 
 func postOpenAIChat(

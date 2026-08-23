@@ -14,6 +14,7 @@ import '../../services/ai_provider_usage_service.dart';
 import '../../services/ai_tts_helper.dart';
 import '../../services/companion_service.dart';
 import '../../services/companion_interaction_coordinator.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
@@ -1149,39 +1150,121 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     final personaController = TextEditingController(text: _profile.persona);
     final saved = await showDialog<CompanionProfileData>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('编辑伙伴资料'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: '名字')),
-              TextField(
-                  controller: emojiController,
-                  decoration: const InputDecoration(labelText: '表情')),
-              TextField(
-                  controller: personaController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: '陪伴方式')),
-            ],
+      builder: (dialogContext) {
+        InputDecoration fieldDecoration(String hint) => InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(color: MoeTokens.hintText),
+              filled: true,
+              fillColor: MoeTokens.softLavenderBg,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: MoeTokens.spaceMd,
+                vertical: MoeTokens.spaceSm,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                borderSide: const BorderSide(color: MoeTokens.lineSoft),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                borderSide: const BorderSide(color: MoeTokens.lineSoft),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                borderSide: const BorderSide(color: AiBrandTokens.primary),
+              ),
+            );
+
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: MoeTokens.spaceXl),
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 420,
+              maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.82,
+            ),
+            child: Material(
+              color: MoeTokens.surface2,
+              borderRadius: BorderRadius.circular(MoeTokens.radius2xl),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(MoeTokens.spaceXl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      '伙伴资料',
+                      style: TextStyle(
+                        color: AiBrandTokens.titleColor,
+                        fontSize: MoeTokens.textXl,
+                        fontWeight: MoeTokens.fontWeightTitle,
+                      ),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceXs),
+                    const Text(
+                      '改成你习惯叫 TA 的样子。',
+                      style: TextStyle(
+                        color: AiBrandTokens.companionInkMuted,
+                        fontSize: MoeTokens.textSm,
+                      ),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceXl),
+                    const Text('名字',
+                        style: TextStyle(fontSize: MoeTokens.textSm)),
+                    const SizedBox(height: MoeTokens.spaceXs),
+                    TextField(
+                      controller: nameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: fieldDecoration('例如：啾啾'),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                    const Text('表情',
+                        style: TextStyle(fontSize: MoeTokens.textSm)),
+                    const SizedBox(height: MoeTokens.spaceXs),
+                    TextField(
+                      controller: emojiController,
+                      textInputAction: TextInputAction.next,
+                      decoration: fieldDecoration('例如：🐤'),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceMd),
+                    const Text('陪伴方式',
+                        style: TextStyle(fontSize: MoeTokens.textSm)),
+                    const SizedBox(height: MoeTokens.spaceXs),
+                    TextField(
+                      controller: personaController,
+                      minLines: 2,
+                      maxLines: 3,
+                      decoration: fieldDecoration('例如：温暖、简短地陪我聊天'),
+                    ),
+                    const SizedBox(height: MoeTokens.spaceXl),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('取消'),
+                        ),
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(
+                            dialogContext,
+                            _profile.copyWith(
+                              name: nameController.text.trim(),
+                              emoji: emojiController.text.trim(),
+                              persona: personaController.text.trim(),
+                            ),
+                          ),
+                          child: const Text('保存'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('取消')),
-          FilledButton(
-              onPressed: () => Navigator.pop(
-                  dialogContext,
-                  _profile.copyWith(
-                      name: nameController.text.trim(),
-                      emoji: emojiController.text.trim(),
-                      persona: personaController.text.trim())),
-              child: const Text('保存')),
-        ],
-      ),
+        );
+      },
     );
     nameController.dispose();
     emojiController.dispose();

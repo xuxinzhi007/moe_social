@@ -976,24 +976,7 @@ func (e *Engine) ChatStreamWithInputMode(
 	)
 
 	if !config.Ready() {
-		// LLM 不可用，返回兜底回复
-		fallback := fallbackReply(profile, state)
-		_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
-			UserID:  userID,
-			Role:    "assistant",
-			Content: fallback,
-		})
-		if onChunk != nil {
-			_ = onChunk(fallback)
-		}
-		if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
-			log.Printf("[companion] bump intimacy after fallback chat user=%d: %v", userID, err)
-		}
-		if isFirstChat {
-			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
-		}
-		e.recordChatCompletedEvent(ctx, userID, scene, "fallback", inputMode)
-		return fallback, nil
+		return "", fmt.Errorf("companion: model service is not configured")
 	}
 
 	fullReply, err := streamChat(ctx, config, modelName, msgs, onChunk)
@@ -1013,24 +996,7 @@ func (e *Engine) ChatStreamWithInputMode(
 			e.recordChatCompletedEvent(ctx, userID, scene, "partial", inputMode)
 			return fullReply, nil
 		}
-		// LLM 调用失败，返回兜底
-		fallback := fallbackReply(profile, state)
-		_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
-			UserID:  userID,
-			Role:    "assistant",
-			Content: fallback,
-		})
-		if onChunk != nil {
-			_ = onChunk(fallback)
-		}
-		if bumpErr := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); bumpErr != nil {
-			log.Printf("[companion] bump intimacy after error fallback user=%d: %v", userID, bumpErr)
-		}
-		if isFirstChat {
-			e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
-		}
-		e.recordChatCompletedEvent(ctx, userID, scene, "error_fallback", inputMode)
-		return fallback, nil
+		return "", fmt.Errorf("companion: model response failed: %w", err)
 	}
 
 	// 6. 保存助手回复
@@ -1571,14 +1537,6 @@ func defaultProfile(userID uint) *Profile {
 		ProactiveQuietEnd:   450,
 		AgentID:             fmt.Sprintf("companion-%d", userID),
 	}
-}
-
-// fallbackReply LLM 不可用时的兜底回复。
-func fallbackReply(profile *Profile, state *State) string {
-	if state != nil && state.MoodThought != "" {
-		return fmt.Sprintf("嗯…我现在%s。你呢？", state.MoodThought)
-	}
-	return fmt.Sprintf("嗨，我是%s，现在想找人聊聊天~", profile.Name)
 }
 
 // ── 类型转换 ──

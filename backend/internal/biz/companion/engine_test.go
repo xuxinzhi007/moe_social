@@ -99,15 +99,11 @@ func TestExtractUnfinishedTopicsOnlyUsesExplicitMarkers(t *testing.T) {
 	}
 }
 
-func TestVoiceChatTurnProducesVoiceEvent(t *testing.T) {
+func TestVoiceChatCompletionProducesVoiceEvent(t *testing.T) {
 	store := newFakeStore()
 	engine := NewEngine(store, nil, llminference.Config{}, "")
 
-	if _, err := engine.ChatStreamWithInputMode(
-		context.Background(), 7, "voice hello", nil, "comfort", "voice",
-	); err != nil {
-		t.Fatalf("ChatStreamWithInputMode() error = %v", err)
-	}
+	engine.recordChatCompletedEvent(context.Background(), 7, "comfort", "llm", "voice")
 
 	foundVoice := false
 	foundChatInputMode := false
@@ -121,6 +117,16 @@ func TestVoiceChatTurnProducesVoiceEvent(t *testing.T) {
 	}
 	if !foundVoice || !foundChatInputMode {
 		t.Fatalf("events = %+v, want voice and voice-mode chat events", store.companionEvents)
+	}
+}
+
+func TestChatStreamReportsUnconfiguredModel(t *testing.T) {
+	engine := NewEngine(newFakeStore(), nil, llminference.Config{}, "")
+
+	if _, err := engine.ChatStreamWithInputMode(
+		context.Background(), 7, "hello", nil, "", "text",
+	); err == nil {
+		t.Fatal("ChatStreamWithInputMode() error = nil, want model configuration error")
 	}
 }
 

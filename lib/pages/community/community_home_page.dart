@@ -82,7 +82,7 @@ class _CommunityHomePageState extends State<CommunityHomePage>
     }
   }
 
-  void _onFabPressed() {
+  void _onPrimaryActionPressed() {
     if (!AuthService.isLoggedIn) {
       MoeToast.error(context, '请先登录');
       return;
@@ -128,6 +128,20 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                           child: _buildHeader(scheme),
                         ),
                       ),
+                      IconButton(
+                        tooltip: onCirclesTab ? '新建群组' : '发帖',
+                        onPressed: _onPrimaryActionPressed,
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              scheme.primary.withValues(alpha: 0.12),
+                          foregroundColor: scheme.primary,
+                        ),
+                        icon: Icon(
+                          onCirclesTab
+                              ? Icons.add_rounded
+                              : Icons.edit_outlined,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -162,11 +176,6 @@ class _CommunityHomePageState extends State<CommunityHomePage>
             ],
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onFabPressed,
-        icon: Icon(onCirclesTab ? Icons.add_rounded : Icons.edit_rounded),
-        label: Text(onCirclesTab ? '新建群组' : '发帖'),
       ),
     );
   }
