@@ -39,7 +39,14 @@ class DirectChatViewModel extends ChangeNotifier {
 
   static const String imagePrefix = '[IMG]';
 
+  /// 语音消息前缀：`[VOICE]$url|$durationSec`。
+  static const String voicePrefix = '[VOICE]';
+
   final List<DirectChatMessage> _messages = [];
+
+  /// 倒序列表缓存（最新在前），避免页面每次 build 全量拷贝。
+  List<DirectChatMessage>? _cachedReversed;
+
   String? _currentUserId;
   bool _isSending = false;
   bool _isBootstrapping = true;
@@ -55,6 +62,16 @@ class DirectChatViewModel extends ChangeNotifier {
   void Function()? onScrollToBottom;
 
   List<DirectChatMessage> get messages => List.unmodifiable(_messages);
+
+  /// 倒序消息（最新在前），内部缓存，消息变更时自动失效。
+  List<DirectChatMessage> get reversedMessages {
+    final cached = _cachedReversed;
+    if (cached != null) return cached;
+    final reversed = List<DirectChatMessage>.unmodifiable(_messages.reversed);
+    _cachedReversed = reversed;
+    return reversed;
+  }
+
   String? get currentUserId => _currentUserId;
   bool get isSending => _isSending;
   bool get isBootstrapping => _isBootstrapping;
@@ -70,6 +87,18 @@ class DirectChatViewModel extends ChangeNotifier {
   String imageUrlOf(String content) => resolveMediaUrl(
         content.substring(imagePrefix.length).trim(),
       );
+
+  bool isVoiceContent(String content) =>
+      content.startsWith(voicePrefix) && content.length > voicePrefix.length;
+
+  /// 解析 `[VOICE]url|秒数` 格式。
+  (String url, int duration) voiceInfoOf(String content) {
+    final raw = content.substring(voicePrefix.length).trim();
+    final parts = raw.split('|');
+    final url = resolveMediaUrl(parts[0]);
+    final duration = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    return (url, duration);
+  }
 
   Future<void> bootstrap() async {
     _isBootstrapping = true;
@@ -356,6 +385,74 @@ class DirectChatViewModel extends ChangeNotifier {
     }
   }
 
+  /// 发送语音文件：上传后以 `[VOICE]$url|$duration` 文本消息发出。
+  /// 成功返回 null；失败返回用户可读错误文案。
+  ///
+  /// TODO(voice): 复用 `/api/upload` 上传音频可行（后端不校验 mime），
+  /// 但 ServeImage 会按图片后缀推断 Content-Type（.m4a 落回 image/jpeg），
+  /// 需后端补充媒体类型识别后再开启正式 flag。
+  Future<String?> sendVoiceFile(File file, {required int durationSec}) async {
+    if (_isSending) return null;
+    final currentUserId = _currentUserId;
+    if (currentUserId == null) return '请先登录';
+    if (!await file.exists()) return '语音文件不存在';
+    if (durationSec < 1) return '说话时间太短';
+
+    _isSending = true;
+    _notify();
+    try {
+      final url = await ChatService.uploadImage(file);
+      final content = '$voicePrefix$url|$durationSec';
+      if (_disposed) return null;
+
+      _messages.add(
+        DirectChatMessage(
+          senderId: currentUserId,
+          content: content,
+          time: DateTime.now(),
+        ),
+      );
+      await _saveMessages();
+      _notify();
+      onScrollToBottom?.call();
+
+      final optimisticIdx = _messages.length - 1;
+      try {
+        final saved = await ChatService.sendPrivateMessage(
+          receiverId: peerUserId,
+          body: content,
+        );
+        if (_disposed) return null;
+        if (optimisticIdx < _messages.length &&
+            _messages[optimisticIdx].senderId == currentUserId &&
+            _messages[optimisticIdx].content == content) {
+          _messages[optimisticIdx] = DirectChatMessage(
+            senderId: currentUserId,
+            content: content,
+            time: _messages[optimisticIdx].time,
+            serverId: _serverSlotFromWsId(saved.id, content),
+          );
+        }
+        _isSending = false;
+        await _saveMessages();
+        _notify();
+        return null;
+      } on ApiException catch (e) {
+        _rollbackOptimistic(optimisticIdx, currentUserId, content);
+        return MoeErrorCopy.toast(e, scene: MoeErrorScene.messages);
+      } catch (e) {
+        _rollbackOptimistic(optimisticIdx, currentUserId, content);
+        return MoeErrorCopy.toast(e, scene: MoeErrorScene.messages);
+      }
+    } catch (e) {
+      if (!_disposed) {
+        _isSending = false;
+        _notify();
+      }
+      return MoeErrorCopy.toast(e, scene: MoeErrorScene.messages);
+    }
+  }
+
   Future<String?> clearLocalChatHistory() async {
     final currentUserId = _currentUserId;
     if (currentUserId == null || currentUserId.isEmpty) return '请先登录';
@@ -546,6 +643,8 @@ class DirectChatViewModel extends ChangeNotifier {
   }
 
   void _notify() {
+    // 任何通知都视为状态可能变更，统一使倒序缓存失效（覆盖所有消息增删改路径）。
+    _cachedReversed = null;
     if (!_disposed) notifyListeners();
   }
 

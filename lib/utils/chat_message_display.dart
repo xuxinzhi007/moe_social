@@ -1,8 +1,11 @@
-/// 私信在列表、通知等处的展示文案（与 [DirectChatPage] 的 `[IMG]` 前缀约定一致）。
+/// 私信在列表、通知等处的展示文案（与 [DirectChatPage] 的 `[IMG]`/`[VOICE]` 前缀约定一致）。
 String formatDmPreviewForUi(String content) {
   final t = content.trim();
   if (t.startsWith('[IMG]')) {
     return '[图片]';
+  }
+  if (t.startsWith('[VOICE]')) {
+    return '🎤 语音消息';
   }
   return t;
 }

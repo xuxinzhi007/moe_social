@@ -63,4 +63,21 @@ class FeatureFlags {
 
   /// 双人直播礼物 PK V1。开发期已开启；关闭后路由不可进入。
   static const bool liveGiftPk = true;
+
+  // ── 聊天 UI 个性化升级 ─────────────────────────────────────
+
+  /// 导航栏毛玻璃（AppBar + 底部 Tab 使用 BackdropFilter 磨砂）。
+  static const bool chatGlassNav = false;
+
+  /// 窗口级连续渐变气泡（按位置偏移渐变色）。
+  static const bool chatGradientBubbles = false;
+
+  /// 聊天品牌动效（发送成功✓ / 新消息弹跳 / 表情反应）。
+  static const bool chatBrandMotion = false;
+
+  /// 语音消息（录音 + 波形可视化 + 播放）。
+  static const bool chatVoiceMessage = false;
+
+  /// 聊天主题皮肤（用户可选背景 / 气泡配色方案）。
+  static const bool chatThemeSkins = false;
 }
