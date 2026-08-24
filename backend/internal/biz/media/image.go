@@ -57,6 +57,17 @@ type ImageFile struct {
 	ContentType  string
 }
 
+// imageExtensions 图库允许的图片扩展名白名单。
+var imageExtensions = map[string]struct{}{
+	".jpg": {}, ".jpeg": {}, ".png": {}, ".gif": {},
+	".webp": {}, ".svg": {}, ".heic": {}, ".bmp": {},
+}
+
+// audioExtensions 语音消息允许的音频扩展名白名单。
+var audioExtensions = map[string]struct{}{
+	".m4a": {}, ".mp3": {}, ".aac": {}, ".wav": {}, ".ogg": {},
+}
+
 func normalizeImageDir(cfg ImageConfig) string {
 	return utils.ResolveImageLocalDir(cfg.LocalDir)
 }
@@ -86,6 +97,10 @@ func ListImages(_ context.Context, cfg ImageConfig, in ListImagesInput) (ListIma
 	imageInfos := make([]ImageInfo, 0, len(files))
 	for _, file := range files {
 		if file.IsDir() {
+			continue
+		}
+		// 仅保留图片扩展名，避免音频等其他文件混入图库。
+		if _, ok := imageExtensions[strings.ToLower(filepath.Ext(file.Name()))]; !ok {
 			continue
 		}
 		info, err := file.Info()
@@ -167,7 +182,7 @@ func OpenImage(_ context.Context, cfg ImageConfig, key string) (ImageFile, error
 	}
 
 	contentType := "image/jpeg"
-	switch filepath.Ext(filename) {
+	switch strings.ToLower(filepath.Ext(filename)) {
 	case ".png":
 		contentType = "image/png"
 	case ".gif":
@@ -176,6 +191,16 @@ func OpenImage(_ context.Context, cfg ImageConfig, key string) (ImageFile, error
 		contentType = "image/webp"
 	case ".svg":
 		contentType = "image/svg+xml"
+	case ".m4a":
+		contentType = "audio/mp4"
+	case ".mp3":
+		contentType = "audio/mpeg"
+	case ".aac":
+		contentType = "audio/aac"
+	case ".wav":
+		contentType = "audio/wav"
+	case ".ogg":
+		contentType = "audio/ogg"
 	}
 
 	return ImageFile{
@@ -188,6 +213,14 @@ func OpenImage(_ context.Context, cfg ImageConfig, key string) (ImageFile, error
 
 // UploadImage 保存上传文件。
 func UploadImage(_ context.Context, cfg ImageConfig, in UploadInput) (ImageInfo, error) {
+	// 扩展名白名单校验：仅接受图片与语音消息音频，堵任意文件上传口子。
+	ext := strings.ToLower(filepath.Ext(in.OrigName))
+	if _, ok := imageExtensions[ext]; !ok {
+		if _, ok := audioExtensions[ext]; !ok {
+			return ImageInfo{}, fmt.Errorf("unsupported file extension: %s", ext)
+		}
+	}
+
 	imgDir := normalizeImageDir(cfg)
 	userDir := filepath.Join(imgDir, in.UserFolder)
 	if err := os.MkdirAll(userDir, os.ModePerm); err != nil {

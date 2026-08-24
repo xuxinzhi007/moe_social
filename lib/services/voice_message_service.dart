@@ -42,14 +42,27 @@ class VoiceMessageService {
   }
 
   /// 停止录音，返回文件路径和时长（秒）；未录音或不足 1 秒返回 null。
+  ///
+  /// 无论 stop 是否异常都复位状态（finally 语义），避免录音状态卡死。
   Future<(String path, int durationSec)?> stopRecording() async {
     if (!_isRecording) return null;
-    await _recorder.stop();
-    _isRecording = false;
     final duration = elapsed.inSeconds;
-    _startTime = null;
     final path = _currentPath;
-    if (path == null || duration < 1) return null;
+    try {
+      await _recorder.stop();
+    } catch (_) {
+      // stop 失败也要清理临时文件，避免泄漏。
+      await _deleteIfExists(path);
+      return null;
+    } finally {
+      _isRecording = false;
+      _startTime = null;
+      _currentPath = null;
+    }
+    if (path == null || duration < 1) {
+      await _deleteIfExists(path);
+      return null;
+    }
     return (path, duration);
   }
 
@@ -59,22 +72,26 @@ class VoiceMessageService {
       _currentPath = null;
       return;
     }
-    await _recorder.cancel();
-    _isRecording = false;
-    _startTime = null;
     final path = _currentPath;
-    _currentPath = null;
-    if (path != null) {
-      final file = File(path);
-      if (await file.exists()) {
-        try {
-          await file.delete();
-        } catch (_) {}
-      }
+    try {
+      await _recorder.cancel();
+    } catch (_) {
+      // cancel 失败也照常复位状态并删除临时文件。
+    } finally {
+      _isRecording = false;
+      _startTime = null;
+      _currentPath = null;
     }
+    await _deleteIfExists(path);
   }
 
-  void dispose() {
-    _recorder.dispose();
+  Future<void> _deleteIfExists(String? path) async {
+    if (path == null) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {}
   }
 }

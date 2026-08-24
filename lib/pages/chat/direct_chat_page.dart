@@ -66,6 +66,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
   double? _recordStartDy;
   Timer? _recordTimer;
 
+  /// 长按手势是否仍在进行中；权限弹窗 / 异步 await 期间手势可能已失效，
+  /// 异步恢复后据此守卫，避免手势已取消仍启动录音。
+  bool _voicePressActive = false;
+
   /// 品牌动效（[FeatureFlags.chatBrandMotion]）的 OverlayEntry，dispose 时清理。
   final List<OverlayEntry> _fxEntries = [];
 
@@ -333,19 +337,33 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Future<void> _startVoiceRecord(double startDy) async {
     if (_chat.isSending || _isRecording) return;
-    final status = await Permission.microphone.request();
+    PermissionStatus status;
+    try {
+      status = await Permission.microphone.request();
+    } catch (_) {
+      if (mounted) MoeToast.error(context, '请求麦克风权限失败');
+      return;
+    }
     if (!status.isGranted) {
       if (mounted) MoeToast.show(context, '需要麦克风权限才能发送语音');
       return;
     }
-    if (!mounted) return;
+    // 权限弹窗期间长按手势可能已失效：不再启动录音，并幂等清理在途录音。
+    if (!mounted || !_voicePressActive) {
+      unawaited(VoiceMessageService().cancelRecording());
+      return;
+    }
     try {
       await VoiceMessageService().startRecording();
     } catch (_) {
       if (mounted) MoeToast.error(context, '启动录音失败，请重试');
       return;
     }
-    if (!mounted) return;
+    // startRecording 异步期间手势同样可能失效（如页面已 dispose）。
+    if (!mounted || !_voicePressActive) {
+      unawaited(VoiceMessageService().cancelRecording());
+      return;
+    }
     setState(() {
       _isRecording = true;
       _recordSeconds = 0;
@@ -400,18 +418,27 @@ class _DirectChatPageState extends State<DirectChatPage> {
     }
     final (path, duration) = result;
     final err = await _chat.sendVoiceFile(File(path), durationSec: duration);
+    if (err == null) {
+      // 发送成功后清理本地临时音频：文件清理不受 mounted 检查阻挡。
+      await _deleteTempFile(path);
+    }
     if (!mounted) return;
     if (err != null) {
+      // 发送失败（如 busy 竞态）保留临时文件，提示用户可重试，避免录音丢失。
       MoeToast.show(
         context,
-        err,
+        err == '语音文件不存在' ? err : '$err，可稍后重试',
         duration: const Duration(seconds: 4),
         icon: Icons.cloud_off_outlined,
       );
     } else {
       _showSendSuccessFx();
     }
-    // 发送完成后清理本地临时音频。
+  }
+
+  /// 删除本地临时音频文件（静默失败）。
+  Future<void> _deleteTempFile(String? path) async {
+    if (path == null) return;
     try {
       final f = File(path);
       if (await f.exists()) await f.delete();
@@ -464,6 +491,20 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 : Icons.keyboard_arrow_up_rounded,
             size: 18,
             color: cancelHint ? MoeTokens.danger : Colors.white54,
+          ),
+          const SizedBox(width: 4),
+          // 兜底取消入口：手势异常时仍可显式取消录音。
+          IconButton(
+            tooltip: '取消录音',
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            onPressed: () => unawaited(_finishVoiceRecord(cancel: true)),
+            icon: const Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -521,8 +562,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _inputFocusNode.dispose();
     _onlineTimer?.cancel();
     _recordTimer?.cancel();
+    _voicePressActive = false;
     if (_isRecording) {
-      // 页面销毁时丢弃未发送的录音。
+      // 页面销毁时仍在按住录音才丢弃未发送的录音（cancelRecording 幂等）；
+      // 松手后的发送阶段（stopRecording 挂起窗口）交给 _finishVoiceRecord 自然完成，
+      // 避免误 cancel 删除在途音频。
       unawaited(VoiceMessageService().cancelRecording());
     }
     _incomingSub?.cancel();
@@ -543,7 +587,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
     final reversedMessages = _chat.reversedMessages;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    final glassNav = FeatureFlags.chatGlassNav;
+    final glassNav = FeatureFlags.glassNavigation;
 
     // 聊天主题皮肤（flag 开启时背景 / 气泡渐变跟随所选皮肤，并按亮度取深浅变体）。
     final chatSkin = FeatureFlags.chatThemeSkins
@@ -665,6 +709,13 @@ class _DirectChatPageState extends State<DirectChatPage> {
       ),
       body: Column(
         children: [
+          // glass 模式下 body 延伸到 AppBar 后方，顶部补偿状态栏+工具栏高度，
+          // 避免告警横幅 / 分页进度条被毛玻璃 AppBar 遮挡；flag 关闭时高度为 0。
+          SizedBox(
+            height: glassNav
+                ? MediaQuery.paddingOf(context).top + kToolbarHeight
+                : 0,
+          ),
           ValueListenableBuilder<bool>(
             valueListenable: ChatPushService.connectionLive,
             builder: (context, live, _) {
@@ -777,12 +828,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
                                     if (showTime)
                                       _buildTimeTag(context, message.time),
                                     _MessageEntranceAnimation(
-                                      // 用消息内容作 key，避免 ListView 按位置复用
-                                      // 导致新消息不播动画 / 旧消息重播。
+                                      // 键策略：服务端消息用稳定的 serverId；
+                                      // 本地乐观消息（serverId 为 null）用位置键，
+                                      // 避免内容重复撞键触发 Duplicate keys 断言。
                                       key: ValueKey(
-                                        '${message.senderId}|'
-                                        '${message.time.millisecondsSinceEpoch}|'
-                                        '${message.content}',
+                                        message.serverId ?? 'local-$index',
                                       ),
                                       isMe: isMe,
                                       animate:
@@ -801,6 +851,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                                         showSending: isMe &&
                                             index == 0 &&
                                             _chat.isSending,
+                                        chatSkin: chatSkin,
+                                        brightness: brightness,
                                       ),
                                     ),
                                   ],
@@ -992,17 +1044,25 @@ class _DirectChatPageState extends State<DirectChatPage> {
     required bool showPeerAvatar,
     required bool tightBottom,
     required bool showSending,
+    required ChatSkin? chatSkin,
+    required Brightness brightness,
   }) {
     final maxW = MediaQuery.sizeOf(context).width * 0.74;
-    final bubbleBg = isMe ? MoeTokens.primary : MoeTokens.surface1;
+    final bubbleBg = isMe
+        ? MoeTokens.primary
+        : chatSkin?.peerColorFor(brightness) ?? MoeTokens.surface1;
     // flag 开启时我方气泡改用窗口级连续渐变（按 index 微偏移）；对方气泡保持纯色。
     final useMeGradient = FeatureFlags.chatGradientBubbles && isMe;
     final textColor = isMe ? Colors.white : MoeTokens.titleText;
     const avatarCol = 36.0;
 
     Widget bubbleChild;
-    if (_chat.isVoiceContent(message.content)) {
-      final (url, duration) = _chat.voiceInfoOf(message.content);
+    // 格式非法（voiceInfoOf 返回 null）时降级为普通文本气泡，不渲染播放器。
+    final voiceInfo = _chat.isVoiceContent(message.content)
+        ? _chat.voiceInfoOf(message.content)
+        : null;
+    if (voiceInfo != null) {
+      final (url, duration) = voiceInfo;
       bubbleChild = VoiceBubble(
         // 用内容作 key：同一语音消息复用播放器状态。
         key: ValueKey('voice|${message.content}'),
@@ -1052,10 +1112,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
     // 气泡圆角：第一条消息有“尾巴”效果，连续消息底部圆角统一
     final tailRadius = tightBottom ? MoeTokens.radiusMd : 4.0;
-    // 气泡渐变采样：开启皮肤功能时取当前所选皮肤，否则仍为默认薰衣草。
-    final skinGradient = FeatureFlags.chatThemeSkins
-        ? context.read<ChatThemeProvider>().currentSkin.bubbleMeGradient
-        : ChatSkins.lavender.bubbleMeGradient;
+    // 气泡渐变采样：开启皮肤功能时取当前所选皮肤（build 顶部已解析，
+    // 避免重复 Provider 查找），否则仍为默认薰衣草。
+    final skinGradient =
+        (chatSkin ?? ChatSkins.lavender).bubbleMeGradient;
     final bubble = DecoratedBox(
       decoration: BoxDecoration(
         color: useMeGradient ? null : bubbleBg,
@@ -1075,7 +1135,12 @@ class _DirectChatPageState extends State<DirectChatPage> {
           bottomLeft: Radius.circular(isMe ? 18 : tailRadius),
           bottomRight: Radius.circular(isMe ? tailRadius : 18),
         ),
-        border: isMe ? null : Border.all(color: MoeTokens.surfaceBorder),
+        border: isMe
+            ? null
+            : Border.all(
+                color: chatSkin?.peerBorderFor(brightness) ??
+                    MoeTokens.surfaceBorder,
+              ),
         boxShadow: isMe
             ? [
                 BoxShadow(
@@ -1190,13 +1255,18 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 const SizedBox(width: 8),
                 // 麦克风：长按录音 → 松开发送，上滑取消。
                 GestureDetector(
-                  onLongPressStart: (details) =>
-                      unawaited(_startVoiceRecord(details.globalPosition.dy)),
+                  onLongPressStart: (details) {
+                    _voicePressActive = true;
+                    unawaited(_startVoiceRecord(details.globalPosition.dy));
+                  },
                   onLongPressMoveUpdate: (details) =>
                       _updateVoiceRecordDrag(details.globalPosition.dy),
-                  onLongPressEnd: (_) =>
-                      unawaited(_finishVoiceRecord(cancel: _recordCancelled)),
+                  onLongPressEnd: (_) {
+                    _voicePressActive = false;
+                    unawaited(_finishVoiceRecord(cancel: _recordCancelled));
+                  },
                   onLongPressCancel: () {
+                    _voicePressActive = false;
                     if (_isRecording) {
                       unawaited(_finishVoiceRecord(cancel: true));
                     }
@@ -1350,6 +1420,9 @@ class _MessageEntranceAnimationState extends State<_MessageEntranceAnimation>
     with SingleTickerProviderStateMixin {
   AnimationController? _controller;
 
+  /// 随 controller 创建，避免 build 中每次新建导致监听器累积泄漏。
+  CurvedAnimation? _curved;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -1361,11 +1434,16 @@ class _MessageEntranceAnimationState extends State<_MessageEntranceAnimation>
             ? const Duration(milliseconds: 200)
             : const Duration(milliseconds: 240),
       )..forward();
+      _curved = CurvedAnimation(
+        parent: _controller!,
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
   @override
   void dispose() {
+    _curved?.dispose();
     _controller?.dispose();
     super.dispose();
   }
@@ -1373,9 +1451,8 @@ class _MessageEntranceAnimationState extends State<_MessageEntranceAnimation>
   @override
   Widget build(BuildContext context) {
     final controller = _controller;
-    if (controller == null) return widget.child;
-
-    final curved = CurvedAnimation(parent: controller, curve: Curves.easeOutCubic);
+    final curved = _curved;
+    if (controller == null || curved == null) return widget.child;
     if (widget.isMe) {
       return FadeTransition(
         opacity: curved,

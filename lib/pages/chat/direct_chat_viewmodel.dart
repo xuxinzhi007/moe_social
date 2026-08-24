@@ -91,13 +91,24 @@ class DirectChatViewModel extends ChangeNotifier {
   bool isVoiceContent(String content) =>
       content.startsWith(voicePrefix) && content.length > voicePrefix.length;
 
-  /// 解析 `[VOICE]url|秒数` 格式。
-  (String url, int duration) voiceInfoOf(String content) {
+  /// 解析 `[VOICE]url|秒数` 格式；格式非法时返回 null（页面降级为文本气泡）。
+  ///
+  /// 用最后一个 `|` 切分，URL 部分本身含 `|` 时不错位；url 需为 http(s)
+  /// 或以 `/api/images/` 开头（与 [resolveMediaUrl] 约定对齐）。
+  (String url, int duration)? voiceInfoOf(String content) {
     final raw = content.substring(voicePrefix.length).trim();
-    final parts = raw.split('|');
-    final url = resolveMediaUrl(parts[0]);
-    final duration = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
-    return (url, duration);
+    final sep = raw.lastIndexOf('|');
+    if (sep <= 0 || sep == raw.length - 1) return null;
+    final urlPart = raw.substring(0, sep).trim();
+    final duration = int.tryParse(raw.substring(sep + 1).trim());
+    if (duration == null) return null;
+    final uri = Uri.tryParse(urlPart);
+    if (uri == null) return null;
+    final isValidUrl = uri.scheme == 'http' ||
+        uri.scheme == 'https' ||
+        urlPart.startsWith('/api/images/');
+    if (!isValidUrl) return null;
+    return (resolveMediaUrl(urlPart), duration);
   }
 
   Future<void> bootstrap() async {
@@ -277,7 +288,8 @@ class DirectChatViewModel extends ChangeNotifier {
   /// 成功返回 null；失败返回用户可读错误文案。
   Future<String?> sendText(String text) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || _isSending) return null;
+    if (trimmed.isEmpty) return null;
+    if (_isSending) return '正在发送中，请稍后再试';
     final currentUserId = _currentUserId;
     if (currentUserId == null) return '请先登录';
 
@@ -325,7 +337,7 @@ class DirectChatViewModel extends ChangeNotifier {
 
   /// 成功返回 null；失败返回用户可读错误文案。
   Future<String?> sendImageFile(File file) async {
-    if (_isSending) return null;
+    if (_isSending) return '正在发送中，请稍后再试';
     final currentUserId = _currentUserId;
     if (currentUserId == null) return '请先登录';
     if (!await file.exists()) return '图片文件不存在';
@@ -392,7 +404,7 @@ class DirectChatViewModel extends ChangeNotifier {
   /// 但 ServeImage 会按图片后缀推断 Content-Type（.m4a 落回 image/jpeg），
   /// 需后端补充媒体类型识别后再开启正式 flag。
   Future<String?> sendVoiceFile(File file, {required int durationSec}) async {
-    if (_isSending) return null;
+    if (_isSending) return '正在发送中，请稍后再试';
     final currentUserId = _currentUserId;
     if (currentUserId == null) return '请先登录';
     if (!await file.exists()) return '语音文件不存在';

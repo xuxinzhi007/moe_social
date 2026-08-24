@@ -22,9 +22,20 @@ class ChatThemeProvider with ChangeNotifier {
 
   Future<void> setSkin(ChatSkin skin) async {
     if (_currentSkin.id == skin.id) return;
+    final old = _currentSkin;
     _currentSkin = skin;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_skinIdKey, skin.id);
     notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_skinIdKey, skin.id);
+    } catch (e) {
+      // 写盘失败回滚到旧值，保持 UI 与持久化一致；不向外抛出。
+      // 守卫：仅当当前值仍是本次要写的 skin 时才回滚，避免并发切换被旧回滚覆盖。
+      if (identical(_currentSkin, skin)) {
+        _currentSkin = old;
+        notifyListeners();
+      }
+      debugPrint('聊天皮肤持久化失败: $e');
+    }
   }
 }

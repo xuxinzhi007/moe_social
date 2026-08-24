@@ -206,6 +206,8 @@ func adminMediaMatchesKeyword(item AdminMediaImage, kw string) bool {
 func ClassifyAdminMediaKind(fileName string) string {
 	lower := strings.ToLower(strings.TrimSpace(fileName))
 	switch {
+	case isAdminMediaAudioFile(lower):
+		return "voice"
 	case strings.Contains(lower, "hand_draw_thumb"):
 		return "hand_draw"
 	case strings.Contains(lower, "avatar"):
@@ -213,6 +215,17 @@ func ClassifyAdminMediaKind(fileName string) string {
 	default:
 		return "gallery"
 	}
+}
+
+// isAdminMediaAudioFile 判断文件是否为语音消息音频（与 App 端允许的音频扩展名一致），
+// 避免音频混入 gallery 导致管理台出现坏图预览。
+func isAdminMediaAudioFile(lowerName string) bool {
+	for _, ext := range []string{".m4a", ".mp3", ".aac", ".wav", ".ogg"} {
+		if strings.HasSuffix(lowerName, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // DeleteAdminMediaImage 删除云图库中的单个文件（filename 为 storage key：userFolder__file）。

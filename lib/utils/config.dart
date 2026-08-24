@@ -22,7 +22,7 @@ class AppConfig {
   static const String productionUrl = 'http://47.106.175.49:8888';
 
   /// 本地 API（无末尾 /）
-  static const String developmentUrl = 'http://127.0.0.1:8888';
+  static const String developmentUrl = 'http://192.168.124.36:8888';
 
   static String get baseUrl => isProduction ? productionUrl : developmentUrl;
 

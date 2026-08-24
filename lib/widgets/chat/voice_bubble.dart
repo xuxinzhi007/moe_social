@@ -5,6 +5,32 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../theme/moe_tokens.dart';
 
+/// 语音播放互斥协调器：同一时刻只允许一个气泡在播放。
+///
+/// 新气泡开始播放时 [claim] 会先 pause 旧的 active 播放器；
+/// 气泡 dispose 时若自己是 active 则 [release] 并 pause。
+class VoicePlaybackCoordinator {
+  VoicePlaybackCoordinator._();
+
+  static AudioPlayer? _active;
+
+  static bool isActive(AudioPlayer p) => identical(_active, p);
+
+  static void claim(AudioPlayer p) {
+    final old = _active;
+    if (old != null && !identical(old, p)) {
+      try {
+        old.pause();
+      } catch (_) {}
+    }
+    _active = p;
+  }
+
+  static void release(AudioPlayer p) {
+    if (identical(_active, p)) _active = null;
+  }
+}
+
 /// 语音消息气泡内容：播放按钮 + 伪波形 + 时长标签。
 ///
 /// 波形为按 [durationSec] 作种子的确定性伪随机竖条，播放进度由
@@ -82,9 +108,12 @@ class _VoiceBubbleState extends State<VoiceBubble> {
       if (_playing) {
         await _player.pause();
       } else {
+        VoicePlaybackCoordinator.claim(_player);
         await _player.play();
       }
     } catch (_) {
+      // play/setUrl 抛错时释放占用，避免协调器一直认为本播放器在播，挡住其他气泡。
+      VoicePlaybackCoordinator.release(_player);
       if (!mounted) return;
       setState(() {
         _playing = false;
@@ -95,6 +124,12 @@ class _VoiceBubbleState extends State<VoiceBubble> {
 
   @override
   void dispose() {
+    if (VoicePlaybackCoordinator.isActive(_player)) {
+      VoicePlaybackCoordinator.release(_player);
+      try {
+        _player.pause();
+      } catch (_) {}
+    }
     _player.dispose();
     super.dispose();
   }

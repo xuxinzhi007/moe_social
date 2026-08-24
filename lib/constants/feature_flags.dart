@@ -66,18 +66,19 @@ class FeatureFlags {
 
   // ── 聊天 UI 个性化升级 ─────────────────────────────────────
 
-  /// 导航栏毛玻璃（AppBar + 底部 Tab 使用 BackdropFilter 磨砂）。
-  static const bool chatGlassNav = false;
+  /// 全站导航毛玻璃（AppBar + 底部 Tab 使用 BackdropFilter 磨砂）。
+  static const bool glassNavigation = true;
 
   /// 窗口级连续渐变气泡（按位置偏移渐变色）。
-  static const bool chatGradientBubbles = false;
+  static const bool chatGradientBubbles = true;
 
   /// 聊天品牌动效（发送成功✓ / 新消息弹跳 / 表情反应）。
-  static const bool chatBrandMotion = false;
+  static const bool chatBrandMotion = true;
 
   /// 语音消息（录音 + 波形可视化 + 播放）。
-  static const bool chatVoiceMessage = false;
+  /// 后端 media 上传已支持音频 Content-Type，正式开启。
+  static const bool chatVoiceMessage = true;
 
   /// 聊天主题皮肤（用户可选背景 / 气泡配色方案）。
-  static const bool chatThemeSkins = false;
+  static const bool chatThemeSkins = true;
 }
