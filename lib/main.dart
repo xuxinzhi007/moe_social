@@ -23,6 +23,7 @@ import 'services/chat_push_service.dart';
 import 'services/push_notification_service.dart';
 import 'services/daily_growth_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/chat_theme_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/device_info_provider.dart';
 import 'providers/loading_provider.dart';
@@ -311,6 +312,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider.value(value: loadingProvider),
         ChangeNotifierProvider.value(value: virtualAvatarProvider),
         ChangeNotifierProvider(create: (_) => CheckInProvider()),
+        ChangeNotifierProvider(create: (_) => ChatThemeProvider()..init()),
         ChangeNotifierProvider(create: (_) => UserLevelProvider()),
         ChangeNotifierProvider(create: (_) => MainNavController()),
         ChangeNotifierProvider(create: (_) => LifeProvider()),

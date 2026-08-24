@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
@@ -10,14 +11,23 @@ import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../services/chat_service.dart';
 import '../../services/user_service.dart';
+import '../../services/voice_message_service.dart';
 import '../../widgets/avatar_image.dart';
+import '../../widgets/chat/voice_bubble.dart';
+import '../../widgets/moe_glass_surface.dart';
+import '../../constants/feature_flags.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../providers/chat_theme_provider.dart';
 import '../../services/chat_push_service.dart';
 import '../../services/presence_service.dart';
 import '../../theme/moe_tokens.dart';
+import '../../theme/chat_skin.dart';
+import '../../widgets/motion/moe_motion.dart';
+import '../../widgets/motion/moe_chat_motion.dart';
 import '../../widgets/moe_action_row.dart';
 import 'direct_chat_viewmodel.dart';
+import 'chat_skin_picker_page.dart';
 import 'voice_call_launcher.dart';
 
 class DirectChatPage extends StatefulWidget {
@@ -48,6 +58,20 @@ class _DirectChatPageState extends State<DirectChatPage> {
   late final VoidCallback _scrollLoadOlderListener;
   double _sendBtnScale = 1.0;
   bool _hasDraft = false;
+
+  // ── 语音消息（[FeatureFlags.chatVoiceMessage]）────────────────
+  bool _isRecording = false;
+  int _recordSeconds = 0;
+  bool _recordCancelled = false;
+  double? _recordStartDy;
+  Timer? _recordTimer;
+
+  /// 品牌动效（[FeatureFlags.chatBrandMotion]）的 OverlayEntry，dispose 时清理。
+  final List<OverlayEntry> _fxEntries = [];
+
+  /// 首屏历史消息不播入场动画；bootstrap 后的首帧渲染完成后置 true，
+  /// 之后新增的消息才走入场动效。
+  bool _initialRenderDone = false;
 
   @override
   void initState() {
@@ -105,6 +129,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
   Future<void> _initChat() async {
     await _chat.bootstrap();
     if (!mounted) return;
+    // 首帧（含历史消息）渲染完后才允许入场动画，避免历史消息闪动。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialRenderDone = true;
+    });
     final warning = _chat.historySyncWarning;
     if (warning != null) {
       MoeToast.show(
@@ -223,6 +251,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
   void _handleIncomingMap(Map<String, dynamic> map) {
     if (!mounted) return;
     _chat.handleIncomingMap(map);
+    // 对方新消息到达：触发新消息弹跳动效（定位在头像 / 气泡附近）。
+    if (map['from']?.toString() == widget.userId) {
+      _showMessagePopFx();
+    }
   }
 
   Future<void> _pickAndSendImage() async {
@@ -287,8 +319,195 @@ class _DirectChatPageState extends State<DirectChatPage> {
         duration: const Duration(seconds: 4),
         icon: Icons.cloud_off_outlined,
       );
+    } else {
+      // 发送成功（消息已加入列表）：触发品牌对勾动效。
+      _showSendSuccessFx();
     }
     _inputFocusNode.requestFocus();
+  }
+
+  // ── 语音消息（FeatureFlags.chatVoiceMessage）：长按录音 → 松开发送 ───
+
+  static const int _maxRecordSeconds = 60;
+  static const double _cancelSlideThreshold = 80.0;
+
+  Future<void> _startVoiceRecord(double startDy) async {
+    if (_chat.isSending || _isRecording) return;
+    final status = await Permission.microphone.request();
+    if (!status.isGranted) {
+      if (mounted) MoeToast.show(context, '需要麦克风权限才能发送语音');
+      return;
+    }
+    if (!mounted) return;
+    try {
+      await VoiceMessageService().startRecording();
+    } catch (_) {
+      if (mounted) MoeToast.error(context, '启动录音失败，请重试');
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _isRecording = true;
+      _recordSeconds = 0;
+      _recordCancelled = false;
+      _recordStartDy = startDy;
+    });
+    _recordTimer?.cancel();
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!_isRecording) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _recordSeconds++);
+      if (_recordSeconds >= _maxRecordSeconds) {
+        timer.cancel();
+        // 达到上限自动发送。
+        unawaited(_finishVoiceRecord(cancel: false));
+      }
+    });
+  }
+
+  void _updateVoiceRecordDrag(double dy) {
+    final start = _recordStartDy;
+    if (start == null || !_isRecording) return;
+    final cancelled = start - dy > _cancelSlideThreshold;
+    if (cancelled != _recordCancelled) {
+      setState(() => _recordCancelled = cancelled);
+    }
+  }
+
+  Future<void> _finishVoiceRecord({required bool cancel}) async {
+    _recordTimer?.cancel();
+    _recordTimer = null;
+    final wasRecording = _isRecording;
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _recordStartDy = null;
+      });
+    }
+    if (!wasRecording) return;
+
+    if (cancel) {
+      await VoiceMessageService().cancelRecording();
+      return;
+    }
+
+    final result = await VoiceMessageService().stopRecording();
+    if (result == null) {
+      if (mounted) MoeToast.show(context, '说话时间太短');
+      return;
+    }
+    final (path, duration) = result;
+    final err = await _chat.sendVoiceFile(File(path), durationSec: duration);
+    if (!mounted) return;
+    if (err != null) {
+      MoeToast.show(
+        context,
+        err,
+        duration: const Duration(seconds: 4),
+        icon: Icons.cloud_off_outlined,
+      );
+    } else {
+      _showSendSuccessFx();
+    }
+    // 发送完成后清理本地临时音频。
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (_) {}
+  }
+
+  /// 录音中提示条（半透明 overlay，显示在输入区上方）。
+  Widget _buildRecordingBar() {
+    final cancelHint = _recordCancelled;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: const BoxDecoration(
+              color: MoeTokens.danger,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${_recordSeconds ~/ 60}:${(_recordSeconds % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: MoeTokens.textMd,
+              fontWeight: FontWeight.w600,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              cancelHint ? '松开取消' : '松开发送，上滑取消',
+              style: TextStyle(
+                color: cancelHint ? MoeTokens.danger : Colors.white70,
+                fontSize: MoeTokens.textSm,
+              ),
+            ),
+          ),
+          Icon(
+            cancelHint
+                ? Icons.cancel_rounded
+                : Icons.keyboard_arrow_up_rounded,
+            size: 18,
+            color: cancelHint ? MoeTokens.danger : Colors.white54,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 品牌动效（FeatureFlags.chatBrandMotion）───────────────────────
+
+  /// 发送成功✓：定位在发送按钮附近（右下角），播完自动移除。
+  void _showSendSuccessFx() {
+    if (!FeatureFlags.chatBrandMotion || !mounted) return;
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        bottom: 80,
+        right: 20,
+        child: MoeSendSuccessFx(onComplete: () => _removeFx(entry)),
+      ),
+    );
+    _insertFx(entry);
+  }
+
+  /// 新消息弹跳：定位在对方头像 / 气泡附近（左下角），播完自动移除。
+  void _showMessagePopFx() {
+    if (!FeatureFlags.chatBrandMotion || !mounted) return;
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        bottom: 96,
+        left: 12,
+        child: MoeMessagePopFx(onComplete: () => _removeFx(entry)),
+      ),
+    );
+    _insertFx(entry);
+  }
+
+  void _insertFx(OverlayEntry entry) {
+    _fxEntries.add(entry);
+    Overlay.of(context).insert(entry);
+  }
+
+  void _removeFx(OverlayEntry entry) {
+    if (!_fxEntries.remove(entry)) return;
+    entry.remove();
   }
 
   @override
@@ -301,8 +520,17 @@ class _DirectChatPageState extends State<DirectChatPage> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _onlineTimer?.cancel();
+    _recordTimer?.cancel();
+    if (_isRecording) {
+      // 页面销毁时丢弃未发送的录音。
+      unawaited(VoiceMessageService().cancelRecording());
+    }
     _incomingSub?.cancel();
     _incomingSub = null;
+    for (final entry in _fxEntries) {
+      entry.remove();
+    }
+    _fxEntries.clear();
     if (_presenceListening) {
       PresenceService.online.removeListener(_onPresenceUpdate);
     }
@@ -312,21 +540,39 @@ class _DirectChatPageState extends State<DirectChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = _chat.currentUserId;
-    final reversedMessages =
-        List<DirectChatMessage>.from(_chat.messages.reversed);
+    final reversedMessages = _chat.reversedMessages;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
+    final glassNav = FeatureFlags.chatGlassNav;
+
+    // 聊天主题皮肤（flag 开启时背景 / 气泡渐变跟随所选皮肤，并按亮度取深浅变体）。
+    final chatSkin = FeatureFlags.chatThemeSkins
+        ? context.watch<ChatThemeProvider>().currentSkin
+        : null;
+    final brightness = Theme.of(context).brightness;
+    final scaffoldBg = chatSkin?.backgroundFor(brightness) ?? MoeTokens.surface0;
+
     return Scaffold(
-      backgroundColor: MoeTokens.surface0,
+      backgroundColor: scaffoldBg,
+      extendBodyBehindAppBar: glassNav,
       appBar: AppBar(
         elevation: 0,
-        scrolledUnderElevation: 0.5,
-        backgroundColor: MoeTokens.surface1,
+        scrolledUnderElevation: glassNav ? 0 : 0.5,
+        backgroundColor: glassNav ? Colors.transparent : MoeTokens.surface1,
         foregroundColor: MoeTokens.titleText,
         surfaceTintColor: Colors.transparent,
-        shape: const ContinuousRectangleBorder(
-          side: BorderSide(color: MoeTokens.surfaceBorder),
-        ),
+        shape: glassNav
+            ? null
+            : const ContinuousRectangleBorder(
+                side: BorderSide(color: MoeTokens.surfaceBorder),
+              ),
+        flexibleSpace: glassNav
+            ? MoeGlassSurface(
+                tint: MoeTokens.surface1.withValues(alpha: 0.78),
+                showBorder: false,
+                child: Container(),
+              )
+            : null,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -525,26 +771,45 @@ class _DirectChatPageState extends State<DirectChatPage> {
                                 if (diff > 5) showTime = true;
                               }
 
-                              return Column(
-                                children: [
-                                  if (showTime)
-                                    _buildTimeTag(context, message.time),
-                                  _buildMessageBubble(
-                                    context,
-                                    message,
-                                    isMe,
-                                    showPeerAvatar: showPeerAvatar,
-                                    tightBottom: index > 0 &&
-                                        reversedMessages[index - 1].senderId ==
-                                            message.senderId,
-                                    showSending:
-                                        isMe && index == 0 && _chat.isSending,
-                                  ),
-                                ],
+                              return RepaintBoundary(
+                                child: Column(
+                                  children: [
+                                    if (showTime)
+                                      _buildTimeTag(context, message.time),
+                                    _MessageEntranceAnimation(
+                                      // 用消息内容作 key，避免 ListView 按位置复用
+                                      // 导致新消息不播动画 / 旧消息重播。
+                                      key: ValueKey(
+                                        '${message.senderId}|'
+                                        '${message.time.millisecondsSinceEpoch}|'
+                                        '${message.content}',
+                                      ),
+                                      isMe: isMe,
+                                      animate:
+                                          FeatureFlags.chatGradientBubbles &&
+                                              _initialRenderDone,
+                                      child: _buildMessageBubble(
+                                        context,
+                                        message,
+                                        isMe,
+                                        index: index,
+                                        showPeerAvatar: showPeerAvatar,
+                                        tightBottom: index > 0 &&
+                                            reversedMessages[index - 1]
+                                                    .senderId ==
+                                                message.senderId,
+                                        showSending: isMe &&
+                                            index == 0 &&
+                                            _chat.isSending,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               );
                             },
                           ),
           ),
+          if (_isRecording) _buildRecordingBar(),
           AnimatedPadding(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
@@ -606,6 +871,26 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   },
                 ),
               ),
+              if (FeatureFlags.chatThemeSkins) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: MoeActionRow(
+                    icon: Icons.palette_outlined,
+                    iconColor: MoeTokens.secondary,
+                    title: '聊天主题',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ChatSkinPickerPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
               const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -703,17 +988,30 @@ class _DirectChatPageState extends State<DirectChatPage> {
     BuildContext context,
     DirectChatMessage message,
     bool isMe, {
+    required int index,
     required bool showPeerAvatar,
     required bool tightBottom,
     required bool showSending,
   }) {
     final maxW = MediaQuery.sizeOf(context).width * 0.74;
     final bubbleBg = isMe ? MoeTokens.primary : MoeTokens.surface1;
+    // flag 开启时我方气泡改用窗口级连续渐变（按 index 微偏移）；对方气泡保持纯色。
+    final useMeGradient = FeatureFlags.chatGradientBubbles && isMe;
     final textColor = isMe ? Colors.white : MoeTokens.titleText;
     const avatarCol = 36.0;
 
-    Widget bubbleChild = _chat.isImageContent(message.content)
-        ? ClipRRect(
+    Widget bubbleChild;
+    if (_chat.isVoiceContent(message.content)) {
+      final (url, duration) = _chat.voiceInfoOf(message.content);
+      bubbleChild = VoiceBubble(
+        // 用内容作 key：同一语音消息复用播放器状态。
+        key: ValueKey('voice|${message.content}'),
+        url: url,
+        durationSec: duration,
+        isMe: isMe,
+      );
+    } else if (_chat.isImageContent(message.content)) {
+      bubbleChild = ClipRRect(
             borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
             child: CachedNetworkImage(
               imageUrl: _chat.imageUrlOf(message.content),
@@ -740,8 +1038,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 color: Colors.white70,
               ),
             ),
-          )
-        : Text(
+          );
+    } else {
+      bubbleChild = Text(
             message.content,
             style: TextStyle(
               color: textColor,
@@ -749,12 +1048,27 @@ class _DirectChatPageState extends State<DirectChatPage> {
               height: 1.45,
             ),
           );
+    }
 
     // 气泡圆角：第一条消息有“尾巴”效果，连续消息底部圆角统一
     final tailRadius = tightBottom ? MoeTokens.radiusMd : 4.0;
+    // 气泡渐变采样：开启皮肤功能时取当前所选皮肤，否则仍为默认薰衣草。
+    final skinGradient = FeatureFlags.chatThemeSkins
+        ? context.read<ChatThemeProvider>().currentSkin.bubbleMeGradient
+        : ChatSkins.lavender.bubbleMeGradient;
     final bubble = DecoratedBox(
       decoration: BoxDecoration(
-        color: bubbleBg,
+        color: useMeGradient ? null : bubbleBg,
+        gradient: useMeGradient
+            ? LinearGradient(
+                colors: skinGradient.colors,
+                stops: skinGradient.stops,
+                begin: skinGradient.begin,
+                end: skinGradient.end,
+                tileMode: skinGradient.tileMode,
+                transform: _GradientShiftTransform(index),
+              )
+            : null,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(isMe ? 18 : 6),
           topRight: Radius.circular(isMe ? 6 : 18),
@@ -872,6 +1186,45 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 ),
                 icon: const Icon(Icons.add_rounded),
               ),
+              if (FeatureFlags.chatVoiceMessage) ...[
+                const SizedBox(width: 8),
+                // 麦克风：长按录音 → 松开发送，上滑取消。
+                GestureDetector(
+                  onLongPressStart: (details) =>
+                      unawaited(_startVoiceRecord(details.globalPosition.dy)),
+                  onLongPressMoveUpdate: (details) =>
+                      _updateVoiceRecordDrag(details.globalPosition.dy),
+                  onLongPressEnd: (_) =>
+                      unawaited(_finishVoiceRecord(cancel: _recordCancelled)),
+                  onLongPressCancel: () {
+                    if (_isRecording) {
+                      unawaited(_finishVoiceRecord(cancel: true));
+                    }
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _isRecording
+                          ? MoeTokens.danger.withValues(alpha: 0.12)
+                          : MoeTokens.surface0,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _isRecording
+                            ? MoeTokens.danger.withValues(alpha: 0.4)
+                            : MoeTokens.surfaceBorder,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.mic_rounded,
+                      size: 22,
+                      color: _isRecording
+                          ? MoeTokens.danger
+                          : MoeTokens.hintText,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
@@ -949,6 +1302,98 @@ class _DirectChatPageState extends State<DirectChatPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 按消息 index 平移渐变起点，让整窗口气泡渐变色彩随位置流动。
+class _GradientShiftTransform extends GradientTransform {
+  final int index;
+
+  const _GradientShiftTransform(this.index);
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    // 每 5 条消息循环一次，微移渐变起点。
+    final shift = (index % 5) * 0.08;
+    return Matrix4.translationValues(
+      shift * bounds.width * 0.1,
+      shift * bounds.height * 0.1,
+      0,
+    );
+  }
+}
+
+/// 新消息入场微动效（仅 animate=true 时播放，历史消息直接展示）。
+///
+/// - 我方：缩放 0.92→1.0 + 淡入，200ms
+/// - 对方：上滑 0.05→0 + 淡入，240ms
+class _MessageEntranceAnimation extends StatefulWidget {
+  const _MessageEntranceAnimation({
+    super.key,
+    required this.child,
+    required this.isMe,
+    required this.animate,
+  });
+
+  final Widget child;
+  final bool isMe;
+  final bool animate;
+
+  @override
+  State<_MessageEntranceAnimation> createState() =>
+      _MessageEntranceAnimationState();
+}
+
+class _MessageEntranceAnimationState extends State<_MessageEntranceAnimation>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _controller;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 仅在首次创建且需要动画时启动；减少动态效果时直接跳过。
+    if (_controller == null && widget.animate && !moeReduceMotion(context)) {
+      _controller = AnimationController(
+        vsync: this,
+        duration: widget.isMe
+            ? const Duration(milliseconds: 200)
+            : const Duration(milliseconds: 240),
+      )..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _controller;
+    if (controller == null) return widget.child;
+
+    final curved = CurvedAnimation(parent: controller, curve: Curves.easeOutCubic);
+    if (widget.isMe) {
+      return FadeTransition(
+        opacity: curved,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+          alignment: Alignment.bottomRight,
+          child: widget.child,
+        ),
+      );
+    }
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.05),
+          end: Offset.zero,
+        ).animate(curved),
+        child: widget.child,
       ),
     );
   }

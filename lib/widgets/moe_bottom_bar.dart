@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../constants/feature_flags.dart';
 import '../theme/moe_tokens.dart';
+import 'moe_glass_surface.dart';
 
 class MoeBottomBar extends StatelessWidget {
   final int selectedIndex;
@@ -27,18 +29,15 @@ class MoeBottomBar extends StatelessWidget {
         final ultraCompact = width < 330;
         final labelFontSize = ultraCompact ? 10.0 : (compact ? 11.0 : 12.0);
 
-        return Container(
-          decoration: BoxDecoration(
-            color: MoeTokens.surface0,
-            boxShadow: MoeTokens.shadowCard(),
-          ),
-          child: SafeArea(
+        final glassNav = FeatureFlags.chatGlassNav;
+
+        final Widget innerContent = SafeArea(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: ultraCompact ? 8 : 12,
+              vertical: compact ? 6 : 8,
+            ),
             child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: ultraCompact ? 8 : 12,
-                vertical: compact ? 6 : 8,
-              ),
-              child: Container(
                 decoration: BoxDecoration(
                   color: MoeTokens.surface1.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(32),
@@ -174,7 +173,23 @@ class MoeBottomBar extends StatelessWidget {
                 ),
               ),
             ),
+          );
+
+        if (glassNav) {
+          return MoeGlassSurface(
+            sigma: MoeTokens.blurLight,
+            tint: MoeTokens.surface0.withValues(alpha: 0.75),
+            showBorder: false,
+            child: innerContent,
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: MoeTokens.surface0,
+            boxShadow: MoeTokens.shadowCard(),
           ),
+          child: innerContent,
         );
       },
     );

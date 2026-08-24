@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth_service.dart';
+import '../../constants/feature_flags.dart';
 import '../../models/notification.dart';
 import '../../models/private_conversation_item.dart';
 import '../../models/user.dart';
@@ -20,6 +21,7 @@ import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_stagger.dart';
@@ -226,6 +228,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         ],
       );
     }
+    final glassNav = FeatureFlags.chatGlassNav;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -236,12 +239,21 @@ class _ConversationsPageState extends State<ConversationsPage> {
             color: MoeTokens.titleText,
           ),
         ),
-        backgroundColor: MoeTokens.surface1,
+        backgroundColor: glassNav ? Colors.transparent : MoeTokens.surface1,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        shape: const ContinuousRectangleBorder(
-          side: BorderSide(color: MoeTokens.surfaceBorder),
-        ),
+        shape: glassNav
+            ? null
+            : const ContinuousRectangleBorder(
+                side: BorderSide(color: MoeTokens.surfaceBorder),
+              ),
+        flexibleSpace: glassNav
+            ? MoeGlassSurface(
+                tint: MoeTokens.surface1.withValues(alpha: 0.78),
+                showBorder: false,
+                child: Container(),
+              )
+            : null,
         actions: [
           IconButton(
             tooltip: '刷新',
@@ -254,6 +266,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         ],
       ),
       backgroundColor: MoeTokens.surface0,
+      extendBodyBehindAppBar: glassNav,
       body: body,
     );
   }
