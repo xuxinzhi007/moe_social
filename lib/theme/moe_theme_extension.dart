@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'chat_skin.dart';
 import 'moe_tokens.dart';
 
 /// 可通过 [ThemeProvider] 动态主色的 Moe 主题扩展。
@@ -13,7 +12,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
     required this.pageBackground,
     required this.cardBackground,
     required this.primaryGradient,
-    this.chatSkin,
   });
 
   final Color primary;
@@ -22,9 +20,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
   final Color pageBackground;
   final Color cardBackground;
   final LinearGradient primaryGradient;
-
-  /// 聊天主题皮肤；null 表示使用默认薰衣草皮肤。
-  final ChatSkin? chatSkin;
 
   factory MoeTheme.light({Color? primary}) {
     final p = primary ?? MoeTokens.primary;
@@ -39,7 +34,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      chatSkin: null,
     );
   }
 
@@ -56,7 +50,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      chatSkin: null,
     );
   }
 
@@ -72,7 +65,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
     Color? pageBackground,
     Color? cardBackground,
     LinearGradient? primaryGradient,
-    ChatSkin? chatSkin,
   }) {
     return MoeTheme(
       primary: primary ?? this.primary,
@@ -81,7 +73,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
       pageBackground: pageBackground ?? this.pageBackground,
       cardBackground: cardBackground ?? this.cardBackground,
       primaryGradient: primaryGradient ?? this.primaryGradient,
-      chatSkin: chatSkin ?? this.chatSkin,
     );
   }
 
@@ -108,8 +99,6 @@ class MoeTheme extends ThemeExtension<MoeTheme> {
         begin: primaryGradient.begin,
         end: primaryGradient.end,
       ),
-      // chatSkin 不参与插值，直接取 other 的值。
-      chatSkin: other.chatSkin,
     );
   }
 }

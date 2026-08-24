@@ -29,7 +29,7 @@ class MoeBottomBar extends StatelessWidget {
         final ultraCompact = width < 330;
         final labelFontSize = ultraCompact ? 10.0 : (compact ? 11.0 : 12.0);
 
-        final glassNav = FeatureFlags.chatGlassNav;
+        final glassNav = FeatureFlags.glassNavigation;
 
         final Widget innerContent = SafeArea(
           child: Container(

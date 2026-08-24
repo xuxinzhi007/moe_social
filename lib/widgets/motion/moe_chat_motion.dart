@@ -91,19 +91,3 @@ class MoeMessagePopFx extends StatelessWidget {
     );
   }
 }
-
-/// 聊天品牌动效 — 表情反应飞出（预留；DM 当前无反应功能）。
-class MoeReactionBurstFx extends StatelessWidget {
-  final VoidCallback? onComplete;
-
-  const MoeReactionBurstFx({super.key, this.onComplete});
-
-  @override
-  Widget build(BuildContext context) {
-    return _MoeChatOneShotFx(
-      assetPath: 'assets/lottie/chat/reaction_burst.json',
-      size: 40,
-      onComplete: onComplete,
-    );
-  }
-}

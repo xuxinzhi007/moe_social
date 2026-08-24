@@ -228,7 +228,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         ],
       );
     }
-    final glassNav = FeatureFlags.chatGlassNav;
+    final glassNav = FeatureFlags.glassNavigation;
     return Scaffold(
       appBar: AppBar(
         title: Text(
