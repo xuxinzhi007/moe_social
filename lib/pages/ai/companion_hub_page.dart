@@ -13,6 +13,7 @@ import '../../services/api_client.dart';
 import '../../services/companion_character_card_import.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../utils/post_navigation.dart';
 import 'companion_hub_viewmodel.dart';
 import 'ai_provider_profiles_page.dart';
@@ -169,6 +170,11 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
       return;
     }
     await Navigator.of(context).pushNamed('/pet/home');
+  }
+
+  Future<void> _openArenaGame() async {
+    if (!FeatureFlags.arenaGamePrototype) return;
+    await Navigator.of(context).pushNamed('/game/arena');
   }
 
   Future<void> _openProviderSettings() async {
@@ -789,6 +795,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                     const SizedBox(height: 14),
                     _PetHomeStrip(onOpen: _openPetHome),
                   ],
+                  if (FeatureFlags.arenaGamePrototype) ...[
+                    const SizedBox(height: 14),
+                    CompanionArenaGameEntry(onOpen: _openArenaGame),
+                  ],
                   if (_hub.dailySummary != null) ...[
                     const SizedBox(height: 16),
                     _DailySummaryCard(summary: _hub.dailySummary!),
@@ -809,6 +819,122 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class CompanionArenaGameEntry extends StatelessWidget {
+  const CompanionArenaGameEntry({super.key, required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return MoePressable(
+      onTap: onOpen,
+      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+      child: Semantics(
+        button: true,
+        excludeSemantics: true,
+        label: '进入星辉远征游戏',
+        child: Container(
+          padding: const EdgeInsets.all(MoeTokens.spaceLg),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF332A54), Color(0xFF69528D)],
+            ),
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+            border: Border.all(color: const Color(0x66FFE3A1)),
+            boxShadow: MoeTokens.shadowMd(),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0x22FFE7A6),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                  border: Border.all(color: const Color(0x55FFE7A6)),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Color(0xFFFFE5A3),
+                ),
+              ),
+              const SizedBox(width: MoeTokens.spaceMd),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '星辉远征',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: MoeTokens.textMd,
+                              fontWeight: MoeTokens.fontWeightTitle,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: MoeTokens.spaceSm),
+                        _ArenaGameBadge(),
+                      ],
+                    ),
+                    SizedBox(height: MoeTokens.spaceXs),
+                    Text(
+                      '独立的卡牌小队冒险，进入后切换横屏',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(0xFFDCD3EB),
+                        fontSize: MoeTokens.textSm,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: MoeTokens.spaceSm),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Color(0xFFFFE5A3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArenaGameBadge extends StatelessWidget {
+  const _ArenaGameBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0x22FFE7A6),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        border: Border.all(color: const Color(0x55FFE7A6)),
+      ),
+      child: const Text(
+        '试玩',
+        style: TextStyle(
+          color: Color(0xFFFFE5A3),
+          fontSize: MoeTokens.textXs,
+          fontWeight: MoeTokens.fontWeightSubtitle,
+        ),
       ),
     );
   }
