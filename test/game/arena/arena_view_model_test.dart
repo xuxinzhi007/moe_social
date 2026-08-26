@@ -8,10 +8,29 @@ void main() {
     final model = ArenaViewModel(random: _FixedRandom());
 
     expect(model.ownedCount, 3);
+    expect(model.heroes, hasLength(9));
     expect(model.heroes.first.name, '澜星');
     expect(
         model.heroes.first.imageAsset, 'assets/arena/heroes/lanxing_001.jpg');
     expect(model.isOwned(model.heroes.first), isTrue);
+  });
+
+  test('new grok image heroes are included in the arena roster', () {
+    final model = ArenaViewModel(random: _FixedRandom());
+
+    expect(
+      model.heroes
+          .where((hero) =>
+              hero.imageAsset?.startsWith('assets/arena/heroes/') ?? false)
+          .map((hero) => hero.imageAsset),
+      containsAll([
+        'assets/arena/heroes/taoyin_001.jpg',
+        'assets/arena/heroes/xueli_001.jpg',
+        'assets/arena/heroes/ziyuan_001.jpg',
+      ]),
+    );
+    expect(
+        model.heroes.map((hero) => hero.name), containsAll(['桃音', '雪璃', '紫鸢']));
   });
 
   test('single summon spends crystals and records a result', () {
@@ -72,6 +91,87 @@ void main() {
     expect(model.lastPlayedCardIndex, -1);
   });
 
+  test('starter deck is generated from the current formation heroes', () {
+    final model = ArenaViewModel(random: _FixedRandom());
+
+    expect(model.formationHeroes.map((hero) => hero.name), [
+      '澜星',
+      '兔突',
+      '猫影',
+    ]);
+    expect(model.cards.map((card) => card.sourceHeroName), [
+      '澜星',
+      '兔突',
+      '猫影',
+      '队伍',
+    ]);
+  });
+
+  test('formation slot can be edited without duplicate heroes', () {
+    final model =
+        ArenaViewModel(random: _FixedRandom(doubles: [.2], ints: [1]));
+
+    model.summon(1);
+    final foxIndex = model.heroes.indexWhere((hero) => hero.id == 'huhuo');
+
+    expect(model.isOwned(model.heroes[foxIndex]), isTrue);
+
+    model.selectFormationSlot(1);
+    model.assignHeroToFormation(foxIndex);
+
+    expect(model.formationHeroAt(1)?.id, 'huhuo');
+    expect(model.formationHeroes.map((hero) => hero.id).toSet(), hasLength(3));
+    expect(model.cards.any((card) => card.sourceHeroName == '狐火'), isTrue);
+  });
+
+  test('selected enemy target receives card damage', () {
+    final model = ArenaViewModel(random: _FixedRandom());
+
+    model.startBattle();
+    model.selectEnemy(1);
+    model.playCard(1);
+
+    expect(model.selectedEnemyIndex, 1);
+    expect(model.enemyHpAt(0), ArenaViewModel.enemyMaxHp);
+    expect(model.enemyHpAt(1), ArenaViewModel.enemyMaxHp - 32);
+    expect(model.battleMessage, contains('敌影 2'));
+  });
+
+  test('winning battle offers three roguelite card rewards', () {
+    final model = ArenaViewModel(random: _FixedRandom(ints: [0, 1, 2]));
+
+    model.startBattle();
+    _winBattle(model);
+
+    expect(model.finished, isTrue);
+    expect(model.won, isTrue);
+    expect(model.hasPendingReward, isTrue);
+    expect(model.rewardChoices, hasLength(3));
+
+    final deckSize = model.cards.length;
+    final floor = model.towerFloor;
+    final reward = model.rewardChoices.first;
+
+    model.chooseRewardCard(0);
+
+    expect(model.hasPendingReward, isFalse);
+    expect(model.cards, hasLength(deckSize + 1));
+    expect(model.cards.last.name, reward.name);
+    expect(model.towerFloor, floor + 1);
+  });
+
+  test('tower node tap only changes selected node description', () {
+    final model = ArenaViewModel(random: _FixedRandom());
+
+    expect(model.view, ArenaView.lobby);
+
+    model.navigate(ArenaView.tower);
+    model.selectTowerNode(0);
+
+    expect(model.view, ArenaView.tower);
+    expect(model.selectedTowerNode.label, '战斗');
+  });
+
   test('insufficient crystals keeps previous summon results untouched', () {
     final model =
         ArenaViewModel(random: _FixedRandom(doubles: [.01], ints: [0]));
@@ -82,6 +182,18 @@ void main() {
     expect(model.summonResults, isNotEmpty);
     expect(model.starCrystals, 880);
   });
+}
+
+void _winBattle(ArenaViewModel model) {
+  var safety = 0;
+  while (!model.finished && safety < 20) {
+    model.playCard(1);
+    model.playCard(3);
+    if (!model.finished) {
+      model.endTurn();
+    }
+    safety++;
+  }
 }
 
 class _FixedRandom implements Random {

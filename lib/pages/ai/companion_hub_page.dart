@@ -36,6 +36,11 @@ class CompanionHubPage extends StatefulWidget {
   State<CompanionHubPage> createState() => _CompanionHubPageState();
 }
 
+@visibleForTesting
+bool shouldShowCompanionDailyPanels({required bool arenaGamePrototype}) {
+  return !arenaGamePrototype;
+}
+
 class _CompanionHubPageState extends State<CompanionHubPage> {
   late final CompanionHubViewModel _hub;
   late final CompanionPresenceProvider _presence;
@@ -165,6 +170,10 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   }
 
   Future<void> _openPetHome() async {
+    if (FeatureFlags.arenaGamePrototype) {
+      await Navigator.of(context).pushNamed('/game/arena/home');
+      return;
+    }
     if (!FeatureFlags.petLifeSim) {
       MoeToast.info(context, '养成小家暂未开放');
       return;
@@ -791,23 +800,26 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       _BindMissingBanner(onOpenWorld: _openLifeWorld),
                     ],
                   ],
-                  if (FeatureFlags.petLifeSim) ...[
-                    const SizedBox(height: 14),
-                    _PetHomeStrip(onOpen: _openPetHome),
-                  ],
                   if (FeatureFlags.arenaGamePrototype) ...[
                     const SizedBox(height: 14),
                     CompanionArenaGameEntry(onOpen: _openArenaGame),
+                  ] else if (FeatureFlags.petLifeSim) ...[
+                    const SizedBox(height: 14),
+                    _PetHomeStrip(onOpen: _openPetHome),
                   ],
-                  if (_hub.dailySummary != null) ...[
+                  if (shouldShowCompanionDailyPanels(
+                    arenaGamePrototype: FeatureFlags.arenaGamePrototype,
+                  )) ...[
+                    if (_hub.dailySummary != null) ...[
+                      const SizedBox(height: 16),
+                      _DailySummaryCard(summary: _hub.dailySummary!),
+                    ],
                     const SizedBox(height: 16),
-                    _DailySummaryCard(summary: _hub.dailySummary!),
+                    _DailyFeedCard(
+                      items: _hub.dailyItems,
+                      onOpenItem: _openDailyItem,
+                    ),
                   ],
-                  const SizedBox(height: 16),
-                  _DailyFeedCard(
-                    items: _hub.dailyItems,
-                    onOpenItem: _openDailyItem,
-                  ),
                 ],
               ),
             ),
@@ -837,7 +849,7 @@ class CompanionArenaGameEntry extends StatelessWidget {
       child: Semantics(
         button: true,
         excludeSemantics: true,
-        label: '进入星辉远征游戏',
+        label: '进入星辉远征',
         child: Container(
           padding: const EdgeInsets.all(MoeTokens.spaceLg),
           decoration: BoxDecoration(
@@ -890,7 +902,7 @@ class CompanionArenaGameEntry extends StatelessWidget {
                     ),
                     SizedBox(height: MoeTokens.spaceXs),
                     Text(
-                      '独立的卡牌小队冒险，进入后切换横屏',
+                      '卡牌小队冒险，进入后切换横屏',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

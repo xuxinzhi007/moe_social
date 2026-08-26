@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 enum ArenaView {
   lobby,
+  home,
   formation,
   tower,
   summon,
@@ -16,6 +17,12 @@ enum ArenaRarity {
   r,
   sr,
   ssr,
+}
+
+enum ArenaCardTargeting {
+  singleEnemy,
+  allEnemies,
+  allyTeam,
 }
 
 extension ArenaRarityLabel on ArenaRarity {
@@ -84,6 +91,9 @@ class ArenaCard {
     required this.icon,
     required this.color,
     required this.damage,
+    this.sourceHeroId,
+    this.sourceHeroName = '队伍',
+    this.targeting = ArenaCardTargeting.singleEnemy,
   });
 
   final String name;
@@ -92,6 +102,9 @@ class ArenaCard {
   final String icon;
   final int color;
   final int damage;
+  final String? sourceHeroId;
+  final String sourceHeroName;
+  final ArenaCardTargeting targeting;
 }
 
 class ArenaSummonResult {
@@ -106,32 +119,63 @@ class ArenaSummonResult {
   final int shards;
 }
 
+class ArenaTowerNode {
+  const ArenaTowerNode({
+    required this.label,
+    required this.kind,
+    required this.description,
+  });
+
+  final String label;
+  final String kind;
+  final String description;
+}
+
 class ArenaViewModel extends ChangeNotifier {
-  ArenaViewModel({Random? random}) : _random = random ?? Random() {
+  ArenaViewModel({
+    Random? random,
+    ArenaView initialView = ArenaView.lobby,
+  })  : _random = random ?? Random(),
+        _view = initialView {
     _ownedHeroIds.addAll(heroes.take(3).map((hero) => hero.id));
+    _deck.addAll(_cardsForFormation());
   }
 
   static const int singleSummonCost = 300;
   static const int tenSummonCost = 2700;
+  static const int formationSize = 3;
+  static const int enemyCount = 3;
+  static const int enemyMaxHp = 100;
 
   final Random _random;
 
-  ArenaView _view = ArenaView.lobby;
+  ArenaView _view;
   int _selectedHero = 0;
+  int _selectedFormationSlot = 0;
   int _energy = 6;
   int _playerHp = 100;
-  int _enemyHp = 100;
+  int _selectedEnemyIndex = 0;
   int _turn = 1;
   int _combo = 0;
   int _lastPlayedCardIndex = -1;
   bool _finished = false;
   bool _won = false;
+  int _towerFloor = 1;
+  int _selectedTowerNode = 2;
   int _starCrystals = 6280;
   String _battleMessage = '选择一张技能卡开始战斗';
   String _summonMessage = '十连召唤 9 折，并至少出现 1 名 SR 以上英雄。';
   final Set<String> _ownedHeroIds = <String>{};
   final Map<String, int> _heroShards = <String, int>{};
   final List<ArenaSummonResult> _summonResults = <ArenaSummonResult>[];
+  final List<String> _formationHeroIds = <String>[
+    'lanxing',
+    'tutu',
+    'maoying',
+  ];
+  final List<int> _enemyHps = List<int>.filled(enemyCount, enemyMaxHp);
+  final List<ArenaCard> _deck = <ArenaCard>[];
+  final List<ArenaCard> _rewardChoices = <ArenaCard>[];
 
   final heroes = const [
     ArenaHero(
@@ -225,68 +269,200 @@ class ArenaViewModel extends ChangeNotifier {
       skillName: '银盾誓约',
       skillDescription: '嘲讽前排敌人，并降低本回合受到的伤害。',
     ),
+    ArenaHero(
+      id: 'taoyin',
+      name: '桃音',
+      title: '花庭祈愿者',
+      role: '辅助',
+      faction: '森林',
+      rarity: ArenaRarity.sr,
+      color: 0xFFEFA8C8,
+      level: 32,
+      stars: 2,
+      power: 12400,
+      favorite: 46,
+      skillName: '花语治愈',
+      skillDescription: '为全队恢复生命，并提高下一张队伍技能的连携收益。',
+      imageAsset: 'assets/arena/heroes/taoyin_001.jpg',
+    ),
+    ArenaHero(
+      id: 'xueli',
+      name: '雪璃',
+      title: '冰庭星使',
+      role: '法师',
+      faction: '圣庭',
+      rarity: ArenaRarity.ssr,
+      color: 0xFF9EC6EA,
+      level: 40,
+      stars: 3,
+      power: 18800,
+      favorite: 66,
+      skillName: '霜晶星河',
+      skillDescription: '对全体敌人造成冰霜伤害，并优先压低生命最高的目标。',
+      imageAsset: 'assets/arena/heroes/xueli_001.jpg',
+    ),
+    ArenaHero(
+      id: 'ziyuan',
+      name: '紫鸢',
+      title: '秘仪占星师',
+      role: '法师',
+      faction: '星辉',
+      rarity: ArenaRarity.sr,
+      color: 0xFFB8A0E6,
+      level: 35,
+      stars: 2,
+      power: 15100,
+      favorite: 55,
+      skillName: '星轨秘仪',
+      skillDescription: '对单体敌人造成魔法伤害；若目标生命低于一半，伤害提高。',
+      imageAsset: 'assets/arena/heroes/ziyuan_001.jpg',
+    ),
   ];
 
-  final cards = const [
+  static const List<ArenaCard> _rewardPool = [
     ArenaCard(
-      name: '星潮回响',
-      description: '伤害后排并减费',
-      cost: 2,
-      icon: '✦',
-      color: 0xFF69CFE3,
-      damage: 26,
-    ),
-    ArenaCard(
-      name: '星愿守护',
-      description: '全队恢复生命',
+      name: '潮涌连弹',
+      description: '低费连携伤害',
       cost: 1,
-      icon: '◇',
-      color: 0xFFB08BD1,
-      damage: -18,
+      icon: '✧',
+      color: 0xFF69CFE3,
+      damage: 18,
+      sourceHeroName: '肉鸽',
     ),
     ArenaCard(
-      name: '月霜箭',
-      description: '造成伤害并虚弱',
+      name: '星砂爆裂',
+      description: '高伤害终结技',
       cost: 3,
+      icon: '✹',
+      color: 0xFFE6B64F,
+      damage: 42,
+      sourceHeroName: '肉鸽',
+    ),
+    ArenaCard(
+      name: '月幕庇护',
+      description: '恢复并稳住血线',
+      cost: 2,
+      icon: '☽',
+      color: 0xFFB08BD1,
+      damage: -24,
+      sourceHeroName: '肉鸽',
+      targeting: ArenaCardTargeting.allyTeam,
+    ),
+    ArenaCard(
+      name: '霜痕追击',
+      description: '中费稳定输出',
+      cost: 2,
       icon: '❄',
       color: 0xFF79B9B0,
-      damage: 36,
+      damage: 30,
+      sourceHeroName: '肉鸽',
     ),
     ArenaCard(
-      name: '流光合击',
-      description: '连携造成大量伤害',
-      cost: 2,
-      icon: '☾',
+      name: '流星裁断',
+      description: '全体爆发伤害',
+      cost: 4,
+      icon: '✦',
       color: 0xFFD47E9B,
-      damage: 30,
+      damage: 32,
+      sourceHeroName: '肉鸽',
+      targeting: ArenaCardTargeting.allEnemies,
+    ),
+  ];
+
+  static const List<ArenaTowerNode> towerNodes = [
+    ArenaTowerNode(
+      label: '战斗',
+      kind: '普通战',
+      description: '进入一场基础战斗，胜利后可选择 1 张技能牌。',
+    ),
+    ArenaTowerNode(
+      label: '休息',
+      kind: '恢复点',
+      description: '后续会用于恢复生命或升级一张技能牌。',
+    ),
+    ArenaTowerNode(
+      label: '精英',
+      kind: '高风险战',
+      description: '更强敌人，奖励也更好。当前原型先进入普通战斗。',
+    ),
+    ArenaTowerNode(
+      label: '商店',
+      kind: '补给',
+      description: '后续会用于购买技能牌、碎片或一次性道具。',
+    ),
+    ArenaTowerNode(
+      label: '首领',
+      kind: 'Boss',
+      description: '章节终点。需要稳定构筑后再挑战。',
     ),
   ];
 
   ArenaView get view => _view;
   int get selectedHero => _selectedHero;
+  int get selectedFormationSlot => _selectedFormationSlot;
   int get energy => _energy;
   int get playerHp => _playerHp;
-  int get enemyHp => _enemyHp;
+  int get enemyHp {
+    final total = _enemyHps.fold<int>(0, (sum, hp) => sum + hp);
+    return (total / (enemyCount * enemyMaxHp) * 100).round();
+  }
+
+  int get selectedEnemyIndex => _selectedEnemyIndex;
   int get turn => _turn;
   int get combo => _combo;
   int get lastPlayedCardIndex => _lastPlayedCardIndex;
   bool get finished => _finished;
   bool get won => _won;
+  int get towerFloor => _towerFloor;
+  int get selectedTowerNodeIndex => _selectedTowerNode;
+  ArenaTowerNode get selectedTowerNode => towerNodes[_selectedTowerNode];
   int get starCrystals => _starCrystals;
   String get battleMessage => _battleMessage;
+  String get battleObjective =>
+      allEnemiesDefeated ? '目标：清场完成' : '目标：敌影 ${_selectedEnemyIndex + 1}';
+  String get enemyIntent =>
+      '敌意图：敌影 ${_selectedEnemyIndex + 1} 回合末 -${8 + _turn * 2}';
   String get summonMessage => _summonMessage;
+  List<ArenaCard> get cards => List.unmodifiable(_deck);
+  List<ArenaCard> get rewardChoices => List.unmodifiable(_rewardChoices);
+  bool get hasPendingReward => _rewardChoices.isNotEmpty;
   List<ArenaSummonResult> get summonResults =>
       List.unmodifiable(_summonResults);
   ArenaHero get activeHero => heroes[_selectedHero];
   List<ArenaHero> get ownedHeroes =>
       heroes.where((hero) => _ownedHeroIds.contains(hero.id)).toList();
+  List<ArenaHero> get formationHeroes {
+    final formation = <ArenaHero>[];
+    for (final heroId in _formationHeroIds) {
+      final hero = _heroById(heroId);
+      if (hero != null && isOwned(hero)) {
+        formation.add(hero);
+      }
+    }
+    return formation;
+  }
+
   int get ownedCount => _ownedHeroIds.length;
-  int get teamPower =>
-      ownedHeroes.take(3).fold(0, (sum, hero) => sum + hero.power);
+  int get teamPower => formationHeroes.fold(0, (sum, hero) => sum + hero.power);
+  bool get allEnemiesDefeated => _enemyHps.every((hp) => hp <= 0);
 
   bool isOwned(ArenaHero hero) => _ownedHeroIds.contains(hero.id);
 
   int shardsOf(ArenaHero hero) => _heroShards[hero.id] ?? 0;
+
+  ArenaTowerNode towerNodeAt(int index) => towerNodes[index];
+
+  int enemyHpAt(int index) {
+    if (index < 0 || index >= _enemyHps.length) return 0;
+    return _enemyHps[index];
+  }
+
+  ArenaHero? formationHeroAt(int index) {
+    if (index < 0 || index >= _formationHeroIds.length) return null;
+    final hero = _heroById(_formationHeroIds[index]);
+    if (hero == null || !isOwned(hero)) return null;
+    return hero;
+  }
 
   void navigate(ArenaView view) {
     _view = view;
@@ -296,6 +472,56 @@ class ArenaViewModel extends ChangeNotifier {
   void selectHero(int index) {
     if (index < 0 || index >= heroes.length) return;
     _selectedHero = index;
+    notifyListeners();
+  }
+
+  void selectFormationSlot(int index) {
+    if (index < 0 || index >= formationSize) return;
+    _selectedFormationSlot = index;
+    final hero = formationHeroAt(index);
+    if (hero != null) {
+      _selectedHero = heroes.indexWhere((candidate) => candidate.id == hero.id);
+    }
+    notifyListeners();
+  }
+
+  void assignHeroToFormation(int heroIndex) {
+    if (heroIndex < 0 || heroIndex >= heroes.length) return;
+    final hero = heroes[heroIndex];
+    if (!isOwned(hero)) return;
+
+    final existingSlot = _formationHeroIds.indexOf(hero.id);
+    if (existingSlot == _selectedFormationSlot) {
+      _selectedHero = heroIndex;
+      notifyListeners();
+      return;
+    }
+
+    if (existingSlot >= 0) {
+      final currentHeroId = _formationHeroIds[_selectedFormationSlot];
+      _formationHeroIds[existingSlot] = currentHeroId;
+    }
+    _formationHeroIds[_selectedFormationSlot] = hero.id;
+    _selectedHero = heroIndex;
+    _rebuildFormationDeck();
+    notifyListeners();
+  }
+
+  void selectTowerNode(int index) {
+    if (index < 0 || index >= towerNodes.length) return;
+    _selectedTowerNode = index;
+    notifyListeners();
+  }
+
+  void selectEnemy(int index) {
+    if (_finished || index < 0 || index >= _enemyHps.length) return;
+    if (_enemyHps[index] <= 0) {
+      _battleMessage = '敌影 ${index + 1} 已倒下，选择仍在场的目标';
+      notifyListeners();
+      return;
+    }
+    _selectedEnemyIndex = index;
+    _battleMessage = '已锁定敌影 ${index + 1}，选择技能牌发动攻击';
     notifyListeners();
   }
 
@@ -374,18 +600,23 @@ class ArenaViewModel extends ChangeNotifier {
     _view = ArenaView.battle;
     _energy = 6;
     _playerHp = 100;
-    _enemyHp = 100;
+    for (var index = 0; index < _enemyHps.length; index++) {
+      _enemyHps[index] = enemyMaxHp;
+    }
+    _selectedEnemyIndex = 0;
     _turn = 1;
     _combo = 0;
     _lastPlayedCardIndex = -1;
     _finished = false;
     _won = false;
-    _battleMessage = '选择一张技能卡开始战斗';
+    _rewardChoices.clear();
+    _battleMessage = '第 $_towerFloor 层 · ${selectedTowerNode.kind}：规划能量与连携';
     notifyListeners();
   }
 
   void playCard(int index) {
     if (_finished || index < 0 || index >= cards.length) return;
+    _selectFirstAliveEnemyIfNeeded();
     final card = cards[index];
     if (_energy < card.cost) {
       _battleMessage = '能量不足，先结束回合恢复能量';
@@ -397,16 +628,33 @@ class ArenaViewModel extends ChangeNotifier {
     _energy -= card.cost;
     if (card.damage < 0) {
       _playerHp = (_playerHp - card.damage).clamp(0, 100);
-      _battleMessage = '${card.name}：全队恢复 ${-card.damage} 点生命';
+      _battleMessage =
+          '${card.sourceHeroName}发动${card.name}：全队恢复 ${-card.damage} 点生命';
+    } else if (card.targeting == ArenaCardTargeting.allEnemies) {
+      for (var enemyIndex = 0; enemyIndex < _enemyHps.length; enemyIndex++) {
+        _enemyHps[enemyIndex] =
+            (_enemyHps[enemyIndex] - card.damage).clamp(0, enemyMaxHp);
+      }
+      _battleMessage =
+          '${card.sourceHeroName}发动${card.name}：对全体敌人造成 ${card.damage} 点伤害';
     } else {
-      _enemyHp = (_enemyHp - card.damage).clamp(0, 100);
-      _battleMessage = '${card.name}：造成 ${card.damage} 点伤害';
+      final target = _selectedEnemyIndex;
+      _enemyHps[target] =
+          (_enemyHps[target] - card.damage).clamp(0, enemyMaxHp);
+      _battleMessage =
+          '${card.sourceHeroName}发动${card.name}：对敌影 ${target + 1} 造成 ${card.damage} 点伤害';
     }
-    if (_enemyHp <= 0) {
+    if (allEnemiesDefeated) {
       _finished = true;
       _won = true;
-      _battleMessage = '胜利！获得星砂与英雄碎片';
+      _starCrystals += 120;
+      _heroShards[activeHero.id] = shardsOf(activeHero) + 4;
+      _rewardChoices
+        ..clear()
+        ..addAll(_rollRewardChoices());
+      _battleMessage = '胜利！选择 1 张技能加入本轮牌组';
     }
+    _selectFirstAliveEnemyIfNeeded();
     notifyListeners();
   }
 
@@ -425,5 +673,164 @@ class ArenaViewModel extends ChangeNotifier {
       _battleMessage = '敌方行动结束，轮到你了';
     }
     notifyListeners();
+  }
+
+  void chooseRewardCard(int index) {
+    if (index < 0 || index >= _rewardChoices.length) return;
+    final card = _rewardChoices[index];
+    _deck.add(card);
+    _rewardChoices.clear();
+    _towerFloor++;
+    _battleMessage = '获得「${card.name}」，下一层会用更强构筑继续挑战';
+    notifyListeners();
+  }
+
+  void skipReward() {
+    if (_rewardChoices.isEmpty) return;
+    _rewardChoices.clear();
+    _towerFloor++;
+    _battleMessage = '跳过奖励，保持当前牌组进入下一层';
+    notifyListeners();
+  }
+
+  List<ArenaCard> _rollRewardChoices() {
+    final pool = List<ArenaCard>.of(_rewardPool)..shuffle(_random);
+    return pool.take(3).toList();
+  }
+
+  void _rebuildFormationDeck() {
+    _deck
+      ..clear()
+      ..addAll(_cardsForFormation());
+  }
+
+  List<ArenaCard> _cardsForFormation() {
+    final cards = <ArenaCard>[];
+    for (final hero in formationHeroes) {
+      cards.add(_cardForHero(hero));
+    }
+    cards.add(
+      const ArenaCard(
+        name: '流光合击',
+        description: '队伍连携单体伤害',
+        cost: 2,
+        icon: '☾',
+        color: 0xFFD47E9B,
+        damage: 30,
+        sourceHeroName: '队伍',
+      ),
+    );
+    return cards;
+  }
+
+  ArenaCard _cardForHero(ArenaHero hero) {
+    switch (hero.id) {
+      case 'lanxing':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '单体魔法伤害',
+          cost: 2,
+          icon: '✦',
+          color: hero.color,
+          damage: 26,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+        );
+      case 'tutu':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '前排爆发突击',
+          cost: 2,
+          icon: '⚔',
+          color: hero.color,
+          damage: 32,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+        );
+      case 'maoying':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '单体伤害并虚弱',
+          cost: 3,
+          icon: '❄',
+          color: hero.color,
+          damage: 36,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+        );
+      case 'linglan':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '全队恢复生命',
+          cost: 1,
+          icon: '◇',
+          color: hero.color,
+          damage: -18,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+          targeting: ArenaCardTargeting.allyTeam,
+        );
+      case 'taoyin':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '全队恢复生命',
+          cost: 1,
+          icon: '✿',
+          color: hero.color,
+          damage: -20,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+          targeting: ArenaCardTargeting.allyTeam,
+        );
+      case 'xueli':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '全体冰霜伤害',
+          cost: 4,
+          icon: '❆',
+          color: hero.color,
+          damage: 34,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+          targeting: ArenaCardTargeting.allEnemies,
+        );
+      case 'ziyuan':
+        return ArenaCard(
+          name: hero.skillName,
+          description: '单体魔法斩杀',
+          cost: 2,
+          icon: '✶',
+          color: hero.color,
+          damage: 31,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+        );
+      default:
+        return ArenaCard(
+          name: hero.skillName,
+          description: '${hero.role}技能',
+          cost: 2,
+          icon: '✧',
+          color: hero.color,
+          damage: 28,
+          sourceHeroId: hero.id,
+          sourceHeroName: hero.name,
+        );
+    }
+  }
+
+  void _selectFirstAliveEnemyIfNeeded() {
+    if (_enemyHps[_selectedEnemyIndex] > 0 || allEnemiesDefeated) return;
+    final nextIndex = _enemyHps.indexWhere((hp) => hp > 0);
+    if (nextIndex >= 0) {
+      _selectedEnemyIndex = nextIndex;
+    }
+  }
+
+  ArenaHero? _heroById(String id) {
+    for (final hero in heroes) {
+      if (hero.id == id) return hero;
+    }
+    return null;
   }
 }
