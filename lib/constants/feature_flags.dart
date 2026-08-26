@@ -7,6 +7,9 @@ class FeatureFlags {
   /// 小游戏、互动故事（GamePlay）等玩法入口。默认关闭。
   static const bool showGameFeatures = false;
 
+  /// 横屏卡牌 PvE 原型；仅通过开发路由访问，不进入主导航。
+  static const bool arenaGamePrototype = true;
+
   /// 抽卡 / gacha 演示页。
   static const bool showGachaFeatures = false;
 
