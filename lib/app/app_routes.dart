@@ -36,6 +36,7 @@ import '../pages/feed/create_post_page.dart';
 import '../pages/feed/topic_posts_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
+import '../pages/arena/arena_page.dart';
 import '../pages/companion/companion_chat_page.dart' deferred as companion_chat;
 import '../pages/companion/companion_memories_page.dart'
     deferred as companion_memories;
@@ -346,12 +347,27 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return const LifeWorldPage();
     },
     '/pet/home': (context) {
+      if (FeatureFlags.arenaGamePrototype) {
+        return const ArenaPage.home();
+      }
       if (!FeatureFlags.petLifeSim) {
         return const Scaffold(
           body: Center(child: Text('养成域未开启')),
         );
       }
       return const PetHomePage();
+    },
+    '/game/arena': (context) {
+      if (!FeatureFlags.arenaGamePrototype) {
+        return const Scaffold(body: Center(child: Text('该原型未开启')));
+      }
+      return const ArenaPage();
+    },
+    '/game/arena/home': (context) {
+      if (!FeatureFlags.arenaGamePrototype) {
+        return const Scaffold(body: Center(child: Text('该原型未开启')));
+      }
+      return const ArenaPage.home();
     },
     '/life/detail': (context) {
       if (!FeatureFlags.showLifeEngine) {

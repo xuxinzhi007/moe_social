@@ -137,6 +137,8 @@ flutter:
     - assets/avatars/
     - assets/branding/
     - assets/frames/
+    - assets/arena/
+    - assets/arena/heroes/
     - assets/lottie/chat/
     - assets/lottie/gifts/
     - assets/pet/
