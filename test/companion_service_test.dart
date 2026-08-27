@@ -163,7 +163,7 @@ void main() {
     );
 
     expect(pulse.kind, 'topic');
-    expect(pulse.ctaLabel, '缁х画鑱婂ぉ');
+    expect(pulse.ctaLabel, '继续聊天');
   });
 
   test('Companion daily items compress same-day duplicates', () {

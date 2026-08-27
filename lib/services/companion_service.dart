@@ -827,7 +827,7 @@ class CompanionService {
     _requireUserId();
     final id = int.tryParse(notificationId.trim());
     if (id == null || id <= 0) {
-      throw Exception('鏃犳晥鐨勪富鍔ㄦ秷鎭湴鍧€');
+      throw Exception('无效的主动消息地址');
     }
     await ApiService.post(
       '/api/companion/proactive/$id/read',

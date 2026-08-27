@@ -80,6 +80,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
   @override
   void initState() {
     super.initState();
+    ChatPushService.setActiveChatPeer(widget.userId);
     _chat = DirectChatViewModel(peerUserId: widget.userId);
     _chat.addListener(_onChatChanged);
     _chat.onScrollToBottom = _scrollToBottom;
@@ -553,6 +554,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   @override
   void dispose() {
+    ChatPushService.setActiveChatPeer(null);
     _chat.removeListener(_onChatChanged);
     _chat.dispose();
     _controller.removeListener(_handleDraftChanged);

@@ -1,0 +1,18 @@
+---
+description: Require emulator-backed QA for Flutter/Android user-facing work
+alwaysApply: true
+---
+
+# Android 模拟器验收
+
+修改 Flutter/Android 用户可见行为，或用户明确要求模拟器验收时，加载 `.cursor/skills/android-emulator-qa/SKILL.md` 并尽量做模拟器验收。
+
+必须覆盖：
+
+- 启动目标 App 或目标页面。
+- 检查关键 `logcat` 错误，优先看 `Flutter` / `AndroidRuntime`。
+- 用截图或 `uiautomator dump` 验证真实 UI 是否符合需求。
+- 不要声称“模拟器验证通过”，除非实际看过截图、结构树或相关日志。
+- 若 agent 无法直接执行 `adb`，给出可复制命令，让用户执行后读取 `emulator-current.png` / `window.xml`。
+- 验证完成后删除 `emulator-current.png`、`window.xml`、临时日志等 QA 产物。
+- 不提交截图、UI dump、日志等 QA 产物，除非用户明确要求。

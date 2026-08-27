@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_service.dart';
 import 'friend_request_sync.dart';
+import 'notification_preferences.dart';
 import 'notification_service.dart';
 import 'enhanced_logger.dart';
 import 'ws_channel_connector.dart';
@@ -21,6 +22,12 @@ import '../widgets/message_notification.dart';
 // It exposes a stream of incoming messages and a per-sender unread counter.
 class ChatPushService {
   ChatPushService._();
+
+  static final _ChatPushLifecycleObserver _lifecycleObserver =
+      _ChatPushLifecycleObserver();
+  static bool _lifecycleObserverAttached = false;
+  static AppLifecycleState _lifecycle = AppLifecycleState.resumed;
+  static String? _activeChatPeerId;
 
   /// 发送方 userId → 展示昵称（避免 WS 里 sender_name 为 Moe 号时通知标题不友好）
   static final Map<String, String> _senderDisplayNameCache = {};
@@ -84,7 +91,29 @@ class ChatPushService {
 
   static void initialize(GlobalKey<NavigatorState> key) {
     _navigatorKey = key;
+    if (!_lifecycleObserverAttached) {
+      WidgetsBinding.instance.addObserver(_lifecycleObserver);
+      _lifecycleObserverAttached = true;
+    }
   }
+
+  /// 当前正在查看的私信会话 peer；进入/离开 [DirectChatPage] 时更新。
+  static void setActiveChatPeer(String? peerUserId) {
+    final id = peerUserId?.trim();
+    _activeChatPeerId = (id == null || id.isEmpty) ? null : id;
+    if (_activeChatPeerId != null) {
+      unawaited(
+        NotificationService.cancelPrivateMessageNotification(_activeChatPeerId!),
+      );
+    }
+  }
+
+  static void updateLifecycle(AppLifecycleState state) {
+    _lifecycle = state;
+  }
+
+  static bool get _isInForeground =>
+      _lifecycle == AppLifecycleState.resumed;
 
   static void setGlobalContext(BuildContext context) {
     _globalContext = context;
@@ -390,6 +419,26 @@ class ChatPushService {
     }
 
     final body = formatDmPreviewForUi(message);
+    if (_activeChatPeerId != null && _activeChatPeerId == senderId) {
+      return;
+    }
+
+    // App 在后台（进程仍存活）：系统通知栏；前台：应用内横幅。
+    if (!_isInForeground) {
+      final enabled = await NotificationPreferences.getEnabled();
+      if (!enabled) return;
+      if (!await NotificationPreferences.isSystemPermissionGranted()) {
+        return;
+      }
+      final unread = unreadBySender.value[senderId] ?? 1;
+      await NotificationService.showPrivateMessageNotification(
+        senderId: senderId,
+        senderName: title,
+        messagePreview: body,
+        unreadCount: unread,
+      );
+      return;
+    }
 
     void show(BuildContext ctx) {
       MessageNotification.show(
@@ -416,9 +465,13 @@ class ChatPushService {
   static void markSenderRead(String senderId) {
     if (senderId.isEmpty) return;
     final next = Map<String, int>.from(unreadBySender.value);
-    if (!next.containsKey(senderId)) return;
+    if (!next.containsKey(senderId)) {
+      unawaited(NotificationService.cancelPrivateMessageNotification(senderId));
+      return;
+    }
     next.remove(senderId);
     unreadBySender.value = next;
+    unawaited(NotificationService.cancelPrivateMessageNotification(senderId));
   }
 
   /// 取出（并清空）某个发送者的待处理消息，用于进入聊天页时补齐。
@@ -505,5 +558,12 @@ class ChatPushService {
     if (list.length > maxPerSender) {
       list.removeRange(0, list.length - maxPerSender);
     }
+  }
+}
+
+class _ChatPushLifecycleObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    ChatPushService.updateLifecycle(state);
   }
 }

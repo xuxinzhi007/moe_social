@@ -93,6 +93,77 @@
   border-color: rgba(145, 234, 228, 0.25);
 }
 
+/* —— App 版本 / 配置详情卡 —— */
+.config-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.config-card.panel {
+  margin-bottom: 0;
+}
+
+.config-dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px 20px;
+  margin: 0;
+}
+
+.config-dl-item {
+  min-width: 0;
+}
+
+.config-dl-item--wide {
+  grid-column: 1 / -1;
+}
+
+.config-dl dt {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted, var(--muted));
+}
+
+.config-dl dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink, var(--text));
+  word-break: break-word;
+}
+
+.config-dl-mono {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12px;
+}
+
+.config-dl-link {
+  font-family: var(--font-mono, ui-monospace, Menlo, monospace);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--info, var(--accent));
+  text-decoration: none;
+}
+
+.config-dl-link:hover {
+  text-decoration: underline;
+}
+
+.config-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.config-card .config-hint {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline, var(--border));
+}
+
 .env-pre,
 .log-pre,
 .terminal pre {

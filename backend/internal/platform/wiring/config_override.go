@@ -73,6 +73,35 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes", "Image.MaxBytes"); n > 0 {
 		c.Image.MaxBytes = n
 	}
+	if d := firstNonEmptyString(v, "image.driver", "Image.Driver"); d != "" {
+		c.Image.Driver = d
+	}
+	if ep := firstNonEmptyString(v, "image.oss.endpoint", "Image.OSS.Endpoint"); ep != "" {
+		c.Image.OSS.Endpoint = ep
+	}
+	if b := firstNonEmptyString(v, "image.oss.bucket", "Image.OSS.Bucket"); b != "" {
+		c.Image.OSS.Bucket = b
+	}
+	if ak := firstNonEmptyString(v, "image.oss.access_key_id", "Image.OSS.AccessKeyID"); ak != "" {
+		c.Image.OSS.AccessKeyID = ak
+	}
+	if sk := firstNonEmptyString(v, "image.oss.access_key_secret", "Image.OSS.AccessKeySecret"); sk != "" {
+		c.Image.OSS.AccessKeySecret = sk
+	}
+	if p := firstNonEmptyString(v, "image.oss.prefix", "Image.OSS.Prefix"); p != "" {
+		c.Image.OSS.Prefix = p
+	}
+	if u := firstNonEmptyString(v, "image.oss.public_base_url", "Image.OSS.PublicBaseUrl"); u != "" {
+		c.Image.OSS.PublicBaseUrl = u
+	}
+	if r := firstNonEmptyString(v, "image.oss.region", "Image.OSS.Region"); r != "" {
+		c.Image.OSS.Region = r
+	}
+	if v.IsSet("image.oss.proxy_via_api") {
+		c.Image.OSS.ProxyViaAPI = v.GetBool("image.oss.proxy_via_api")
+	} else if v.IsSet("Image.OSS.ProxyViaAPI") {
+		c.Image.OSS.ProxyViaAPI = v.GetBool("Image.OSS.ProxyViaAPI")
+	}
 	if secret := strings.TrimSpace(os.Getenv("MOE_AUTH_ACCESS_SECRET")); secret != "" {
 		c.Auth.AccessSecret = secret
 	} else if secret := firstNonEmptyString(v, "auth.access_secret"); secret != "" {

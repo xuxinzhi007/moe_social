@@ -6,11 +6,11 @@ import 'package:flutter/scheduler.dart';
 import '../theme/moe_tokens.dart';
 import 'motion/moe_motion.dart';
 
-/// 钀岀ぞ椋庢牸杞婚噺绾?Toast 閫氱煡
+/// 萌社风格轻量级 Toast 通知。
 class MoeToast {
   static OverlayEntry? _overlayEntry;
 
-  /// 涓诲姩绉婚櫎褰撳墠 Toast锛屽父鐢ㄤ簬椤甸潰鍒囨崲/鐧诲嚭绛夊満鏅?
+  /// 主动移除当前 Toast，常用于页面切换、退出登录等场景。
   static void dismiss() {
     _overlayEntry?.remove();
     _overlayEntry = null;
@@ -67,7 +67,7 @@ class MoeToast {
     }
   }
 
-  /// 鎴愬姛鎻愮ず
+  /// 成功提示。
   static void success(BuildContext context, String message) {
     show(
       context,
@@ -78,7 +78,7 @@ class MoeToast {
     );
   }
 
-  /// 閿欒鎻愮ず
+  /// 错误提示。
   static void error(BuildContext context, String message) {
     show(
       context,
@@ -89,7 +89,7 @@ class MoeToast {
     );
   }
 
-  /// 淇℃伅鎻愮ず
+  /// 信息提示。
   static void info(BuildContext context, String message) {
     show(
       context,
@@ -100,7 +100,7 @@ class MoeToast {
     );
   }
 
-  /// 璀﹀憡鎻愮ず
+  /// 警告提示。
   static void warning(BuildContext context, String message) {
     show(
       context,

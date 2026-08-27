@@ -14,11 +14,18 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   static bool _localInitialized = false;
   static String? _pendingCompanionNotificationPayload;
+  static String? _pendingDmSenderId;
+  static String? _pendingDmSenderName;
   static Timer? _pendingNotificationTimer;
   static int _pendingNotificationAttempts = 0;
 
   /// WS 推送公告/系统通知时触发，供 [NotificationProvider] 刷新未读。
   static VoidCallback? onRealtimeRefresh;
+
+  static const _dmChannelId = 'direct_message_channel_v2';
+
+  static int _dmNotificationId(String senderId) =>
+      senderId.hashCode & 0x7fffffff;
 
   static Future<void> initLocalNotifications() async {
     if (kIsWeb || _localInitialized) {
@@ -35,6 +42,21 @@ class NotificationService {
       initSettings,
       onDidReceiveNotificationResponse: _handleLocalNotificationResponse,
     );
+
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _dmChannelId,
+        '私信消息',
+        description: '私信消息通知',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound('moe_notify'),
+      ),
+    );
+
     _localInitialized = true;
   }
 
@@ -42,9 +64,53 @@ class NotificationService {
     NotificationResponse response,
   ) {
     final payload = response.payload?.trim() ?? '';
-    if (payload.isEmpty || !payload.startsWith('companion')) return;
+    if (payload.isEmpty) return;
+    if (payload.startsWith('dm:')) {
+      _pendingDmSenderId = payload.substring(3).trim();
+      _pendingDmSenderName = null;
+      _flushPendingDmNotification();
+      return;
+    }
+    if (!payload.startsWith('companion')) return;
     _pendingCompanionNotificationPayload = payload;
     _flushPendingCompanionNotification();
+  }
+
+  static void _flushPendingDmNotification() {
+    _pendingNotificationTimer?.cancel();
+    _pendingNotificationTimer = null;
+    final navigator = AuthService.navigatorKey.currentState;
+    if (navigator == null) {
+      if (_pendingNotificationAttempts++ >= 20) {
+        _pendingDmSenderId = null;
+        _pendingDmSenderName = null;
+        _pendingNotificationAttempts = 0;
+        return;
+      }
+      _pendingNotificationTimer = Timer(
+        const Duration(milliseconds: 200),
+        _flushPendingDmNotification,
+      );
+      return;
+    }
+
+    final senderId = _pendingDmSenderId?.trim() ?? '';
+    final senderName = (_pendingDmSenderName?.trim().isNotEmpty == true)
+        ? _pendingDmSenderName!.trim()
+        : '用户';
+    _pendingDmSenderId = null;
+    _pendingDmSenderName = null;
+    _pendingNotificationAttempts = 0;
+    if (senderId.isEmpty) return;
+
+    navigator.pushNamed(
+      '/direct-chat',
+      arguments: <String, dynamic>{
+        'userId': senderId,
+        'username': senderName,
+        'avatar': '',
+      },
+    );
   }
 
   static void _flushPendingCompanionNotification() {
@@ -79,11 +145,12 @@ class NotificationService {
   }
 
   static Future<void> showPrivateMessageNotification({
+    required String senderId,
     required String senderName,
     required String messagePreview,
     required int unreadCount,
   }) async {
-    if (kIsWeb) {
+    if (kIsWeb || senderId.trim().isEmpty) {
       return;
     }
 
@@ -91,30 +158,41 @@ class NotificationService {
       await initLocalNotifications();
     }
 
-    // 新 channel id：已装过旧版的用户会拿到带自定义铃声的新通道（Android 8+ 通道属性不可变）
     const androidDetails = AndroidNotificationDetails(
-      'direct_message_channel_v2',
+      _dmChannelId,
       '私信消息',
       channelDescription: '私信消息通知',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
       sound: RawResourceAndroidNotificationSound('moe_notify'),
+      category: AndroidNotificationCategory.message,
     );
-    // iOS 自定义 wav 需加入 Xcode Runner 资源；此处先保证系统提示音可靠触发
     const iosDetails = DarwinNotificationDetails(presentSound: true);
     const details =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    final title = '$senderName 给你发来了私信';
-    final body = unreadCount > 1 ? '你有 $unreadCount 条未读私信' : messagePreview;
+    final name = senderName.trim().isEmpty ? '用户' : senderName.trim();
+    final title = '$name 给你发来了私信';
+    final preview = messagePreview.trim();
+    final body = unreadCount > 1
+        ? '你有 $unreadCount 条未读私信'
+        : (preview.isEmpty ? '发来一条新消息' : preview);
 
+    _pendingDmSenderName = name;
     await _localNotifications.show(
-      0,
+      _dmNotificationId(senderId),
       title,
       body,
       details,
+      payload: 'dm:$senderId',
     );
+  }
+
+  /// 进入对应对话或已读后清除通知栏条目。
+  static Future<void> cancelPrivateMessageNotification(String senderId) async {
+    if (kIsWeb || senderId.trim().isEmpty || !_localInitialized) return;
+    await _localNotifications.cancel(_dmNotificationId(senderId));
   }
 
   static Future<void> showCompanionProactiveNotification({

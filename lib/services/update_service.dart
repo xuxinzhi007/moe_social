@@ -114,12 +114,14 @@ class UpdateFetchResult {
     required this.status,
     this.info,
     this.httpStatus,
+    this.message,
     this.error,
   });
 
   final UpdateFetchStatus status;
   final UpdateReleaseInfo? info;
   final int? httpStatus;
+  final String? message;
   final Object? error;
 }
 
@@ -157,6 +159,9 @@ class UpdateService {
 
   // 当前下载取消令牌
   static CancelToken? _cancelToken;
+  static Future<UpdateFetchResult>? _fetchLatestInFlight;
+  static Future<void>? _checkUpdateInFlight;
+  static bool _updateDialogShowing = false;
 
   /// 生成稳定、安全的本地文件名（含版本便于卸载后辨认）。
   static String _safeApkFileName(String versionLabel, String originalFileName) {
@@ -261,10 +266,34 @@ class UpdateService {
 
   /// 拉取后端配置的最新版本元数据（不弹 UI）。
   static Future<UpdateFetchResult> fetchLatestRelease() async {
+    final inFlight = _fetchLatestInFlight;
+    if (inFlight != null) return inFlight;
+    final task = _fetchLatestReleaseUncached();
+    _fetchLatestInFlight = task;
     try {
-      final remote = await AppReleaseService.fetchLatest(platform: 'android');
+      return await task;
+    } finally {
+      if (identical(_fetchLatestInFlight, task)) {
+        _fetchLatestInFlight = null;
+      }
+    }
+  }
+
+  static Future<UpdateFetchResult> _fetchLatestReleaseUncached() async {
+    try {
+      final remoteResult =
+          await AppReleaseService.fetchLatestResult(platform: 'android');
+      if (remoteResult.status != AppReleaseFetchStatus.ok) {
+        return UpdateFetchResult(
+          status: _mapAppReleaseStatus(remoteResult.status),
+          httpStatus: remoteResult.httpStatus,
+          message: remoteResult.message,
+          error: remoteResult.error,
+        );
+      }
+      final remote = remoteResult.info;
       if (remote == null) {
-        return UpdateFetchResult(status: UpdateFetchStatus.error);
+        return UpdateFetchResult(status: UpdateFetchStatus.empty);
       }
       if (!remote.available ||
           remote.apkUrl.isEmpty ||
@@ -292,6 +321,28 @@ class UpdateService {
   /// 检查更新
   static Future<void> checkUpdate(BuildContext context,
       {bool showNoUpdateToast = false}) async {
+    final inFlight = _checkUpdateInFlight;
+    if (inFlight != null) {
+      if (showNoUpdateToast && context.mounted) {
+        MoeToast.info(context, '正在检查更新，请稍候');
+      }
+      return inFlight;
+    }
+    final task = _checkUpdate(context, showNoUpdateToast: showNoUpdateToast);
+    _checkUpdateInFlight = task;
+    try {
+      await task;
+    } finally {
+      if (identical(_checkUpdateInFlight, task)) {
+        _checkUpdateInFlight = null;
+      }
+    }
+  }
+
+  static Future<void> _checkUpdate(
+    BuildContext context, {
+    bool showNoUpdateToast = false,
+  }) async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
@@ -339,7 +390,13 @@ class UpdateService {
           return;
         case UpdateFetchStatus.badStatus:
           if (showNoUpdateToast && context.mounted) {
-            MoeToast.error(context, '检查更新失败: ${result.httpStatus ?? "?"}');
+            final suffix = result.message?.trim();
+            MoeToast.error(
+              context,
+              suffix == null || suffix.isEmpty
+                  ? '检查更新失败: ${result.httpStatus ?? "?"}'
+                  : '检查更新失败: $suffix',
+            );
           }
           return;
         case UpdateFetchStatus.error:
@@ -353,6 +410,17 @@ class UpdateService {
         MoeToast.error(context, '检查更新出错: $e');
       }
     }
+  }
+
+  static UpdateFetchStatus _mapAppReleaseStatus(AppReleaseFetchStatus status) {
+    return switch (status) {
+      AppReleaseFetchStatus.ok => UpdateFetchStatus.ok,
+      AppReleaseFetchStatus.empty => UpdateFetchStatus.empty,
+      AppReleaseFetchStatus.rateLimited => UpdateFetchStatus.rateLimited,
+      AppReleaseFetchStatus.notFound => UpdateFetchStatus.notFound,
+      AppReleaseFetchStatus.badStatus => UpdateFetchStatus.badStatus,
+      AppReleaseFetchStatus.error => UpdateFetchStatus.error,
+    };
   }
 
   /// 远端版本是否高于本地：优先比 versionCode，缺省时回退版本名。
@@ -379,6 +447,8 @@ class UpdateService {
   }) {
     final url = info.downloadUrl;
     if (url == null || url.isEmpty) return;
+    if (_updateDialogShowing) return;
+    _updateDialogShowing = true;
     _showUpdateDialog(context, info, onRemindLater: onRemindLater);
   }
 
@@ -726,7 +796,8 @@ class UpdateService {
     final codeHint =
         info.versionCode > 0 ? '（构建号 ${info.versionCode}）' : '';
 
-    showDialog(
+    unawaited(
+      showDialog<void>(
       context: context,
       barrierDismissible: !force,
       builder: (dialogContext) => PopScope(
@@ -944,6 +1015,9 @@ class UpdateService {
           ],
         ),
       ),
+      ).whenComplete(() {
+        _updateDialogShowing = false;
+      }),
     );
   }
 

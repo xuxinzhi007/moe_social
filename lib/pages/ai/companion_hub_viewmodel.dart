@@ -191,9 +191,9 @@ class CompanionHubViewModel extends ChangeNotifier {
         );
       case 'topic':
         return CompanionPulseData(
-          title: '鏈畬鎴愮殑璇濋',
+          title: '未完成的话题',
           body: leadItem.body,
-          ctaLabel: '缁х画鑱婂ぉ',
+          ctaLabel: '继续聊天',
           kind: leadItem.kind,
         );
       default:
@@ -530,7 +530,7 @@ class CompanionHubViewModel extends ChangeNotifier {
       items.add(
         CompanionDailyItem(
           kind: 'topic',
-          title: '鏈畬鎴愮殑璇濋',
+          title: '未完成的话题',
           body: _clip(text, 96),
           fullBody: text,
           at: DateTime.tryParse(entry.createdAt),
