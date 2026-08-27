@@ -7,7 +7,8 @@ class FeatureFlags {
   /// 小游戏、互动故事（GamePlay）等玩法入口。默认关闭。
   static const bool showGameFeatures = false;
 
-  /// 横屏卡牌 PvE 原型；仅通过开发路由访问，不进入主导航。
+  /// 星辉远征主游戏（横屏卡牌 PvE）。为 true 时 Companion「小家」进入 Arena；
+  /// 旧 Pet 竖屏主路径视为弃用入口（代码可留作回滚）。
   static const bool arenaGamePrototype = true;
 
   /// 抽卡 / gacha 演示页。
@@ -23,31 +24,13 @@ class FeatureFlags {
   static const bool showLocalModelSettings = showExperimentalFeatures;
 
   /// AI 伙伴 — 数字生命个人小世界（「TA 的世界」多居民地图）。
-  /// 养成主路径已切到 [petLifeSim] 小家；默认关闭入口，代码保留可回滚。
-  /// 本开关只控制世界入口，不隐藏 Companion 聊天。
+  /// 养成主路径为 [arenaGamePrototype] 星辉；本开关只控制世界入口，不隐藏 Companion 聊天。
   static const bool showLifeEngine = false;
 
   /// Flame 小世界实验渲染（「TA 的世界」全屏 GameWidget）。
   /// true = 走 Flame；false = 回退 CustomPaint [LifeWorldMap]。
   /// 见 `.cursor/skills/flame-life-world/SKILL.md`。
   static const bool useFlameLifeWorld = true;
-
-  /// 完整养成域（Pet Life Sim，《宠我一生》级分期）——当前主路径。
-  /// 见 `docs/dev/pet-life-sim-roadmap.md`；不替代 Companion 关系首页。
-  static const bool petLifeSim = true;
-
-  /// 小家角色用 Spine 骨骼换装（C 方案）。默认关：无授权/无资源时走 PNG。
-  /// 见 `docs/dev/pet-spine-avatar.md`。开启前需 Spine Editor 授权 + `assets/pet/spine/`。
-  static const bool petSpineAvatar = false;
-
-  /// Moe 官方 avatar 分层 pack（admin 生产 → assets/pet/moe_content/avatar/）。
-  /// 正式小家默认 **false**：走 Paper PNG，避免 sheet 合成失败出现蓝块占位。
-  /// 调研时再开；见 `docs/dev/moe-pet-content-pack.md`。
-  static const bool petMoeAvatar = false;
-
-  /// LPC 流水线：同画布 sheet + 走动（小家当前默认显示轨）。
-  /// Moe 保持 false。见 `docs/dev/pet-lpc-pipeline.md`。
-  static const bool petLpcPrototype = true;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
 

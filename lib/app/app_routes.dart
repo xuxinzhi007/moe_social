@@ -42,7 +42,6 @@ import '../pages/companion/companion_memories_page.dart'
     deferred as companion_memories;
 import '../pages/life/life_entity_detail.dart';
 import '../pages/life/life_world_page.dart';
-import '../pages/pet/pet_home_page.dart';
 import '../pages/notifications/notification_center_page.dart'
     deferred as notification_center;
 import '../pages/profile/edit_profile_page.dart';
@@ -347,15 +346,13 @@ Map<String, WidgetBuilder> buildAppRoutes() {
       return const LifeWorldPage();
     },
     '/pet/home': (context) {
-      if (FeatureFlags.arenaGamePrototype) {
-        return const ArenaPage.home();
-      }
-      if (!FeatureFlags.petLifeSim) {
+      // 兼容旧深链：恒进星辉小家。
+      if (!FeatureFlags.arenaGamePrototype) {
         return const Scaffold(
-          body: Center(child: Text('养成域未开启')),
+          body: Center(child: Text('星辉远征未开启')),
         );
       }
-      return const PetHomePage();
+      return const ArenaPage.home();
     },
     '/game/arena': (context) {
       if (!FeatureFlags.arenaGamePrototype) {

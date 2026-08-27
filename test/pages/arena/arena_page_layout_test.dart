@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:moe_social/game/arena/arena_view_model.dart';
+import 'package:moe_social/models/arena_state.dart';
 import 'package:moe_social/pages/arena/arena_page.dart';
+import 'package:moe_social/services/arena_service.dart';
 
 void main() {
   testWidgets('arena prototype tabs render in phone landscape constraints',
@@ -13,9 +15,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final model = ArenaViewModel(service: _OfflineArenaService());
+    addTearDown(model.dispose);
+
     await tester.pumpWidget(
-      const MaterialApp(
-        home: ArenaPage(),
+      MaterialApp(
+        home: ArenaPage(modelForTesting: model),
       ),
     );
     await tester.pump();
@@ -34,9 +39,10 @@ void main() {
     expect(find.text('星辉小家'), findsOneWidget);
     expect(find.text('今日陪伴'), findsOneWidget);
     expect(find.text('远征加成'), findsOneWidget);
-    expect(find.text('今天的关系摘要'), findsOneWidget);
-    expect(find.text('TA 的日常'), findsOneWidget);
-    expect(find.text('送礼'), findsOneWidget);
+    expect(find.text('当前皮肤'), findsOneWidget);
+    expect(find.text('更换皮肤'), findsOneWidget);
+    expect(find.textContaining('整卡替换立绘'), findsOneWidget);
+    expect(find.text('送礼 · 80'), findsOneWidget);
     expect(find.text('训练'), findsOneWidget);
     expect(find.text('出发'), findsOneWidget);
     expect(tester.takeException(), isNull, reason: '小家');
@@ -73,6 +79,9 @@ void main() {
 
     await tester.tap(find.text('澜星').first);
     await tester.pump();
+    expect(find.text('皮肤'), findsOneWidget);
+    expect(find.textContaining('整卡替换角色立绘'), findsOneWidget);
+    expect(find.text('经典'), findsWidgets);
     expect(find.text('养成路线'), findsOneWidget);
     expect(find.text('碎片升星'), findsOneWidget);
     expect(find.text('技能升级'), findsOneWidget);
@@ -105,6 +114,7 @@ void main() {
     expect(find.textContaining('路线分支'), findsOneWidget);
     await tester.tap(find.text('战斗').first);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('战斗 · 普通战'), findsOneWidget);
     expect(find.text('开始冒险'), findsOneWidget);
     expect(tester.takeException(), isNull, reason: '爬塔');
@@ -113,6 +123,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('十连 · 2700'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
     expect(tester.takeException(), isNull, reason: '十连结果弹层');
 
     await tester.tap(find.text('确认'));
@@ -140,6 +151,7 @@ void main() {
     expect(find.text('兔突 · 闪耀突刺'), findsOneWidget);
     expect(find.textContaining('敌影 2'), findsWidgets);
     expect(tester.takeException(), isNull, reason: '战斗出牌反馈');
+    await tester.pump(const Duration(milliseconds: 500));
   });
 
   testWidgets('battle units and cards use the edited formation heroes',
@@ -151,10 +163,11 @@ void main() {
 
     final model = ArenaViewModel(
       random: _FixedRandom(doubles: [.2], ints: [1]),
+      service: _OfflineArenaService(),
     );
     addTearDown(model.dispose);
 
-    expect(model.summon(1), isTrue);
+    expect(await model.summon(1), isTrue);
     final foxIndex = model.heroes.indexWhere((hero) => hero.id == 'huhuo');
     model.selectFormationSlot(1);
     model.assignHeroToFormation(foxIndex);
@@ -166,12 +179,55 @@ void main() {
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('狐火'), findsOneWidget);
     expect(find.text('狐火技'), findsOneWidget);
     expect(find.text('兔突技'), findsNothing);
     expect(tester.takeException(), isNull, reason: '战斗应使用编辑后的编队');
   });
+}
+
+class _OfflineArenaService extends ArenaService {
+  @override
+  Future<ArenaStateDto?> fetchState() async => null;
+
+  @override
+  Future<ArenaStateDto?> setFormation(List<String> heroIds) async => null;
+
+  @override
+  Future<ArenaStateDto?> saveDeck(List<ArenaDeckCardDto> cards) async => null;
+
+  @override
+  Future<ArenaSummonResultDto?> summon(int count) async => null;
+
+  @override
+  Future<ArenaStateDto?> homeGift(String heroId) async => null;
+
+  @override
+  Future<ArenaStateDto?> homeTrain() async => null;
+
+  @override
+  Future<ArenaStateDto?> saveSkin({
+    required String heroId,
+    required String skinId,
+  }) async =>
+      null;
+
+  @override
+  Future<ArenaStateDto?> saveMeta({
+    int? selectedTowerNode,
+    bool clearBuffs = false,
+  }) async =>
+      null;
+
+  @override
+  Future<ArenaClearTowerResultDto?> clearTower({
+    required bool won,
+    String? bonusHeroId,
+    List<ArenaDeckCardDto>? deck,
+  }) async =>
+      null;
 }
 
 class _FixedRandom implements Random {

@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package arena.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "backend/api/arena/v1;arenav1";
+
+// Arena — 星辉远征存档契约（与 /api/arena/* 对齐；HTTP 由 protohttp/arena 手写注册）。
+
+message ArenaOwnedHero {
+  string hero_id = 1;
+  int32 shards = 2;
+  int32 bond = 3;
+}
+
+message ArenaDeckCard {
+  string name = 1;
+  string description = 2;
+  int32 cost = 3;
+  string icon = 4;
+  int32 color = 5;
+  int32 damage = 6;
+  string source_hero_id = 7;
+  string source_hero_name = 8;
+  string targeting = 9;
+}
+
+message ArenaState {
+  string user_id = 1;
+  int32 star_crystals = 2;
+  int32 tower_floor = 3;
+  repeated string formation_hero_ids = 4;
+  repeated ArenaOwnedHero owned_heroes = 5;
+  string updated_at = 6;
+  repeated ArenaDeckCard deck = 7;
+}
+
+message GetArenaStateRequest {}
+message GetArenaStateReply {
+  ArenaState state = 1;
+}
+
+message SetFormationRequest {
+  repeated string hero_ids = 1;
+}
+message SetFormationReply {
+  ArenaState state = 1;
+}
+
+message SaveDeckRequest {
+  repeated ArenaDeckCard cards = 1;
+}
+message SaveDeckReply {
+  ArenaState state = 1;
+}
+
+message SummonRequest {
+  int32 count = 1; // 1 or 10
+}
+message SummonPull {
+  string hero_id = 1;
+  bool is_new = 2;
+  int32 shards = 3;
+}
+message SummonReply {
+  ArenaState state = 1;
+  repeated SummonPull pulls = 2;
+  string message = 3;
+}
+
+message HomeGiftRequest {
+  string hero_id = 1;
+}
+message HomeGiftReply {
+  ArenaState state = 1;
+}
+
+message ClearTowerRequest {
+  bool won = 1;
+  string bonus_hero_id = 2;
+  repeated ArenaDeckCard deck = 3;
+}
+message ClearTowerReply {
+  ArenaState state = 1;
+  int32 crystal_reward = 2;
+}
+
+service Arena {
+  rpc GetState(GetArenaStateRequest) returns (GetArenaStateReply) {
+    option (google.api.http) = { get: "/api/arena/state" };
+  }
+  rpc SetFormation(SetFormationRequest) returns (SetFormationReply) {
+    option (google.api.http) = { put: "/api/arena/formation" body: "*" };
+  }
+  rpc SaveDeck(SaveDeckRequest) returns (SaveDeckReply) {
+    option (google.api.http) = { put: "/api/arena/deck" body: "*" };
+  }
+  rpc Summon(SummonRequest) returns (SummonReply) {
+    option (google.api.http) = { post: "/api/arena/summon" body: "*" };
+  }
+  rpc HomeGift(HomeGiftRequest) returns (HomeGiftReply) {
+    option (google.api.http) = { post: "/api/arena/home/gift" body: "*" };
+  }
+  rpc ClearTower(ClearTowerRequest) returns (ClearTowerReply) {
+    option (google.api.http) = { post: "/api/arena/tower/clear" body: "*" };
+  }
+}
