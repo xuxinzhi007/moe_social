@@ -171,7 +171,7 @@ class _AchievementUnlockNotificationState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '鎴愬氨瑙ｉ攣',
+                  '成就解锁',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -214,7 +214,7 @@ class _AchievementUnlockNotificationState
                         vertical: 6,
                       ),
                       child: const Text(
-                        '鏌ョ湅鎴愬氨涓績',
+                        '查看成就中心',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -337,7 +337,7 @@ class AchievementNotificationManager {
                       child: MoeReveal(
                         delay: const Duration(milliseconds: 30),
                         child: Text(
-                          '澶浜嗭紝杩欐瑙ｉ攣浜?$unlockedCount 涓垚灏憋紝鍘绘垚灏变腑蹇冪湅鐪嬪畬鏁磋繘搴﹀惂',
+                          '太棒了，这次解锁了 $unlockedCount 个成就，去成就中心看看完整进度吧',
                           style: const TextStyle(
                             color: Colors.black87,
                             fontSize: 14,

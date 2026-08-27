@@ -40,6 +40,9 @@ func TestOpenImageContentType(t *testing.T) {
 		if err != nil {
 			t.Fatalf("OpenImage(%s): %v", tc.key, err)
 		}
+		if f.Body != nil {
+			_ = f.Body.Close()
+		}
 		if f.ContentType != tc.want {
 			t.Errorf("OpenImage(%s) ContentType = %q, want %q", tc.key, f.ContentType, tc.want)
 		}

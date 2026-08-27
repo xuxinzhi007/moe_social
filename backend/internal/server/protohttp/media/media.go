@@ -124,15 +124,22 @@ func (s *Server) ServeImage(ctx context.Context, in *mediav1.ServeImageRequest) 
 	if err != nil {
 		return nil, errNotFound
 	}
-	f, err := os.Open(file.Path)
-	if err != nil {
-		return nil, errNotFound
+	if file.Body != nil {
+		defer file.Body.Close()
 	}
-	defer f.Close()
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
+	var data []byte
+	if file.Body != nil {
+		data, err = io.ReadAll(file.Body)
+		if err != nil {
+			return nil, err
+		}
+	} else if file.Path != "" {
+		data, err = os.ReadFile(file.Path)
+		if err != nil {
+			return nil, errNotFound
+		}
+	} else {
+		return nil, errNotFound
 	}
 	return &httpbody.HttpBody{
 		ContentType: file.ContentType,
@@ -140,7 +147,7 @@ func (s *Server) ServeImage(ctx context.Context, in *mediav1.ServeImageRequest) 
 	}, nil
 }
 
-// ServeImageHTTP 流式输出图片（跳过 JSON 信封）。
+// ServeImageHTTP 流式输出图片（跳过 JSON 信封）；OSS 可 302 到公网/CDN。
 func (s *Server) ServeImageHTTP(ctx khttp.Context) error {
 	app, err := s.requireApp()
 	if err != nil {
@@ -154,18 +161,42 @@ func (s *Server) ServeImageHTTP(ctx khttp.Context) error {
 	if err != nil {
 		return writeImageError(ctx, http.StatusNotFound, 404, "图片不存在")
 	}
-	f, err := os.Open(file.Path)
-	if err != nil {
-		return writeImageError(ctx, http.StatusNotFound, 404, "图片不存在")
-	}
-	defer f.Close()
 
 	w := ctx.Response()
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+
+	if file.PublicURL != "" {
+		if file.Body != nil {
+			_ = file.Body.Close()
+		}
+		http.Redirect(w, ctx.Request(), file.PublicURL, http.StatusFound)
+		return nil
+	}
+
 	w.Header().Set("Content-Type", file.ContentType)
 	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%s", file.Filename))
-	http.ServeContent(w, ctx.Request(), file.Filename, file.ModTime, f)
-	return nil
+
+	if file.Path != "" {
+		if file.Body != nil {
+			_ = file.Body.Close()
+		}
+		f, err := os.Open(file.Path)
+		if err != nil {
+			return writeImageError(ctx, http.StatusNotFound, 404, "图片不存在")
+		}
+		defer f.Close()
+		http.ServeContent(w, ctx.Request(), file.Filename, file.ModTime, f)
+		return nil
+	}
+	if file.Body != nil {
+		defer file.Body.Close()
+		if file.Size > 0 {
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", file.Size))
+		}
+		_, err := io.Copy(w, file.Body)
+		return err
+	}
+	return writeImageError(ctx, http.StatusNotFound, 404, "图片不存在")
 }
 
 func writeImageError(ctx khttp.Context, status, code int, message string) error {

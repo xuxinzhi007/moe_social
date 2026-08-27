@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AdminFormDrawer } from '../components/AdminFormDrawer'
+import { AdminTag, TagRow } from '../components/AdminTag'
 import { FormField } from '../components/FormField'
 import { PageMessage } from '../components/PageMessage'
-import { MonitorPageLayout } from '../ui'
+import { AdminPanel, MonitorPageLayout } from '../ui'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { DeployApiError } from '../api/deployClient'
 
@@ -145,47 +146,66 @@ export function AppReleasePage() {
           <p className="muted">加载中…</p>
         ) : configured && release ? (
           <div className="config-cards">
-            <section className="panel config-card">
-              <h3>当前生效配置</h3>
+            <AdminPanel title="当前生效配置" className="config-card">
               <dl className="config-dl">
-                <div>
+                <div className="config-dl-item">
                   <dt>平台</dt>
                   <dd>
                     <code>{release.platform}</code>
                   </dd>
                 </div>
-                <div>
+                <div className="config-dl-item">
                   <dt>版本名</dt>
                   <dd>
                     <code>{release.version_name || '—'}</code>
                   </dd>
                 </div>
-                <div>
+                <div className="config-dl-item">
                   <dt>versionCode</dt>
                   <dd>
                     <code>{release.version_code || '—'}</code>
                   </dd>
                 </div>
-                <div>
+                <div className="config-dl-item">
                   <dt>状态</dt>
                   <dd>
-                    {release.enabled ? '已启用' : '已停用'}
-                    {release.force_update ? ' · 强制更新' : ' · 可稍后'}
+                    <TagRow>
+                      <AdminTag
+                        label={release.enabled ? '已启用' : '已停用'}
+                        tone={release.enabled ? 'ok' : 'neutral'}
+                        dot
+                      />
+                      <AdminTag
+                        label={release.force_update ? '强制更新' : '可稍后'}
+                        tone={release.force_update ? 'warn' : 'neutral'}
+                      />
+                    </TagRow>
                   </dd>
                 </div>
-                <div>
+                <div className="config-dl-item">
+                  <dt>最近更新</dt>
+                  <dd className="config-dl-mono">{release.updated_at || '—'}</dd>
+                </div>
+                <div className="config-dl-item config-dl-item--wide">
                   <dt>APK URL</dt>
                   <dd>
-                    <code className="text-break-all">{release.apk_url || '—'}</code>
+                    {release.apk_url ? (
+                      <a
+                        className="config-dl-link text-break-all"
+                        href={release.apk_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {release.apk_url}
+                      </a>
+                    ) : (
+                      '—'
+                    )}
                   </dd>
                 </div>
-                <div>
+                <div className="config-dl-item config-dl-item--wide">
                   <dt>更新说明</dt>
                   <dd className="text-pre-wrap">{release.changelog || '—'}</dd>
-                </div>
-                <div>
-                  <dt>最近更新</dt>
-                  <dd>{release.updated_at || '—'}</dd>
                 </div>
               </dl>
               <p className="muted config-hint">
@@ -193,7 +213,7 @@ export function AppReleasePage() {
                 GITHUB_RUN_NUMBER）。也可手工填 GitHub Release / OSS 直链。强制更新请在此页勾选保存。速查：
                 <code>docs/dev/app-release-cheatsheet.md</code>。
               </p>
-            </section>
+            </AdminPanel>
           </div>
         ) : (
           <p className="muted">尚未配置 App 版本。点击「配置首个版本」填写 versionCode 与 APK 下载地址。</p>

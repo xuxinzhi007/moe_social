@@ -56,4 +56,19 @@ type ImageConf struct {
 	LocalDir      string `json:"LocalDir" yaml:"LocalDir"`
 	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
 	MaxBytes      int64  `json:"MaxBytes" yaml:"MaxBytes"`
+	// Driver: local | oss（空=local）
+	Driver string    `json:"Driver" yaml:"Driver"`
+	OSS    ImageOSS  `json:"OSS" yaml:"OSS"`
+}
+
+// ImageOSS 阿里云对象存储。
+type ImageOSS struct {
+	Endpoint        string `json:"Endpoint" yaml:"Endpoint"`
+	Bucket          string `json:"Bucket" yaml:"Bucket"`
+	AccessKeyID     string `json:"AccessKeyID" yaml:"AccessKeyID"`
+	AccessKeySecret string `json:"AccessKeySecret" yaml:"AccessKeySecret"`
+	Prefix          string `json:"Prefix" yaml:"Prefix"`
+	PublicBaseUrl   string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
+	Region          string `json:"Region" yaml:"Region"`
+	ProxyViaAPI     bool   `json:"ProxyViaAPI" yaml:"ProxyViaAPI"`
 }

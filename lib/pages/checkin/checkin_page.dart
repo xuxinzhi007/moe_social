@@ -848,7 +848,7 @@ class _CheckInPageState extends State<CheckInPage>
               ),
               icon: const Icon(Icons.toc_rounded, size: 18),
               label: Text(
-                '鏌ョ湅鍏ㄩ儴 ${tasks.length} 涓换鍔?',
+                '查看全部 ${tasks.length} 个任务',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),

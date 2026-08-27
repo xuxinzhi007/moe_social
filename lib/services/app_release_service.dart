@@ -41,24 +41,98 @@ class AppReleaseInfo {
   }
 }
 
+enum AppReleaseFetchStatus {
+  ok,
+  empty,
+  rateLimited,
+  notFound,
+  badStatus,
+  error,
+}
+
+class AppReleaseFetchResult {
+  const AppReleaseFetchResult({
+    required this.status,
+    this.info,
+    this.httpStatus,
+    this.message,
+    this.error,
+  });
+
+  final AppReleaseFetchStatus status;
+  final AppReleaseInfo? info;
+  final int? httpStatus;
+  final String? message;
+  final Object? error;
+}
+
 /// App 版本域服务（公开接口，无需登录）。
 class AppReleaseService {
   AppReleaseService._();
 
-  /// 拉取指定平台最新启用版本；网络/业务失败返回 null。
-  static Future<AppReleaseInfo?> fetchLatest({String platform = 'android'}) async {
+  /// 拉取指定平台最新启用版本，并保留失败原因供 UI 展示更准确的状态。
+  static Future<AppReleaseFetchResult> fetchLatestResult({
+    String platform = 'android',
+  }) async {
     try {
       final response = await ApiService.get(
         '/api/public/app-release/latest?platform=${Uri.encodeQueryComponent(platform)}',
       );
-      if (!ApiResponse.isSuccess(response)) return null;
-      final payload = ApiResponse.payload(response);
-      if (payload.isEmpty) {
-        return AppReleaseInfo.fromJson(response);
+      if (!ApiResponse.isSuccess(response)) {
+        return AppReleaseFetchResult(
+          status: AppReleaseFetchStatus.badStatus,
+          httpStatus: _asStatusCode(response['code']),
+          message: response['message']?.toString(),
+        );
       }
-      return AppReleaseInfo.fromJson(payload);
-    } catch (_) {
-      return null;
+
+      final payload = ApiResponse.payload(response);
+      final info = AppReleaseInfo.fromJson(
+        payload.isEmpty ? response : payload,
+      );
+      if (!info.available) {
+        return AppReleaseFetchResult(
+          status: AppReleaseFetchStatus.empty,
+          info: info,
+        );
+      }
+      return AppReleaseFetchResult(status: AppReleaseFetchStatus.ok, info: info);
+    } on ApiException catch (e) {
+      return AppReleaseFetchResult(
+        status: _statusFromApiException(e),
+        httpStatus: e.code,
+        message: e.message,
+        error: e,
+      );
+    } catch (e) {
+      return AppReleaseFetchResult(
+        status: AppReleaseFetchStatus.error,
+        error: e,
+      );
     }
+  }
+
+  /// 拉取指定平台最新启用版本；网络/业务失败返回 null。
+  static Future<AppReleaseInfo?> fetchLatest({String platform = 'android'}) async {
+    final result = await fetchLatestResult(platform: platform);
+    return result.status == AppReleaseFetchStatus.ok ? result.info : null;
+  }
+
+  static int? _asStatusCode(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static AppReleaseFetchStatus _statusFromApiException(ApiException e) {
+    final code = e.code;
+    if (code == null) return AppReleaseFetchStatus.error;
+    return switch (code) {
+      404 => AppReleaseFetchStatus.notFound,
+      429 => AppReleaseFetchStatus.rateLimited,
+      >= 500 => AppReleaseFetchStatus.badStatus,
+      _ => AppReleaseFetchStatus.error,
+    };
   }
 }

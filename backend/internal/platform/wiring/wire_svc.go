@@ -28,8 +28,19 @@ func wireServiceContext(opts Options) (apiconfig.Config, *svc.ServiceContext, er
 	rep := newWireReporter()
 	ctx := svc.NewServiceContext(c)
 	wirePlatformServices(ctx, ImageConfig{
+		Driver:        c.Image.Driver,
 		LocalDir:      c.Image.LocalDir,
 		PublicBaseUrl: c.Image.PublicBaseUrl,
+		OSS: ImageOSSConfig{
+			Endpoint:        c.Image.OSS.Endpoint,
+			Bucket:          c.Image.OSS.Bucket,
+			AccessKeyID:     c.Image.OSS.AccessKeyID,
+			AccessKeySecret: c.Image.OSS.AccessKeySecret,
+			Prefix:          c.Image.OSS.Prefix,
+			PublicBaseUrl:   c.Image.OSS.PublicBaseUrl,
+			Region:          c.Image.OSS.Region,
+			ProxyViaAPI:     c.Image.OSS.ProxyViaAPI,
+		},
 	})
 	wireAccessServices(rep, ctx)
 	wireCommunityServices(rep, ctx)
