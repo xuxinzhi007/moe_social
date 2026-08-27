@@ -13,6 +13,7 @@ import '../services/companion_service.dart';
 import '../services/rive_bootstrap.dart';
 import '../theme/moe_tokens.dart';
 import 'moe_action_row.dart';
+import 'moe_badge_dot.dart';
 import 'moe_toast.dart';
 import 'motion/moe_pressable.dart';
 import 'motion/moe_reveal.dart';
@@ -571,24 +572,10 @@ class _FloatingVirtualAvatarHostState extends State<FloatingVirtualAvatarHost>
                       Positioned(
                         right: -2,
                         top: -2,
-                        child: Container(
-                          constraints:
-                              const BoxConstraints(minWidth: 18, minHeight: 18),
-                          padding: const EdgeInsets.symmetric(horizontal: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF4D6D),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            unreadCount > 99 ? '99+' : '$unreadCount',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                        child: MoeBadgeDot.count(
+                          count: unreadCount,
+                          // 近白描边分隔悬浮球底色
+                          borderColor: MoeTokens.surface1,
                         ),
                       ),
                   ],

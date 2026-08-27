@@ -10,6 +10,7 @@ import '../../services/achievement_hooks.dart';
 import '../../services/api_client.dart' show ApiException;
 import '../../services/commerce_service.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import 'order_center_page.dart';
 import 'recharge_page.dart';
@@ -557,10 +558,9 @@ class _VipOrderConfirmPageState extends State<VipOrderConfirmPage> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        child: MoeSmallLoading(
+                          size: 20,
+                          color: Colors.white,
                         ),
                       )
                     : Text(

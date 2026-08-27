@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../game/pet/pet_adventure_game.dart';
 import '../../providers/pet_provider.dart';
+import '../../widgets/moe_loading.dart';
 
 /// 小院试炼：可操作回合战（攻击 / 防御 / 必杀）。
 class PetAdventurePage extends StatefulWidget {
@@ -76,7 +77,7 @@ class _PetAdventurePageState extends State<PetAdventurePage> {
     final game = _game;
     if (game == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: MoeLoading()),
       );
     }
     final pet = context.watch<PetProvider>();

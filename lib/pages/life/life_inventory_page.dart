@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
 
 /// 背包道具页面。
 class LifeInventoryPage extends StatefulWidget {
@@ -29,12 +31,7 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
     if (_claiming) return;
     final provider = context.read<LifeProvider>();
     if (provider.claimedToday) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('今日已签到领取过了，明天再来吧'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      MoeToast.info(context, '今日已签到领取过了，明天再来吧');
       return;
     }
     setState(() => _claiming = true);
@@ -49,13 +46,11 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
             : result.count > 0
                 ? '签到成功！获得 ${result.items.map((e) => e.displayIcon).join('')} ×${result.count}'
                 : (result.message.isNotEmpty ? result.message : '签到成功');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: ok ? MoeTokens.success : MoeTokens.danger,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (ok) {
+      MoeToast.success(context, msg);
+    } else {
+      MoeToast.error(context, msg);
+    }
     provider.clearActionError();
   }
 
@@ -224,15 +219,11 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
     final provider = context.read<LifeProvider>();
     final ok = await provider.useItem(entity.id, invItem.itemId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok
-            ? '✨ ${invItem.displayName} 使用成功！'
-            : provider.lastActionError ?? '使用失败'),
-        backgroundColor: ok ? MoeTokens.success : MoeTokens.danger,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (ok) {
+      MoeToast.success(context, '✨ ${invItem.displayName} 使用成功！');
+    } else {
+      MoeToast.error(context, provider.lastActionError ?? '使用失败');
+    }
     provider.clearActionError();
   }
 
@@ -281,8 +272,8 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                    child: MoeSmallLoading(
+                                      size: 20,
                                       color: Colors.white,
                                     ),
                                   )
@@ -329,7 +320,7 @@ class _LifeInventoryPageState extends State<LifeInventoryPage> {
               if (provider.inventoryLoading)
                 const Expanded(
                   child: Center(
-                    child: CircularProgressIndicator(),
+                    child: MoeLoading(),
                   ),
                 )
               // 空背包状态

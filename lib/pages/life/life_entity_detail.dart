@@ -5,6 +5,8 @@ import '../../models/life_state.dart';
 import '../../providers/life_provider.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_tile.dart';
+import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
 
 /// Entity 详情页 — 展示单个实体的属性和最近事件。
 class LifeEntityDetailPage extends StatefulWidget {
@@ -31,27 +33,18 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
         final msg = action == 'feed'
             ? '喂食成功！${widget.entity.emoji} 很开心'
             : '抚摸成功！${widget.entity.emoji} 心情变好了';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: MoeTokens.success,
-            duration: const Duration(seconds: 1),
-          ),
+        MoeToast.success(
+          context,
+          msg,
+          duration: const Duration(seconds: 1),
         );
       } else if (provider.lastActionError != null) {
         final isCooldown = provider.lastActionIsCooldown;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                if (isCooldown) ...[Icon(Icons.timer_outlined, size: 18, color: Colors.white), const SizedBox(width: 6)],
-                Expanded(child: Text(provider.lastActionError!)),
-              ],
-            ),
-            backgroundColor: isCooldown ? MoeTokens.warning : MoeTokens.danger,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (isCooldown) {
+          MoeToast.warning(context, provider.lastActionError!);
+        } else {
+          MoeToast.error(context, provider.lastActionError!);
+        }
         provider.clearActionError();
       }
     } finally {
@@ -180,21 +173,9 @@ class _LifeEntityDetailPageState extends State<LifeEntityDetailPage> {
       final ok = await provider.useItem(widget.entity.id, invItem.itemId);
       if (!mounted) return;
       if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✨ ${invItem.displayName} 使用成功！'),
-            backgroundColor: MoeTokens.success,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        MoeToast.success(context, '✨ ${invItem.displayName} 使用成功！');
       } else if (provider.lastActionError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.lastActionError!),
-            backgroundColor: MoeTokens.danger,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        MoeToast.error(context, provider.lastActionError!);
         provider.clearActionError();
       }
     } finally {
@@ -654,8 +635,8 @@ class _ActionButton extends StatelessWidget {
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                  child: MoeSmallLoading(
+                    size: 20,
                     color: Colors.white,
                   ),
                 )

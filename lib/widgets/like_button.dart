@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:moe_social/services/post_service.dart';
+import 'package:moe_social/theme/moe_tokens.dart';
 import 'package:moe_social/widgets/motion/moe_pressable.dart';
+import 'package:moe_social/widgets/moe_loading.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
+
+/// 点赞高亮红 — 保留原点赞视觉的命名常量
+/// （比 MoeTokens.danger 更亮，不并入 danger 语义以免误用于错误提示）。
+const Color kLikeActiveRed = Color(0xFFFF4757); // ui-hardcode: ignore
 
 class LikeButton extends StatefulWidget {
   final String postId;
@@ -136,7 +142,7 @@ class _LikeButtonState extends State<LikeButton>
               _likeCount.toString(),
               key: ValueKey<int>(_likeCount),
               style: TextStyle(
-                color: _isLiked ? const Color(0xFFFF4757) : Colors.grey[500],
+                color: _isLiked ? kLikeActiveRed : MoeTokens.hintText,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -145,13 +151,9 @@ class _LikeButtonState extends State<LikeButton>
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.only(left: 8),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFFF4757),
-                ),
+              child: MoeSmallLoading(
+                size: 16,
+                color: kLikeActiveRed,
               ),
             ),
         ],

@@ -15,10 +15,13 @@ import '../../services/ai_tts_helper.dart';
 import '../../services/companion_service.dart';
 import '../../services/companion_interaction_coordinator.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
@@ -673,7 +676,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MoeLoading());
     }
 
     // ── 错误降级：友好提示卡片 ──
@@ -845,7 +848,13 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              FilledButton.icon(
+              // 主 CTA 迁移至统一按钮组件（回调逻辑保持等价；通栏宽度还原）
+              CustomButton(
+                text: buttonText,
+                icon: Icons.refresh_rounded,
+                width: double.infinity,
+                backgroundColor: AiBrandTokens.primary,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                 onPressed: () {
                   setState(() {
                     _isLoading = true;
@@ -853,16 +862,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                   });
                   _loadInitialData();
                 },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text(buttonText),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AiBrandTokens.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(44),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
               ),
             ],
           ),
@@ -1151,29 +1150,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     final saved = await showDialog<CompanionProfileData>(
       context: context,
       builder: (dialogContext) {
-        InputDecoration fieldDecoration(String hint) => InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: MoeTokens.hintText),
-              filled: true,
-              fillColor: MoeTokens.softLavenderBg,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: MoeTokens.spaceMd,
-                vertical: MoeTokens.spaceSm,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: MoeTokens.lineSoft),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: MoeTokens.lineSoft),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-                borderSide: const BorderSide(color: AiBrandTokens.primary),
-              ),
-            );
-
         return Dialog(
           insetPadding:
               const EdgeInsets.symmetric(horizontal: MoeTokens.spaceXl),
@@ -1212,29 +1188,32 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                     const Text('名字',
                         style: TextStyle(fontSize: MoeTokens.textSm)),
                     const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
+                    MoeInputField(
                       controller: nameController,
+                      hintText: '例如：啾啾',
+                      maxLines: 1,
                       textInputAction: TextInputAction.next,
-                      decoration: fieldDecoration('例如：啾啾'),
                     ),
                     const SizedBox(height: MoeTokens.spaceMd),
                     const Text('表情',
                         style: TextStyle(fontSize: MoeTokens.textSm)),
                     const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
+                    MoeInputField(
                       controller: emojiController,
+                      hintText: '例如：🐤',
+                      maxLines: 1,
                       textInputAction: TextInputAction.next,
-                      decoration: fieldDecoration('例如：🐤'),
                     ),
                     const SizedBox(height: MoeTokens.spaceMd),
                     const Text('陪伴方式',
                         style: TextStyle(fontSize: MoeTokens.textSm)),
                     const SizedBox(height: MoeTokens.spaceXs),
-                    TextField(
+                    MoeInputField(
                       controller: personaController,
+                      hintText: '例如：温暖、简短地陪我聊天',
                       minLines: 2,
                       maxLines: 3,
-                      decoration: fieldDecoration('例如：温暖、简短地陪我聊天'),
+                      textInputAction: TextInputAction.newline,
                     ),
                     const SizedBox(height: MoeTokens.spaceXl),
                     Row(

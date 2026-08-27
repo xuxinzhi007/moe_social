@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/moe_loading.dart';
 import 'pet_lpc_composer.dart';
 import 'pet_lpc_sheet.dart';
 
@@ -85,11 +86,7 @@ class _PetLpcItemThumbState extends State<PetLpcItemThumb> {
         width: widget.size,
         height: widget.size,
         child: const Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: MoeSmallLoading(size: 16),
         ),
       );
     }

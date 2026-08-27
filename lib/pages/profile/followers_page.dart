@@ -5,6 +5,7 @@ import '../../theme/moe_tokens.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_loading.dart';
 
 class FollowersPage extends StatefulWidget {
   final String userId;
@@ -81,7 +82,7 @@ class _FollowersPageState extends State<FollowersPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MoeLoading());
     }
 
     if (_hasError) {

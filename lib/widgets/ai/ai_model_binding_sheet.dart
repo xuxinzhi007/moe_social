@@ -7,6 +7,8 @@ import '../../pages/ai/ai_provider_profiles_page.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_sheet.dart';
 import 'ai_theme.dart';
+import '../moe_loading.dart';
+import '../moe_toast.dart';
 
 /// 使用他人角色卡前：选择本账号的 API 来源与模型 ID。
 class AiModelBindingSelection {
@@ -142,9 +144,7 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
   void _submit() {
     final model = _modelController.text.trim();
     if (model.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请选择或输入模型 ID')),
-      );
+      MoeToast.warning(context, '请选择或输入模型 ID');
       return;
     }
     Navigator.pop(
@@ -161,7 +161,7 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
     if (_loadingProfiles) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: MoeLoading(size: 32)),
       );
     }
 
@@ -255,13 +255,9 @@ class _AiModelBindingSheetBodyState extends State<_AiModelBindingSheetBody> {
             padding: const EdgeInsets.only(top: 8),
             child: Row(
               children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AiBrandTokens.primary.withValues(alpha: 0.7),
-                  ),
+                MoeSmallLoading(
+                  size: 14,
+                  color: AiBrandTokens.primary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Text('加载模型列表…', style: AiTheme.caption),

@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../../providers/loading_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/auth_background.dart';
 import '../../widgets/email_completion_bubble.dart';
 import '../../widgets/moe_toast.dart';
@@ -488,13 +489,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
                   child: Center(
                     child: isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
+                        ? const MoeSmallLoading(
+                            size: 22,
+                            color: Colors.white,
                           )
                         : const Text(
                             '立即注册',
@@ -637,13 +634,9 @@ class _TempMailButton extends StatelessWidget {
                 ),
               ),
               child: isLoading
-                  ? SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                      ),
+                  ? MoeSmallLoading(
+                      size: 14,
+                      color: accentColor,
                     )
                   : Row(
                       mainAxisSize: MainAxisSize.min,

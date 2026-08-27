@@ -48,6 +48,8 @@
 | `success` | `#2E7D32` | 成功 |
 | `danger` | `#E53935` | 错误/危险 |
 | `warning` | `#FF6F00` | 警告 |
+| `goldLight` | `#FFE082` | VIP 主金色（徽章描边/会员强调） |
+| `goldBg` | `#FFF8E1` | VIP 金色浅底（徽章文字/浅金底色） |
 
 ### 2.2 渐变系统
 
@@ -210,9 +212,69 @@ ClipRRect(
 
 ---
 
-## 4. 页面模板
+## 4. 统一组件强制规范（防新增护栏）
 
-### 4.1 认证页通用结构
+> **硬性要求**：以下映射为强制项，新代码与改动代码一律使用统一组件；
+> 由 `scripts/check_ui_hardcode.sh` 在提交前 / CI 拦截新增违规（只查 diff 新增行，存量不追溯）。
+
+### 4.1 场景 → 必须使用的组件
+
+| 场景 | 必须使用 | 禁止新增 |
+|------|---------|---------|
+| 按钮 | `CustomButton`（配 `MoeButtonSize` 档位） | 裸 `ElevatedButton` / `TextButton` / 手拼 InkWell 按钮 |
+| 输入框 | `MoeInputField` | 裸 `TextField` / `TextFormField` |
+| 轻提示反馈 | `MoeToast` | 裸 `SnackBar` / `ScaffoldMessenger.showSnackBar` |
+| 加载中 | `MoeLoading` / `CustomButton(isLoading: true)` | 裸 `CircularProgressIndicator` |
+| 未读角标 | `MoeBadgeDot`（全局权威实现） | 手拼小圆点 / 自绘角标 |
+| 列表吸顶头 | `MoePinnedHeaderDelegate`（全局权威实现） | 自写 `SliverPersistentHeaderDelegate` |
+| 菜单/设置条目 | `MoeMenuCard` | 手拼 ListTile 卡片 |
+| 颜色 / 圆角 / 间距 | `MoeTokens.*` | 硬编码 `Colors.*` / `Color(0x…)` / `BorderRadius.circular(字面量)` |
+
+### 4.2 按钮尺寸档位（`MoeButtonSize`）
+
+| 档位 | 高度 | 水平内边距 | 适用场景 |
+|------|------|-----------|---------|
+| `small` | 40px | 16px | 紧凑列表、弹窗次级操作 |
+| `medium`（默认） | 48px | 20px | 多数页面 CTA |
+| `large` | 56px | 24px | 登录/注册等主 CTA |
+
+```dart
+CustomButton(text: '保存', size: MoeButtonSize.small, onPressed: onSave)
+```
+
+确需非标尺寸时才显式传 `height` / `padding`，并优先复用 `MoeTokens.btnHeight*` / `btnPad*`。
+
+### 4.3 图标分层
+
+| 层级 | 方案 | 适用 |
+|------|------|------|
+| 系统级 | Material Icons（`Icons.*`） | 通用操作（返回、关闭、更多）等非品牌图标 |
+| 品牌门面 | `MoeIcon`（SVG，资产 `assets/icons/ui/`） | 心形/星形等品牌识别图标；缺失时自动降级 Material 近义图标 |
+| 动效图标 | Lottie（`assets/lottie/`） | 礼物、聊天等需要动画表达的场景 |
+
+### 4.4 禁止项清单
+
+- 禁止新增硬编码色值（`Colors.*` / `Color(0x…)`）—— 一律 `MoeTokens`；缺 token 先补录再用
+- 禁止新增字面量圆角（`BorderRadius.circular(18)` 式）—— 一律 `MoeTokens.radius*` 档位
+- 禁止新增裸 `TextField` / `TextFormField` / `SnackBar` / `CircularProgressIndicator`
+- 禁止绕过 `MoeBadgeDot` / `MoePinnedHeaderDelegate` 重复实现全局角标与吸顶逻辑
+
+### 4.5 护栏脚本用法（`scripts/check_ui_hardcode.sh`）
+
+```bash
+scripts/check_ui_hardcode.sh            # 默认 base=HEAD，提交前自检工作区新增行
+scripts/check_ui_hardcode.sh origin/main  # CI：检测整个 PR 的新增行
+```
+
+- 退出码：`0` 无新增违规 / `1` 存在违规（输出 `文件:行号:[类型] 内容` 清单）/ `2` 环境错误
+- 豁免：行尾 `// ui-hardcode: ignore`；文件前 10 行 `// ui-hardcode: ignore-file`；
+  环境变量 `EXCLUDES`（冒号分隔，默认豁免 `lib/theme/moe_tokens.dart` — 色值 SSOT）
+
+---
+
+## 5. 页面模板
+
+### 5.1 认证页通用结构
 
 ```
 AuthBackground（4色渐变 + 浮动光斑）
@@ -230,13 +292,13 @@ AuthBackground（4色渐变 + 浮动光斑）
                   └─ 底部引导（渐变分隔线 + 渐变文字）
 ```
 
-### 4.2 认证页背景（AuthBackground）
+### 5.2 认证页背景（AuthBackground）
 
 - **4 色渐变**：紫 / 蓝 / 青 / 粉（粉色增加萌感）
 - **4 个浮动光斑**：Lissajous 曲线运动轨迹
 - **顶部光晕条**：模拟光源照射效果
 
-### 4.3 登录页特有元素
+### 5.3 登录页特有元素
 
 - `_BreathingLogo`：渐变容器 + 心形图标 + 呼吸脉冲动画
   - padding: 16, icon: 40, borderRadius: 22
@@ -244,7 +306,7 @@ AuthBackground（4色渐变 + 浮动光斑）
 - 品牌名 "Moe Social"：`gradientText` ShaderMask，fontSize 26
 - 副标题：`gradientSoft` ShaderMask
 
-### 4.4 页面高度控制
+### 5.4 页面高度控制
 
 登录页经过高度优化，确保 iPhone 14 一屏可见：
 - Logo 区域紧凑化（~130px）
@@ -254,13 +316,15 @@ AuthBackground（4色渐变 + 浮动光斑）
 
 ---
 
-## 5. 新页面/组件开发指南
+## 6. 新页面/组件开发指南
 
 ### 检查清单
 
 创建新页面或组件时，按以下清单检查：
 
 - [ ] 颜色是否引用 `MoeTokens`？（禁止硬编码色值）
+- [ ] 按钮/输入/反馈/加载是否使用统一组件（见第 4 章强制规范）？
+- [ ] 提交前是否通过 `scripts/check_ui_hardcode.sh` 检查？
 - [ ] 卡片是否使用 `shadowCard()` 双层阴影？
 - [ ] 浮层是否使用 `shadowElevated()` 双层阴影？
 - [ ] 按钮是否使用 `gradientPrimary` + `shadowGlow`？
@@ -346,15 +410,19 @@ Container(
 
 ---
 
-## 6. 文件索引
+## 7. 文件索引
 
 | 文件 | 职责 |
 |------|------|
 | `lib/theme/moe_tokens.dart` | 全局 Design Tokens SSOT |
 | `lib/theme/moe_theme.dart` | ThemeExtension + light/dark + lerp |
 | `lib/widgets/auth_background.dart` | 认证页渐变背景 + 浮动光斑 |
-| `lib/widgets/custom_button.dart` | 统一按钮组件 |
+| `lib/widgets/custom_button.dart` | 统一按钮组件（+ `MoeButtonSize` 档位） |
 | `lib/widgets/moe_input_field.dart` | 统一输入框 |
+| `lib/widgets/moe_icon.dart` | 品牌 SVG 图标（带 Material 降级） |
+| `lib/widgets/moe_badge_dot.dart` | 全局未读角标（权威实现） |
+| `lib/widgets/moe_pinned_header_delegate.dart` | 全局吸顶 Delegate（权威实现） |
+| `lib/widgets/moe_menu_card.dart` | 菜单/设置条目卡片 |
 | `lib/widgets/moe_empty_state.dart` | 空态组件 |
 | `lib/widgets/moe_loading.dart` | 加载动画 |
 | `lib/widgets/moe_bottom_bar.dart` | 底部导航栏 |

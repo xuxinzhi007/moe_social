@@ -112,13 +112,9 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
                       FilledButton(
                         onPressed: _isSaving ? null : _save,
                         child: _isSaving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
+                            ? const MoeSmallLoading(
+                                size: 18,
+                                color: Colors.white,
                               )
                             : const Text('保存设置'),
                       ),

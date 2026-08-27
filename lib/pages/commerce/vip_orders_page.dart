@@ -3,6 +3,7 @@ import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../services/commerce_service.dart';
 import '../../models/vip_order.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 class VipOrdersPage extends StatefulWidget {
@@ -116,7 +117,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
       body: RefreshIndicator(
         onRefresh: () => _loadOrders(refresh: true),
         child: _isLoading && _orders.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: MoeLoading())
             : _orders.isEmpty
                 ? Center(
                     child: Column(
@@ -142,7 +143,7 @@ class _VipOrdersPageState extends State<VipOrdersPage> {
                           padding: const EdgeInsets.all(16),
                           child: Center(
                             child: _isLoading
-                                ? const CircularProgressIndicator()
+                                ? const MoeSmallLoading(size: 24)
                                 : TextButton(
                                     onPressed: _loadMore,
                                     child: const Text('加载更多'),

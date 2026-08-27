@@ -6,6 +6,8 @@ import '../../config/app_config.dart';
 import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 class AutoGLMConfigPage extends StatefulWidget {
@@ -73,7 +75,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       _logger.info('配置加载完成', category: LogCategory.system);
     } catch (e) {
       _logger.error('配置加载失败: $e', category: LogCategory.system);
-      _showSnackBar('配置加载失败: $e', isError: true);
+      MoeToast.error(context, '配置加载失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -140,9 +142,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(MoeTokens.primary),
-              ))
+            ? const Center(child: MoeLoading())
             : Form(
                 key: _formKey,
                 child: ListView(
@@ -290,28 +290,20 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   }
 
   Widget _buildApiUrlField() {
-    return TextFormField(
+    return MoeInputField(
       controller: _apiUrlController,
-      decoration: InputDecoration(
-        labelText: 'API 地址 *',
-        hintText: '请输入 API 服务地址',
-        prefixIcon: Icon(Icons.cloud, color: MoeTokens.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-        suffixIcon: PopupMenuButton<String>(
-          icon: Icon(Icons.history, color: Colors.grey[600]),
-          tooltip: '选择预设地址',
-          onSelected: (url) => _apiUrlController.text = url,
-          itemBuilder: (context) => [
-            'https://api-inference.modelscope.cn/v1/chat/completions',
-            'https://api.openai.com/v1/chat/completions',
-            'https://api.anthropic.com/v1/messages',
-          ].map((url) => PopupMenuItem(value: url, child: Text(url))).toList(),
-        ),
+      hintText: '请输入 API 服务地址 *',
+      icon: Icons.cloud,
+      maxLines: 1,
+      suffixIcon: PopupMenuButton<String>(
+        icon: const Icon(Icons.history, color: MoeTokens.hintText),
+        tooltip: '选择预设地址',
+        onSelected: (url) => _apiUrlController.text = url,
+        itemBuilder: (context) => [
+          'https://api-inference.modelscope.cn/v1/chat/completions',
+          'https://api.openai.com/v1/chat/completions',
+          'https://api.anthropic.com/v1/messages',
+        ].map((url) => PopupMenuItem(value: url, child: Text(url))).toList(),
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -405,21 +397,13 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   }
 
   Widget _buildMaxStepsField() {
-    return TextFormField(
+    return MoeInputField(
       controller: _maxStepsController,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: '最大步数',
-        hintText: '20',
-        prefixIcon: Icon(Icons.linear_scale, color: MoeTokens.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
+      hintText: '最大步数（默认 20）',
+      icon: Icons.linear_scale,
+      maxLines: 1,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '请输入最大步数';
@@ -434,21 +418,13 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
   }
 
   Widget _buildStepTimeoutField() {
-    return TextFormField(
+    return MoeInputField(
       controller: _stepTimeoutController,
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: '步骤超时(秒)',
-        hintText: '30',
-        prefixIcon: Icon(Icons.timer, color: MoeTokens.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
+      hintText: '步骤超时秒数（默认 30）',
+      icon: Icons.timer,
+      maxLines: 1,
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '请输入超时时间';
@@ -635,10 +611,10 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         category: LogCategory.system,
       );
 
-      _showSnackBar('配置保存成功！');
+      MoeToast.info(context, '配置保存成功！');
     } catch (e) {
       _logger.error('配置保存失败: $e', category: LogCategory.system);
-      _showSnackBar('配置保存失败: $e', isError: true);
+      MoeToast.error(context, '配置保存失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -657,7 +633,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         : await AppConfig.getModelName();
 
     if (apiUrl.isEmpty) {
-      _showSnackBar('API地址不能为空', isError: true);
+      MoeToast.error(context, 'API地址不能为空');
       return;
     }
 
@@ -703,7 +679,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         _logger.info('API连接测试成功',
           metadata: {'response': content},
           category: LogCategory.network);
-        _showSnackBar('API连接测试成功！✅\n模型响应：$content');
+        MoeToast.info(context, 'API连接测试成功！✅\n模型响应：$content');
       } else {
         throw Exception('API返回错误状态码: ${response.statusCode}');
       }
@@ -733,7 +709,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       }
 
       _logger.error('API连接测试失败: $errorMessage', category: LogCategory.network);
-      _showSnackBar('连接测试失败 ❌\n$errorMessage', isError: true);
+      MoeToast.error(context, '连接测试失败 ❌\n$errorMessage');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -784,12 +760,12 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
       final configJson = JsonEncoder.withIndent('  ').convert(config);
 
       await Clipboard.setData(ClipboardData(text: configJson));
-      _showSnackBar('配置已复制到剪贴板');
+      MoeToast.info(context, '配置已复制到剪贴板');
 
       _logger.info('配置导出成功', category: LogCategory.system);
     } catch (e) {
       _logger.error('配置导出失败: $e', category: LogCategory.system);
-      _showSnackBar('导出失败: $e', isError: true);
+      MoeToast.error(context, '导出失败: $e');
     }
   }
 
@@ -809,7 +785,7 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
 
   void _importConfig() {
     // 实现配置导入功能
-    _showSnackBar('配置导入功能开发中...');
+    MoeToast.info(context, '配置导入功能开发中...');
   }
 
   Future<void> _resetToDefaults() async {
@@ -834,18 +810,18 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
     if (confirm == true) {
       await AppConfig.resetToDefaults();
       await _loadConfig();
-      _showSnackBar('配置已重置为默认值');
+      MoeToast.info(context, '配置已重置为默认值');
     }
   }
 
   void _testAllSettings() {
     // 实现所有设置测试功能
-    _showSnackBar('全面测试功能开发中...');
+    MoeToast.info(context, '全面测试功能开发中...');
   }
 
   void _scanApiKey() {
     // 实现二维码扫描功能
-    _showSnackBar('二维码扫描功能开发中...');
+    MoeToast.info(context, '二维码扫描功能开发中...');
   }
 
   void _editCustomModel() {
@@ -879,14 +855,6 @@ class _AutoGLMConfigPageState extends State<AutoGLMConfigPage> {
         );
       },
     );
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (isError) {
-      MoeToast.error(context, message);
-      return;
-    }
-    MoeToast.info(context, message);
   }
 
   Widget _buildConfigTip() {

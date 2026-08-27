@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/user_service.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -96,7 +97,7 @@ class _MessageRetentionSettingsPageState
         centerTitle: true,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MoeLoading())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -157,13 +158,9 @@ class _MessageRetentionSettingsPageState
                 FilledButton(
                   onPressed: _saving ? null : _save,
                   child: _saving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                      ? const MoeSmallLoading(
+                          size: 22,
+                          color: Colors.white,
                         )
                       : const Text('保存'),
                 ),

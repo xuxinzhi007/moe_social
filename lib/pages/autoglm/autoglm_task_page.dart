@@ -652,8 +652,9 @@ class _AutoGLMTaskPageState extends State<AutoGLMTaskPage> with TickerProviderSt
                   const SizedBox(width: 12),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    width: 56,
-                    height: 56,
+                    // 执行按钮收敛至标准图标按钮档位（48）
+                    width: MoeTokens.iconBtnMd,
+                    height: MoeTokens.iconBtnMd,
                     child: FloatingActionButton(
                       heroTag: "execute_button",
                       onPressed: _isProcessing ? _stopTask : _executeCurrentTask,

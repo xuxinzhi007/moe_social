@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../widgets/moe_loading.dart';
 import 'pet_moe_avatar_composer.dart';
 
 /// 换衣 rail：Moe 包单品部件缩略图（仅该层 idle·朝下）。
@@ -69,11 +70,7 @@ class _PetMoeItemThumbState extends State<PetMoeItemThumb> {
         width: widget.size,
         height: widget.size,
         child: const Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: MoeSmallLoading(size: 16),
         ),
       );
     }

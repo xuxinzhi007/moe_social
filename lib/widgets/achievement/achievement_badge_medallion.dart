@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/achievement_badge.dart';
+import '../../../theme/moe_tokens.dart';
 import '../motion/moe_motion.dart';
+import '../moe_icon.dart';
 import 'achievement_badge_visuals.dart';
 
 class AchievementBadgeMedallion extends StatefulWidget {
@@ -83,6 +85,25 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion>
     super.dispose();
   }
 
+  /// 徽章主图形：映射到 MoeIcon SVG 的优先走定制图标；
+  /// 未映射的保留 [achievementIconForId] Material 图标兜底（不白屏）。
+  Widget _buildBadgeSymbol(
+    AchievementBadge badge,
+    double size,
+    bool isUnlocked,
+  ) {
+    final iconColor = isUnlocked ? badge.color : MoeTokens.greyDisabled;
+    final moeName = moeIconNameForBadge(badge);
+    if (moeName != null) {
+      return MoeIcon(name: moeName, size: size * 0.5, color: iconColor);
+    }
+    return Icon(
+      achievementIconForId(badge.id),
+      size: size * 0.5,
+      color: iconColor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final badge = widget.badge;
@@ -140,11 +161,7 @@ class _AchievementBadgeMedallionState extends State<AchievementBadgeMedallion>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Icon(
-                achievementIconForId(badge.id),
-                size: size * 0.5,
-                color: isUnlocked ? badge.color : Colors.grey.shade400,
-              ),
+              _buildBadgeSymbol(badge, size, isUnlocked),
               if (!isUnlocked && widget.showLockBadge)
                 Positioned(
                   child: Container(

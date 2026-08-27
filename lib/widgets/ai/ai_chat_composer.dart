@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../moe_loading.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_theme.dart';
 
@@ -310,13 +311,9 @@ class _SendingSlot extends StatelessWidget {
       width: 34,
       height: 34,
       child: Center(
-        child: SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AiBrandTokens.primary.withValues(alpha: 0.55),
-          ),
+        child: MoeSmallLoading(
+          size: 18,
+          color: AiBrandTokens.primary.withValues(alpha: 0.55),
         ),
       ),
     );

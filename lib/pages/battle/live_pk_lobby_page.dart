@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../providers/battle_lobby_provider.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_toast.dart';
 
 /// Development-only entry for creating a V1 PK room with two existing users.
 class LivePkLobbyPage extends StatefulWidget {
@@ -51,16 +53,18 @@ class _LivePkLobbyPageState extends State<LivePkLobbyPage> {
                 const SizedBox(height: MoeTokens.spaceSm),
                 const Text('创建者必须是其中一位参赛者；使用两个数据库中已有的用户 ID。'),
                 const SizedBox(height: MoeTokens.space2xl),
-                TextField(
+                MoeInputField(
                   controller: _leftController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '左方用户 ID'),
+                  hintText: '左方用户 ID',
+                  maxLines: 1,
                 ),
                 const SizedBox(height: MoeTokens.spaceLg),
-                TextField(
+                MoeInputField(
                   controller: _rightController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '右方用户 ID'),
+                  hintText: '右方用户 ID',
+                  maxLines: 1,
                 ),
                 const SizedBox(height: MoeTokens.space2xl),
                 FilledButton.icon(
@@ -78,10 +82,11 @@ class _LivePkLobbyPageState extends State<LivePkLobbyPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: MoeTokens.spaceMd),
-                TextField(
+                MoeInputField(
                   controller: _roomController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'PK 房间 ID'),
+                  hintText: 'PK 房间 ID',
+                  maxLines: 1,
                 ),
                 const SizedBox(height: MoeTokens.spaceLg),
                 OutlinedButton.icon(
@@ -113,16 +118,14 @@ class _LivePkLobbyPageState extends State<LivePkLobbyPage> {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error.toString())));
+      MoeToast.error(context, error.toString());
     }
   }
 
   void _enterRoom(BuildContext context) {
     final roomId = _roomController.text.trim();
     if (int.tryParse(roomId) == null || int.parse(roomId) <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('请输入有效的 PK 房间 ID')));
+      MoeToast.error(context, '请输入有效的 PK 房间 ID');
       return;
     }
     Navigator.of(context)

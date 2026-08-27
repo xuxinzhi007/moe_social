@@ -7,6 +7,8 @@ import '../../utils/validators.dart';
 import '../../models/user.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../utils/media_url.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
 import '../../theme/moe_tokens.dart';
@@ -37,9 +39,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
         _showUserFoundDialog(user);
       } on ApiException catch (e) {
-        _showCustomSnackBar(context, e.message, isError: true);
+        MoeToast.error(context, e.message);
       } catch (e) {
-        _showCustomSnackBar(context, '查询失败，请稍后重试', isError: true);
+        MoeToast.error(context, '查询失败，请稍后重试');
       } finally {
         if (mounted) {
           setState(() {
@@ -203,15 +205,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  void _showCustomSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    if (isError) {
-      MoeToast.error(context, message);
-      return;
-    }
-    MoeToast.success(context, message);
-  }
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -350,32 +343,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                           fontSize: MoeTokens.textBase),
                                     ),
                                     const SizedBox(height: 30),
-                                    TextFormField(
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text('邮箱地址',
+                                          style: TextStyle(
+                                              fontSize: MoeTokens.textSm,
+                                              color: MoeTokens.titleText)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    MoeInputField(
                                       controller: _emailController,
-                                      decoration: InputDecoration(
-                                        labelText: '邮箱地址',
-                                        prefixIcon: const Icon(
-                                            Icons.email_outlined,
-                                            color: MoeTokens.primary),
-                                        border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                MoeTokens.radiusInput)),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: BorderSide(
-                                              color: Colors.grey[200]!),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: const BorderSide(
-                                              color: MoeTokens.primary),
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.grey[50],
-                                      ),
-                                      keyboardType: TextInputType.emailAddress,
+                                      hintText: '邮箱地址',
+                                      icon: Icons.email_outlined,
+                                      primaryColor: MoeTokens.primary,
+                                      maxLines: 1,
+                                      keyboardType:
+                                          TextInputType.emailAddress,
                                       validator: Validators.email,
                                     ),
                                     const SizedBox(height: 30),
@@ -395,13 +378,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                           elevation: 5,
                                         ),
                                         child: _isLoading
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        color: Colors.white,
-                                                        strokeWidth: 2))
+                                            ? const MoeSmallLoading(
+                                                size: 20,
+                                                color: Colors.white)
                                             : const Text('查找账号',
                                                 style: TextStyle(
                                                     fontSize: MoeTokens.textLg,

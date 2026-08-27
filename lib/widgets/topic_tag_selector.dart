@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/topic_tag.dart';
+import '../theme/moe_tokens.dart';
+import 'moe_input_field.dart';
 import 'moe_toast.dart';
 
 /// 话题标签选择器 - 支持搜索、创建和选择自定义标签
@@ -200,36 +202,23 @@ class _TopicTagSelectorState extends State<TopicTagSelector> {
           // 搜索输入框
           if (widget.showSearchBar) ...[
             const SizedBox(height: 16),
-            TextField(
+            MoeInputField(
               controller: _searchController,
               focusNode: _searchFocus,
-              decoration: InputDecoration(
-                hintText: widget.placeholder ?? '搜索或创建新标签...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.grey),
-                        onPressed: () {
-                          _searchController.clear();
-                          _searchFocus.unfocus();
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
+              hintText: widget.placeholder ?? '搜索或创建新标签...',
+              maxLines: 1,
+              prefixIcon: const Icon(Icons.search, color: MoeTokens.hintText),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: MoeTokens.hintText),
+                      onPressed: () {
+                        _searchController.clear();
+                        _searchFocus.unfocus();
+                      },
+                    )
+                  : null,
               textInputAction: TextInputAction.done,
-              onSubmitted: (value) {
+              onFieldSubmitted: (value) {
                 if (value.trim().isNotEmpty) {
                   _createAndAddTag(value.trim());
                 }

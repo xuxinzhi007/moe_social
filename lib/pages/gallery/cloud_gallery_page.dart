@@ -15,6 +15,7 @@ import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
 import '../../utils/public_download_directory.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_loading.dart';
 import 'cloud_image_viewer_page.dart';
 
 class CloudGalleryPage extends StatefulWidget {
@@ -802,12 +803,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
                             }
                             return Center(
                               child: _isFetching
-                                  ? const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
+                                  ? const MoeSmallLoading(size: 24)
                                   : const SizedBox(),
                             );
                           }

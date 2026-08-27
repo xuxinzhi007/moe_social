@@ -5,6 +5,11 @@ import '../../services/chat_push_service.dart';
 import '../../utils/media_url.dart';
 import '../../widgets/moe_toast.dart';
 
+/// 通话接听/挂断圆形按钮尺寸。
+/// 通话场景为产品有意设计的大圆钮，但从原 80 收敛至 72，
+/// 与常规按钮档位（40/48/56）拉开层级，但不再过度放大。
+const double _kCallActionButtonSize = 72.0;
+
 class VoiceCallReceivingPage extends StatelessWidget {
   final String callerId;
   final String callerName;
@@ -91,8 +96,8 @@ class VoiceCallReceivingPage extends StatelessWidget {
               GestureDetector(
                 onTap: () => _rejectCall(context),
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: _kCallActionButtonSize,
+                  height: _kCallActionButtonSize,
                   decoration: const BoxDecoration(
                     color: Colors.red,
                     shape: BoxShape.circle,
@@ -104,8 +109,8 @@ class VoiceCallReceivingPage extends StatelessWidget {
               GestureDetector(
                 onTap: () => _answerCall(context),
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: _kCallActionButtonSize,
+                  height: _kCallActionButtonSize,
                   decoration: const BoxDecoration(
                     color: Colors.green,
                     shape: BoxShape.circle,

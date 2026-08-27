@@ -133,6 +133,7 @@ flutter:
   assets:
     - assets/
     - assets/chat/
+    - assets/icons/ui/
     - assets/avatars/
     - assets/branding/
     - assets/frames/

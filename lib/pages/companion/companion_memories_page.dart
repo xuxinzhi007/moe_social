@@ -7,6 +7,7 @@ import '../../services/companion_service.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import 'companion_memories_viewmodel.dart';
@@ -88,19 +89,21 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
 
   Future<void> _editContent(CompanionMemoryData memory) async {
     final controller = TextEditingController(text: memory.content);
+    final focusNode = FocusNode();
     final next = await showDialog<String>(
       context: context,
       builder: (dialogContext) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          focusNode.requestFocus();
+        });
         return AlertDialog(
           title: const Text('编辑这段记忆'),
-          content: TextField(
+          content: MoeInputField(
             controller: controller,
+            focusNode: focusNode,
+            hintText: '写下更准确的说法',
             maxLines: 6,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: '写下更准确的说法',
-              border: OutlineInputBorder(),
-            ),
+            textInputAction: TextInputAction.newline,
           ),
           actions: [
             TextButton(
@@ -117,6 +120,7 @@ class _CompanionMemoriesPageState extends State<CompanionMemoriesPage> {
       },
     );
     controller.dispose();
+    focusNode.dispose();
     if (next == null || !mounted) return;
     if (next.isEmpty) {
       MoeToast.error(context, '记忆内容不能为空');

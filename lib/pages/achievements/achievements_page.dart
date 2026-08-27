@@ -5,6 +5,7 @@ import '../../models/achievement_badge.dart';
 import '../../services/achievement_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/achievement_badge_display.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/motion/moe_reveal.dart';
 
 class AchievementsPage extends StatefulWidget {
@@ -98,7 +99,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: MoeTokens.primary),
+              child: MoeLoading(),
             )
           : _currentUserId == null
               ? const Center(

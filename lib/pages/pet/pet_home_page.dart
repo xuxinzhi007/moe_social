@@ -17,6 +17,7 @@ import '../../providers/pet_provider.dart';
 import '../../services/companion_service.dart';
 import '../../services/pet_career_config.dart';
 import '../../widgets/motion/moe_vfx_profile.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/pet/pet_care_juice_overlay.dart';
 import 'pet_adventure_page.dart';
 import 'pet_dressing_page.dart';
@@ -757,7 +758,7 @@ class _PetHomePageState extends State<PetHomePage> {
       return const Scaffold(body: Center(child: Text('养成域未开启')));
     }
     if (_pet == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: MoeLoading()));
     }
     final p = pet.profile;
     return ChangeNotifierProvider.value(
@@ -916,7 +917,7 @@ class _PetHomePageState extends State<PetHomePage> {
             if (!pet.loaded)
               const ColoredBox(
                 color: Color(0x55FFFFFF),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: MoeLoading()),
               ),
           ],
         ),

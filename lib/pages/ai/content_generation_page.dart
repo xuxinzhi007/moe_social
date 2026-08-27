@@ -11,6 +11,7 @@ import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/ai_chat_empty_state.dart';
 import '../../widgets/ai/message_bubble.dart';
+import '../../widgets/moe_loading.dart';
 
 enum ContentType {
   text,
@@ -493,14 +494,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
                           gradient: AiBrandTokens.userBubbleGradient,
                         ),
                         child: const Center(
-                          child: SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
+                          child: MoeSmallLoading(size: 22, color: Colors.white),
                         ),
                       )
                     : Container(
@@ -522,11 +516,7 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
               padding: const EdgeInsets.only(top: 10),
               child: Row(
                 children: [
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+                  const MoeSmallLoading(size: 14),
                   const SizedBox(width: 8),
                   Text(
                     _generationStatus,

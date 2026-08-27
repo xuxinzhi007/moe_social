@@ -425,13 +425,9 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
                       ),
                       if (_onlineMatching) ...[
                         const SizedBox(width: 12),
-                        const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                        const MoeSmallLoading(
+                          size: 18,
+                          color: Colors.white,
                         ),
                       ],
                     ],
@@ -567,13 +563,9 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
           elevation: 0,
         ),
         icon: _loading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+            ? const MoeSmallLoading(
+                size: 18,
+                color: Colors.white,
               )
             : const Icon(Icons.auto_awesome_rounded, size: 20),
         label: Text(

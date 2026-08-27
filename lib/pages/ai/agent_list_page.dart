@@ -23,6 +23,7 @@ import '../../widgets/ai/ai_empty_state.dart';
 import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_search_bar.dart';
@@ -482,45 +483,16 @@ class _AgentListPageState extends State<AgentListPage>
   }
 
   Widget _buildHeroSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: TextField(
-        onChanged: (value) {
-          _updateTavernState(() => _searchQuery = value);
-          _filterAgents();
-        },
-        style: TextStyle(fontSize: MoeTokens.textBase, height: 1.4),
-        decoration: InputDecoration(
-          hintText: '搜索角色、描述或模型...',
-          hintStyle: TextStyle(
-              color: Colors.grey.shade400, fontSize: MoeTokens.textBase),
-          prefixIcon:
-              Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 22),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: Icon(Icons.clear_rounded,
-                      color: Colors.grey.shade400, size: 20),
-                  onPressed: () {
-                    _updateTavernState(() => _searchQuery = '');
-                    _filterAgents();
-                  },
-                )
-              : null,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: MoeTokens.spaceLg, vertical: MoeTokens.spaceMd),
-        ),
-      ),
+    return MoeSearchBar(
+      hintText: '搜索角色、描述或模型...',
+      onSearch: (value) {
+        _updateTavernState(() => _searchQuery = value);
+        _filterAgents();
+      },
+      onClear: () {
+        _updateTavernState(() => _searchQuery = '');
+        _filterAgents();
+      },
     );
   }
 
@@ -909,52 +881,56 @@ class _AgentListPageState extends State<AgentListPage>
     final controller = TextEditingController(
       text: provider.defaultModel.trim(),
     );
+    final focusNode = FocusNode();
     if (!mounted) return;
     final modelId = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('绑定模型 ID'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              '填写你在中转站控制台里实际调用的模型名，例如 gpt-4o-mini、deepseek-chat。',
-              style: TextStyle(fontSize: 13, height: 1.4),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: '模型 ID',
-                hintText: 'gpt-4o-mini',
-                border: OutlineInputBorder(),
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          focusNode.requestFocus();
+        });
+        return AlertDialog(
+          title: const Text('绑定模型 ID'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '填写你在中转站控制台里实际调用的模型名，例如 gpt-4o-mini、deepseek-chat。',
+                style: TextStyle(fontSize: 13, height: 1.4),
               ),
-              autofocus: true,
-              onSubmitted: (v) {
-                final trimmed = v.trim();
-                if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
+              const SizedBox(height: 12),
+              MoeInputField(
+                controller: controller,
+                focusNode: focusNode,
+                hintText: '模型 ID（例如 gpt-4o-mini）',
+                maxLines: 1,
+                onFieldSubmitted: (v) {
+                  final trimmed = v.trim();
+                  if (trimmed.isNotEmpty) Navigator.pop(ctx, trimmed);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final trimmed = controller.text.trim();
+                if (trimmed.isEmpty) return;
+                Navigator.pop(ctx, trimmed);
               },
+              child: const Text('创建角色卡'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final trimmed = controller.text.trim();
-              if (trimmed.isEmpty) return;
-              Navigator.pop(ctx, trimmed);
-            },
-            child: const Text('创建角色卡'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     controller.dispose();
+    focusNode.dispose();
     if (modelId == null || modelId.trim().isEmpty || !mounted) return;
     await _createAgentFromModel(modelId.trim(), provider);
   }
@@ -1049,14 +1025,12 @@ class _AgentListPageState extends State<AgentListPage>
               label: const Text('从 JSON 文件导入'),
             ),
             const SizedBox(height: 12),
-            TextField(
+            MoeInputField(
               controller: controller,
+              hintText: '或粘贴从其他平台导出的角色卡 JSON',
               minLines: 10,
               maxLines: 16,
-              decoration: AiTheme.inputDecoration(
-                hintText: '或粘贴从其他平台导出的角色卡 JSON',
-                alignLabelWithHint: true,
-              ),
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
@@ -1125,11 +1099,7 @@ class _AgentListPageState extends State<AgentListPage>
                             }
                           },
                     child: isImporting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? const MoeSmallLoading(size: 18)
                         : const Text('导入'),
                   ),
                 ),

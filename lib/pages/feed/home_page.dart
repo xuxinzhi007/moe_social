@@ -14,8 +14,11 @@ import '../../providers/companion_presence_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../widgets/post_card.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_badge_dot.dart';
+import '../../widgets/moe_pinned_header_delegate.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/motion/moe_stagger.dart';
@@ -217,7 +220,7 @@ class _HomePageState extends State<HomePage>
             ),
             SliverPersistentHeader(
               pinned: true,
-              delegate: _HomeFeedFilterHeader(
+              delegate: MoePinnedHeaderDelegate(
                 height: _feed.availableTags.isEmpty ? 52 : 92,
                 background: MoeTheme.of(context).pageBackground,
                 child: Column(
@@ -333,21 +336,10 @@ class _HomePageState extends State<HomePage>
                 return Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: MoeTokens.danger,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints:
-                        const BoxConstraints(minWidth: 8, minHeight: 8),
-                    child: provider.activityUnreadCount > 99
-                        ? const Text(
-                            '99+',
-                            style: TextStyle(color: Colors.white, fontSize: 8),
-                          )
-                        : null,
-                  ),
+                  // 保持原信息暴露规则：≤99 纯红点，仅 >99 显「99+」
+                  child: provider.activityUnreadCount > 99
+                      ? MoeBadgeDot.count(count: provider.activityUnreadCount)
+                      : const MoeBadgeDot.dot(),
                 );
               },
             ),
@@ -377,13 +369,14 @@ class _HomePageState extends State<HomePage>
           avatar: Icon(
             Icons.tag_rounded,
             size: 14,
-            color: selected ? Colors.white : tag.color,
+            // 选中态文字/图标用近白表面色
+            color: selected ? MoeTokens.surface1 : tag.color,
           ),
           label: Text('#${tag.name}'),
           labelStyle: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : MoeTokens.titleText,
+            color: selected ? MoeTokens.surface1 : MoeTokens.titleText,
           ),
           selectedColor: tag.color,
           backgroundColor: tag.color.withValues(alpha: 0.10),
@@ -422,7 +415,8 @@ class _HomePageState extends State<HomePage>
             borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             border: Border.all(
               color: wantsYou
-                  ? const Color(0xFFE97891).withValues(alpha: 0.35)
+                  // 无精确对应 token，取最近语义色 pastelPink（关注粉）
+                  ? MoeTokens.pastelPink.withValues(alpha: 0.35)
                   : MoeTokens.primary.withValues(alpha: 0.12),
             ),
           ),
@@ -499,7 +493,8 @@ class _HomePageState extends State<HomePage>
           child: Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.white,
+              // 近白表面色作为分段容器底
+              color: MoeTokens.surface1,
               borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
               border: Border.all(color: MoeTokens.surfaceBorder),
             ),
@@ -568,21 +563,11 @@ class _HomePageState extends State<HomePage>
         Semantics(
           button: true,
           label: '发动态',
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              onTap: _openCreatePost,
-              child: Ink(
-                width: 48,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: MoeTokens.primary,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                ),
-                child: const Icon(Icons.add_rounded, color: Colors.white),
-              ),
-            ),
+          child: CustomButton(
+            text: '发动态',
+            size: MoeButtonSize.small,
+            icon: Icons.add_rounded,
+            onPressed: _openCreatePost,
           ),
         ),
       ],
@@ -625,9 +610,11 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             const SizedBox(width: 8),
-            TextButton(
+            CustomButton(
+              text: '\u91cd\u8bd5',
+              size: MoeButtonSize.small,
+              isOutline: true,
               onPressed: _feed.isLoading || _feed.isRefreshing ? null : onRetry,
-              child: const Text('\u91cd\u8bd5'),
             ),
           ],
         ),
@@ -713,9 +700,11 @@ class _HomePageState extends State<HomePage>
             ),
             label: '加载更多失败',
             accentColor: MoeTokens.pastelOrange,
-            trailing: TextButton(
+            trailing: CustomButton(
+              text: '重试',
+              size: MoeButtonSize.small,
+              isOutline: true,
               onPressed: _feed.isLoadingMore ? null : _loadMorePosts,
-              child: const Text('重试'),
             ),
           ),
         ),
@@ -737,11 +726,15 @@ class _HomePageState extends State<HomePage>
     } else if (_feed.hasMore && !_feed.isLoading && !_feed.isRefreshing) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: (_feed.isLoadingMore || _feed.isRefreshing)
+        child: Center(
+          child: CustomButton(
+            text: '\u70b9\u51fb\u52a0\u8f7d\u66f4\u591a',
+            size: MoeButtonSize.small,
+            icon: Icons.arrow_downward_rounded,
+            isLoading: _feed.isLoadingMore,
+            // 保留原胶囊视觉的圆角档位
+            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+            onPressed: (_feed.isLoadingMore || _feed.isRefreshing)
                 ? null
                 : () {
                     if (!_feed.isLoading &&
@@ -751,31 +744,6 @@ class _HomePageState extends State<HomePage>
                       _loadMorePosts();
                     }
                   },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: MoeTokens.gradientPrimary,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                border: Border.all(color: MoeTokens.surfaceBorder),
-                boxShadow: MoeTokens.shadowSm(),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.arrow_downward_rounded,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '\u70b9\u51fb\u52a0\u8f7d\u66f4\u591a',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       );
@@ -867,44 +835,5 @@ class _HomePageState extends State<HomePage>
             }
           : null,
     );
-  }
-}
-
-/// 粘性热门/最新/关注 + 话题行（对标小红书顶部分段）。
-class _HomeFeedFilterHeader extends SliverPersistentHeaderDelegate {
-  _HomeFeedFilterHeader({
-    required this.height,
-    required this.child,
-    required this.background,
-  });
-
-  final double height;
-  final Widget child;
-  final Color background;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: background,
-      elevation: overlapsContent || shrinkOffset > 0 ? 0.5 : 0,
-      child: child,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _HomeFeedFilterHeader oldDelegate) {
-    return height != oldDelegate.height ||
-        background != oldDelegate.background ||
-        child != oldDelegate.child;
   }
 }

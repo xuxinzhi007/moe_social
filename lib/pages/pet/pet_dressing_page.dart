@@ -14,6 +14,8 @@ import '../../game/pet/pet_moe_item_thumb.dart';
 import '../../game/pet/pet_sheet_avatar.dart';
 import '../../models/pet_state.dart';
 import '../../providers/pet_provider.dart';
+import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_toast.dart';
 
 /// 换衣间：模型锚点穿搭 + 大预览；可选微调位移/缩放/旋转。
 ///
@@ -134,9 +136,7 @@ class _PetDressingPageState extends State<PetDressingPage> {
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('穿着已保存到小家')),
-    );
+    MoeToast.success(context, '穿着已保存到小家');
     Navigator.pop(context);
   }
 
@@ -572,7 +572,7 @@ class _DressPreviewState extends State<_DressPreview>
                     width: side,
                     height: side,
                     child: stack == null && lpc == null
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: MoeLoading(size: 32))
                         : stack != null
                             ? Stack(
                                 clipBehavior: Clip.none,

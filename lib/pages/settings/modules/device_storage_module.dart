@@ -6,6 +6,7 @@ import '../../../theme/moe_tokens.dart';
 import '../../../services/app_storage_service.dart';
 import '../../../providers/device_info_provider.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_loading.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/dialogs/confirm_dialog.dart';
 
@@ -156,11 +157,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
             onTap:
                 _clearingCache ? () {} : () => _confirmAndClearCache(context),
             trailing: _clearingCache
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const MoeSmallLoading(size: 22)
                 : null,
           ),
         if (!isWeb)
@@ -173,11 +170,7 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
                 ? () {}
                 : () => _confirmAndClearGeneratedData(context),
             trailing: _clearingGeneratedData
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? const MoeSmallLoading(size: 22)
                 : null,
           ),
       ],

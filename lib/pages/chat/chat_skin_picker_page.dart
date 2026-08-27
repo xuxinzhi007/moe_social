@@ -261,7 +261,8 @@ class _SkinCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                 child: Container(
-                  height: 60,
+                  // 气泡预览块对齐 48 档高度
+                  height: MoeTokens.btnHeightMd,
                   decoration: BoxDecoration(gradient: skin.bubbleMeGradient),
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 8, bottom: 8),

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../auth_service.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/moe_theme_extension.dart';
+import '../../../widgets/moe_loading.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/motion/moe_pressable.dart';
 import '../../../widgets/motion/moe_reveal.dart';
@@ -287,14 +288,7 @@ class _AddFriendBottomSheetState extends State<AddFriendBottomSheet> {
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                        ? const MoeSmallLoading(size: 22, color: Colors.white)
                         : const Text('发送申请'),
                   ),
                 ),

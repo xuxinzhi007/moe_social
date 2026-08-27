@@ -10,6 +10,7 @@ import '../../auth_service.dart';
 import '../../models/user.dart';
 import '../../services/qr_code_service.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 class UserQrCodePage extends StatefulWidget {
@@ -252,14 +253,7 @@ class _UserQrCodePageState extends State<UserQrCodePage> {
           FilledButton.icon(
             onPressed: _isSaving ? null : _saveQrCardToGallery,
             icon: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
+                ? const MoeSmallLoading(size: 16, color: Colors.white)
                 : const Icon(Icons.download_rounded),
             label: Text(_isSaving ? '保存中...' : '保存到相册'),
             style: FilledButton.styleFrom(
@@ -303,7 +297,7 @@ class _UserQrCodePageState extends State<UserQrCodePage> {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MoeLoading())
           : _currentUser != null
               ? SingleChildScrollView(
                   padding: EdgeInsets.fromLTRB(

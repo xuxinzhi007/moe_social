@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_icon.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
@@ -1285,9 +1286,10 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             : MoeTokens.surfaceBorder,
                       ),
                     ),
-                    child: Icon(
-                      Icons.mic_rounded,
+                    child: MoeIcon(
+                      name: 'mic',
                       size: 22,
+                      // 录音中变 danger 红；srcIn 单色着色保证两种状态下都清晰可读。
                       color: _isRecording
                           ? MoeTokens.danger
                           : MoeTokens.hintText,

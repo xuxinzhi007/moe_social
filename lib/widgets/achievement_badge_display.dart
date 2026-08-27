@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/achievement_badge.dart';
 import 'achievement/achievement_badge_medallion.dart';
 import 'achievement/achievement_badge_visuals.dart';
+import 'moe_icon.dart';
 
 class AchievementRarityChip extends StatelessWidget {
   final BadgeRarity rarity;
@@ -906,11 +907,22 @@ class MiniBadge extends StatelessWidget {
           shape: BoxShape.circle,
           color: Colors.white,
         ),
-        child: Icon(
-          badge.badgeSymbol,
-          size: size * 0.48,
-          color: badge.color,
-        ),
+        // 与 medallion 同策略：能映射走 MoeIcon SVG，未映射保留 Material 图标兜底。
+        child: () {
+          final moeName = moeIconNameForBadge(badge);
+          if (moeName != null) {
+            return MoeIcon(
+              name: moeName,
+              size: size * 0.48,
+              color: badge.color,
+            );
+          }
+          return Icon(
+            badge.badgeSymbol,
+            size: size * 0.48,
+            color: badge.color,
+          );
+        }(),
       ),
     );
   }

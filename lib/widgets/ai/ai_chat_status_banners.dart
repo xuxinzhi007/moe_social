@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../moe_loading.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_theme.dart';
 
@@ -82,13 +83,9 @@ class _AiGeneratingBannerState extends State<AiGeneratingBanner>
               final scale = 0.9 + (t < 0.5 ? t * 0.4 : (1 - t) * 0.4);
               return Transform.scale(scale: scale, child: child);
             },
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AiBrandTokens.primary.withValues(alpha: 0.85),
-              ),
+            child: MoeSmallLoading(
+              size: 16,
+              color: AiBrandTokens.primary.withValues(alpha: 0.85),
             ),
           ),
           const SizedBox(width: 10),

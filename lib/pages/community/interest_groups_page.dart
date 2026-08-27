@@ -10,6 +10,7 @@ import '../../theme/moe_tokens.dart';
 import '../../utils/media_url.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_search_bar.dart';
 import '../../widgets/moe_toast.dart';
@@ -463,24 +464,20 @@ class _CreateInterestGroupSheetState extends State<_CreateInterestGroupSheet> {
               const SizedBox(height: 16),
               MoeReveal(
                 delay: const Duration(milliseconds: 60),
-                child: TextField(
+                child: MoeInputField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: '群组名称',
-                    border: OutlineInputBorder(),
-                  ),
+                  hintText: '群组名称',
+                  maxLines: 1,
                 ),
               ),
               const SizedBox(height: 12),
               MoeReveal(
                 delay: const Duration(milliseconds: 90),
-                child: TextField(
+                child: MoeInputField(
                   controller: _descCtrl,
+                  hintText: '简介',
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: '简介',
-                    border: OutlineInputBorder(),
-                  ),
+                  minLines: 3,
                 ),
               ),
               const SizedBox(height: 8),
@@ -504,7 +501,7 @@ class _CreateInterestGroupSheetState extends State<_CreateInterestGroupSheet> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: MoeSmallLoading(size: 20),
                         )
                       : const Text('创建'),
                 ),

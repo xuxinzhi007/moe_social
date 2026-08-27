@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/moe_menu_card.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
 
@@ -204,13 +205,9 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_loading)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                        const MoeSmallLoading(
+                          size: 20,
+                          color: Colors.white,
                         )
                       else
                         const Icon(Icons.security_rounded, color: Colors.white),

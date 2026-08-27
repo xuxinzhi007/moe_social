@@ -68,10 +68,11 @@ class MoeToast {
   }
 
   /// 鎴愬姛鎻愮ず
-  static void success(BuildContext context, String message) {
+  static void success(BuildContext context, String message, {Duration? duration}) {
     show(
       context,
       message,
+      duration: duration ?? const Duration(seconds: 2),
       icon: Icons.check_circle_rounded,
       backgroundColor: const Color(0xFFF0FDF4),
       textColor: const Color(0xFF16A34A),
@@ -79,10 +80,11 @@ class MoeToast {
   }
 
   /// 閿欒鎻愮ず
-  static void error(BuildContext context, String message) {
+  static void error(BuildContext context, String message, {Duration? duration}) {
     show(
       context,
       message,
+      duration: duration ?? const Duration(seconds: 2),
       icon: Icons.error_rounded,
       backgroundColor: const Color(0xFFFEF2F2),
       textColor: const Color(0xFFDC2626),
@@ -90,10 +92,11 @@ class MoeToast {
   }
 
   /// 淇℃伅鎻愮ず
-  static void info(BuildContext context, String message) {
+  static void info(BuildContext context, String message, {Duration? duration}) {
     show(
       context,
       message,
+      duration: duration ?? const Duration(seconds: 2),
       icon: Icons.info_rounded,
       backgroundColor: const Color(0xFFEFF6FF),
       textColor: const Color(0xFF2563EB),
@@ -101,10 +104,11 @@ class MoeToast {
   }
 
   /// 璀﹀憡鎻愮ず
-  static void warning(BuildContext context, String message) {
+  static void warning(BuildContext context, String message, {Duration? duration}) {
     show(
       context,
       message,
+      duration: duration ?? const Duration(seconds: 2),
       icon: Icons.warning_rounded,
       backgroundColor: const Color(0xFFFFFBEB),
       textColor: const Color(0xFFD97706),

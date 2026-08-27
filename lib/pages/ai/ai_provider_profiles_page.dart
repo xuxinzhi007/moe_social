@@ -6,6 +6,7 @@ import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/ai/ai_loading_skeleton.dart';
@@ -14,6 +15,8 @@ import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_status_dot.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 // ── 预设服务 ──────────────────────────────────────────────────────────────
@@ -511,7 +514,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   _buildSectionLabel('选择服务'),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 72,
+                    // 预设选择行收敛至标准按钮高度（48 档）
+                    height: MoeTokens.btnHeightMd,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _presets.length,
@@ -538,7 +542,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             width: 80,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? p.color.withValues(alpha: 0.1)
@@ -554,12 +558,15 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(p.icon, color: p.color, size: 24),
-                                const SizedBox(height: 4),
+                                Icon(p.icon, color: p.color, size: 20),
+                                const SizedBox(height: 2),
                                 Text(
                                   p.name,
+                                  // 系统字体缩放下防换行溢出
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: isSelected
                                         ? FontWeight.w700
                                         : FontWeight.w500,
@@ -581,54 +588,45 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 // ── Step 2: 基础信息 ──
                 _buildSectionLabel('基本信息'),
                 const SizedBox(height: 8),
-                TextField(
+                MoeInputField(
                   controller: nameController,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '服务名称',
-                    hintText: '例如：我的 GPT、DeepSeek',
-                  ),
+                  hintText: '服务名称（例如：我的 GPT、DeepSeek）',
+                  maxLines: 1,
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                MoeInputField(
                   controller: baseUrlController,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: '服务地址',
-                    hintText: 'https://api.example.com/v1',
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.content_paste_rounded, size: 18),
-                      tooltip: '从剪贴板粘贴',
-                      onPressed: () async {
-                        final data =
-                            await Clipboard.getData(Clipboard.kTextPlain);
-                        if (data?.text != null) {
-                          baseUrlController.text = data!.text!;
-                          setLocalState(() {});
-                        }
-                      },
-                    ),
+                  hintText: '服务地址（https://api.example.com/v1）',
+                  maxLines: 1,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.content_paste_rounded, size: 18),
+                    tooltip: '从剪贴板粘贴',
+                    onPressed: () async {
+                      final data =
+                          await Clipboard.getData(Clipboard.kTextPlain);
+                      if (data?.text != null) {
+                        baseUrlController.text = data!.text!;
+                        setLocalState(() {});
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                MoeInputField(
                   controller: apiKeyController,
-                  obscureText: true,
-                  decoration: AiTheme.inputDecoration(
-                    labelText: 'API Key（密钥）',
-                    hintText: 'sk-... 或留空（本地服务无需密钥）',
-                  ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.content_paste_rounded, size: 18),
-                      tooltip: '从剪贴板粘贴',
-                      onPressed: () async {
-                        final data =
-                            await Clipboard.getData(Clipboard.kTextPlain);
-                        if (data?.text != null) {
-                          apiKeyController.text = data!.text!;
-                          setLocalState(() {});
-                        }
-                      },
-                    ),
+                  hintText: 'API Key（sk-... 或留空，本地服务无需密钥）',
+                  isPassword: true,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.content_paste_rounded, size: 18),
+                    tooltip: '从剪贴板粘贴',
+                    onPressed: () async {
+                      final data =
+                          await Clipboard.getData(Clipboard.kTextPlain);
+                      if (data?.text != null) {
+                        apiKeyController.text = data!.text!;
+                        setLocalState(() {});
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -646,14 +644,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     ),
                     onPressed: detecting ? null : runDetectAndTest,
                     icon: detecting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
+                        ? const MoeSmallLoading(size: 18, color: Colors.white)
                         : const Icon(Icons.auto_fix_high_rounded, size: 20),
                     label: Text(
                       detecting
@@ -836,13 +827,11 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
+                      child: MoeInputField(
                         controller: defaultModelController,
-                        decoration: AiTheme.inputDecoration(
-                          labelText: '添加模型',
-                          hintText: '输入模型名称',
-                        ),
-                        onSubmitted: (v) {
+                        hintText: '添加模型（输入模型名称）',
+                        maxLines: 1,
+                        onFieldSubmitted: (v) {
                           final val = v.trim();
                           if (val.isNotEmpty &&
                               !manualModels.contains(val)) {

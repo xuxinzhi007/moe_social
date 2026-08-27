@@ -22,6 +22,7 @@ import '../../theme/moe_tokens.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_loading.dart';
+import '../../widgets/moe_menu_card.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/dialogs/confirm_dialog.dart';
 import '../../widgets/profile_bg.dart';
@@ -42,6 +43,12 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   MoeTheme get _moe => MoeTheme.of(context);
+
+  /// 快捷入口卡设计高度；token 档位中无对应值，页面内局部定义。
+  static const double _quickActionCardHeight = 104;
+
+  /// 快捷入口卡角标（badge 红点）尺寸；token 无对应档位，页面内局部定义。
+  static const double _quickActionBadgeSize = 17;
 
   User? _user;
   bool _isLoading = true;
@@ -266,8 +273,8 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (_) => AlertDialog(
           title: const Text('先登录再查看'),
           content: const Text('登录后可查看会员权益、套餐和开通记录。'),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusXl)),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -387,11 +394,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     MoeReveal(
                       delay: const Duration(milliseconds: 65),
                       child: _menuSection('常用功能', [
-                        _MenuItem(
+                        MoeMenuItem(
                           icon: Icons.forum_rounded,
                           title: '兴趣社区',
                           subtitle: '话题、帖子与同好交流',
-                          color: const Color(0xFF5B8DEF),
+                          // 原 0xFF5B8DEF，无精确对应，用最接近的品牌蓝
+                          color: MoeTokens.pastelBlue,
                           onTap: () {
                             HapticFeedback.lightImpact();
                             Navigator.pushNamed(context, '/community');
@@ -411,7 +419,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     MoeReveal(
                       delay: const Duration(milliseconds: 110),
                       child: _menuSection('云端与相册', [
-                        _MenuItem(
+                        MoeMenuItem(
                             icon: Icons.cloud_queue_rounded,
                             title: '云端图库',
                             subtitle: '管理你的美好回忆',
@@ -424,11 +432,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                       builder: (_) =>
                                           const CloudGalleryPage()));
                             }),
-                        _MenuItem(
+                        MoeMenuItem(
                             icon: Icons.qr_code_rounded,
                             title: '我的二维码',
                             subtitle: '让其他用户扫描添加你',
-                            color: const Color(0xFF4ECDC4),
+                            color: MoeTokens.pastelTeal,
                             onTap: () {
                               HapticFeedback.lightImpact();
                               Navigator.pushNamed(context, '/user-qr-code');
@@ -440,10 +448,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     MoeReveal(
                       delay: const Duration(milliseconds: 140),
                       child: _menuSection('账号', [
-                        _MenuItem(
+                        MoeMenuItem(
                             icon: Icons.logout_rounded,
                             title: '退出登录',
-                            color: const Color(0xFFFF6B6B),
+                            // 原 0xFFFF6B6B，用最接近的语义危险色
+                            color: MoeTokens.danger,
                             isDestructive: true,
                             onTap: () {
                               HapticFeedback.lightImpact();
@@ -493,12 +502,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
           if (_isLoadingDetails) ...[
             const SizedBox(width: 8),
-            const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70))),
+            MoeSmallLoading(size: 12, color: Colors.white.withValues(alpha: 0.7)),
           ],
         ],
       ),
@@ -627,16 +631,19 @@ class _ProfilePageState extends State<ProfilePage> {
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusFull),
+                            // 金色系已回收为 VIP 专属 token（原 0xFFFFE082 @ 0.95）
                             border: Border.all(
-                                color: const Color(0xFFFFE082)
-                                    .withValues(alpha: 0.95)),
+                                color:
+                                    MoeTokens.goldLight.withValues(alpha: 0.95)),
                           ),
                           child: const Text('VIP',
                               style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
-                                  color: Color(0xFFFFF8E1))),
+                                  // 浅金已回收为 VIP 专属 token（原 0xFFFFF8E1）
+                                  color: MoeTokens.goldBg)),
                         ),
                       ],
                     ],
@@ -795,10 +802,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _glassPill({required Widget child, required VoidCallback onTap}) {
     return Material(
       color: Colors.white.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
       child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: child)),
@@ -811,21 +818,22 @@ class _ProfilePageState extends State<ProfilePage> {
           style: const TextStyle(
               fontSize: 19,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF1E1E2E),
+              // 原 0xFF1E1E2E，用最接近的深墨色 token
+              color: MoeTokens.inkDark,
               height: 1.05)),
       const SizedBox(height: 4),
       Text(label,
           style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E1E2E).withValues(alpha: 0.52))),
+              color: MoeTokens.inkDark.withValues(alpha: 0.52))),
     ]);
     if (onTap != null) {
       return Material(
           color: Colors.transparent,
           child: InkWell(
               onTap: onTap,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
               child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -846,14 +854,16 @@ class _ProfilePageState extends State<ProfilePage> {
     final actions = [
       _QuickAction(
         icon: Icons.event_available_rounded,
-        iconColor: const Color(0xFF5A67D8),
+        // 原 0xFF5A67D8，无精确对应，用最接近的品牌主色
+        iconColor: MoeTokens.primary,
         label: '签到',
         subtitle: '每日奖励',
         onTap: _navigateToCheckIn,
       ),
       _QuickAction(
         icon: Icons.account_balance_wallet_rounded,
-        iconColor: const Color(0xFFFF8F00),
+        // 原 0xFFFF8F00，用最接近的语义警示色
+        iconColor: MoeTokens.warning,
         label: '钱包',
         subtitle: '¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
@@ -866,7 +876,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       _QuickAction(
         icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
-        iconColor: _isVip ? const Color(0xFFFFB347) : _moe.primary,
+        iconColor: _isVip ? MoeTokens.pastelOrange : _moe.primary,
         label: '会员',
         subtitle: _isVip ? '权益生效中' : '开通享特权',
         isCta: !_isVip,
@@ -874,7 +884,8 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       _QuickAction(
         icon: Icons.military_tech_rounded,
-        iconColor: const Color(0xFFE65100),
+        // 原 0xFFE65100，无精确对应，用最接近的语义警示色
+        iconColor: MoeTokens.warning,
         label: '成就',
         subtitle: '$unlockedBadges 枚已解锁',
         badge: unlockedBadges,
@@ -883,7 +894,7 @@ class _ProfilePageState extends State<ProfilePage> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(MoeTokens.spaceSm),
       decoration: BoxDecoration(
         color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
@@ -900,7 +911,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildQuickActionCard(_QuickAction action) {
     final isCta = action.isCta;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: MoeTokens.spaceXs),
       child: Material(
         color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
@@ -909,9 +920,11 @@ class _ProfilePageState extends State<ProfilePage> {
           onTap: action.onTap,
           borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           child: SizedBox(
-            height: 104,
+            // 104 为快捷入口卡设计高度，token 档位中无对应值，局部保留
+            height: _quickActionCardHeight,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              padding: const EdgeInsets.symmetric(
+                  vertical: MoeTokens.spaceMd, horizontal: MoeTokens.spaceSm),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -919,19 +932,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: MoeTokens.iconBtnSm,
+                        height: MoeTokens.iconBtnSm,
                         decoration: BoxDecoration(
                           color: action.iconColor.withValues(alpha: 0.14),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           action.icon,
-                          size: 20,
+                          size: MoeTokens.spaceXl,
                           color: action.iconColor,
                         ),
                       ),
-                      const SizedBox(height: 7),
+                      const SizedBox(height: MoeTokens.spaceSm),
                       SizedBox(
                         width: double.infinity,
                         child: Text(
@@ -940,14 +953,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: MoeTokens.textSm,
                             fontWeight: FontWeight.w700,
                             color: MoeTokens.titleText,
                             height: 1.25,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: MoeTokens.spaceXs),
                       SizedBox(
                         width: double.infinity,
                         child: Text(
@@ -970,10 +983,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       top: -2,
                       right: -2,
                       child: Container(
-                        width: 17,
-                        height: 17,
+                        width: _quickActionBadgeSize,
+                        height: _quickActionBadgeSize,
                         decoration: const BoxDecoration(
-                            color: Color(0xFFFF6B35), shape: BoxShape.circle),
+                            // 原 0xFFFF6B35，角标红点用语义危险色，最接近
+                            color: MoeTokens.danger,
+                            shape: BoxShape.circle),
                         child: Center(
                           child: Text(
                             '${action.badge}',
@@ -1036,15 +1051,17 @@ class _ProfilePageState extends State<ProfilePage> {
                             horizontal: 7, vertical: 1),
                         decoration: BoxDecoration(
                           color:
-                              const Color(0xFFFFB347).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
+                              MoeTokens.pastelOrange.withValues(alpha: 0.15),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusSm),
                         ),
                         child: Text(
                             '${stats.unlockedBadges}/${stats.totalBadges}',
                             style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFFE65100))),
+                                // 与快捷入口「成就」图标色保持一致（原同为 0xFFE65100）
+                                color: MoeTokens.warning)),
                       ),
                     ],
                   ),
@@ -1146,92 +1163,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ─── Menu section ─────────────────────────────────────────────────────────
 
-  Widget _menuSection(String title, List<_MenuItem> items) {
+  Widget _menuSection(String title, List<MoeMenuItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionTitle(title),
-        const SizedBox(height: 10),
-        Container(
-          decoration: BoxDecoration(
-            color: MoeTokens.surface1,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            border: Border.all(color: MoeTokens.surfaceBorder),
-            boxShadow: MoeTokens.shadowSm(),
-          ),
-          child: Column(
-            children: items.map((item) {
-              final isLast = items.last == item;
-              return Column(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: item.onTap,
-                      borderRadius: BorderRadius.only(
-                        topLeft: items.first == item
-                            ? const Radius.circular(24)
-                            : Radius.zero,
-                        topRight: items.first == item
-                            ? const Radius.circular(24)
-                            : Radius.zero,
-                        bottomLeft:
-                            isLast ? const Radius.circular(24) : Radius.zero,
-                        bottomRight:
-                            isLast ? const Radius.circular(24) : Radius.zero,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 15),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(9),
-                              decoration: BoxDecoration(
-                                  color: item.color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(13)),
-                              child:
-                                  Icon(item.icon, color: item.color, size: 21),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(item.title,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                          color: item.isDestructive
-                                              ? MoeTokens.danger
-                                              : MoeTokens.titleText)),
-                                  if (item.subtitle != null) ...[
-                                    const SizedBox(height: 2),
-                                    Text(item.subtitle!,
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: MoeTokens.hintText)),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.arrow_forward_ios_rounded,
-                                color: Colors.grey[300], size: 15),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (!isLast)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 60, right: 20),
-                      child: Divider(height: 1, color: MoeTokens.surfaceBorder),
-                    ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
+        const SizedBox(height: MoeTokens.spaceMd),
+        MoeMenuCard(items: items),
       ],
     );
   }
@@ -1247,7 +1185,8 @@ class _ProfilePageState extends State<ProfilePage> {
             style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF2D2D3D),
+                // 原 0xFF2D2D3D，与 inkDark 几乎一致，直接用 token
+                color: MoeTokens.inkDark,
                 letterSpacing: 0.2)),
       ]);
 }
@@ -1278,20 +1217,4 @@ class _ProfileDetail<T> {
 
   final T value;
   final bool didLoad;
-}
-
-class _MenuItem {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final Color color;
-  final VoidCallback onTap;
-  final bool isDestructive;
-  _MenuItem(
-      {required this.icon,
-      required this.title,
-      this.subtitle,
-      required this.color,
-      required this.onTap,
-      this.isDestructive = false});
 }

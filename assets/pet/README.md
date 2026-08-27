@@ -7,7 +7,7 @@
 
 ## 源素材 → 运行时映射
 
-你补齐的源目录：`assets/avatars/flutter角色图/`（中文文件名，保留不动）。
+源目录 `assets/avatars/flutter角色图/` 已于 UI 治理阶段删除（零引用开发残留），正式资源见 `assets/pet/`。
 
 已同步到养成运行时目录（Room / Adventure 读取这里）：
 
@@ -66,7 +66,7 @@ Sheet：`lpc/hero_walk.png`、`lpc/hero_idle.png`（可用本机 Universal LPC G
 
 `PetArt.loadImage`：失败或 1×1 占位 → Flame 用 Canvas 几何回退，不阻断试玩。
 
-换图：覆盖 `assets/pet/...` 同名文件即可；若只更新中文源目录，需再同步拷贝一次。
+换图：直接覆盖 `assets/pet/...` 同名文件即可（中文源目录已删除，无需再同步拷贝）。
 
 ## 透明通道注意
 

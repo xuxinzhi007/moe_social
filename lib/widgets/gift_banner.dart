@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/gift.dart';
+import '../theme/moe_tokens.dart';
 import 'optimized_gift_animation.dart';
 import 'gift_icon_widget.dart';
 
@@ -177,7 +178,8 @@ class _GiftBannerWidgetState extends State<_GiftBannerWidget>
     final maxWidth = screenW * 0.72;
     return Container(
       constraints: BoxConstraints(maxWidth: maxWidth),
-      height: 56,
+      // 礼物横幅收敛至标准按钮高度（48 档）
+      height: MoeTokens.btnHeightMd,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -187,7 +189,7 @@ class _GiftBannerWidgetState extends State<_GiftBannerWidget>
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(MoeTokens.btnHeightMd / 2),
         boxShadow: [
           BoxShadow(
             color: widget.gift.color.withValues(alpha: 0.4),
@@ -240,13 +242,13 @@ class _GiftBannerWidgetState extends State<_GiftBannerWidget>
   Widget _buildAvatar() {
     if (widget.senderAvatar != null && widget.senderAvatar!.isNotEmpty) {
       return CircleAvatar(
-        radius: 18,
+        radius: 16,
         backgroundImage: NetworkImage(widget.senderAvatar!),
         backgroundColor: Colors.white24,
       );
     }
     return CircleAvatar(
-      radius: 18,
+      radius: 16,
       backgroundColor: Colors.white24,
       child: Text(
         widget.senderName.isNotEmpty

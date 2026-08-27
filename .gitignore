@@ -109,7 +109,8 @@ key.properties
 .tags*
 **/.vagrant/
 **/DerivedData/
-Icon?
+# macOS 根目录的 Icon\r\r 特殊文件；锚定根目录避免在 ignorecase 下误伤 assets/icons 等目录。
+/Icon?
 **/Pods/
 **/.symlinks/
 xcuserdata

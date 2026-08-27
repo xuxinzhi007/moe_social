@@ -3,6 +3,7 @@ import '../../theme/moe_tokens.dart';
 import '../../auth_service.dart';
 import '../../services/commerce_service.dart';
 import '../../models/vip_record.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
 class VipHistoryPage extends StatefulWidget {
@@ -112,7 +113,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
       body: RefreshIndicator(
         onRefresh: () => _loadHistory(refresh: true),
         child: _isLoading && _records.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: MoeLoading())
             : _records.isEmpty
                 ? Center(
                     child: Column(
@@ -137,7 +138,7 @@ class _VipHistoryPageState extends State<VipHistoryPage> {
                           padding: const EdgeInsets.all(16),
                           child: Center(
                             child: _isLoading
-                                ? const CircularProgressIndicator()
+                                ? const MoeSmallLoading(size: 24)
                                 : TextButton(
                                     onPressed: _loadMore,
                                     child: const Text('加载更多'),

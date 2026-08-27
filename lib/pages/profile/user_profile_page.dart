@@ -13,6 +13,7 @@ import '../../services/achievement_service.dart';
 import '../../services/like_state_manager.dart';
 import '../../widgets/avatar_image.dart';
 import '../../widgets/dynamic_avatar.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/profile_bg.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/motion/moe_stagger.dart';
@@ -1066,7 +1067,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     if (_isLoadingPosts)
                       const Padding(
                         padding: EdgeInsets.all(32.0),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(child: MoeLoading()),
                       )
                     else if (_userPosts.isEmpty)
                       Padding(

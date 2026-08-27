@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../providers/theme_provider.dart';
 import '../../autoglm/autoglm_service.dart';
@@ -1037,13 +1038,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                           shape: const CircleBorder(),
                           child: _isProcessing
                               ? (_isStopping
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
+                                  ? const MoeSmallLoading(
+                                      size: 20,
+                                      color: Colors.white,
                                     )
                                   : const Icon(Icons.stop_rounded,
                                       color: Colors.white))
@@ -1058,13 +1055,9 @@ class _AutoGLMPageState extends State<AutoGLMPage> with WidgetsBindingObserver {
                       Row(
                         children: [
                           const SizedBox(width: 8),
-                          const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: MoeTokens.primary,
-                            ),
+                          const MoeSmallLoading(
+                            size: 12,
+                            color: MoeTokens.primary,
                           ),
                           const SizedBox(width: 8),
                           Expanded(

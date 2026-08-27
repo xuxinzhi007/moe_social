@@ -5,6 +5,7 @@ import '../../../models/user.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/feishu_enterprise_invite_banner.dart';
+import '../../../widgets/moe_input_field.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/motion/moe_pressable.dart';
 import '../../../widgets/motion/moe_reveal.dart';
@@ -93,23 +94,25 @@ Future<void> showFeishuBindSheet(BuildContext context) async {
                 const SizedBox(height: 16),
                 MoeReveal(
                   delay: const Duration(milliseconds: 90),
-                  child: TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: '企业飞书邮箱',
-                      hintText: 'you@feishu.cn',
-                      filled: true,
-                      fillColor: const Color(0xFFF7F8FC),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '企业飞书邮箱',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: MoeTokens.titleText,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                      const SizedBox(height: 8),
+                      MoeInputField(
+                        controller: emailController,
+                        hintText: 'you@feishu.cn',
+                        icon: Icons.email_outlined,
+                        maxLines: 1,
+                        keyboardType: TextInputType.emailAddress,
                       ),
-                    ),
+                    ],
                   ),
                 ),
                 if (bound) ...[

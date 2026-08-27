@@ -137,37 +137,6 @@ class VirtualAvatarSettingsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          _card(
-            child: Column(
-              children: [
-                _actionTile(
-                  icon: Icons.face_retouching_natural_rounded,
-                  title: '助手形象',
-                  subtitle: Text(
-                    avatar.characterId == 'default_moe' ? '默认形象（当前）' : '自定义形象',
-                  ),
-                  onTap: () async {
-                    await avatar.setCharacterId('default_moe');
-                    if (!context.mounted) return;
-                    MoeToast.info(context, '更多形象即将上线');
-                  },
-                ),
-                _actionTile(
-                  icon: Icons.style_rounded,
-                  title: '助手皮肤',
-                  subtitle: Text(
-                    avatar.skinId == 'classic' ? '经典皮肤（当前）' : '自定义皮肤',
-                  ),
-                  onTap: () async {
-                    await avatar.setSkinId('classic');
-                    if (!context.mounted) return;
-                    MoeToast.info(context, '更多皮肤即将上线');
-                  },
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

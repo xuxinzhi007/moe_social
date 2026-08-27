@@ -9,6 +9,7 @@ import '../../services/presence_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
+import '../../widgets/moe_badge_dot.dart';
 import '../../widgets/motion/moe_sheet.dart';
 import '../profile/friends_page.dart';
 import '../profile/widgets/add_friend_bottom_sheet.dart';
@@ -171,7 +172,11 @@ class _MessageCenterPageState extends State<MessageCenterPage>
                                 Text(_tabs[i].label),
                                 if (i == 1 && hasRequests) ...[
                                   const SizedBox(width: 6),
-                                  _TabCountDot(count: incomingRequestCount),
+                                  MoeBadgeDot.count(
+                                    count: incomingRequestCount,
+                                    // 保持原橙色申请角标语义
+                                    color: MoeTokens.warning,
+                                  ),
                                 ],
                               ],
                             ),
@@ -211,31 +216,6 @@ class _MessageCenterPageState extends State<MessageCenterPage>
           ),
         );
       },
-    );
-  }
-}
-
-class _TabCountDot extends StatelessWidget {
-  const _TabCountDot({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-        color: MoeTokens.warning,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-      ),
-      child: Text(
-        count > 99 ? '99+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
     );
   }
 }

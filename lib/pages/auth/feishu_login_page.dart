@@ -8,6 +8,7 @@ import '../../services/auth_flow_service.dart';
 import '../../utils/oauth_flow_helper.dart';
 import '../../utils/webview_platform_init.dart';
 import 'feishu_login_result.dart';
+import '../../widgets/moe_loading.dart';
 
 /// 仅负责飞书授权并带回 [code]；登录页显示 loading 并换 token。
 class FeishuLoginPage extends StatefulWidget {
@@ -164,7 +165,7 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(),
+                      MoeLoading(),
                       SizedBox(height: 16),
                       Text('正在获取授权…'),
                     ],

@@ -11,6 +11,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/error_handler.dart';
 import '../../utils/media_url.dart';
 import '../../utils/public_download_directory.dart';
+import '../../widgets/moe_loading.dart';
 
 /// Proto JSON uses strings for int64 values, while legacy media responses use numbers.
 int? parseCloudImageSize(Object? raw) {
@@ -241,10 +242,9 @@ class _CloudImageViewerPageState extends State<CloudImageViewerPage> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            child: MoeSmallLoading(
+                              size: 20,
+                              color: Colors.white,
                             ),
                           )
                         : const Icon(Icons.download_rounded,

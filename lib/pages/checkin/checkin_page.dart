@@ -192,12 +192,6 @@ class _CheckInPageState extends State<CheckInPage>
         icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
         onPressed: () => Navigator.pop(context),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.history_rounded, color: Colors.white),
-          onPressed: () => _showHistoryPage(context),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: const BoxDecoration(
@@ -1996,28 +1990,12 @@ class _CheckInPageState extends State<CheckInPage>
       );
 
       if (checkInProvider.successMessage != null) {
-        _showSuccessSnackBar(checkInProvider.successMessage!);
+        MoeToast.success(context, checkInProvider.successMessage!);
       }
     } else {
       if (checkInProvider.errorMessage != null) {
-        _showErrorSnackBar(checkInProvider.errorMessage!);
+        MoeToast.error(context, checkInProvider.errorMessage!);
       }
     }
-  }
-
-  void _showSuccessSnackBar(String message) {
-    MoeToast.success(context, message);
-  }
-
-  void _showErrorSnackBar(String message) {
-    MoeToast.error(context, message);
-  }
-
-  void _showHistoryPage(BuildContext context) {
-    MoeToast.show(
-      context,
-      '签到历史功能开发中...',
-      icon: Icons.info_outline_rounded,
-    );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:moe_social/theme/moe_tokens.dart';
 
 /// 萌社交统一输入框组件 — 渐变背景 + 聚焦发光 + 图标渐变圆圈。
@@ -29,6 +31,8 @@ class MoeInputField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final FocusNode? focusNode;
   final ValueChanged<String>? onFieldSubmitted;
+  final ValueChanged<String>? onChanged;
+  final List<TextInputFormatter>? inputFormatters;
   final TextStyle? style;
   final TextStyle? hintStyle;
 
@@ -55,6 +59,8 @@ class MoeInputField extends StatefulWidget {
     this.textInputAction,
     this.focusNode,
     this.onFieldSubmitted,
+    this.onChanged,
+    this.inputFormatters,
     this.style,
     this.hintStyle,
   });
@@ -128,6 +134,8 @@ class _MoeInputFieldState extends State<MoeInputField> {
         keyboardType: widget.keyboardType ??
             (widget.isPassword ? TextInputType.visiblePassword : null),
         onFieldSubmitted: widget.onFieldSubmitted,
+        onChanged: widget.onChanged,
+        inputFormatters: widget.inputFormatters,
         onEditingComplete: widget.onEditingComplete,
         validator: widget.validator,
         autovalidateMode:

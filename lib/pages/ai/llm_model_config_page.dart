@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/moe_tokens.dart';
+import '../../widgets/moe_loading.dart';
 
 import '../../services/llm_api_service.dart';
 import '../../services/llm_endpoint_config.dart';
@@ -113,7 +114,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: MoeLoading())
           : _error != null
               ? Center(
                   child: Padding(

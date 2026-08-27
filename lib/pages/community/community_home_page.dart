@@ -7,6 +7,7 @@ import '../../auth_service.dart';
 import '../../providers/main_nav_controller.dart';
 import '../../services/companion_service.dart';
 import '../../widgets/ai_bot_badge.dart';
+import '../../widgets/moe_pinned_header_delegate.dart';
 import '../../widgets/motion/moe_reveal.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -135,6 +136,9 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                           backgroundColor:
                               scheme.primary.withValues(alpha: 0.12),
                           foregroundColor: scheme.primary,
+                          // 主操作按钮走 iconBtn 档位尺寸
+                          minimumSize: Size.square(MoeTokens.iconBtnMd),
+                          iconSize: 24,
                         ),
                         icon: Icon(
                           onCirclesTab
@@ -148,9 +152,9 @@ class _CommunityHomePageState extends State<CommunityHomePage>
               ),
               SliverPersistentHeader(
                 pinned: true,
-                delegate: _PinnedSegmentBarDelegate(
+                delegate: MoePinnedHeaderDelegate(
                   height: 56,
-                  backgroundColor: moe.pageBackground,
+                  background: moe.pageBackground,
                   child: MoeReveal(
                     duration: MoeTokens.motionFadeDuration,
                     delay: MoeTokens.motionStaggerStep,
@@ -318,7 +322,8 @@ class _CommunityHomePageState extends State<CommunityHomePage>
                     style: TextStyle(
                       fontSize: 12,
                       height: 1.3,
-                      color: Colors.grey.shade700,
+                      // 无精确对应 token，取最近语义色 inkMuted（次级灰）
+                      color: MoeTokens.inkMuted,
                     ),
                   ),
                 ],
@@ -343,44 +348,5 @@ class _CommunityHomePageState extends State<CommunityHomePage>
         ),
       ),
     );
-  }
-}
-
-class _PinnedSegmentBarDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedSegmentBarDelegate({
-    required this.child,
-    required this.height,
-    required this.backgroundColor,
-  });
-
-  final Widget child;
-  final double height;
-  final Color backgroundColor;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: backgroundColor,
-      elevation: overlapsContent ? 0.5 : 0,
-      shadowColor: Colors.black26,
-      child: SizedBox(height: height, child: child),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _PinnedSegmentBarDelegate oldDelegate) {
-    return oldDelegate.child != child ||
-        oldDelegate.height != height ||
-        oldDelegate.backgroundColor != backgroundColor;
   }
 }

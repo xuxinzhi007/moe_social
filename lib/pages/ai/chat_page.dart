@@ -36,6 +36,7 @@ import '../../widgets/ai/ai_chat_identity_hero.dart';
 import '../../widgets/ai/ai_chat_session_drawer.dart';
 import '../../widgets/ai/ai_chat_status_banners.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -315,15 +316,13 @@ class _ChatPageState extends State<ChatPage> {
               style: TextStyle(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 12),
-            TextField(
+            MoeInputField(
               controller: controller,
+              hintText:
+                  '例如：我是一个偏理性但容易焦虑的产品经理，希望对方叫我阿栀，回答尽量直接一点。',
               minLines: 5,
               maxLines: 8,
-              decoration: const InputDecoration(
-                hintText: '例如：我是一个偏理性但容易焦虑的产品经理，希望对方叫我阿栀，回答尽量直接一点。',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: 12),
             Row(
@@ -765,13 +764,11 @@ class _ChatPageState extends State<ChatPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('编辑系统提示词'),
-        content: TextField(
+        content: MoeInputField(
           controller: controller,
+          hintText: '输入系统提示词（为空则使用默认）',
           maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: '输入系统提示词（为空则使用默认）',
-            border: OutlineInputBorder(),
-          ),
+          textInputAction: TextInputAction.newline,
         ),
         actions: [
           TextButton(

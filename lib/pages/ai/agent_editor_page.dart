@@ -21,6 +21,7 @@ import '../../widgets/ai/ai_section_header.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
 import '../../widgets/moe_action_row.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../widgets/app_message_widget.dart';
 import '../../providers/loading_provider.dart';
@@ -325,11 +326,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Row(
                           children: [
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
+                            MoeSmallLoading(size: 14),
                             SizedBox(width: 8),
                             Text('正在从 Ollama 读取...',
                                 style: TextStyle(
@@ -815,14 +812,9 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: [
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color:
-                                  AiBrandTokens.primary.withValues(alpha: 0.7),
-                            ),
+                          MoeSmallLoading(
+                            size: 14,
+                            color: AiBrandTokens.primary.withValues(alpha: 0.7),
                           ),
                           const SizedBox(width: 8),
                           Text('后台刷新模型列表…', style: AiTheme.caption),

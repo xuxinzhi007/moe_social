@@ -33,6 +33,13 @@ abstract final class MoeTokens {
   static const Color danger = Color(0xFFE53935);
   static const Color warning = Color(0xFFFF6F00);
 
+  // ─── VIP gold palette — 会员/VIP 专属金色系 ────────────────────────
+  /// VIP 主金色 — VIP 徽章描边、会员强调元素（原 profile VIP 徽章 0xFFFFE082）
+  static const Color goldLight = Color(0xFFFFE082);
+
+  /// VIP 金色浅底 — VIP 徽章文字/浅金底色（原 profile VIP 文字 0xFFFFF8E1）
+  static const Color goldBg = Color(0xFFFFF8E1);
+
   // ─── Game-specific colors ────────────────────────────────────────
   static const Color gamePageBackground = Color(0xFFFFFBF5);
 
@@ -131,6 +138,34 @@ abstract final class MoeTokens {
   static const double radiusCard = radiusXl; // 20
   static const double radiusCardLarge = radius2xl; // 24
   static const double radiusIconBg = 14.0;
+
+  // ─── Button sizing scale — 按钮尺寸档位（配合 [CustomButton] / [MoeButtonSize]）───
+  /// 40px — 小按钮高度（紧凑列表、弹窗次级操作）
+  static const double btnHeightSm = 40.0;
+
+  /// 48px — 标准按钮高度（默认档位，多数页面 CTA）
+  static const double btnHeightMd = 48.0;
+
+  /// 56px — 大按钮高度（登录/注册等主 CTA）
+  static const double btnHeightLg = 56.0;
+
+  /// 16px — 按钮水平内边距（small 档）
+  static const double btnPadSm = 16.0;
+
+  /// 20px — 按钮水平内边距（medium 档，默认）
+  static const double btnPadMd = 20.0;
+
+  /// 24px — 按钮水平内边距（large 档）
+  static const double btnPadLg = 24.0;
+
+  /// 40px — IconButton 小尺寸（正方形）
+  static const double iconBtnSm = 40.0;
+
+  /// 48px — IconButton 标准尺寸（正方形，默认）
+  static const double iconBtnMd = 48.0;
+
+  /// 16px — 按钮文字基准字号（介于 textMd 与 textLg 之间，各档位通用）
+  static const double fontSizeButton = 16.0;
 
   // ─── Surface elevation system ────────────────────────────────────
   /// 4 级表面色，从底到顶逐渐变亮，用于分层视觉。

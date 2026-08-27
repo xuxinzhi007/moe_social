@@ -7,6 +7,8 @@ import '../../../services/device_service.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_input_field.dart';
+import '../../../widgets/moe_loading.dart';
 import '../../../widgets/moe_toast.dart';
 import '../../../widgets/dialogs/confirm_dialog.dart';
 import '../privacy_settings_page.dart';
@@ -99,53 +101,36 @@ class AccountSecurityModule extends StatelessWidget {
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
 
-    // 验证错误信息
-    String? oldPasswordError;
-    String? newPasswordError;
-    String? confirmPasswordError;
+    // 实时校验函数（返回错误串，null 表示通过；与 MoeInputField validator 等价）
+    String? validateOldPassword() {
+      if (oldPasswordController.text.isEmpty) return '请输入当前密码';
+      return null;
+    }
+
+    String? validateNewPassword() {
+      if (newPasswordController.text.isEmpty) return '请输入新密码';
+      if (newPasswordController.text.length < 6) return '密码长度不能少于6位';
+      return null;
+    }
+
+    String? validateConfirmPassword() {
+      if (confirmPasswordController.text.isEmpty) return '请确认新密码';
+      if (confirmPasswordController.text != newPasswordController.text) {
+        return '两次输入的密码不一致';
+      }
+      return null;
+    }
+
     bool isLoading = false;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
-          // 实时验证函数
-          void validateOldPassword() {
-            if (oldPasswordController.text.isEmpty) {
-              setState(() => oldPasswordError = '请输入当前密码');
-            } else {
-              setState(() => oldPasswordError = null);
-            }
-          }
-
-          void validateNewPassword() {
-            if (newPasswordController.text.isEmpty) {
-              setState(() => newPasswordError = '请输入新密码');
-            } else if (newPasswordController.text.length < 6) {
-              setState(() => newPasswordError = '密码长度不能少于6位');
-            } else {
-              setState(() => newPasswordError = null);
-            }
-          }
-
-          void validateConfirmPassword() {
-            if (confirmPasswordController.text.isEmpty) {
-              setState(() => confirmPasswordError = '请确认新密码');
-            } else if (confirmPasswordController.text !=
-                newPasswordController.text) {
-              setState(() => confirmPasswordError = '两次输入的密码不一致');
-            } else {
-              setState(() => confirmPasswordError = null);
-            }
-          }
-
           bool isFormValid() {
-            return oldPasswordError == null &&
-                newPasswordError == null &&
-                confirmPasswordError == null &&
-                oldPasswordController.text.isNotEmpty &&
-                newPasswordController.text.isNotEmpty &&
-                confirmPasswordController.text.isNotEmpty;
+            return validateOldPassword() == null &&
+                validateNewPassword() == null &&
+                validateConfirmPassword() == null;
           }
 
           return AlertDialog(
@@ -155,44 +140,37 @@ class AccountSecurityModule extends StatelessWidget {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                MoeInputField(
                   controller: oldPasswordController,
-                  decoration: InputDecoration(
-                    labelText: '当前密码',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    errorText: oldPasswordError,
-                  ),
-                  obscureText: true,
-                  onChanged: (value) {
-                    validateOldPassword();
-                  },
+                  hintText: '当前密码',
+                  icon: Icons.lock_outline_rounded,
+                  isPassword: true,
+                  maxLines: 1,
+                  autovalidateMode: AutovalidateMode.always,
+                  validator: (_) => validateOldPassword(),
+                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                MoeInputField(
                   controller: newPasswordController,
-                  decoration: InputDecoration(
-                    labelText: '新密码',
-                    prefixIcon: const Icon(Icons.lock_rounded),
-                    errorText: newPasswordError,
-                  ),
-                  obscureText: true,
-                  onChanged: (value) {
-                    validateNewPassword();
-                    validateConfirmPassword();
-                  },
+                  hintText: '新密码',
+                  icon: Icons.lock_rounded,
+                  isPassword: true,
+                  maxLines: 1,
+                  autovalidateMode: AutovalidateMode.always,
+                  validator: (_) => validateNewPassword(),
+                  onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                MoeInputField(
                   controller: confirmPasswordController,
-                  decoration: InputDecoration(
-                    labelText: '确认新密码',
-                    prefixIcon: const Icon(Icons.lock_reset_rounded),
-                    errorText: confirmPasswordError,
-                  ),
-                  obscureText: true,
-                  onChanged: (value) {
-                    validateConfirmPassword();
-                  },
+                  hintText: '确认新密码',
+                  icon: Icons.lock_reset_rounded,
+                  isPassword: true,
+                  maxLines: 1,
+                  autovalidateMode: AutovalidateMode.always,
+                  validator: (_) => validateConfirmPassword(),
+                  onChanged: (_) => setState(() {}),
                 ),
               ],
             ),
@@ -240,8 +218,8 @@ class AccountSecurityModule extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: isLoading
-                    ? const CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2)
+                    ? const MoeSmallLoading(
+                        size: 20, color: Colors.white)
                     : const Text('确定'),
               ),
             ],
@@ -287,8 +265,7 @@ class AccountSecurityModule extends StatelessWidget {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
-                        child:
-                            CircularProgressIndicator(color: MoeTokens.primary),
+                        child: MoeLoading(),
                       );
                     }
 

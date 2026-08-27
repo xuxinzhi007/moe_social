@@ -13,6 +13,7 @@ import '../../services/presence_service.dart';
 import '../../widgets/avatar_image.dart';
 import '../../providers/notification_provider.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_badge_dot.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../utils/moe_error_copy.dart';
@@ -1043,7 +1044,7 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
                           ),
                           if (dmUnread > 0) ...[
                             const SizedBox(width: 6),
-                            _unreadBadge(dmUnread),
+                            MoeBadgeDot.count(count: dmUnread),
                           ],
                         ],
                       ),
@@ -1120,24 +1121,6 @@ class _FriendsPageState extends State<FriendsPage> with WidgetsBindingObserver {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _unreadBadge(int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF6B6B),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        count > 99 ? '99+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
         ),
       ),
     );

@@ -19,6 +19,7 @@ import 'ai_provider_profiles_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/moe_error_copy.dart';
@@ -164,10 +165,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   }
 
   Future<void> _openPetHome() async {
-    if (!FeatureFlags.petLifeSim) {
-      MoeToast.info(context, '养成小家暂未开放');
-      return;
-    }
     await Navigator.of(context).pushNamed('/pet/home');
   }
 
@@ -407,13 +404,11 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                   builder: (dialogContext) {
                     return AlertDialog(
                       title: const Text('粘贴角色卡 JSON'),
-                      content: TextField(
+                      content: MoeInputField(
                         controller: pasteController,
+                        hintText: '粘贴 SillyTavern / Moe 角色卡 JSON',
                         maxLines: 10,
-                        decoration: const InputDecoration(
-                          hintText: '粘贴 SillyTavern / Moe 角色卡 JSON',
-                          border: OutlineInputBorder(),
-                        ),
+                        textInputAction: TextInputAction.newline,
                       ),
                       actions: [
                         TextButton(
@@ -574,12 +569,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                                     onPressed:
                                         uploadingAvatar ? null : pickAvatar,
                                     icon: uploadingAvatar
-                                        ? const SizedBox.square(
-                                            dimension: 14,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
+                                        ? const MoeSmallLoading(size: 14)
                                         : const Icon(Icons.photo_rounded),
                                     label: Text(
                                       uploadingAvatar ? '上传中…' : '上传头像',

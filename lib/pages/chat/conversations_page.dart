@@ -20,6 +20,8 @@ import '../../utils/chat_message_display.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_icon.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_glass_surface.dart';
 import '../../widgets/avatar_image.dart';
@@ -173,35 +175,23 @@ class _ConversationsPageState extends State<ConversationsPage> {
   Widget _buildSearchBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1,
-          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-          border: Border.all(color: MoeTokens.surfaceBorder),
+      child: MoeInputField(
+        controller: _searchController,
+        hintText: '搜索会话、好友昵称或 Moe ID',
+        maxLines: 1,
+        textInputAction: TextInputAction.search,
+        fillColor: MoeTokens.surface1,
+        prefixIcon: const Icon(
+          Icons.search_rounded,
+          color: MoeTokens.hintText,
         ),
-        child: TextField(
-          controller: _searchController,
-          textInputAction: TextInputAction.search,
-          decoration: InputDecoration(
-            hintText: '搜索会话、好友昵称或 Moe ID',
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: MoeTokens.hintText,
-            ),
-            suffixIcon: _vm.searchQuery.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: '清空搜索',
-                    onPressed: () => _searchController.clear(),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
-        ),
+        suffixIcon: _vm.searchQuery.isEmpty
+            ? null
+            : IconButton(
+                tooltip: '清空搜索',
+                onPressed: () => _searchController.clear(),
+                icon: const Icon(Icons.close_rounded),
+              ),
       ),
     );
   }
@@ -343,6 +333,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
             final preview = previewRaw.isEmpty
                 ? '点击开始聊天'
                 : formatDmPreviewForUi(previewRaw);
+            final isVoicePreview = isVoiceDmPreview(previewRaw);
             final pushBadge = pushUnread[peerId] ?? 0;
             final badge = pushBadge > c.unreadCount ? pushBadge : c.unreadCount;
             // 解析最后活跃时间
@@ -357,6 +348,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 avatar: avatar,
                 title: title,
                 preview: preview,
+                isVoicePreview: isVoicePreview,
                 badge: badge,
                 lastActive: lastActive,
                 isOnline: PresenceService.isUserOnline(peerId),
@@ -507,6 +499,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           final preview = previewRaw.isEmpty
               ? (last == null ? '' : '收到一条新消息')
               : formatDmPreviewForUi(previewRaw);
+          final isVoicePreview = isVoiceDmPreview(previewRaw);
           final badge = pushUnread[peerId] ?? 0;
 
           return MoeStaggerReveal(
@@ -520,6 +513,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 avatar: avatar,
                 title: title,
                 preview: preview.isEmpty ? '点击开始聊天' : preview,
+                isVoicePreview: isVoicePreview,
                 badge: badge,
                 lastActive: lastActivity(peerId),
                 isOnline: PresenceService.isUserOnline(peerId),
@@ -662,6 +656,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     required String preview,
     required int badge,
     required VoidCallback onTap,
+    bool isVoicePreview = false,
     DateTime? lastActive,
     bool isOnline = false,
   }) {
@@ -751,15 +746,39 @@ class _ConversationsPageState extends State<ConversationsPage> {
                         ),
                       ),
                       SizedBox(height: MoeTokens.spaceXs),
-                      Text(
-                        preview,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: MoeTokens.hintText,
-                          fontSize: MoeTokens.textSm,
+                      // 语音消息预览：MoeIcon 麦克风 + 文案（替代旧 🎤 emoji）。
+                      if (isVoicePreview)
+                        Row(
+                          children: [
+                            MoeIcon(
+                              name: 'mic',
+                              size: MoeTokens.textSm * 1.2,
+                              color: MoeTokens.hintText,
+                            ),
+                            SizedBox(width: MoeTokens.spaceXs),
+                            Expanded(
+                              child: Text(
+                                preview,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: MoeTokens.hintText,
+                                  fontSize: MoeTokens.textSm,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          preview,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: MoeTokens.hintText,
+                            fontSize: MoeTokens.textSm,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

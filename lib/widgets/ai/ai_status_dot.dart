@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../moe_loading.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_theme.dart';
 
@@ -36,13 +37,9 @@ class AiStatusDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (status == AiSyncStatus.syncing)
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: _color,
-            ),
+          MoeSmallLoading(
+            size: 12,
+            color: _color,
           )
         else
           Container(

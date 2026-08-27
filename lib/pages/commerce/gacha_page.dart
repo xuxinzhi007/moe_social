@@ -921,7 +921,8 @@ class _GachaPageState extends State<GachaPage>
     required VoidCallback onTap,
   }) {
     return SizedBox(
-      height: 64,
+      // 抽卡按钮收敛至大按钮档位（56）
+      height: MoeTokens.btnHeightLg,
       child: ElevatedButton(
         onPressed: _isPlaying ? null : onTap,
         style: ElevatedButton.styleFrom(

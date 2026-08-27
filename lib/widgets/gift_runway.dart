@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/gift.dart';
+import 'moe_icon.dart';
 
 /// 直播风格左侧礼物跑道（与全屏 Lottie 分层；连送合并同一条）。
 class GiftRunwayController {
@@ -215,10 +216,18 @@ class _RunwayBanner extends StatelessWidget {
                     color: item.gift.color.withValues(alpha: 0.85),
                     shape: BoxShape.circle,
                   ),
-                  child: Text(
-                    item.gift.emoji.isNotEmpty ? item.gift.emoji : '🎁',
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  // 礼物 emoji 缺失时的 🎁 占位改用统一 MoeIcon SVG；
+                  // size 按原 fontSize 14×1.2 换算，白色在彩色圆底上清晰可读。
+                  child: item.gift.emoji.isNotEmpty
+                      ? Text(
+                          item.gift.emoji,
+                          style: const TextStyle(fontSize: 14),
+                        )
+                      : const MoeIcon(
+                          name: 'gift',
+                          size: 17,
+                          color: Colors.white,
+                        ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(

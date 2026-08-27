@@ -3,6 +3,7 @@ import 'package:moe_social/auth_service.dart';
 import 'package:moe_social/models/gift_purchase_order.dart';
 import 'package:moe_social/models/vip_order.dart';
 import 'package:moe_social/services/commerce_service.dart';
+import 'package:moe_social/widgets/moe_loading.dart';
 import 'package:moe_social/widgets/moe_toast.dart';
 import 'package:moe_social/pages/commerce/wallet_page.dart';
 import '../../theme/moe_tokens.dart';
@@ -138,7 +139,7 @@ class _GiftPurchaseOrdersTabState extends State<_GiftPurchaseOrdersTab> {
       return const Center(child: Text('请先登录'));
     }
     if (_loading && _items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MoeLoading());
     }
     if (_items.isEmpty) {
       return RefreshIndicator(
@@ -322,7 +323,7 @@ class _VipOrdersTabState extends State<_VipOrdersTab> {
       return const Center(child: Text('请先登录'));
     }
     if (_loading && _items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MoeLoading());
     }
     if (_items.isEmpty) {
       return RefreshIndicator(
@@ -485,7 +486,7 @@ class _WalletTransactionsTabState extends State<_WalletTransactionsTab> {
       return const Center(child: Text('请先登录'));
     }
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: MoeLoading());
     }
     return Column(
       children: [

@@ -5,6 +5,8 @@ import '../../services/auth_flow_service.dart';
 import '../../services/api_service.dart' show ApiException;
 import 'reset_password_page.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
 import '../../theme/moe_tokens.dart';
@@ -48,13 +50,13 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
     try {
       await AuthFlowService.sendResetPasswordCode(widget.email);
       if (!mounted) return;
-      _showCustomSnackBar(context, '验证码已重新发送', isError: false);
+      MoeToast.success(context, '验证码已重新发送');
       _startCountdown();
     } on ApiException catch (e) {
-      if (mounted) _showCustomSnackBar(context, e.message, isError: true);
+      if (mounted) MoeToast.error(context, e.message);
     } catch (e) {
       if (mounted) {
-        _showCustomSnackBar(context, '发送失败，请稍后重试', isError: true);
+        MoeToast.error(context, '发送失败，请稍后重试');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -71,7 +73,7 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
         await AuthFlowService.verifyResetCode(
             widget.email, _codeController.text);
         if (!mounted) return;
-        _showCustomSnackBar(context, '验证成功！(≧∇≦)/', isError: false);
+        MoeToast.success(context, '验证成功！(≧∇≦)/');
 
         Navigator.push(
           context,
@@ -83,24 +85,15 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
           ),
         );
       } on ApiException catch (e) {
-        if (mounted) _showCustomSnackBar(context, e.message, isError: true);
+        if (mounted) MoeToast.error(context, e.message);
       } catch (e) {
         if (mounted) {
-          _showCustomSnackBar(context, '验证失败，请稍后重试', isError: true);
+          MoeToast.error(context, '验证失败，请稍后重试');
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    if (isError) {
-      MoeToast.error(context, message);
-      return;
-    }
-    MoeToast.success(context, message);
   }
 
   @override
@@ -230,47 +223,37 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                           height: 1.5),
                                     ),
                                     const SizedBox(height: 30),
-                                    TextFormField(
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text('6位验证码',
+                                          style: TextStyle(
+                                              fontSize: MoeTokens.textSm,
+                                              color: MoeTokens.titleText)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    MoeInputField(
                                       controller: _codeController,
-                                      decoration: InputDecoration(
-                                        labelText: '6位验证码',
-                                        prefixIcon: const Icon(
-                                            Icons.verified_user_outlined,
-                                            color: MoeTokens.primary),
-                                        border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                MoeTokens.radiusInput)),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: BorderSide(
-                                              color: Colors.grey[200]!),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: const BorderSide(
-                                              color: MoeTokens.primary),
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.grey[50],
-                                        suffixIcon: _countdown > 0
-                                            ? Padding(
-                                                padding:
-                                                    const EdgeInsets.all(12),
-                                                child: Text('${_countdown}s',
-                                                    style: const TextStyle(
-                                                        color: Colors.grey)),
-                                              )
-                                            : TextButton(
-                                                onPressed: _resendCode,
-                                                child: const Text('重发',
-                                                    style: TextStyle(
-                                                        color:
-                                                            MoeTokens.primary)),
-                                              ),
-                                      ),
+                                      hintText: '6位验证码',
+                                      icon: Icons.verified_user_outlined,
+                                      primaryColor: MoeTokens.primary,
+                                      maxLines: 1,
                                       keyboardType: TextInputType.number,
+                                      suffixIcon: _countdown > 0
+                                          ? Padding(
+                                              padding:
+                                                  const EdgeInsets.all(12),
+                                              child: Text('${_countdown}s',
+                                                  style: const TextStyle(
+                                                      color:
+                                                          MoeTokens.hintText)),
+                                            )
+                                          : TextButton(
+                                              onPressed: _resendCode,
+                                              child: const Text('重发',
+                                                  style: TextStyle(
+                                                      color:
+                                                          MoeTokens.primary)),
+                                            ),
                                       validator: (value) =>
                                           (value?.length ?? 0) != 6
                                               ? '请输入6位验证码'
@@ -293,13 +276,9 @@ class _VerifyCodePageState extends State<VerifyCodePage> {
                                           elevation: 5,
                                         ),
                                         child: _isLoading
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        color: Colors.white,
-                                                        strokeWidth: 2))
+                                            ? const MoeSmallLoading(
+                                                size: 20,
+                                                color: Colors.white)
                                             : const Text('验证并重置',
                                                 style: TextStyle(
                                                     fontSize: MoeTokens.textLg,

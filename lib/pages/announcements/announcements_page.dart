@@ -3,8 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../../models/announcement.dart';
 import '../../services/announcement_service.dart';
-import '../../theme/moe_tokens.dart';
 import '../../utils/error_handler.dart';
+import '../../widgets/moe_loading.dart';
 import 'announcement_detail_page.dart';
 
 class AnnouncementsPage extends StatefulWidget {
@@ -84,7 +84,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
       body: RefreshIndicator(
         onRefresh: () => _load(refresh: true),
         child: _loading && _items.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: MoeTokens.primary))
+            ? const Center(child: MoeLoading())
             : _items.isEmpty
                 ? ListView(
                     children: const [
@@ -103,7 +103,7 @@ class _AnnouncementsPageState extends State<AnnouncementsPage> {
                         }
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          child: Center(child: MoeSmallLoading(size: 24)),
                         );
                       }
                       final item = _items[index];

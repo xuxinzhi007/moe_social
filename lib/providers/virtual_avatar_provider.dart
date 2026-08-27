@@ -17,8 +17,6 @@ class AvatarQuickActions {
 class VirtualAvatarProvider extends ChangeNotifier {
   static const _keyEnabled = 'virtual_avatar_enabled';
   static const _keyQuickActions = 'virtual_avatar_quick_actions';
-  static const _keyCharacterId = 'virtual_avatar_character_id';
-  static const _keySkinId = 'virtual_avatar_skin_id';
   static const _keyHiddenUntilDay = 'virtual_avatar_hidden_until_day';
 
   bool _initialized = false;
@@ -27,15 +25,11 @@ class VirtualAvatarProvider extends ChangeNotifier {
   String? _hiddenUntilDay;
 
   Set<String> _quickActions = {...AvatarQuickActions.defaults};
-  String _characterId = 'default_moe';
-  String _skinId = 'classic';
 
   bool get initialized => _initialized;
   bool get enabled => _enabled;
   bool get hiddenInSession => _hiddenInSession;
   Set<String> get quickActions => _quickActions;
-  String get characterId => _characterId;
-  String get skinId => _skinId;
 
   bool get hiddenToday => _hiddenUntilDay == _todayKey();
   bool get isVisible => _enabled && !_hiddenInSession && !hiddenToday;
@@ -49,8 +43,6 @@ class VirtualAvatarProvider extends ChangeNotifier {
     if (_quickActions.isEmpty) {
       _quickActions = {...AvatarQuickActions.defaults};
     }
-    _characterId = prefs.getString(_keyCharacterId) ?? 'default_moe';
-    _skinId = prefs.getString(_keySkinId) ?? 'classic';
     _hiddenUntilDay = prefs.getString(_keyHiddenUntilDay);
     _initialized = true;
     notifyListeners();
@@ -80,20 +72,6 @@ class VirtualAvatarProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_keyQuickActions, _quickActions.toList());
-  }
-
-  Future<void> setCharacterId(String id) async {
-    _characterId = id;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyCharacterId, id);
-  }
-
-  Future<void> setSkinId(String id) async {
-    _skinId = id;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keySkinId, id);
   }
 
   void hideForSession() {

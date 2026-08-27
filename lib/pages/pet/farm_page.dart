@@ -9,6 +9,7 @@ import '../../models/farm_crop_config.dart';
 import '../../models/farm_state.dart';
 import '../../providers/farm_provider.dart';
 import '../../providers/pet_provider.dart';
+import '../../widgets/moe_toast.dart';
 
 /// QQ 农场全屏页面（从宠物房间跳转进入）。
 ///
@@ -308,12 +309,11 @@ class _FarmPageState extends State<FarmPage> {
 
   void _toast(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
+    MoeToast.show(
+      context,
+      msg,
       duration: const Duration(milliseconds: 1400),
-      behavior: SnackBarBehavior.floating,
-      width: 260,
-    ));
+    );
   }
 
   // ------------------------------------------------------------- 构建

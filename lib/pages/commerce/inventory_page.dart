@@ -4,6 +4,7 @@ import '../../models/virtual_item.dart';
 import '../../widgets/dynamic_avatar.dart';
 // import '../../auth_service.dart';
 import '../../services/user_service.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_tokens.dart';
 import '../../services/enhanced_logger.dart';
@@ -162,7 +163,7 @@ class _InventoryPageState extends State<InventoryPage> {
           // 物品列表
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: MoeLoading())
                 : _items.isEmpty
                     ? const Center(child: Text('背包空空如也，快去抽奖吧！'))
                     : GridView.builder(

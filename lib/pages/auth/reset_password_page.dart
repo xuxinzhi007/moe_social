@@ -4,6 +4,8 @@ import '../../services/auth_flow_service.dart';
 import '../../services/api_service.dart' show ApiException;
 import '../../utils/validators.dart';
 import '../../widgets/motion/moe_reveal.dart';
+import '../../widgets/moe_input_field.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../utils/responsive.dart';
 import '../../theme/moe_tokens.dart';
@@ -23,7 +25,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
-  bool _obscurePassword = true;
 
   Future<void> _resetPassword() async {
     if (_formKey.currentState!.validate()) {
@@ -38,28 +39,19 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           _newPasswordController.text,
         );
         if (!mounted) return;
-        _showCustomSnackBar(context, '密码重置成功，请重新登录 (｡♥‿♥｡)', isError: false);
+        MoeToast.success(context, '密码重置成功，请重新登录 (｡♥‿♥｡)');
 
         Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
       } on ApiException catch (e) {
-        if (mounted) _showCustomSnackBar(context, e.message, isError: true);
+        if (mounted) MoeToast.error(context, e.message);
       } catch (e) {
         if (mounted) {
-          _showCustomSnackBar(context, '重置失败，请稍后重试', isError: true);
+          MoeToast.error(context, '重置失败，请稍后重试');
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    if (isError) {
-      MoeToast.error(context, message);
-      return;
-    }
-    MoeToast.success(context, message);
   }
 
   @override
@@ -172,71 +164,37 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                                 key: _formKey,
                                 child: Column(
                                   children: [
-                                    TextFormField(
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text('新密码',
+                                          style: TextStyle(
+                                              fontSize: MoeTokens.textSm,
+                                              color: MoeTokens.titleText)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    MoeInputField(
                                       controller: _newPasswordController,
-                                      decoration: InputDecoration(
-                                        labelText: '新密码',
-                                        prefixIcon: const Icon(
-                                            Icons.lock_outline,
-                                            color: MoeTokens.primary),
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                              _obscurePassword
-                                                  ? Icons.visibility_off
-                                                  : Icons.visibility,
-                                              color: Colors.grey),
-                                          onPressed: () => setState(() =>
-                                              _obscurePassword =
-                                                  !_obscurePassword),
-                                        ),
-                                        border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                MoeTokens.radiusInput)),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: BorderSide(
-                                              color: Colors.grey[200]!),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: const BorderSide(
-                                              color: MoeTokens.primary),
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.grey[50],
-                                      ),
-                                      obscureText: _obscurePassword,
+                                      hintText: '新密码',
+                                      icon: Icons.lock_outline,
+                                      primaryColor: MoeTokens.primary,
+                                      isPassword: true,
                                       validator: Validators.password,
                                     ),
                                     const SizedBox(height: 20),
-                                    TextFormField(
+                                    const Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text('确认密码',
+                                          style: TextStyle(
+                                              fontSize: MoeTokens.textSm,
+                                              color: MoeTokens.titleText)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    MoeInputField(
                                       controller: _confirmPasswordController,
-                                      decoration: InputDecoration(
-                                        labelText: '确认密码',
-                                        prefixIcon: const Icon(
-                                            Icons.lock_reset_outlined,
-                                            color: MoeTokens.primary),
-                                        border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                                MoeTokens.radiusInput)),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: BorderSide(
-                                              color: Colors.grey[200]!),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              MoeTokens.radiusInput),
-                                          borderSide: const BorderSide(
-                                              color: MoeTokens.primary),
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.grey[50],
-                                      ),
-                                      obscureText: _obscurePassword,
+                                      hintText: '确认密码',
+                                      icon: Icons.lock_reset_outlined,
+                                      primaryColor: MoeTokens.primary,
+                                      isPassword: true,
                                       validator: (value) =>
                                           Validators.confirmPassword(value,
                                               _newPasswordController.text),
@@ -258,13 +216,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                                           elevation: 5,
                                         ),
                                         child: _isLoading
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        color: Colors.white,
-                                                        strokeWidth: 2))
+                                            ? const MoeSmallLoading(
+                                                size: 20,
+                                                color: Colors.white)
                                             : const Text('确认重置',
                                                 style: TextStyle(
                                                     fontSize: MoeTokens.textLg,

@@ -85,16 +85,15 @@ class _CommentsPageState extends State<CommentsPage> {
       if (userId != null && unlocks.isNotEmpty) {
         AchievementHooks.scheduleServerUnlocks(userId, unlocks);
       }
-      _showCustomSnackBar(context, '评论成功', isError: false);
+      MoeToast.success(context, '评论成功');
     } on StateError catch (e) {
       if (!mounted) return;
-      _showCustomSnackBar(context, e.message, isError: true);
+      MoeToast.error(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      _showCustomSnackBar(
+      MoeToast.error(
         context,
         MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
-        isError: true,
       );
     }
   }
@@ -104,23 +103,13 @@ class _CommentsPageState extends State<CommentsPage> {
       await _vm.toggleCommentLike(commentId);
     } on StateError catch (e) {
       if (!mounted) return;
-      _showCustomSnackBar(context, e.message, isError: true);
+      MoeToast.error(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      _showCustomSnackBar(
+      MoeToast.error(
         context,
         MoeErrorCopy.toast(e, scene: MoeErrorScene.feed),
-        isError: true,
       );
-    }
-  }
-
-  void _showCustomSnackBar(BuildContext context, String message,
-      {bool isError = false}) {
-    if (isError) {
-      MoeToast.error(context, message);
-    } else {
-      MoeToast.success(context, message);
     }
   }
 

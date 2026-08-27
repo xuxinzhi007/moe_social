@@ -10,6 +10,7 @@ import '../../widgets/ai/ai_list_tile_card.dart';
 import '../../widgets/ai/ai_scaffold.dart';
 import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_input_field.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 
@@ -116,33 +117,26 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
         builder: (ctx, setLocalState) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            MoeInputField(
               controller: titleController,
-              decoration: AiTheme.inputDecoration(
-                labelText: '标题',
-                hintText: '例如：银月城',
-              ),
+              hintText: '标题（例如：银月城）',
+              maxLines: 1,
             ),
             const SizedBox(height: 12),
-            TextField(
+            MoeInputField(
               controller: keywordsController,
-              decoration: AiTheme.inputDecoration(
-                labelText: '触发关键词',
-                hintText: '逗号或换行分隔',
-              ),
+              hintText: '触发关键词（逗号或换行分隔）',
               minLines: 2,
               maxLines: 4,
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: 12),
-            TextField(
+            MoeInputField(
               controller: contentController,
+              hintText: '内容：世界观设定、人物关系、规则等',
               minLines: 5,
               maxLines: 8,
-              decoration: AiTheme.inputDecoration(
-                labelText: '内容',
-                hintText: '世界观设定、人物关系、规则等',
-                alignLabelWithHint: true,
-              ),
+              textInputAction: TextInputAction.newline,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -247,11 +241,7 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
         TextButton(
           onPressed: _saving ? null : _save,
           child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const MoeSmallLoading(size: 18)
               : const Text('保存'),
         ),
       ],
@@ -266,25 +256,20 @@ class _AiLorebookEditorPageState extends State<AiLorebookEditorPage> {
         child: ListView(
           padding: const EdgeInsets.all(AiTheme.pagePadding),
           children: [
-            TextFormField(
+            MoeInputField(
               controller: _nameController,
-              decoration: AiTheme.inputDecoration(
-                labelText: '名称',
-                hintText: '例如：赛博都市世界观',
-              ),
+              hintText: '名称（例如：赛博都市世界观）',
+              maxLines: 1,
               validator: (value) =>
                   value == null || value.trim().isEmpty ? '请输入名称' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            MoeInputField(
               controller: _descriptionController,
+              hintText: '描述（适用于哪些角色或场景）',
               minLines: 2,
               maxLines: 4,
-              decoration: AiTheme.inputDecoration(
-                labelText: '描述',
-                hintText: '适用于哪些角色或场景',
-                alignLabelWithHint: true,
-              ),
+              textInputAction: TextInputAction.newline,
             ),
             const SizedBox(height: 16),
             const AiHighlightCard(

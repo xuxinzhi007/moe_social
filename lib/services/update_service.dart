@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../auth_service.dart';
+import '../widgets/moe_loading.dart';
 import '../widgets/moe_toast.dart';
 import 'app_release_service.dart';
 
@@ -1717,11 +1718,7 @@ class _DownloadProgressDialogState extends State<_DownloadProgressDialog> {
       title: Row(
         children: [
           if (_isDownloading)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+            const MoeSmallLoading(size: 24)
           else if (_downloadComplete)
             const Icon(Icons.check_circle, color: Colors.green, size: 24)
           else

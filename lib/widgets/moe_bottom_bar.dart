@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/feature_flags.dart';
 import '../theme/moe_tokens.dart';
+import 'moe_badge_dot.dart';
 import 'moe_glass_surface.dart';
 
 class MoeBottomBar extends StatelessWidget {
@@ -40,7 +41,7 @@ class MoeBottomBar extends StatelessWidget {
             child: Container(
                 decoration: BoxDecoration(
                   color: MoeTokens.surface1.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.circular(32), // ui-hardcode: ignore 存量胶囊导航底槽视觉，不追溯
                   border: Border.all(
                     color: MoeTokens.surfaceBorder,
                     width: 1,
@@ -79,11 +80,11 @@ class MoeBottomBar extends StatelessWidget {
                                   )
                                 : null,
                             color: isSelected ? null : Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20), // ui-hardcode: ignore 存量选中胶囊视觉，不追溯
                           ),
                           child: Material(
                             color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20), // ui-hardcode: ignore 存量选中胶囊视觉，不追溯
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
                               onTap: () => onItemSelected(index),
@@ -122,7 +123,7 @@ class MoeBottomBar extends StatelessWidget {
                                                     iconData,
                                                     color: isSelected
                                                         ? primaryColor
-                                                        : Colors.grey[400],
+                                                        : Colors.grey[400], // ui-hardcode: ignore 存量未选中图标色，不追溯
                                                     size: compact ? 21 : 24,
                                                   ),
                                                 );
@@ -132,7 +133,11 @@ class MoeBottomBar extends StatelessWidget {
                                               Positioned(
                                                 right: -10,
                                                 top: -6,
-                                                child: _Badge(count: badgeCount),
+                                                child: MoeBadgeDot.count(
+                                                  count: badgeCount,
+                                                  // 近白描边分隔图标底色
+                                                  borderColor: MoeTokens.surface1,
+                                                ),
                                               ),
                                           ],
                                         ),
@@ -149,7 +154,7 @@ class MoeBottomBar extends StatelessWidget {
                                             style: TextStyle(
                                               color: isSelected
                                                   ? primaryColor
-                                                  : Colors.grey[500],
+                                                  : Colors.grey[500], // ui-hardcode: ignore 存量未选中文字色，不追溯
                                               fontWeight: isSelected
                                                   ? FontWeight.w700
                                                   : FontWeight.w600,
@@ -206,30 +211,3 @@ class MoeBottomBar extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFF4D6D),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white, width: 1.2),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        count > 99 ? '99+' : '$count',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}

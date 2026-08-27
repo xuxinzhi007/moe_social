@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import '../../../providers/device_info_provider.dart';
 import '../../../services/user_service.dart';
 import '../../../services/update_service.dart';
+import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
+import '../../../widgets/moe_input_field.dart';
+import '../../../widgets/moe_loading.dart';
 import '../../../widgets/moe_toast.dart';
 
 class AboutModule extends StatelessWidget {
@@ -113,18 +116,15 @@ class AboutModule extends StatelessWidget {
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                MoeInputField(
                   controller: contentController,
-                  decoration: const InputDecoration(
-                    hintText: '请详细描述问题现象、机型、系统版本等',
-                    border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
+                  hintText: '请详细描述问题现象、机型、系统版本等',
                   maxLines: 5,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.done,
+                  style: const TextStyle(fontSize: 13),
+                  hintStyle:
+                      const TextStyle(fontSize: 13, color: MoeTokens.hintText),
                 ),
               ],
             ),
@@ -169,13 +169,9 @@ class AboutModule extends StatelessWidget {
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                  ? const MoeSmallLoading(
+                      size: 18,
+                      color: Colors.white,
                     )
                   : const Text('提交反馈'),
             ),

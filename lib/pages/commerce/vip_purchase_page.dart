@@ -4,6 +4,7 @@ import '../../services/commerce_service.dart';
 import '../../models/vip_plan.dart';
 import 'vip_order_confirm_page.dart';
 import '../../widgets/motion/moe_stagger.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../../theme/moe_theme_extension.dart';
 import '../../theme/moe_tokens.dart';
@@ -185,7 +186,7 @@ class _VipPurchasePageState extends State<VipPurchasePage> {
           SafeArea(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
+                    child: MoeLoading(),
                   )
                 : RefreshIndicator(
                     color: _moe.primary,

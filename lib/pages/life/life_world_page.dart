@@ -14,6 +14,7 @@ import '../../services/companion_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/life/life_event_tile.dart';
 import '../../widgets/life/life_world_map.dart';
+import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
 import '../ai/game_play_page.dart';
 import 'life_entity_detail.dart';
@@ -1641,7 +1642,7 @@ class _StatusThoughtCard extends StatelessWidget {
                   avatar: isOpeningStory
                       ? const SizedBox.square(
                           dimension: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: MoeSmallLoading(size: 14),
                         )
                       : const Icon(Icons.auto_stories_rounded, size: 16),
                   label: const Text('互动故事'),
@@ -1941,7 +1942,7 @@ class _LoadingState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(),
+          MoeLoading(),
           SizedBox(height: 14),
           Text('正在唤醒 AI 伙伴...'),
         ],
