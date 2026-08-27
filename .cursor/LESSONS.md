@@ -25,6 +25,7 @@
 | AI 互动闭环迭代 | `docs/dev/ai-companion-interaction-loop.md` |
 | Flame 小世界引擎 | `.cursor/skills/flame-life-world/SKILL.md` |
 | 养成 Pet Life Sim | `docs/dev/pet-life-sim-roadmap.md` |
+| 星辉远征 Arena | `docs/dev/aurora-arena-ssot.md` |
 | Pet 分层装扮 A | `docs/dev/pet-layered-avatar.md` |
 | Pet LPC 短跑（过渡） | `docs/dev/pet-lpc-pipeline.md` |
 | **Moe 养成内容包（角色+家具+装饰）** | `docs/dev/moe-pet-content-pack.md` |

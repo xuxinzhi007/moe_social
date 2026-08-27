@@ -29,6 +29,7 @@ import (
 	adminapphttp "backend/internal/server/protohttp/adminapp"
 	admininsightshttp "backend/internal/server/protohttp/admininsights"
 	aihttp "backend/internal/server/protohttp/ai"
+	arenahttp "backend/internal/server/protohttp/arena"
 	battlehttp "backend/internal/server/protohttp/battle"
 	behaviorhttp "backend/internal/server/protohttp/behavior"
 	chathttp "backend/internal/server/protohttp/chat"
@@ -54,6 +55,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
+	arenaapp "backend/internal/service/arena"
 	battleapp "backend/internal/service/battle"
 	behaviorapp "backend/internal/service/behavior"
 	chatapp "backend/internal/service/chat"
@@ -90,6 +92,7 @@ type ProtoHTTPDeps struct {
 	LifeApp            *lifeapp.AppService
 	CompanionApp       *companionapp.AppService
 	PetApp             *petapp.AppService
+	ArenaApp           *arenaapp.AppService
 	UserApp            *userapp.AppService
 	CommentApp         *commentapp.AppService
 	CommunityApp       *communityapp.AppService
@@ -144,6 +147,9 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.PetApp != nil {
 		pethttp.RegisterRoutes(srv, d.PetApp)
+	}
+	if d.ArenaApp != nil {
+		arenahttp.RegisterRoutes(srv, d.ArenaApp)
 	}
 	if d.UserApp != nil {
 		userv1.RegisterUserServiceHTTPServer(srv, userhttp.New(d.UserApp))

@@ -60,6 +60,17 @@ class _ArenaPageState extends State<ArenaPage>
     unawaited(
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
     );
+    if (_ownsModel) {
+      unawaited(_model.hydrate());
+    }
+  }
+
+  Future<void> _onHomeGift() async {
+    await _model.giftAtHome();
+  }
+
+  Future<void> _onHomeTrain() async {
+    await _model.trainAtHome();
   }
 
   @override
@@ -156,6 +167,7 @@ class _ArenaPageState extends State<ArenaPage>
 
   void _saveFormation() {
     setState(() => _formationSaved = true);
+    unawaited(_model.syncFormation());
   }
 
   void _openSummonPool() {
@@ -186,7 +198,12 @@ class _ArenaPageState extends State<ArenaPage>
           bottom: _navHeight + 8,
           width: 225,
           height: 272,
-          child: _HeroPortrait(hero: hero, showFrame: true),
+          child: _HeroPortrait(
+            hero: hero,
+            showFrame: true,
+            imageAsset: _model.portraitAssetOf(hero),
+            tint: _model.portraitTintOf(hero),
+          ),
         ),
         Positioned(
           left: 34,
@@ -269,20 +286,34 @@ class _ArenaPageState extends State<ArenaPage>
 
   Widget _buildHome() {
     final hero = _model.activeHero;
+    final bond = _model.bondOf(hero);
+    final restLabel = _model.restBuffReady
+        ? '已就绪 · 下场生命 +${ArenaViewModel.homeRestHpBonus}'
+        : '训练后解锁 · 下场生命 +${ArenaViewModel.homeRestHpBonus}';
+    final bondLabel = _model.bondBuffReady
+        ? '已就绪 · 下场能量 +${ArenaViewModel.homeBondEnergyBonus}'
+        : '送礼后解锁 · 下场能量 +${ArenaViewModel.homeBondEnergyBonus}';
+    final skin = _model.skinOf(hero);
     return _panelScaffold(
       title: '星辉小家',
-      subtitle: 'TA 的小家并入远征体系：统一角色资源，养成结果服务战斗和爬塔。',
+      subtitle: '送礼与训练服务战斗；皮肤在角色页整卡切换。',
       child: Row(
         children: [
           SizedBox(
-            width: 250,
-            child: _HeroPortrait(hero: hero, showFrame: true),
+            width: 220,
+            child: _HeroPortrait(
+              hero: hero,
+              showFrame: true,
+              imageAsset: _model.portraitAssetOf(hero),
+              tint: _model.portraitTintOf(hero),
+            ),
           ),
           const SizedBox(width: MoeTokens.spaceMd),
           Expanded(
             child: Column(
               children: [
                 Expanded(
+                  flex: 5,
                   child: Row(
                     children: [
                       Expanded(
@@ -298,19 +329,20 @@ class _ArenaPageState extends State<ArenaPage>
                                   fontWeight: MoeTokens.fontWeightTitle,
                                 ),
                               ),
-                              const SizedBox(height: MoeTokens.spaceSm),
-                              Text(
-                                '${hero.name} 想在出发前整理装备。完成小家日常后，远征获得少量初始能量。',
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _ArenaColors.muted,
-                                  fontSize: MoeTokens.textSm,
-                                  height: 1.35,
+                              const SizedBox(height: MoeTokens.spaceXs),
+                              Expanded(
+                                child: Text(
+                                  _model.homeMessage,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: _ArenaColors.muted,
+                                    fontSize: MoeTokens.textSm,
+                                    height: 1.3,
+                                  ),
                                 ),
                               ),
-                              const Spacer(),
-                              _homeMetric('好感度', hero.favorite, hero.color),
+                              _homeMetric('好感度', bond, hero.color),
                             ],
                           ),
                         ),
@@ -329,10 +361,24 @@ class _ArenaPageState extends State<ArenaPage>
                                   fontWeight: MoeTokens.fontWeightTitle,
                                 ),
                               ),
-                              const SizedBox(height: MoeTokens.spaceSm),
-                              _homeBuff('休息充分', '下次战斗初始生命 +5%'),
                               const SizedBox(height: MoeTokens.spaceXs),
-                              _homeBuff('羁绊整理', '同阵营角色连携更容易触发'),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    _homeBuff(
+                                      '休息充分',
+                                      restLabel,
+                                    ),
+                                    _homeBuff(
+                                      '羁绊整理',
+                                      bondLabel,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -340,41 +386,83 @@ class _ArenaPageState extends State<ArenaPage>
                     ],
                   ),
                 ),
-                const SizedBox(height: MoeTokens.spaceSm),
-                SizedBox(
-                  height: 58,
+                const SizedBox(height: 6),
+                _SurfaceCard(
                   child: Row(
                     children: [
                       Expanded(
-                        child: _HomeStoryCard(
-                          icon: Icons.favorite_rounded,
-                          title: '今天的关系摘要',
-                          body:
-                              '${hero.name} 的好感度 ${hero.favorite}，出发前会把陪伴状态转成远征士气。',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              '当前皮肤',
+                              style: TextStyle(
+                                color: _ArenaColors.violet,
+                                fontSize: MoeTokens.textSm,
+                                fontWeight: MoeTokens.fontWeightTitle,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${hero.name} · ${skin.name}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: MoeTokens.textSm,
+                              ),
+                            ),
+                            const Text(
+                              '整卡替换立绘，不是部位换装',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: _ArenaColors.muted,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: MoeTokens.spaceSm),
-                      Expanded(
-                        child: _HomeStoryCard(
-                          icon: Icons.article_rounded,
-                          title: 'TA 的日常',
-                          body: '整理装备、写下战斗便签、等待你从这里带队出发。',
+                      MoePressable(
+                        onTap: () => _model.navigate(ArenaView.character),
+                        borderRadius:
+                            BorderRadius.circular(MoeTokens.radiusMd),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _ArenaColors.violet,
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusMd),
+                          ),
+                          child: const Text(
+                            '更换皮肤',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: MoeTokens.spaceSm),
-                SizedBox(
-                  height: 82,
+                const SizedBox(height: 6),
+                Expanded(
+                  flex: 4,
                   child: Row(
                     children: [
                       Expanded(
                         child: _HomeActionCard(
                           icon: Icons.volunteer_activism_rounded,
-                          title: '送礼',
-                          body: '消耗远征资源提升好感，后续解锁角色剧情。',
-                          onTap: () => _model.navigate(ArenaView.collection),
+                          title: '送礼 · ${ArenaViewModel.homeGiftCost}',
+                          body:
+                              '消耗星晶提升好感，下场战斗初始能量 +${ArenaViewModel.homeBondEnergyBonus}。',
+                          onTap: () => unawaited(_onHomeGift()),
                         ),
                       ),
                       const SizedBox(width: MoeTokens.spaceSm),
@@ -382,8 +470,9 @@ class _ArenaPageState extends State<ArenaPage>
                         child: _HomeActionCard(
                           icon: Icons.auto_fix_high_rounded,
                           title: '训练',
-                          body: '把小家日常变成战斗前准备，不再单独维护旧玩法。',
-                          onTap: () => _model.navigate(ArenaView.formation),
+                          body:
+                              '完成出征前整理，下场战斗初始生命 +${ArenaViewModel.homeRestHpBonus}。',
+                          onTap: () => unawaited(_onHomeTrain()),
                         ),
                       ),
                       const SizedBox(width: MoeTokens.spaceSm),
@@ -441,14 +530,21 @@ class _ArenaPageState extends State<ArenaPage>
                           child: Wrap(
                             spacing: 28,
                             children: List.generate(3, (index) {
+                              final slotHero = _model.formationHeroAt(index);
                               return MoePressable(
                                 onTap: () => _model.selectFormationSlot(index),
                                 borderRadius: BorderRadius.circular(16),
                                 child: _FormationSlot(
-                                  hero: _model.formationHeroAt(index),
+                                  hero: slotHero,
                                   selected:
                                       index == _model.selectedFormationSlot,
                                   positionLabel: ['前排', '中排', '后排'][index],
+                                  imageAsset: slotHero == null
+                                      ? null
+                                      : _model.portraitAssetOf(slotHero),
+                                  tint: slotHero == null
+                                      ? null
+                                      : _model.portraitTintOf(slotHero),
                                 ),
                               );
                             }),
@@ -557,6 +653,9 @@ class _ArenaPageState extends State<ArenaPage>
                   selected: index == _model.selectedHero,
                   inFormation: _model.formationHeroes
                       .any((formationHero) => formationHero.id == hero.id),
+                  stars: _model.starsOf(hero),
+                  imageAsset: _model.portraitAssetOf(hero),
+                  tint: _model.portraitTintOf(hero),
                   onTap: () {
                     setState(() => _formationSaved = false);
                     _model.selectHero(index);
@@ -731,7 +830,12 @@ class _ArenaPageState extends State<ArenaPage>
           top: 44,
           width: 205,
           height: 245,
-          child: _HeroPortrait(hero: upHero, showFrame: true),
+          child: _HeroPortrait(
+            hero: upHero,
+            showFrame: true,
+            imageAsset: _model.portraitAssetOf(upHero),
+            tint: _model.portraitTintOf(upHero),
+          ),
         ),
         Positioned(
           right: 28,
@@ -978,8 +1082,12 @@ class _ArenaPageState extends State<ArenaPage>
                     owned: _model.isOwned(hero),
                     selected: index == _model.selectedHero,
                     shards: _model.shardsOf(hero),
+                    stars: _model.starsOf(hero),
+                    power: _model.powerOf(hero),
                     inFormation: _model.formationHeroes
                         .any((formationHero) => formationHero.id == hero.id),
+                    imageAsset: _model.portraitAssetOf(hero),
+                    tint: _model.portraitTintOf(hero),
                     onTap: () {
                       _model.selectHero(index);
                       _model.navigate(ArenaView.character);
@@ -1006,7 +1114,13 @@ class _ArenaPageState extends State<ArenaPage>
           top: 62,
           bottom: _navHeight + 14,
           width: 265,
-          child: _HeroPortrait(hero: hero, locked: !owned, showFrame: true),
+          child: _HeroPortrait(
+            hero: hero,
+            locked: !owned,
+            showFrame: true,
+            imageAsset: _model.portraitAssetOf(hero),
+            tint: _model.portraitTintOf(hero),
+          ),
         ),
         Positioned(
           right: 34,
@@ -1046,10 +1160,107 @@ class _ArenaPageState extends State<ArenaPage>
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _StatBox('等级', owned ? '${hero.level}' : '--'),
-                      _StatBox('好感度', owned ? '${hero.favorite}' : '--'),
-                      _StatBox('战力', owned ? '${hero.power}' : '--'),
+                      _StatBox('等级', owned ? '${_model.levelOf(hero)}' : '--'),
+                      _StatBox('好感度', owned ? '${_model.bondOf(hero)}' : '--'),
+                      _StatBox('战力', owned ? '${_model.powerOf(hero)}' : '--'),
                     ],
+                  ),
+                  const Divider(height: 22),
+                  const Text(
+                    '皮肤',
+                    style: TextStyle(
+                      color: _ArenaColors.violet,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    '整卡替换角色立绘（类似皮肤），不是帽衣裤鞋部位。',
+                    style: TextStyle(
+                      color: _ArenaColors.muted,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 72,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: hero.resolvedSkins.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final skin = hero.resolvedSkins[index];
+                        final selected = _model.skinOf(hero).id == skin.id;
+                        return MoePressable(
+                          onTap: !owned
+                              ? null
+                              : () => unawaited(
+                                    _model.selectHeroSkin(hero, skin.id),
+                                  ),
+                          borderRadius:
+                              BorderRadius.circular(MoeTokens.radiusMd),
+                          child: Container(
+                            width: 108,
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? _ArenaColors.violet.withValues(alpha: 0.14)
+                                  : Colors.white.withValues(alpha: 0.7),
+                              borderRadius:
+                                  BorderRadius.circular(MoeTokens.radiusMd),
+                              border: Border.all(
+                                color: selected
+                                    ? _ArenaColors.violet
+                                    : _ArenaColors.gold.withValues(alpha: 0.5),
+                                width: selected ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: skin.imageAsset == null
+                                        ? ColoredBox(color: Color(hero.color))
+                                        : (skin.tint == null
+                                            ? Image.asset(
+                                                skin.imageAsset!,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                              )
+                                            : ColorFiltered(
+                                                colorFilter: ColorFilter.mode(
+                                                  Color(skin.tint!),
+                                                  BlendMode.modulate,
+                                                ),
+                                                child: Image.asset(
+                                                  skin.imageAsset!,
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                ),
+                                              )),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  skin.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: selected
+                                        ? _ArenaColors.violet
+                                        : _ArenaColors.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   const Divider(height: 22),
                   Text(
@@ -1281,6 +1492,12 @@ class _ArenaPageState extends State<ArenaPage>
               label: index < team.length ? team[index].name : '空位',
               active: index == 0 && !_model.finished,
               hp: _model.playerHp,
+              imageAsset: index < team.length
+                  ? _model.portraitAssetOf(team[index])
+                  : null,
+              tint: index < team.length
+                  ? _model.portraitTintOf(team[index])
+                  : null,
             ),
           ),
         ),
@@ -2618,8 +2835,8 @@ class _HomeActionCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _ArenaColors.violet.withValues(alpha: .10),
@@ -2628,10 +2845,10 @@ class _HomeActionCard extends StatelessWidget {
                     child: Icon(
                       icon,
                       color: _ArenaColors.violet,
-                      size: 17,
+                      size: 14,
                     ),
                   ),
-                  const SizedBox(width: MoeTokens.spaceSm),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       title,
@@ -2646,88 +2863,24 @@ class _HomeActionCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: MoeTokens.spaceXs),
+              const SizedBox(height: 2),
               Expanded(
-                child: Text(
-                  body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _ArenaColors.muted,
-                    fontSize: 10,
-                    height: 1.25,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    body,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ArenaColors.muted,
+                      fontSize: 10,
+                      height: 1.2,
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
-      );
-}
-
-class _HomeStoryCard extends StatelessWidget {
-  const _HomeStoryCard({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        height: double.infinity,
-        padding: const EdgeInsets.all(MoeTokens.spaceSm),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .58),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-          border: Border.all(color: _ArenaColors.gold.withValues(alpha: .32)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _ArenaColors.violet.withValues(alpha: .10),
-                borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-              ),
-              child: Icon(icon, color: _ArenaColors.violet, size: 18),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _ArenaColors.violet,
-                      fontSize: MoeTokens.textXs,
-                      fontWeight: MoeTokens.fontWeightTitle,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    body,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _ArenaColors.muted,
-                      fontSize: 9,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       );
 }
@@ -2982,25 +3135,35 @@ class _HeroPortrait extends StatelessWidget {
     required this.hero,
     this.locked = false,
     this.showFrame = false,
+    this.imageAsset,
+    this.tint,
   });
 
   final ArenaHero hero;
   final bool locked;
   final bool showFrame;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset = hero.imageAsset;
-    final portrait = imageAsset == null
+    final asset = imageAsset ?? hero.imageAsset;
+    Widget portrait = asset == null
         ? _LargeHeroPlaceholder(color: hero.color)
         : ClipRRect(
             borderRadius: BorderRadius.circular(28),
             child: Image.asset(
-              imageAsset,
+              asset,
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
             ),
           );
+    if (tint != null && asset != null) {
+      portrait = ColorFiltered(
+        colorFilter: ColorFilter.mode(Color(tint!), BlendMode.modulate),
+        child: portrait,
+      );
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -3082,11 +3245,15 @@ class _FormationSlot extends StatelessWidget {
     required this.hero,
     required this.selected,
     required this.positionLabel,
+    this.imageAsset,
+    this.tint,
   });
 
   final ArenaHero? hero;
   final bool selected;
   final String positionLabel;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
@@ -3134,7 +3301,11 @@ class _FormationSlot extends StatelessWidget {
             : Stack(
                 fit: StackFit.expand,
                 children: [
-                  _FormationSlotPortrait(hero: currentHero),
+                  _FormationSlotPortrait(
+                    hero: currentHero,
+                    imageAsset: imageAsset,
+                    tint: tint,
+                  ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -3238,19 +3409,32 @@ class _FormationSlot extends StatelessWidget {
 }
 
 class _FormationSlotPortrait extends StatelessWidget {
-  const _FormationSlotPortrait({required this.hero});
+  const _FormationSlotPortrait({
+    required this.hero,
+    this.imageAsset,
+    this.tint,
+  });
 
   final ArenaHero hero;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset = hero.imageAsset;
-    if (imageAsset != null) {
-      return Image.asset(
-        imageAsset,
+    final asset = imageAsset ?? hero.imageAsset;
+    if (asset != null) {
+      Widget image = Image.asset(
+        asset,
         fit: BoxFit.cover,
         alignment: Alignment.topCenter,
       );
+      if (tint != null) {
+        image = ColorFiltered(
+          colorFilter: ColorFilter.mode(Color(tint!), BlendMode.modulate),
+          child: image,
+        );
+      }
+      return image;
     }
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -3280,14 +3464,20 @@ class _HeroCard extends StatelessWidget {
     required this.owned,
     required this.selected,
     required this.inFormation,
+    required this.stars,
     required this.onTap,
+    this.imageAsset,
+    this.tint,
   });
 
   final ArenaHero hero;
   final bool owned;
   final bool selected;
   final bool inFormation;
+  final int stars;
   final VoidCallback onTap;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
@@ -3332,7 +3522,12 @@ class _HeroCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _AvatarCircle(hero: hero, locked: !owned),
+                _AvatarCircle(
+                  hero: hero,
+                  locked: !owned,
+                  imageAsset: imageAsset,
+                  tint: tint,
+                ),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Column(
@@ -3366,7 +3561,7 @@ class _HeroCard extends StatelessWidget {
                         inFormation
                             ? '上阵中 · ${hero.faction}'
                             : owned
-                                ? '${hero.faction} · ${hero.stars}星'
+                                ? '${hero.faction} · $stars星'
                                 : '未解锁 · ${hero.faction}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -3397,16 +3592,24 @@ class _HeroCollectionCard extends StatelessWidget {
     required this.owned,
     required this.selected,
     required this.shards,
+    required this.stars,
+    required this.power,
     required this.inFormation,
     required this.onTap,
+    this.imageAsset,
+    this.tint,
   });
 
   final ArenaHero hero;
   final bool owned;
   final bool selected;
   final int shards;
+  final int stars;
+  final int power;
   final bool inFormation;
   final VoidCallback onTap;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
@@ -3448,7 +3651,12 @@ class _HeroCollectionCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              _AvatarCircle(hero: hero, locked: !owned),
+              _AvatarCircle(
+                hero: hero,
+                locked: !owned,
+                imageAsset: imageAsset,
+                tint: tint,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -3491,7 +3699,7 @@ class _HeroCollectionCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       owned
-                          ? '战力 ${hero.power} · ${hero.skillName}'
+                          ? '战力 $power · ${hero.skillName}'
                           : '碎片 $shards / 40',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -3511,7 +3719,7 @@ class _HeroCollectionCard extends StatelessWidget {
                   if (inFormation)
                     _MiniStatusPill('上阵')
                   else
-                    _MiniStatusPill(owned ? '${hero.stars}星' : '召唤'),
+                    _MiniStatusPill(owned ? '$stars星' : '召唤'),
                   const SizedBox(height: 5),
                   Icon(
                     Icons.chevron_right_rounded,
@@ -3625,18 +3833,25 @@ class _HeroMetaChip extends StatelessWidget {
 }
 
 class _AvatarCircle extends StatelessWidget {
-  const _AvatarCircle({required this.hero, this.locked = false});
+  const _AvatarCircle({
+    required this.hero,
+    this.locked = false,
+    this.imageAsset,
+    this.tint,
+  });
 
   final ArenaHero hero;
   final bool locked;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
-    final imageAsset = hero.imageAsset;
+    final asset = imageAsset ?? hero.imageAsset;
     Widget child;
-    if (locked && imageAsset == null) {
+    if (locked && asset == null) {
       child = const _LockedAvatarSilhouette();
-    } else if (imageAsset == null) {
+    } else if (asset == null) {
       child = const Center(
         child: Text(
           '✦',
@@ -3644,6 +3859,17 @@ class _AvatarCircle extends StatelessWidget {
         ),
       );
     } else {
+      Widget image = Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+      );
+      if (tint != null) {
+        image = ColorFiltered(
+          colorFilter: ColorFilter.mode(Color(tint!), BlendMode.modulate),
+          child: image,
+        );
+      }
       child = ClipOval(
         child: locked
             ? ColorFiltered(
@@ -3651,17 +3877,9 @@ class _AvatarCircle extends StatelessWidget {
                   Color(0xFF30263C),
                   BlendMode.saturation,
                 ),
-                child: Image.asset(
-                  imageAsset,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                ),
+                child: image,
               )
-            : Image.asset(
-                imageAsset,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-              ),
+            : image,
       );
     }
 
@@ -3730,6 +3948,8 @@ class _BattleUnit extends StatelessWidget {
     this.active = false,
     this.selected = false,
     this.onTap,
+    this.imageAsset,
+    this.tint,
   });
 
   final ArenaHero? hero;
@@ -3740,11 +3960,27 @@ class _BattleUnit extends StatelessWidget {
   final bool active;
   final bool selected;
   final VoidCallback? onTap;
+  final String? imageAsset;
+  final int? tint;
 
   @override
   Widget build(BuildContext context) {
     final unitColor =
         enemy ? _ArenaColors.ink : Color(hero?.color ?? 0xFFB88BCE);
+    final portraitAsset = imageAsset ?? hero?.imageAsset;
+    Widget portrait = portraitAsset == null
+        ? _UnitPlaceholder(color: unitColor, enemy: enemy)
+        : Image.asset(
+            portraitAsset,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          );
+    if (portraitAsset != null && tint != null) {
+      portrait = ColorFiltered(
+        colorFilter: ColorFilter.mode(Color(tint!), BlendMode.modulate),
+        child: portrait,
+      );
+    }
     final unit = AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
@@ -3818,13 +4054,7 @@ class _BattleUnit extends StatelessWidget {
                 ],
               ),
               clipBehavior: Clip.antiAlias,
-              child: hero?.imageAsset == null
-                  ? _UnitPlaceholder(color: unitColor, enemy: enemy)
-                  : Image.asset(
-                      hero!.imageAsset!,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                    ),
+              child: portrait,
             ),
           ),
           Positioned(

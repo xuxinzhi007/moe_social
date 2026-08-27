@@ -1,0 +1,17 @@
+﻿False|lib/pages/pet
+False|lib/pages/pet/pet_home_page.dart
+False|lib/game/pet
+False|lib/game/pet/pet_art.dart
+False|lib/game/farm
+False|lib/providers/pet_provider.dart
+False|lib/providers/farm_provider.dart
+False|lib/services/pet_service.dart
+False|test/game/pet
+False|test/pet_crop_test.dart
+False|test/pet_furniture_scene_prune_test.dart
+False|test/pet_care_juice_controller_test.dart
+False|test/pet_profile_assimilate_test.dart
+False|lib/models/pet_crop.dart
+False|lib/models/pet_care_item.dart
+False|lib/models/pet_state.dart
+False|lib/models/pet_wear.dart

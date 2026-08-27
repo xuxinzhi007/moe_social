@@ -5,6 +5,7 @@ import (
 	achievementapp "backend/internal/service/achievement"
 	adminapp "backend/internal/service/admin"
 	aiapp "backend/internal/service/ai"
+	arenaapp "backend/internal/service/arena"
 	battleapp "backend/internal/service/battle"
 	behaviorapp "backend/internal/service/behavior"
 	chatapp "backend/internal/service/chat"
@@ -54,7 +55,8 @@ type AIServices struct {
 }
 
 type GameServices struct {
-	GameApp *gameapp.AppService
+	GameApp  *gameapp.AppService
+	ArenaApp *arenaapp.AppService
 }
 
 type LifeServices struct {
@@ -98,6 +100,7 @@ type ServiceContext struct {
 	LifeApp        *lifeapp.AppService
 	CompanionApp   *companionapp.AppService
 	PetApp         *petapp.AppService
+	ArenaApp       *arenaapp.AppService
 	LLMApp         *llmapp.AppService
 	MediaApp       *mediaapp.AppService
 	ChatApp        *chatapp.AppService
@@ -143,7 +146,7 @@ func (c *ServiceContext) SyncDomains() {
 		AIApp:  c.AIApp,
 		LLMApp: c.LLMApp,
 	}
-	c.Domains.Game = GameServices{GameApp: c.GameApp}
+	c.Domains.Game = GameServices{GameApp: c.GameApp, ArenaApp: c.ArenaApp}
 	c.Domains.Life = LifeServices{LifeApp: c.LifeApp}
 	c.Domains.Companion = CompanionServices{CompanionApp: c.CompanionApp}
 	c.Domains.Platform = PlatformServices{MediaApp: c.MediaApp}

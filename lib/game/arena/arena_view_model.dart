@@ -1,6 +1,12 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../models/arena_state.dart';
+import '../../services/arena_service.dart';
 
 enum ArenaView {
   lobby,
@@ -49,6 +55,24 @@ extension ArenaRarityLabel on ArenaRarity {
   }
 }
 
+class ArenaHeroSkin {
+  const ArenaHeroSkin({
+    required this.id,
+    required this.name,
+    this.imageAsset,
+    this.tint,
+  });
+
+  final String id;
+  final String name;
+
+  /// 整卡立绘资源；空则走色块占位。
+  final String? imageAsset;
+
+  /// 可选色调，用于同一资源做出第二套皮肤观感（异色）。
+  final int? tint;
+}
+
 class ArenaHero {
   const ArenaHero({
     required this.id,
@@ -65,6 +89,7 @@ class ArenaHero {
     required this.skillName,
     required this.skillDescription,
     this.imageAsset,
+    this.skins = const [],
   });
 
   final String id;
@@ -81,6 +106,15 @@ class ArenaHero {
   final String skillName;
   final String skillDescription;
   final String? imageAsset;
+  final List<ArenaHeroSkin> skins;
+
+  /// 可切换皮肤列表；未显式配置时用 [imageAsset] 生成「经典」。
+  List<ArenaHeroSkin> get resolvedSkins {
+    if (skins.isNotEmpty) return skins;
+    return [
+      ArenaHeroSkin(id: 'classic', name: '经典', imageAsset: imageAsset),
+    ];
+  }
 }
 
 class ArenaCard {
@@ -135,7 +169,9 @@ class ArenaViewModel extends ChangeNotifier {
   ArenaViewModel({
     Random? random,
     ArenaView initialView = ArenaView.lobby,
+    ArenaService? service,
   })  : _random = random ?? Random(),
+        _service = service ?? ArenaService(),
         _view = initialView {
     _ownedHeroIds.addAll(heroes.take(3).map((hero) => hero.id));
     _deck.addAll(_cardsForFormation());
@@ -146,14 +182,28 @@ class ArenaViewModel extends ChangeNotifier {
   static const int formationSize = 3;
   static const int enemyCount = 3;
   static const int enemyMaxHp = 100;
+  static const int towerClearReward = 120;
+  static const int towerWinShardBonus = 4;
+  static const int homeGiftCost = 80;
+  static const int homeGiftBondGain = 5;
+  static const int homeRestHpBonus = 5;
+  static const int homeBondEnergyBonus = 1;
+  static const String _localPrefsKey = 'arena_progress_v1';
 
   final Random _random;
+  final ArenaService _service;
+  bool _cloudSynced = false;
+  bool _hydrating = false;
+
+  bool get cloudSynced => _cloudSynced;
+  bool get hydrating => _hydrating;
 
   ArenaView _view;
   int _selectedHero = 0;
   int _selectedFormationSlot = 0;
   int _energy = 6;
   int _playerHp = 100;
+  int _playerMaxHp = 100;
   int _selectedEnemyIndex = 0;
   int _turn = 1;
   int _combo = 0;
@@ -165,8 +215,17 @@ class ArenaViewModel extends ChangeNotifier {
   int _starCrystals = 6280;
   String _battleMessage = '选择一张技能卡开始战斗';
   String _summonMessage = '十连召唤 9 折，并至少出现 1 名 SR 以上英雄。';
+  String _homeMessage = '完成小家日常后，远征会获得初始生命与能量加成。';
+  bool _restBuffReady = false;
+  bool _bondBuffReady = false;
   final Set<String> _ownedHeroIds = <String>{};
   final Map<String, int> _heroShards = <String, int>{};
+  final Map<String, int> _heroBondBonus = <String, int>{};
+  final Map<String, int> _heroLevels = <String, int>{};
+  final Map<String, int> _heroStars = <String, int>{};
+  final Map<String, int> _heroPowers = <String, int>{};
+  final Map<String, int> _heroFavorites = <String, int>{};
+  final Map<String, String> _heroSkinIds = <String, String>{};
   final List<ArenaSummonResult> _summonResults = <ArenaSummonResult>[];
   final List<String> _formationHeroIds = <String>[
     'lanxing',
@@ -176,6 +235,8 @@ class ArenaViewModel extends ChangeNotifier {
   final List<int> _enemyHps = List<int>.filled(enemyCount, enemyMaxHp);
   final List<ArenaCard> _deck = <ArenaCard>[];
   final List<ArenaCard> _rewardChoices = <ArenaCard>[];
+  Timer? _formationSaveTimer;
+  Timer? _metaSaveTimer;
 
   final heroes = const [
     ArenaHero(
@@ -193,6 +254,19 @@ class ArenaViewModel extends ChangeNotifier {
       skillName: '星潮回响',
       skillDescription: '对敌方后排造成魔法伤害，并为手牌中费用最高的技能减 1 费。',
       imageAsset: 'assets/arena/heroes/lanxing_001.jpg',
+      skins: [
+        ArenaHeroSkin(
+          id: 'classic',
+          name: '经典',
+          imageAsset: 'assets/arena/heroes/lanxing_001.jpg',
+        ),
+        ArenaHeroSkin(
+          id: 'starlight',
+          name: '星辉誓约',
+          imageAsset: 'assets/arena/heroes/lanxing_001.jpg',
+          tint: 0xFFB8A0E8,
+        ),
+      ],
     ),
     ArenaHero(
       id: 'tutu',
@@ -284,6 +358,19 @@ class ArenaViewModel extends ChangeNotifier {
       skillName: '花语治愈',
       skillDescription: '为全队恢复生命，并提高下一张队伍技能的连携收益。',
       imageAsset: 'assets/arena/heroes/taoyin_001.jpg',
+      skins: [
+        ArenaHeroSkin(
+          id: 'classic',
+          name: '经典',
+          imageAsset: 'assets/arena/heroes/taoyin_001.jpg',
+        ),
+        ArenaHeroSkin(
+          id: 'blossom',
+          name: '花庭夜宴',
+          imageAsset: 'assets/arena/heroes/taoyin_001.jpg',
+          tint: 0xFFFFB0D0,
+        ),
+      ],
     ),
     ArenaHero(
       id: 'xueli',
@@ -300,6 +387,19 @@ class ArenaViewModel extends ChangeNotifier {
       skillName: '霜晶星河',
       skillDescription: '对全体敌人造成冰霜伤害，并优先压低生命最高的目标。',
       imageAsset: 'assets/arena/heroes/xueli_001.jpg',
+      skins: [
+        ArenaHeroSkin(
+          id: 'classic',
+          name: '经典',
+          imageAsset: 'assets/arena/heroes/xueli_001.jpg',
+        ),
+        ArenaHeroSkin(
+          id: 'frost',
+          name: '霜夜圣咏',
+          imageAsset: 'assets/arena/heroes/xueli_001.jpg',
+          tint: 0xFFA0D0FF,
+        ),
+      ],
     ),
     ArenaHero(
       id: 'ziyuan',
@@ -316,6 +416,19 @@ class ArenaViewModel extends ChangeNotifier {
       skillName: '星轨秘仪',
       skillDescription: '对单体敌人造成魔法伤害；若目标生命低于一半，伤害提高。',
       imageAsset: 'assets/arena/heroes/ziyuan_001.jpg',
+      skins: [
+        ArenaHeroSkin(
+          id: 'classic',
+          name: '经典',
+          imageAsset: 'assets/arena/heroes/ziyuan_001.jpg',
+        ),
+        ArenaHeroSkin(
+          id: 'oracle',
+          name: '秘仪紫夜',
+          imageAsset: 'assets/arena/heroes/ziyuan_001.jpg',
+          tint: 0xFFD0B0FF,
+        ),
+      ],
     ),
   ];
 
@@ -402,6 +515,7 @@ class ArenaViewModel extends ChangeNotifier {
   int get selectedFormationSlot => _selectedFormationSlot;
   int get energy => _energy;
   int get playerHp => _playerHp;
+  int get playerMaxHp => _playerMaxHp;
   int get enemyHp {
     final total = _enemyHps.fold<int>(0, (sum, hp) => sum + hp);
     return (total / (enemyCount * enemyMaxHp) * 100).round();
@@ -423,6 +537,9 @@ class ArenaViewModel extends ChangeNotifier {
   String get enemyIntent =>
       '敌意图：敌影 ${_selectedEnemyIndex + 1} 回合末 -${8 + _turn * 2}';
   String get summonMessage => _summonMessage;
+  String get homeMessage => _homeMessage;
+  bool get restBuffReady => _restBuffReady;
+  bool get bondBuffReady => _bondBuffReady;
   List<ArenaCard> get cards => List.unmodifiable(_deck);
   List<ArenaCard> get rewardChoices => List.unmodifiable(_rewardChoices);
   bool get hasPendingReward => _rewardChoices.isNotEmpty;
@@ -443,12 +560,102 @@ class ArenaViewModel extends ChangeNotifier {
   }
 
   int get ownedCount => _ownedHeroIds.length;
-  int get teamPower => formationHeroes.fold(0, (sum, hero) => sum + hero.power);
+  int get teamPower =>
+      formationHeroes.fold(0, (sum, hero) => sum + powerOf(hero));
   bool get allEnemiesDefeated => _enemyHps.every((hp) => hp <= 0);
 
   bool isOwned(ArenaHero hero) => _ownedHeroIds.contains(hero.id);
 
   int shardsOf(ArenaHero hero) => _heroShards[hero.id] ?? 0;
+
+  int levelOf(ArenaHero hero) => _heroLevels[hero.id] ?? hero.level;
+
+  int starsOf(ArenaHero hero) => _heroStars[hero.id] ?? hero.stars;
+
+  int powerOf(ArenaHero hero) => _heroPowers[hero.id] ?? hero.power;
+
+  int favoriteOf(ArenaHero hero) => _heroFavorites[hero.id] ?? hero.favorite;
+
+  int bondOf(ArenaHero hero) =>
+      (favoriteOf(hero) + (_heroBondBonus[hero.id] ?? 0)).clamp(0, 100);
+
+  ArenaHeroSkin skinOf(ArenaHero hero) {
+    final skins = hero.resolvedSkins;
+    final id = _heroSkinIds[hero.id] ?? skins.first.id;
+    return skins.firstWhere((s) => s.id == id, orElse: () => skins.first);
+  }
+
+  String? portraitAssetOf(ArenaHero hero) => skinOf(hero).imageAsset;
+
+  int? portraitTintOf(ArenaHero hero) => skinOf(hero).tint;
+
+  /// 切换英雄整卡皮肤（非部位换装）。
+  Future<void> selectHeroSkin(ArenaHero hero, String skinId) async {
+    if (!isOwned(hero)) return;
+    final ok = hero.resolvedSkins.any((s) => s.id == skinId);
+    if (!ok) return;
+    _heroSkinIds[hero.id] = skinId;
+    notifyListeners();
+    await _persistLocal();
+    final remote = await _service.saveSkin(heroId: hero.id, skinId: skinId);
+    if (remote != null) applyState(remote);
+  }
+
+  @override
+  void dispose() {
+    _formationSaveTimer?.cancel();
+    _metaSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  /// 送礼：耗星晶提升活跃英雄羁绊，并准备下场能量加成（优先云端）。
+  Future<bool> giftAtHome() async {
+    if (_starCrystals < homeGiftCost) {
+      _homeMessage = '星晶不足，送礼还差 ${homeGiftCost - _starCrystals}。';
+      notifyListeners();
+      return false;
+    }
+    final hero = activeHero;
+    final remote = await _service.homeGift(hero.id);
+    if (remote != null) {
+      applyState(remote);
+      _bondBuffReady = true;
+      _cloudSynced = true;
+      _homeMessage =
+          '送给 ${hero.name} 一份远征小礼，好感 +$homeGiftBondGain。下场战斗初始能量 +$homeBondEnergyBonus。';
+      notifyListeners();
+      await _persistLocal();
+      return true;
+    }
+
+    _starCrystals -= homeGiftCost;
+    _heroBondBonus[hero.id] = (_heroBondBonus[hero.id] ?? 0) + homeGiftBondGain;
+    _bondBuffReady = true;
+    _cloudSynced = false;
+    _homeMessage =
+        '送给 ${hero.name} 一份远征小礼，好感 +$homeGiftBondGain。下场战斗初始能量 +$homeBondEnergyBonus。';
+    notifyListeners();
+    await _persistLocal();
+    return true;
+  }
+
+  /// 训练/休息：准备下场生命加成（优先云端）。
+  Future<void> trainAtHome() async {
+    final remote = await _service.homeTrain();
+    if (remote != null) {
+      applyState(remote);
+      _cloudSynced = true;
+      _homeMessage = '${activeHero.name} 完成出征前整理，下场战斗初始生命 +$homeRestHpBonus。';
+      notifyListeners();
+      await _persistLocal();
+      return;
+    }
+    _restBuffReady = true;
+    _cloudSynced = false;
+    _homeMessage = '${activeHero.name} 完成出征前整理，下场战斗初始生命 +$homeRestHpBonus。';
+    notifyListeners();
+    await _persistLocal();
+  }
 
   ArenaTowerNode towerNodeAt(int index) => towerNodes[index];
 
@@ -505,12 +712,14 @@ class ArenaViewModel extends ChangeNotifier {
     _selectedHero = heroIndex;
     _rebuildFormationDeck();
     notifyListeners();
+    _scheduleFormationSave();
   }
 
   void selectTowerNode(int index) {
     if (index < 0 || index >= towerNodes.length) return;
     _selectedTowerNode = index;
     notifyListeners();
+    _scheduleMetaSave();
   }
 
   void selectEnemy(int index) {
@@ -525,7 +734,148 @@ class ArenaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool summon(int count) {
+  /// 优先云端拉取存档；失败读本地缓存。
+  Future<void> hydrate() async {
+    _hydrating = true;
+    notifyListeners();
+    final remote = await _service.fetchState();
+    if (remote != null) {
+      applyState(remote);
+      _cloudSynced = true;
+      await _persistLocal();
+    } else {
+      final local = await _loadLocal();
+      if (local != null) {
+        applyState(local);
+      }
+      _cloudSynced = false;
+    }
+    _hydrating = false;
+    notifyListeners();
+  }
+
+  void applyState(ArenaStateDto state) {
+    _starCrystals = state.starCrystals;
+    _towerFloor = state.towerFloor <= 0 ? 1 : state.towerFloor;
+    _restBuffReady = state.restBuffReady;
+    _bondBuffReady = state.bondBuffReady;
+    if (state.selectedTowerNode >= 0 &&
+        state.selectedTowerNode < towerNodes.length) {
+      _selectedTowerNode = state.selectedTowerNode;
+    }
+    _ownedHeroIds
+      ..clear()
+      ..addAll(state.ownedHeroes.map((hero) => hero.heroId));
+    _heroShards
+      ..clear()
+      ..addEntries(
+        state.ownedHeroes.map(
+          (hero) => MapEntry(hero.heroId, hero.shards),
+        ),
+      );
+    _heroBondBonus
+      ..clear()
+      ..addEntries(
+        state.ownedHeroes
+            .where((hero) => hero.bond > 0)
+            .map((hero) => MapEntry(hero.heroId, hero.bond)),
+      );
+    _heroLevels.clear();
+    _heroStars.clear();
+    _heroPowers.clear();
+    _heroFavorites.clear();
+    _heroSkinIds.clear();
+    for (final owned in state.ownedHeroes) {
+      final base = _heroById(owned.heroId);
+      _heroLevels[owned.heroId] =
+          owned.level > 0 ? owned.level : (base?.level ?? 1);
+      _heroStars[owned.heroId] =
+          owned.stars > 0 ? owned.stars : (base?.stars ?? 1);
+      _heroPowers[owned.heroId] =
+          owned.power > 0 ? owned.power : (base?.power ?? 0);
+      _heroFavorites[owned.heroId] =
+          owned.favorite > 0 ? owned.favorite : (base?.favorite ?? 0);
+      if (owned.skinId.isNotEmpty) {
+        _heroSkinIds[owned.heroId] = owned.skinId;
+      }
+    }
+    if (state.formationHeroIds.length == formationSize &&
+        state.formationHeroIds.every((id) => _ownedHeroIds.contains(id))) {
+      _formationHeroIds
+        ..clear()
+        ..addAll(state.formationHeroIds);
+    }
+    if (state.deck.isNotEmpty) {
+      _deck
+        ..clear()
+        ..addAll(state.deck.map(_cardFromDto));
+    } else {
+      _rebuildFormationDeck();
+    }
+  }
+
+  Future<bool> syncFormation() async {
+    final remote = await _service.setFormation(
+      List<String>.of(_formationHeroIds),
+    );
+    if (remote == null) {
+      _cloudSynced = false;
+      notifyListeners();
+      await _persistLocal();
+      return false;
+    }
+    applyState(remote);
+    final deckRemote = await _service.saveDeck(_deckDtos());
+    if (deckRemote != null) {
+      applyState(deckRemote);
+    }
+    _cloudSynced = true;
+    notifyListeners();
+    await _persistLocal();
+    return true;
+  }
+
+  Future<bool> syncDeck() async {
+    final remote = await _service.saveDeck(_deckDtos());
+    if (remote == null) {
+      _cloudSynced = false;
+      await _persistLocal();
+      return false;
+    }
+    applyState(remote);
+    _cloudSynced = true;
+    notifyListeners();
+    await _persistLocal();
+    return true;
+  }
+
+  Future<bool> summon(int count) async {
+    final cost = count == 10 ? tenSummonCost : singleSummonCost;
+    if (_starCrystals < cost) {
+      _summonMessage = '星晶不足，还差 ${cost - _starCrystals}。';
+      notifyListeners();
+      return false;
+    }
+
+    final remote = await _service.summon(count);
+    if (remote != null) {
+      applyState(remote.state);
+      _summonResults
+        ..clear()
+        ..addAll(remote.pulls.map(_resultFromPull));
+      _summonMessage = remote.message.isNotEmpty
+          ? remote.message
+          : _summonSummaryMessage(_summonResults);
+      _cloudSynced = true;
+      notifyListeners();
+      await _persistLocal();
+      return true;
+    }
+
+    return _summonLocal(count);
+  }
+
+  bool _summonLocal(int count) {
     final cost = count == 10 ? tenSummonCost : singleSummonCost;
     if (_starCrystals < cost) {
       _summonMessage = '星晶不足，还差 ${cost - _starCrystals}。';
@@ -544,14 +894,28 @@ class ArenaViewModel extends ChangeNotifier {
       _summonResults[_summonResults.length - 1] = _recordPull(guaranteed);
     }
 
-    final newCount = _summonResults.where((result) => result.isNew).length;
-    final shards =
-        _summonResults.fold<int>(0, (sum, result) => sum + result.shards);
-    _summonMessage = newCount > 0
+    _summonMessage = _summonSummaryMessage(_summonResults);
+    _cloudSynced = false;
+    notifyListeners();
+    unawaited(_persistLocal());
+    return true;
+  }
+
+  String _summonSummaryMessage(List<ArenaSummonResult> results) {
+    final newCount = results.where((result) => result.isNew).length;
+    final shards = results.fold<int>(0, (sum, result) => sum + result.shards);
+    return newCount > 0
         ? '获得 $newCount 名新英雄，重复角色转化为 $shards 个碎片。'
         : '本次获得 $shards 个英雄碎片。';
-    notifyListeners();
-    return true;
+  }
+
+  ArenaSummonResult _resultFromPull(ArenaSummonPullDto pull) {
+    final hero = _heroById(pull.heroId) ?? heroes.first;
+    return ArenaSummonResult(
+      hero: hero,
+      isNew: pull.isNew,
+      shards: pull.shards,
+    );
   }
 
   void closeSummonResults() {
@@ -565,6 +929,10 @@ class ArenaViewModel extends ChangeNotifier {
     final isNew = !_ownedHeroIds.contains(hero.id);
     if (isNew) {
       _ownedHeroIds.add(hero.id);
+      _heroLevels[hero.id] = hero.level;
+      _heroStars[hero.id] = hero.stars;
+      _heroPowers[hero.id] = hero.power;
+      _heroFavorites[hero.id] = hero.favorite;
       return ArenaSummonResult(hero: hero, isNew: true, shards: 0);
     }
 
@@ -598,8 +966,20 @@ class ArenaViewModel extends ChangeNotifier {
 
   void startBattle() {
     _view = ArenaView.battle;
+    _playerMaxHp = 100;
     _energy = 6;
-    _playerHp = 100;
+    final buffNotes = <String>[];
+    if (_restBuffReady) {
+      _playerMaxHp += homeRestHpBonus;
+      _restBuffReady = false;
+      buffNotes.add('休息充分 生命+$homeRestHpBonus');
+    }
+    if (_bondBuffReady) {
+      _energy += homeBondEnergyBonus;
+      _bondBuffReady = false;
+      buffNotes.add('羁绊整理 能量+$homeBondEnergyBonus');
+    }
+    _playerHp = _playerMaxHp;
     for (var index = 0; index < _enemyHps.length; index++) {
       _enemyHps[index] = enemyMaxHp;
     }
@@ -610,8 +990,53 @@ class ArenaViewModel extends ChangeNotifier {
     _finished = false;
     _won = false;
     _rewardChoices.clear();
-    _battleMessage = '第 $_towerFloor 层 · ${selectedTowerNode.kind}：规划能量与连携';
+    final buffSuffix = buffNotes.isEmpty ? '' : ' · ${buffNotes.join(' / ')}';
+    _battleMessage =
+        '第 $_towerFloor 层 · ${selectedTowerNode.kind}：规划能量与连携$buffSuffix';
     notifyListeners();
+    unawaited(_persistConsumedBuffs());
+  }
+
+  Future<void> _persistConsumedBuffs() async {
+    final remote = await _service.saveMeta(clearBuffs: true);
+    if (remote != null) {
+      // 只同步 buff 标记，避免开战瞬间被旧节点等覆盖观感。
+      _restBuffReady = remote.restBuffReady;
+      _bondBuffReady = remote.bondBuffReady;
+      _cloudSynced = true;
+    } else {
+      _cloudSynced = false;
+    }
+    await _persistLocal();
+  }
+
+  void _scheduleFormationSave() {
+    _formationSaveTimer?.cancel();
+    _formationSaveTimer = Timer(const Duration(milliseconds: 450), () {
+      unawaited(syncFormation());
+    });
+  }
+
+  void _scheduleMetaSave() {
+    _metaSaveTimer?.cancel();
+    _metaSaveTimer = Timer(const Duration(milliseconds: 350), () {
+      unawaited(_syncMeta());
+    });
+  }
+
+  Future<void> _syncMeta() async {
+    final remote = await _service.saveMeta(
+      selectedTowerNode: _selectedTowerNode,
+    );
+    if (remote != null) {
+      applyState(remote);
+      _cloudSynced = true;
+      notifyListeners();
+      await _persistLocal();
+      return;
+    }
+    _cloudSynced = false;
+    await _persistLocal();
   }
 
   void playCard(int index) {
@@ -627,7 +1052,7 @@ class ArenaViewModel extends ChangeNotifier {
     _combo++;
     _energy -= card.cost;
     if (card.damage < 0) {
-      _playerHp = (_playerHp - card.damage).clamp(0, 100);
+      _playerHp = (_playerHp - card.damage).clamp(0, _playerMaxHp);
       _battleMessage =
           '${card.sourceHeroName}发动${card.name}：全队恢复 ${-card.damage} 点生命';
     } else if (card.targeting == ArenaCardTargeting.allEnemies) {
@@ -647,8 +1072,7 @@ class ArenaViewModel extends ChangeNotifier {
     if (allEnemiesDefeated) {
       _finished = true;
       _won = true;
-      _starCrystals += 120;
-      _heroShards[activeHero.id] = shardsOf(activeHero) + 4;
+      // 星晶/层数/碎片结算走 clearTower（云端优先），避免与服务端双计。
       _rewardChoices
         ..clear()
         ..addAll(_rollRewardChoices());
@@ -660,7 +1084,7 @@ class ArenaViewModel extends ChangeNotifier {
 
   void endTurn() {
     if (_finished) return;
-    _playerHp = (_playerHp - (8 + _turn * 2)).clamp(0, 100);
+    _playerHp = (_playerHp - (8 + _turn * 2)).clamp(0, _playerMaxHp);
     _energy = 6;
     _turn++;
     _combo = 0;
@@ -675,22 +1099,132 @@ class ArenaViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void chooseRewardCard(int index) {
+  Future<void> chooseRewardCard(int index) async {
     if (index < 0 || index >= _rewardChoices.length) return;
     final card = _rewardChoices[index];
     _deck.add(card);
     _rewardChoices.clear();
-    _towerFloor++;
-    _battleMessage = '获得「${card.name}」，下一层会用更强构筑继续挑战';
-    notifyListeners();
+    await _settleTowerWin(
+      message: '获得「${card.name}」，下一层会用更强构筑继续挑战',
+    );
   }
 
-  void skipReward() {
+  Future<void> skipReward() async {
     if (_rewardChoices.isEmpty) return;
     _rewardChoices.clear();
+    await _settleTowerWin(message: '跳过奖励，保持当前牌组进入下一层');
+  }
+
+  Future<void> _settleTowerWin({required String message}) async {
+    final remote = await _service.clearTower(
+      won: true,
+      bonusHeroId: activeHero.id,
+      deck: _deckDtos(),
+    );
+    if (remote != null) {
+      applyState(remote.state);
+      _cloudSynced = true;
+      _battleMessage = message;
+      notifyListeners();
+      await _persistLocal();
+      return;
+    }
+    _starCrystals += towerClearReward;
+    _heroShards[activeHero.id] = shardsOf(activeHero) + towerWinShardBonus;
     _towerFloor++;
-    _battleMessage = '跳过奖励，保持当前牌组进入下一层';
+    _cloudSynced = false;
+    _battleMessage = message;
     notifyListeners();
+    await _persistLocal();
+  }
+
+  List<ArenaDeckCardDto> _deckDtos() =>
+      _deck.map(_dtoFromCard).toList(growable: false);
+
+  ArenaDeckCardDto _dtoFromCard(ArenaCard card) {
+    return ArenaDeckCardDto(
+      name: card.name,
+      description: card.description,
+      cost: card.cost,
+      icon: card.icon,
+      color: card.color,
+      damage: card.damage,
+      sourceHeroId: card.sourceHeroId,
+      sourceHeroName: card.sourceHeroName,
+      targeting: switch (card.targeting) {
+        ArenaCardTargeting.allEnemies => 'all_enemies',
+        ArenaCardTargeting.allyTeam => 'ally_team',
+        ArenaCardTargeting.singleEnemy => 'single_enemy',
+      },
+    );
+  }
+
+  ArenaCard _cardFromDto(ArenaDeckCardDto dto) {
+    return ArenaCard(
+      name: dto.name,
+      description: dto.description,
+      cost: dto.cost,
+      icon: dto.icon,
+      color: dto.color,
+      damage: dto.damage,
+      sourceHeroId: dto.sourceHeroId,
+      sourceHeroName: dto.sourceHeroName,
+      targeting: switch (dto.targeting) {
+        'all_enemies' => ArenaCardTargeting.allEnemies,
+        'ally_team' => ArenaCardTargeting.allyTeam,
+        _ => ArenaCardTargeting.singleEnemy,
+      },
+    );
+  }
+
+  ArenaStateDto _snapshot() {
+    return ArenaStateDto(
+      userId: '',
+      starCrystals: _starCrystals,
+      towerFloor: _towerFloor,
+      formationHeroIds: List<String>.of(_formationHeroIds),
+      ownedHeroes: _ownedHeroIds.map((id) {
+        final base = _heroById(id);
+        return ArenaOwnedHeroDto(
+          heroId: id,
+          shards: _heroShards[id] ?? 0,
+          bond: _heroBondBonus[id] ?? 0,
+          level: _heroLevels[id] ?? base?.level ?? 1,
+          stars: _heroStars[id] ?? base?.stars ?? 1,
+          power: _heroPowers[id] ?? base?.power ?? 0,
+          favorite: _heroFavorites[id] ?? base?.favorite ?? 0,
+          skinId: _heroSkinIds[id] ??
+              (base?.resolvedSkins.isNotEmpty == true
+                  ? base!.resolvedSkins.first.id
+                  : 'classic'),
+        );
+      }).toList(),
+      deck: _deckDtos(),
+      restBuffReady: _restBuffReady,
+      bondBuffReady: _bondBuffReady,
+      selectedTowerNode: _selectedTowerNode,
+    );
+  }
+
+  Future<void> _persistLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_localPrefsKey, jsonEncode(_snapshot().toJson()));
+    } catch (_) {}
+  }
+
+  Future<ArenaStateDto?> _loadLocal() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_localPrefsKey);
+      if (raw == null || raw.isEmpty) return null;
+      final map = jsonDecode(raw);
+      if (map is Map<String, dynamic>) return ArenaStateDto.fromJson(map);
+      if (map is Map) {
+        return ArenaStateDto.fromJson(Map<String, dynamic>.from(map));
+      }
+    } catch (_) {}
+    return null;
   }
 
   List<ArenaCard> _rollRewardChoices() {
