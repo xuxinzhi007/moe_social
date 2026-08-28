@@ -78,8 +78,7 @@ class ChatSkin {
           : bubblePeerBorder;
 
   @override
-  bool operator ==(Object other) =>
-      other is ChatSkin && other.id == id;
+  bool operator ==(Object other) => other is ChatSkin && other.id == id;
 
   @override
   int get hashCode => id.hashCode;
@@ -97,12 +96,12 @@ abstract final class ChatSkins {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
-    bubblePeerColor: MoeTokens.surface1,
-    bubblePeerBorder: MoeTokens.surfaceBorder,
+    bubblePeerColor: Colors.white,
+    bubblePeerBorder: Color(0x337F7FD5),
     dark: ChatSkinDark(
       chatBackground: Color(0xFF20203A),
-      bubblePeerColor: Color(0xFF2E2E4A),
-      bubblePeerBorder: Color(0x1FFFFFFF),
+      bubblePeerColor: Color(0xFF32324F),
+      bubblePeerBorder: Color(0x33FFFFFF),
     ),
   );
 
@@ -110,14 +109,14 @@ abstract final class ChatSkins {
   static const ChatSkin peach = ChatSkin(
     id: 'peach',
     name: '蜜桃',
-    chatBackground: Color(0xFFFFF5F5),
+    chatBackground: Color(0xFFFBF4F4),
     bubbleMeGradient: LinearGradient(
-      colors: [Color(0xFFFF9A9E), Color(0xFFFAD0C4)],
+      colors: [Color(0xFFD9899A), Color(0xFFE8C4BC)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
-    bubblePeerColor: Color(0xFFFFF0F0),
-    bubblePeerBorder: Color(0x1FFF9A9E),
+    bubblePeerColor: Colors.white,
+    bubblePeerBorder: Color(0x33D9899A),
     dark: ChatSkinDark(
       chatBackground: Color(0xFF2B2024),
       bubblePeerColor: Color(0xFF3D2C30),
@@ -129,14 +128,14 @@ abstract final class ChatSkins {
   static const ChatSkin ocean = ChatSkin(
     id: 'ocean',
     name: '深海',
-    chatBackground: Color(0xFFF0F7FF),
+    chatBackground: Color(0xFFF3F6FC),
     bubbleMeGradient: LinearGradient(
-      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+      colors: [MoeTokens.primary, MoeTokens.secondary],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
-    bubblePeerColor: Color(0xFFF0F4FF),
-    bubblePeerBorder: Color(0x1F667EEA),
+    bubblePeerColor: Colors.white,
+    bubblePeerBorder: Color(0x33667EEA),
     dark: ChatSkinDark(
       chatBackground: Color(0xFF1A2035),
       bubblePeerColor: Color(0xFF273049),
@@ -148,14 +147,14 @@ abstract final class ChatSkins {
   static const ChatSkin mint = ChatSkin(
     id: 'mint',
     name: '薄荷',
-    chatBackground: Color(0xFFF0FFF4),
+    chatBackground: Color(0xFFF3F8F6),
     bubbleMeGradient: LinearGradient(
-      colors: [Color(0xFF43E97B), Color(0xFF38F9D7)],
+      colors: [MoeTokens.pastelTeal, MoeTokens.accent],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
-    bubblePeerColor: Color(0xFFF0FFF8),
-    bubblePeerBorder: Color(0x1F43E97B),
+    bubblePeerColor: Colors.white,
+    bubblePeerBorder: Color(0x334ECDC4),
     dark: ChatSkinDark(
       chatBackground: Color(0xFF1B2B22),
       bubblePeerColor: Color(0xFF27392E),
@@ -174,7 +173,7 @@ abstract final class ChatSkins {
       end: Alignment.bottomRight,
     ),
     bubblePeerColor: Color(0xFF2D2D44),
-    bubblePeerBorder: Color(0x1FFFFFFF),
+    bubblePeerBorder: Color(0x33FFFFFF),
     isDarkSkin: true,
   );
 

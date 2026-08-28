@@ -74,7 +74,10 @@ class _PostCardState extends State<PostCard> {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(
+        horizontal: MoeTokens.spaceMd,
+        vertical: MoeTokens.spaceXs,
+      ),
       decoration: BoxDecoration(
         color: MoeTokens.surface1,
         borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
@@ -87,7 +90,12 @@ class _PostCardState extends State<PostCard> {
           borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
           onTap: widget.onCardTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.fromLTRB(
+              MoeTokens.spaceLg,
+              MoeTokens.spaceLg,
+              MoeTokens.spaceLg,
+              MoeTokens.spaceMd,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -123,7 +131,7 @@ class _PostCardState extends State<PostCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: MoeTokens.spaceMd),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,49 +279,56 @@ class _PostCardState extends State<PostCard> {
                 // 帖子正文（手绘数据已内嵌在 content 中，展示时剥离）
                 if (widget.post.isPendingModeration)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Chip(
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        avatar: Icon(Icons.hourglass_top_rounded,
-                            size: 16, color: Colors.amber[800]),
-                        label:
-                            const Text('审核中', style: TextStyle(fontSize: 12)),
-                        backgroundColor: Colors.amber.shade50,
+                        avatar: const Icon(
+                          Icons.hourglass_top_rounded,
+                          size: 16,
+                          color: MoeTokens.warning,
+                        ),
+                        label: const Text(
+                          '审核中',
+                          style: TextStyle(
+                            fontSize: MoeTokens.textSm,
+                            color: MoeTokens.warning,
+                          ),
+                        ),
+                        backgroundColor:
+                            MoeTokens.warning.withValues(alpha: 0.12),
+                        side: BorderSide(
+                          color: MoeTokens.warning.withValues(alpha: 0.28),
+                        ),
                       ),
                     ),
                   ),
 
-                if (widget.post.displayCaption.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: _renderContentWithEmojis(
-                        context, widget.post.displayCaption),
-                  ),
+                if (widget.post.images.isNotEmpty) ...[
+                  _buildImageGrid(context, widget.post.images, widget.post.id),
+                  const SizedBox(height: MoeTokens.spaceMd),
+                ],
 
                 if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
-                  if (widget.post.displayCaption.isNotEmpty)
-                    const SizedBox(height: 4),
                   _HandDrawThumbnail(
                     post: widget.post,
                     onOpenReplay: () =>
                         _openHandDrawViewer(context, widget.post),
                   ),
+                  const SizedBox(height: MoeTokens.spaceMd),
                 ] else if (widget.post.hasHandDraw ||
                     widget.post.handDrawCard != null) ...[
-                  if (widget.post.displayCaption.isNotEmpty)
-                    const SizedBox(height: 4),
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () => _openHandDrawViewer(context, widget.post),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 280),
+                          constraints: const BoxConstraints(maxHeight: 320),
                           child: AspectRatio(
                             aspectRatio: 3 / 4,
                             child: widget.post.handDrawCard != null
@@ -321,13 +336,14 @@ class _PostCardState extends State<PostCard> {
                                     data: widget.post.handDrawCard!,
                                   )
                                 : ColoredBox(
-                                    color: Colors.grey.shade200,
+                                    color: MoeTokens.softChipBg,
                                     child: Center(
                                       child: Text(
                                         '手绘动态',
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w600,
+                                          color: MoeTokens.hintText,
+                                          fontWeight:
+                                              MoeTokens.fontWeightSubtitle,
                                         ),
                                       ),
                                     ),
@@ -349,9 +365,18 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ],
 
-                // 话题标签
+                if (widget.post.displayCaption.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: MoeTokens.spaceXs,
+                      bottom: MoeTokens.spaceSm,
+                    ),
+                    child: _renderContentWithEmojis(
+                        context, widget.post.displayCaption),
+                  ),
+
                 if (widget.post.topicTags.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: MoeTokens.spaceSm),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -359,14 +384,15 @@ class _PostCardState extends State<PostCard> {
                       children: widget.post.topicTags
                           .map(
                             (tag) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.only(
+                                right: MoeTokens.spaceSm,
+                              ),
                               child: TopicTagDisplay(
                                 tag: tag,
-                                fontSize: 11,
+                                fontSize: MoeTokens.textXs,
                                 compact: true,
                                 showUsageCount: false,
                                 onTap: () {
-                                  // 跳转到话题动态列表页面
                                   Navigator.pushNamed(
                                     context,
                                     '/topic-posts',
@@ -381,15 +407,7 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ],
 
-                const SizedBox(height: 12),
-
-                // 帖子图片
-                if (widget.post.images.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _buildImageGrid(context, widget.post.images, widget.post.id),
-                ],
-
-                const SizedBox(height: 20),
+                const SizedBox(height: MoeTokens.spaceLg),
                 Divider(
                   height: 1,
                   color: theme.dividerColor.withValues(alpha: 0.1),
@@ -640,12 +658,14 @@ $link''';
         child: Hero(
           tag: '${widget.heroTagPrefix}post_img_${postId}_0',
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: NetworkImageWidget(
-              imageUrl: images[0],
-              width: double.infinity,
-              height: 250,
-              fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: NetworkImageWidget(
+                imageUrl: images[0],
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
@@ -654,10 +674,10 @@ $link''';
 
     // 2-4张图使用2列，其他使用3列
     int crossAxisCount = images.length == 2 || images.length == 4 ? 2 : 3;
-    double spacing = 6.0;
+    double spacing = MoeTokens.spaceXs;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
       child: LayoutBuilder(builder: (context, constraints) {
         final totalSpacing = spacing * (crossAxisCount - 1);
         final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;

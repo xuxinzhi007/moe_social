@@ -321,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_isLoading && _user == null) {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
-        backgroundColor: MoeTokens.pageBackground,
+        backgroundColor: MoeTheme.of(context).pageBackground,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
@@ -341,7 +341,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_loadError != null && _user == null) {
       return AdaptivePageScaffold(
         template: PageTemplate.fullscreen,
-        backgroundColor: MoeTokens.pageBackground,
+        backgroundColor: MoeTheme.of(context).pageBackground,
         body: CustomScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
@@ -364,7 +364,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
-      backgroundColor: MoeTokens.pageBackground,
+      backgroundColor: MoeTheme.of(context).pageBackground,
       body: RefreshIndicator(
         onRefresh: () => _loadUserInfo(forceRefresh: true),
         color: MoeTheme.of(context).primary,
@@ -383,22 +383,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     MoeReveal(
                         delay: const Duration(milliseconds: 50),
                         child: _buildQuickActions()),
-                    const SizedBox(height: 18),
-                    MoeReveal(
-                      delay: const Duration(milliseconds: 65),
-                      child: _menuSection('常用功能', [
-                        _MenuItem(
-                          icon: Icons.forum_rounded,
-                          title: '兴趣社区',
-                          subtitle: '话题、帖子与同好交流',
-                          color: const Color(0xFF5B8DEF),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.pushNamed(context, '/community');
-                          },
-                        ),
-                      ]),
-                    ),
                     const SizedBox(height: 18),
                     // Achievements preview
                     if (_user != null) ...[
@@ -428,7 +412,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             icon: Icons.qr_code_rounded,
                             title: '我的二维码',
                             subtitle: '让其他用户扫描添加你',
-                            color: const Color(0xFF4ECDC4),
+                            color: MoeTokens.pastelTeal,
                             onTap: () {
                               HapticFeedback.lightImpact();
                               Navigator.pushNamed(context, '/user-qr-code');
@@ -809,16 +793,16 @@ class _ProfilePageState extends State<ProfilePage> {
     final col = Column(mainAxisSize: MainAxisSize.min, children: [
       Text(value,
           style: const TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1E1E2E),
+              fontSize: MoeTokens.textLg,
+              fontWeight: MoeTokens.fontWeightDisplay,
+              color: Colors.white,
               height: 1.05)),
-      const SizedBox(height: 4),
+      const SizedBox(height: MoeTokens.spaceXs),
       Text(label,
           style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E1E2E).withValues(alpha: 0.52))),
+              fontSize: MoeTokens.textXs,
+              fontWeight: MoeTokens.fontWeightSubtitle,
+              color: Colors.white.withValues(alpha: 0.78))),
     ]);
     if (onTap != null) {
       return Material(
@@ -846,14 +830,14 @@ class _ProfilePageState extends State<ProfilePage> {
     final actions = [
       _QuickAction(
         icon: Icons.event_available_rounded,
-        iconColor: const Color(0xFF5A67D8),
+        iconColor: MoeTokens.primary,
         label: '签到',
         subtitle: '每日奖励',
         onTap: _navigateToCheckIn,
       ),
       _QuickAction(
         icon: Icons.account_balance_wallet_rounded,
-        iconColor: const Color(0xFFFF8F00),
+        iconColor: MoeTokens.pastelOrange,
         label: '钱包',
         subtitle: '¥${_user?.balance.toStringAsFixed(2) ?? '0.00'}',
         onTap: () {
@@ -866,7 +850,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       _QuickAction(
         icon: _isVip ? Icons.workspace_premium_rounded : Icons.diamond_rounded,
-        iconColor: _isVip ? const Color(0xFFFFB347) : _moe.primary,
+        iconColor: _isVip ? MoeTokens.pastelOrange : _moe.primary,
         label: '会员',
         subtitle: _isVip ? '权益生效中' : '开通享特权',
         isCta: !_isVip,
@@ -874,7 +858,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       _QuickAction(
         icon: Icons.military_tech_rounded,
-        iconColor: const Color(0xFFE65100),
+        iconColor: MoeTokens.warning,
         label: '成就',
         subtitle: '$unlockedBadges 枚已解锁',
         badge: unlockedBadges,
