@@ -22,6 +22,7 @@ import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/moe_error_state.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/moe_action_row.dart';
 import '../../utils/moe_error_copy.dart';
 import '../../widgets/motion/moe_pressable.dart';
 import '../../widgets/motion/moe_motion.dart';
@@ -187,7 +188,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
   Future<void> _openCompanionTools() async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AiBrandTokens.pageBackground,
+      backgroundColor: MoeTokens.surface1,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -199,7 +200,12 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
               maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.78,
             ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              padding: const EdgeInsets.fromLTRB(
+                MoeTokens.spaceLg,
+                MoeTokens.spaceMd,
+                MoeTokens.spaceLg,
+                MoeTokens.spaceLg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -207,40 +213,45 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                     '伙伴工具',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AiBrandTokens.titleColor,
+                      fontSize: MoeTokens.textMd,
+                      fontWeight: MoeTokens.fontWeightTitle,
+                      color: MoeTokens.titleText,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  ListTile(
-                    leading: const Icon(Icons.psychology_alt_rounded),
-                    title: const Text('TA 记得的事'),
+                  const SizedBox(height: MoeTokens.spaceSm),
+                  MoeActionRow(
+                    icon: Icons.psychology_alt_rounded,
+                    title: 'TA 记得的事',
                     subtitle: const Text('查看和管理你们共同留下的记忆'),
+                    iconColor: MoeTokens.primary,
                     onTap: () => Navigator.pop(sheetContext, 'memories'),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.edit_note_rounded),
-                    title: const Text('编辑伙伴资料'),
+                  MoeActionRow(
+                    icon: Icons.edit_note_rounded,
+                    title: '编辑伙伴资料',
                     subtitle: const Text('调整名字、性格和陪伴方式'),
+                    iconColor: MoeTokens.primary,
                     onTap: () => Navigator.pop(sheetContext, 'profile'),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.tune_rounded),
-                    title: const Text('模型服务配置'),
+                  MoeActionRow(
+                    icon: Icons.tune_rounded,
+                    title: '模型服务配置',
                     subtitle: const Text('选择模型和服务提供方'),
+                    iconColor: MoeTokens.secondary,
                     onTap: () => Navigator.pop(sheetContext, 'provider'),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.refresh_rounded),
-                    title: const Text('刷新近况'),
+                  MoeActionRow(
+                    icon: Icons.refresh_rounded,
+                    title: '刷新近况',
                     subtitle: const Text('重新加载伙伴状态和今日摘要'),
+                    iconColor: MoeTokens.secondary,
                     onTap: () => Navigator.pop(sheetContext, 'refresh'),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.notifications_none_rounded),
-                    title: const Text('主动陪伴设置'),
+                  MoeActionRow(
+                    icon: Icons.notifications_none_rounded,
+                    title: '主动陪伴设置',
                     subtitle: const Text('控制主动消息、免打扰时间和时区'),
+                    iconColor: MoeTokens.primary,
                     onTap: () => Navigator.pop(sheetContext, 'proactive'),
                   ),
                 ],
@@ -484,15 +495,17 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                                 color: Colors.grey.shade600,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            ListTile(
-                              leading: const Icon(Icons.folder_open_rounded),
-                              title: const Text('选择 JSON / PNG 文件'),
+                            const SizedBox(height: MoeTokens.spaceMd),
+                            MoeActionRow(
+                              icon: Icons.folder_open_rounded,
+                              title: '选择 JSON / PNG 文件',
+                              iconColor: MoeTokens.primary,
                               onTap: () => Navigator.pop(ctx, 'file'),
                             ),
-                            ListTile(
-                              leading: const Icon(Icons.content_paste_rounded),
-                              title: const Text('粘贴 JSON'),
+                            MoeActionRow(
+                              icon: Icons.content_paste_rounded,
+                              title: '粘贴 JSON',
+                              iconColor: MoeTokens.primary,
                               onTap: () => Navigator.pop(ctx, 'paste'),
                             ),
                           ],
@@ -769,7 +782,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                   ),
                   const SizedBox(height: 12),
                   _CompanionQuickActions(
-                    onChat: _openChat,
                     onMemories: () => _openMemories(),
                     onLife: FeatureFlags.showLifeEngine ? _openLifeWorld : null,
                   ),
@@ -788,10 +800,6 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       _BindMissingBanner(onOpenWorld: _openLifeWorld),
                     ],
                   ],
-                  if (FeatureFlags.arenaGamePrototype) ...[
-                    const SizedBox(height: 14),
-                    CompanionArenaGameEntry(onOpen: _openArenaGame),
-                  ],
                   if (shouldShowCompanionDailyPanels(
                     arenaGamePrototype: FeatureFlags.arenaGamePrototype,
                   )) ...[
@@ -805,14 +813,18 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                       onOpenItem: _openDailyItem,
                     ),
                   ],
+                  if (FeatureFlags.arenaGamePrototype) ...[
+                    const SizedBox(height: MoeTokens.spaceLg),
+                    CompanionArenaGameEntry(onOpen: _openArenaGame),
+                  ],
                 ],
               ),
             ),
           if (_isChatLoading || _isSavingProfile)
-            const Positioned.fill(
+            Positioned.fill(
               child: ColoredBox(
-                color: Color(0x22FFFFFF),
-                child: Center(child: MoeLoading()),
+                color: MoeTokens.pageBackground.withValues(alpha: 0.45),
+                child: const Center(child: MoeLoading()),
               ),
             ),
         ],
@@ -836,34 +848,20 @@ class CompanionArenaGameEntry extends StatelessWidget {
         excludeSemantics: true,
         label: '进入星辉远征',
         child: Container(
-          padding: const EdgeInsets.all(MoeTokens.spaceLg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceLg,
+            vertical: MoeTokens.spaceMd,
+          ),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF332A54), Color(0xFF69528D)],
-            ),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            border: Border.all(color: const Color(0x66FFE3A1)),
             boxShadow: MoeTokens.shadowMd(),
           ),
-          child: Row(
+          child: const Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0x22FFE7A6),
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-                  border: Border.all(color: const Color(0x55FFE7A6)),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Color(0xFFFFE5A3),
-                ),
-              ),
-              const SizedBox(width: MoeTokens.spaceMd),
-              const Expanded(
+              _ArenaSparkleIcon(),
+              SizedBox(width: MoeTokens.spaceMd),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -875,7 +873,7 @@ class CompanionArenaGameEntry extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: MoeTokens.titleText,
                               fontSize: MoeTokens.textMd,
                               fontWeight: MoeTokens.fontWeightTitle,
                             ),
@@ -891,7 +889,7 @@ class CompanionArenaGameEntry extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Color(0xFFDCD3EB),
+                        color: MoeTokens.hintText,
                         fontSize: MoeTokens.textSm,
                         height: 1.3,
                       ),
@@ -899,15 +897,49 @@ class CompanionArenaGameEntry extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: MoeTokens.spaceSm),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: Color(0xFFFFE5A3),
+              SizedBox(width: MoeTokens.spaceSm),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: MoeTokens.hintText,
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 薰衣草星簇，对齐星辉远征入口原设计色调。
+class _ArenaSparkleIcon extends StatelessWidget {
+  const _ArenaSparkleIcon();
+
+  static const Color _sparkle = MoeTokens.primary;
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 36,
+      height: 36,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 2,
+            top: 8,
+            child: Icon(Icons.auto_awesome, size: 20, color: _sparkle),
+          ),
+          Positioned(
+            right: 2,
+            top: 2,
+            child: Icon(Icons.auto_awesome, size: 12, color: _sparkle),
+          ),
+          Positioned(
+            right: 6,
+            bottom: 2,
+            child: Icon(Icons.auto_awesome, size: 9, color: _sparkle),
+          ),
+        ],
       ),
     );
   }
@@ -919,16 +951,18 @@ class _ArenaGameBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: MoeTokens.spaceSm,
+        vertical: MoeTokens.spaceXs,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0x22FFE7A6),
+        color: MoeTokens.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-        border: Border.all(color: const Color(0x55FFE7A6)),
       ),
       child: const Text(
         '试玩',
         style: TextStyle(
-          color: Color(0xFFFFE5A3),
+          color: MoeTokens.primary,
           fontSize: MoeTokens.textXs,
           fontWeight: MoeTokens.fontWeightSubtitle,
         ),
@@ -1091,8 +1125,15 @@ class _HeroCard extends StatelessWidget {
                 width: double.infinity,
                 height: 46,
                 decoration: BoxDecoration(
-                  color: AiBrandTokens.primary,
+                  gradient: MoeTokens.primaryGradient,
                   borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MoeTokens.primary.withValues(alpha: 0.28),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -1112,98 +1153,6 @@ class _HeroCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ignore: unused_element
-class _CompanionMessageCard extends StatelessWidget {
-  const _CompanionMessageCard({
-    required this.name,
-    required this.message,
-    required this.reason,
-  });
-
-  final String name;
-  final String message;
-  final String reason;
-
-  @override
-  Widget build(BuildContext context) {
-    final companionName = name.trim().isEmpty ? 'TA' : name.trim();
-    final content = message.trim().isEmpty
-        ? '$companionName 留下了一句话，正在等你回来。'
-        : message.trim();
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: '$companionName 想和你说：$content',
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF5F8),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFFFC8D4)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFE0E8),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.favorite_rounded,
-                size: 18,
-                color: Color(0xFFE97891),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$companionName 想和你说',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: AiBrandTokens.titleColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    content,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.4,
-                      color: Color(0xFF5D4E6E),
-                    ),
-                  ),
-                  if (reason.trim().isNotEmpty) ...[
-                    const SizedBox(height: 5),
-                    Text(
-                      reason.trim(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFFB86A7C),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1245,9 +1194,16 @@ class _CompanionSummaryBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
+        color: Colors.white.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: accent.withValues(alpha: 0.12)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x147F7FD5),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1365,12 +1321,10 @@ class _CompanionSummaryBlock extends StatelessWidget {
 
 class _CompanionQuickActions extends StatelessWidget {
   const _CompanionQuickActions({
-    required this.onChat,
     required this.onMemories,
     this.onLife,
   });
 
-  final VoidCallback onChat;
   final VoidCallback onMemories;
   final VoidCallback? onLife;
 
@@ -1380,15 +1334,6 @@ class _CompanionQuickActions extends StatelessWidget {
       children: [
         Expanded(
           child: _QuickAction(
-            icon: Icons.chat_bubble_outline_rounded,
-            label: '继续聊天',
-            tint: AiBrandTokens.primary,
-            onTap: onChat,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _QuickAction(
             icon: Icons.psychology_alt_rounded,
             label: '记忆',
             tint: const Color(0xFF8A62B8),
@@ -1396,12 +1341,12 @@ class _CompanionQuickActions extends StatelessWidget {
           ),
         ),
         if (onLife != null) ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: MoeTokens.spaceSm),
           Expanded(
             child: _QuickAction(
               icon: Icons.public_rounded,
-              label: 'Life 世界',
-              tint: const Color(0xFF4C9A82),
+              label: '世界',
+              tint: MoeTokens.pastelTeal,
               onTap: onLife!,
             ),
           ),
@@ -1438,6 +1383,13 @@ class _QuickAction extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: tint.withValues(alpha: 0.16)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x147F7FD5),
+                blurRadius: 8,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

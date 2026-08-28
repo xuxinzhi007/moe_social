@@ -331,22 +331,32 @@ class _HomePageState extends State<HomePage>
                   return const SizedBox.shrink();
                 }
                 return Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 6,
+                  right: 4,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: MoeTokens.danger,
-                      shape: BoxShape.circle,
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
                     ),
-                    constraints:
-                        const BoxConstraints(minWidth: 8, minHeight: 8),
-                    child: provider.activityUnreadCount > 99
-                        ? const Text(
-                            '99+',
-                            style: TextStyle(color: Colors.white, fontSize: 8),
-                          )
-                        : null,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MoeTokens.spaceXs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: MoeTokens.danger,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      provider.activityUnreadCount > 99
+                          ? '99+'
+                          : '${provider.activityUnreadCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: MoeTokens.textXs,
+                        fontWeight: MoeTokens.fontWeightSubtitle,
+                        height: 1.1,
+                      ),
+                    ),
                   ),
                 );
               },
@@ -377,18 +387,18 @@ class _HomePageState extends State<HomePage>
           avatar: Icon(
             Icons.tag_rounded,
             size: 14,
-            color: selected ? Colors.white : tag.color,
+            color: selected ? MoeTokens.primary : MoeTokens.hintText,
           ),
           label: Text('#${tag.name}'),
           labelStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : MoeTokens.titleText,
+            fontSize: MoeTokens.textSm,
+            fontWeight: MoeTokens.fontWeightSubtitle,
+            color: selected ? MoeTokens.primary : MoeTokens.titleText,
           ),
-          selectedColor: tag.color,
-          backgroundColor: tag.color.withValues(alpha: 0.10),
+          selectedColor: MoeTokens.primary.withValues(alpha: 0.14),
+          backgroundColor: MoeTokens.softChipBg,
           side: BorderSide(
-            color: selected ? tag.color : tag.color.withValues(alpha: 0.28),
+            color: selected ? MoeTokens.primary : MoeTokens.surfaceBorder,
           ),
           onSelected: (_) => _onTopicSelected(tag),
         );
@@ -499,7 +509,7 @@ class _HomePageState extends State<HomePage>
           child: Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: MoeTokens.surface1,
               borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
               border: Border.all(color: MoeTokens.surfaceBorder),
             ),
@@ -522,7 +532,7 @@ class _HomePageState extends State<HomePage>
                       }
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                      duration: MoeTokens.motionFast,
                       curve: Curves.easeOutCubic,
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(

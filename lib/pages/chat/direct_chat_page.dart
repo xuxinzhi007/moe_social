@@ -487,9 +487,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
             ),
           ),
           Icon(
-            cancelHint
-                ? Icons.cancel_rounded
-                : Icons.keyboard_arrow_up_rounded,
+            cancelHint ? Icons.cancel_rounded : Icons.keyboard_arrow_up_rounded,
             size: 18,
             color: cancelHint ? MoeTokens.danger : Colors.white54,
           ),
@@ -587,7 +585,6 @@ class _DirectChatPageState extends State<DirectChatPage> {
   Widget build(BuildContext context) {
     final currentUserId = _chat.currentUserId;
     final reversedMessages = _chat.reversedMessages;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     final glassNav = FeatureFlags.glassNavigation;
 
@@ -596,10 +593,12 @@ class _DirectChatPageState extends State<DirectChatPage> {
         ? context.watch<ChatThemeProvider>().currentSkin
         : null;
     final brightness = Theme.of(context).brightness;
-    final scaffoldBg = chatSkin?.backgroundFor(brightness) ?? MoeTokens.surface0;
+    final scaffoldBg =
+        chatSkin?.backgroundFor(brightness) ?? MoeTokens.surface0;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
+      resizeToAvoidBottomInset: true,
       extendBodyBehindAppBar: glassNav,
       appBar: AppBar(
         elevation: 0,
@@ -853,6 +852,9 @@ class _DirectChatPageState extends State<DirectChatPage> {
                                         showSending: isMe &&
                                             index == 0 &&
                                             _chat.isSending,
+                                        showSent: isMe &&
+                                            index == 0 &&
+                                            !_chat.isSending,
                                         chatSkin: chatSkin,
                                         brightness: brightness,
                                       ),
@@ -863,13 +865,13 @@ class _DirectChatPageState extends State<DirectChatPage> {
                             },
                           ),
           ),
+        ],
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           if (_isRecording) _buildRecordingBar(),
-          AnimatedPadding(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            padding: EdgeInsets.only(bottom: bottomInset > 0 ? 6 : 0),
-            child: _buildInputArea(context),
-          ),
+          _buildInputArea(context),
         ],
       ),
     );
@@ -999,21 +1001,14 @@ class _DirectChatPageState extends State<DirectChatPage> {
 
   Widget _buildTimeTag(BuildContext context, DateTime time) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-        decoration: BoxDecoration(
-          color: MoeTokens.surface1.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-          border: Border.all(color: MoeTokens.surfaceBorder),
-          boxShadow: MoeTokens.shadowSm(),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MoeTokens.spaceMd),
         child: Text(
           _formatTime(time),
           style: const TextStyle(
             color: MoeTokens.hintText,
             fontSize: MoeTokens.textXs,
-            fontWeight: FontWeight.w500,
+            fontWeight: MoeTokens.fontWeightCaption,
           ),
         ),
       ),
@@ -1046,13 +1041,16 @@ class _DirectChatPageState extends State<DirectChatPage> {
     required bool showPeerAvatar,
     required bool tightBottom,
     required bool showSending,
+    required bool showSent,
     required ChatSkin? chatSkin,
     required Brightness brightness,
   }) {
     final maxW = MediaQuery.sizeOf(context).width * 0.74;
+    final peerFallback =
+        brightness == Brightness.dark ? const Color(0xFF32324F) : Colors.white;
     final bubbleBg = isMe
         ? MoeTokens.primary
-        : chatSkin?.peerColorFor(brightness) ?? MoeTokens.surface1;
+        : chatSkin?.peerColorFor(brightness) ?? peerFallback;
     // flag 开启时我方气泡改用窗口级连续渐变（按 index 微偏移）；对方气泡保持纯色。
     final useMeGradient = FeatureFlags.chatGradientBubbles && isMe;
     final textColor = isMe ? Colors.white : MoeTokens.titleText;
@@ -1073,51 +1071,59 @@ class _DirectChatPageState extends State<DirectChatPage> {
         isMe: isMe,
       );
     } else if (_chat.isImageContent(message.content)) {
-      bubbleChild = ClipRRect(
-            borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-            child: CachedNetworkImage(
-              imageUrl: _chat.imageUrlOf(message.content),
-              fit: BoxFit.cover,
-              width: 200,
-              height: 200,
-              memCacheWidth: 400,
-              memCacheHeight: 400,
-              maxWidthDiskCache: 400,
-              maxHeightDiskCache: 400,
-              placeholder: (context, url) => SizedBox(
-                width: 200,
-                height: 200,
-                child: Center(
-                  child: MoeSmallLoading(
-                    size: 24,
-                    color: MoeTokens.primary,
-                  ),
+      final imageW =
+          (MediaQuery.sizeOf(context).width * 0.55).clamp(160.0, 280.0);
+      bubbleChild = ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: imageW,
+          maxHeight: 280,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          child: CachedNetworkImage(
+            imageUrl: _chat.imageUrlOf(message.content),
+            fit: BoxFit.cover,
+            width: imageW,
+            memCacheWidth: (imageW * 2).round(),
+            maxWidthDiskCache: 800,
+            placeholder: (context, url) => SizedBox(
+              width: imageW,
+              height: imageW * 0.75,
+              child: Center(
+                child: MoeSmallLoading(
+                  size: 24,
+                  color: MoeTokens.primary,
                 ),
               ),
-              errorWidget: (context, url, error) => const Icon(
+            ),
+            errorWidget: (context, url, error) => SizedBox(
+              width: imageW,
+              height: 80,
+              child: Icon(
                 Icons.broken_image_outlined,
                 size: 48,
-                color: Colors.white70,
+                color: isMe ? Colors.white70 : MoeTokens.hintText,
               ),
             ),
-          );
+          ),
+        ),
+      );
     } else {
       bubbleChild = Text(
-            message.content,
-            style: TextStyle(
-              color: textColor,
-              fontSize: MoeTokens.textMd,
-              height: 1.45,
-            ),
-          );
+        message.content,
+        style: TextStyle(
+          color: textColor,
+          fontSize: MoeTokens.textMd,
+          height: 1.45,
+        ),
+      );
     }
 
     // 气泡圆角：第一条消息有“尾巴”效果，连续消息底部圆角统一
     final tailRadius = tightBottom ? MoeTokens.radiusMd : 4.0;
     // 气泡渐变采样：开启皮肤功能时取当前所选皮肤（build 顶部已解析，
     // 避免重复 Provider 查找），否则仍为默认薰衣草。
-    final skinGradient =
-        (chatSkin ?? ChatSkins.lavender).bubbleMeGradient;
+    final skinGradient = (chatSkin ?? ChatSkins.lavender).bubbleMeGradient;
     final bubble = DecoratedBox(
       decoration: BoxDecoration(
         color: useMeGradient ? null : bubbleBg,
@@ -1141,17 +1147,11 @@ class _DirectChatPageState extends State<DirectChatPage> {
             ? null
             : Border.all(
                 color: chatSkin?.peerBorderFor(brightness) ??
-                    MoeTokens.surfaceBorder,
+                    (brightness == Brightness.dark
+                        ? const Color(0x33FFFFFF)
+                        : const Color(0x337F7FD5)),
               ),
-        boxShadow: isMe
-            ? [
-                BoxShadow(
-                  color: MoeTokens.primary.withValues(alpha: 0.18),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : MoeTokens.shadowSm(),
+        boxShadow: isMe ? MoeTokens.shadowSm() : null,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1198,9 +1198,18 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   child: bubble,
                 ),
                 if (showSending) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: MoeTokens.spaceXs),
                   const Text(
                     '发送中...',
+                    style: TextStyle(
+                      fontSize: MoeTokens.textXs,
+                      color: MoeTokens.hintText,
+                    ),
+                  ),
+                ] else if (showSent) ...[
+                  const SizedBox(height: MoeTokens.spaceXs),
+                  const Text(
+                    '已发送',
                     style: TextStyle(
                       fontSize: MoeTokens.textXs,
                       color: MoeTokens.hintText,
@@ -1226,6 +1235,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
         top: false,
         child: Container(
           decoration: const BoxDecoration(
+            color: MoeTokens.surface1,
             border: Border(
               top: BorderSide(color: MoeTokens.surfaceBorder),
             ),
@@ -1243,12 +1253,13 @@ class _DirectChatPageState extends State<DirectChatPage> {
                 tooltip: '发送图片',
                 onPressed: _chat.isSending ? null : _pickAndSendImage,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                constraints:
+                    const BoxConstraints.tightFor(width: 44, height: 44),
                 style: IconButton.styleFrom(
-                  fixedSize: const Size(40, 40),
-                  minimumSize: const Size(40, 40),
-                  maximumSize: const Size(40, 40),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  fixedSize: const Size(44, 44),
+                  minimumSize: const Size(44, 44),
+                  maximumSize: const Size(44, 44),
+                  tapTargetSize: MaterialTapTargetSize.padded,
                   backgroundColor: MoeTokens.surface0,
                   foregroundColor: MoeTokens.hintText,
                   disabledForegroundColor: MoeTokens.hintText.withValues(
@@ -1279,8 +1290,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     }
                   },
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: _isRecording
                           ? MoeTokens.danger.withValues(alpha: 0.12)
@@ -1295,9 +1306,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     child: Icon(
                       Icons.mic_rounded,
                       size: 20,
-                      color: _isRecording
-                          ? MoeTokens.danger
-                          : MoeTokens.hintText,
+                      color:
+                          _isRecording ? MoeTokens.danger : MoeTokens.hintText,
                     ),
                   ),
                 ),
@@ -1321,7 +1331,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                       if (canSend) unawaited(_sendMessage());
                     },
                     decoration: const InputDecoration(
-                      hintText: '消息',
+                      hintText: '发送消息',
                       hintStyle: TextStyle(
                         color: MoeTokens.hintText,
                         fontSize: MoeTokens.textMd,
@@ -1354,8 +1364,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   scale: _sendBtnScale,
                   duration: MoeTokens.motionFast,
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: canSend ? MoeTokens.primary : MoeTokens.surface0,
                       shape: BoxShape.circle,
