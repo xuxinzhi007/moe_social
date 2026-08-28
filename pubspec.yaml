@@ -81,6 +81,7 @@ dependencies:
   fluwx: ^5.7.5
   flame: ^1.38.0
   image: ^4.8.0
+  edge_tts: ^0.1.5
 
 dev_dependencies:
   flutter_test:
