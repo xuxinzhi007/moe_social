@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../constants/feature_flags.dart';
@@ -51,36 +50,33 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   AiProviderProfile? _activeProvider;
   ProviderTokenUsage? _providerUsage;
 
-  // AIRI 向轻量语音（本机 STT/TTS；非 Live2D）
+  // AIRI 向轻量语音：STT 本机；TTS 走 Edge 神经音色 + just_audio
   final stt.SpeechToText _speech = stt.SpeechToText();
-  final FlutterTts _tts = FlutterTts();
   late final AiTtsHelper _ttsHelper;
   bool _speechAvailable = false;
   bool _listening = false;
   bool _autoSpeak = false;
   bool _voiceInputPending = false;
   bool _isSpeaking = false;
+  bool _ttsBusy = false;
   int? _speakingIndex;
-
-  static const _sceneStarters = <String, ({String id, String prompt})>{
-    '睡前收尾': (id: 'sleep', prompt: '陪我做个睡前收尾，帮我把今天慢慢放下。'),
-    '情绪安抚': (id: 'comfort', prompt: '我今天有点低落，先陪陪我，不用急着给建议。'),
-    '轻松约会': (id: 'date', prompt: '和我安排一个轻松的线上约会吧，节奏慢一点。'),
-    '专注学习': (id: 'study', prompt: '陪我专心学习 25 分钟，先帮我定一个小目标。'),
-  };
-  String? _activeScene;
 
   bool get _voiceEnabled => FeatureFlags.companionVoicePresence;
 
   @override
   void initState() {
     super.initState();
-    _ttsHelper = AiTtsHelper(_tts);
+    _ttsHelper = AiTtsHelper();
+    _focusNode.addListener(_onComposerFocusChanged);
     if (_voiceEnabled) {
       unawaited(_initVoice());
     }
     _loadInitialData();
     unawaited(_loadProviderStatus());
+  }
+
+  void _onComposerFocusChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadProviderStatus() async {
@@ -143,7 +139,18 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     }
     await _ttsHelper.initialize();
     _ttsHelper.bindHandlers(
+      onStart: () {
+        if (!mounted) return;
+        setState(() => _isSpeaking = true);
+      },
       onComplete: () {
+        if (!mounted) return;
+        setState(() {
+          _isSpeaking = false;
+          _speakingIndex = null;
+        });
+      },
+      onCancel: () {
         if (!mounted) return;
         setState(() {
           _isSpeaking = false;
@@ -166,8 +173,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     CompanionService().cancelStream();
     if (_voiceEnabled) {
       unawaited(_speech.stop());
-      unawaited(_tts.stop());
     }
+    unawaited(_ttsHelper.dispose());
     _controller.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -287,7 +294,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
       await for (final event in CompanionService().chatStream(
         text,
-        scene: _activeScene,
+        scene: null,
         inputMode: wasVoiceInput ? 'voice' : 'text',
       )) {
         if (!mounted) return;
@@ -323,11 +330,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 CompanionPresenceProvider.instance.markCompanionChatSeen());
             unawaited(_refreshPresenceState());
             CompanionInteractionCoordinator.instance.publishChatCompleted(
-              scene: _activeScene,
+              scene: null,
             );
             if (wasVoiceInput) {
               CompanionInteractionCoordinator.instance
-                  .publishVoiceTurnCompleted(scene: _activeScene);
+                  .publishVoiceTurnCompleted(scene: null);
             }
             if (_voiceEnabled && _autoSpeak) {
               unawaited(_speakAt(_items.length - 1, spoken));
@@ -518,28 +525,44 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     }
   }
 
+  Future<void> _stopSpeaking() async {
+    await _ttsHelper.stop();
+    if (!mounted) return;
+    setState(() {
+      _isSpeaking = false;
+      _ttsBusy = false;
+      _speakingIndex = null;
+    });
+  }
+
   Future<void> _speakAt(int index, String text) async {
     if (!_voiceEnabled || text.trim().isEmpty) return;
-    if (_isSpeaking && _speakingIndex == index) {
-      await _ttsHelper.stop();
-      if (mounted) {
-        setState(() {
-          _isSpeaking = false;
-          _speakingIndex = null;
-        });
-      }
+    if ((_isSpeaking || _ttsBusy) && _speakingIndex == index) {
+      await _stopSpeaking();
       return;
     }
     try {
       setState(() {
+        _ttsBusy = true;
         _isSpeaking = true;
         _speakingIndex = index;
       });
-      await _ttsHelper.speak(text);
+      final started = await _ttsHelper.speak(text);
+      if (!mounted) return;
+      if (!started) {
+        setState(() {
+          _isSpeaking = false;
+          _ttsBusy = false;
+          _speakingIndex = null;
+        });
+        return;
+      }
+      setState(() => _ttsBusy = false);
     } catch (e) {
       if (mounted) {
         setState(() {
           _isSpeaking = false;
+          _ttsBusy = false;
           _speakingIndex = null;
         });
         MoeToast.error(context, e.toString().replaceFirst('Exception: ', ''));
@@ -551,21 +574,24 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 76,
+        toolbarHeight: 64,
         titleSpacing: 0,
         title: _buildAppBarTitle(),
         backgroundColor: AiBrandTokens.chatBackground,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: IconButton.filledTonal(
+        leadingWidth: 56,
+        leading: Center(
+          child: _ComposerCircleButton(
+            size: 40,
             tooltip: '返回',
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.78),
-              foregroundColor: AiBrandTokens.titleColor,
+            onTap: () => Navigator.of(context).maybePop(),
+            background: MoeTokens.cardBackground,
+            borderColor: AiBrandTokens.companionBorder,
+            child: const Icon(
+              Icons.arrow_back_rounded,
+              size: 20,
+              color: MoeTokens.titleText,
             ),
           ),
         ),
@@ -573,28 +599,18 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
           _ProviderStatusButton(
             status: _providerStatus,
             label: _providerLabel,
+            onTap: () => unawaited(_openProviderSettings()),
           ),
           IconButton(
             tooltip: '聊天工具',
             onPressed: _openChatTools,
-            icon: const Icon(Icons.menu_rounded),
-          ),
-          if (_voiceEnabled)
-            IconButton(
-              tooltip: _autoSpeak ? '关闭自动朗读' : '开启自动朗读',
-              onPressed: () {
-                setState(() => _autoSpeak = !_autoSpeak);
-                MoeToast.success(
-                  context,
-                  _autoSpeak ? '已开启：TA 说完会朗读' : '已关闭自动朗读',
-                );
-              },
-              icon: Icon(
-                _autoSpeak
-                    ? Icons.record_voice_over_rounded
-                    : Icons.volume_up_outlined,
-              ),
+            icon: Badge(
+              isLabelVisible: _voiceEnabled && _autoSpeak,
+              smallSize: 8,
+              backgroundColor: AiBrandTokens.primary,
+              child: const Icon(Icons.more_horiz_rounded),
             ),
+          ),
         ],
       ),
       body: AiChatBackground(
@@ -636,19 +652,19 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
               _profile.name.isNotEmpty ? _profile.name : '我的伙伴',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
-            if (_activeScene != null)
-              Text(
-                '正在一起 · ${_sceneDisplayName(_activeScene!)}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AiBrandTokens.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              )
-            else if (_state.activityLabel.isNotEmpty)
+            if (_state.activityLabel.isNotEmpty)
               Text(
                 _state.activityLabel,
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              )
+            else if (_voiceEnabled && _autoSpeak)
+              const Text(
+                '自动朗读已开',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AiBrandTokens.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
           ],
         ),
@@ -656,51 +672,34 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     );
   }
 
-  String _sceneDisplayName(String id) {
-    switch (id) {
-      case 'sleep':
-        return '睡前收尾';
-      case 'comfort':
-        return '情绪安抚';
-      case 'date':
-        return '轻松约会';
-      case 'study':
-        return '专注学习';
-      default:
-        return '陪伴';
-    }
-  }
-
   Widget _buildContent() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // ── 错误降级：友好提示卡片 ──
     if (_loadError != null) {
       return _buildFallbackCard();
     }
 
-    // ── 空态：首次进入欢迎卡 ──
     if (_items.isEmpty) {
       return _buildWelcomeCard();
     }
 
-    // ── 消息列表 ──
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      itemCount: _items.length + 1,
+      itemCount: _items.length,
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return _ConversationMarker(
-            label: _activeScene == null
-                ? '此刻，适合慢慢聊'
-                : '场景 · ${_sceneDisplayName(_activeScene!)}',
-          );
-        }
-        final item = _items[index - 1];
+        final item = _items[index];
         final isAssistant = item.role == 'assistant';
+        final itemIndex = index;
+        final canSpeak = _voiceEnabled &&
+            isAssistant &&
+            !item.isStreaming &&
+            !item.isError &&
+            item.content.trim().isNotEmpty;
+        final speakingThis =
+            (_isSpeaking || _ttsBusy) && _speakingIndex == itemIndex;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
@@ -712,6 +711,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 contentType: MessageContentType.text,
                 isUser: item.role == 'user',
                 isLoading: item.isStreaming,
+                airyCompanion: true,
                 agentLabel: isAssistant ? _profile.name : null,
                 assistantAvatar: isAssistant
                     ? CompanionAvatar(
@@ -721,39 +721,18 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                         borderRadius: BorderRadius.circular(12),
                       )
                     : null,
-                bubbleAction: _voiceEnabled &&
-                        isAssistant &&
-                        !item.isStreaming &&
-                        !item.isError &&
-                        item.content.trim().isNotEmpty
-                    ? IconButton(
-                        tooltip: _isSpeaking && _speakingIndex == index
-                            ? '停止朗读'
-                            : '朗读这条消息',
-                        onPressed: () => unawaited(
-                          _speakAt(index, item.content),
-                        ),
-                        icon: Icon(
-                          _isSpeaking && _speakingIndex == index
-                              ? Icons.stop_circle_rounded
-                              : Icons.volume_up_rounded,
-                          size: 17,
-                        ),
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(36, 36),
-                          padding: EdgeInsets.zero,
-                          backgroundColor:
-                              _isSpeaking && _speakingIndex == index
-                                  ? AiBrandTokens.primary
-                                  : const Color(0xFFF0ECF8),
-                          foregroundColor:
-                              _isSpeaking && _speakingIndex == index
-                                  ? Colors.white
-                                  : AiBrandTokens.primary,
-                        ),
-                      )
-                    : null,
               ),
+              if (canSpeak)
+                Padding(
+                  padding: const EdgeInsets.only(left: 40, top: 2),
+                  child: _SpeakChip(
+                    speaking: speakingThis,
+                    busy: _ttsBusy && _speakingIndex == itemIndex,
+                    onTap: () => unawaited(
+                      _speakAt(itemIndex, item.content),
+                    ),
+                  ),
+                ),
               if (isAssistant && item.isStreaming && item.content.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(left: 40, top: 1),
@@ -951,19 +930,18 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
 
   Widget _buildComposer() {
     final hasError = _loadError != null;
-    final activeSceneLabel =
-        _activeScene == null ? null : _sceneDisplayName(_activeScene!);
+    const btnSize = 40.0;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
+        color: MoeTokens.cardBackground.withValues(alpha: 0.96),
         border: Border(
-          top: BorderSide(color: AiBrandTokens.primary.withValues(alpha: 0.1)),
+          top: BorderSide(color: MoeTokens.primary.withValues(alpha: 0.08)),
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -975,60 +953,54 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 ),
                 const SizedBox(height: 8),
               ],
-              if (activeSceneLabel != null)
-                _ActiveSceneStrip(
-                  label: activeSceneLabel,
-                  onExit: () => setState(() => _activeScene = null),
-                )
-              else if (!_isSending && !hasError)
-                _SceneStarterRail(
-                  labels: _sceneStarters.keys.toList(growable: false),
-                  onSelected: (label) {
-                    final starter = _sceneStarters[label]!;
-                    setState(() => _activeScene = starter.id);
-                    _controller.value = TextEditingValue(
-                      text: starter.prompt,
-                      selection: TextSelection.collapsed(
-                        offset: starter.prompt.length,
-                      ),
-                    );
-                    _focusNode.requestFocus();
-                  },
-                ),
               if (_listening || _isSending) ...[
-                const SizedBox(height: 8),
                 _ComposerStatus(
                   label: _listening ? '正在听你说…' : 'TA 正在组织回应…',
                   listening: _listening,
                 ),
+                const SizedBox(height: 8),
               ],
-              const SizedBox(height: 9),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F5FB),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AiBrandTokens.primary.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    if (_voiceEnabled)
-                      IconButton(
-                        tooltip: _listening ? '停止听写' : '语音输入',
-                        onPressed: (_isSending || hasError)
-                            ? null
-                            : () => unawaited(_toggleListen()),
-                        icon: Icon(
-                          _listening
-                              ? Icons.graphic_eq_rounded
-                              : Icons.mic_none_rounded,
-                          color: _listening
-                              ? AiBrandTokens.primary
-                              : Colors.grey.shade600,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_voiceEnabled) ...[
+                    _ComposerCircleButton(
+                      size: btnSize,
+                      tooltip: _listening ? '停止听写' : '语音输入',
+                      onTap: (_isSending || hasError)
+                          ? null
+                          : () => unawaited(_toggleListen()),
+                      background: _listening
+                          ? MoeTokens.primary.withValues(alpha: 0.12)
+                          : MoeTokens.softChipBg,
+                      borderColor: _listening
+                          ? MoeTokens.primary.withValues(alpha: 0.35)
+                          : AiBrandTokens.companionBorder,
+                      child: Icon(
+                        _listening
+                            ? Icons.graphic_eq_rounded
+                            : Icons.mic_none_rounded,
+                        size: 20,
+                        color: _listening
+                            ? MoeTokens.primary
+                            : MoeTokens.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 120),
+                      decoration: BoxDecoration(
+                        color: MoeTokens.softLavenderBg,
+                        borderRadius:
+                            BorderRadius.circular(MoeTokens.radiusXl),
+                        border: Border.all(
+                          color: _focusNode.hasFocus
+                              ? MoeTokens.primary.withValues(alpha: 0.28)
+                              : AiBrandTokens.companionBorder,
                         ),
                       ),
-                    Expanded(
                       child: TextField(
                         controller: _controller,
                         focusNode: _focusNode,
@@ -1042,39 +1014,47 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                                   ? '正在听…'
                                   : _isSending
                                       ? 'TA 正在回应…'
-                                      : '写下此刻想说的话',
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                                      : '说点什么吧…',
+                          hintStyle:
+                              const TextStyle(color: MoeTokens.hintText),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 12,
+                            horizontal: 14,
+                            vertical: 11,
                           ),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(
+                          fontSize: MoeTokens.textMd,
+                          color: MoeTokens.titleText,
                         ),
                         onSubmitted: (_) => _sendMessage(),
                         enabled: !_isSending && !hasError,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(5),
-                      child: IconButton.filled(
-                        tooltip: '发送',
-                        onPressed:
-                            (_isSending || hasError) ? null : _sendMessage,
-                        icon: Icon(
-                          _isSending
-                              ? Icons.more_horiz_rounded
-                              : Icons.arrow_upward_rounded,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: (_isSending || hasError)
-                              ? Colors.grey.shade300
-                              : AiBrandTokens.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  _ComposerCircleButton(
+                    size: btnSize,
+                    tooltip: '发送',
+                    onTap: (_isSending || hasError) ? null : _sendMessage,
+                    background: (_isSending || hasError)
+                        ? MoeTokens.softChipBg
+                        : MoeTokens.primary,
+                    borderColor: (_isSending || hasError)
+                        ? AiBrandTokens.companionBorder
+                        : Colors.transparent,
+                    child: Icon(
+                      _isSending
+                          ? Icons.more_horiz_rounded
+                          : Icons.arrow_upward_rounded,
+                      size: 20,
+                      color: (_isSending || hasError)
+                          ? MoeTokens.hintText
+                          : Colors.white,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1127,6 +1107,28 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                     title: '模型设置',
                     subtitle: _providerLabel,
                     onTap: () => Navigator.pop(sheetContext, 'provider')),
+                if (_voiceEnabled)
+                  _ChatToolTile(
+                    icon: _autoSpeak
+                        ? Icons.record_voice_over_rounded
+                        : Icons.volume_up_outlined,
+                    title: _autoSpeak ? '自动朗读 · 开' : '自动朗读 · 关',
+                    subtitle:
+                        _autoSpeak ? 'TA 说完会自动朗读，点此关闭' : '开启后，TA 说完会朗读给你听',
+                    onTap: () => Navigator.pop(sheetContext, 'auto_speak'),
+                  ),
+                if (_voiceEnabled)
+                  _ChatToolTile(
+                    icon: Icons.record_voice_over_outlined,
+                    title: '朗读音色',
+                    subtitle: AiTtsHelper.chineseVoices
+                        .firstWhere(
+                          (v) => v.id == _ttsHelper.voice,
+                          orElse: () => AiTtsHelper.chineseVoices.first,
+                        )
+                        .label,
+                    onTap: () => Navigator.pop(sheetContext, 'tts_voice'),
+                  ),
               ],
             ),
           ),
@@ -1141,7 +1143,60 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         await _showProfileEditor();
       case 'provider':
         await _openProviderSettings();
+      case 'auto_speak':
+        setState(() => _autoSpeak = !_autoSpeak);
+        if (!mounted) return;
+        MoeToast.success(
+          context,
+          _autoSpeak ? '已开启：TA 说完会朗读' : '已关闭自动朗读',
+        );
+      case 'tts_voice':
+        await _pickTtsVoice();
     }
+  }
+
+  Future<void> _pickTtsVoice() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AiBrandTokens.pageBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '选择朗读音色',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Edge 神经语音 · 可换声线',
+                style: TextStyle(fontSize: 12, color: MoeTokens.inkMuted),
+              ),
+              const SizedBox(height: 10),
+              for (final voice in AiTtsHelper.chineseVoices)
+                ListTile(
+                  title: Text(voice.label),
+                  trailing: voice.id == _ttsHelper.voice
+                      ? const Icon(Icons.check_rounded,
+                          color: AiBrandTokens.primary)
+                      : null,
+                  onTap: () => Navigator.pop(sheetContext, voice.id),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    await _ttsHelper.setVoice(selected);
+    if (!mounted) return;
+    setState(() {});
+    MoeToast.success(context, '已切换音色');
   }
 
   Future<void> _showProfileEditor() async {
@@ -1310,10 +1365,15 @@ enum _ChatProviderStatus {
 }
 
 class _ProviderStatusButton extends StatelessWidget {
-  const _ProviderStatusButton({required this.status, required this.label});
+  const _ProviderStatusButton({
+    required this.status,
+    required this.label,
+    required this.onTap,
+  });
 
   final _ChatProviderStatus status;
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1324,12 +1384,10 @@ class _ProviderStatusButton extends StatelessWidget {
         const Color(0xFFE36B6B),
       _ => const Color(0xFFE4A13C),
     };
-    return Tooltip(
-      message: label,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Icon(Icons.cloud_outlined, color: color, size: 23),
-      ),
+    return IconButton(
+      tooltip: label,
+      onPressed: onTap,
+      icon: Icon(Icons.cloud_outlined, color: color, size: 23),
     );
   }
 }
@@ -1391,108 +1449,97 @@ class _ChatToolTile extends StatelessWidget {
   }
 }
 
-class _ConversationMarker extends StatelessWidget {
-  const _ConversationMarker({required this.label});
+class _ComposerCircleButton extends StatelessWidget {
+  const _ComposerCircleButton({
+    required this.size,
+    required this.child,
+    required this.background,
+    required this.borderColor,
+    this.onTap,
+    this.tooltip,
+  });
 
-  final String label;
+  final double size;
+  final Widget child;
+  final Color background;
+  final Color borderColor;
+  final VoidCallback? onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-              child: Divider(
-                  color: AiBrandTokens.primary.withValues(alpha: 0.12))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.grey.shade500,
-              ),
-            ),
+    final button = Material(
+      color: background,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: borderColor),
           ),
-          Expanded(
-              child: Divider(
-                  color: AiBrandTokens.primary.withValues(alpha: 0.12))),
-        ],
+          child: child,
+        ),
       ),
     );
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
   }
 }
 
-class _ActiveSceneStrip extends StatelessWidget {
-  const _ActiveSceneStrip({required this.label, required this.onExit});
+class _SpeakChip extends StatelessWidget {
+  const _SpeakChip({
+    required this.speaking,
+    required this.onTap,
+    this.busy = false,
+  });
 
-  final String label;
-  final VoidCallback onExit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.nights_stay_rounded,
-            size: 16, color: AiBrandTokens.primary),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            '正在一起 · $label',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: AiBrandTokens.titleColor,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: onExit,
-          style: TextButton.styleFrom(
-            foregroundColor: AiBrandTokens.primary,
-            visualDensity: VisualDensity.compact,
-          ),
-          child: const Text('结束场景'),
-        ),
-      ],
-    );
-  }
-}
-
-class _SceneStarterRail extends StatelessWidget {
-  const _SceneStarterRail({required this.labels, required this.onSelected});
-
-  final List<String> labels;
-  final ValueChanged<String> onSelected;
+  final bool speaking;
+  final bool busy;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: labels.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 7),
-        itemBuilder: (context, index) {
-          final label = labels[index];
-          return OutlinedButton.icon(
-            onPressed: () => onSelected(label),
-            icon: const Icon(Icons.auto_awesome_rounded, size: 14),
-            label: Text(label),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AiBrandTokens.companionInkMuted,
-              side: const BorderSide(color: AiBrandTokens.companionBorder),
-              backgroundColor: AiBrandTokens.companionSurface,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              textStyle:
-                  const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+    final active = speaking || busy;
+    final label = busy ? '合成中 · 停止' : (speaking ? '停止' : '朗读');
+    return AnimatedContainer(
+      duration: MoeTokens.motionFast,
+      curve: Curves.easeInOut,
+      child: Material(
+        color: active
+            ? MoeTokens.primary.withValues(alpha: 0.12)
+            : MoeTokens.softChipBg,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  active ? Icons.stop_rounded : Icons.volume_up_outlined,
+                  size: 14,
+                  color: active ? MoeTokens.primary : MoeTokens.inkMuted,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: active ? MoeTokens.primary : MoeTokens.inkMuted,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

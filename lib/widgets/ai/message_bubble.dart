@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../moe_toast.dart';
+import '../../theme/moe_tokens.dart';
 import 'ai_brand_tokens.dart';
 import 'ai_rich_message_body.dart';
 import '../motion/moe_motion.dart';
@@ -27,6 +28,9 @@ class AiMessageBubble extends StatefulWidget {
   final bool hideAvatar;
   final bool compactTop;
 
+  /// 陪伴对话气泡：雾面渐变、不对称圆角、轻色影（Airy Moe）。
+  final bool airyCompanion;
+
   const AiMessageBubble({
     super.key,
     required this.content,
@@ -41,6 +45,7 @@ class AiMessageBubble extends StatefulWidget {
     this.richFormat = false,
     this.hideAvatar = false,
     this.compactTop = false,
+    this.airyCompanion = false,
   });
 
   @override
@@ -286,8 +291,10 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                     isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.airyCompanion ? 18 : 16,
+                      vertical: widget.airyCompanion ? 14 : 12,
+                    ),
                     decoration: BoxDecoration(
                       gradient: isUser
                           ? const LinearGradient(
@@ -298,18 +305,34 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             )
-                          : null,
+                          : widget.airyCompanion &&
+                                  widget.contentType != MessageContentType.code
+                              ? LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    MoeTokens.cardBackground,
+                                    MoeTokens.softLavenderBg,
+                                    MoeTokens.secondary.withValues(alpha: 0.14),
+                                  ],
+                                  stops: const [0.0, 0.55, 1.0],
+                                )
+                              : null,
                       color: isUser
                           ? null
                           : widget.contentType == MessageContentType.code
                               ? const Color(0xFF1E1E1E)
-                              : Colors.white.withValues(alpha: 0.96),
+                              : widget.airyCompanion
+                                  ? null
+                                  : Colors.white.withValues(alpha: 0.96),
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
+                        topLeft: Radius.circular(
+                          widget.airyCompanion && !isUser ? 8 : 20,
+                        ),
                         topRight: const Radius.circular(20),
                         bottomLeft: isUser
                             ? const Radius.circular(20)
-                            : const Radius.circular(4),
+                            : Radius.circular(widget.airyCompanion ? 22 : 4),
                         bottomRight: isUser
                             ? const Radius.circular(4)
                             : const Radius.circular(20),
@@ -317,8 +340,11 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                       border: !isUser &&
                               widget.contentType != MessageContentType.code
                           ? Border.all(
-                              color:
-                                  AiBrandTokens.primary.withValues(alpha: 0.08),
+                              color: widget.airyCompanion
+                                  ? MoeTokens.primary.withValues(alpha: 0.16)
+                                  : AiBrandTokens.primary
+                                      .withValues(alpha: 0.08),
+                              width: widget.airyCompanion ? 1.2 : 1,
                             )
                           : null,
                       boxShadow: isUser ||
@@ -333,19 +359,57 @@ class _AiMessageBubbleState extends State<AiMessageBubble> {
                                 offset: const Offset(0, 3),
                               ),
                             ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
+                          : widget.airyCompanion
+                              ? [
+                                  BoxShadow(
+                                    color: MoeTokens.primary
+                                        .withValues(alpha: 0.10),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                  BoxShadow(
+                                    color: MoeTokens.accent
+                                        .withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
                     ),
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
+                        if (widget.airyCompanion &&
+                            !isUser &&
+                            widget.contentType != MessageContentType.code)
+                          Positioned(
+                            left: -6,
+                            top: 10,
+                            bottom: 10,
+                            child: Container(
+                              width: 3,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(99),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    MoeTokens.primary.withValues(alpha: 0.55),
+                                    MoeTokens.accent.withValues(alpha: 0.35),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         Padding(
                           padding: EdgeInsets.only(
+                            left: widget.airyCompanion && !isUser ? 6 : 0,
                             right: widget.bubbleAction == null ? 0 : 34,
                           ),
                           child: (!widget.isUser &&

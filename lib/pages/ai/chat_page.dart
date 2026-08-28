@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
@@ -73,7 +72,6 @@ class _ChatPageState extends State<ChatPage> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _speechAvailable = false;
   bool _isListening = false;
-  final FlutterTts _tts = FlutterTts();
   late final AiTtsHelper _ttsHelper;
   bool _isSpeaking = false;
   String? _speakingMessageId;
@@ -110,7 +108,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    _ttsHelper = AiTtsHelper(_tts);
+    _ttsHelper = AiTtsHelper();
     _quickReplies = buildAgentQuickReplies(widget.agent);
     _scrollController.addListener(_onScroll);
     _systemPrompt = widget.agent.systemPrompt.trim().isNotEmpty
@@ -138,8 +136,7 @@ class _ChatPageState extends State<ChatPage> {
     _focusNode.dispose();
     _searchController.dispose();
     _speech.stop();
-    _tts.stop();
-    _tts.setCompletionHandler(() {}); // 解除业务回调（API 要求非 null 的 void Function()）
+    unawaited(_ttsHelper.dispose());
     super.dispose();
   }
 
@@ -229,7 +226,18 @@ class _ChatPageState extends State<ChatPage> {
     try {
       await _ttsHelper.initialize();
       _ttsHelper.bindHandlers(
+        onStart: () {
+          if (!mounted) return;
+          setState(() => _isSpeaking = true);
+        },
         onComplete: () {
+          if (!mounted) return;
+          setState(() {
+            _isSpeaking = false;
+            _speakingMessageId = null;
+          });
+        },
+        onCancel: () {
           if (!mounted) return;
           setState(() {
             _isSpeaking = false;
@@ -984,7 +992,13 @@ class _ChatPageState extends State<ChatPage> {
         _isSpeaking = true;
         _speakingMessageId = msgId;
       });
-      await _ttsHelper.speak(text);
+      final started = await _ttsHelper.speak(text);
+      if (!started && mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _speakingMessageId = null;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

@@ -1242,8 +1242,13 @@ class _DirectChatPageState extends State<DirectChatPage> {
               IconButton(
                 tooltip: '发送图片',
                 onPressed: _chat.isSending ? null : _pickAndSendImage,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(width: 40, height: 40),
                 style: IconButton.styleFrom(
-                  fixedSize: const Size(42, 42),
+                  fixedSize: const Size(40, 40),
+                  minimumSize: const Size(40, 40),
+                  maximumSize: const Size(40, 40),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   backgroundColor: MoeTokens.surface0,
                   foregroundColor: MoeTokens.hintText,
                   disabledForegroundColor: MoeTokens.hintText.withValues(
@@ -1251,7 +1256,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   ),
                   side: const BorderSide(color: MoeTokens.surfaceBorder),
                 ),
-                icon: const Icon(Icons.add_rounded),
+                icon: const Icon(Icons.add_rounded, size: 20),
               ),
               if (FeatureFlags.chatVoiceMessage) ...[
                 const SizedBox(width: 8),
@@ -1274,8 +1279,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     }
                   },
                   child: Container(
-                    width: 42,
-                    height: 42,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: _isRecording
                           ? MoeTokens.danger.withValues(alpha: 0.12)
@@ -1289,7 +1294,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                     ),
                     child: Icon(
                       Icons.mic_rounded,
-                      size: 22,
+                      size: 20,
                       color: _isRecording
                           ? MoeTokens.danger
                           : MoeTokens.hintText,
@@ -1349,8 +1354,8 @@ class _DirectChatPageState extends State<DirectChatPage> {
                   scale: _sendBtnScale,
                   duration: MoeTokens.motionFast,
                   child: Container(
-                    width: 42,
-                    height: 42,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: canSend ? MoeTokens.primary : MoeTokens.surface0,
                       shape: BoxShape.circle,
@@ -1366,7 +1371,7 @@ class _DirectChatPageState extends State<DirectChatPage> {
                         : Icon(
                             Icons.arrow_upward_rounded,
                             color: canSend ? Colors.white : MoeTokens.hintText,
-                            size: 21,
+                            size: 20,
                           ),
                   ),
                 ),
