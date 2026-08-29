@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../constants/app_links.dart';
 import '../../../providers/device_info_provider.dart';
 import '../../../services/user_service.dart';
 import '../../../services/update_service.dart';
+import '../../../theme/moe_tokens.dart';
 import '../../../widgets/moe_menu_card.dart';
 import '../../../widgets/moe_toast.dart';
 
@@ -29,6 +35,13 @@ class AboutModule extends StatelessWidget {
           ),
         ),
         MoeMenuItem(
+          icon: Icons.language_rounded,
+          title: '访问官网',
+          subtitle: '了解 Moe Social 产品介绍与最新信息',
+          color: MoeTokens.primary,
+          onTap: () => unawaited(_openOfficialWebsite(context)),
+        ),
+        MoeMenuItem(
           icon: Icons.feedback_outlined,
           title: '意见反馈',
           subtitle: '问题描述与联系方式',
@@ -44,6 +57,28 @@ class AboutModule extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _openOfficialWebsite(BuildContext context) async {
+    final uri = Uri.tryParse(AppLinks.officialWebsite);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      MoeToast.error(context, '官网地址无效');
+      return;
+    }
+
+    try {
+      final opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        MoeToast.error(context, '无法打开官网，请稍后重试');
+      }
+    } catch (_) {
+      if (context.mounted) {
+        MoeToast.error(context, '无法打开官网，请稍后重试');
+      }
+    }
   }
 
   static const String _feedbackEmail = 'xuxinzhi19@gmail.com';

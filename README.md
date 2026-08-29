@@ -128,6 +128,7 @@ moe_social/
 | 用途 | 链接 |
 |------|------|
 | 文档总索引 | [docs/README.md](docs/README.md) |
+| 当前 UI 视觉升级 | [docs/dev/ui-upgrade-iteration-2026-08-29.md](docs/dev/ui-upgrade-iteration-2026-08-29.md) |
 | 浏览器导航 | [docs/index.html](docs/index.html) |
 | 记忆系统 SSOT | [docs/dev/用户记忆系统-OpenClaw式演进设计.md](docs/dev/用户记忆系统-OpenClaw式演进设计.md) |
 | 部署平台 / Agent | [docs/dev/deploy-platform.md](docs/dev/deploy-platform.md) |

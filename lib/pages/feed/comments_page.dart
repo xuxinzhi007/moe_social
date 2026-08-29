@@ -342,6 +342,7 @@ class _CommentsPageState extends State<CommentsPage> {
                         child: PostCard(
                           post: widget.embeddedPost!,
                           heroTagPrefix: 'cdetail_',
+                          mediaPresentation: PostCardMediaPresentation.detail,
                           onComment: () {
                             _commentFocus.requestFocus();
                           },

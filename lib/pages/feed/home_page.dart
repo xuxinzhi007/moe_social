@@ -1,3 +1,4 @@
+// Hallmark · layout: sliver-cascade · tone: kawaii-soft · scroll: custom-scroll
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -12,14 +13,13 @@ import '../../widgets/moe_error_state.dart';
 import '../../utils/post_navigation.dart';
 import '../../providers/companion_presence_provider.dart';
 import '../../providers/notification_provider.dart';
-import '../../providers/main_nav_controller.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/home_stories_bar.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
-import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/motion/moe_stagger.dart';
 import '../../widgets/motion/moe_pressable.dart';
+import '../../widgets/motion/moe_motion.dart';
 import '../../widgets/layout/adaptive_page_scaffold.dart';
 import '../../widgets/personalized_card.dart';
 import '../../theme/moe_theme_extension.dart';
@@ -48,22 +48,13 @@ class _HomePageState extends State<HomePage>
   final Set<String> _revealedFeedKeys = {};
 
   static const _tabs = [
-    (
-      label: '\u70ed\u95e8',
-      icon: Icons.whatshot_rounded,
-      mode: HomeFeedMode.hot
-    ),
-    (
-      label: '\u6700\u65b0',
-      icon: Icons.new_releases_rounded,
-      mode: HomeFeedMode.latest
-    ),
-    (
-      label: '\u5173\u6ce8',
-      icon: Icons.star_rounded,
-      mode: HomeFeedMode.following
-    ),
+    (label: '热门', mode: HomeFeedMode.hot),
+    (label: '最新', mode: HomeFeedMode.latest),
+    (label: '关注', mode: HomeFeedMode.following),
   ];
+
+  static const double _filterTabExtent = 52;
+  static const double _filterTopicExtent = 40;
 
   @override
   void initState() {
@@ -190,7 +181,7 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    // Feed 优先：轻顶栏 → Stories → 轻陪伴 → 粘性分段 → 帖子。
+    // Feed 优先：轻顶栏 → Stories → 轻陪伴 → 粘性文字分段 → 帖子。
     // 发帖入口固定在筛选栏右侧，不叠加 FAB 或大海报。
     return AdaptivePageScaffold(
       template: PageTemplate.fullscreen,
@@ -212,23 +203,33 @@ class _HomePageState extends State<HomePage>
             SliverToBoxAdapter(
               child: const HomeStoriesBar(),
             ),
-            SliverToBoxAdapter(
-              child: _buildCompanionPresenceCard(context),
-            ),
             SliverPersistentHeader(
               pinned: true,
               delegate: _HomeFeedFilterHeader(
-                height: _feed.availableTags.isEmpty ? 52 : 92,
+                height: _feed.availableTags.isEmpty
+                    ? _filterTabExtent
+                    : _filterTabExtent + _filterTopicExtent,
                 background: MoeTheme.of(context).pageBackground,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: _buildFeedModeSwitcher(context),
+                    SizedBox(
+                      height: _filterTabExtent,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          MoeTokens.spaceLg,
+                          MoeTokens.spaceSm,
+                          MoeTokens.spaceLg,
+                          0,
+                        ),
+                        child: _buildFeedModeSwitcher(context),
+                      ),
                     ),
                     if (_feed.availableTags.isNotEmpty)
-                      Expanded(child: _buildTopicFilterRow(context)),
+                      SizedBox(
+                        height: _filterTopicExtent,
+                        child: _buildTopicFilterRow(context),
+                      ),
                   ],
                 ),
               ),
@@ -374,130 +375,22 @@ class _HomePageState extends State<HomePage>
 
     return ListView.separated(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        MoeTokens.spaceLg,
+        MoeTokens.spaceXs,
+        MoeTokens.spaceLg,
+        MoeTokens.spaceSm,
+      ),
       itemCount: tags.length,
-      separatorBuilder: (_, __) => const SizedBox(width: 8),
+      separatorBuilder: (_, __) => const SizedBox(width: MoeTokens.spaceSm),
       itemBuilder: (context, index) {
         final tag = tags[index];
-        final selected = _feed.activeTopic?.id == tag.id;
-        return FilterChip(
-          selected: selected,
-          showCheckmark: false,
-          visualDensity: VisualDensity.compact,
-          avatar: Icon(
-            Icons.tag_rounded,
-            size: 14,
-            color: selected ? MoeTokens.primary : MoeTokens.hintText,
-          ),
-          label: Text('#${tag.name}'),
-          labelStyle: TextStyle(
-            fontSize: MoeTokens.textSm,
-            fontWeight: MoeTokens.fontWeightSubtitle,
-            color: selected ? MoeTokens.primary : MoeTokens.titleText,
-          ),
-          selectedColor: MoeTokens.primary.withValues(alpha: 0.14),
-          backgroundColor: MoeTokens.softChipBg,
-          side: BorderSide(
-            color: selected ? MoeTokens.primary : MoeTokens.surfaceBorder,
-          ),
-          onSelected: (_) => _onTopicSelected(tag),
+        return _HomeTopicChip(
+          name: tag.name,
+          selected: _feed.activeTopic?.id == tag.id,
+          onTap: () => _onTopicSelected(tag),
         );
       },
-    );
-  }
-
-  Widget _buildCompanionPresenceCard(BuildContext context) {
-    final snapshot = _feed.companionSnapshot;
-    if (snapshot == null) return const SizedBox.shrink();
-    final profile = snapshot.profile;
-    final state = snapshot.state;
-    final name = profile.name.trim().isNotEmpty ? profile.name.trim() : 'AI 伙伴';
-    final greeting = state.greeting.trim().isNotEmpty
-        ? state.greeting.trim()
-        : (state.moodThought.trim().isNotEmpty
-            ? state.moodThought.trim()
-            : '想你了，去看看 TA 吧');
-    final wantsYou = context.watch<CompanionPresenceProvider>().hasAttention;
-    // AI 是社交增强能力；只有伙伴确实需要用户回应时才打断动态流。
-    if (!wantsYou) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 2),
-      child: MoePressable(
-        onTap: () => context.read<MainNavController>().requestTab(2),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: MoeTokens.surface1,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-            border: Border.all(
-              color: wantsYou
-                  ? const Color(0xFFE97891).withValues(alpha: 0.35)
-                  : MoeTokens.primary.withValues(alpha: 0.12),
-            ),
-          ),
-          child: Row(
-            children: [
-              CompanionAvatar(
-                emoji: profile.emoji,
-                avatarUrl: profile.avatarUrl,
-                size: 34,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusIconBg),
-                backgroundColor: MoeTokens.surface0,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: MoeTokens.titleText,
-                            ),
-                          ),
-                        ),
-                        if (wantsYou) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            '想你了',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: MoeTokens.pastelPink,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      greeting,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.25,
-                        color: MoeTokens.hintText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: MoeTokens.hintText,
-                size: 22,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -506,95 +399,28 @@ class _HomePageState extends State<HomePage>
     return Row(
       children: [
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: MoeTokens.surface1,
-              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              border: Border.all(color: MoeTokens.surfaceBorder),
-            ),
-            child: Row(
-              children: _tabs.asMap().entries.map((entry) {
-                final index = entry.key;
-                final tab = entry.value;
-                final isSelected = _feed.mode == tab.mode;
-                return Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                    onTap: () {
-                      if (_tabController.index != index) {
-                        _tabController.animateTo(index);
-                        return;
-                      }
-                      // 已在该 Tab 但处于话题筛选时：点一次清话题回到该模式。
-                      if (_feed.activeTopic != null || _feed.mode != tab.mode) {
-                        _feed.setMode(tab.mode);
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: MoeTokens.motionFast,
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? MoeTokens.primary.withValues(alpha: 0.12)
-                            : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(MoeTokens.radiusFull),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            tab.icon,
-                            size: 14,
-                            color: isSelected
-                                ? MoeTokens.primary
-                                : MoeTokens.hintText,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            tab.label,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? MoeTokens.primary
-                                  : MoeTokens.hintText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Semantics(
-          button: true,
-          label: '发动态',
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-              onTap: _openCreatePost,
-              child: Ink(
-                width: 48,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: MoeTokens.primary,
-                  borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          child: Row(
+            children: [
+              for (final entry in _tabs.asMap().entries)
+                _HomeFeedModeTab(
+                  label: entry.value.label,
+                  selected: _feed.mode == entry.value.mode,
+                  onTap: () {
+                    if (_tabController.index != entry.key) {
+                      _tabController.animateTo(entry.key);
+                      return;
+                    }
+                    if (_feed.activeTopic != null ||
+                        _feed.mode != entry.value.mode) {
+                      _feed.setMode(entry.value.mode);
+                    }
+                  },
                 ),
-                child: const Icon(Icons.add_rounded, color: Colors.white),
-              ),
-            ),
+            ],
           ),
         ),
+        const SizedBox(width: MoeTokens.spaceSm),
+        _HomeComposeButton(onTap: _openCreatePost),
       ],
     );
   }
@@ -880,7 +706,7 @@ class _HomePageState extends State<HomePage>
   }
 }
 
-/// 粘性热门/最新/关注 + 话题行（对标小红书顶部分段）。
+/// 粘性热门/最新/关注 + 话题行（对标小红书文字分段）。
 class _HomeFeedFilterHeader extends SliverPersistentHeaderDelegate {
   _HomeFeedFilterHeader({
     required this.height,
@@ -904,10 +730,19 @@ class _HomeFeedFilterHeader extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Material(
+    final pinned = overlapsContent || shrinkOffset > 0;
+    return ColoredBox(
       color: background,
-      elevation: overlapsContent || shrinkOffset > 0 ? 0.5 : 0,
-      child: child,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: pinned ? MoeTokens.surfaceBorder : Colors.transparent,
+            ),
+          ),
+        ),
+        child: child,
+      ),
     );
   }
 
@@ -916,5 +751,165 @@ class _HomeFeedFilterHeader extends SliverPersistentHeaderDelegate {
     return height != oldDelegate.height ||
         background != oldDelegate.background ||
         child != oldDelegate.child;
+  }
+}
+
+class _HomeFeedModeTab extends StatelessWidget {
+  const _HomeFeedModeTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = moeReduceMotion(context);
+    final duration = reduceMotion ? Duration.zero : MoeTokens.motionFast;
+    final style = TextStyle(
+      fontSize: selected ? MoeTokens.textLg : MoeTokens.textBase,
+      fontWeight:
+          selected ? MoeTokens.fontWeightTitle : MoeTokens.fontWeightBody,
+      color: selected ? MoeTokens.titleText : MoeTokens.hintText,
+      height: 1.2,
+    );
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: MoePressable(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+        child: Padding(
+          padding: const EdgeInsets.only(right: MoeTokens.spaceLg),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: duration,
+                  curve: Curves.easeInOut,
+                  style: style,
+                  child: Text(label),
+                ),
+                const SizedBox(height: MoeTokens.spaceXs),
+                AnimatedContainer(
+                  duration: duration,
+                  curve: Curves.easeInOut,
+                  width: selected ? MoeTokens.spaceLg : 0,
+                  height: MoeTokens.spaceXs,
+                  decoration: BoxDecoration(
+                    color: MoeTokens.primary,
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeComposeButton extends StatelessWidget {
+  const _HomeComposeButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '发动态',
+      excludeSemantics: true,
+      child: MoePressable(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceMd,
+            vertical: MoeTokens.spaceXs,
+          ),
+          decoration: BoxDecoration(
+            gradient: MoeTokens.gradientPrimary,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+            boxShadow: MoeTokens.shadowSm(),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+              SizedBox(width: MoeTokens.spaceXs),
+              Text(
+                '发帖',
+                style: TextStyle(
+                  fontSize: MoeTokens.textSm,
+                  fontWeight: MoeTokens.fontWeightSubtitle,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeTopicChip extends StatelessWidget {
+  const _HomeTopicChip({
+    required this.name,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String name;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = moeReduceMotion(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '#$name',
+      excludeSemantics: true,
+      child: MoePressable(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        child: AnimatedContainer(
+          duration: reduceMotion ? Duration.zero : MoeTokens.motionFast,
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(
+            horizontal: MoeTokens.spaceMd,
+            vertical: MoeTokens.spaceXs,
+          ),
+          decoration: BoxDecoration(
+            color: selected
+                ? MoeTokens.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          ),
+          child: Text(
+            '#$name',
+            style: TextStyle(
+              fontSize: MoeTokens.textSm,
+              fontWeight: selected
+                  ? MoeTokens.fontWeightSubtitle
+                  : MoeTokens.fontWeightCaption,
+              color: selected ? MoeTokens.primary : MoeTokens.caption,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

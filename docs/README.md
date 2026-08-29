@@ -7,6 +7,7 @@
 
 | 我想… | 去看 |
 |--------|------|
+| **了解当前 UI 视觉升级方向** | [dev/ui-upgrade-iteration-2026-08-29.md](./dev/ui-upgrade-iteration-2026-08-29.md) |
 | 推理服务 + 记忆怎么配合 | [dev/llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) |
 | 记忆 RPG / Bot 观察 UI | [dev/moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) |
 | 记忆系统架构 / API | [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) |
@@ -100,4 +101,4 @@ docs/
 
 ---
 
-最后整理：**2026-05-27**（删除 `docs/archive/` · 清理跳转 stub）
+最后整理：**2026-08-29**（补充 UI 视觉升级迭代入口，并同步当前主导航与 Companion 入口说明）

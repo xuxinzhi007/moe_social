@@ -6,6 +6,7 @@
 
 | 文档 | 用途 |
 |------|------|
+| [ui-upgrade-iteration-2026-08-29.md](./ui-upgrade-iteration-2026-08-29.md) | **当前 Flutter UI 视觉升级迭代** |
 | [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层** |
 | [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | 产品成熟度 |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |

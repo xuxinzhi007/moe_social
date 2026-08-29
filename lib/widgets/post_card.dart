@@ -25,6 +25,12 @@ import 'moe_loading.dart';
 import '../utils/media_url.dart';
 import '../utils/post_navigation.dart';
 
+/// 帖子卡片中媒体的展示密度。
+enum PostCardMediaPresentation {
+  feed,
+  detail,
+}
+
 class PostCard extends StatefulWidget {
   final Post post;
   final VoidCallback? onLike;
@@ -45,6 +51,9 @@ class PostCard extends StatefulWidget {
   /// 首页（根页面）保持默认空字符串；其他嵌套页面传入唯一前缀，例如 'up_'。
   final String heroTagPrefix;
 
+  /// 列表使用紧凑媒体预览，动态详情使用更大的受限预览。
+  final PostCardMediaPresentation mediaPresentation;
+
   const PostCard({
     super.key,
     required this.post,
@@ -56,6 +65,7 @@ class PostCard extends StatefulWidget {
     this.onEdit,
     this.onDelete,
     this.heroTagPrefix = '',
+    this.mediaPresentation = PostCardMediaPresentation.feed,
   });
 
   @override
@@ -72,6 +82,8 @@ class _PostCardState extends State<PostCard> {
 
   Widget _buildCard(BuildContext context) {
     final theme = Theme.of(context);
+    final isDetail =
+        widget.mediaPresentation == PostCardMediaPresentation.detail;
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -314,45 +326,16 @@ class _PostCardState extends State<PostCard> {
                 if (widget.post.handDrawThumbUrl.isNotEmpty) ...[
                   _HandDrawThumbnail(
                     post: widget.post,
+                    aspectRatio: _mediaPreviewAspectRatio(isDetail: isDetail),
+                    minHeight: _mediaPreviewMinHeight(isDetail: isDetail),
+                    maxHeight: _mediaPreviewMaxHeight(isDetail: isDetail),
                     onOpenReplay: () =>
                         _openHandDrawViewer(context, widget.post),
                   ),
                   const SizedBox(height: MoeTokens.spaceMd),
                 ] else if (widget.post.hasHandDraw ||
                     widget.post.handDrawCard != null) ...[
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _openHandDrawViewer(context, widget.post),
-                      borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 320),
-                          child: AspectRatio(
-                            aspectRatio: 3 / 4,
-                            child: widget.post.handDrawCard != null
-                                ? HandDrawCardStatic(
-                                    data: widget.post.handDrawCard!,
-                                  )
-                                : ColoredBox(
-                                    color: MoeTokens.softChipBg,
-                                    child: Center(
-                                      child: Text(
-                                        '手绘动态',
-                                        style: TextStyle(
-                                          color: MoeTokens.hintText,
-                                          fontWeight:
-                                              MoeTokens.fontWeightSubtitle,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildHandDrawPreview(context, isDetail: isDetail),
                   Align(
                     alignment: Alignment.center,
                     child: TextButton.icon(
@@ -643,73 +626,190 @@ $link''';
       BuildContext context, List<String> images, String postId) {
     if (images.isEmpty) return const SizedBox.shrink();
 
-    // 单张大图
+    final isDetail =
+        widget.mediaPresentation == PostCardMediaPresentation.detail;
+
+    // 单图使用固定预览窗口，点开后仍由全屏查看器展示完整比例。
     if (images.length == 1) {
-      return GestureDetector(
-        onTap: () {
-          PostImageViewer.show(
-            context,
-            imageUrls: images,
-            postId: postId,
-            heroTagPrefix: widget.heroTagPrefix,
-            initialIndex: 0,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final height = _singleImagePreviewHeight(
+            constraints.maxWidth,
+            isDetail: isDetail,
           );
-        },
-        child: Hero(
-          tag: '${widget.heroTagPrefix}post_img_${postId}_0',
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: NetworkImageWidget(
-                imageUrl: images[0],
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // 2-4张图使用2列，其他使用3列
-    int crossAxisCount = images.length == 2 || images.length == 4 ? 2 : 3;
-    double spacing = MoeTokens.spaceXs;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
-      child: LayoutBuilder(builder: (context, constraints) {
-        final totalSpacing = spacing * (crossAxisCount - 1);
-        final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: List.generate(images.length, (index) {
-            return GestureDetector(
+          return SizedBox(
+            key: ValueKey('post_media_${postId}_single'),
+            width: double.infinity,
+            height: height,
+            child: GestureDetector(
               onTap: () {
                 PostImageViewer.show(
                   context,
                   imageUrls: images,
                   postId: postId,
                   heroTagPrefix: widget.heroTagPrefix,
-                  initialIndex: index,
+                  initialIndex: 0,
                 );
               },
               child: Hero(
-                tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
-                child: NetworkImageWidget(
-                  imageUrl: images[index],
-                  width: itemSize,
-                  height: itemSize,
-                  fit: BoxFit.cover,
+                tag: '${widget.heroTagPrefix}post_img_${postId}_0',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                  child: NetworkImageWidget(
+                    imageUrl: images[0],
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            );
-          }),
+            ),
+          );
+        },
+      );
+    }
+
+    // 2-4 张图使用 2 列，其他使用 3 列；总高度按行数收紧。
+    final crossAxisCount = images.length == 2 || images.length == 4 ? 2 : 3;
+    final spacing = MoeTokens.spaceXs;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final totalSpacing = spacing * (crossAxisCount - 1);
+        final itemSize = (constraints.maxWidth - totalSpacing) / crossAxisCount;
+        final rowCount = (images.length / crossAxisCount).ceil();
+        final maxHeight = isDetail
+            ? MoeTokens.postMediaDetailGridMaxHeight
+            : MoeTokens.postMediaFeedGridMaxHeight;
+        final rowHeight = ((maxHeight - spacing * (rowCount - 1)) / rowCount)
+            .clamp(1.0, itemSize)
+            .toDouble();
+        final gridHeight = rowHeight * rowCount + spacing * (rowCount - 1);
+
+        return SizedBox(
+          key: ValueKey('post_media_${postId}_grid'),
+          width: double.infinity,
+          height: gridHeight,
+          child: Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: List.generate(images.length, (index) {
+              return SizedBox(
+                width: itemSize,
+                height: rowHeight,
+                child: GestureDetector(
+                  onTap: () {
+                    PostImageViewer.show(
+                      context,
+                      imageUrls: images,
+                      postId: postId,
+                      heroTagPrefix: widget.heroTagPrefix,
+                      initialIndex: index,
+                    );
+                  },
+                  child: Hero(
+                    tag: '${widget.heroTagPrefix}post_img_${postId}_$index',
+                    child: NetworkImageWidget(
+                      imageUrl: images[index],
+                      width: itemSize,
+                      height: rowHeight,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         );
       }),
     );
+  }
+
+  Widget _buildHandDrawPreview(
+    BuildContext context, {
+    required bool isDetail,
+  }) {
+    final aspectRatio = _mediaPreviewAspectRatio(isDetail: isDetail);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = _mediaPreviewHeight(
+          constraints.maxWidth,
+          isDetail: isDetail,
+        );
+        return SizedBox(
+          key: ValueKey('post_media_${widget.post.id}_hand_draw'),
+          width: double.infinity,
+          height: height,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openHandDrawViewer(context, widget.post),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                child: widget.post.handDrawCard != null
+                    ? HandDrawCardStatic(
+                        data: widget.post.handDrawCard!,
+                        aspectRatio: aspectRatio,
+                        borderRadius: 0,
+                      )
+                    : ColoredBox(
+                        color: MoeTokens.softChipBg,
+                        child: Center(
+                          child: Text(
+                            '手绘动态',
+                            style: TextStyle(
+                              color: MoeTokens.hintText,
+                              fontWeight: MoeTokens.fontWeightSubtitle,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  double _mediaPreviewAspectRatio({required bool isDetail}) {
+    return isDetail
+        ? MoeTokens.postMediaDetailAspectRatio
+        : MoeTokens.postMediaFeedAspectRatio;
+  }
+
+  double _mediaPreviewMinHeight({required bool isDetail}) {
+    return isDetail
+        ? MoeTokens.postMediaDetailMinHeight
+        : MoeTokens.postMediaFeedMinHeight;
+  }
+
+  double _mediaPreviewMaxHeight({required bool isDetail}) {
+    return isDetail
+        ? MoeTokens.postMediaDetailMaxHeight
+        : MoeTokens.postMediaFeedMaxHeight;
+  }
+
+  double _mediaPreviewHeight(
+    double width, {
+    required bool isDetail,
+  }) {
+    final ratio = _mediaPreviewAspectRatio(isDetail: isDetail);
+    return (width / ratio)
+        .clamp(
+          _mediaPreviewMinHeight(isDetail: isDetail),
+          _mediaPreviewMaxHeight(isDetail: isDetail),
+        )
+        .toDouble();
+  }
+
+  double _singleImagePreviewHeight(
+    double width, {
+    required bool isDetail,
+  }) {
+    return _mediaPreviewHeight(width, isDetail: isDetail);
   }
 
   String _formatTime(DateTime time) {
@@ -805,91 +905,107 @@ $link''';
 class _HandDrawThumbnail extends StatelessWidget {
   const _HandDrawThumbnail({
     required this.post,
+    required this.aspectRatio,
+    required this.minHeight,
+    required this.maxHeight,
     required this.onOpenReplay,
   });
 
   final Post post;
+  final double aspectRatio;
+  final double minHeight;
+  final double maxHeight;
   final VoidCallback onOpenReplay;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onOpenReplay,
-        borderRadius: BorderRadius.circular(20),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: AspectRatio(
-            aspectRatio: 3 / 4,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CachedNetworkImage(
-                  imageUrl: resolveMediaUrl(post.handDrawThumbUrl),
-                  fit: BoxFit.cover,
-                  memCacheWidth: 960,
-                  memCacheHeight: 1280,
-                  maxWidthDiskCache: 960,
-                  maxHeightDiskCache: 1280,
-                  placeholder: (_, __) =>
-                      Container(color: Colors.grey.shade100),
-                  errorWidget: (_, __, ___) => Container(
-                    color: Colors.grey.shade200,
-                    child:
-                        const Center(child: Icon(Icons.broken_image_outlined)),
-                  ),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.center,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.05),
-                          Colors.black.withValues(alpha: 0.3),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : maxHeight * aspectRatio;
+        final height =
+            (width / aspectRatio).clamp(minHeight, maxHeight).toDouble();
+        return SizedBox(
+          width: double.infinity,
+          height: height,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onOpenReplay,
+              borderRadius: BorderRadius.circular(20),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: resolveMediaUrl(post.handDrawThumbUrl),
+                      fit: BoxFit.cover,
+                      memCacheWidth: 960,
+                      memCacheHeight: 540,
+                      maxWidthDiskCache: 960,
+                      maxHeightDiskCache: 540,
+                      placeholder: (_, __) =>
+                          Container(color: Colors.grey.shade100),
+                      errorWidget: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Center(
+                            child: Icon(Icons.broken_image_outlined)),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.center,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.05),
+                              Colors.black.withValues(alpha: 0.3),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Icon(
+                        Icons.play_circle_fill_rounded,
+                        size: 68,
+                        color: Colors.white.withValues(alpha: 0.94),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 14,
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                Center(
-                  child: Icon(
-                    Icons.play_circle_fill_rounded,
-                    size: 68,
-                    color: Colors.white.withValues(alpha: 0.94),
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 14,
+                    if (post.handDrawCard == null)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 10,
+                        child: Text(
+                          '点击查看大图',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            shadows: const [
+                              Shadow(color: Colors.black54, blurRadius: 4),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
-                if (post.handDrawCard == null)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 10,
-                    child: Text(
-                      '点击查看大图',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        shadows: const [
-                          Shadow(color: Colors.black54, blurRadius: 4),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

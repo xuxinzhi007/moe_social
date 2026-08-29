@@ -61,6 +61,23 @@ abstract final class MoeTokens {
   /// 40px — 页面级大间距
   static const double space4xl = 40.0;
 
+  // ─── Feed media scale ───────────────────────────────────────────
+  /// 动态列表媒体预览的宽高比（宽 / 高），统一使用轻量横向窗口。
+  static const double postMediaFeedAspectRatio = 16 / 9;
+
+  /// 动态列表单图预览的高度范围。
+  static const double postMediaFeedMinHeight = 120.0;
+  static const double postMediaFeedMaxHeight = 200.0;
+
+  /// 动态详情中的媒体可以更大，但不能把评论入口推到很后面。
+  static const double postMediaDetailAspectRatio = 16 / 9;
+  static const double postMediaDetailMinHeight = 160.0;
+  static const double postMediaDetailMaxHeight = 320.0;
+
+  /// 多图网格按行数压缩，保证一条动态不会因为多张图片失去上下文。
+  static const double postMediaFeedGridMaxHeight = 200.0;
+  static const double postMediaDetailGridMaxHeight = 320.0;
+
   // ─── Typography scale ────────────────────────────────────────────
   /// 11px — 辅助微文字（角标、徽标）
   static const double textXs = 11.0;
