@@ -32,7 +32,7 @@
 | 3 | 世界入口强度 | **中等**：关系页「TA 的世界」条 + 可进入 |
 | 4 | 底栏第一眼 | **关系首页**（身份、近况、主 CTA 聊天、日常流） |
 | 5 | 「TA 的日常」一期 | **世界近况 + 社区动态**；二期再加聊天高光 |
-| 6 | 首页陪伴入口 | **轻存在感**（点进底栏）；去掉发动态/社区等重复入口 |
+| 6 | 首页陪伴入口 | **轻存在感**（底栏为稳定入口；有明确待回应时由主壳一次性提醒 Sheet 引导）；不常驻陪伴卡片 |
 | 7 | 改造力度 | **收口**：改叙事与路径，不先大删酒馆代码 |
 | 8 | 酒馆命运 | **退役向（A）**：不进正式导航；需要的能力迁 Companion；大厅不当多角色载体 |
 | 9 | 二期多角色形态 | **暂不定（C）**：一期单伙伴；协议/数据勿写死到「永远只能一个」 |
@@ -98,7 +98,7 @@
 ## 6. 一期验收清单
 
 - [x] 底栏 AI伙伴 = 关系首页 + 聊天主按钮 + 世界条 + 日常流（`companion_hub_page` / `companion_hub_viewmodel`）
-- [x] 首页仅轻存在感，无重复发动态/社区 Chip（`home_page`）
+- [x] 首页仅轻存在感，无重复发动态/社区 Chip；不常驻 Companion 卡片，有待回应时由主壳一次性提醒（`home_page` / `main_shell`）
 - [x] 快捷操作无第二套「AI 伙伴」入口（`quick_actions_grid`）
 - [x] Life 无互动故事入口（Flag 关时）（`life_world_page`）
 - [x] 酒馆无主导航入口（仅经已隐藏的 GamePlay 可达；`showGameFeatures=false`）
@@ -110,7 +110,7 @@
 - [x] **C. 工程收口（轻量）**：`GameHubPage` → `CompanionHubPage`；GamePlay→酒馆入口受 `showGameFeatures` 门控；酒馆页加退役注释
 - [x] **壳层方案 2**：`LifeWorldPage` = 2D 地图优先；Flame 实验见决策 11
 - [x] **互动闭环 Slice-1**：照料语气 + moments + 日常深链 + 世界「去聊天」+ Hub 返程刷新
-- [x] **Slice-2**：Companion WS + 「TA 想你了」角标/横幅 + 首页轻卡实时问候
+- [x] **Slice-2**：Companion WS + 「TA 想你了」角标 / Hub 状态提示 + 首页按需提醒 Sheet
 - [x] **轻量自定义 + 双层身份**：`avatar_url`；绑定不覆盖人设；Hub 可上传头像
 - [x] **Slice-3**：聊天/照料亲密度微增；社区 bot 自动创建；删除死代码 `companion_context`
 - [x] **Slice-4**：记忆专页 `/ai-memories`；日常流 memory 深链 + 进聊天 CTA

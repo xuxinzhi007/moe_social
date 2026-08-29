@@ -22,6 +22,7 @@ Kratos：`docs/dev/kratos-migration-status.md` · OpenAPI：`docs/dev/openapi-ap
 
 **Flutter 统一入口：** `moe-flutter`（产品边界 · 正式架构 · UI · audit）  
 Life：`digital-life` · Flame 舞台：`flame-life-world`（`lib/game/life/` / 拖地图 / 镜头）  
+模拟器 QA：`android-emulator-qa`（启动、截图、UI 树、日志与权限检查）
 Go：`golang-style` · `effective-go` · `implementation-guardrails` · `golang-gin-database` · `git-commit`
 
 

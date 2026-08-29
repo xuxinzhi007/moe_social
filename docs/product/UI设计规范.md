@@ -1,6 +1,9 @@
 # Moe Social UI Design Guide
 
-本指南定义了 **Moe Social** 项目的视觉风格和 UI 规范。所有新页面的开发都应遵循此规范，以保持应用风格的高度统一。
+> **文档状态（2026-08-29）**：历史基础规范。当前视觉执行以 [`docs/DESIGN_SYSTEM.md`](../DESIGN_SYSTEM.md)、[`docs/dev/ui-upgrade-iteration-2026-08-29.md`](../dev/ui-upgrade-iteration-2026-08-29.md)、`lib/theme/moe_tokens.dart` 和 `.cursor/skills/moe-ui-design/SKILL.md` 为准。
+> 本文保留早期风格词汇与页面经验；新增或改造页面不要直接复制其中的硬编码颜色、间距、阴影和装饰背景示例。
+
+本指南记录 **Moe Social** 早期的萌系视觉基础，主要用于理解历史页面的设计来源。
 
 ## 1. 核心设计理念
 

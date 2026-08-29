@@ -379,6 +379,16 @@ class _SettingsPageState extends State<SettingsPage> {
         'target': '关于与支持',
       },
       {
+        'title': '访问官网',
+        'description': '了解 Moe Social 产品介绍与最新信息',
+        'icon': Icons.language_rounded,
+        'color': MoeTokens.primary,
+        'module': '关于与支持',
+        'keywords': ['官网', '网站', '主页', '介绍', 'moe social'],
+        'action': 'scroll',
+        'target': '关于与支持',
+      },
+      {
         'title': '意见反馈',
         'description': '问题描述与联系方式',
         'icon': Icons.feedback_outlined,

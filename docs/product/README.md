@@ -6,13 +6,14 @@
 
 | 文档 | 状态 | 说明 |
 |------|------|------|
+| [../dev/ui-upgrade-iteration-2026-08-29.md](../dev/ui-upgrade-iteration-2026-08-29.md) | **活跃** | 当前 Flutter UI 视觉升级迭代；先做视觉与体验收束，不扩展业务边界 |
 | [项目开发总览与当前优先级-2026-05-18.md](./项目开发总览与当前优先级-2026-05-18.md) | 主入口 | 四条产品线与优先级（2026-05-18 快照，细节以代码与 [llm-inference](../dev/llm-inference-and-memory-vision.md) 为准） |
 | [moe-app-product-assessment.md](./moe-app-product-assessment.md) | 参考 | App / Admin / 官网成熟度评估 |
 | [AI酒馆化改造方案.md](./AI酒馆化改造方案.md) | 活跃 | Provider / Lorebook / 角色卡；含 Phase 进度 |
 | [探索页重构方案-2026-05-19.md](./探索页重构方案-2026-05-19.md) | 参考 | 探索页 IA |
 | [AI角色聊天页优化方案-2026-05-19.md](./AI角色聊天页优化方案-2026-05-19.md) | 参考 | 聊天页体验 |
 | [AI酒馆UI体验迭代方案-2026-05-19.md](./AI酒馆UI体验迭代方案-2026-05-19.md) | 参考 | UI 迭代 |
-| [UI设计规范.md](./UI设计规范.md) | 规范 | 视觉规范 |
+| [UI设计规范.md](./UI设计规范.md) | 参考（历史基线） | 早期视觉词汇与页面经验；当前执行以 `docs/DESIGN_SYSTEM.md` 与 UI 视觉升级迭代为准 |
 | [IA首屏与空状态设计.md](./IA首屏与空状态设计.md) | 规范 | IA / 空状态 |
 
 ## 运营与后台

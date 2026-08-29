@@ -54,8 +54,8 @@
 |----|------|
 | WS 客户端 | ✅ `CompanionWsService` → `/ws/companion`（subscribe/ping、退避重连） |
 | Presence | ✅ `CompanionPresenceProvider` 全局；登录 start / 登出 stop |
-| Hub / 首页 | ✅ 问候/mood/activity 实时补丁；首页轻卡「想你了」 |
-| 角标 | ✅ 底栏 AI伙伴 badge；Hub「TA 想你了」横幅；聊天已读清除 |
+| Hub / 首页 | ✅ 问候/mood/activity 实时补丁；首页不常驻卡片，仅在待回应时按需提醒 |
+| 角标 | ✅ 底栏 AI伙伴 badge；Hub 状态提示；首页一次性提醒 Sheet；聊天已读清除 |
 | 聊天 AppBar | ✅ SSE done 后刷新 companion state |
 
 ### Slice-3（已落地）关系进度 + 收口
@@ -126,7 +126,7 @@ CompanionService.getSnapshot()
 ## 8. Slice-2 验收清单
 
 - [x] `/ws/companion` 连接 + 心跳 + 重连
-- [x] greeting / state_snapshot 刷新 Hub Hero 与首页轻卡
+- [x] greeting / state_snapshot 刷新 Hub Hero 与首页按需提醒状态
 - [x] 底栏 AI伙伴角标 + Hub「TA 想你了」
 - [x] 聊天已读 / 点横幅清角标
 - [x] 聊天结束后 AppBar 活动态刷新

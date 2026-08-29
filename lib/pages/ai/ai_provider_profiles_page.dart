@@ -6,6 +6,7 @@ import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
+import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/ai/ai_loading_skeleton.dart';
@@ -14,7 +15,9 @@ import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_status_dot.dart';
 import '../../widgets/ai/ai_surface_card.dart';
 import '../../widgets/ai/ai_theme.dart';
+import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/motion/moe_pressable.dart';
 
 // ── 预设服务 ──────────────────────────────────────────────────────────────
 
@@ -123,15 +126,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     return s.isSuccess ? AiSyncStatus.success : AiSyncStatus.error;
   }
 
-  String? _statusLabelFor(AiProviderProfile p) {
-    final s = _connectivity[p.id];
-    if (s == null) return null;
-    return s.isSuccess ? '已连通' : '连接失败';
-  }
+  List<AiProviderProfile> get _customProfiles =>
+      _profiles.where((p) => !p.isBuiltin).toList(growable: false);
 
-  String _shortUrl(String url) {
-    if (url.length <= 46) return url;
-    return '${url.substring(0, 22)}…${url.substring(url.length - 20)}';
+  String _hostFor(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri != null && uri.host.isNotEmpty) return uri.host;
+    return url.trim();
   }
 
   // ── 动态描述 ──
@@ -170,19 +171,21 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   // ── Provider 列表卡片 ──
 
   Widget _buildCard(AiProviderProfile profile) {
-    final status = _statusFor(profile);
-    final statusLabel = _statusLabelFor(profile);
-    final modelLine = profile.defaultModel.isEmpty
-        ? '未设置默认模型'
-        : profile.defaultModel;
-    final manualLine = profile.manualModels.isEmpty
-        ? ''
-        : ' · 另有 ${profile.manualModels.length} 个模型';
     final accent = _accentFor(profile);
+    final defaultModel = profile.defaultModel.trim();
+    final extraCount = profile.manualModels
+        .map((m) => m.trim())
+        .where((m) => m.isNotEmpty && m != defaultModel)
+        .length;
+    final host = _hostFor(profile.baseUrl);
 
     return AiSurfaceCard(
-      onTap: () => _showEditor(initial: profile),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(
+        MoeTokens.spaceLg,
+        MoeTokens.spaceMd,
+        MoeTokens.spaceXs,
+        MoeTokens.spaceMd,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -191,11 +194,11 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
             height: 44,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
             ),
             child: Icon(_iconFor(profile), color: accent, size: 22),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: MoeTokens.spaceMd),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,71 +208,82 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     Expanded(
                       child: Text(
                         profile.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontWeight: MoeTokens.fontWeightTitle,
+                          fontSize: MoeTokens.textMd,
                           color: AiBrandTokens.titleColor,
                         ),
                       ),
                     ),
-                    AiStatusDot(status: status, label: statusLabel),
+                    const SizedBox(width: MoeTokens.spaceSm),
+                    _StatusPill(status: _statusFor(profile)),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(_descriptionFor(profile), style: AiTheme.caption),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 52,
-                        child: Text('地址', style: AiTheme.caption),
-                      ),
-                      Expanded(
-                        child: Text(
-                          _shortUrl(profile.baseUrl),
-                          style: AiTheme.caption.copyWith(
-                            color: AiBrandTokens.titleColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: MoeTokens.spaceXs),
+                Text(
+                  _descriptionFor(profile),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AiTheme.caption,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 52,
-                        child: Text('模型', style: AiTheme.caption),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '$modelLine$manualLine',
-                          style: AiTheme.caption.copyWith(
-                            color: AiBrandTokens.titleColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: MoeTokens.spaceSm),
+                Wrap(
+                  spacing: MoeTokens.spaceSm,
+                  runSpacing: MoeTokens.spaceXs,
+                  children: [
+                    if (host.isNotEmpty)
+                      _MetaChip(icon: Icons.link_rounded, label: host),
+                    _MetaChip(
+                      icon: Icons.smart_toy_outlined,
+                      label: defaultModel.isEmpty ? '未设置模型' : defaultModel,
+                      muted: defaultModel.isEmpty,
+                    ),
+                    if (extraCount > 0) _MetaChip(label: '+$extraCount'),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 4),
           PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade600),
+            tooltip: '更多操作',
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: MoeTokens.inkMuted,
+            ),
+            iconSize: 22,
+            offset: const Offset(0, 8),
+            position: PopupMenuPosition.under,
+            color: MoeTokens.surface3,
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            ),
             onSelected: (value) {
               if (value == 'edit') _showEditor(initial: profile);
               if (value == 'delete') _delete(profile);
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('编辑')),
-              PopupMenuItem(value: 'delete', child: Text('删除')),
+              PopupMenuItem(
+                value: 'edit',
+                height: 44,
+                child: _ProviderActionMenuItem(
+                  icon: Icons.edit_outlined,
+                  label: '编辑',
+                  color: MoeTokens.titleText,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                height: 44,
+                child: _ProviderActionMenuItem(
+                  icon: Icons.delete_outline_rounded,
+                  label: '删除',
+                  color: MoeTokens.danger,
+                ),
+              ),
             ],
           ),
         ],
@@ -281,35 +295,46 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
   Future<void> _showEditor({AiProviderProfile? initial}) async {
     final isEditing = initial != null && !initial.isBuiltin;
-    final nameController =
-        TextEditingController(text: initial?.name ?? '');
+    final nameController = TextEditingController(text: initial?.name ?? '');
     final baseUrlController =
         TextEditingController(text: initial?.baseUrl ?? '');
     final defaultModelController =
         TextEditingController(text: initial?.defaultModel ?? '');
+    final modelInputController = TextEditingController();
     final apiKeyController = TextEditingController(
       text: initial == null
           ? ''
           : await AiProviderService().readApiKey(initial.id),
     );
 
-    var providerType =
-        initial?.providerType ?? AiProviderType.openAiCompatible;
+    var providerType = initial?.providerType ?? AiProviderType.openAiCompatible;
     var supportsSystemMessages = initial?.supportsSystemMessages ?? true;
     var supportsStreaming = initial?.supportsStreaming ?? false;
     var supportsVision = initial?.supportsVision ?? false;
     var supportsToolCalls = initial?.supportsToolCalls ?? false;
-    var manualModels = <String>[...(initial?.manualModels ?? const <String>[])];
+    var manualModels = <String>[
+      ...(initial?.manualModels ?? const <String>[])
+          .map((model) => model.trim())
+          .where((model) => model.isNotEmpty),
+    ];
+    final initialDefaultModel = initial?.defaultModel.trim() ?? '';
+    if (initialDefaultModel.isNotEmpty &&
+        !manualModels.contains(initialDefaultModel)) {
+      manualModels.insert(0, initialDefaultModel);
+    }
     String? testResult;
     bool? testSuccess;
     var detecting = false;
     var showAdvanced = false;
+    var obscureApiKey = true;
+    var saving = false;
     var selectedPreset = -1;
 
     // 尝试匹配已有 preset
     if (initial != null) {
       for (var i = 0; i < _presets.length - 1; i++) {
-        if (initial.baseUrl.contains(_presets[i].baseUrl.replaceAll('/v1', ''))) {
+        if (initial.baseUrl
+            .contains(_presets[i].baseUrl.replaceAll('/v1', ''))) {
           selectedPreset = i;
           break;
         }
@@ -322,7 +347,21 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
       nameController.dispose();
       baseUrlController.dispose();
       defaultModelController.dispose();
+      modelInputController.dispose();
       apiKeyController.dispose();
+    }
+
+    void mergeModels(Iterable<String> incoming) {
+      final merged = <String>{
+        ...manualModels
+            .map((model) => model.trim())
+            .where((model) => model.isNotEmpty),
+      };
+      for (final raw in incoming) {
+        final model = raw.trim();
+        if (model.isNotEmpty) merged.add(model);
+      }
+      manualModels = merged.toList();
     }
 
     try {
@@ -336,7 +375,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
+                    onPressed: saving ? null : () => Navigator.pop(ctx),
                     child: const Text('取消'),
                   ),
                 ),
@@ -344,41 +383,70 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 Expanded(
                   child: FilledButton(
                     style: AiTheme.primaryButtonStyle(),
-                    onPressed: () async {
-                      final name = nameController.text.trim();
-                      final baseUrl = baseUrlController.text.trim();
-                      if (name.isEmpty || baseUrl.isEmpty) {
-                        MoeToast.error(context, '请填写服务名称和地址');
-                        return;
-                      }
-                      final now = DateTime.now();
-                      final profile = AiProviderProfile(
-                        id: initial?.id ??
-                            now.millisecondsSinceEpoch.toString(),
-                        name: name,
-                        providerType: providerType,
-                        baseUrl: baseUrl,
-                        defaultModel: defaultModelController.text.trim(),
-                        manualModels: manualModels,
-                        supportsSystemMessages: supportsSystemMessages,
-                        supportsStreaming: supportsStreaming,
-                        supportsVision: supportsVision,
-                        supportsToolCalls: supportsToolCalls,
-                        createdAt: initial?.createdAt ?? now,
-                        updatedAt: now,
-                      );
-                      await AiProviderService().saveProfile(
-                        profile,
-                        apiKey: apiKeyController.text.trim(),
-                      );
-                      if (testSuccess == true && initial?.id != null) {
-                        await AiProviderConnectivityCache.saveSuccess(
-                            profile.id);
-                      }
-                      if (!ctx.mounted) return;
-                      Navigator.pop(ctx);
-                    },
-                    child: const Text('保存'),
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            final baseUrl = baseUrlController.text.trim();
+                            if (name.isEmpty || baseUrl.isEmpty) {
+                              MoeToast.error(context, '请填写服务名称和地址');
+                              return;
+                            }
+                            setFooterState(() => saving = true);
+                            try {
+                              final now = DateTime.now();
+                              final profile = AiProviderProfile(
+                                id: initial?.id ??
+                                    now.millisecondsSinceEpoch.toString(),
+                                name: name,
+                                providerType: providerType,
+                                baseUrl: baseUrl,
+                                defaultModel:
+                                    defaultModelController.text.trim(),
+                                manualModels: manualModels,
+                                supportsSystemMessages: supportsSystemMessages,
+                                supportsStreaming: supportsStreaming,
+                                supportsVision: supportsVision,
+                                supportsToolCalls: supportsToolCalls,
+                                createdAt: initial?.createdAt ?? now,
+                                updatedAt: now,
+                              );
+                              await AiProviderService().saveProfile(
+                                profile,
+                                apiKey: apiKeyController.text.trim(),
+                              );
+                              if (testSuccess == true) {
+                                await AiProviderConnectivityCache.saveSuccess(
+                                  profile.id,
+                                );
+                              }
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                            } catch (_) {
+                              if (!ctx.mounted) return;
+                              setFooterState(() => saving = false);
+                              MoeToast.error(ctx, '保存失败，请稍后重试');
+                            }
+                          },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (saving)
+                          const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        else
+                          const Icon(Icons.check_rounded, size: 18),
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        Text(saving ? '保存中...' : '保存'),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -415,11 +483,9 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   nameController.text = detect.suggestedName!;
                 }
                 if (detect.models.isNotEmpty) {
-                  final existing = {...manualModels};
-                  existing.addAll(detect.models);
-                  manualModels = existing.toList();
+                  mergeModels(detect.models);
                   if (defaultModelController.text.trim().isEmpty) {
-                    defaultModelController.text = detect.models.first;
+                    defaultModelController.text = detect.models.first.trim();
                   }
                 }
 
@@ -445,19 +511,21 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   temp.id,
                   apiKeyController.text.trim(),
                 );
-                final models = await AiChatGatewayService()
-                    .fetchModelsForProfile(temp);
-                if (initial == null) {
-                  await AiProviderService().deleteApiKey(previewId);
+                late final List<String> models;
+                try {
+                  models =
+                      await AiChatGatewayService().fetchModelsForProfile(temp);
+                } finally {
+                  if (initial == null) {
+                    await AiProviderService().deleteApiKey(previewId);
+                  }
                 }
                 if (!ctx.mounted) return;
 
                 if (models.isNotEmpty) {
-                  final existing = {...manualModels};
-                  existing.addAll(models);
-                  manualModels = existing.toList();
+                  mergeModels(models);
                   if (defaultModelController.text.trim().isEmpty) {
-                    defaultModelController.text = models.first;
+                    defaultModelController.text = models.first.trim();
                   }
                 }
 
@@ -482,14 +550,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 String friendly;
                 if (msg.contains('401') || msg.contains('403')) {
                   friendly = 'API Key 无效或已过期，请检查后重试';
-                } else if (msg.contains('timeout') ||
-                    msg.contains('Timeout')) {
+                } else if (msg.contains('timeout') || msg.contains('Timeout')) {
                   friendly = '连接超时，请检查地址是否正确';
                 } else if (msg.contains('SocketException') ||
                     msg.contains('Connection')) {
                   friendly = '无法连接到服务，请检查网络或地址';
                 } else {
-                  friendly = '连接失败：$msg';
+                  friendly = '连接失败，请检查服务地址、API Key 和接口兼容性';
                 }
                 if (ctx.mounted) {
                   setLocalState(() => testResult = friendly);
@@ -503,23 +570,38 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
               }
             }
 
+            void addManualModel() {
+              final value = modelInputController.text.trim();
+              if (value.isEmpty || manualModels.contains(value)) return;
+              setLocalState(() {
+                manualModels.add(value);
+                if (defaultModelController.text.trim().isEmpty) {
+                  defaultModelController.text = value;
+                }
+                modelInputController.clear();
+              });
+            }
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // ── Step 1: 快速选择 ──
                 if (!isEditing) ...[
                   _buildSectionLabel('选择服务'),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: MoeTokens.spaceSm),
                   SizedBox(
-                    height: 72,
+                    height: 82,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _presets.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(width: MoeTokens.spaceSm),
                       itemBuilder: (_, i) {
                         final p = _presets[i];
                         final isSelected = selectedPreset == i;
-                        return GestureDetector(
+                        return _PresetTile(
+                          preset: p,
+                          selected: isSelected,
                           onTap: () {
                             setLocalState(() {
                               selectedPreset = i;
@@ -528,73 +610,50 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                               }
                               if (nameController.text.trim().isEmpty ||
                                   _presets.any((pr) =>
-                                      nameController.text.trim() ==
-                                      pr.name)) {
+                                      nameController.text.trim() == pr.name)) {
                                 nameController.text =
                                     i < _presets.length - 1 ? p.name : '';
                               }
                             });
                           },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 80,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? p.color.withValues(alpha: 0.1)
-                                  : Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? p.color
-                                    : Colors.grey.shade200,
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(p.icon, color: p.color, size: 24),
-                                const SizedBox(height: 4),
-                                Text(
-                                  p.name,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: isSelected
-                                        ? p.color
-                                        : Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         );
                       },
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: MoeTokens.spaceXl),
                 ],
 
                 // ── Step 2: 基础信息 ──
                 _buildSectionLabel('基本信息'),
-                const SizedBox(height: 8),
+                const SizedBox(height: MoeTokens.spaceSm),
                 TextField(
                   controller: nameController,
+                  textInputAction: TextInputAction.next,
                   decoration: AiTheme.inputDecoration(
                     labelText: '服务名称',
                     hintText: '例如：我的 GPT、DeepSeek',
+                  ).copyWith(
+                    prefixIcon: const Icon(
+                      Icons.badge_outlined,
+                      color: MoeTokens.inkMuted,
+                      size: 20,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: MoeTokens.spaceMd),
                 TextField(
                   controller: baseUrlController,
+                  keyboardType: TextInputType.url,
+                  textInputAction: TextInputAction.next,
                   decoration: AiTheme.inputDecoration(
                     labelText: '服务地址',
                     hintText: 'https://api.example.com/v1',
                   ).copyWith(
+                    prefixIcon: const Icon(
+                      Icons.link_rounded,
+                      color: MoeTokens.inkMuted,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.content_paste_rounded, size: 18),
                       tooltip: '从剪贴板粘贴',
@@ -609,41 +668,60 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: MoeTokens.spaceMd),
                 TextField(
                   controller: apiKeyController,
-                  obscureText: true,
+                  obscureText: obscureApiKey,
+                  keyboardType: TextInputType.visiblePassword,
+                  textInputAction: TextInputAction.done,
                   decoration: AiTheme.inputDecoration(
                     labelText: 'API Key（密钥）',
                     hintText: 'sk-... 或留空（本地服务无需密钥）',
                   ).copyWith(
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.content_paste_rounded, size: 18),
-                      tooltip: '从剪贴板粘贴',
-                      onPressed: () async {
-                        final data =
-                            await Clipboard.getData(Clipboard.kTextPlain);
-                        if (data?.text != null) {
-                          apiKeyController.text = data!.text!;
-                          setLocalState(() {});
-                        }
-                      },
+                    prefixIcon: const Icon(
+                      Icons.key_outlined,
+                      color: MoeTokens.inkMuted,
+                      size: 20,
+                    ),
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            obscureApiKey
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 19,
+                          ),
+                          tooltip: obscureApiKey ? '显示 API Key' : '隐藏 API Key',
+                          onPressed: () => setLocalState(
+                            () => obscureApiKey = !obscureApiKey,
+                          ),
+                        ),
+                        IconButton(
+                          icon:
+                              const Icon(Icons.content_paste_rounded, size: 18),
+                          tooltip: '从剪贴板粘贴',
+                          onPressed: () async {
+                            final data =
+                                await Clipboard.getData(Clipboard.kTextPlain);
+                            if (data?.text != null) {
+                              apiKeyController.text = data!.text!;
+                              setLocalState(() {});
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: MoeTokens.spaceLg),
 
                 // ── 一键检测 ──
                 SizedBox(
-                  height: 48,
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AiBrandTokens.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    style: AiTheme.secondaryButtonStyle(),
                     onPressed: detecting ? null : runDetectAndTest,
                     icon: detecting
                         ? const SizedBox(
@@ -651,16 +729,14 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: AiBrandTokens.primary,
                             ),
                           )
                         : const Icon(Icons.auto_fix_high_rounded, size: 20),
                     label: Text(
-                      detecting
-                          ? '正在检测...'
-                          : '自动检测并获取模型',
+                      detecting ? '正在检测...' : '检测连接并获取模型',
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: MoeTokens.textMd,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -669,16 +745,21 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
                 // 检测结果
                 if (testResult != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: MoeTokens.spaceSm),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(MoeTokens.spaceMd),
                     decoration: BoxDecoration(
                       color: (testSuccess == true
                               ? AiTheme.success
                               : AiTheme.danger)
                           .withValues(alpha: 0.08),
-                      borderRadius:
-                          BorderRadius.circular(AiTheme.radiusAiCard),
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                      border: Border.all(
+                        color: (testSuccess == true
+                                ? AiTheme.success
+                                : AiTheme.danger)
+                            .withValues(alpha: 0.18),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -696,7 +777,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                           child: Text(
                             testResult!,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: MoeTokens.textSm,
                               color: testSuccess == true
                                   ? AiTheme.success
                                   : AiTheme.danger,
@@ -709,48 +790,49 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   ),
                 ],
 
-                const SizedBox(height: 20),
+                const SizedBox(height: MoeTokens.spaceXl),
 
                 // ── 模型选择 ──
                 _buildSectionLabel('可用模型'),
-                const SizedBox(height: 4),
+                const SizedBox(height: MoeTokens.spaceXs),
                 Text(
-                  '点击选择默认模型，或手动添加',
+                  '点击模型名称设为默认，支持手动补充',
                   style: AiTheme.caption,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: MoeTokens.spaceMd),
 
                 // 模型芯片
                 if (manualModels.isEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 20),
+                      horizontal: MoeTokens.spaceLg,
+                      vertical: MoeTokens.spaceXl,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius:
-                          BorderRadius.circular(AiTheme.radiusAiCard),
-                      border: Border.all(color: Colors.grey.shade200),
+                      color: MoeTokens.softChipBg,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                      border: Border.all(color: MoeTokens.surfaceBorder),
                     ),
                     child: Center(
                       child: Column(
                         children: [
-                          Icon(Icons.inbox_rounded,
-                              size: 32, color: Colors.grey.shade400),
-                          const SizedBox(height: 8),
+                          Icon(
+                            Icons.view_list_outlined,
+                            size: 28,
+                            color: MoeTokens.hintText,
+                          ),
+                          const SizedBox(height: MoeTokens.spaceSm),
                           Text(
                             '暂无模型',
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 13,
+                            style: AiTheme.body.copyWith(
+                              color: MoeTokens.inkMuted,
+                              fontWeight: MoeTokens.fontWeightSubtitle,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: MoeTokens.spaceXs),
                           Text(
-                            '点击上方「自动检测」获取模型列表',
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 12,
-                            ),
+                            '先检测连接，或在下方手动添加',
+                            style: AiTheme.caption,
                           ),
                         ],
                       ),
@@ -758,165 +840,135 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   )
                 else
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: MoeTokens.spaceSm,
+                    runSpacing: MoeTokens.spaceSm,
                     children: manualModels.map((m) {
-                      final isDefault =
-                          defaultModelController.text.trim() == m;
-                      return GestureDetector(
-                        onTap: () {
+                      final isDefault = defaultModelController.text.trim() == m;
+                      return _ModelChip(
+                        model: m,
+                        isDefault: isDefault,
+                        onTap: () => setLocalState(
+                          () => defaultModelController.text = m,
+                        ),
+                        onDelete: () {
                           setLocalState(() {
-                            defaultModelController.text = m;
+                            manualModels.remove(m);
+                            if (defaultModelController.text.trim() == m) {
+                              defaultModelController.text = manualModels.isEmpty
+                                  ? ''
+                                  : manualModels.first;
+                            }
                           });
                         },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: isDefault
-                                ? AiBrandTokens.primary.withValues(alpha: 0.12)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDefault
-                                  ? AiBrandTokens.primary
-                                  : Colors.grey.shade300,
-                              width: isDefault ? 1.5 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isDefault) ...[
-                                Icon(Icons.star_rounded,
-                                    size: 14,
-                                    color: AiBrandTokens.primary),
-                                const SizedBox(width: 4),
-                              ],
-                              Text(
-                                m,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: isDefault
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: isDefault
-                                      ? AiBrandTokens.primary
-                                      : AiBrandTokens.titleColor,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () {
-                                  setLocalState(() {
-                                    manualModels.remove(m);
-                                    if (defaultModelController.text.trim() ==
-                                        m) {
-                                      defaultModelController.text =
-                                          manualModels.isEmpty
-                                              ? ''
-                                              : manualModels.first;
-                                    }
-                                  });
-                                },
-                                child: Icon(Icons.close_rounded,
-                                    size: 14,
-                                    color: Colors.grey.shade400),
-                              ),
-                            ],
-                          ),
-                        ),
                       );
                     }).toList(),
                   ),
 
                 // 手动添加模型
-                const SizedBox(height: 12),
+                const SizedBox(height: MoeTokens.spaceMd),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
-                        controller: defaultModelController,
+                        controller: modelInputController,
+                        textInputAction: TextInputAction.done,
                         decoration: AiTheme.inputDecoration(
                           labelText: '添加模型',
                           hintText: '输入模型名称',
+                        ).copyWith(
+                          prefixIcon: const Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: MoeTokens.inkMuted,
+                            size: 20,
+                          ),
                         ),
-                        onSubmitted: (v) {
-                          final val = v.trim();
-                          if (val.isNotEmpty &&
-                              !manualModels.contains(val)) {
-                            setLocalState(() {
-                              manualModels.add(val);
-                              defaultModelController.clear();
-                              if (defaultModelController.text.isEmpty) {
-                                defaultModelController.text = val;
-                              }
-                            });
-                          }
-                        },
+                        onSubmitted: (_) => addManualModel(),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            AiBrandTokens.primary.withValues(alpha: 0.12),
-                        foregroundColor: AiBrandTokens.primary,
+                    const SizedBox(width: MoeTokens.spaceSm),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              AiBrandTokens.primary.withValues(alpha: 0.12),
+                          foregroundColor: AiBrandTokens.primary,
+                        ),
+                        onPressed: addManualModel,
+                        tooltip: '添加模型',
+                        icon: const Icon(Icons.add_rounded),
                       ),
-                      onPressed: () {
-                        final val =
-                            defaultModelController.text.trim();
-                        if (val.isNotEmpty &&
-                            !manualModels.contains(val)) {
-                          setLocalState(() {
-                            manualModels.add(val);
-                            if (manualModels.length == 1) {
-                              // 第一个自动设为默认
-                            }
-                            defaultModelController.clear();
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.add_rounded),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: MoeTokens.spaceXl),
 
                 // ── 高级设置（折叠） ──
-                GestureDetector(
+                MoePressable(
                   onTap: () =>
                       setLocalState(() => showAdvanced = !showAdvanced),
-                  child: Container(
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                  child: AnimatedContainer(
+                    duration: MoeTokens.motionFast,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
+                      horizontal: MoeTokens.spaceMd,
+                      vertical: MoeTokens.spaceMd,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius:
-                          BorderRadius.circular(AiTheme.radiusAiCard),
+                      color: showAdvanced
+                          ? AiBrandTokens.primary.withValues(alpha: 0.08)
+                          : MoeTokens.softChipBg,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                      border: Border.all(
+                        color: showAdvanced
+                            ? AiBrandTokens.primary.withValues(alpha: 0.32)
+                            : MoeTokens.surfaceBorder,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.settings_outlined,
-                            size: 18, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '高级设置',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                            ),
+                        Container(
+                          padding: const EdgeInsets.all(MoeTokens.spaceSm),
+                          decoration: BoxDecoration(
+                            color:
+                                AiBrandTokens.primary.withValues(alpha: 0.12),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusMd),
+                          ),
+                          child: const Icon(
+                            Icons.tune_rounded,
+                            size: 18,
+                            color: AiBrandTokens.primary,
                           ),
                         ),
-                        Icon(
-                          showAdvanced
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
-                          color: Colors.grey.shade500,
+                        const SizedBox(width: MoeTokens.spaceMd),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '高级设置',
+                                style: AiTheme.body.copyWith(
+                                  fontWeight: MoeTokens.fontWeightSubtitle,
+                                ),
+                              ),
+                              const SizedBox(height: MoeTokens.spaceXs),
+                              Text(
+                                '调整输出方式与模型能力',
+                                style: AiTheme.caption,
+                              ),
+                            ],
+                          ),
+                        ),
+                        AnimatedRotation(
+                          turns: showAdvanced ? 0.5 : 0,
+                          duration: MoeTokens.motionFast,
+                          child: const Icon(
+                            Icons.expand_more_rounded,
+                            color: MoeTokens.inkMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -924,50 +976,53 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 ),
 
                 if (showAdvanced) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: MoeTokens.spaceSm),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
                     title: Text('系统消息',
-                        style: AiTheme.body
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text('部分旧模型不支持，关闭后自动兼容',
-                        style: AiTheme.caption),
+                        style:
+                            AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+                    subtitle: Text('部分旧模型不支持，关闭后自动兼容', style: AiTheme.caption),
                     value: supportsSystemMessages,
                     activeTrackColor: AiBrandTokens.primary,
-                    onChanged: (v) => setLocalState(
-                        () => supportsSystemMessages = v),
+                    onChanged: (v) =>
+                        setLocalState(() => supportsSystemMessages = v),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
                     title: Text('流式输出',
-                        style: AiTheme.body
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text('逐字显示回复，体验更流畅',
-                        style: AiTheme.caption),
+                        style:
+                            AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+                    subtitle: Text('逐字显示回复，体验更流畅', style: AiTheme.caption),
                     value: supportsStreaming,
                     activeTrackColor: AiBrandTokens.primary,
-                    onChanged: (v) => setLocalState(
-                        () => supportsStreaming = v),
+                    onChanged: (v) =>
+                        setLocalState(() => supportsStreaming = v),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
                     title: Text('图像理解',
-                        style: AiTheme.body
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text('支持发送图片给 AI 分析',
-                        style: AiTheme.caption),
+                        style:
+                            AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+                    subtitle: Text('支持发送图片给 AI 分析', style: AiTheme.caption),
                     value: supportsVision,
                     activeTrackColor: AiBrandTokens.primary,
-                    onChanged: (v) =>
-                        setLocalState(() => supportsVision = v),
+                    onChanged: (v) => setLocalState(() => supportsVision = v),
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    visualDensity: VisualDensity.compact,
                     title: Text('工具调用',
-                        style: AiTheme.body
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text('允许 AI 调用记忆搜索等高级功能',
-                        style: AiTheme.caption),
+                        style:
+                            AiTheme.body.copyWith(fontWeight: FontWeight.w600)),
+                    subtitle: Text('允许 AI 调用记忆搜索等高级功能', style: AiTheme.caption),
                     value: supportsToolCalls,
                     activeTrackColor: AiBrandTokens.primary,
                     onChanged: (v) =>
@@ -975,7 +1030,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   ),
                 ],
 
-                const SizedBox(height: 24),
+                const SizedBox(height: MoeTokens.space2xl),
               ],
             );
           },
@@ -1025,64 +1080,388 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final customProfiles = _customProfiles;
+
     return AiScaffold(
       title: '模型服务',
       syncStatus: _syncingCloud ? AiSyncStatus.syncing : AiSyncStatus.idle,
       syncLabel: _syncingCloud ? '正在同步…' : null,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showEditor(),
-        backgroundColor: AiBrandTokens.primary,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('添加服务'),
-      ),
+      bottomNavigationBar: _initialLoading
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MoeTokens.spaceLg,
+                  MoeTokens.spaceSm,
+                  MoeTokens.spaceLg,
+                  MoeTokens.spaceSm,
+                ),
+                child: SizedBox(
+                  height: 52,
+                  child: FilledButton.icon(
+                    style: AiTheme.primaryButtonStyle(),
+                    onPressed: () => _showEditor(),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text(
+                      '添加服务',
+                      style: TextStyle(
+                        fontSize: MoeTokens.textMd,
+                        fontWeight: MoeTokens.fontWeightTitle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
       body: _initialLoading
           ? const AiLoadingSkeleton()
           : RefreshIndicator(
               onRefresh: _load,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AiTheme.pagePadding),
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AiSurfaceCard(
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline_rounded,
-                              size: 20,
-                              color: AiBrandTokens.primary.withValues(alpha: 0.7)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              '连接 AI 模型服务，支持 OpenAI / DeepSeek / OpenRouter 等',
-                              style: AiTheme.body.copyWith(fontSize: 13),
+              child: customProfiles.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AiTheme.pagePadding),
+                      children: const [
+                        SizedBox(height: MoeTokens.space3xl),
+                        MoeEmptyState(
+                          icon: Icons.hub_outlined,
+                          title: '还没有模型服务',
+                          subtitle:
+                              '连接 OpenAI、DeepSeek、OpenRouter 等兼容接口，配置后即可和伙伴聊天。',
+                          compact: true,
+                        ),
+                      ],
+                    )
+                  : ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(
+                        AiTheme.pagePadding,
+                        MoeTokens.spaceMd,
+                        AiTheme.pagePadding,
+                        MoeTokens.spaceLg,
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            MoeTokens.spaceXs,
+                            0,
+                            MoeTokens.spaceXs,
+                            MoeTokens.spaceMd,
+                          ),
+                          child: Text(
+                            '已添加 ${customProfiles.length} 个服务',
+                            style: const TextStyle(
+                              fontSize: MoeTokens.textSm,
+                              fontWeight: MoeTokens.fontWeightSubtitle,
+                              color: MoeTokens.inkMuted,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    if (_profiles.where((p) => !p.isBuiltin).isNotEmpty) ...[
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('已添加的服务',
-                                style: AiTheme.title.copyWith(fontSize: 15)),
-                            const SizedBox(height: 2),
-                            Text('点击编辑或删除', style: AiTheme.caption),
-                          ],
                         ),
-                      ),
-                      ..._profiles
-                          .where((p) => !p.isBuiltin)
-                          .map(_buildCard),
-                    ],
-                    const SizedBox(height: 80),
-                  ],
-                ),
+                        ...customProfiles.map(_buildCard),
+                      ],
+                    ),
+            ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status});
+
+  final AiSyncStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      AiSyncStatus.success => ('已连通', MoeTokens.success),
+      AiSyncStatus.error => ('连接失败', MoeTokens.danger),
+      AiSyncStatus.syncing => ('检测中', MoeTokens.secondary),
+      AiSyncStatus.warning => ('异常', MoeTokens.warning),
+      AiSyncStatus.idle => ('未检测', MoeTokens.inkMuted),
+    };
+
+    return Semantics(
+      label: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: MoeTokens.spaceSm,
+          vertical: MoeTokens.spaceXs,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: MoeTokens.spaceXs),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: MoeTokens.textXs,
+                fontWeight: MoeTokens.fontWeightSubtitle,
+                color: color,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.label,
+    this.icon,
+    this.muted = false,
+  });
+
+  final String label;
+  final IconData? icon;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = muted ? MoeTokens.hintText : MoeTokens.caption;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MoeTokens.spaceSm,
+        vertical: MoeTokens.spaceXs,
+      ),
+      decoration: BoxDecoration(
+        color: MoeTokens.softChipBg,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: MoeTokens.spaceXs),
+          ],
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 168),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: MoeTokens.textXs,
+                fontWeight: MoeTokens.fontWeightSubtitle,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProviderActionMenuItem extends StatelessWidget {
+  const _ProviderActionMenuItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 19, color: color),
+        const SizedBox(width: MoeTokens.spaceSm),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: MoeTokens.textBase,
+            fontWeight: MoeTokens.fontWeightSubtitle,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PresetTile extends StatelessWidget {
+  const _PresetTile({
+    required this.preset,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _Preset preset;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '选择${preset.name}，${preset.hint}',
+      child: SizedBox(
+        width: 104,
+        child: MoePressable(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+          child: AnimatedContainer(
+            duration: MoeTokens.motionFast,
+            padding: const EdgeInsets.symmetric(
+              horizontal: MoeTokens.spaceSm,
+              vertical: MoeTokens.spaceSm,
+            ),
+            decoration: BoxDecoration(
+              color: selected
+                  ? preset.color.withValues(alpha: 0.10)
+                  : MoeTokens.surface1,
+              borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+              border: Border.all(
+                color: selected ? preset.color : MoeTokens.surfaceBorder,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(preset.icon, color: preset.color, size: 21),
+                const SizedBox(height: MoeTokens.spaceXs),
+                Text(
+                  preset.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: MoeTokens.textXs,
+                    fontWeight: selected
+                        ? MoeTokens.fontWeightTitle
+                        : MoeTokens.fontWeightSubtitle,
+                    color: selected ? preset.color : MoeTokens.inkDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  preset.hint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: MoeTokens.textXs,
+                    color: selected
+                        ? preset.color.withValues(alpha: 0.84)
+                        : MoeTokens.hintText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModelChip extends StatelessWidget {
+  const _ModelChip({
+    required this.model,
+    required this.isDefault,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final String model;
+  final bool isDefault;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDefault ? AiBrandTokens.primary : MoeTokens.caption;
+    return Semantics(
+      button: true,
+      selected: isDefault,
+      label: isDefault ? '$model，默认模型' : model,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 248),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+            child: AnimatedContainer(
+              duration: MoeTokens.motionFast,
+              padding: const EdgeInsets.symmetric(
+                horizontal: MoeTokens.spaceMd,
+                vertical: MoeTokens.spaceXs,
+              ),
+              decoration: BoxDecoration(
+                color: isDefault
+                    ? AiBrandTokens.primary.withValues(alpha: 0.10)
+                    : MoeTokens.softChipBg,
+                borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+                border: Border.all(
+                  color: isDefault
+                      ? AiBrandTokens.primary.withValues(alpha: 0.8)
+                      : MoeTokens.surfaceBorder,
+                  width: isDefault ? 1.5 : 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isDefault) ...[
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 15,
+                      color: AiBrandTokens.primary,
+                    ),
+                    const SizedBox(width: MoeTokens.spaceXs),
+                  ],
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 168),
+                    child: Text(
+                      model,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: MoeTokens.textSm,
+                        fontWeight: isDefault
+                            ? MoeTokens.fontWeightTitle
+                            : MoeTokens.fontWeightSubtitle,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: MoeTokens.spaceXs),
+                  IconButton(
+                    onPressed: onDelete,
+                    tooltip: '移除模型',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 28,
+                      height: 28,
+                    ),
+                    splashRadius: 16,
+                    iconSize: 16,
+                    color: MoeTokens.hintText,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -117,6 +117,20 @@ abstract final class AiTheme {
     );
   }
 
+  static ButtonStyle secondaryButtonStyle() {
+    return OutlinedButton.styleFrom(
+      foregroundColor: AiBrandTokens.primary,
+      backgroundColor: AiBrandTokens.primary.withValues(alpha: 0.06),
+      minimumSize: const Size.fromHeight(48),
+      side: BorderSide(
+        color: AiBrandTokens.primary.withValues(alpha: 0.34),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MoeTokens.radiusButton),
+      ),
+    );
+  }
+
   static ButtonStyle dangerButtonStyle() {
     return FilledButton.styleFrom(
       backgroundColor: danger,

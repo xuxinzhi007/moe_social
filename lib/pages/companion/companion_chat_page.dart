@@ -1,3 +1,5 @@
+// Hallmark · layout: bottom-sheet-stack · tone: kawaii-soft · scroll: list-view
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -266,18 +268,23 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
     });
   }
 
-  Future<void> _sendMessage() async {
-    final text = _controller.text.trim();
+  Future<void> _sendMessage({
+    String? textOverride,
+    bool appendUserMessage = true,
+  }) async {
+    final text = (textOverride ?? _controller.text).trim();
     if (text.isEmpty || _isSending) return;
 
-    final wasVoiceInput = _voiceInputPending;
+    final wasVoiceInput = appendUserMessage && _voiceInputPending;
     _voiceInputPending = false;
 
     _controller.clear();
     final quotaBefore = _providerUsage?.totalAvailable;
     int replyIndex = -1;
     setState(() {
-      _items.add(_ChatItem(role: 'user', content: text));
+      if (appendUserMessage) {
+        _items.add(_ChatItem(role: 'user', content: text));
+      }
       _isSending = true;
     });
     _scrollToBottom();
@@ -395,6 +402,29 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
         unawaited(_refreshReplyUsage(replyIndex, quotaBefore));
       }
     }
+  }
+
+  Future<void> _retryFailedMessage(int failedIndex) async {
+    if (_isSending ||
+        failedIndex < 0 ||
+        failedIndex >= _items.length ||
+        !_items[failedIndex].isError) {
+      return;
+    }
+
+    var userIndex = failedIndex - 1;
+    while (userIndex >= 0 && _items[userIndex].role != 'user') {
+      userIndex--;
+    }
+    if (userIndex < 0) {
+      MoeToast.error(context, '找不到上一条消息，暂时无法重试');
+      return;
+    }
+
+    final text = _items[userIndex].content.trim();
+    if (text.isEmpty) return;
+    setState(() => _items.removeAt(failedIndex));
+    await _sendMessage(textOverride: text, appendUserMessage: false);
   }
 
   Future<void> _refreshReplyUsage(int replyIndex, double? quotaBefore) async {
@@ -711,6 +741,10 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                 contentType: MessageContentType.text,
                 isUser: item.role == 'user',
                 isLoading: item.isStreaming,
+                isError: item.isError,
+                onErrorAction: item.isError && !_isSending
+                    ? () => unawaited(_retryFailedMessage(itemIndex))
+                    : null,
                 airyCompanion: true,
                 agentLabel: isAssistant ? _profile.name : null,
                 assistantAvatar: isAssistant
@@ -981,9 +1015,8 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                             ? Icons.graphic_eq_rounded
                             : Icons.mic_none_rounded,
                         size: 20,
-                        color: _listening
-                            ? MoeTokens.primary
-                            : MoeTokens.inkMuted,
+                        color:
+                            _listening ? MoeTokens.primary : MoeTokens.inkMuted,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -993,8 +1026,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                       constraints: const BoxConstraints(maxHeight: 120),
                       decoration: BoxDecoration(
                         color: MoeTokens.softLavenderBg,
-                        borderRadius:
-                            BorderRadius.circular(MoeTokens.radiusXl),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
                         border: Border.all(
                           color: _focusNode.hasFocus
                               ? MoeTokens.primary.withValues(alpha: 0.28)
@@ -1015,8 +1047,7 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
                                   : _isSending
                                       ? 'TA 正在回应…'
                                       : '说点什么吧…',
-                          hintStyle:
-                              const TextStyle(color: MoeTokens.hintText),
+                          hintStyle: const TextStyle(color: MoeTokens.hintText),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14,
