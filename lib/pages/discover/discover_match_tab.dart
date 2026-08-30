@@ -519,7 +519,7 @@ class _DiscoverMatchTabState extends State<DiscoverMatchTab>
               final sel = _selectedTagIds.contains(tag.id);
               return ChoiceChip(
                 label: Text(
-                  '#${tag.name}',
+                  tag.name,
                   style: TextStyle(
                     fontSize: widget.compact ? 12 : 13,
                     fontWeight: FontWeight.w700,
@@ -885,7 +885,7 @@ class _MatchCandidateRow extends StatelessWidget {
                     const SizedBox(height: 3),
                     if (tags.isNotEmpty)
                       Text(
-                        tags.map((n) => '#$n').join(' · '),
+                        tags.join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

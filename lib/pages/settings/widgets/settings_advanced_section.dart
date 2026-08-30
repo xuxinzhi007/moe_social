@@ -118,6 +118,16 @@ class _SettingsAdvancedSectionState extends State<SettingsAdvancedSection> {
                       color: MoeTokens.accent,
                       onTap: () => Navigator.of(context).pushNamed('/battle'),
                     ),
+                  if (FeatureFlags.showGameNetworkLab)
+                    MoeMenuItem(
+                      icon: Icons.hub_rounded,
+                      title: '异地联机实验',
+                      subtitle: 'Android 虚拟网络连通性测试',
+                      color: MoeTokens.pastelTeal,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        '/game-network/lab',
+                      ),
+                    ),
                   MoeMenuItem(
                     icon: Icons.notifications_active_rounded,
                     title: '飞书通知',

@@ -42,7 +42,8 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
   Future<void> _pickTime({required bool isStart}) async {
     final settings = _settings;
     if (settings == null) return;
-    final initial = _minuteToTime(isStart ? settings.quietStart : settings.quietEnd);
+    final initial =
+        _minuteToTime(isStart ? settings.quietStart : settings.quietEnd);
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked == null || !mounted) return;
     final minute = picked.hour * 60 + picked.minute;
@@ -68,7 +69,8 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
       MoeToast.success(context, '主动陪伴设置已保存');
     } catch (error) {
       if (mounted) {
-        MoeToast.error(context, error.toString().replaceFirst('Exception: ', ''));
+        MoeToast.error(
+            context, error.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -101,10 +103,8 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
                   onRefresh: _load,
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                     children: [
-                      _buildIntro(),
-                      const SizedBox(height: 16),
                       _buildSettingsCard(settings),
                       const SizedBox(height: 16),
                       _buildPrivacyNote(),
@@ -125,37 +125,6 @@ class _CompanionSettingsPageState extends State<CompanionSettingsPage> {
                     ],
                   ),
                 ),
-    );
-  }
-
-  Widget _buildIntro() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: MoeTokens.heroGradient,
-        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
-        boxShadow: MoeTokens.shadowSm(),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 28),
-          SizedBox(height: 12),
-          Text(
-            '让 TA 在合适的时候出现',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            '你可以随时关闭主动联系，也可以安排一段不被打扰的时间。',
-            style: TextStyle(color: Colors.white70, height: 1.4),
-          ),
-        ],
-      ),
     );
   }
 

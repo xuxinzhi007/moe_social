@@ -398,7 +398,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     }
   }
 
-  Widget _buildHeroHeader(BuildContext context) {
+  Widget _buildGallerySummary(BuildContext context) {
     final compact = _isCompactLayout(context);
     final maxBytes = _maxBytes ?? 0;
     final usedBytes = _usedBytes ?? 0;
@@ -406,106 +406,56 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
         maxBytes > 0 ? (usedBytes / maxBytes).clamp(0.0, 1.0) : 0.0;
     final remainingBytes =
         maxBytes > usedBytes ? _formatBytes(maxBytes - usedBytes) : '0 B';
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(12, 10, 12, compact ? 10 : 18),
-      padding: EdgeInsets.all(compact ? 14 : 22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFF8F6FF),
-            Color(0xFFEFF4FF),
-            Color(0xFFFDF9FF),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: MoeTokens.primary.withValues(alpha: 0.08),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-          ),
-        ],
+    final infoChips = [
+      _buildInfoChip(
+        icon: Icons.collections_outlined,
+        label: '已存图片',
+        value: '${_images.length}',
       ),
+      _buildInfoChip(
+        icon: Icons.auto_awesome_outlined,
+        label: '剩余空间',
+        value: maxBytes > 0 ? remainingBytes : '未统计',
+      ),
+      _buildInfoChip(
+        icon: Icons.backup_outlined,
+        label: '云端状态',
+        value: _busy ? '同步中' : '可上传',
+      ),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, compact ? 8 : 12, 12, compact ? 8 : 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: compact ? 42 : 58,
-                height: compact ? 42 : 58,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(compact ? 14 : 18),
-                ),
-                child: Icon(
-                  Icons.cloud_circle_rounded,
-                  size: compact ? 22 : 32,
-                  color: MoeTokens.primary,
-                ),
-              ),
-              SizedBox(width: compact ? 12 : 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '把灵感收进云端',
-                      style: TextStyle(
-                        fontSize: compact ? 18 : 24,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF25273A),
-                      ),
-                    ),
-                    SizedBox(height: compact ? 4 : 6),
-                    Text(
-                      _images.isEmpty
-                          ? '从第一张图开始整理你的收藏、头像素材和创作灵感。'
-                          : '你的图片会统一存放在这里，随时回看、下载或继续挑选使用。',
-                      style: TextStyle(
-                        fontSize: compact ? 13 : 14,
-                        height: compact ? 1.4 : 1.5,
-                        color: const Color(0xFF69708A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 12 : 18),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildInfoChip(
-                icon: Icons.collections_outlined,
-                label: '已存图片',
-                value: '${_images.length}',
-              ),
-              _buildInfoChip(
-                icon: Icons.auto_awesome_outlined,
-                label: '剩余空间',
-                value: maxBytes > 0 ? remainingBytes : '未统计',
-              ),
-              _buildInfoChip(
-                icon: Icons.backup_outlined,
-                label: '云端状态',
-                value: _busy ? '同步中' : '可上传',
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 8.0;
+              final columns = constraints.maxWidth >= 560 ? 3 : 2;
+              final chipWidth =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: infoChips
+                    .map(
+                      (chip) => SizedBox(width: chipWidth, child: chip),
+                    )
+                    .toList(),
+              );
+            },
           ),
           if (maxBytes > 0) ...[
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.74),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: MoeTokens.primary.withValues(alpha: 0.1),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,32 +515,41 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
     required String value,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.75),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.9),
+          color: const Color(0xFFE7E8F4),
         ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: MoeTokens.primary),
           const SizedBox(width: 6),
-          Text(
-            '$label  ',
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF77809A),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF77809A),
+              ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF2E3142),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF2E3142),
+              ),
             ),
           ),
         ],
@@ -753,7 +712,7 @@ class _CloudGalleryPageState extends State<CloudGalleryPage> {
             ),
       body: Column(
         children: [
-          _buildHeroHeader(context),
+          _buildGallerySummary(context),
           Expanded(
             child: _isFetching && _images.isEmpty
                 ? GridView.builder(

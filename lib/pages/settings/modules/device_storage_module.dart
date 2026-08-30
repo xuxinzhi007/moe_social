@@ -208,6 +208,8 @@ class _DeviceStorageModuleState extends State<DeviceStorageModule> {
               MapEntry('系统版本',
                   provider.osVersion.isEmpty ? '未知' : provider.osVersion),
               MapEntry('应用版本', provider.versionDisplayLabel),
+              if (provider.buildNumber.isNotEmpty)
+                MapEntry('构建号', provider.buildNumber),
               MapEntry(
                 '屏幕分辨率',
                 '${size.width.toStringAsFixed(0)} x ${size.height.toStringAsFixed(0)}',

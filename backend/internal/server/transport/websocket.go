@@ -6,6 +6,7 @@ import (
 
 	battlev1 "backend/api/battle/v1"
 	chatbiz "backend/internal/biz/chat"
+	gamenetwork "backend/internal/biz/game_network"
 	apicomm "backend/internal/platform/apicomm"
 	battleapp "backend/internal/service/battle"
 	companionapp "backend/internal/service/companion"
@@ -22,6 +23,7 @@ func registerWebSocket(r *khttp.Router, deps Deps) {
 	r.GET("/ws/chat", chatWSHandler(deps.ChatWS))
 	r.GET("/ws/presence", chatPresenceWSHandler())
 	r.GET("/ws/remote", chatRemoteWS())
+	r.GET("/ws/game-network", gameNetworkWS())
 	r.GET("/ws/world", chatWorldWSHandler())
 	r.GET("/ws/admin/moe/brain/pipeline", brainPipelineWSHandler(deps.MoeAdmin))
 	r.GET("/ws/life", lifeWSHandler(deps.LifeApp))
@@ -59,6 +61,13 @@ func battleWSHandler(app *battleapp.AppService) func(khttp.Context) error {
 func chatRemoteWS() func(khttp.Context) error {
 	return func(ctx khttp.Context) error {
 		chatbiz.ServeRemoteWS(ctx.Response(), ctx.Request())
+		return nil
+	}
+}
+
+func gameNetworkWS() func(khttp.Context) error {
+	return func(ctx khttp.Context) error {
+		gamenetwork.ServeWS(ctx.Response(), ctx.Request())
 		return nil
 	}
 }
