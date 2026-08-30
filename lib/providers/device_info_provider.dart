@@ -40,12 +40,14 @@ class DeviceInfoProvider with ChangeNotifier, WidgetsBindingObserver {
   String get buildNumber => _buildNumber;
   String get packageName => _packageName;
 
-  /// 设置页等展示用：展示版本号、构建号，并标记本地开发包。
+  /// 设置页等展示用：展示发布版本，并标记本地开发包。
+  ///
+  /// 构建号仍保留在 [buildNumber] 中，用于更新判断和设备诊断，
+  /// 不混入用户看到的发布版本号。
   String get versionDisplayLabel {
     if (_version.isEmpty) return '未知';
-    final build = _buildNumber.isEmpty ? '' : '+$_buildNumber';
-    final flavor = _packageName.endsWith('.dev') ? ' Dev' : '';
-    return 'v$_version$build$flavor';
+    final flavor = _packageName.endsWith('.dev') ? '（开发版）' : '';
+    return 'v$_version$flavor';
   }
 
   String get deviceId => _deviceId;

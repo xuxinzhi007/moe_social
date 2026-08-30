@@ -144,8 +144,6 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
           padding: const EdgeInsets.all(16),
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            _buildHero(),
-            const SizedBox(height: 20),
             _sectionTitle('推荐角色卡', '内置模板，一键套用 Tavern 骨架'),
             const SizedBox(height: 10),
             ...AiStarterTemplates.agentTemplates.map(_buildStarterCard),
@@ -176,45 +174,6 @@ class _CharacterCardPlazaPageState extends State<CharacterCardPlazaPage> {
             const SizedBox(height: 32),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHero() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: AiBrandTokens.heroGradient,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: AiBrandTokens.primary.withValues(alpha: 0.22),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '发现角色，开启对话',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '从推荐模板快速起号，或使用你已导入、创建的角色卡直接进入聊天。',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-        ],
       ),
     );
   }

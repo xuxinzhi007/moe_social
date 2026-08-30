@@ -18,6 +18,9 @@ class FeatureFlags {
 
   static const bool showExperimentalFeatures = false;
 
+  /// Android 异地联机网络实验。开发阶段直接开启；发布前关闭。
+  static const bool showGameNetworkLab = true;
+
   /// AutoGLM 自动化（自用）；入口在「设置 → 高级选项」。
   static const bool showAutoGlm = showExperimentalFeatures;
 

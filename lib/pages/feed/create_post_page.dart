@@ -1030,7 +1030,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '#${tag.name}',
+                tag.name,
                 style: textTheme.labelSmall?.copyWith(color: tag.color),
               ),
               const SizedBox(width: 6),

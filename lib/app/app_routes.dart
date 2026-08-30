@@ -34,6 +34,7 @@ import '../pages/community/interest_group_detail_page.dart';
 import '../pages/feed/comments_page.dart';
 import '../pages/feed/create_post_page.dart';
 import '../pages/feed/topic_posts_page.dart';
+import '../pages/game_network/game_network_lab_page.dart';
 import '../pages/gallery/cloud_gallery_page.dart' deferred as cloud_gallery;
 import '../pages/announcements/announcements_page.dart';
 import '../pages/arena/arena_page.dart';
@@ -365,6 +366,12 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         return const Scaffold(body: Center(child: Text('该原型未开启')));
       }
       return const ArenaPage.home();
+    },
+    '/game-network/lab': (context) {
+      if (!FeatureFlags.showGameNetworkLab) {
+        return const Scaffold(body: Center(child: Text('该实验未开启')));
+      }
+      return const GameNetworkLabPage();
     },
     '/life/detail': (context) {
       if (!FeatureFlags.showLifeEngine) {

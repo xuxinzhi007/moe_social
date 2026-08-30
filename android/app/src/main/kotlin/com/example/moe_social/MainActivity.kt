@@ -10,16 +10,22 @@ import android.widget.Toast
 import android.content.Intent
 import android.provider.Settings
 import android.content.Context
+import android.net.VpnService
 
 import android.net.Uri
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.Signature
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.security.MessageDigest
 import java.io.File
 
 class MainActivity : FlutterActivity() {
+    private companion object {
+        const val GAME_NETWORK_VPN_PERMISSION_REQUEST = 24643
+    }
+
     private var lastImeIdLogged: String? = null
     private var lastIsAdbLogged: Boolean? = null
 
@@ -87,6 +93,91 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.moe_social/game_network",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "prepareGameNetworkVpn" -> {
+                    val prepareIntent = VpnService.prepare(this)
+                    if (prepareIntent == null) {
+                        result.success(true)
+                    } else {
+                        startActivityForResult(
+                            prepareIntent,
+                            GAME_NETWORK_VPN_PERMISSION_REQUEST,
+                        )
+                        result.success(false)
+                    }
+                }
+                "startGameNetworkVpn" -> {
+                    if (VpnService.prepare(this) != null) {
+                        result.error(
+                            "VPN_PERMISSION_REQUIRED",
+                            "VPN permission has not been granted",
+                            null,
+                        )
+                        return@setMethodCallHandler
+                    }
+                    val role = call.argument<String>("role") ?: "guest"
+                    val roomId = call.argument<String>("roomId")?.trim()
+                    val relayUrl = call.argument<String>("relayUrl")?.trim()
+                    val token = call.argument<String>("token")?.trim()
+                    if (roomId.isNullOrEmpty() || relayUrl.isNullOrEmpty()) {
+                        result.error(
+                            "GAME_NETWORK_CONFIG_REQUIRED",
+                            "roomId and relayUrl are required",
+                            null,
+                        )
+                        return@setMethodCallHandler
+                    }
+                    val intent = Intent(this, GameNetworkVpnService::class.java).apply {
+                        action = GameNetworkVpnService.ACTION_START
+                        putExtra(GameNetworkVpnService.EXTRA_ROLE, role)
+                        putExtra(GameNetworkVpnService.EXTRA_ROOM_ID, roomId)
+                        putExtra(GameNetworkVpnService.EXTRA_RELAY_URL, relayUrl)
+                        if (!token.isNullOrEmpty()) {
+                            putExtra(GameNetworkVpnService.EXTRA_TOKEN, token)
+                        }
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(this, intent)
+                    } else {
+                        startService(intent)
+                    }
+                    result.success(true)
+                }
+                "stopGameNetworkVpn" -> {
+                    val intent = Intent(this, GameNetworkVpnService::class.java).apply {
+                        action = GameNetworkVpnService.ACTION_STOP
+                    }
+                    startService(intent)
+                    result.success(true)
+                }
+                "gameNetworkStatus" -> {
+                    result.success(GameNetworkVpnService.snapshot())
+                }
+                "writeGameNetworkPacket" -> {
+                    val packet = call.argument<ByteArray>("packet")
+                    result.success(packet != null && GameNetworkVpnService.writePacket(packet))
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.moe_social/game_network/packets",
+        ).setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                GameNetworkBridge.packetSink = events
+            }
+
+            override fun onCancel(arguments: Any?) {
+                GameNetworkBridge.packetSink = null
+            }
+        })
 
 
 

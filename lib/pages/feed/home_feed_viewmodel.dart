@@ -115,7 +115,7 @@ class HomeFeedViewModel extends ChangeNotifier {
   List<TopicTag> get availableTags => _availableTags;
 
   String sectionTitle() {
-    if (_activeTopic != null) return '#${_activeTopic!.name}';
+    if (_activeTopic != null) return _activeTopic!.name;
     switch (_mode) {
       case HomeFeedMode.hot:
         return '热门动态';

@@ -508,7 +508,7 @@ class _HomePageState extends State<HomePage>
     final inTopic = _feed.activeTopic != null;
     return MoeEmptyState(
       icon: Icons.auto_awesome_rounded,
-      title: inTopic ? '#${topicName ?? ''} 下暂时还没有动态' : '这里还是空的',
+      title: inTopic ? '${topicName ?? ''}下暂时还没有动态' : '这里还是空的',
       subtitle:
           inTopic ? '换个话题看看，或者自己发一条带上这个标签的动态吧。' : '发一条动态记录今天，或者去好友页认识新朋友。',
       primaryAction: MoeEmptyStateAction(
@@ -880,7 +880,7 @@ class _HomeTopicChip extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: '#$name',
+      label: name,
       excludeSemantics: true,
       child: MoePressable(
         onTap: onTap,
@@ -899,7 +899,7 @@ class _HomeTopicChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
           ),
           child: Text(
-            '#$name',
+            name,
             style: TextStyle(
               fontSize: MoeTokens.textSm,
               fontWeight: selected

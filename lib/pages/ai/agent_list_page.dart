@@ -365,7 +365,7 @@ class _AgentListPageState extends State<AgentListPage>
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(MoeTokens.spaceXl,
-              MoeTokens.spaceLg, MoeTokens.spaceXl, MoeTokens.space3xl),
+              MoeTokens.spaceMd, MoeTokens.spaceXl, MoeTokens.spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -381,7 +381,8 @@ class _AgentListPageState extends State<AgentListPage>
                           padding: const EdgeInsets.all(MoeTokens.spaceSm),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                            borderRadius:
+                                BorderRadius.circular(MoeTokens.radiusMd),
                           ),
                           child: const Icon(
                             Icons.arrow_back_rounded,
@@ -450,9 +451,9 @@ class _AgentListPageState extends State<AgentListPage>
                   ),
                 ],
               ),
-              const SizedBox(height: MoeTokens.spaceXl),
+              const SizedBox(height: MoeTokens.spaceMd),
               _buildHeroSearchBar(),
-              const SizedBox(height: MoeTokens.spaceLg),
+              const SizedBox(height: MoeTokens.spaceMd),
               Row(
                 children: [
                   _buildHeroStat(

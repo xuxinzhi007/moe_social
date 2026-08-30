@@ -58,7 +58,7 @@ class _CommunityDiscussionsTabState extends State<CommunityDiscussionsTab> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text('#${topic.name}'),
+              label: Text(topic.name),
               selected: sel,
               onSelected: (_) => setState(() => _selectedTopic = topic),
               selectedColor: topic.color.withValues(alpha: 0.14),

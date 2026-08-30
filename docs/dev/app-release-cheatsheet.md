@@ -100,7 +100,7 @@ curl -sS "http://47.106.175.49:8888/api/public/app-release/latest?platform=andro
 | versionCode | `GITHUB_RUN_NUMBER` | **比大小看这个**；每次 Actions 跑会涨 |
 | apk_url | `…/releases/download/<tag>/app-release.apk` | 直链下载 |
 
-本地 Dev 包显示 `v1.0.0+1` 时，远端 `versionCode` 必须 **大于 1** 才会提示更新。
+本地开发包显示 `v1.0.0（开发版）` 时，远端 `versionCode` 必须 **大于 1** 才会提示更新。
 
 ---
 
