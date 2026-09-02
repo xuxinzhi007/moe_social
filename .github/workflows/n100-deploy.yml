@@ -1,0 +1,57 @@
+# 仅在已注册 label=n100 的 self-hosted runner 上跑。
+# 不碰云 VPS；不覆盖 N100 上的 config.yaml。
+name: N100 deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to publish on the mini host
+        type: choice
+        options:
+          - backend
+          - admin
+          - both
+        default: backend
+
+jobs:
+  publish:
+    name: Publish on n100
+    runs-on: [self-hosted, n100]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        if: inputs.target == 'backend' || inputs.target == 'both'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Build moe-social
+        if: inputs.target == 'backend' || inputs.target == 'both'
+        working-directory: backend
+        run: |
+          mkdir -p bin
+          CGO_ENABLED=0 go build -o bin/moe-social ./cmd/moe-social-stack
+          install -D -m 0755 bin/moe-social "${HOME}/moe-runtime/bin/moe-social"
+          systemctl --user restart moe-social
+          systemctl --user --no-pager --full status moe-social || true
+
+      - name: Setup Node
+        if: inputs.target == 'admin' || inputs.target == 'both'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: moe-admin/package-lock.json
+
+      - name: Build and sync moe-admin
+        if: inputs.target == 'admin' || inputs.target == 'both'
+        working-directory: moe-admin
+        run: |
+          npm ci
+          npm run build
+          test -d /var/www/html/ops
+          rsync -a --delete dist/ /var/www/html/ops/

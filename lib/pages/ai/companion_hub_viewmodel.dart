@@ -125,20 +125,19 @@ class CompanionHubViewModel extends ChangeNotifier {
     required CompanionStateData state,
     required List<CompanionDailyItem> dailyItems,
     required bool hasAttention,
+    String attentionMessage = '',
   }) {
     final leadItem = dailyItems.isNotEmpty ? dailyItems.first : null;
     final greeting = state.greeting.trim();
     final mood = state.moodThought.trim();
     final activity = state.activityLabel.trim();
 
-    if (hasAttention) {
+    if (hasAttention && attentionMessage.trim().isNotEmpty) {
       final who = profile.name.trim().isNotEmpty ? profile.name.trim() : 'TA';
-      final body = greeting.isNotEmpty
-          ? greeting
-          : (mood.isNotEmpty ? mood : 'TA 正在等你来聊聊。');
+      final attention = attentionMessage.trim();
       return CompanionPulseData(
         title: '$who 想和你说',
-        body: body,
+        body: attention,
         ctaLabel: '去聊天',
         kind: 'attention',
       );

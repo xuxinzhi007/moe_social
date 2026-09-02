@@ -161,7 +161,7 @@
 
 - 优先使用用户当前选中的 Provider、Base URL、模型和 API Key。
 - 未选择或配置不完整时回退后端全局 `llm_inference` 配置。
-- 用户 API Key 只随聊天请求传输，不写入 `companion_profiles`、记忆或关系事件。
+- 用户 API Key 默认只随聊天请求传输，不写入 `companion_profiles`、记忆或关系事件；若用户主动开启账号同步，仅保存在 AI 用户配置的独立密文字段。
 - 生产环境必须使用 HTTPS；API Key 不进入日志、SSE 事件和错误文案。
 - 用户配置调用失败时回退全局配置或 Companion fallback，不阻断关系数据写入。
 

@@ -1,6 +1,8 @@
 # Moe Admin（React 管理后台）
 
-Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin API / Deploy Agent。
+Moe Social 专属管理台：浅色 Element 风格布局 + 现有 Admin API / Deploy Agent。
+
+独立仓库，暂时放在 `moe_social/moe-admin/` 里方便和后端一起联调。提交走本目录自己的 git，不要提交进外层 `moe_social`。
 
 ## 开发启动
 
@@ -16,6 +18,31 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 go-zero Admin 
 浏览器：**http://127.0.0.1:5173/ops/**（登录 `/ops/login`）
 
 生产构建（按需）：`npm run build` → `dist/`，由 CI 或静态服务器发布（Agent 不再托管 `/ops/`）
+
+## 联调（本机）
+
+后端先改契约，管理台再跟：
+
+1. `backend/api/**` proto → `cd backend && make gen`
+2. `cd backend && make moe-social`（`:8888`，需要运维页再带 Agent `:19010`）
+3. `cd moe-admin && npm run dev` → http://127.0.0.1:5173/ops/
+4. Vite 已把 `/api/admin` 代理到本机 `:8888`
+
+小主机上的页面不会热更新，联调不要对着局域网包改。
+
+## 局域网发布（小主机）
+
+地址：http://192.168.124.77/ops/
+静态文件：`/var/www/html/ops` · nginx：`/etc/nginx/sites-available/moe-admin`
+
+本机开发完成后再同步，不会自动更新：
+
+```powershell
+cd moe-admin
+npm run deploy:lan
+```
+
+或手动：`npm run build`，把 `dist/` 覆盖到小主机 `/var/www/html/ops`。配置见 `deploy/nginx-lan.conf`。
 
 ## 目录说明
 

@@ -22,6 +22,8 @@ message GetAiUserConfigReq {
 message GetAiUserConfigResp {
   string user_persona = 1;
   string preferences_json = 2;
+  // 已明确开启账号同步的 Provider API Key；服务端只保存密文。
+  string provider_api_keys_json = 3;
 }
 
 message GetUserMemoriesReq {
@@ -104,11 +106,16 @@ message UpsertAiUserConfigReq {
   string user_persona = 2;
   bool has_user_persona = 3;
   string preferences_json = 4;
+  // 单个 Provider 密钥的增量写入；key 为空表示删除云端密钥。
+  string provider_api_key_profile_id = 5;
+  string provider_api_key = 6;
+  bool has_provider_api_key = 7;
 }
 
 message UpsertAiUserConfigResp {
   string user_persona = 1;
   string preferences_json = 2;
+  string provider_api_keys_json = 3;
 }
 
 message UpsertUserMemoryEmbeddingReq {

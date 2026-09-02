@@ -48,6 +48,10 @@ func (s *publicAgentStoreStub) LoadOrCreateConfig(context.Context, uint) (*model
 
 func (s *publicAgentStoreStub) SaveConfig(context.Context, *model.AiUserConfig) error { return nil }
 
+func (s *publicAgentStoreStub) UpdateConfig(context.Context, uint, func(*model.AiUserConfig) error) (*model.AiUserConfig, error) {
+	return nil, nil
+}
+
 func (s *publicAgentStoreStub) FindAllConfigs(context.Context) ([]model.AiUserConfig, error) {
 	return s.configs, nil
 }

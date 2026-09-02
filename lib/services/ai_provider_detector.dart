@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/ai_provider_profile.dart';
 import 'api_service.dart';
-import 'api_response.dart';
+import 'ai_model_list_parser.dart';
 import 'ai_provider_service.dart';
 
 /// 探测中转站 Base URL：规范化地址、识别 OpenAI 兼容类型、拉取模型列表。
@@ -31,7 +31,7 @@ class AiProviderDetectResult {
 abstract final class AiProviderDetector {
   static Future<AiProviderDetectResult> detect({
     required String baseUrl,
-    required String apiKey,
+    String? apiKey,
     String? previewProfileId,
   }) async {
     final normalized = normalizeBaseUrl(baseUrl);
@@ -175,29 +175,16 @@ abstract final class AiProviderDetector {
   }
 
   static List<String> _extractModelNames(dynamic decoded) {
-    if (decoded is! Map) return const [];
-    final raw = ApiResponse.listOf(
-      Map<String, dynamic>.from(decoded),
-      keys: const ['models'],
-    );
-    if (raw.whereType<String>().isNotEmpty) {
-      return raw.whereType<String>().toList();
-    }
-    return raw
-        .whereType<Map>()
-        .map((m) => (m['name'] ?? m['id'])?.toString() ?? '')
-        .where((e) => e.trim().isNotEmpty)
-        .map((e) => e.trim())
-        .toList();
+    return AiModelListParser.extract(decoded);
   }
 
   static Future<Map<String, String>> _buildHeaders({
-    required String apiKey,
+    String? apiKey,
     required Uri uri,
     String? profileId,
   }) async {
-    var key = apiKey.trim();
-    if (key.isEmpty && profileId != null) {
+    var key = apiKey?.trim() ?? '';
+    if (apiKey == null && profileId != null) {
       key = await AiProviderService().readApiKey(profileId);
     }
     final base = {

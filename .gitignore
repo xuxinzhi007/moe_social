@@ -158,6 +158,10 @@ backend/.codex-tmp/
 moe_social_mcp_server/
 .qoder
 
+# Moe Admin 构建产物（独立仓，暂时放在工作区里联调）
+moe-admin/node_modules/
+moe-admin/dist/
+
 # Avatar generated artifacts
 moe-admin/public/pet/moe_avatar/
 moe-avatar/node_modules/

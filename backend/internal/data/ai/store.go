@@ -9,6 +9,7 @@ import (
 	"backend/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type store struct {
@@ -54,6 +55,45 @@ func (s *store) LoadOrCreateConfig(ctx context.Context, userID uint) (*model.AiU
 
 func (s *store) SaveConfig(ctx context.Context, cfg *model.AiUserConfig) error {
 	return s.db.WithContext(ctx).Save(cfg).Error
+}
+
+func (s *store) UpdateConfig(
+	ctx context.Context,
+	userID uint,
+	mutate func(*model.AiUserConfig) error,
+) (*model.AiUserConfig, error) {
+	var config model.AiUserConfig
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("user_id = ?", userID).
+			First(&config).Error
+		if err == gorm.ErrRecordNotFound {
+			config = model.AiUserConfig{
+				UserID:               userID,
+				ProviderProfilesJSON: "[]",
+				AgentsJSON:           "[]",
+				LorebooksJSON:        "[]",
+				UserPersona:          "",
+				PreferencesJSON:      "{}",
+			}
+			if err := tx.Create(&config).Error; err != nil {
+				return fmt.Errorf("create ai user config: %w", err)
+			}
+		} else if err != nil {
+			return fmt.Errorf("lock ai user config: %w", err)
+		}
+		if err := mutate(&config); err != nil {
+			return err
+		}
+		if err := tx.Save(&config).Error; err != nil {
+			return fmt.Errorf("save ai user config: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &config, nil
 }
 
 func (s *store) FindAllConfigs(ctx context.Context) ([]model.AiUserConfig, error) {

@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 import '../models/ai_agent.dart';
 import '../models/ai_provider_profile.dart';
 import 'ai_models_cache_service.dart';
+import 'ai_model_list_parser.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
-import 'api_response.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
 
@@ -125,10 +125,18 @@ class AiChatGatewayService {
     return fetchModelsForProfile(profile);
   }
 
-  Future<List<String>> fetchModelsForProfile(AiProviderProfile profile) async {
+  Future<List<String>> fetchModelsForProfile(
+    AiProviderProfile profile, {
+    String? apiKey,
+    bool allowCachedFallback = true,
+  }) async {
     try {
       if (profile.isLlamaCppServer || profile.isOpenAiCompatible) {
-        return _fetchOpenAiCompatibleModels(profile);
+        final models = await _fetchOpenAiCompatibleModels(
+          profile,
+          apiKey: apiKey,
+        );
+        if (models.isNotEmpty || !allowCachedFallback) return models;
       }
 
       if (profile.isBackendOllama) {
@@ -141,9 +149,12 @@ class AiChatGatewayService {
           throw Exception('加载模型失败: ${response.statusCode}');
         }
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        return _extractModelNames(decoded);
+        final models = _extractModelNames(decoded);
+        if (models.isNotEmpty || !allowCachedFallback) return models;
       }
-    } catch (_) {}
+    } catch (_) {
+      if (!allowCachedFallback) rethrow;
+    }
 
     final cached = await AiModelsCacheService().read(profile.id);
     if (cached.isNotEmpty) return cached;
@@ -156,11 +167,14 @@ class AiChatGatewayService {
   }
 
   Future<List<String>> _fetchOpenAiCompatibleModels(
-    AiProviderProfile profile,
-  ) async {
+    AiProviderProfile profile, {
+    String? apiKey,
+  }) async {
+    final resolvedApiKey = apiKey == null
+        ? await AiProviderService().readApiKey(profile.id)
+        : AiProviderService.normalizeApiKey(apiKey);
     if (profile.requiresApiKey) {
-      final apiKey = await AiProviderService().readApiKey(profile.id);
-      if (apiKey.trim().isEmpty) {
+      if (resolvedApiKey.trim().isEmpty) {
         throw Exception(
           '请先在「模型来源」中为「${profile.name}」填写 API Key',
         );
@@ -169,7 +183,14 @@ class AiChatGatewayService {
     final baseUrl = await _resolveProviderBaseUrl(profile);
     final uri = Uri.parse('${_normalizeBaseUrl(baseUrl)}/models');
     final response = await http
-        .get(uri, headers: await _buildProviderHeaders(profile, uri: uri))
+        .get(
+          uri,
+          headers: await _buildProviderHeaders(
+            profile,
+            uri: uri,
+            apiKeyOverride: resolvedApiKey,
+          ),
+        )
         .timeout(const Duration(seconds: 12));
     if (response.statusCode != 200) {
       throw Exception('加载模型失败: ${response.statusCode}');
@@ -178,9 +199,8 @@ class AiChatGatewayService {
     final names = _extractModelNames(decoded);
     if (names.isNotEmpty) {
       await AiModelsCacheService().write(profile.id, names);
-      return names;
     }
-    throw Exception('models_empty');
+    return names;
   }
 
   Future<String> sendChat({
@@ -440,11 +460,12 @@ class AiChatGatewayService {
   Future<Map<String, String>> _buildProviderHeaders(
     AiProviderProfile profile, {
     Uri? uri,
+    String? apiKeyOverride,
   }) async {
     final apiKey = profile.isLlamaCppServer
         ? ''
         : _normalizeApiKey(
-            await AiProviderService().readApiKey(profile.id),
+            apiKeyOverride ?? await AiProviderService().readApiKey(profile.id),
           );
     final baseHeaders = {
       'Content-Type': 'application/json',
@@ -457,19 +478,7 @@ class AiChatGatewayService {
   }
 
   List<String> _extractModelNames(dynamic decoded) {
-    if (decoded is! Map) return const [];
-    final raw = ApiResponse.listOf(
-      Map<String, dynamic>.from(decoded),
-      keys: const ['models'],
-    );
-    if (raw.whereType<String>().isNotEmpty) {
-      return raw.whereType<String>().toList();
-    }
-    return raw
-        .whereType<Map>()
-        .map((m) => (m['name'] ?? m['id'])?.toString() ?? '')
-        .where((e) => e.trim().isNotEmpty)
-        .toList();
+    return AiModelListParser.extract(decoded);
   }
 
   String _extractOpenAiCompatibleContent(dynamic decoded) {

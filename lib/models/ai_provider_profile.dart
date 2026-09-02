@@ -21,6 +21,12 @@ enum AiProviderType {
 
 class AiProviderProfile {
   static const String builtinBackendId = 'builtin_backend_ollama';
+  static const String legacyBuiltinLocalLlamaCppId = 'builtin_local_llama_cpp';
+
+  static const Set<String> builtinProviderIds = {
+    builtinBackendId,
+    legacyBuiltinLocalLlamaCppId,
+  };
 
   final String id;
   final String name;
@@ -50,11 +56,21 @@ class AiProviderProfile {
     required this.updatedAt,
   });
 
-  bool get isBuiltinBackend => id == builtinBackendId;
+  bool get isBuiltinBackend => isBuiltinProviderId(id);
   bool get isBuiltin => isBuiltinBackend;
   bool get isBackendOllama => providerType == AiProviderType.backendOllama;
   bool get isLlamaCppServer => providerType == AiProviderType.llamaCppServer;
-  bool get isOpenAiCompatible => providerType == AiProviderType.openAiCompatible;
+  bool get isOpenAiCompatible =>
+      providerType == AiProviderType.openAiCompatible;
+
+  static bool isBuiltinProviderId(String? raw) {
+    final normalized = raw?.trim() ?? '';
+    return builtinProviderIds.contains(normalized);
+  }
+
+  static bool isLegacyBuiltinProviderId(String? raw) {
+    return raw?.trim() == legacyBuiltinLocalLlamaCppId;
+  }
 
   /// 当 /models 不可用时，用于下拉与「模型来源」列表的回退模型 ID。
   List<String> get effectiveModelIds {
@@ -69,6 +85,14 @@ class AiProviderProfile {
   }
 
   bool get hasConfiguredModels => effectiveModelIds.isNotEmpty;
+
+  /// 发送聊天时实际使用的模型 ID；没有显式默认值时取列表第一项。
+  String get effectiveModelId {
+    final preferred = defaultModel.trim();
+    if (preferred.isNotEmpty) return preferred;
+    final ids = effectiveModelIds;
+    return ids.isEmpty ? '' : ids.first;
+  }
 
   Map<String, dynamic> toMap() {
     return {

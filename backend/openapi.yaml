@@ -443,6 +443,40 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminPublishAnnouncementResp'
+    /api/admin/app-release:
+        get:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminGetAppRelease
+            parameters:
+                - name: platform
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminGetAppReleaseResp'
+        put:
+            tags:
+                - AdminApp
+            operationId: AdminApp_AdminUpsertAppRelease
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/admin.v1.AdminUpsertAppReleaseReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/admin.v1.AdminUpsertAppReleaseResp'
     /api/admin/audit-logs:
         get:
             tags:
@@ -2761,6 +2795,108 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.GetAnnouncementResp'
+    /api/arena/deck:
+        put:
+            tags:
+                - Arena
+            operationId: Arena_SaveDeck
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/arena.v1.SaveDeckRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.SaveDeckReply'
+    /api/arena/formation:
+        put:
+            tags:
+                - Arena
+            operationId: Arena_SetFormation
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/arena.v1.SetFormationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.SetFormationReply'
+    /api/arena/home/gift:
+        post:
+            tags:
+                - Arena
+            operationId: Arena_HomeGift
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/arena.v1.HomeGiftRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.HomeGiftReply'
+    /api/arena/state:
+        get:
+            tags:
+                - Arena
+            operationId: Arena_GetState
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.GetArenaStateReply'
+    /api/arena/summon:
+        post:
+            tags:
+                - Arena
+            operationId: Arena_Summon
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/arena.v1.SummonRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.SummonReply'
+    /api/arena/tower/clear:
+        post:
+            tags:
+                - Arena
+            operationId: Arena_ClearTower
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/arena.v1.ClearTowerRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/arena.v1.ClearTowerReply'
     /api/auth/feishu/authorize-url:
         get:
             tags:
@@ -2962,6 +3098,114 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/user.v1.UpdateUserAvatarResp'
+    /api/battles:
+        post:
+            tags:
+                - BattleService
+            operationId: BattleService_CreateRoom
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/battle.v1.CreateRoomRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/battle.v1.BattleRoomReply'
+    /api/battles/{roomId}:
+        get:
+            tags:
+                - BattleService
+            operationId: BattleService_GetRoom
+            parameters:
+                - name: roomId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/battle.v1.BattleRoomReply'
+    /api/battles/{roomId}/finish:
+        post:
+            tags:
+                - BattleService
+            operationId: BattleService_FinishRoom
+            parameters:
+                - name: roomId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/battle.v1.FinishRoomRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/battle.v1.BattleRoomReply'
+    /api/battles/{roomId}/gifts:
+        post:
+            tags:
+                - BattleService
+            operationId: BattleService_SendBattleGift
+            parameters:
+                - name: roomId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/battle.v1.SendBattleGiftRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/battle.v1.SendBattleGiftReply'
+    /api/battles/{roomId}/start:
+        post:
+            tags:
+                - BattleService
+            operationId: BattleService_StartRoom
+            parameters:
+                - name: roomId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/battle.v1.StartRoomRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/battle.v1.BattleRoomReply'
     /api/chat/online:
         get:
             tags:
@@ -3306,6 +3550,53 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/companion.v1.ListChatHistoryReply'
+    /api/companion/community-identity:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_GetCommunityIdentity
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.GetCommunityIdentityReply'
+    /api/companion/context/preview:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_GetContextPreview
+            parameters:
+                - name: scene
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ContextPreviewReply'
+    /api/companion/events:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_ListEvents
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListEventsReply'
     /api/companion/memories:
         get:
             tags:
@@ -3325,6 +3616,226 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/companion.v1.ListMemoriesReply'
+    /api/companion/memories/{memoryId}:
+        put:
+            tags:
+                - Companion
+            operationId: Companion_UpdateMemory
+            parameters:
+                - name: memoryId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.UpdateMemoryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.UpdateMemoryReply'
+        delete:
+            tags:
+                - Companion
+            operationId: Companion_DeleteMemory
+            parameters:
+                - name: memoryId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.DeleteMemoryReply'
+    /api/companion/memories/{memoryId}/confirm:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_ConfirmMemory
+            parameters:
+                - name: memoryId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.ConfirmMemoryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ConfirmMemoryReply'
+    /api/companion/memories/{memoryId}/pin:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_SetMemoryPinned
+            parameters:
+                - name: memoryId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.SetMemoryPinnedRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.SetMemoryPinnedReply'
+    /api/companion/memory-conflicts:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_ListMemoryConflicts
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListMemoryConflictsReply'
+    /api/companion/memory-conflicts/{conflictId}/resolve:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_ResolveMemoryConflict
+            parameters:
+                - name: conflictId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.ResolveMemoryConflictRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ResolveMemoryConflictReply'
+    /api/companion/proactive-deliveries:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_ListProactiveDeliveries
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListProactiveDeliveriesReply'
+    /api/companion/proactive-settings:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_GetProactiveSettings
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.GetProactiveSettingsReply'
+        put:
+            tags:
+                - Companion
+            operationId: Companion_UpdateProactiveSettings
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.UpdateProactiveSettingsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.UpdateProactiveSettingsReply'
+    /api/companion/proactive/revoke:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_RevokeProactiveDelivery
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.RevokeProactiveDeliveryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.RevokeProactiveDeliveryReply'
+    /api/companion/proactive/{notificationId}/read:
+        post:
+            tags:
+                - Companion
+            operationId: Companion_MarkProactiveRead
+            parameters:
+                - name: notificationId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/companion.v1.MarkProactiveReadRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.MarkProactiveReadReply'
     /api/companion/profile:
         get:
             tags:
@@ -3355,6 +3866,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/companion.v1.UpsertProfileReply'
+    /api/companion/relationship-events:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_ListRelationshipEvents
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListRelationshipEventsReply'
     /api/companion/state:
         get:
             tags:
@@ -3368,6 +3897,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/companion.v1.GetStateReply'
+    /api/companion/timeline:
+        get:
+            tags:
+                - Companion
+            operationId: Companion_GetTimeline
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/companion.v1.ListEventsReply'
     /api/content/generate:
         post:
             tags:
@@ -4046,6 +4593,270 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/landing.v1.ListLandingFeedbackReply'
+    /api/pet/adventure:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Adventure
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.EmptyPetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.AdventureReply'
+    /api/pet/age-up:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_AgeUp
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.EmptyPetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/baby:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_HaveBaby
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.EmptyPetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/care:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Care
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.EmptyPetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/dress:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Dress
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.DressRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/feed:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Feed
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.FeedRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/friend:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_AddFriend
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.FriendRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/furniture:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_PlaceFurniture
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.PlaceFurnitureRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/iap/verify:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_VerifyIap
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.IapVerifyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.IapVerifyReply'
+    /api/pet/marry:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Marry
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.MarryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/scene:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_SetScene
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.SetSceneRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/shop/buy:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_BuySoft
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.BuyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.PetProfileReply'
+    /api/pet/state:
+        get:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_GetState
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.GetPetStateReply'
+    /api/pet/study:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Study
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.StudyRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.StudyReply'
+    /api/pet/work:
+        post:
+            tags:
+                - PetLifeSim
+            operationId: PetLifeSim_Work
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/pet.v1.EmptyPetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/pet.v1.WorkReply'
     /api/posts:
         get:
             tags:
@@ -4399,6 +5210,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/chat.v1.ClearPrivateChatHistoryResp'
+    /api/public/app-release/latest:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetLatestAppRelease
+            parameters:
+                - name: platform
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.GetLatestAppReleaseResp'
     /api/public/client-config:
         get:
             tags:
@@ -6550,6 +7378,28 @@ components:
                     type: string
                 updatedAt:
                     type: string
+        admin.v1.AdminAppRelease:
+            type: object
+            properties:
+                platform:
+                    type: string
+                versionName:
+                    type: string
+                versionCode:
+                    type: string
+                apkUrl:
+                    type: string
+                changelog:
+                    type: string
+                forceUpdate:
+                    type: boolean
+                enabled:
+                    type: boolean
+                updatedAt:
+                    type: string
+                updatedBy:
+                    type: string
+            description: AdminAppRelease 管理台 App 版本配置（每平台一条）。
         admin.v1.AdminAuditLogItem:
             type: object
             properties:
@@ -6888,6 +7738,13 @@ components:
             properties:
                 announcement:
                     $ref: '#/components/schemas/admin.v1.AdminAnnouncementItem'
+        admin.v1.AdminGetAppReleaseResp:
+            type: object
+            properties:
+                release:
+                    $ref: '#/components/schemas/admin.v1.AdminAppRelease'
+                configured:
+                    type: boolean
         admin.v1.AdminGetGiftResp:
             type: object
             properties:
@@ -7905,6 +8762,28 @@ components:
             properties:
                 plan:
                     $ref: '#/components/schemas/admin.v1.VipPlan'
+        admin.v1.AdminUpsertAppReleaseReq:
+            type: object
+            properties:
+                platform:
+                    type: string
+                versionName:
+                    type: string
+                versionCode:
+                    type: string
+                apkUrl:
+                    type: string
+                changelog:
+                    type: string
+                forceUpdate:
+                    type: boolean
+                enabled:
+                    type: boolean
+        admin.v1.AdminUpsertAppReleaseResp:
+            type: object
+            properties:
+                release:
+                    $ref: '#/components/schemas/admin.v1.AdminAppRelease'
         admin.v1.AdminUpsertMenuReq:
             type: object
             properties:
@@ -8363,6 +9242,270 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/ai.v1.AiJsonResourceItem'
+        arena.v1.ArenaDeckCard:
+            type: object
+            properties:
+                name:
+                    type: string
+                description:
+                    type: string
+                cost:
+                    type: integer
+                    format: int32
+                icon:
+                    type: string
+                color:
+                    type: integer
+                    format: int32
+                damage:
+                    type: integer
+                    format: int32
+                sourceHeroId:
+                    type: string
+                sourceHeroName:
+                    type: string
+                targeting:
+                    type: string
+        arena.v1.ArenaOwnedHero:
+            type: object
+            properties:
+                heroId:
+                    type: string
+                shards:
+                    type: integer
+                    format: int32
+                bond:
+                    type: integer
+                    format: int32
+        arena.v1.ArenaState:
+            type: object
+            properties:
+                userId:
+                    type: string
+                starCrystals:
+                    type: integer
+                    format: int32
+                towerFloor:
+                    type: integer
+                    format: int32
+                formationHeroIds:
+                    type: array
+                    items:
+                        type: string
+                ownedHeroes:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/arena.v1.ArenaOwnedHero'
+                updatedAt:
+                    type: string
+                deck:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/arena.v1.ArenaDeckCard'
+        arena.v1.ClearTowerReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+                crystalReward:
+                    type: integer
+                    format: int32
+        arena.v1.ClearTowerRequest:
+            type: object
+            properties:
+                won:
+                    type: boolean
+                bonusHeroId:
+                    type: string
+                deck:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/arena.v1.ArenaDeckCard'
+        arena.v1.GetArenaStateReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+        arena.v1.HomeGiftReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+        arena.v1.HomeGiftRequest:
+            type: object
+            properties:
+                heroId:
+                    type: string
+        arena.v1.SaveDeckReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+        arena.v1.SaveDeckRequest:
+            type: object
+            properties:
+                cards:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/arena.v1.ArenaDeckCard'
+        arena.v1.SetFormationReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+        arena.v1.SetFormationRequest:
+            type: object
+            properties:
+                heroIds:
+                    type: array
+                    items:
+                        type: string
+        arena.v1.SummonPull:
+            type: object
+            properties:
+                heroId:
+                    type: string
+                isNew:
+                    type: boolean
+                shards:
+                    type: integer
+                    format: int32
+        arena.v1.SummonReply:
+            type: object
+            properties:
+                state:
+                    $ref: '#/components/schemas/arena.v1.ArenaState'
+                pulls:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/arena.v1.SummonPull'
+                message:
+                    type: string
+        arena.v1.SummonRequest:
+            type: object
+            properties:
+                count:
+                    type: integer
+                    format: int32
+        battle.v1.BattleGiftEvent:
+            type: object
+            properties:
+                eventId:
+                    type: string
+                eventSeq:
+                    type: string
+                senderUserId:
+                    type: string
+                side:
+                    type: integer
+                    format: enum
+                giftId:
+                    type: string
+                giftName:
+                    type: string
+                giftIcon:
+                    type: string
+                quantity:
+                    type: integer
+                    format: int32
+                scoreDelta:
+                    type: string
+                leftScore:
+                    $ref: '#/components/schemas/battle.v1.BattleScore'
+                rightScore:
+                    $ref: '#/components/schemas/battle.v1.BattleScore'
+                createdAt:
+                    type: string
+        battle.v1.BattleParticipant:
+            type: object
+            properties:
+                userId:
+                    type: string
+                userName:
+                    type: string
+                avatarUrl:
+                    type: string
+        battle.v1.BattleRoomReply:
+            type: object
+            properties:
+                room:
+                    $ref: '#/components/schemas/battle.v1.BattleRoomSnapshot'
+        battle.v1.BattleRoomSnapshot:
+            type: object
+            properties:
+                roomId:
+                    type: string
+                status:
+                    type: integer
+                    format: enum
+                left:
+                    $ref: '#/components/schemas/battle.v1.BattleParticipant'
+                right:
+                    $ref: '#/components/schemas/battle.v1.BattleParticipant'
+                leftScore:
+                    $ref: '#/components/schemas/battle.v1.BattleScore'
+                rightScore:
+                    $ref: '#/components/schemas/battle.v1.BattleScore'
+                startedAt:
+                    type: string
+                endsAt:
+                    type: string
+                serverTime:
+                    type: string
+                winnerSide:
+                    type: integer
+                    format: enum
+                lastEventSeq:
+                    type: string
+        battle.v1.BattleScore:
+            type: object
+            properties:
+                side:
+                    type: integer
+                    format: enum
+                score:
+                    type: string
+                giftValue:
+                    type: string
+        battle.v1.CreateRoomRequest:
+            type: object
+            properties:
+                leftUserId:
+                    type: string
+                rightUserId:
+                    type: string
+        battle.v1.FinishRoomRequest:
+            type: object
+            properties:
+                roomId:
+                    type: string
+        battle.v1.SendBattleGiftReply:
+            type: object
+            properties:
+                room:
+                    $ref: '#/components/schemas/battle.v1.BattleRoomSnapshot'
+                event:
+                    $ref: '#/components/schemas/battle.v1.BattleGiftEvent'
+        battle.v1.SendBattleGiftRequest:
+            type: object
+            properties:
+                roomId:
+                    type: string
+                side:
+                    type: integer
+                    format: enum
+                giftId:
+                    type: string
+                quantity:
+                    type: integer
+                    format: int32
+                requestId:
+                    type: string
+        battle.v1.StartRoomRequest:
+            type: object
+            properties:
+                roomId:
+                    type: string
         behavior.v1.TrackUserBehaviorEventsReply:
             type: object
             properties:
@@ -8740,6 +9883,10 @@ components:
                     type: string
                 replyToUserName:
                     type: string
+                authorIsBot:
+                    type: boolean
+                authorBotAgentKey:
+                    type: string
         comment.v1.CreateCommentReply:
             type: object
             properties:
@@ -8994,6 +10141,21 @@ components:
                     type: string
                 isPublic:
                     type: boolean
+        companion.v1.CommunityIdentityMsg:
+            type: object
+            properties:
+                userId:
+                    type: string
+                userName:
+                    type: string
+                userAvatar:
+                    type: string
+                agentId:
+                    type: string
+                authorIsBot:
+                    type: boolean
+                authorBotAgentKey:
+                    type: string
         companion.v1.CompanionChatLogMsg:
             type: object
             properties:
@@ -9004,6 +10166,54 @@ components:
                 content:
                     type: string
                 createdAt:
+                    type: string
+        companion.v1.CompanionEventMsg:
+            type: object
+            properties:
+                id:
+                    type: string
+                eventType:
+                    type: string
+                sourceDomain:
+                    type: string
+                sourceId:
+                    type: string
+                dedupeKey:
+                    type: string
+                payloadJson:
+                    type: string
+                visibility:
+                    type: string
+                sensitivity:
+                    type: string
+                relationshipDelta:
+                    type: number
+                    format: double
+                occurredAt:
+                    type: string
+                createdAt:
+                    type: string
+        companion.v1.CompanionMemoryConflictMsg:
+            type: object
+            properties:
+                id:
+                    type: string
+                memoryId:
+                    type: string
+                memoryType:
+                    type: string
+                memoryKey:
+                    type: string
+                candidateContent:
+                    type: string
+                confidence:
+                    type: number
+                    format: double
+                status:
+                    type: string
+                createdAt:
+                    type: string
+                resolvedAt:
                     type: string
         companion.v1.CompanionMemoryMsg:
             type: object
@@ -9019,6 +10229,19 @@ components:
                     format: int32
                 createdAt:
                     type: string
+                pinned:
+                    type: boolean
+                    description: 置顶：列表靠前；置顶时服务端会取消过期（永久保留）。
+                userConfirmed:
+                    type: boolean
+                    description: 用户已确认：表示用户检查过这条记忆。
+                confirmedAt:
+                    type: string
+                memoryKey:
+                    type: string
+                confidence:
+                    type: number
+                    format: double
         companion.v1.CompanionMomentMsg:
             type: object
             properties:
@@ -9028,6 +10251,47 @@ components:
                     type: string
                 timeLabel:
                     type: string
+        companion.v1.CompanionProactiveDeliveryMsg:
+            type: object
+            properties:
+                deliveryKey:
+                    type: string
+                notificationId:
+                    type: string
+                status:
+                    type: string
+                reason:
+                    type: string
+                priority:
+                    type: integer
+                    format: int32
+                scheduledAt:
+                    type: string
+                deliveredAt:
+                    type: string
+                readAt:
+                    type: string
+                expiresAt:
+                    type: string
+                revokedAt:
+                    type: string
+        companion.v1.CompanionProactiveSettingsMsg:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                dailyLimit:
+                    type: integer
+                    format: int32
+                quietStart:
+                    type: integer
+                    format: int32
+                quietEnd:
+                    type: integer
+                    format: int32
+                timezoneOffset:
+                    type: integer
+                    format: int32
         companion.v1.CompanionProfileMsg:
             type: object
             properties:
@@ -9056,6 +10320,31 @@ components:
                 lifeEntityId:
                     type: integer
                     format: int32
+                avatarUrl:
+                    type: string
+                    description: 关系层头像 URL（用户自定义）；空则前端回退 emoji。与世界居民形象分离。
+                worldBindStatus:
+                    type: string
+                    description: 世界绑定状态：unbound | bound_ok | bound_missing（已绑定但居民不在舞台，不解绑）。
+        companion.v1.CompanionRelationshipEventMsg:
+            type: object
+            properties:
+                id:
+                    type: string
+                eventType:
+                    type: string
+                title:
+                    type: string
+                content:
+                    type: string
+                relationshipLevel:
+                    type: integer
+                    format: int32
+                intimacyScore:
+                    type: number
+                    format: double
+                createdAt:
+                    type: string
         companion.v1.CompanionStateMsg:
             type: object
             properties:
@@ -9081,6 +10370,62 @@ components:
                 energy:
                     type: number
                     format: double
+                entityAlive:
+                    type: boolean
+                    description: 绑定居民是否在舞台上存活；false 时 moments 仍可来自历史事件日志。
+                worldBindStatus:
+                    type: string
+                    description: 与 Profile.world_bind_status 对齐，便于 state 单接口刷新 UI。
+        companion.v1.ConfirmMemoryReply:
+            type: object
+            properties:
+                memory:
+                    $ref: '#/components/schemas/companion.v1.CompanionMemoryMsg'
+        companion.v1.ConfirmMemoryRequest:
+            type: object
+            properties:
+                memoryId:
+                    type: string
+        companion.v1.ContextPreviewReply:
+            type: object
+            properties:
+                scene:
+                    type: string
+                historyCount:
+                    type: integer
+                    format: int32
+                memoryCount:
+                    type: integer
+                    format: int32
+                relationshipLevel:
+                    type: integer
+                    format: int32
+                intimacyScore:
+                    type: number
+                    format: double
+                worldBindStatus:
+                    type: string
+                firstChat:
+                    type: boolean
+                relationshipEventCount:
+                    type: integer
+                    format: int32
+                unfinishedTopicCount:
+                    type: integer
+                    format: int32
+        companion.v1.DeleteMemoryReply:
+            type: object
+            properties: {}
+        companion.v1.GetCommunityIdentityReply:
+            type: object
+            properties:
+                identity:
+                    $ref: '#/components/schemas/companion.v1.CommunityIdentityMsg'
+        companion.v1.GetProactiveSettingsReply:
+            type: object
+            properties:
+                settings:
+                    $ref: '#/components/schemas/companion.v1.CompanionProactiveSettingsMsg'
         companion.v1.GetProfileReply:
             type: object
             properties:
@@ -9100,6 +10445,13 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/companion.v1.CompanionChatLogMsg'
+        companion.v1.ListEventsReply:
+            type: object
+            properties:
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionEventMsg'
         companion.v1.ListMemoriesReply:
             type: object
             properties:
@@ -9107,6 +10459,101 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/companion.v1.CompanionMemoryMsg'
+        companion.v1.ListMemoryConflictsReply:
+            type: object
+            properties:
+                conflicts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionMemoryConflictMsg'
+        companion.v1.ListProactiveDeliveriesReply:
+            type: object
+            properties:
+                deliveries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionProactiveDeliveryMsg'
+        companion.v1.ListRelationshipEventsReply:
+            type: object
+            properties:
+                events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/companion.v1.CompanionRelationshipEventMsg'
+        companion.v1.MarkProactiveReadReply:
+            type: object
+            properties: {}
+        companion.v1.MarkProactiveReadRequest:
+            type: object
+            properties:
+                notificationId:
+                    type: string
+        companion.v1.ResolveMemoryConflictReply:
+            type: object
+            properties: {}
+        companion.v1.ResolveMemoryConflictRequest:
+            type: object
+            properties:
+                conflictId:
+                    type: string
+                resolution:
+                    type: string
+        companion.v1.RevokeProactiveDeliveryReply:
+            type: object
+            properties: {}
+        companion.v1.RevokeProactiveDeliveryRequest:
+            type: object
+            properties:
+                deliveryKey:
+                    type: string
+                reason:
+                    type: string
+        companion.v1.SetMemoryPinnedReply:
+            type: object
+            properties:
+                memory:
+                    $ref: '#/components/schemas/companion.v1.CompanionMemoryMsg'
+        companion.v1.SetMemoryPinnedRequest:
+            type: object
+            properties:
+                memoryId:
+                    type: string
+                pinned:
+                    type: boolean
+        companion.v1.UpdateMemoryReply:
+            type: object
+            properties:
+                memory:
+                    $ref: '#/components/schemas/companion.v1.CompanionMemoryMsg'
+        companion.v1.UpdateMemoryRequest:
+            type: object
+            properties:
+                memoryId:
+                    type: string
+                content:
+                    type: string
+        companion.v1.UpdateProactiveSettingsReply:
+            type: object
+            properties:
+                settings:
+                    $ref: '#/components/schemas/companion.v1.CompanionProactiveSettingsMsg'
+        companion.v1.UpdateProactiveSettingsRequest:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                dailyLimit:
+                    type: integer
+                    format: int32
+                quietStart:
+                    type: integer
+                    format: int32
+                quietEnd:
+                    type: integer
+                    format: int32
+                timezoneOffset:
+                    type: integer
+                    format: int32
         companion.v1.UpsertProfileReply:
             type: object
             properties:
@@ -9134,6 +10581,8 @@ components:
                 lifeEntityId:
                     type: integer
                     format: int32
+                avatarUrl:
+                    type: string
         content.v1.GenerateContentData:
             type: object
             properties:
@@ -9847,6 +11296,9 @@ components:
                     type: string
                 preferencesJson:
                     type: string
+                providerApiKeysJson:
+                    type: string
+                    description: 已明确开启账号同步的 Provider API Key；服务端只保存密文。
         llm.v1.GetUserMemoriesDisplayResp:
             type: object
             properties:
@@ -10004,12 +11456,21 @@ components:
                     type: boolean
                 preferencesJson:
                     type: string
+                providerApiKeyProfileId:
+                    type: string
+                    description: 单个 Provider 密钥的增量写入；key 为空表示删除云端密钥。
+                providerApiKey:
+                    type: string
+                hasProviderApiKey:
+                    type: boolean
         llm.v1.UpsertAiUserConfigResp:
             type: object
             properties:
                 userPersona:
                     type: string
                 preferencesJson:
+                    type: string
+                providerApiKeysJson:
                     type: string
         llm.v1.UpsertUserMemoryReq:
             type: object
@@ -11171,6 +12632,187 @@ components:
                     type: string
                 userId:
                     type: string
+        pet.v1.AdventureReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+                message:
+                    type: string
+                win:
+                    type: boolean
+        pet.v1.BuyRequest:
+            type: object
+            properties:
+                itemId:
+                    type: string
+        pet.v1.DressRequest:
+            type: object
+            properties:
+                hatId:
+                    type: string
+                topId:
+                    type: string
+                bottomId:
+                    type: string
+                shoesId:
+                    type: string
+        pet.v1.EmptyPetRequest:
+            type: object
+            properties: {}
+        pet.v1.FeedRequest:
+            type: object
+            properties:
+                itemId:
+                    type: string
+                    description: Kept optional for compatibility with clients that used the default meal.
+        pet.v1.FriendRequest:
+            type: object
+            properties:
+                friendId:
+                    type: string
+        pet.v1.GetPetStateReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+        pet.v1.IapVerifyReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+                verified:
+                    type: boolean
+                placeholder:
+                    type: boolean
+                message:
+                    type: string
+        pet.v1.IapVerifyRequest:
+            type: object
+            properties:
+                productId:
+                    type: string
+                receipt:
+                    type: string
+        pet.v1.MarryRequest:
+            type: object
+            properties:
+                spouseId:
+                    type: string
+        pet.v1.PetFurniture:
+            type: object
+            properties:
+                id:
+                    type: string
+                x:
+                    type: number
+                    format: double
+                y:
+                    type: number
+                    format: double
+                scene:
+                    type: string
+        pet.v1.PetProfile:
+            type: object
+            properties:
+                id:
+                    type: string
+                userId:
+                    type: string
+                name:
+                    type: string
+                species:
+                    type: string
+                hunger:
+                    type: number
+                    format: double
+                energy:
+                    type: number
+                    format: double
+                mood:
+                    type: number
+                    format: double
+                coins:
+                    type: integer
+                    format: int32
+                ageYears:
+                    type: integer
+                    format: int32
+                virtue:
+                    type: integer
+                    format: int32
+                intel:
+                    type: integer
+                    format: int32
+                sport:
+                    type: integer
+                    format: int32
+                art:
+                    type: integer
+                    format: int32
+                labor:
+                    type: integer
+                    format: int32
+                hatId:
+                    type: string
+                topId:
+                    type: string
+                bottomId:
+                    type: string
+                shoesId:
+                    type: string
+                sceneId:
+                    type: string
+                furniture:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/pet.v1.PetFurniture'
+                spouseUserId:
+                    type: string
+                hasBaby:
+                    type: boolean
+                friends:
+                    type: array
+                    items:
+                        type: string
+                updatedAt:
+                    type: string
+                createdAt:
+                    type: string
+        pet.v1.PetProfileReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+        pet.v1.PlaceFurnitureRequest:
+            type: object
+            properties:
+                item:
+                    $ref: '#/components/schemas/pet.v1.PetFurniture'
+        pet.v1.SetSceneRequest:
+            type: object
+            properties:
+                sceneId:
+                    type: string
+        pet.v1.StudyReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+                message:
+                    type: string
+        pet.v1.StudyRequest:
+            type: object
+            properties:
+                subject:
+                    type: string
+        pet.v1.WorkReply:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/pet.v1.PetProfile'
+                message:
+                    type: string
         platform.v1.AnnouncementItem:
             type: object
             properties:
@@ -11215,6 +12857,23 @@ components:
             properties:
                 item:
                     $ref: '#/components/schemas/platform.v1.AnnouncementItem'
+        platform.v1.GetLatestAppReleaseResp:
+            type: object
+            properties:
+                available:
+                    type: boolean
+                platform:
+                    type: string
+                versionName:
+                    type: string
+                versionCode:
+                    type: string
+                apkUrl:
+                    type: string
+                changelog:
+                    type: string
+                forceUpdate:
+                    type: boolean
         platform.v1.GetLlmConfigResp:
             type: object
             properties:
@@ -12733,6 +14392,8 @@ tags:
     - name: AdminApp
     - name: AdminInsights
     - name: AiResources
+    - name: Arena
+    - name: BattleService
     - name: BehaviorApp
     - name: ChatPresenceService
     - name: Checkin
@@ -12753,6 +14414,8 @@ tags:
            GET /api/admin/moe/brain/pipeline?agent_key=
          试点 :19032；灰度 moe.kratos_admin_http_enabled
     - name: NotifyService
+    - name: PetLifeSim
+      description: PetLifeSim 养成完整域服务。
     - name: Platform
     - name: PostService
     - name: PrivateMessageService

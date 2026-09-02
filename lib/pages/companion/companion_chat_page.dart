@@ -21,6 +21,7 @@ import '../../widgets/ai/ai_chat_background.dart';
 import '../../widgets/ai/companion_avatar.dart';
 import '../../widgets/ai/message_bubble.dart';
 import '../../widgets/moe_toast.dart';
+import '../../widgets/motion/moe_pressable.dart';
 
 /// 伙伴聊天页 —— 接入后端 SSE 流式聊天，所有 Prompt/LLM 逻辑由后端处理。
 class CompanionChatPage extends StatefulWidget {
@@ -84,25 +85,32 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
   Future<void> _loadProviderStatus() async {
     try {
       final providerService = AiProviderService();
-      final selectedId = await providerService.readLastSelectedProfileId();
       final profiles = await providerService.listProfiles();
       final customProfiles = profiles.where((item) => !item.isBuiltin).toList();
-      if (selectedId == null || selectedId.isEmpty) {
-        if (!mounted) return;
-        setState(() {
-          _providerStatus = customProfiles.isEmpty
-              ? _ChatProviderStatus.notConfigured
-              : _ChatProviderStatus.notSelected;
-          _providerLabel = customProfiles.isEmpty ? '未配置模型' : '请选择模型';
-        });
-        return;
-      }
-      final provider = await providerService.resolveProfile(selectedId);
+      final selection =
+          await providerService.resolveActiveProvider(profiles: profiles);
+      final provider = selection.profile;
       if (provider.isBuiltinBackend) {
         if (!mounted) return;
+        final waitingForSelection =
+            selection.source == AiProviderSelectionSource.defaultBuiltin &&
+                customProfiles.isNotEmpty;
+        final notConfigured =
+            selection.source == AiProviderSelectionSource.defaultBuiltin &&
+                customProfiles.isEmpty;
         setState(() {
-          _providerStatus = _ChatProviderStatus.backendDefault;
-          _providerLabel = '使用系统模型';
+          _activeProvider = null;
+          _providerUsage = null;
+          _providerStatus = waitingForSelection
+              ? _ChatProviderStatus.notSelected
+              : notConfigured
+                  ? _ChatProviderStatus.notConfigured
+                  : _ChatProviderStatus.backendDefault;
+          _providerLabel = waitingForSelection
+              ? '请选择模型'
+              : notConfigured
+                  ? '未配置模型'
+                  : '使用系统模型';
         });
         return;
       }
@@ -980,13 +988,6 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_providerStatus.needsConfiguration) ...[
-                _ModelSetupHint(
-                  label: _providerLabel,
-                  onConfigure: _openProviderSettings,
-                ),
-                const SizedBox(height: 8),
-              ],
               if (_listening || _isSending) ...[
                 _ComposerStatus(
                   label: _listening ? '正在听你说…' : 'TA 正在组织回应…',
@@ -1415,39 +1416,33 @@ class _ProviderStatusButton extends StatelessWidget {
         const Color(0xFFE36B6B),
       _ => const Color(0xFFE4A13C),
     };
-    return IconButton(
-      tooltip: label,
-      onPressed: onTap,
-      icon: Icon(Icons.cloud_outlined, color: color, size: 23),
-    );
-  }
-}
-
-class _ModelSetupHint extends StatelessWidget {
-  const _ModelSetupHint({required this.label, required this.onConfigure});
-
-  final String label;
-  final VoidCallback onConfigure;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFFFF4E8),
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded,
-                color: Color(0xFFC07A28), size: 18),
-            const SizedBox(width: 7),
-            Expanded(
-              child: Text('模型服务$label，配置后即可开始稳定对话。',
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700)),
+    final icon = switch (status) {
+      _ChatProviderStatus.connected => Icons.cloud_done_rounded,
+      _ChatProviderStatus.failed ||
+      _ChatProviderStatus.notConfigured =>
+        Icons.cloud_off_rounded,
+      _ChatProviderStatus.backendDefault => Icons.cloud_rounded,
+      _ => Icons.cloud_queue_rounded,
+    };
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: MoePressable(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withValues(alpha: 0.22)),
             ),
-            TextButton(onPressed: onConfigure, child: const Text('去配置')),
-          ],
+            child: Icon(icon, color: color, size: 21),
+          ),
         ),
       ),
     );
