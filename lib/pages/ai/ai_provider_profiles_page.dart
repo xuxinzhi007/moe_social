@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../models/ai_provider_profile.dart';
 import '../../services/ai_chat_gateway_service.dart';
+import '../../services/ai_cloud_config_service.dart';
+import '../../services/ai_models_cache_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
@@ -88,7 +90,10 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   List<AiProviderProfile> _profiles = [];
   bool _initialLoading = true;
   bool _syncingCloud = false;
+  String? _activeProfileId;
   final Map<String, ProviderConnectivityState?> _connectivity = {};
+  final Map<String, bool> _apiKeyConfigured = {};
+  final Set<String> _cloudApiKeyProfiles = {};
 
   @override
   void initState() {
@@ -102,19 +107,40 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     } else {
       setState(() => _syncingCloud = true);
     }
-    final profiles = await AiProviderService().listProfiles();
+    final providerService = AiProviderService();
+    final profiles = await providerService.listProfiles();
+    final activeSelection =
+        await providerService.resolveActiveProvider(profiles: profiles);
     final conn = <String, ProviderConnectivityState?>{};
+    final keys = <String, bool>{};
+    final cloudKeyIds = await providerService
+        .readCloudApiKeyProfileIds()
+        .timeout(const Duration(seconds: 2), onTimeout: () => null);
     for (final p in profiles) {
       if (!p.isBuiltin) {
         conn[p.id] = await AiProviderConnectivityCache.read(p.id);
+        if (p.requiresApiKey) {
+          keys[p.id] = (await AiProviderService().readApiKey(p.id)).isNotEmpty;
+        }
       }
     }
     if (!mounted) return;
     setState(() {
       _profiles = profiles;
+      _activeProfileId = activeSelection.profile.isBuiltinBackend
+          ? null
+          : activeSelection.profile.id;
       _connectivity
         ..clear()
         ..addAll(conn);
+      _apiKeyConfigured
+        ..clear()
+        ..addAll(keys);
+      if (cloudKeyIds != null) {
+        _cloudApiKeyProfiles
+          ..clear()
+          ..addAll(cloudKeyIds);
+      }
       _initialLoading = false;
       _syncingCloud = false;
     });
@@ -173,117 +199,162 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   Widget _buildCard(AiProviderProfile profile) {
     final accent = _accentFor(profile);
     final defaultModel = profile.defaultModel.trim();
-    final extraCount = profile.manualModels
-        .map((m) => m.trim())
-        .where((m) => m.isNotEmpty && m != defaultModel)
-        .length;
     final host = _hostFor(profile.baseUrl);
+    final connectivity = _connectivity[profile.id];
+    final isActive = _activeProfileId == profile.id;
+    final configuredModelCount = profile.effectiveModelIds.length;
+    final modelCount =
+        connectivity != null && connectivity.modelCount > configuredModelCount
+            ? connectivity.modelCount
+            : configuredModelCount;
+    final keyLabel = profile.requiresApiKey
+        ? (_apiKeyConfigured[profile.id] != true
+            ? '待配置 Key'
+            : _cloudApiKeyProfiles.contains(profile.id)
+                ? '账号已同步'
+                : '仅本机保存')
+        : '无需 Key';
 
     return AiSurfaceCard(
+      onTap: () => _showEditor(initial: profile),
       padding: const EdgeInsets.fromLTRB(
         MoeTokens.spaceLg,
         MoeTokens.spaceMd,
         MoeTokens.spaceXs,
         MoeTokens.spaceMd,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-            ),
-            child: Icon(_iconFor(profile), color: accent, size: 22),
-          ),
-          const SizedBox(width: MoeTokens.spaceMd),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                ),
+                child: Icon(_iconFor(profile), color: accent, size: 22),
+              ),
+              const SizedBox(width: MoeTokens.spaceMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        profile.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: MoeTokens.fontWeightTitle,
-                          fontSize: MoeTokens.textMd,
-                          color: AiBrandTokens.titleColor,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            profile.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: MoeTokens.fontWeightTitle,
+                              fontSize: MoeTokens.textMd,
+                              color: AiBrandTokens.titleColor,
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        _StatusPill(status: _statusFor(profile)),
+                      ],
+                    ),
+                    const SizedBox(height: MoeTokens.spaceXs),
+                    Text(
+                      _descriptionFor(profile),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AiTheme.caption,
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: '更多操作',
+                padding: EdgeInsets.zero,
+                icon: const Icon(
+                  Icons.more_horiz_rounded,
+                  color: MoeTokens.inkMuted,
+                ),
+                iconSize: 22,
+                offset: const Offset(0, 8),
+                position: PopupMenuPosition.under,
+                color: MoeTokens.surface3,
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') _showEditor(initial: profile);
+                  if (value == 'delete') _delete(profile);
+                  if (value == 'select') _selectForChat(profile);
+                },
+                itemBuilder: (_) => [
+                  if (!isActive)
+                    const PopupMenuItem(
+                      value: 'select',
+                      height: 44,
+                      child: _ProviderActionMenuItem(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: '设为聊天服务',
+                        color: MoeTokens.primary,
                       ),
                     ),
-                    const SizedBox(width: MoeTokens.spaceSm),
-                    _StatusPill(status: _statusFor(profile)),
-                  ],
-                ),
-                const SizedBox(height: MoeTokens.spaceXs),
-                Text(
-                  _descriptionFor(profile),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AiTheme.caption,
-                ),
-                const SizedBox(height: MoeTokens.spaceSm),
-                Wrap(
-                  spacing: MoeTokens.spaceSm,
-                  runSpacing: MoeTokens.spaceXs,
-                  children: [
-                    if (host.isNotEmpty)
-                      _MetaChip(icon: Icons.link_rounded, label: host),
-                    _MetaChip(
-                      icon: Icons.smart_toy_outlined,
-                      label: defaultModel.isEmpty ? '未设置模型' : defaultModel,
-                      muted: defaultModel.isEmpty,
+                  const PopupMenuItem(
+                    value: 'edit',
+                    height: 44,
+                    child: _ProviderActionMenuItem(
+                      icon: Icons.edit_outlined,
+                      label: '编辑',
+                      color: MoeTokens.titleText,
                     ),
-                    if (extraCount > 0) _MetaChip(label: '+$extraCount'),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    height: 44,
+                    child: _ProviderActionMenuItem(
+                      icon: Icons.delete_outline_rounded,
+                      label: '删除',
+                      color: MoeTokens.danger,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          PopupMenuButton<String>(
-            tooltip: '更多操作',
-            padding: EdgeInsets.zero,
-            icon: const Icon(
-              Icons.more_vert_rounded,
-              color: MoeTokens.inkMuted,
-            ),
-            iconSize: 22,
-            offset: const Offset(0, 8),
-            position: PopupMenuPosition.under,
-            color: MoeTokens.surface3,
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
-            ),
-            onSelected: (value) {
-              if (value == 'edit') _showEditor(initial: profile);
-              if (value == 'delete') _delete(profile);
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'edit',
-                height: 44,
-                child: _ProviderActionMenuItem(
-                  icon: Icons.edit_outlined,
-                  label: '编辑',
-                  color: MoeTokens.titleText,
-                ),
+          const SizedBox(height: MoeTokens.spaceMd),
+          Divider(height: 1, color: MoeTokens.lineSoft.withValues(alpha: 0.7)),
+          const SizedBox(height: MoeTokens.spaceMd),
+          Wrap(
+            spacing: MoeTokens.spaceSm,
+            runSpacing: MoeTokens.spaceXs,
+            children: [
+              if (host.isNotEmpty)
+                _MetaChip(icon: Icons.link_rounded, label: host),
+              _MetaChip(
+                icon: Icons.smart_toy_outlined,
+                label: modelCount > 0 ? '$modelCount 个模型' : '未设置模型',
+                muted: modelCount == 0,
               ),
-              PopupMenuItem(
-                value: 'delete',
-                height: 44,
-                child: _ProviderActionMenuItem(
-                  icon: Icons.delete_outline_rounded,
-                  label: '删除',
-                  color: MoeTokens.danger,
-                ),
+              _MetaChip(
+                icon: profile.requiresApiKey
+                    ? Icons.lock_outline_rounded
+                    : Icons.lock_open_outlined,
+                label: keyLabel,
+                muted: profile.requiresApiKey &&
+                    _apiKeyConfigured[profile.id] != true,
               ),
+              if (isActive)
+                const _MetaChip(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: '聊天使用中',
+                ),
+              if (defaultModel.isNotEmpty)
+                _MetaChip(
+                  icon: Icons.star_outline_rounded,
+                  label: defaultModel,
+                ),
             ],
           ),
         ],
@@ -295,17 +366,24 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
   Future<void> _showEditor({AiProviderProfile? initial}) async {
     final isEditing = initial != null && !initial.isBuiltin;
+    final editorProfileId =
+        initial?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
+    final storedApiKey =
+        initial == null ? '' : await AiProviderService().readApiKey(initial.id);
+    final cachedModels = await AiModelsCacheService().read(editorProfileId);
+    final canSyncApiKey = AiCloudConfigService().isAuthenticated;
+    final cloudApiKeyProfileIds = initial != null && canSyncApiKey
+        ? await AiProviderService()
+            .readCloudApiKeyProfileIds()
+            .timeout(const Duration(seconds: 2), onTimeout: () => null)
+        : null;
     final nameController = TextEditingController(text: initial?.name ?? '');
     final baseUrlController =
         TextEditingController(text: initial?.baseUrl ?? '');
     final defaultModelController =
         TextEditingController(text: initial?.defaultModel ?? '');
     final modelInputController = TextEditingController();
-    final apiKeyController = TextEditingController(
-      text: initial == null
-          ? ''
-          : await AiProviderService().readApiKey(initial.id),
-    );
+    final apiKeyController = TextEditingController(text: storedApiKey);
 
     var providerType = initial?.providerType ?? AiProviderType.openAiCompatible;
     var supportsSystemMessages = initial?.supportsSystemMessages ?? true;
@@ -318,16 +396,25 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
           .where((model) => model.isNotEmpty),
     ];
     final initialDefaultModel = initial?.defaultModel.trim() ?? '';
-    if (initialDefaultModel.isNotEmpty &&
-        !manualModels.contains(initialDefaultModel)) {
-      manualModels.insert(0, initialDefaultModel);
+    final cachedAndConfigured = <String>{
+      ...manualModels,
+      ...cachedModels,
+    };
+    if (initialDefaultModel.isNotEmpty) {
+      cachedAndConfigured.add(initialDefaultModel);
     }
+    manualModels = cachedAndConfigured.toList();
     String? testResult;
     bool? testSuccess;
     var detecting = false;
     var showAdvanced = false;
     var obscureApiKey = true;
     var saving = false;
+    var clearApiKey = false;
+    var detectedModelCount = 0;
+    var syncApiKeyToAccount =
+        cloudApiKeyProfileIds?.contains(editorProfileId) == true;
+    var cloudApiKeySyncTouched = false;
     var selectedPreset = -1;
 
     // 尝试匹配已有 preset
@@ -364,17 +451,22 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
       manualModels = merged.toList();
     }
 
+    bool? savedToCloud;
     try {
-      await AiSheet.show<void>(
+      savedToCloud = await AiSheet.show<bool>(
         context: context,
         title: isEditing ? '编辑模型服务' : '添加模型服务',
         subtitle: '连接 AI 模型，让你的伙伴更聪明',
+        initialChildSize: 0.98,
+        minChildSize: 0.64,
+        maxChildSize: 0.99,
         footer: StatefulBuilder(
           builder: (ctx, setFooterState) {
             return Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: AiTheme.secondaryButtonStyle(),
                     onPressed: saving ? null : () => Navigator.pop(ctx),
                     child: const Text('取消'),
                   ),
@@ -396,8 +488,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                             try {
                               final now = DateTime.now();
                               final profile = AiProviderProfile(
-                                id: initial?.id ??
-                                    now.millisecondsSinceEpoch.toString(),
+                                id: editorProfileId,
                                 name: name,
                                 providerType: providerType,
                                 baseUrl: baseUrl,
@@ -411,17 +502,35 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                                 createdAt: initial?.createdAt ?? now,
                                 updatedAt: now,
                               );
+                              final bool? cloudSyncDecision =
+                                  cloudApiKeySyncTouched ||
+                                          cloudApiKeyProfileIds != null
+                                      ? syncApiKeyToAccount
+                                      : null;
                               await AiProviderService().saveProfile(
                                 profile,
                                 apiKey: apiKeyController.text.trim(),
+                                clearApiKey: clearApiKey,
+                                syncApiKeyToCloud: cloudSyncDecision,
                               );
+                              if (!isEditing) {
+                                await AiProviderService()
+                                    .saveLastSelectedProfileId(profile.id);
+                              }
                               if (testSuccess == true) {
                                 await AiProviderConnectivityCache.saveSuccess(
                                   profile.id,
+                                  modelCount: detectedModelCount > 0
+                                      ? detectedModelCount
+                                      : manualModels.length,
                                 );
                               }
                               if (!ctx.mounted) return;
-                              Navigator.pop(ctx);
+                              Navigator.pop(ctx, cloudSyncDecision == true);
+                            } on AiCloudSyncException catch (error) {
+                              if (!ctx.mounted) return;
+                              setFooterState(() => saving = false);
+                              MoeToast.error(ctx, error.message);
                             } catch (_) {
                               if (!ctx.mounted) return;
                               setFooterState(() => saving = false);
@@ -462,6 +571,31 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 MoeToast.error(context, '请先填写服务地址');
                 return;
               }
+              final enteredApiKey =
+                  AiProviderService.normalizeApiKey(apiKeyController.text);
+              final previewProfile = AiProviderProfile(
+                id: editorProfileId,
+                name: nameController.text.trim().isEmpty
+                    ? '预览'
+                    : nameController.text.trim(),
+                providerType: providerType,
+                baseUrl: AiProviderDetector.normalizeBaseUrl(url),
+                defaultModel: defaultModelController.text.trim(),
+                manualModels: manualModels,
+                supportsSystemMessages: supportsSystemMessages,
+                supportsStreaming: supportsStreaming,
+                supportsVision: supportsVision,
+                supportsToolCalls: supportsToolCalls,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+              if (previewProfile.requiresApiKey && enteredApiKey.isEmpty) {
+                setLocalState(() {
+                  testResult = '请先填写 API Key，再检测连接';
+                  testSuccess = false;
+                });
+                return;
+              }
               setLocalState(() {
                 detecting = true;
                 testResult = null;
@@ -490,9 +624,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 }
 
                 // 2. 测试连接
-                const previewId = 'preview_provider_test';
                 final temp = AiProviderProfile(
-                  id: initial?.id ?? previewId,
+                  id: editorProfileId,
                   name: nameController.text.trim().isEmpty
                       ? '预览'
                       : nameController.text.trim(),
@@ -507,23 +640,17 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                 );
-                await AiProviderService().writeApiKey(
-                  temp.id,
-                  apiKeyController.text.trim(),
-                );
                 late final List<String> models;
-                try {
-                  models =
-                      await AiChatGatewayService().fetchModelsForProfile(temp);
-                } finally {
-                  if (initial == null) {
-                    await AiProviderService().deleteApiKey(previewId);
-                  }
-                }
+                models = await AiChatGatewayService().fetchModelsForProfile(
+                  temp,
+                  apiKey: enteredApiKey,
+                  allowCachedFallback: false,
+                );
                 if (!ctx.mounted) return;
 
                 if (models.isNotEmpty) {
                   mergeModels(models);
+                  detectedModelCount = models.length;
                   if (defaultModelController.text.trim().isEmpty) {
                     defaultModelController.text = models.first.trim();
                   }
@@ -581,6 +708,14 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 modelInputController.clear();
               });
             }
+
+            final selectedModel = defaultModelController.text.trim();
+            final displayModels = <String>[
+              if (selectedModel.isNotEmpty &&
+                  manualModels.contains(selectedModel))
+                selectedModel,
+              ...manualModels.where((model) => model != selectedModel),
+            ];
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -686,6 +821,20 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     suffixIcon: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (apiKeyController.text.trim().isNotEmpty)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_sweep_outlined,
+                              size: 18,
+                            ),
+                            tooltip: '清除已保存的 API Key',
+                            onPressed: () => setLocalState(() {
+                              apiKeyController.clear();
+                              clearApiKey = true;
+                              syncApiKeyToAccount = false;
+                              cloudApiKeySyncTouched = true;
+                            }),
+                          ),
                         IconButton(
                           icon: Icon(
                             obscureApiKey
@@ -714,6 +863,86 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                       ],
                     ),
                   ),
+                  onChanged: (value) {
+                    if (value.trim().isEmpty && initial != null) {
+                      clearApiKey = true;
+                      syncApiKeyToAccount = false;
+                      cloudApiKeySyncTouched = true;
+                    } else if (value.trim().isNotEmpty) {
+                      clearApiKey = false;
+                    }
+                    setLocalState(() {});
+                  },
+                ),
+                const SizedBox(height: MoeTokens.spaceSm),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    MoeTokens.spaceMd,
+                    MoeTokens.spaceSm,
+                    MoeTokens.spaceSm,
+                    MoeTokens.spaceSm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AiBrandTokens.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
+                    border: Border.all(
+                      color: AiBrandTokens.primary.withValues(alpha: 0.14),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.cloud_sync_outlined,
+                        size: 19,
+                        color: canSyncApiKey
+                            ? AiBrandTokens.primary
+                            : MoeTokens.hintText,
+                      ),
+                      const SizedBox(width: MoeTokens.spaceSm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '在账号间同步 Key',
+                              style: AiTheme.body.copyWith(
+                                fontWeight: MoeTokens.fontWeightSubtitle,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              !canSyncApiKey
+                                  ? '登录后可开启，默认不会上传'
+                                  : cloudApiKeyProfileIds == null && isEditing
+                                      ? '账号同步暂时不可用，可先保存在本机'
+                                      : syncApiKeyToAccount
+                                          ? '已加密保存，换设备登录后可恢复'
+                                          : '仅保存在当前设备，不会上传',
+                              style: AiTheme.caption,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: syncApiKeyToAccount,
+                        activeThumbColor: AiBrandTokens.primary,
+                        onChanged: !canSyncApiKey ||
+                                apiKeyController.text.trim().isEmpty ||
+                                (cloudApiKeyProfileIds == null && isEditing)
+                            ? null
+                            : (value) => setLocalState(() {
+                                  syncApiKeyToAccount = value;
+                                  cloudApiKeySyncTouched = true;
+                                }),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: MoeTokens.spaceXs),
+                Text(
+                  '本机始终保留安全副本；关闭同步不会影响当前设备。',
+                  style: AiTheme.caption.copyWith(color: AiTheme.success),
                 ),
                 const SizedBox(height: MoeTokens.spaceLg),
 
@@ -801,13 +1030,10 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                 ),
                 const SizedBox(height: MoeTokens.spaceMd),
 
-                // 模型芯片
+                // 模型列表
                 if (manualModels.isEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: MoeTokens.spaceLg,
-                      vertical: MoeTokens.spaceXl,
-                    ),
+                    padding: const EdgeInsets.all(MoeTokens.spaceLg),
                     decoration: BoxDecoration(
                       color: MoeTokens.softChipBg,
                       borderRadius: BorderRadius.circular(MoeTokens.radiusLg),
@@ -839,29 +1065,51 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                     ),
                   )
                 else
-                  Wrap(
-                    spacing: MoeTokens.spaceSm,
-                    runSpacing: MoeTokens.spaceSm,
-                    children: manualModels.map((m) {
-                      final isDefault = defaultModelController.text.trim() == m;
-                      return _ModelChip(
-                        model: m,
-                        isDefault: isDefault,
-                        onTap: () => setLocalState(
-                          () => defaultModelController.text = m,
-                        ),
-                        onDelete: () {
-                          setLocalState(() {
-                            manualModels.remove(m);
-                            if (defaultModelController.text.trim() == m) {
-                              defaultModelController.text = manualModels.isEmpty
-                                  ? ''
-                                  : manualModels.first;
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            '${manualModels.length} 个模型',
+                            style: AiTheme.caption.copyWith(
+                              color: MoeTokens.inkMuted,
+                              fontWeight: MoeTokens.fontWeightSubtitle,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (selectedModel.isNotEmpty)
+                            const _ModelDefaultBadge(),
+                        ],
+                      ),
+                      const SizedBox(height: MoeTokens.spaceSm),
+                      ...displayModels.map((model) {
+                        final isDefault = selectedModel == model;
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: MoeTokens.spaceXs,
+                          ),
+                          child: _ModelRow(
+                            model: model,
+                            isDefault: isDefault,
+                            onTap: () => setLocalState(
+                              () => defaultModelController.text = model,
+                            ),
+                            onDelete: () {
+                              setLocalState(() {
+                                manualModels.remove(model);
+                                if (defaultModelController.text.trim() ==
+                                    model) {
+                                  defaultModelController.text =
+                                      manualModels.isEmpty
+                                          ? ''
+                                          : manualModels.first;
+                                }
+                              });
+                            },
+                          ),
+                        );
+                      }),
+                    ],
                   ),
 
                 // 手动添加模型
@@ -873,8 +1121,8 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                         controller: modelInputController,
                         textInputAction: TextInputAction.done,
                         decoration: AiTheme.inputDecoration(
-                          labelText: '添加模型',
-                          hintText: '输入模型名称',
+                          labelText: '手动添加模型 ID',
+                          hintText: '例如：gpt-4o-mini',
                         ).copyWith(
                           prefixIcon: const Icon(
                             Icons.add_circle_outline_rounded,
@@ -1041,7 +1289,12 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
         disposeControllers();
       });
     }
-    if (mounted) await _load();
+    if (mounted) {
+      await _load();
+      if (savedToCloud == true && mounted) {
+        MoeToast.success(context, 'API Key 已同步到账号，登录后可恢复');
+      }
+    }
   }
 
   Widget _buildSectionLabel(String text) {
@@ -1059,6 +1312,13 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
   }
 
   // ── 删除 ──
+
+  Future<void> _selectForChat(AiProviderProfile profile) async {
+    await AiProviderService().saveLastSelectedProfileId(profile.id);
+    if (!mounted) return;
+    setState(() => _activeProfileId = profile.id);
+    MoeToast.success(context, '已切换到 ${profile.name}，聊天会使用它');
+  }
 
   Future<void> _delete(AiProviderProfile profile) async {
     final ok = await AiConfirmSheet.show(
@@ -1144,17 +1404,35 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
                             MoeTokens.spaceXs,
-                            0,
+                            MoeTokens.spaceSm,
                             MoeTokens.spaceXs,
                             MoeTokens.spaceMd,
                           ),
-                          child: Text(
-                            '已添加 ${customProfiles.length} 个服务',
-                            style: const TextStyle(
-                              fontSize: MoeTokens.textSm,
-                              fontWeight: MoeTokens.fontWeightSubtitle,
-                              color: MoeTokens.inkMuted,
-                            ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('我的模型来源', style: AiTheme.title),
+                                    const SizedBox(height: MoeTokens.spaceXs),
+                                    Text(
+                                      '聊天和角色会共用这里的连接配置',
+                                      style: AiTheme.caption,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${customProfiles.length} 个服务',
+                                style: const TextStyle(
+                                  fontSize: MoeTokens.textSm,
+                                  fontWeight: MoeTokens.fontWeightSubtitle,
+                                  color: MoeTokens.inkMuted,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         ...customProfiles.map(_buildCard),
@@ -1371,8 +1649,8 @@ class _PresetTile extends StatelessWidget {
   }
 }
 
-class _ModelChip extends StatelessWidget {
-  const _ModelChip({
+class _ModelRow extends StatelessWidget {
+  const _ModelRow({
     required this.model,
     required this.isDefault,
     required this.onTap,
@@ -1386,80 +1664,114 @@ class _ModelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDefault ? AiBrandTokens.primary : MoeTokens.caption;
+    final accent = isDefault ? AiBrandTokens.primary : MoeTokens.inkMuted;
     return Semantics(
       button: true,
       selected: isDefault,
       label: isDefault ? '$model，默认模型' : model,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 248),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-            child: AnimatedContainer(
-              duration: MoeTokens.motionFast,
-              padding: const EdgeInsets.symmetric(
-                horizontal: MoeTokens.spaceMd,
-                vertical: MoeTokens.spaceXs,
-              ),
-              decoration: BoxDecoration(
-                color: isDefault
-                    ? AiBrandTokens.primary.withValues(alpha: 0.10)
-                    : MoeTokens.softChipBg,
-                borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
-                border: Border.all(
-                  color: isDefault
-                      ? AiBrandTokens.primary.withValues(alpha: 0.8)
-                      : MoeTokens.surfaceBorder,
-                  width: isDefault ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isDefault) ...[
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 15,
-                      color: AiBrandTokens.primary,
-                    ),
-                    const SizedBox(width: MoeTokens.spaceXs),
-                  ],
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 168),
-                    child: Text(
-                      model,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: MoeTokens.textSm,
-                        fontWeight: isDefault
-                            ? MoeTokens.fontWeightTitle
-                            : MoeTokens.fontWeightSubtitle,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: MoeTokens.spaceXs),
-                  IconButton(
-                    onPressed: onDelete,
-                    tooltip: '移除模型',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 28,
-                      height: 28,
-                    ),
-                    splashRadius: 16,
-                    iconSize: 16,
-                    color: MoeTokens.hintText,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
-              ),
+      child: MoePressable(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+        child: AnimatedContainer(
+          duration: MoeTokens.motionFast,
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.fromLTRB(
+            MoeTokens.spaceSm,
+            MoeTokens.spaceXs,
+            MoeTokens.spaceXs,
+            MoeTokens.spaceXs,
+          ),
+          decoration: BoxDecoration(
+            color: isDefault
+                ? AiBrandTokens.primary.withValues(alpha: 0.10)
+                : MoeTokens.softChipBg,
+            borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+            border: Border.all(
+              color: isDefault
+                  ? AiBrandTokens.primary.withValues(alpha: 0.72)
+                  : MoeTokens.surfaceBorder,
+              width: isDefault ? 1.4 : 1,
             ),
           ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: isDefault
+                      ? AiBrandTokens.primary.withValues(alpha: 0.16)
+                      : MoeTokens.surface1,
+                  borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
+                ),
+                child: Icon(
+                  isDefault ? Icons.star_rounded : Icons.smart_toy_outlined,
+                  size: 17,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: MoeTokens.spaceSm),
+              Expanded(
+                child: Text(
+                  model,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AiTheme.mono.copyWith(
+                    color: isDefault
+                        ? AiBrandTokens.primary
+                        : AiBrandTokens.titleColor,
+                    fontWeight:
+                        isDefault ? MoeTokens.fontWeightTitle : FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (isDefault) ...[
+                const SizedBox(width: MoeTokens.spaceSm),
+                const _ModelDefaultBadge(),
+              ],
+              IconButton(
+                onPressed: onDelete,
+                tooltip: '移除模型',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints.tightFor(
+                  width: 34,
+                  height: 34,
+                ),
+                splashRadius: 18,
+                iconSize: 17,
+                color: MoeTokens.hintText,
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModelDefaultBadge extends StatelessWidget {
+  const _ModelDefaultBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MoeTokens.spaceSm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: AiBrandTokens.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(MoeTokens.radiusFull),
+      ),
+      child: Text(
+        '默认',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: MoeTokens.textXs,
+          fontWeight: MoeTokens.fontWeightSubtitle,
+          color: AiBrandTokens.primary,
         ),
       ),
     );

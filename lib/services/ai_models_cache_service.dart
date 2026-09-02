@@ -18,10 +18,7 @@ class AiModelsCacheService {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        return decoded
-            .map((e) => e.toString())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        return _normalize(decoded);
       }
     } catch (_) {}
     return const [];
@@ -29,6 +26,14 @@ class AiModelsCacheService {
 
   Future<void> write(String profileId, List<String> models) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key(profileId), jsonEncode(models));
+    await prefs.setString(_key(profileId), jsonEncode(_normalize(models)));
+  }
+
+  static List<String> _normalize(Iterable<dynamic> models) {
+    return models
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
   }
 }

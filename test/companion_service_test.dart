@@ -121,11 +121,30 @@ void main() {
         ),
       ],
       hasAttention: true,
+      attentionMessage: '我在等你',
     );
 
     expect(pulse.title, 'Moe 想和你说');
     expect(pulse.ctaLabel, '去聊天');
     expect(pulse.kind, 'attention');
+  });
+
+  test('Companion pulse does not invent attention without a message', () {
+    final pulse = CompanionHubViewModel.buildPulseData(
+      profile: const CompanionProfileData(name: 'Moe'),
+      state: const CompanionStateData(greeting: '晚上好'),
+      dailyItems: const [
+        CompanionDailyItem(
+          kind: 'memory',
+          title: '记得的事',
+          body: '你喜欢喝热茶',
+        ),
+      ],
+      hasAttention: true,
+    );
+
+    expect(pulse.kind, 'memory');
+    expect(pulse.title, 'TA 记得的事');
   });
 
   test('Companion pulse maps memory items coherently', () {

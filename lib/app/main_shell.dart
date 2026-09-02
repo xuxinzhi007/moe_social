@@ -105,6 +105,7 @@ class _MainPageState extends State<MainPage> {
     if (!mounted ||
         _selectedIndex != 0 ||
         !_presence.hasAttention ||
+        _presence.attentionMessage.trim().isEmpty ||
         _companionNudgeShown ||
         _companionNudgeOpen) {
       return;
@@ -119,18 +120,18 @@ class _MainPageState extends State<MainPage> {
     if (!mounted ||
         _selectedIndex != 0 ||
         !_presence.hasAttention ||
+        _presence.attentionMessage.trim().isEmpty ||
         _companionNudgeShown ||
         _companionNudgeOpen) {
       return;
     }
     _companionNudgeShown = true;
     _companionNudgeOpen = true;
-    final greeting = _presence.greeting.trim().isNotEmpty
-        ? _presence.greeting.trim()
-        : _presence.moodThought.trim();
+    final greeting = _presence.attentionMessage.trim();
     final goSee = await CompanionAttentionSheet.show(
       context,
       greeting: greeting,
+      sourceLabel: _presence.attentionSourceLabel,
     );
     _companionNudgeOpen = false;
     if (!mounted) return;

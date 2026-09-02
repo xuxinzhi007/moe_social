@@ -15,6 +15,7 @@ type AiStore interface {
 
 	LoadOrCreateConfig(ctx context.Context, userID uint) (*model.AiUserConfig, error)
 	SaveConfig(ctx context.Context, cfg *model.AiUserConfig) error
+	UpdateConfig(ctx context.Context, userID uint, mutate func(*model.AiUserConfig) error) (*model.AiUserConfig, error)
 	FindAllConfigs(ctx context.Context) ([]model.AiUserConfig, error)
 	GetUserDisplayName(ctx context.Context, userID uint) string
 }

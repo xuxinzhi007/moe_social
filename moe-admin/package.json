@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "deploy:lan": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy/sync-lan.ps1",
     "codegraph:gen": "node ../scripts/codegraph/gen_all.mjs"
   },
   "dependencies": {

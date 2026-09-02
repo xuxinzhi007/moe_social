@@ -7,6 +7,12 @@ import '../services/companion_interaction_coordinator.dart';
 import '../services/companion_ws_service.dart';
 import '../services/notification_service.dart';
 
+enum CompanionAttentionSource {
+  none,
+  proactiveMessage,
+  unreadChat,
+}
+
 /// 全局伙伴存在感：WS 问候/状态 + 「TA 想你了」角标。
 ///
 /// 登录后 [start]，登出 [stop]。UI 用 Provider 订阅。
@@ -24,6 +30,8 @@ class CompanionPresenceProvider extends ChangeNotifier {
   String _greeting = '';
   String _moodThought = '';
   String _activityLabel = '';
+  String _attentionMessage = '';
+  CompanionAttentionSource _attentionSource = CompanionAttentionSource.none;
   int _attentionCount = 0;
   bool _started = false;
   bool _viewingCompanion = false;
@@ -32,6 +40,13 @@ class CompanionPresenceProvider extends ChangeNotifier {
   String get greeting => _greeting;
   String get moodThought => _moodThought;
   String get activityLabel => _activityLabel;
+  String get attentionMessage => _attentionMessage;
+  CompanionAttentionSource get attentionSource => _attentionSource;
+  String get attentionSourceLabel => switch (_attentionSource) {
+        CompanionAttentionSource.proactiveMessage => '刚刚收到的主动回访',
+        CompanionAttentionSource.unreadChat => '聊天里有一条新回复',
+        CompanionAttentionSource.none => '',
+      };
   int get attentionCount => _attentionCount;
   bool get hasAttention => _attentionCount > 0;
   bool get started => _started;
@@ -54,6 +69,8 @@ class CompanionPresenceProvider extends ChangeNotifier {
     _greeting = '';
     _moodThought = '';
     _activityLabel = '';
+    _attentionMessage = '';
+    _attentionSource = CompanionAttentionSource.none;
     _attentionCount = 0;
     _viewingCompanion = false;
     notifyListeners();
@@ -67,6 +84,8 @@ class CompanionPresenceProvider extends ChangeNotifier {
 
   void clearAttention() {
     if (_attentionCount == 0) return;
+    _attentionMessage = '';
+    _attentionSource = CompanionAttentionSource.none;
     _attentionCount = 0;
     notifyListeners();
   }
@@ -97,19 +116,27 @@ class CompanionPresenceProvider extends ChangeNotifier {
       changed = true;
     }
 
-    // 问候/主动回访且用户不在伙伴页 → 点亮「TA 想你了」
-    if ((event.type == 'greeting' || event.type == 'proactive') &&
+    final attentionMessage = _attentionMessageFor(event);
+
+    // 只有 WS 携带了真实内容，才点亮「TA 想你了」。
+    if (event.type == 'proactive' &&
+        attentionMessage.isNotEmpty &&
         !_viewingCompanion) {
-      if (_attentionCount != 1) {
-        _attentionCount = 1;
-        changed = true;
-      }
+      final attentionChanged = _attentionMessage != attentionMessage ||
+          _attentionSource != CompanionAttentionSource.proactiveMessage ||
+          _attentionCount != 1;
+      _attentionMessage = attentionMessage;
+      _attentionSource = CompanionAttentionSource.proactiveMessage;
+      _attentionCount = 1;
+      changed = changed || attentionChanged;
     }
 
-    if (event.type == 'proactive' && !_viewingCompanion) {
+    if (event.type == 'proactive' &&
+        attentionMessage.isNotEmpty &&
+        !_viewingCompanion) {
       unawaited(
         NotificationService.showCompanionProactiveNotification(
-          message: event.greeting,
+          message: attentionMessage,
           reason: event.activityLabel,
           notificationId: event.notificationId,
         ),
@@ -120,6 +147,14 @@ class CompanionPresenceProvider extends ChangeNotifier {
     if (changed) {
       _coordinator.publishPresenceChanged(eventType: event.type);
     }
+  }
+
+  String _attentionMessageFor(CompanionPresenceEvent event) {
+    final greeting = event.greeting.trim();
+    if (greeting.isNotEmpty) return greeting;
+    final mood = event.moodThought.trim();
+    if (mood.isNotEmpty) return mood;
+    return '';
   }
 
   void _onEvent(CompanionWsEvent event) {
@@ -175,19 +210,31 @@ class CompanionPresenceProvider extends ChangeNotifier {
     try {
       final readAt = await _companion.loadChatReadAt();
       final history = await _companion.listChatHistory(limit: 8);
-      final lastAssistant = history
-          .where((e) => e.role != 'user' && e.content.trim().isNotEmpty)
-          .map((e) => DateTime.tryParse(e.createdAt))
-          .whereType<DateTime>()
-          .fold<DateTime?>(null, (best, t) {
-        if (best == null || t.isAfter(best)) return t;
-        return best;
-      });
+      CompanionChatLogData? latestAssistant;
+      DateTime? latestAssistantAt;
+      for (final item in history) {
+        if (item.role == 'user' || item.content.trim().isEmpty) continue;
+        final at = DateTime.tryParse(item.createdAt);
+        if (at == null) continue;
+        if (latestAssistantAt == null || at.isAfter(latestAssistantAt)) {
+          latestAssistant = item;
+          latestAssistantAt = at;
+        }
+      }
       if (!_started || _viewingCompanion) return;
-      if (lastAssistant == null) return;
-      if (readAt == null || lastAssistant.isAfter(readAt)) {
-        if (_attentionCount != 1) {
-          _attentionCount = 1;
+      if (latestAssistant == null || latestAssistantAt == null) return;
+      if (readAt == null || latestAssistantAt.isAfter(readAt)) {
+        if (_attentionSource == CompanionAttentionSource.proactiveMessage) {
+          return;
+        }
+        final message = latestAssistant.content.trim();
+        final attentionChanged = _attentionMessage != message ||
+            _attentionSource != CompanionAttentionSource.unreadChat ||
+            _attentionCount != 1;
+        _attentionMessage = message;
+        _attentionSource = CompanionAttentionSource.unreadChat;
+        _attentionCount = 1;
+        if (attentionChanged) {
           notifyListeners();
         }
       }

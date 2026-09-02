@@ -760,21 +760,21 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                 children: [
                   Builder(
                     builder: (context) {
-                      final hasAttention = context
-                          .watch<CompanionPresenceProvider>()
-                          .hasAttention;
+                      final presence =
+                          context.watch<CompanionPresenceProvider>();
+                      final hasAttention = presence.hasAttention;
                       final pulse = CompanionHubViewModel.buildPulseData(
                         profile: _hub.profile,
                         state: _hub.state,
                         dailyItems: _hub.dailyItems,
                         hasAttention: hasAttention,
+                        attentionMessage: presence.attentionMessage,
                       );
 
                       return _HeroCard(
                         profile: _hub.profile,
                         state: _hub.state,
                         pulse: pulse,
-                        hasAttention: hasAttention,
                         onChat: _openChat,
                         onCustomize: _isSavingProfile ? null : _editProfile,
                       );
@@ -976,7 +976,6 @@ class _HeroCard extends StatelessWidget {
     required this.profile,
     required this.state,
     required this.pulse,
-    required this.hasAttention,
     required this.onChat,
     this.onCustomize,
   });
@@ -984,7 +983,6 @@ class _HeroCard extends StatelessWidget {
   final CompanionProfileData profile;
   final CompanionStateData state;
   final CompanionPulseData pulse;
-  final bool hasAttention;
   final VoidCallback onChat;
   final VoidCallback? onCustomize;
 
@@ -1141,8 +1139,8 @@ class _HeroCard extends StatelessWidget {
                     Icon(Icons.chat_bubble_rounded, color: Colors.white),
                     SizedBox(width: 8),
                     Text(
-                      hasAttention ? '回复 TA' : '开始聊天',
-                      style: TextStyle(
+                      isAttention ? '回复 TA' : '开始聊天',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),

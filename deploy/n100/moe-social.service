@@ -1,0 +1,15 @@
+[Unit]
+Description=Moe Social HTTP API (n100 preview)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/moe-runtime
+ExecStart=%h/moe-runtime/bin/moe-social -f config/config.yaml -agent=false
+Restart=on-failure
+RestartSec=5
+Environment=HOME=%h
+
+[Install]
+WantedBy=default.target

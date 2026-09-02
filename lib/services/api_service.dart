@@ -407,7 +407,7 @@ class ApiService {
           _log('❌ $method $pathLabel → $status (${elapsedMs}ms)');
         } else if (_verboseApiLog) {
           _log('📥 $method $pathLabel → $status (${elapsedMs}ms)');
-          _log('📥 Response Body: ${_safeTextForLog(bodyText)}');
+          _log('📥 Response Body: ${_safeResponseBodyForLog(bodyText)}');
         } else {
           _log('✓ $method $pathLabel → $status (${elapsedMs}ms)');
         }
@@ -450,7 +450,10 @@ class ApiService {
       // 直接抛出友好的错误提示，避免后续JSON解析报错
       if ((response.statusCode < 200 || response.statusCode >= 300) &&
           !(trimmedBody.startsWith('{') || trimmedBody.startsWith('['))) {
-        _log('❌ 收到非JSON错误响应: ${_safeTextForLog(trimmedBody, maxLen: 200)}');
+        _log(
+          '❌ 收到非JSON错误响应: '
+          '${_safeResponseBodyForLog(trimmedBody, maxLen: 200)}',
+        );
         String errorMessage = '请求失败 (状态码: ${response.statusCode})';
         if (response.statusCode == 404) {
           errorMessage = 'API端点不存在，请检查后端是否实现 /api/chat/online 等接口';
@@ -464,7 +467,10 @@ class ApiService {
         result = json.decode(bodyText) as Map<String, dynamic>;
       } catch (e) {
         _log('❌ JSON解析失败: $e');
-        _log('❌ 响应内容(截断): ${_safeTextForLog(bodyText, maxLen: 200)}');
+        _log(
+          '❌ 响应内容(截断): '
+          '${_safeResponseBodyForLog(bodyText, maxLen: 200)}',
+        );
 
         // 如果响应看起来像HTML，给出更友好的错误提示
         if (bodyText.contains('<html>') || bodyText.contains('<!DOCTYPE')) {
@@ -895,6 +901,17 @@ class ApiService {
     return '${cleaned.substring(0, maxLen)}...';
   }
 
+  static String _safeResponseBodyForLog(
+    String text, {
+    int maxLen = 800,
+  }) {
+    try {
+      return _safeJsonForLog(json.decode(text), maxLen: maxLen);
+    } catch (_) {
+      return _safeTextForLog(text, maxLen: maxLen);
+    }
+  }
+
   static String _safeJsonForLog(dynamic data, {int maxLen = 800}) {
     try {
       final sanitized = _sanitizeForLog(data);
@@ -915,7 +932,12 @@ class ApiService {
         if (lower.contains('avatar') ||
             lower.contains('image') ||
             lower == 'images' ||
-            lower.contains('password')) {
+            lower.contains('password') ||
+            lower.contains('api_key') ||
+            lower.contains('apikey') ||
+            lower == 'authorization' ||
+            lower.contains('access_token') ||
+            lower == 'token') {
           out[k] = '<omitted>';
           return;
         }

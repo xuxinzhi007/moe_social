@@ -32,6 +32,14 @@ func (s *actorStoreStub) LoadOrCreateConfig(_ context.Context, userID uint) (*mo
 
 func (s *actorStoreStub) SaveConfig(context.Context, *model.AiUserConfig) error { return nil }
 
+func (s *actorStoreStub) UpdateConfig(
+	context.Context,
+	uint,
+	func(*model.AiUserConfig) error,
+) (*model.AiUserConfig, error) {
+	return nil, nil
+}
+
 func (s *actorStoreStub) FindAllConfigs(context.Context) ([]model.AiUserConfig, error) {
 	return nil, nil
 }

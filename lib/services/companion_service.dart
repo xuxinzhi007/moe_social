@@ -970,15 +970,16 @@ class CompanionService {
       body['input_mode'] = inputMode.trim();
     }
     try {
-      final selectedId = await AiProviderService().readLastSelectedProfileId();
-      final provider = await AiProviderService().resolveProfile(selectedId);
+      final provider =
+          (await AiProviderService().resolveActiveProvider()).profile;
+      final model = provider.effectiveModelId;
       if (!provider.isBuiltinBackend &&
           provider.baseUrl.trim().isNotEmpty &&
-          provider.defaultModel.trim().isNotEmpty) {
+          model.isNotEmpty) {
         body.addAll({
           'provider_base_url': provider.baseUrl.trim(),
           'provider_api_style': provider.isBackendOllama ? 'ollama' : 'openai',
-          'provider_model': provider.defaultModel.trim(),
+          'provider_model': model,
           'provider_api_key': await AiProviderService().readApiKey(provider.id),
           'provider_timeout_seconds': 120,
         });
