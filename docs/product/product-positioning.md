@@ -20,34 +20,33 @@
 | 层级 | 范围 | 说明 |
 |------|------|------|
 | **核心（P0）** | 动态流、发帖、评论点赞、话题、关注/好友、私信、社区群组、个人页 | 对外叙事与主 Tab 只服务这一条线 |
-| **增强（P1）** | **长期 AI 陪伴（Companion）**、**数字生命世界（Life，陪伴延伸）**、**养成游戏域（Pet Life Sim，Flag）**、云相册、签到成就、通知 | 提升互动与留存，入口弱于社交主路径；决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`；养成见 `docs/dev/pet-life-sim-roadmap.md` |
+| **增强（P1）** | **长期 AI 陪伴（Companion）**、**数字生命世界（Life，陪伴延伸）**、**养成游戏域（Arena 星辉远征，Flag）**、云相册、签到成就、通知 | 提升互动与留存，入口弱于社交主路径；决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`；养成见 `docs/dev/aurora-arena-ssot.md` |
 | **已退役入口（默认不可见）** | AI 酒馆大厅（多卡选角） | 代码可暂留；**不是**多角色陪伴方案；正式路径只走 Companion |
 | **商业（P2）** | 钱包、VIP、礼物 | 结构保留，不做主视觉重心 |
 | **实验（隐藏）** | AutoGLM 自动化 | 开发者自用；默认关闭，仅「设置 → 高级选项」 |
 | **已下线（默认隐藏）** | 小游戏、抽卡、游戏大厅 | 代码暂留，**无主导航/首页入口**；`FeatureFlags.showGameFeatures = false` |
 
-### 2.1 数字生命模块定位
+### 2.1 数字生命模块定位（已转向）
 
-> 用户手机里的个人小世界 — 完全随机化的数字生态沙盒，每个生命都有独立个性，一切皆有可能。用户可干预但生命自主演化，涌现出意想不到的故事。
-
-| 维度 | 说明 |
-|------|------|
-| **层级** | 增强型功能（P1），作为长期陪伴的延伸舞台 |
-| **入口** | 自「AI伙伴」关系页弱/中等入口进入；首页仅轻存在感跳转，不复制整套 AI 面板 |
-| **Feature Flag** | `FeatureFlags.showLifeEngine = true` |
-| **是** | 生态沙盒（规则驱动、地形演化、食物链）+ 轻量互动（喂食/道具/观察） |
-| **不是** | 不是社交主路径、不是 AI 聊天工具；**完整宠物养成**见独立 Flag 域「Pet Life Sim」，不与本模块混为一谈 |
-
-### 2.2 养成游戏域（Pet Life Sim）
-
-> 嵌在 Moe 内的《宠我一生》级养成（Flutter + Flame）。Flag 开启后可完整体验小家/生涯/社交/轻冒险；**不替代** Feed / 私信 / Companion 关系首页。
+> 用户手机里的个人小世界 — 完全随机化的数字生态沙盒。**2026-09 起方向已转向：Life 引擎降级为 Arena 星辉远征的「英雄生活模拟」内核**（活世界方案，世界为全服共享），不再作为独立产品线演进；方案见 `docs/dev/aurora-living-world-plan.md`。
 
 | 维度 | 说明 |
 |------|------|
-| **层级** | Flag 可开启增强线（`FeatureFlags.petLifeSim`） |
-| **入口** | Companion Hub「TA 的小家」等；无新主 Tab |
-| **SSOT** | `docs/dev/pet-life-sim-roadmap.md` |
-| **引擎** | Flutter + Flame；不拆 Godot/Unity |
+| **层级** | 转向期：独立入口关闭，作为活世界内核保留 |
+| **入口** | 当前 `FeatureFlags.showLifeEngine = false`（前端入口全关）；后端引擎待 M0 降频止血 |
+| **是** | 生态沙盒（规则驱动、地形演化、食物链）+ 轻量互动；未来=全服共享的英雄营地世界模拟 |
+| **不是** | 不是社交主路径、不是 AI 聊天工具；活世界英雄 AI 不出星辉远征边界（共享世界为异步内容，非玩家联机） |
+
+### 2.2 养成游戏域（Arena 星辉远征）
+
+> 嵌在 Moe 内的横屏卡牌 PvE 养成壳（原 Pet Life Sim / 农场已删除，星辉是唯一游戏壳）。Flag 开启后可完整体验大厅/小家/编队/爬塔/召唤；**不替代** Feed / 私信 / Companion 关系首页。下一阶段：活世界（全服共享世界 + 英雄生活模拟 + 性格化对话，方案已定稿未实施）。
+
+| 维度 | 说明 |
+|------|------|
+| **层级** | Flag 可开启增强线（`FeatureFlags.arenaGamePrototype`） |
+| **入口** | Companion Hub「星辉远征」；无新主 Tab |
+| **SSOT** | `docs/dev/aurora-arena-ssot.md` · 活世界：`docs/dev/aurora-living-world-plan.md` |
+| **引擎** | Flutter 原生 + 横屏；不拆 Godot/Unity |
 
 **设计原则**：
 - 涌现而非编排 — 不预设剧本，让规则驱动行为，让行为涌现故事
@@ -85,7 +84,7 @@
 ## 5. 明确不做（当前阶段）
 
 - 不以游戏、抽卡作为产品卖点或首页入口
-- 数字生命（Life）不是社交主路径、不是 AI 聊天工具；完整宠物养成走 Pet Life Sim Flag 域，不与 Life 沙盘混用
+- 数字生命（Life）不是社交主路径、不是 AI 聊天工具；完整养成走 Arena 星辉远征 Flag 域，不与 Life 沙盘混用
 - 不把 AutoGLM 暴露给普通用户
 - 不新增与社交无关的主 Tab
 

@@ -3,7 +3,7 @@
 > **文档定位**：记忆子系统唯一事实源，禁止并行多套方案。  
 > **核心隐喻**：账号级 **记忆文本库**（后端 PostgreSQL），支持 **查询 / 写入 / 注入**；聊天模型只是消费者。  
 > **推理服务**（llama-server、`llm_inference.*`）：见 [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)  
-> **变更清单**：[记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) · **导航**：[docs/index.html](../index.html) · **推理**：[llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)
+> **导航**：[docs/index.html](../index.html) · **推理**：[llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)
 
 ---
 
@@ -260,5 +260,5 @@ cd docs && python3 -m http.server 8765
 | 2026-05-20 | [记忆系统-开源对标调研.md](./记忆系统-开源对标调研.md) OpenClaw/酒馆对标与四阶段路线 |
 | 2026-05-20 | **OpenClaw Phase 1**：双层注入、日记层、`pre_compact_flush`、bootstrap 预算 |
 | 2026-05-20 | **Phase 2**：混合检索、Ollama/中转 embedding 链、异步索引、`POST /memories/reindex`、`memory_list?query=`、`docs/index.html` |
-| 2026-05-20 | [记忆系统-2026-05-20-变更整理.md](./记忆系统-2026-05-20-变更整理.md) 变更汇总与文档同步 |
+| 2026-05-20 | 记忆系统变更汇总与文档同步（原变更整理快照已删除，明细见 git 历史） |
 | 2026-05-20 | **Phase 3**：图谱 `user_memory_relations`、MMR rerank、`HybridSearchEnhanced` |

@@ -93,7 +93,7 @@ admin:
 |----------|--------|--------|------|------|
 | **工作台** | 统计卡片、服务健康、快捷入口 | P0 ✅部分已有 | `GET /api/admin/dashboard` | `DashboardPage` |
 | **用户管理** | 列表/搜索/详情/禁用/VIP/角色 | P0 | 新增 admin 用户 API | `UserListPage` `UserDetailPage` |
-| **运营商品** | VIP 套餐、礼物目录 CRUD、默认初始化 | P1 | `/api/admin/vip/plans`、`/api/admin/gifts`；迁移**不** seed 业务数据 | 见 [产品评估](../product/moe-app-product-assessment.md#8-商业化配置vip--礼物应走-admin而非迁移种子) |
+| **运营商品** | VIP 套餐、礼物目录 CRUD、默认初始化 | P1 | `/api/admin/vip/plans`、`/api/admin/gifts`；迁移**不** seed 业务数据 | — |
 | **官网反馈** | 列表/筛选/详情 | P0 ✅已有 | `GET /api/ops/landing/feedback` → 迁到 `/api/admin/landing/feedback` | `FeedbackPage` |
 | **公告管理** | 富文本公告、上下线、置顶 | P1 | 新表 + CRUD | `AnnouncementPage` |
 | **通知推送** | 全员广播、指定用户 | P1 | 复用/封装 `broadcast` | `NotifyBroadcastPage` |

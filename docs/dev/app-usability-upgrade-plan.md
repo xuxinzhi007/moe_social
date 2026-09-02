@@ -9,7 +9,7 @@ Moe Social 的正式定位是萌系心情社交，核心是发动态、浏览互
 ### 仓库内产品证据
 
 - `docs/product/product-positioning.md` 将动态流、发帖、评论点赞、好友和私信定义为 P0。
-- `docs/dev/p0-adjustment-backlog-2026-06-03.md` 已将首页、消息、AI、我的主线与三态、草稿、重连列为收口标准。
+- 首页、消息、AI、我的主线与三态、草稿、重连已列为收口标准（2026-06 P0 调整清单，已消化并入本文）。
 - `lib/pages/feed/home_page.dart` 和 `lib/pages/chat/conversations_page.dart` 已有加载、空、错和重试基础，后续应复用，而不是另造页面框架。
 - 主路径页面仍存在多处超长文件，例如 `companion_chat_page.dart`、`create_post_page.dart`、`comments_page.dart` 和私信相关页面；改动应按可测试的 UI/状态边界拆分。
 - `lib/utils/config.dart` 默认使用本地环境，公开安装包若未切换环境会连接私网地址；这是发布前必须关闭的可达性风险。

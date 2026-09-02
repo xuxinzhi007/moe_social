@@ -8,6 +8,7 @@
 | 我想… | 去看 |
 |--------|------|
 | **了解当前 UI 视觉升级方向** | [dev/ui-upgrade-iteration-2026-08-29.md](./dev/ui-upgrade-iteration-2026-08-29.md) |
+| **查看最近一次全栈审查**（产品方向 / 代码 / UI） | [dev/full-review-2026-09-02.md](./dev/full-review-2026-09-02.md) |
 | 推理服务 + 记忆怎么配合 | [dev/llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) |
 | 记忆 RPG / Bot 观察 UI | [dev/moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) |
 | 记忆系统架构 / API | [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) |
@@ -15,7 +16,7 @@
 | 本地跑起来 | [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md) · [dev/ports.md](./dev/ports.md) |
 | **OpenAPI / Apifox 同步** | [dev/openapi-apifox.md](./dev/openapi-apifox.md) |
 | 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md) |
-| 产品优先级与 AI 酒馆 | [product/项目开发总览与当前优先级-2026-05-18.md](./product/项目开发总览与当前优先级-2026-05-18.md) · [product/AI酒馆化改造方案.md](./product/AI酒馆化改造方案.md) |
+| 产品定位与边界 | [product/product-positioning.md](./product/product-positioning.md) · [product/IA首屏与空状态设计.md](./product/IA首屏与空状态设计.md) |
 | 开发规范 | [../AGENTS.md](../AGENTS.md) · [.cursor/rules/moe-social-unified.mdc](../.cursor/rules/moe-social-unified.mdc) · [../code_review.md](../code_review.md) |
 | **Kratos 后端** | [dev/kratos-migration-status.md](./dev/kratos-migration-status.md) · [dev/kratos-architecture-audit.md](./dev/kratos-architecture-audit.md) · [dev/kratos-migration.md](./dev/kratos-migration.md) · [dev/new-api-kratos.md](./dev/new-api-kratos.md) |
 | Agent 踩坑 / Session | [.cursor/LESSONS.md](../.cursor/LESSONS.md) · [guidelines/sessions/](./guidelines/sessions/) |
@@ -50,7 +51,6 @@ docs/
 | 1 | [llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) | 推理 + 记忆配置 SSOT |
 | 2 | [用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) | 记忆库架构、API |
 | 2b | [moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) | 记忆 RPG UI |
-| 3 | [记忆系统-2026-05-20-变更整理.md](./dev/记忆系统-2026-05-20-变更整理.md) | 近期变更 |
 | 4 | [memory/README.md](./dev/memory/README.md) | 代码目录地图 |
 
 ---
@@ -101,4 +101,4 @@ docs/
 
 ---
 
-最后整理：**2026-08-29**（补充 UI 视觉升级迭代入口，并同步当前主导航与 Companion 入口说明）
+最后整理：**2026-09-02**（新增全栈审查快照入口：dev/full-review-2026-09-02.md）

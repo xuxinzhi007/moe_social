@@ -1,6 +1,6 @@
 # Moe Avatar — 管理台编辑器（moe-admin）
 
-> **角色**是「养成内容包」的一类；家具/装饰见 [moe-pet-content-pack.md](./moe-pet-content-pack.md)  
+> **角色**是「养成内容包」的一类（App 端宠物域已下线，管理台内容编辑能力保留，供资产维护与后续域复用）  
 > **入口**：运营 → **养成内容** → 角色装扮（`/ops/biz/pet/avatar`）
 
 ## 1. 目标
@@ -51,8 +51,8 @@
 | **格线 sheet（本页 · 过渡）** | `petMoeAvatar=true` | 64px walk/idle 四方向格 · LPC 原型素体 | 各槽 **整张 sheet 叠层**；PNG 只画该部位、其余透明 |
 | **官方锚点模型（App 目标）** | `petMoeAvatar=false` | `assets/pet/character/` 头/躯干/腿/臂 + `avatar_stack.json` | 帽/衣/裤/鞋 **wearAnchors** 定位，分部位贴合 |
 
-- 用户预期的「头/帽/身/腿/脚各就各位」= **锚点模型**（见 [pet-layered-avatar.md](./pet-layered-avatar.md)），不是本页格线 sheet。
-- 本页 sheet 仅为 walk/idle 动画 **生产过渡**；正式美术应产出锚点分片或 Spine（[pet-spine-avatar.md](./pet-spine-avatar.md)）。
+- 用户预期的「头/帽/身/腿/脚各就各位」= **锚点模型**（原锚点分片方案文档已随宠物域下线删除，方案要点已并入本文）。
+- 本页 sheet 仅为 walk/idle 动画 **生产过渡**；正式美术应产出锚点分片或 Spine。
 - manifest 中**每个单品 id 必须有独立文件路径**（如 `top_hoodie_walk.png`），禁止多 id 共用一路径。
 
 ## 6. 完整闭环（admin → App）
@@ -88,4 +88,3 @@
 
 - [moe-avatar/README.md](../../moe-avatar/README.md)
 - [moe-avatar/spec/editor-vision.md](../../moe-avatar/spec/editor-vision.md)
-- [pet-lpc-pipeline.md](./pet-lpc-pipeline.md)（LPC 短跑 · 过渡）
