@@ -1,6 +1,6 @@
 # 记忆子系统模块地图
 
-通用「记忆文本库」架构的目录约定与迁移计划。产品级 SSOT 见 [用户记忆系统-OpenClaw式演进设计.md](../用户记忆系统-OpenClaw式演进设计.md)；本次迭代变更清单见 [记忆系统-2026-05-20-变更整理.md](../记忆系统-2026-05-20-变更整理.md)。
+通用「记忆文本库」架构的目录约定与迁移计划。产品级 SSOT 见 [用户记忆系统-OpenClaw式演进设计.md](../用户记忆系统-OpenClaw式演进设计.md)。
 
 **文档导航**：[docs/index.html](../../index.html) · **监控台**：[memory-system-dashboard.html](../memory-system-dashboard.html)
 

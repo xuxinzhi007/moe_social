@@ -7,8 +7,11 @@
 | 文档 | 用途 |
 |------|------|
 | [ui-upgrade-iteration-2026-08-29.md](./ui-upgrade-iteration-2026-08-29.md) | **当前 Flutter UI 视觉升级迭代** |
+| [aurora-arena-ssot.md](./aurora-arena-ssot.md) | **星辉远征（Arena）域 SSOT** |
+| [aurora-living-world-plan.md](./aurora-living-world-plan.md) | **星辉活世界方案**（英雄 AI + Life 转向合并，方案已定稿未实施） |
+| [full-review-2026-09-02.md](./full-review-2026-09-02.md) | 全栈审查快照（产品方向 / 代码 / UI + P0-P2 行动项） |
 | [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层** |
-| [../product/moe-app-product-assessment.md](../product/moe-app-product-assessment.md) | 产品成熟度 |
+| [../product/product-positioning.md](../product/product-positioning.md) | 产品定位与边界 |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |
 | [快速调试步骤.md](./快速调试步骤.md) | Flutter 模拟器与运行 |
 | [ports.md](./ports.md) | 本地端口（API 8888、Admin 5173） |

@@ -47,9 +47,6 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 
 这就是 **「gin-vue-admin 类产品形态，但后端仍是 go-zero」**，而不是引入 gin-vue-admin 的 Gin 服务。
 
-**曾参考的 gin-vue-admin 能力清单**（仓库内已删除上游拷贝）见：  
-👉 **[gva-reference.md](./gva-reference.md)** · 历史整合笔记 **[moe-admin-gva-integration.md](./moe-admin-gva-integration.md)**
-
 **完整后台设计方案（用户/菜单/公告/登录等）** 见：
 
 👉 **[moe-admin-platform-design.md](./moe-admin-platform-design.md)**

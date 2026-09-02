@@ -73,12 +73,8 @@ go build -tags hybrid -o bin/moe-social-hybrid ./cmd/moe-social
 curl -s http://127.0.0.1:8888/health
 curl -s http://127.0.0.1:8888/migration | jq '{percent, rollout_percent, breakdown}'
 
-# 域 gRPC（需 grpcurl + 服务已启动）
-cd backend && ./scripts/grpc-smoke-notify-chat-vip.ps1   # Windows
-# 或 bash scripts/grpc-smoke-notify-chat-vip.sh
+# 域 gRPC：按域 proto 用 grpcurl 逐域验证（需服务已启动）
 ```
-
-详见 [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md)。
 
 ## 生产零 go-zero 自检
 

@@ -2,7 +2,7 @@
 
 使用 **Flutter** 与 **Go / Kratos** 构建的复合型社交产品：萌系社交主线、AI 智能体 / 酒馆化能力、虚拟形象与 VIP 商业化、以及 AutoGLM 自动化实验能力。支持 Android、iOS、Web、Windows、macOS、Linux。
 
-> 产品优先级与路线图见 [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md)。贡献与命令约定见 [AGENTS.md](AGENTS.md)。
+> 产品定位与边界见 [docs/product/product-positioning.md](docs/product/product-positioning.md)。贡献与命令约定见 [AGENTS.md](AGENTS.md)。
 
 ## 功能模块（当前已实现）
 
@@ -201,7 +201,7 @@ MIT License
 
 A **Flutter** client plus **Go / Kratos** backend for a composite social product: cute-style social feed, AI agents / tavern-style chat, virtual avatars and VIP commerce, and an experimental **AutoGLM** automation stack. Targets Android, iOS, Web, Windows, macOS, and Linux.
 
-**Roadmap:** [docs/product/项目开发总览与当前优先级-2026-05-18.md](docs/product/项目开发总览与当前优先级-2026-05-18.md) · **Repo guidelines:** [AGENTS.md](AGENTS.md)
+**Roadmap:** [docs/product/product-positioning.md](docs/product/product-positioning.md) · **Repo guidelines:** [AGENTS.md](AGENTS.md)
 
 ## Implemented areas
 

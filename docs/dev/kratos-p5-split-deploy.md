@@ -72,7 +72,7 @@ flowchart LR
 2. **API 镜像/二进制**：`go build ./api`；gateway 无 `SuperClient` import（P5-C）。
 3. **配置**：分体必须 `single_process: false` + `super_grpc_retired: false`。
 4. **连通**：API 容器 `MOE_SUPER_RPC_ENDPOINT` 或 `api.super_rpc_endpoints` 指向 RPC `:8080`。
-5. **冒烟**：`make split-deploy-smoke` 或 [grpc-smoke-notify-chat-vip.md](./grpc-smoke-notify-chat-vip.md)
+5. **冒烟**：按域 proto 用 grpcurl 逐域验证（原 grpc-smoke 脚本已随 go-zero 时代退役删除）
 6. **观测**：`curl -s http://<api>:8888/migration | jq '.breakdown.p5_super_runtime_pct'`（单进程应为 100；分体该项语义见 status 板）。
 
 ---
