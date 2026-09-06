@@ -136,6 +136,9 @@ func streamOpenAIChat(
 	if opts.MaxTokens > 0 {
 		body["max_tokens"] = opts.MaxTokens
 	}
+	if opts.RepeatPenalty > 0 {
+		body["repeat_penalty"] = opts.RepeatPenalty
+	}
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return "", err
@@ -220,7 +223,7 @@ func streamOllamaChat(
 	opts ChatOptions,
 	onChunk StreamHandler,
 ) (string, error) {
-	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: true}
+	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: true, Think: false}
 	if opts.Temperature > 0 {
 		reqBody.Temperature = opts.Temperature
 	}
@@ -229,6 +232,9 @@ func streamOllamaChat(
 	}
 	if opts.MaxTokens > 0 {
 		reqBody.MaxTokens = opts.MaxTokens
+	}
+	if opts.RepeatPenalty > 0 {
+		reqBody.RepeatPenalty = opts.RepeatPenalty
 	}
 	raw, err := json.Marshal(reqBody)
 	if err != nil {

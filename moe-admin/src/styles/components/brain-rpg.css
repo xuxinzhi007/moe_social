@@ -12,6 +12,10 @@
   border: 1px solid var(--border-subtle, #e8e8ef);
 }
 
+.brain-rpg-side-panel .brain-rpg-hero-card {
+  min-height: 116px;
+}
+
 .brain-rpg-hero-card strong {
   display: block;
   font-size: 1.35rem;
@@ -47,6 +51,7 @@
 }
 
 @media (max-width: 960px) {
+  .brain-rpg-purpose { align-items: flex-start; flex-direction: column; }
   .brain-rpg-grid {
     grid-template-columns: 1fr;
   }
@@ -372,3 +377,19 @@
   flex: 1;
   min-width: 140px;
 }
+.brain-rpg-purpose {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, #7c5cff 18%, var(--border-subtle, #e8e8ef));
+  border-radius: 14px;
+  background: linear-gradient(100deg, rgba(124, 92, 255, .07), rgba(255, 255, 255, .65));
+}
+
+.brain-rpg-purpose > div { display: grid; gap: 4px; }
+.brain-rpg-purpose-kicker { color: #6954d6; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.brain-rpg-purpose strong { font-size: 15px; }
+.brain-rpg-purpose p { margin: 0; color: var(--text-muted, #666); font-size: 12px; line-height: 1.5; }

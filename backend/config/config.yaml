@@ -87,17 +87,21 @@ wechat:
     app_secret: ""
   oauth_scope: "snsapi_userinfo"
 
-# 云端 LLM 推理（默认 DeepSeek，OpenAI 兼容格式）
-# API Key 推荐通过环境变量 MOE_LLM_API_KEY 设置，勿直接提交到 Git
+# 统一 LLM 推理配置（Moe Bot、Companion、记忆共用）。
+# provider 仅用于说明部署方，真正决定协议的是 api_style：
+#   ollama -> 原生 Ollama /api/chat（通常端口 11434）
+#   openai -> OpenAI 兼容 /v1/chat/completions（llama.cpp/llama-server 等）
+# base_url 必须是后端进程可访问的地址，不是 Flutter 客户端地址。
 llm_inference:
-  base_url: "https://api.deepseek.com"
-  api_style: openai
+  provider: ollama
+  base_url: "http://192.168.124.77:11434"
+  api_style: ollama
   timeout_seconds: 120
-  memory_model: "deepseek-chat"
+  memory_model: "qwen2.5:3b-instruct"
   api_key: ""
-  # 文字游戏专用推理（优先于 base_url；本地 llama-server 跑在 6633 时启用）
+  # 文字游戏可使用独立推理端点；未填写时复用上面的统一端点。
   game_base_url: "http://127.0.0.1:6633"
-  # 留空则自动读取 llama-server /v1/models 第一个模型
+  # 留空则自动读取端点模型列表中的第一个模型
   game_model: ""
   # narrator=Go管世界+模型只写叙事(0.5B~3B)；agent=模型调world_*工具(7B+)
   game_llm_mode: "narrator"
@@ -194,7 +198,7 @@ moe:
   # 智能发送：LLM 判断此刻是否发帖
   bot_smart_retry_minutes: 30
   bot_smart_min_interval_hours: 2
-  # Bot 发帖专用模型 ID（llama-server 的基座名，如 qwen2）；勿填酒馆「创建角色」派生模型名
+  # Bot 发帖专用模型 ID；必须与 llm_inference 对应端点返回的模型名一致。
   bot_post_model: "qwen2"
   # Phase 3 Sprint 1：管理台 Moe HTTP 优先走 API 进程内 MoeAdmin（仍需 RPC 处理发帖/记忆端口）
   api_in_process: true

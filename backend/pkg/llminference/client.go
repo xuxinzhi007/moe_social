@@ -37,9 +37,10 @@ type Message struct {
 
 // ChatOptions 采样参数。
 type ChatOptions struct {
-	Temperature float64
-	TopP        float64
-	MaxTokens   int
+	Temperature   float64
+	TopP          float64
+	MaxTokens     int
+	RepeatPenalty float64
 }
 
 // ConfigFrom 从统一配置字段构建客户端配置。
@@ -261,6 +262,9 @@ func postOpenAIChat(
 	if opts.MaxTokens > 0 {
 		body["max_tokens"] = opts.MaxTokens
 	}
+	if opts.RepeatPenalty > 0 {
+		body["repeat_penalty"] = opts.RepeatPenalty
+	}
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return "", err
@@ -300,12 +304,14 @@ func postOpenAIChat(
 }
 
 type ollamaChatRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	Stream      bool      `json:"stream"`
-	Temperature float64   `json:"temperature,omitempty"`
-	TopP        float64   `json:"top_p,omitempty"`
-	MaxTokens   int       `json:"max_tokens,omitempty"`
+	Model         string    `json:"model"`
+	Messages      []Message `json:"messages"`
+	Stream        bool      `json:"stream"`
+	Think         bool      `json:"think"`
+	Temperature   float64   `json:"temperature,omitempty"`
+	TopP          float64   `json:"top_p,omitempty"`
+	MaxTokens     int       `json:"max_tokens,omitempty"`
+	RepeatPenalty float64   `json:"repeat_penalty,omitempty"`
 }
 
 func postOllamaChat(
@@ -315,7 +321,7 @@ func postOllamaChat(
 	messages []Message,
 	opts ChatOptions,
 ) (string, error) {
-	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: false}
+	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: false, Think: false}
 	if opts.Temperature > 0 {
 		reqBody.Temperature = opts.Temperature
 	}
@@ -324,6 +330,9 @@ func postOllamaChat(
 	}
 	if opts.MaxTokens > 0 {
 		reqBody.MaxTokens = opts.MaxTokens
+	}
+	if opts.RepeatPenalty > 0 {
+		reqBody.RepeatPenalty = opts.RepeatPenalty
 	}
 	raw, err := json.Marshal(reqBody)
 	if err != nil {

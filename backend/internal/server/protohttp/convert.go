@@ -42,10 +42,16 @@ func pipelineToProto(snap moebiz.PipelineSnapshot) *moev1pb.GetBrainPipelineRepl
 		Detail:          snap.Detail,
 		PostId:          snap.PostID,
 		TotalDurationMs: snap.TotalDurationMS,
+		Running:         snap.Running,
+		CurrentPhase:    snap.CurrentPhase,
+		ActiveStepKey:   snap.ActiveStepKey,
 		Steps:           make([]*moev1pb.MoePipelineStep, 0, len(snap.Steps)),
 	}
 	if snap.HasRun {
 		out.RunAt = snap.RunAt.Format("2006-01-02 15:04:05")
+	}
+	if !snap.RunStartedAt.IsZero() {
+		out.RunStartedAt = snap.RunStartedAt.Format("2006-01-02 15:04:05")
 	}
 	m := snap.Metrics
 	if m.NumCPU != 0 || m.ProcAllocMB != 0 || m.InferenceOnline || m.GpuNote != "" {

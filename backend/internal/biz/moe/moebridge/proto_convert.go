@@ -60,6 +60,10 @@ func PipelineDataFromProto(d *moepb.GetBrainPipelineReply) types.AdminGetMoeBrai
 		PostId:          d.GetPostId(),
 		RunAt:           d.GetRunAt(),
 		TotalDurationMs: d.GetTotalDurationMs(),
+		Running:         d.GetRunning(),
+		CurrentPhase:    d.GetCurrentPhase(),
+		RunStartedAt:    d.GetRunStartedAt(),
+		ActiveStepKey:   d.GetActiveStepKey(),
 		Steps:           make([]types.MoePipelineStepItem, 0, len(d.GetSteps())),
 	}
 	if hm := d.GetHostMetrics(); hm != nil {

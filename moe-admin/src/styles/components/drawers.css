@@ -2,6 +2,8 @@
 .drawer-backdrop {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.4);
   z-index: 100;
   display: flex;
@@ -22,19 +24,40 @@
   border-radius: 8px;
   pointer-events: none;
   z-index: 0;
+  display: none;
 }
 
 .drawer {
   position: relative;
   z-index: 1;
   width: min(400px, 92vw);
-  height: 100%;
+  height: 100dvh;
   background: var(--panel);
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.drawer--wide {
+  width: min(960px, 92vw);
+}
+
+.drawer--wide .drawer-body {
+  padding: 24px 32px;
+}
+
+.drawer--wide .drawer-body > .form-field,
+.drawer--wide .drawer-body > label {
+  max-width: 760px;
+}
+
+@media (max-width: 700px) {
+  .drawer--wide { width: 100vw; }
+  .drawer--wide .drawer-body { padding: 18px; }
 }
 
 .topbar .btn.is-active {
@@ -73,6 +96,8 @@
   padding: 16px 18px;
   overflow: auto;
   flex: 1;
+  min-height: 0;
+  padding-bottom: 28px;
 }
 
 .drawer-foot {

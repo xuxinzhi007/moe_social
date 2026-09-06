@@ -35,7 +35,17 @@ export function MoeBrainPage() {
   const { client } = useAdminAuth()
   const { showToast } = useDeploy()
 
-  const [agents, setAgents] = useState<Array<{ agent_key: string; display_name: string }>>([])
+  const [agents, setAgents] = useState<Array<{
+    agent_key: string
+    display_name: string
+    post_schedule_mode?: string
+    schedule_cron?: string
+    next_run_at?: string
+    post_quota_daily?: number
+    posts_today?: number
+    enabled?: boolean
+    model_name?: string
+  }>>([])
   const agentKey = paramKey || searchParams.get('agent') || 'moe_guide'
 
   const [brain, setBrain] = useState<BrainData | null>(null)
@@ -64,9 +74,16 @@ export function MoeBrainPage() {
       const res = await client.listMoeRuntimes()
       if (res.success && res.data) {
         setAgents(
-          asArray<{ agent_key: string; display_name?: string }>(res.data.items).map((item) => ({
+          asArray<typeof agents[number] & { display_name?: string }>(res.data.items).map((item) => ({
             agent_key: item.agent_key,
             display_name: item.display_name || item.agent_key,
+            post_schedule_mode: item.post_schedule_mode,
+            schedule_cron: item.schedule_cron,
+            next_run_at: item.next_run_at,
+            post_quota_daily: item.post_quota_daily,
+            posts_today: item.posts_today,
+            enabled: item.enabled,
+            model_name: item.model_name,
           })),
         )
       }
@@ -293,6 +310,7 @@ export function MoeBrainPage() {
   }
 
   const activeKey = brain?.agent_key || agentKey
+  const activeRuntime = agents.find((item) => item.agent_key === activeKey)
   const episodes = brain?.episodes ?? []
   const tagStats = brain?.tag_stats ?? []
   const memories = brain?.memories ?? []
@@ -349,100 +367,62 @@ export function MoeBrainPage() {
           </button>
         </div>
       }
-      metrics={[
-        { label: '自传记录', value: loading ? '…' : episodes.length },
-        { label: '认可记录', value: loading ? '…' : approvedCount },
-        { label: '平均质量', value: loading ? '…' : avgEpisodeQuality },
-        {
-          label: '稳定度',
-          value: loading ? '…' : stabilityScore,
-          hint: stabilityDelta ? `${stabilityDelta > 0 ? '+' : ''}${stabilityDelta}` : undefined,
-        },
-      ]}
       error={error || undefined}
     >
       <InferenceStatusBar agentKey={activeKey} refreshKey={opsRefresh} />
-      <BrainPipelinePanel
-        agentKey={activeKey}
-        refreshKey={opsRefresh}
-        running={runningOnce}
-        stabilityScore={stabilityScore}
-      />
-      <MemoryInfluencePanel meta={brain?.generation_meta} />
-      <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
-
-      <section className="panel content-panel-table brain-object-panel" aria-label="当前对象">
-        <div className="content-toolbar">
-          <div className="content-toolbar-head">
-            <strong>当前对象</strong>
-            <span>先选择 Bot，再查看它的标签分布、规则和结果记录。</span>
+      <section className="brain-purpose-card" aria-label="Bot 当前状态">
+        <div className="brain-purpose-copy">
+          <span className="brain-purpose-kicker">BOT 现在能做什么</span>
+          <h2>{brain?.display_name || activeRuntime?.display_name || activeKey}</h2>
+          <p>
+            它会读取自己的近期动态和社区话题，用当前模型生成一条像真实用户一样的短动态，经过重复与文风检查后再发布。
+          </p>
+          <div className="brain-purpose-selector">
+            <label htmlFor="brain-purpose-agent">当前 Bot</label>
+            <select id="brain-purpose-agent" value={activeKey} onChange={(e) => onSelectAgent(e.target.value)}>
+              {agents.length === 0 ? <option value={activeKey}>{activeKey}</option> : agents.map((agent) => (
+                <option key={agent.agent_key} value={agent.agent_key}>{agent.display_name} ({agent.agent_key})</option>
+              ))}
+            </select>
           </div>
         </div>
-        <div className="brain-object-grid">
-          <div className="brain-object-select">
-            <FormField label="选择 Bot">
-              <select value={activeKey} onChange={(e) => onSelectAgent(e.target.value)}>
-                {agents.length === 0 ? (
-                  <option value={activeKey}>{activeKey}</option>
-                ) : (
-                  agents.map((agent) => (
-                    <option key={agent.agent_key} value={agent.agent_key}>
-                      {agent.display_name} ({agent.agent_key})
-                    </option>
-                  ))
-                )}
-              </select>
-            </FormField>
-          </div>
-          <div className="brain-object-summary">
-            <div className="summary-card">
-              <span className="summary-label">Bot 用户 ID</span>
-              <strong className="summary-value">{brain?.bot_user_id || '—'}</strong>
-              <span className="summary-note">当前绑定用户</span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-label">自传记录</span>
-              <strong className="summary-value">{episodes.length}</strong>
-              <span className="summary-note">已累计生成</span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-label">认可记录</span>
-              <strong className="summary-value">{approvedCount}</strong>
-              <span className="summary-note">质量达标条数</span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-label">稳定度评分</span>
-              <strong className="summary-value">{stabilityScore}</strong>
-              <span className="summary-note">
-                试跑奖惩
-                {stabilityDelta !== 0 ? (
-                  <AdminTag
-                    label={`${stabilityDelta > 0 ? '+' : ''}${stabilityDelta}`}
-                    tone={stabilityDelta > 0 ? 'ok' : 'fail'}
-                  />
-                ) : (
-                  ' · 末次无变化'
-                )}
-              </span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-label">自传均分</span>
-              <strong className="summary-value">{avgEpisodeQuality}</strong>
-              <span className="summary-note">已发内容质量</span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-label">记忆块行数</span>
-              <strong className="summary-value">
-                {brain?.generation_meta?.prompt_memory_lines ?? 0}
-              </strong>
-              <span className="summary-note">
-                注入 prompt 行数 · 自传 {brain?.generation_meta?.episodes_in_prompt ?? 0} · 库{' '}
-                {brain?.generation_meta?.memories_synced ?? 0}
-              </span>
-            </div>
-          </div>
+        <div className="brain-purpose-facts">
+          <div><span>自传 / 认可</span><strong>{episodes.length} / {approvedCount}</strong></div>
+          <div><span>平均质量</span><strong>{avgEpisodeQuality}</strong></div>
+          <div><span>稳定度</span><strong>{stabilityScore}{stabilityDelta ? ` (${stabilityDelta > 0 ? '+' : ''}${stabilityDelta})` : ''}</strong></div>
+          <div><span>状态</span><strong>{activeRuntime?.enabled === false ? '已暂停' : '已启用'}</strong></div>
+          <div><span>模式</span><strong>{activeRuntime?.post_schedule_mode === 'smart' ? '智能发送' : activeRuntime?.post_schedule_mode === 'cron' ? '定时发送' : '手动触发'}</strong></div>
+          <div><span>今日配额</span><strong>{activeRuntime?.posts_today ?? 0} / {activeRuntime?.post_quota_daily ?? '—'}</strong></div>
+          <div><span>下次执行</span><strong>{activeRuntime?.next_run_at || '手动触发'}</strong></div>
+          <div><span>绑定用户</span><strong title={brain?.bot_user_id || undefined}>{brain?.bot_user_id || '—'}</strong></div>
+          <div><span>记忆注入</span><strong>{brain?.generation_meta?.prompt_memory_lines ?? 0} 行</strong></div>
         </div>
+        {episodes.length === 0 && !runningOnce ? (
+          <div className="brain-first-run">
+            <div>
+              <strong>这个 Bot 还没有真正发过动态</strong>
+              <span>点击下面的按钮，让它完成第一次生成、质检和发布。</span>
+            </div>
+            <button type="button" className="btn btn-primary" onClick={() => void runOncePost()}>
+              立即生成并发布
+            </button>
+          </div>
+        ) : null}
       </section>
+      <section className="brain-generation-context" aria-label="生成上下文">
+        <div className="brain-generation-context-label">
+          <span>生成上下文</span>
+          <small>执行状态与记忆来源</small>
+        </div>
+        <BrainPipelinePanel
+          agentKey={activeKey}
+          refreshKey={opsRefresh}
+          running={runningOnce}
+          stabilityScore={stabilityScore}
+        />
+        <MemoryInfluencePanel meta={brain?.generation_meta} />
+      </section>
+      <PageMessage message={message} tone={messageTone} onClose={() => setMessage('')} />
 
       {loading ? <p className="muted">加载中…</p> : null}
 
@@ -508,7 +488,7 @@ export function MoeBrainPage() {
           ) : (
         <section className="brain-workbench">
           <div className="brain-main-stack">
-            <div className="panel content-panel-table">
+            <div className="panel content-panel-table brain-policy-panel">
               <div className="content-toolbar">
                 <div className="content-toolbar-head">
                   <strong>标签策略</strong>
@@ -541,7 +521,7 @@ export function MoeBrainPage() {
               </div>
             </div>
 
-            <div className="panel content-panel-table">
+            <div className="panel content-panel-table brain-episodes-panel">
               <div className="content-toolbar">
                 <div className="content-toolbar-head">
                   <strong>自传记录</strong>
@@ -576,7 +556,9 @@ export function MoeBrainPage() {
                               <div style={{ fontSize: 11 }}>润色×{episode.revision_count}</div>
                             ) : null}
                           </td>
-                          <td style={{ maxWidth: 360 }}>{episode.content}</td>
+                          <td className="brain-episode-content" title={episode.content}>
+                            {episode.content}
+                          </td>
                           <td>
                             <div className="btn-row" style={{ flexWrap: 'wrap', gap: 4 }}>
                               {(episode.tags || []).map((tag) => (
@@ -624,7 +606,7 @@ export function MoeBrainPage() {
           </div>
 
           <div className="brain-side-stack">
-            <div className="panel content-panel-table">
+            <div className="panel content-panel-table brain-analysis-panel">
               <div className="content-toolbar">
                 <div className="content-toolbar-head">
                   <strong>标签分析</strong>
@@ -663,7 +645,7 @@ export function MoeBrainPage() {
               </div>
             </div>
 
-            <div className="panel content-panel-table">
+            <div className="panel content-panel-table brain-memory-panel">
               <div className="content-toolbar">
                 <div className="content-toolbar-head">
                   <strong>记忆库</strong>

@@ -3,6 +3,7 @@ import { AdminPanel, MonitorPageLayout } from '../ui'
 import { useDeploy } from '../context/DeployContext'
 
 const CONFIG_FILES = [
+  'Modelfile',
   'docker-compose.binary.yml',
   'docker-compose.yml',
   'config.yaml',
@@ -80,7 +81,7 @@ export function DockerPage() {
     <MonitorPageLayout
       title="云服务器 · Docker"
       description="SSH 管理 compose 与 moe-social 容器"
-      envNote="云目标 VPS · compose 服务名 moe-social · 配置白名单见远程配置下拉"
+      envNote="云目标 VPS · Modelfile 与服务配置均通过 SSH 白名单读写"
       headActions={
         <button type="button" className="btn btn-ghost" onClick={() => void refreshDocker()}>
           刷新状态
@@ -98,9 +99,9 @@ export function DockerPage() {
         <pre className="log-pre">{checkOut}</pre>
       </AdminPanel>
 
-      <div className="panel remote-config-panel">
+      <div className={`panel remote-config-panel ${configFile === 'Modelfile' ? 'remote-modelfile-panel' : ''}`}>
         <div className="panel-head">
-          <h3>远程配置</h3>
+          <h3>{configFile === 'Modelfile' ? '远程 Ollama Modelfile' : '远程配置'}</h3>
           <div className="remote-config-toolbar">
             <select
               value={configFile}
@@ -131,7 +132,9 @@ export function DockerPage() {
             spellCheck={false}
             rows={22}
             wrap="off"
-            placeholder="点击「读取」从 VPS 拉取配置；编辑后「保存到 VPS」会自动 .bak 备份。"
+              placeholder={configFile === 'Modelfile'
+                ? '点击「读取」查看小主机当前 Modelfile；编辑后保存会自动备份。'
+                : '点击「读取」从 VPS 拉取配置；编辑后「保存到 VPS」会自动 .bak 备份。'}
           />
           <p className="config-editor-meta">
             当前文件：{configFile}
@@ -142,6 +145,11 @@ export function DockerPage() {
               ? ' · 改 feishu/wechat 后请重启 moe-social 容器'
               : ''}
           </p>
+          {configFile === 'Modelfile' ? (
+            <p className="config-editor-help">
+              这里编辑的是云端小主机上用于 <code>ollama create</code> 的文件；保存前会自动生成时间戳备份，保存不会自动重建模型。
+            </p>
+          ) : null}
         </div>
       </div>
 

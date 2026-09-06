@@ -103,11 +103,17 @@ func formatEpisodesForPrompt(episodes []model.MoeBotEpisode) string {
 		return ""
 	}
 	lines := make([]string, 0, len(episodes))
-	for _, ep := range episodes {
+	for i, ep := range episodes {
+		tags := strings.Join(parseTagsJSON(ep.TagsJSON), "、")
+		if tags == "" {
+			tags = "未分类"
+		}
 		lines = append(lines, fmt.Sprintf(
-			"- [%s] %s",
+			"- 记忆%d：日期=%s，质量=%d，标签=%s（只参考事实，不复用原文措辞）",
+			i+1,
 			ep.CreatedAt.Format("01-02"),
-			truncateRunes(strings.TrimSpace(ep.Content), 120),
+			ep.QualityScore,
+			tags,
 		))
 	}
 	return strings.Join(lines, "\n")

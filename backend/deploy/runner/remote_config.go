@@ -17,6 +17,7 @@ var allowedRemoteConfigPaths = map[string]bool{
 	"config.yaml":                true,
 	"config/config.yaml":         true,
 	"api/etc/moe.yaml":         true,
+	"Modelfile":                 true,
 }
 
 // ValidateRemoteConfigName returns safe relative path for remote file ops.
@@ -30,7 +31,7 @@ func ValidateRemoteConfigName(name string) (string, error) {
 		return "", fmt.Errorf("非法文件路径")
 	}
 	if !allowedRemoteConfigPaths[name] {
-		return "", fmt.Errorf("不允许编辑该文件，仅支持 compose 与 config 白名单")
+		return "", fmt.Errorf("不允许编辑该文件，仅支持 Modelfile、compose 与 config 白名单")
 	}
 	return name, nil
 }

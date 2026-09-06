@@ -17,13 +17,14 @@ type liveRunRegistry struct {
 }
 
 type liveRunSession struct {
-	agentKey    string
-	startedAt   time.Time
-	mu          sync.RWMutex
-	steps       []RunStep
-	genAttempts []GenAttemptRecord
-	activeKey   string
-	activeLabel string
+	agentKey     string
+	startedAt    time.Time
+	mu           sync.RWMutex
+	steps        []RunStep
+	genAttempts  []GenAttemptRecord
+	activeKey    string
+	activeLabel  string
+	activeDetail string
 }
 
 // LiveRunSnapshot 试跑进行中的流水线视图。
@@ -33,6 +34,7 @@ type LiveRunSnapshot struct {
 	Steps            []RunStep
 	ActiveKey        string
 	ActiveLabel      string
+	ActiveDetail     string
 	CurrentPhase     string
 	GenerateAttempts []GenAttemptRecord
 }
@@ -181,6 +183,17 @@ func (s *liveRunSession) SetActive(key, label string) {
 	s.mu.Lock()
 	s.activeKey = strings.TrimSpace(key)
 	s.activeLabel = strings.TrimSpace(label)
+	s.activeDetail = ""
+	s.mu.Unlock()
+	s.touch()
+}
+
+func (s *liveRunSession) SetActiveDetail(detail string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.activeDetail = strings.TrimSpace(detail)
 	s.mu.Unlock()
 	s.touch()
 }
@@ -221,11 +234,12 @@ func (s *liveRunSession) Snapshot() LiveRunSnapshot {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := LiveRunSnapshot{
-		AgentKey:    s.agentKey,
-		StartedAt:   s.startedAt,
-		Steps:       cloneRunSteps(s.steps),
-		ActiveKey:   s.activeKey,
-		ActiveLabel: s.activeLabel,
+		AgentKey:     s.agentKey,
+		StartedAt:    s.startedAt,
+		Steps:        cloneRunSteps(s.steps),
+		ActiveKey:    s.activeKey,
+		ActiveLabel:  s.activeLabel,
+		ActiveDetail: s.activeDetail,
 	}
 	if len(s.genAttempts) > 0 {
 		out.GenerateAttempts = append([]GenAttemptRecord(nil), s.genAttempts...)
@@ -248,6 +262,9 @@ func (s *liveRunSession) PipelineSteps() []RunStep {
 			Status: "running",
 			Detail: "进行中",
 		})
+		if snap.ActiveDetail != "" {
+			out[len(out)-1].Detail = snap.ActiveDetail
+		}
 	}
 	return out
 }

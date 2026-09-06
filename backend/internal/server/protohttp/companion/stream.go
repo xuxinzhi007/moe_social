@@ -78,7 +78,14 @@ func handleChatStream(ctx khttp.Context, app *companionapp.AppService) error {
 		return apicomm.WriteSSE(w, "delta", map[string]string{"text": chunk})
 	})
 	if err != nil {
-		if writeErr := apicomm.WriteSSE(w, "error", map[string]string{"text": "模型服务调用失败，请检查 API Key、模型和额度后重试。"}); writeErr != nil {
+		detail := strings.TrimSpace(err.Error())
+		if len(detail) > 500 {
+			detail = detail[:500] + "…"
+		}
+		if detail == "" {
+			detail = "模型服务调用失败"
+		}
+		if writeErr := apicomm.WriteSSE(w, "error", map[string]string{"text": detail}); writeErr != nil {
 			return fmt.Errorf("write companion chat error: %w", writeErr)
 		}
 		return nil

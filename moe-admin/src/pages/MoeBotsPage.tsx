@@ -307,7 +307,7 @@ export function MoeBotsPage() {
     <>
       <ListPageLayout
         title="社区 AI Bot"
-        description="配置发帖 Bot：正文由本地 7B（llama-server）生成，支持定时 cron 与智能发送。调度器默认每 60 秒扫描。"
+        description="配置发帖 Bot：正文由服务端 llm_inference 配置的 Ollama 或 OpenAI 兼容模型生成，支持定时 cron 与智能发送。调度器默认每 60 秒扫描。"
         headActions={
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             新建 Bot
@@ -336,6 +336,8 @@ export function MoeBotsPage() {
       <AdminFormDrawer
         open={drawerOpen}
         title="Bot 运行时配置"
+        subtitle="配置 Bot 身份、发帖调度与模型行为；保存后由后端调度器接管。"
+        wide
         saving={saving}
         error={formError}
         onClose={() => setDrawerOpen(false)}
@@ -393,11 +395,11 @@ export function MoeBotsPage() {
             </FormField>
           </>
         ) : null}
-        <FormField label="模型 ID（展示用；发帖实际用服务端 moe.bot_post_model 基座）">
+        <FormField label="模型 ID（展示用；发帖实际优先使用服务端 moe.bot_post_model）">
           <input
             value={form.model_name}
             onChange={(e) => setForm({ ...form, model_name: e.target.value })}
-            placeholder="qwen2（勿填酒馆派生角色模型名）"
+            placeholder="例如 qwen2.5:3b-instruct；需与推理端模型名一致"
           />
         </FormField>
         <FormField label="每日发帖配额">

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"backend/internal/platform/moelog"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 )
@@ -63,7 +64,9 @@ func RunAgent(ctx context.Context, deps Deps, agentKey string, trigger RunTrigge
 			bundle.StabilityDelta = delta
 			bundle.RunFeedback = feedback
 		}
-		_ = SaveAgentRunLog(deps.DB, agentKey, ok, detail, postID, bundle)
+		if err := SaveAgentRunLog(deps.DB, agentKey, ok, detail, postID, bundle); err != nil {
+			moelog.Errorf("moe run log save failed agent=%s: %v", agentKey, err)
+		}
 	}
 
 	out, st, err := executeFlowPlan(ctx, deps, agentKey, plan, rec)

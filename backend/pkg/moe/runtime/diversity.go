@@ -146,13 +146,12 @@ func buildMeaningAwareBlock(recent []model.Post, episodes []model.MoeBotEpisode)
 	lines = append(lines, "【本次硬性要求】")
 	lines = append(lines, "- 禁止再用「周X的深夜，Moe社区…星光/灯火」这类开头")
 	lines = append(lines, "- 禁止再写深夜抒情+晒画+提问的三段式套路")
-	lines = append(lines, "- 换场景：如刚吃完宵夜/排队买咖啡/画材翻车/具体数字/一句吐槽")
+	lines = append(lines, "- 本次必须更换场景、开头节奏和叙事结构，不要复用近期动态的具体素材")
 	return strings.Join(lines, "\n")
 }
 
 func summarizePostMeaning(content string) string {
 	content = strings.TrimSpace(content)
-	open := openingSlice(content, 28)
 	theme := "日常"
 	switch {
 	case themeClusterHits(content) >= 2:
@@ -162,7 +161,14 @@ func summarizePostMeaning(content string) string {
 	case strings.Contains(content, "？") || strings.Contains(content, "吗"):
 		theme = "提问互动"
 	}
-	return fmt.Sprintf("开头「%s…」→ %s", open, theme)
+	structure := "叙事"
+	if strings.Contains(content, "？") || strings.Contains(content, "吗") {
+		structure = "互动"
+	}
+	if strings.Contains(content, "结果") || strings.Contains(content, "后来") {
+		structure = "经历复盘"
+	}
+	return fmt.Sprintf("主题=%s，结构=%s（禁止复用原文、开头和细节）", theme, structure)
 }
 
 func extractThemeLabels(content string) []string {

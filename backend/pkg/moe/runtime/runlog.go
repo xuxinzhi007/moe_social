@@ -61,6 +61,13 @@ func (r *StepRecorder) BeginStep(key, label string) {
 	}
 }
 
+// UpdateActiveDetail 更新当前运行步骤的实时详情，供 WebSocket 展示生成增量。
+func (r *StepRecorder) UpdateActiveDetail(detail string) {
+	if r != nil && r.live != nil {
+		r.live.SetActiveDetail(detail)
+	}
+}
+
 // Add 追加一步并记录距上一步的耗时（首步为距 RunOnce 开始的耗时）。
 func (r *StepRecorder) Add(key, label, status, detail string, stepDur time.Duration) {
 	if r == nil {
