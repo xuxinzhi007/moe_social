@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import type { MoeBrainGenerationMeta } from '../api/adminClient'
 
 type Props = {
@@ -19,12 +18,9 @@ export function MemoryInfluencePanel({ meta }: Props) {
     <section className="panel memory-influence-panel">
       <header className="platform-section-head memory-influence-head">
         <div>
-          <h3>记忆如何参与生成</h3>
-          <p className="muted">{meta.note}</p>
+          <h3>本次生成用了什么</h3>
+          <p className="muted">{meta.note || '系统把近期经历压缩成上下文，再交给模型生成。'}</p>
         </div>
-        <Link className="btn btn-ghost btn-sm" to="/ai/moe-tools?tab=tools">
-          查看全部 8 个 Moe 工具 →
-        </Link>
       </header>
       <div className="admin-metrics page-insight-strip">
         <div className="metric">
@@ -40,9 +36,9 @@ export function MemoryInfluencePanel({ meta }: Props) {
           <div className="value">{meta.prompt_memory_lines}</div>
         </div>
         <div className="metric">
-          <div className="label">发帖走 memory 工具</div>
+          <div className="label">记忆注入方式</div>
           <div className="value" title="发帖链路为系统提示词直注记忆，不经过 memory_search 工具调用">
-            {meta.post_uses_tool_memory ? '是' : '否（设计如此）'}
+            {meta.post_uses_tool_memory ? '按需检索' : '直接注入'}
           </div>
         </div>
         {meta.prompt_est_tokens && meta.prompt_est_tokens > 0 ? (

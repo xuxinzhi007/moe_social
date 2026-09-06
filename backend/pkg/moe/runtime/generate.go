@@ -105,7 +105,7 @@ func generatePostContent(
 			rec.BeginStep("generate", "LLM 生成正文")
 		}
 		attemptStart := time.Now()
-		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability)
+		gen, err := callPostLLM(ctx, deps, modelName, persona, rulesBlock, brainBlock, ctxBlock, recent, attempt, rejectNovel, stability, rec)
 		if err != nil {
 			lastErr = err
 			rejectNovel = ""
@@ -151,46 +151,26 @@ func generatePostContent(
 			continue
 		}
 		score := novelStyleScore(gen.Content)
-		if score < novelStyleRejectThreshold {
-			forbidden := brain.ParseTagList(rt.ForbiddenTags)
-			if hits := brain.EpisodeTagsViolate(gen.Content, gen.MoodTag, score, forbidden); len(hits) > 0 {
-				lastErr = fmt.Errorf("命中禁止标签 %v", hits)
-				rejectNovel = "novel"
-				ctxBlock.topicHint = "禁止使用标签：" + strings.Join(hits, "、")
-				fallback = append(fallback, postGenCandidate{gen: gen, score: score + 5, attempt: attempt})
-				attempts = append(attempts, GenAttemptRecord{
-					Attempt: attempt,
-					Outcome: GenOutcomeForbidden,
-					Snippet: genSnippet(gen.Content),
-					Note:    strings.Join(hits, "、"),
-				})
-				recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart), attempts)
-				continue
-			}
-			gen.Source = fmt.Sprintf("llm#%d", attempt)
-			attempts = append(attempts, GenAttemptRecord{
-				Attempt: attempt,
-				Outcome: GenOutcomeOK,
-				Snippet: genSnippet(gen.Content),
-			})
-			recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), fmt.Sprintf("质量分约 %d", score), time.Since(attemptStart), attempts)
-			if rec != nil {
-				rec.Add("generate_finalize", "生成质检汇总", "ok",
-					FormatGenStepDetail(attempts, true, gen.Source), time.Since(genPhaseStart))
-			}
-			return gen, attempts, nil
+		forbidden := brain.ParseTagList(rt.ForbiddenTags)
+		if hits := brain.EpisodeTagsViolate(gen.Content, gen.MoodTag, score, forbidden); len(hits) > 0 {
+			lastErr = fmt.Errorf("命中禁止标签 %v", hits)
+			rejectNovel = "forbidden"
+			ctxBlock.topicHint = "避开这些明确禁止的标签：" + strings.Join(hits, "、")
+			attempts = append(attempts, GenAttemptRecord{Attempt: attempt, Outcome: GenOutcomeForbidden, Snippet: genSnippet(gen.Content), Note: strings.Join(hits, "、")})
+			recordGenAttemptStep(rec, attempt, "fail", GenOutcomeForbidden, genSnippet(gen.Content), strings.Join(hits, "、"), time.Since(attemptStart), attempts)
+			continue
 		}
-		fallback = append(fallback, postGenCandidate{gen: gen, score: score, attempt: attempt})
-		lastErr = fmt.Errorf("偏剧本/诗意腔（得分 %d）", score)
-		rejectNovel = "novel"
-		ctxBlock.topicHint = "必须用口语：我在做什么+一个小细节，禁止抒情散文、禁止「灵魂/星辰/灯火/共鸣」"
+		gen.Source = fmt.Sprintf("llm#%d", attempt)
 		attempts = append(attempts, GenAttemptRecord{
 			Attempt: attempt,
-			Outcome: GenOutcomeNovel,
+			Outcome: GenOutcomeOK,
 			Snippet: genSnippet(gen.Content),
-			Note:    fmt.Sprintf("得分 %d", score),
 		})
-		recordGenAttemptStep(rec, attempt, "fail", GenOutcomeNovel, genSnippet(gen.Content), fmt.Sprintf("剧本腔 %d", score), time.Since(attemptStart), attempts)
+		recordGenAttemptStep(rec, attempt, "ok", GenOutcomeOK, genSnippet(gen.Content), "通过重复与禁止标签检查", time.Since(attemptStart), attempts)
+		if rec != nil {
+			rec.Add("generate_finalize", "生成质检汇总", "ok", FormatGenStepDetail(attempts, true, gen.Source), time.Since(genPhaseStart))
+		}
+		return gen, attempts, nil
 	}
 
 	// 仅稳定度足够时允许采用放宽质检的候选，低稳定度必须在严格质检下成功。
@@ -271,6 +251,7 @@ func callPostLLM(
 	attempt int,
 	rejectKind string,
 	stabilityScore int,
+	rec *StepRecorder,
 ) (GeneratedPost, error) {
 	sys := strings.Join([]string{
 		communityPostGuardrails,
@@ -282,13 +263,14 @@ func callPostLLM(
 		persona,
 		"",
 		"任务：写一条【全新】社区动态（不是评论回复）。",
-		"步骤：先看【本 Bot 近期已发】避免重复 → 从【社区脉搏/记忆/时段】挑 1 个具体点 → 按硬性规则写成朋友圈口语。",
-		"类型任选其一：晒进度 / 晒作品 / 求建议 / 轻松吐槽 / 回应站友话题。",
+		"先参考【本 Bot 近期已发】避免重复，再从社区脉搏、记忆、账号画像或当下时段中自由选择最有感觉的切入点。不要刻意复刻任何示例。",
+		"长度、语气、是否提问、是否使用表情都由内容自然决定；可以短，也可以稍微展开，不要为了满足格式而添加无意义的句子。",
 		"只输出 JSON：{\"content\":\"...\",\"mood_tag\":\"calm|happy|think|sad|excited\"}",
 	}, "\n")
 
 	userParts := []string{
 		brain.StabilityGenerationHint(stabilityScore),
+		"【本次创作方向】" + postScenarioHint(attempt, rejectKind),
 		"【账号画像】\n" + ctxBlock.userProfile,
 		"【时段】" + ctxBlock.timeHint,
 		"【创作提示】" + ctxBlock.topicHint,
@@ -299,7 +281,7 @@ func callPostLLM(
 		userParts = append(userParts, "", ctxBlock.topicAvoid)
 	}
 	userParts = append(userParts, "",
-		"【本 Bot 近期已发 — 禁止重复】",
+		"【本 Bot 近期已用主题摘要 — 仅用于避开，不是写作范文】",
 		ctxBlock.ownPosts,
 		"",
 		"【社区脉搏 — 其他用户近期动态】",
@@ -312,13 +294,13 @@ func callPostLLM(
 		switch rejectKind {
 		case "novel":
 			userParts = append(userParts, "",
-				fmt.Sprintf("（第 %d 次：上次太像散文/剧本腔，请改成朋友圈口语，例如「刚画完线稿，手酸，你们周末干嘛」）", attempt))
+				fmt.Sprintf("（第 %d 次：上次太像散文/剧本腔，请改成自然口语，避免抒情套话）", attempt))
 		case "duplicate":
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次：与历史重复，请换主题、换开头、换细节）", attempt))
 		case "theme":
 			userParts = append(userParts, "",
-				fmt.Sprintf("（第 %d 次：与近期动态「意思太像」（同深夜抒情/同开头），请换场景：具体小事、数字、吐槽，禁止星光/灯火/夜空抒情）", attempt))
+				fmt.Sprintf("（第 %d 次：与近期动态意思太像，请换场景、叙事视角和句式，不要沿用上一条结构）", attempt))
 		case "json":
 			userParts = append(userParts, "",
 				fmt.Sprintf("（第 %d 次：上次 JSON 非法，只输出 {\"content\":\"一句口语\",\"mood_tag\":\"calm\"}，不要其它字符）", attempt))
@@ -338,13 +320,26 @@ func callPostLLM(
 		temp = 0.68
 	}
 	temp = brain.AdjustTemperatureForStability(stabilityScore, temp)
-	raw, err := llminference.Chat(ctx, deps.Inference, modelName, []llminference.Message{
+	messages := []llminference.Message{
 		{Role: "system", Content: sys},
 		{Role: "user", Content: strings.Join(userParts, "\n")},
-	}, llminference.ChatOptions{
-		Temperature: temp,
-		TopP:        0.92,
-		MaxTokens:   512,
+	}
+	var streamed strings.Builder
+	raw, err := llminference.ChatStream(ctx, deps.Inference, modelName, messages, llminference.ChatOptions{
+		Temperature:   temp,
+		TopP:          0.95,
+		RepeatPenalty: 1.12,
+		MaxTokens:     512,
+	}, func(chunk string) error {
+		streamed.WriteString(chunk)
+		if rec != nil {
+			preview := streamed.String()
+			if len([]rune(preview)) > 1200 {
+				preview = string([]rune(preview)[len([]rune(preview))-1200:])
+			}
+			rec.UpdateActiveDetail("实时生成：" + preview)
+		}
+		return nil
 	})
 	if err != nil {
 		return GeneratedPost{}, fmt.Errorf("LLM 生成失败: %w", err)
@@ -362,6 +357,24 @@ func callPostLLM(
 		content = string([]rune(content)[:220])
 	}
 	return GeneratedPost{Content: content, MoodTag: normalizeMoodTag(parsed.MoodTag)}, nil
+}
+
+func postScenarioHint(attempt int, rejectKind string) string {
+	scenarios := []string{
+		"记录刚刚发生的一件小事：一个动作、一个细节、一个意外结果；不要提问。",
+		"写一个正在进行的具体进度：带数字或可验证细节；不要使用排队、画材店、深夜抒情。",
+		"写一句轻松吐槽或小发现：换到吃饭、通勤、收拾房间、天气、设备等日常场景。",
+		"回应一个社区里看到的话题：只说自己的经历或看法，不要复述原帖，不要以“大家好”开头。",
+		"写一个小请求或选择题：先交代真实背景，再用一句自然口语收尾；不要套用上次句式。",
+	}
+	index := attempt - 1
+	if index < 0 {
+		index = 0
+	}
+	if rejectKind != "" {
+		index++
+	}
+	return scenarios[index%len(scenarios)]
 }
 
 func parsePostGenJSON(raw string) (postGenJSON, error) {

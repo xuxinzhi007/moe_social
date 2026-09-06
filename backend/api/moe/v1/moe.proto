@@ -87,6 +87,10 @@ message GetBrainPipelineReply {
   int64 total_duration_ms = 6;
   repeated MoePipelineStep steps = 7;
   MoeHostMetrics host_metrics = 8;
+  bool running = 9;
+  string current_phase = 10;
+  string run_started_at = 11;
+  string active_step_key = 12;
 }
 
 message RunAgentOnceRequest {

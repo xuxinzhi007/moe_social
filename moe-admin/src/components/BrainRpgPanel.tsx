@@ -281,7 +281,7 @@ export function BrainRpgPanel({
       <div className="content-toolbar">
         <div className="content-toolbar-head">
           <strong>记忆 RPG</strong>
-          <span>采集 · 分类 · 入梦 · 压缩 · 自主思考 · 观察 Bot 探索</span>
+          <span>把 Bot 的经历整理成可复用的记忆，帮助它下次发动态更像自己，而不是直接发布动态。</span>
         </div>
         <button
           type="button"
@@ -299,6 +299,14 @@ export function BrainRpgPanel({
 
       {rpg ? (
         <>
+          <div className="brain-rpg-purpose">
+            <div>
+              <span className="brain-rpg-purpose-kicker">这一区域的作用</span>
+              <strong>让 Bot 记住经历，慢慢形成自己的偏好</strong>
+              <p>入梦负责整理和压缩历史，自主思考负责观察和产生想法；真正发动态仍由“工作台 → 试跑发帖”完成。</p>
+            </div>
+            <AdminTag label={autonomousMind ? '正在观察' : '等待开启'} tone={autonomousMind ? 'ok' : 'neutral'} />
+          </div>
           <div className="brain-rpg-game-shell">
             <div className="brain-rpg-scene-col">
               <BrainRpgCharacter
@@ -323,7 +331,7 @@ export function BrainRpgPanel({
                 </span>
               </div>
               <div className="brain-rpg-hero-card">
-                <span className="summary-label">自主思考</span>
+                <span className="summary-label">主动观察（不发帖）</span>
                 <label className="brain-rpg-schedule-row">
                   <input
                     type="checkbox"
@@ -331,7 +339,7 @@ export function BrainRpgPanel({
                     disabled={savingMind}
                     onChange={(e) => void saveAutonomousMind(e.target.checked)}
                   />
-                  开启后 Bot 会调用模型自言自语
+                  开启后 Bot 会定期观察并产生想法
                 </label>
                 <span className="summary-note">
                   {autonomousMind
@@ -340,14 +348,14 @@ export function BrainRpgPanel({
                 </span>
               </div>
               <div className="brain-rpg-hero-card">
-                <span className="summary-label">定时入梦</span>
+                <span className="summary-label">定时整理记忆</span>
                 <label className="brain-rpg-schedule-row">
                   <input
                     type="checkbox"
                     checked={dreamEnabled}
                     onChange={(e) => setDreamEnabled(e.target.checked)}
                   />
-                  启用 cron
+                  启用定时整理
                 </label>
                 <input
                   type="text"

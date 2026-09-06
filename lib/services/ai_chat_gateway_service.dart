@@ -271,7 +271,13 @@ class AiChatGatewayService {
         .timeout(const Duration(seconds: 180));
 
     if (response.statusCode != 200) {
-      throw Exception('请求失败 (${response.statusCode})');
+      final body = utf8.decode(response.bodyBytes).trim();
+      final detail = body.length > 500 ? '${body.substring(0, 500)}…' : body;
+      throw Exception(
+        detail.isEmpty
+            ? '后端推理请求失败 (${response.statusCode})'
+            : '后端推理请求失败 (${response.statusCode})：$detail',
+      );
     }
 
     final decodedBody = utf8.decode(response.bodyBytes);

@@ -61,6 +61,8 @@ function genOutcomeLabel(outcome: string): string {
 
 function formatMs(ms?: number): string {
   if (ms === undefined || ms <= 0) return '—'
+  // 防止旧日志把纳秒/Unix 时间戳误当成毫秒，污染流水线状态展示。
+  if (!Number.isFinite(ms) || ms > 7 * 24 * 60 * 60 * 1000) return '未采集'
   if (ms < 1000) return `${ms} ms`
   return `${(ms / 1000).toFixed(2)} s`
 }
@@ -116,9 +118,8 @@ function PhaseDetail({
     const rows = genAttemptsForDisplay(genAttempts, allSteps)
     return (
       <div className="brain-pulse-detail">
-        <p className="brain-pulse-detail-lead">{phase.summary}</p>
         {rows.length > 0 ? <GenAttemptRows items={rows} /> : (
-          <p className="muted">暂无生成明细</p>
+          <p className="muted">暂无生成明细，等待模型返回结果。</p>
         )}
       </div>
     )
@@ -140,7 +141,15 @@ function PhaseDetail({
 /** Bot 试跑流水线：阶段脉冲时间线 + 折叠重试明细 */
 export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, stabilityScore }: Props) {
   const { client } = useAdminAuth()
-  const [data, setData] = useState<MoeBrainPipelineData | null>(null)
+  const cacheKey = `moe-brain-pipeline:${agentKey}`
+  const [data, setData] = useState<MoeBrainPipelineData | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(cacheKey)
+      return raw ? normalizePipelineData(JSON.parse(raw) as MoeBrainPipelineData) : null
+    } catch {
+      return null
+    }
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState<PhaseId>('load')
@@ -157,7 +166,9 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
     try {
       const res = await client.getMoeBrainPipeline(agentKey)
       if (res.success && res.data) {
-        setData(normalizePipelineData(res.data))
+        const next = normalizePipelineData(res.data)
+        setData(next)
+        if (next.run_at || next.running) sessionStorage.setItem(cacheKey, JSON.stringify(next))
       } else {
         setData(null)
         setError(res.message || '加载流水线失败')
@@ -168,7 +179,13 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
     } finally {
       setLoading(false)
     }
-  }, [agentKey, client])
+  }, [agentKey, cacheKey, client])
+
+  useEffect(() => {
+    if (data?.run_at || data?.running) {
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(data)) } catch { /* storage unavailable */ }
+    }
+  }, [cacheKey, data])
 
   useEffect(() => {
     void load()
@@ -176,6 +193,16 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
 
   const serverRunning = Boolean(data?.running)
   const showRunning = running || serverRunning
+
+  // A new run owns the panel from its first frame; never keep the previous
+  // completed run visible while the WebSocket is reconnecting.
+  useEffect(() => {
+    if (running) {
+      setData(null)
+      setError('')
+      setSelectedId('load')
+    }
+  }, [running])
 
   useEffect(() => {
     if (!showRunning) return
@@ -229,6 +256,13 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
   const generateMs = steps
     .filter((s) => s.key.startsWith('gen_attempt') || s.key === 'generate')
     .reduce((sum, s) => sum + (s.duration_ms ?? 0), 0)
+  const liveDraft = showRunning
+    ? steps
+        .filter((s) => s.key.startsWith('gen_attempt') && s.detail)
+        .map((s) => s.detail || '')
+        .join('\n')
+        .trim()
+    : ''
 
   const liveTotalMs = (() => {
     void liveTick
@@ -260,7 +294,7 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
       <header className="platform-section-head brain-pipeline-head">
         <div>
           <h3>发帖流水线</h3>
-          <p className="muted">仅展示服务端记录的阶段、耗时和结果。</p>
+          <p className="muted">实时展示阶段、耗时、重试和结果；生成阶段会随推理进度更新。</p>
         </div>
         {data && hasRun ? (
           <label className="brain-pulse-tech-toggle">
@@ -334,6 +368,20 @@ export function BrainPipelinePanel({ agentKey, refreshKey = 0, running = false, 
               ) : null}
             </div>
           </div>
+
+          {showRunning ? (
+            <div className="brain-live-output" aria-live="polite">
+              <div className="brain-live-output-head">
+                <span className="brain-live-output-dot" aria-hidden />
+                <strong>{runPhaseLabel === '生成' ? '模型正在写' : '正在准备生成'}</strong>
+                <span className="muted">实时内容会逐字出现</span>
+              </div>
+              <div className="brain-live-output-body">
+                {liveDraft || '模型正在读取记忆和近期动态，马上开始生成…'}
+                {liveDraft ? <span className="brain-live-caret" aria-hidden /> : null}
+              </div>
+            </div>
+          ) : null}
 
           {empty && !showRunning ? (
             <div className="brain-pipeline-empty">

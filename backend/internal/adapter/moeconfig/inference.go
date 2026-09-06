@@ -18,11 +18,17 @@ func InferenceFromViper() llminference.Config {
 	v.AddConfigPath("../config")
 	v.AddConfigPath("../../config")
 	_ = v.ReadInConfig()
-	base := v.GetString("llm_inference.base_url")
+	base := strings.TrimSpace(os.Getenv("MOE_LLM_BASE_URL"))
+	if base == "" {
+		base = v.GetString("llm_inference.base_url")
+	}
 	if base == "" {
 		base = v.GetString("ollama.base_url")
 	}
-	style := v.GetString("llm_inference.api_style")
+	style := strings.TrimSpace(os.Getenv("MOE_LLM_API_STYLE"))
+	if style == "" {
+		style = v.GetString("llm_inference.api_style")
+	}
 	if style == "" {
 		style = v.GetString("ollama.api_style")
 	}
@@ -30,7 +36,10 @@ func InferenceFromViper() llminference.Config {
 	if ts <= 0 {
 		ts = v.GetInt("ollama.timeout_seconds")
 	}
-	model := v.GetString("llm_inference.memory_model")
+	model := strings.TrimSpace(os.Getenv("MOE_LLM_MODEL"))
+	if model == "" {
+		model = v.GetString("llm_inference.memory_model")
+	}
 	if model == "" {
 		model = v.GetString("ollama.memory_model")
 	}

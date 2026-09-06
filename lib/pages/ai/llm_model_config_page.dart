@@ -34,7 +34,7 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
       final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
       final data = await LlmApiService.getConfig();
 
-      final inference = data['llm_inference'] ?? data['ollama'];
+      final inference = data['llm_inference'];
       final memoryBudget = data['memory_budget'];
       final runtime = data['runtime'];
       if (inference is! Map || memoryBudget is! Map) {

@@ -329,9 +329,11 @@ class _CompanionChatPageState extends State<CompanionChatPage> {
             break;
           case 'done':
             receivedTerminalEvent = true;
-            final finalText = event.text.trim().isNotEmpty
-                ? event.text.trim()
-                : fullText.trim();
+            final streamedText = fullText.trim();
+            final terminalText = event.text.trim();
+            final finalText = terminalText.length >= streamedText.length
+                ? terminalText
+                : streamedText;
             final spoken =
                 finalText.isNotEmpty ? finalText : '我在呢～刚才走神了一下，再说一次好吗？';
             setState(() {

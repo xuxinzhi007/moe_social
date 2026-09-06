@@ -24,10 +24,24 @@ List<Map<String, dynamic>> parseAiResourceItems(
       throw const FormatException('AI resource payload_json must be an object');
     }
     final payload = Map<String, dynamic>.from(decoded);
+    final rawBaseUrl = payload['base_url']?.toString() ?? '';
+    final cleanBaseUrl = _cleanBaseUrl(rawBaseUrl);
+    if (cleanBaseUrl.isNotEmpty) payload['base_url'] = cleanBaseUrl;
     final id = item['id'];
     if (id != null) payload['id'] = id.toString();
     return payload;
   }).toList(growable: false);
+}
+
+String _cleanBaseUrl(String raw) {
+  var value = raw.trim();
+  if (value.isEmpty) return value;
+  final match =
+      RegExp(r'https?://[^\s\]\)]+', caseSensitive: false).firstMatch(value);
+  if (match != null) value = match.group(0)!;
+  value = value.replaceAll(r'\', '').trim();
+  while (value.endsWith('/')) value = value.substring(0, value.length - 1);
+  return value;
 }
 
 class AiCloudConfigSnapshot {

@@ -22,12 +22,16 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 		return
 	}
 
-	if base := v.GetString("llm_inference.base_url"); base != "" {
+	if base := strings.TrimSpace(os.Getenv("MOE_LLM_BASE_URL")); base != "" {
+		c.LLMInference.BaseUrl = base
+	} else if base := v.GetString("llm_inference.base_url"); base != "" {
 		c.LLMInference.BaseUrl = base
 	} else if base := v.GetString("ollama.base_url"); base != "" {
 		c.LLMInference.BaseUrl = base
 	}
-	if style := strings.TrimSpace(v.GetString("llm_inference.api_style")); style != "" {
+	if style := strings.TrimSpace(os.Getenv("MOE_LLM_API_STYLE")); style != "" {
+		c.LLMInference.ApiStyle = style
+	} else if style := strings.TrimSpace(v.GetString("llm_inference.api_style")); style != "" {
 		c.LLMInference.ApiStyle = style
 	} else if style := strings.TrimSpace(v.GetString("ollama.api_style")); style != "" {
 		c.LLMInference.ApiStyle = style
@@ -37,7 +41,9 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 	} else if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
 		c.LLMInference.TimeoutSeconds = ts
 	}
-	if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
+	if m := strings.TrimSpace(os.Getenv("MOE_LLM_MODEL")); m != "" {
+		c.LLMInference.MemoryModel = m
+	} else if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
 		c.LLMInference.MemoryModel = m
 	} else if m := strings.TrimSpace(v.GetString("ollama.memory_model")); m != "" {
 		c.LLMInference.MemoryModel = m

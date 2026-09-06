@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"backend/internal/platform/moelog"
 	"backend/pkg/moe/runtime"
 )
 
@@ -44,7 +45,14 @@ func RunAgentOnceAsync(ctx context.Context, deps runtime.Deps, agentKey string) 
 	key := strings.TrimSpace(agentKey)
 	go func() {
 		defer EndRunAgentOnce(key)
-		_, _ = RunAgentOnce(context.Background(), deps, key)
+		result, err := RunAgentOnce(context.Background(), deps, key)
+		if err != nil {
+			moelog.Errorf("moe async run failed agent=%s: %v", key, err)
+			return
+		}
+		if !result.OK {
+			moelog.Errorf("moe async run rejected agent=%s: %s", key, result.Detail)
+		}
 	}()
 	return start, nil
 }

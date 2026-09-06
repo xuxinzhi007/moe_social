@@ -2,9 +2,6 @@ package runtime
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"net/http"
 	"runtime"
 	"strings"
 	"time"
@@ -24,16 +21,16 @@ type HostMetrics struct {
 	GpuNote          string `json:"gpu_note,omitempty"`
 }
 
-// SampleHostMetrics 采样当前 RPC 进程与 llama-server 列表（GPU 由推理端占用，此处仅备注）。
+// SampleHostMetrics 采样当前 RPC 进程与统一推理端点列表（GPU 由推理端占用，此处仅备注）。
 func SampleHostMetrics(ctx context.Context, inf llminference.Config) HostMetrics {
 	var ms runtime.MemStats
 	runtime.ReadMemStats(&ms)
 	out := HostMetrics{
-		ProcAllocMB: int64(ms.Alloc / 1024 / 1024),
-		ProcSysMB:   int64(ms.Sys / 1024 / 1024),
-		NumCPU:      runtime.NumCPU(),
+		ProcAllocMB:  int64(ms.Alloc / 1024 / 1024),
+		ProcSysMB:    int64(ms.Sys / 1024 / 1024),
+		NumCPU:       runtime.NumCPU(),
 		NumGoroutine: runtime.NumGoroutine(),
-		GpuNote:     "GPU 显存由 llama-server 进程占用，请在启动推理的机器上用活动监视器 / nvidia-smi 查看",
+		GpuNote:      "GPU 显存由推理服务进程占用，请在启动推理的机器上查看",
 	}
 	base := strings.TrimSpace(inf.BaseURL)
 	if base == "" {
@@ -50,34 +47,9 @@ func SampleHostMetrics(ctx context.Context, inf llminference.Config) HostMetrics
 }
 
 func probeInferenceModels(ctx context.Context, inf llminference.Config) (online bool, count int) {
-	if !inf.Ready() {
-		return false, 0
-	}
-	client := &http.Client{Timeout: 5 * time.Second}
-	url := strings.TrimRight(inf.BaseURL, "/") + "/v1/models"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	models, err := llminference.ListModels(ctx, inf)
 	if err != nil {
 		return false, 0
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, 0
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return false, 0
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, 0
-	}
-	var parsed struct {
-		Data []struct {
-			ID string `json:"id"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(body, &parsed); err != nil {
-		return true, 0
-	}
-	return true, len(parsed.Data)
+	return true, len(models)
 }

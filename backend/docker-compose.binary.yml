@@ -6,8 +6,13 @@ services:
     working_dir: /app
     command: ["/app/moe-social", "-f", "config/config.yaml"]
     restart: always
-    ports:
-      - "8888:8888"
+    environment:
+      MOE_LLM_BASE_URL: ${MOE_LLM_BASE_URL:-}
+      MOE_LLM_API_STYLE: ${MOE_LLM_API_STYLE:-}
+      MOE_LLM_MODEL: ${MOE_LLM_MODEL:-}
+      MOE_LLM_API_KEY: ${MOE_LLM_API_KEY:-}
+    # 必须 host：容器内 127.0.0.1:11434 才能打到宿主机上的 Ollama 反代隧道
+    network_mode: host
     volumes:
       - ./bin/moe-social:/app/moe-social
       - ./api/etc:/app/api/etc

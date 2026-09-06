@@ -51,8 +51,8 @@ func gatherPostContext(ctx context.Context, deps Deps, rt model.MoeAgentRuntime)
 	if deps.DB != nil && rt.BotUserID > 0 {
 		if own := listBotRecentPosts(deps.DB, rt.BotUserID, botRecentPostLimit); len(own) > 0 {
 			lines := make([]string, 0, len(own))
-			for _, p := range own {
-				lines = append(lines, fmt.Sprintf("- [%s] %s", p.CreatedAt.Format("01-02 15:04"), truncateRunes(p.Content, 100)))
+			for i, p := range own {
+				lines = append(lines, fmt.Sprintf("- 第 %d 条：%s", i+1, summarizePostMeaning(p.Content)))
 			}
 			out.ownPosts = strings.Join(lines, "\n")
 		}

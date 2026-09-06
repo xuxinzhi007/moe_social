@@ -10,6 +10,7 @@ class AiSurfaceCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.gradient,
+    this.border,
   });
 
   final Widget child;
@@ -17,6 +18,7 @@ class AiSurfaceCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final Gradient? gradient;
+  final Border? border;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,7 @@ class AiSurfaceCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: gradient == null ? AiTheme.surface : null,
         gradient: gradient,
+        border: border,
         borderRadius: BorderRadius.circular(AiTheme.radiusAiCard),
         boxShadow: AiTheme.cardShadow,
       ),

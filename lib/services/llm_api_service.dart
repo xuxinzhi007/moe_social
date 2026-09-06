@@ -14,11 +14,44 @@ class LlmApiService {
   /// 读取后端生效的 LLM / 记忆预算 / runtime 配置。
   static Future<Map<String, dynamic>> getConfig() async {
     final decoded = await ApiClient.get('/api/llm/config');
-    final data = ApiResponse.nestedPayload(decoded);
-    if (data.isEmpty) {
-      throw Exception('配置数据为空');
+    final data = normalizeConfig(ApiResponse.nestedPayload(decoded));
+    final inference = data['llm_inference'];
+    final budget = data['memory_budget'];
+    if (inference is! Map ||
+        inference.isEmpty ||
+        budget is! Map ||
+        budget.isEmpty) {
+      throw Exception('配置字段缺失');
     }
     return data;
+  }
+
+  /// 兼容旧嵌套 `llm_inference`/`ollama` 与当前扁平 `inference_*` 字段。
+  static Map<String, dynamic> normalizeConfig(Map<String, dynamic> data) {
+    final nested = data['llm_inference'] ?? data['ollama'];
+    final inference = <String, dynamic>{};
+    if (nested is Map) {
+      inference.addAll(Map<String, dynamic>.from(nested));
+    }
+    if (inference['base_url'] == null &&
+        (data['inference_base_url'] != null ||
+            data['inference_api_style'] != null)) {
+      inference['base_url'] = data['inference_base_url'];
+      inference['api_style'] = data['inference_api_style'];
+      inference['timeout_seconds'] = data['inference_timeout_sec'];
+      inference['memory_model'] = data['memory_model'];
+      inference['has_summary_prompt'] = data['has_summary_prompt'];
+      inference['has_extract_prompt'] = data['has_extract_prompt'];
+    }
+    return {
+      'llm_inference': inference,
+      'memory_budget': data['memory_budget'] is Map
+          ? Map<String, dynamic>.from(data['memory_budget'] as Map)
+          : <String, dynamic>{},
+      'runtime': data['runtime'] is Map
+          ? Map<String, dynamic>.from(data['runtime'] as Map)
+          : null,
+    };
   }
 
   /// 同步角色 system prompt 到后端 `/api/llm/agents`。

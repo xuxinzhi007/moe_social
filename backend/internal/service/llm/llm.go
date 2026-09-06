@@ -60,6 +60,7 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 		InferenceBaseURL:    s.deps.Inference.BaseURL,
 		InferenceAPIStyle:   string(s.deps.Inference.APIStyle),
 		InferenceTimeoutSec: int(s.deps.Inference.Timeout.Seconds()),
+		MemoryModel:         s.deps.Inference.DefaultModel,
 		MemoryBudget:        llmbiz.DefaultMemoryBudget(),
 	}
 }

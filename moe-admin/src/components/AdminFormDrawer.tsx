@@ -10,6 +10,7 @@ type AdminFormDrawerProps = {
   onClose: () => void
   onSave: () => void
   saveLabel?: string
+  wide?: boolean
   children: ReactNode
 }
 
@@ -22,6 +23,7 @@ export function AdminFormDrawer({
   onClose,
   onSave,
   saveLabel = '保存',
+  wide = false,
   children,
 }: AdminFormDrawerProps) {
   useDrawerDismiss(open, onClose)
@@ -32,7 +34,7 @@ export function AdminFormDrawer({
     <div className="drawer-backdrop" role="presentation" onClick={onClose}>
       <p className="drawer-backdrop-hint">点击空白处或按 Esc 关闭</p>
       <aside
-        className="drawer"
+        className={`drawer ${wide ? 'drawer--wide' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
