@@ -53,7 +53,6 @@ func wireServiceContext(opts Options) (apiconfig.Config, *svc.ServiceContext, er
 	wireArenaServices(rep, ctx)
 	ctx.SyncDomains()
 	reportWiredDomains(rep, ctx)
-	wireKratosNotes(rep)
 	logWireSummary(rep, &c)
 	return c, ctx, nil
 }

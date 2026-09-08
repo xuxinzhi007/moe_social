@@ -2,8 +2,10 @@
 
 > **范围**：`backend/` · `lib/` · `moe-admin/` · `website/` · `deploy/` · `.github/workflows/` · 仓库卫生
 > **基线提交**：`14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）
-> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13、§14 记录审查之后**已落地的改动批次**（含改动内容与验证结果），性质是变更记录而非审查。
+> **提交状态**：第一批（§13）= `8037287e`、第二批（§14）= `3ebcf62d`，两者已入库；**第三批（§15）仍在暂存区未提交**。
+> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13–§15 记录审查之后**已落地的三批改动**（含改动内容与验证结果），性质是变更记录而非审查。
 > **有效性**：本文是**绑定基线提交 `14370f93` 的快照**（依 `docs/README.md` 文档维护约定第 3 条）。§11 各批次整改落地后，对应章节即失效，应**直接删除该章节**而非保留 archive stub。所有行号以该基线为准，后续提交可能使其偏移。
+> ⚠️ **行号提醒**：三批改动已使 §0–§12 的部分行号失效（尤其 `moewiring/config.go`——该文件从 191 行降到 80 行，原 `:62-190` 区间的引用全部作废）。凡被 §13–§15 就地更新过的条目，以更新后的文字为准；未更新的条目按基线行号读。
 > **前提说明**：当前仓库内的第三方密钥为**开发期临时凭据，正式版会整体更换**。因此本文的重点不是「密钥泄露应急」，而是**为什么结构上会导致密钥只能写在这里**——结构不改，换完新密钥仍会回到同一状态。
 
 ---
@@ -17,10 +19,10 @@
 | 1 | 明文凭据在被跟踪的 `config.yaml` 内 | P0 | `backend/config/config.yaml:11,23,28,51,81,256` | 批次 1 |
 | 2 | Android release 签名口令有明文 fallback | P0 | `android/app/build.gradle.kts:27,29` | 批次 1 |
 | 3 | 同一 API 地址有 14 处运行时副本 | P1 | 见 §4.1 表 | 批次 3 |
-| 4 | 改 yaml 可能不生效（Go 硬编码短路 / 键名写错） | P1 | `moewiring/config.go:62-131`、`admin_runtime_config.go:79,100` | 批次 2 |
-| 5 | 「SSOT」声明与实际真源不符（Agora 段） | P1 | `api/etc/moe.yaml:12` vs `config.yaml` 无该段 | 批次 2 |
-| 6 | 端口 SSOT 被越界硬编码 | P2 | `moewiring/config.go:169,184,189` | 批次 2 |
-| 7 | 死配置 / 摆设开关制造噪音 | P2 | 见 §6 表（`.env`、`super.yaml`、20 个 `*_api_in_process`） | 批次 4 |
+| 4 | 改 yaml 可能不生效（Go 硬编码短路 / 键名写错） | P1 | ⚠️ **部分完成**：Go 硬编码短路那一半已消除（`moewiring/config.go` 那族过渡开关全删，见 §5.3）；键名写错那一半已修（`admin_runtime_config.go` 写蛇形键、`hand_draw_require_moderation` 补 `runtime.` 前缀，见 §5.5 / §14.3）。**剩** `config_override.go:73,97` 的驼峰死别名 | 第 2 步 |
+| 5 | 「SSOT」声明与实际真源不符（Agora 段） | P1 | `api/etc/moe.yaml:11` vs `config.yaml` 无该段 | 批次 2 |
+| 6 | 端口 SSOT 被越界硬编码 | P2 | ✅ **已消除**：`18888` / `19032` 的硬编码兜底随死函数删除，可执行路径里已无这两个无监听者的端口（见 §4.2、§15.4）。**剩** `6633` / `11434` 未登记 | 批次 5 |
+| 7 | 死配置 / 摆设开关制造噪音 | P2 | ⚠️ **部分完成**：零调用方那一类已清空（`api.timeout_ms` 链、15 个 Kratos 过渡开关、`wireKratosNotes` 链，见 §15.2）；`moe.*_api_in_process` 经实测**不是死配置**（40 处活调用点），收敛归第 2 步。原见 §6 表 | 批次 4 收敛清单 → 第 2 步 |
 | 8 | 切环境 = 改源码 + 重启 + 提交 | P1 | `lib/utils/config.dart:16`、提交 `96d7a612` | 批次 3 |
 | 9 | 服务器配置与仓库配置已永久分叉 | P1 | `backend/scripts/vps-switch-companion-model.sh` | 批次 5 |
 | 10 | 4 套部署链互不知情，两条会互删产物 | P1 | `sync-lan.ps1:12,24` vs `n100-deploy.yml:57` | 批次 5 |
@@ -196,44 +198,44 @@ keyPassword   = System.getenv("KEY_PASSWORD")      ?: "moe123456"
 
 `docs/dev/ports.md` + `backend/devports/ports.go` 是一个**做得不错**的端口注册表，明确预留 `19010–19019`。但：
 
-| 端口 | 硬编码位置 | 是否在 ports.md 表内 |
-|------|-----------|---------------------|
-| `18888` | `moewiring/config.go:169` | ✗ |
-| `19032` | `moewiring/config.go:184,189` | ✗（超出 19010–19019 预留段） |
-| `6633` | `config.yaml:103`、`api/etc/moe.yaml:18` | ✗ |
-| `11434` | `config.yaml:97`、`llminference/client.go:70` | ✗ |
+| 端口 | 硬编码位置 | 是否在 ports.md 表内 | 第三批后状态 |
+|------|-----------|---------------------|-------------|
+| `18888` | `moewiring/config.go:169`（`KratosInternalHTTPPort()`） | ✗ | ✅ **已随死函数删除**，Go 代码里 0 处可执行命中（仅剩一条说明注释） |
+| `19032` | `moewiring/config.go:184,189`（`KratosAdminBaseURL()` / `KratosPilotBaseURL()`） | ✗（超出 19010–19019 预留段） | ✅ **已随死函数删除**，2 处兜底消失 |
+| `6633` | `config.yaml:103`、`api/etc/moe.yaml:17` | ✗ | 未处理（`moe.yaml` 残留值仍会经 §5.2 的「非空才覆盖」静默生效） |
+| `11434` | `config.yaml:97`、`llminference/client.go:70` | ✗ | 未处理（`ResolveAPIStyle` 的端口嗅探，见 §6 表末行） |
 
-`19032` 还同时出现在 `internal/conf/moe/v1/pilot.pb.go:229`、`api/vip/v1/vip_read.pb.go:27`、`api/moe/v1/moe_grpc.pb.go:60,378` 的注释与生成物里，以及 `openapi.yaml:14370,14415`。端口注册表存在但未被强制。
+`19032` 还同时出现在 `internal/conf/moe/v1/pilot.pb.go:229`、`api/vip/v1/vip_read.pb.go:27`、`api/moe/v1/moe_grpc.pb.go:60,378` 的注释与生成物里，以及 `openapi.yaml:14370,14415`。第三批之后，全仓剩余的 10 处 `19032` 命中**全部是注释、测试 fixture 或 `.pb.go` 生成物里的注释**，生产代码的可执行兜底路径里已经没有这两个无监听者的端口；这些生成物命中要等 proto 重新生成才会消失，不影响运行。端口注册表本身仍未被强制。
 
 ---
 
 ## 5. P1 — 真源冲突：改了配置但不生效
 
-`backend/config/config.yaml:5` 自称「统一配置（SSOT，PK-13）」。实际有 5 类破口：
+`backend/config/config.yaml:5` 自称「统一配置（SSOT，PK-13）」。原分析列出 5 类破口，截至 2026-09-08 第三批后**只剩 5.1、5.2 两类未处理**（5.3、5.4 已随死代码删除而消除，5.5 是已修复的写回 bug）：
 
 ### 5.1 Agora 段的唯一真源不是 SSOT
 
-`api/etc/moe.yaml:12` 定义了 `Agora:` 段，而 `config.yaml` 中**完全不存在** `agora`（已 grep 确认）。`config_override.go` 也没有对应分支。→ 语音通话凭据的唯一真源是那个被称作「片段」的文件，直接违反 SSOT 声明。
+`api/etc/moe.yaml:11` 定义了 `Agora:` 段，而 `config.yaml` 中**完全不存在** `agora`（已 grep 确认）。`config_override.go` 也没有对应分支。→ 语音通话凭据的唯一真源是那个被称作「片段」的文件，直接违反 SSOT 声明。
 
 ### 5.2 「非空才覆盖」导致片段残留值生效
 
-`config_override.go:14-126`（`ApplyUnifiedConfigOverrides`）的所有分支都是 `if v := ...; v != "" { 覆盖 }`。因此 `api/etc/moe.yaml` 里的残留值会在 `config.yaml` 未显式设置时**静默生效**，例如 `moe.yaml:18` `BaseUrl: http://127.0.0.1:6633`、`:20` `TimeoutSeconds: 300`。
+`config_override.go:14-126`（`ApplyUnifiedConfigOverrides`）的所有分支都是 `if v := ...; v != "" { 覆盖 }`。因此 `api/etc/moe.yaml` 里的残留值会在 `config.yaml` 未显式设置时**静默生效**，例如 `moe.yaml:17` `BaseUrl: http://127.0.0.1:6633`、`:19` `TimeoutSeconds: 300`。（行号较原分析各上移 1，因第三批删掉了同文件第 5 行的 `Timeout: 600000`。）
 
-### 5.3 Go 硬编码短路 yaml
+### 5.3 Go 硬编码短路 yaml ✅ 已消除（2026-09-08 第三批，见 §15.2 B 组）
 
-`internal/platform/moewiring/config.go`：
+本节原状：`moewiring/config.go` 里有一族 go-zero→Kratos 迁移期的过渡开关，它们**恒定 `return true`** 或在某个开关为真时强制改写其它开关的返回值，使 yaml 里的同名键完全失去作用。原文记录的短路点是 `KratosPilotReadEnabled()`（3 处 `return true`）、`KratosPureEnabled()` 为真时强制 `KratosHTTPFrontEnabled` / `KratosGRPCManaged` / `KratosSuperGRPCNative` 全部为真、强制 `fallback = false`，以及恒定 `return true` 的 `KratosPK8GoctlRetired()` / `KratosPureHTTPWithoutLegacy()`；另有 7 个键（`kratos_internal_http_port`、`kratos_pilot_read_enabled`、`kratos_http_front_enabled`、`kratos_grpc_managed`、`super_grpc_retired`、`pilot_process_deprecated`、`kratos_hybrid_http_fallback`）在 `config.yaml` 里根本不存在，只能走 Go 默认值。
 
-- `:62-64`、`:86-88`、`:97-99` — `KratosPilotReadEnabled()` 为 true 时直接 `return true`，yaml 值被短路
-- `:112-131` — `KratosPureEnabled()` 为 true 时强制 `KratosHTTPFrontEnabled` / `KratosGRPCManaged` / `KratosSuperGRPCNative` 全部 true
-- `:148-156` — 强制 `fallback = false`
-- `:133-146` — `KratosPK8GoctlRetired()` / `KratosPureHTTPWithoutLegacy()` 恒定 `return true`
+**处置结果**：这 15 个函数逐个核实调用方后**全部删除**（其中 8 个零调用方，其余的调用方本身也是死代码），`config.go` 从 191 行降到 80 行、只剩 8 个函数。因此「yaml 写了但不生效」和「配置文件里看不到也改不动」这两类破口在本节范围内已不存在——上述 7 个幽灵键的读取逻辑随函数一起消失。`config.go` 现在的唯一职责是 `*_api_in_process` 装配开关族（`IsSet` 语义，见 §12.3 第 2 条），它们的键全部真实存在于 `config.yaml`。
 
-而以下键**在 `config.yaml` 里根本不存在**，只能走 Go 默认值，在配置文件里既看不到也改不动：
-`kratos_internal_http_port`、`kratos_pilot_read_enabled`、`kratos_http_front_enabled`、`kratos_grpc_managed`、`super_grpc_retired`、`pilot_process_deprecated`、`kratos_hybrid_http_fallback`。
+**仍未消除的同类问题**：`config_override.go:73`、`:97` 仍保留 `image.publicbaseurl` / `Image.PublicBaseUrl`（以及 OSS 段的同名驼峰变体）这类永不可能命中的别名——viper 会把查找键小写化，所以「三键并查」实际只有两键，驼峰那一支是纯死代码（详见 §12.1 表）。属第 2 步 `apiconfig` 收敛的范围。
 
-### 5.4 同一个键有两条读取路径
+### 5.4 同一个键有两条读取路径 ✅ 已消除（2026-09-08 第三批，遗留一个待决项）
 
-`KratosAdminBaseURL()`（`config.go:176-190`）先查 `moeconf.LoadBootstrap()`（另一份基于 proto 的加载器，`moeconf/load.go:27-37`），未命中再回落 `moeViper()`，最后兜底 `http://127.0.0.1:19032`。而 `config.yaml:227` 写的是 `kratos_admin_base_url: "http://127.0.0.1:8888"`。同一个键、两个 loader、三个可能结果。
+本节原状：`KratosAdminBaseURL()` 先查 `moeconf.LoadBootstrap()`（另一份基于 proto 的加载器），未命中再回落 `moeViper()`，最后兜底 `http://127.0.0.1:19032`。而 `config.yaml` 写的是 `kratos_admin_base_url: "http://127.0.0.1:8888"`。同一个键、两个 loader、三个可能结果——其中那个硬编码兜底端口还没有任何监听者。
+
+**处置结果**：`KratosAdminBaseURL()` 本身零外部调用方（唯一调用方是同批删除的 `KratosPilotBaseURL()`，而后者唯一调用方是 `wire_mode.go` 里那 4 个薄封装之一），因此整条双路径连同 `19032` 兜底一起删除。「两个 loader 读同一个键」这个破口在本节范围内已不存在。
+
+**遗留（需要你决定，见 §15.3）**：`KratosAdminBaseURL()` 是 `moeconf.LoadBootstrap()` 的 4 个调用方之一，且那 4 个全在被删的死函数里——`moeconf` 包现在**零导入方**（98 + 27 行）。连带 `config.yaml` 的 `moe.kratos_pure_enabled` / `moe.kratos_admin_base_url` 两个键也空转了（唯一读者是 `moeconf/load.go:86`）。两键已在 yaml 里就地标注，包本身的删除建议并入第 2 步与 `utils.InitConfig()` 一起做，不单独删。
 
 ### 5.5 已确认的写回 bug（管理台保存配置静默失效）✅ 已修复
 
@@ -271,17 +273,20 @@ keyPassword   = System.getenv("KEY_PASSWORD")      ?: "moe123456"
 > `_runtimeProductionBaseUrl` 间接层已删，`initRemoteProductionBaseUrl()` 已更名为 `initBaseUrl()`。
 > **`backend/.env` 一行已失效**：复核发现该文件磁盘上不存在、git 历史里也从未入库（`.gitignore:99-100` 已覆盖 `.env` / `.env.*`），原分析针对的是一个本地未跟踪文件。
 > **两个同名 `AppConfig` 已消除**：`lib/utils/config.dart` 的类改名为 `ApiEnvConfig`，`api_service.dart` / `main.dart` 里的 `as moe_launch_config` 别名随之删掉（见 §14.2）。
-> **仍未处理**：`moe.*_api_in_process` 开关族（含隐藏的 3 个）、`api.timeout_ms`（本轮新查明：只写不读）。
+> **第三批（2026-09-08）更新**：`api.timeout_ms` 整条链已删（6 个文件，见 §15.2 A 组）；`moe.*_api_in_process` 开关族经实测**不是死配置**——20 个键对应 **40 处真实装配调用点**，收敛成一个键要改遍每个域的装配路径，属「改动大、收益中」，本批未动（前提纠正见 §15.1）；同批还清掉了 `moewiring/config.go` 里 15 个零调用方的 Kratos 过渡开关与整条 `wireKratosNotes` 链。
+> **仍未处理**：`moe.*_api_in_process` 的收敛（含把 `game` / `notify` / `life` 三个隐藏开关显式化），归入第 2 步调用点迁移。
 
 | 项 | 状态 | 证据 |
 |----|------|------|
 | `backend/.env` | ✅ **一行已失效**：磁盘上不存在，git 历史里也从未入库 | `ls backend/.env` → No such file；`git log --all -- backend/.env` → 空；`.gitignore:99-100` 已覆盖 `.env` / `.env.*` |
 | `backend/api/etc/super.yaml` | ✅ **已删**。原 37 字节、零 Go 引用，却被文档当作 CORS/监听真源 | 删除后 `go build ./...` 通过；悬空文档引用已修（见 §9.2） |
 | `MOE_SUPER_RPC_ENDPOINT` | ✅ **已删**。原只存在于 `config.yaml:35` 的注释里，却指导运维去设一个无人消费的环境变量；连同 `api.super_rpc_endpoints`（已注释）与 `api.super_rpc_timeout_ms`（活键但零读者）整块移除 | `grep -rn 'super_rpc_timeout_ms\|MOE_SUPER_RPC_ENDPOINT' backend/ --include='*.go'` → 0；注意 `moe.pilot.super_rpc_endpoint` 是**另一个键**，`moeconf/load.go:62` 仍在读，保留 |
-| 20 个 `moe.*_api_in_process` | `config.yaml:204-225` 全部为 true（含 `:225 single_process`），而兜底默认值 `defaultInProcessEnabled()`（`moewiring/config.go:43-45`）也是 true → **20 个键的信息量等于 1 个键** | 分支确实存在（`wiring/wire_community.go:12-84` 等 20 处），但关掉会导致 `ctx.XxxApp` 为 nil，无人会关 |
-| 隐藏的 3 个开关 | `moe.game_api_in_process`（`api_game.go:13`）、`moe.notify_api_in_process`（`api_notify.go:10`）、`moe.life_api_in_process`（`api_life.go:10`）代码在读，yaml 里没写 | 只能靠默认值，配置文件里不可见 |
+| 20 个 `moe.*_api_in_process` | ⚠️ **不是死配置，是冗余**（第三批实测纠正）：`config.yaml:198-217` 全部为 true（`single_process` 在 `:219`，同为 true），兜底默认值 `defaultInProcessEnabled()`（`moewiring/config.go:40-42`）也是 true → **20 个键的信息量等于 1 个键**。但它们**各有真实调用点**：全仓 40 处 `if moewiring.XxxAPIInProcessEnabled() { ctx.XxxApp = … }` 形态的装配分支 | 收敛成 1 个键要改遍 40 处调用点、覆盖每个域的装配路径，属「改动大、收益中」，故第三批未动，归入第 2 步（详见 §15.1） |
+| 隐藏的 3 个开关 | `moe.game_api_in_process`（`api_game.go:13`）、`moe.notify_api_in_process`（`api_notify.go:10`）、`moe.life_api_in_process`（`api_life.go:10`）代码在读，yaml 里没写 | ✅ **已验证工作正常**：只能靠默认值，但冒烟启动日志第 11 行列出了全部 22 个已装配域，含这三个（见 §15.4）。问题是「配置文件里不可见」，不是「不生效」——处置方式是把三键补进 yaml，与上一条合并做 |
 | `lib/config/moe_api.json` + `RemoteApiConfigService` | ✅ **整条链已删**。原无调用方：`lib/main.dart:195` 调的方法只读 `AppConfig`、不访问网络 | 删除后 `flutter analyze` 无 error/warning；方法已更名 `initBaseUrlFromAppConfig()`（见下一行） |
-| `api.timeout_ms` | **只写不读**（本轮新查明）：`wiring/config_override.go:68` 灌进 `apiconfig.Config.Timeout`，全仓无任何读者 | `grep -rn '\.Timeout\b' backend/ --include='*.go'` 命中的三处 `cfg.Timeout` 属 `llminference.Config`（`time.Duration`），与本键无关；LLM 超时实际由 `llm_inference.timeout_seconds` 决定。已在 `config.yaml` 注释标注，键本身待第 2 步随 `apiconfig` 一并清除 |
+| `api.timeout_ms` | ✅ **已删**（第三批 A 组）：原为**只写不读**——`wiring/config_override.go:68` 灌进 `apiconfig.Config.Timeout`，全仓无任何读者。整条链跨 6 个文件一并清除：`config.yaml` 的键 · `api/etc/moe.yaml:5` 的 `Timeout: 600000` · `apiconfig.Config.Timeout` 字段 · `config_override.go` 的写入分支 · `pkg/conf.API.TimeoutMS` 字段 · `conf_test.go` 的 fixture | **方法论记录**：`grep -rn '\.Timeout\b' backend/ --include='*.go'` 命中的三处 `cfg.Timeout` 属 `llminference.Config`（`time.Duration`），与本键（`int64`）毫无关系——**命中不等于消费**，必须确认接收者类型。LLM 超时实际由 `llm_inference.timeout_seconds` 决定，`config.yaml` 已就地注释指向它 |
+| 15 个 Kratos 过渡开关 | ✅ **已删**（第三批 B 组）：`moewiring/config.go` 里 `KratosPureEnabled` / `KratosHTTPFrontEnabled` / `KratosGRPCManaged` / `KratosSuperGRPCNative` / `KratosHybridHTTPFallback` / `SuperGrpcRetired` / `KratosPK8GoctlRetired` / `KratosPilotReadEnabled` / `KratosPureHTTPWithoutLegacy` / `PilotProcessDeprecated` / `KratosInternalHTTPPort` / `Kratos{Admin,Vip,AdminInsights}HTTPEnabled` / `Kratos{Pilot,Admin}BaseURL`。文件 191 → 80 行，导入从 4 个降到 2 个 | **逐个实测调用方**（不是看 grep 命中）：8 个零调用方；`KratosPK8GoctlRetired` 的唯一调用方自己也是死的；`KratosPureEnabled` 那 5 个「调用方」全在这族死函数内部。连带消灭 `18888` ×1、`19032` ×2 的硬编码兜底（见 §15.2 B 表） |
+| `wireKratosNotes` 整条链 | ✅ **已删**（第三批 C 组）：`wiring/wire_mode.go`（`git rm`，19 行 4 个薄封装）+ `wire_platform.go` 里的函数本体与 `fmt` 导入 + `wire_svc.go:56` 的调用点 | 该函数只往启动日志写 note，而它依赖的三个闸（`kratos_admin_insights_http_enabled` 等）对应的 yaml 键**根本不存在** → 恒 false → **一条 note 都没输出过**。冒烟启动的 46 行日志里零条 kratos note 即为实证（见 §15.4） |
 | `FeatureFlags.showLocalModelSettings` | ✅ **已删**（原 0 处引用） | `grep -rn 'showLocalModelSettings' lib/` → 0 |
 | `FeatureFlags.companionSingleActiveBondPhase1` | ✅ **已删**。原仅出现在 `companion_service.dart:605` 的注释里，该注释已改写为不依赖此常量 | `grep -rn 'companionSingleActiveBondPhase1' lib/` → 0 |
 | `FeatureFlags.showExperimentalFeatures` | 无直接判断，仅用于派生 `showAutoGlm`（`showLocalModelSettings` 已删，派生对象只剩一个） | `feature_flags.dart:19,25` |
@@ -397,7 +402,7 @@ if old not in text:
 >    `security-and-stability-backlog.md`、`goctl-generation-hygiene.md`（加归档头）、`kratos-legacy-api-migration.md`。
 >
 > 顺带实测出的结论（已写进上述文档）：后端**只监听一个端口** `runtime.http_port`（8888），无 gRPC；
-> `8080` / `19011` / `18888` / `19032` / `6633` 五个端口**已无任何监听者**，仅存在于死代码的硬编码兜底里。
+> `8080` / `19011` / `18888` / `19032` / `6633` 五个端口**已无任何监听者**。其中 `18888` / `19032` 的硬编码兜底已在第三批随死函数一并删除（见 §15.2），生产代码里再无引用；`6633` 仍作为 `api/etc/moe.yaml` 的残留值存在（见 §5.2）。
 
 Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **目录已不存在**，`backend/api/super.go` **已删**（注意 `backend/api/` 下仍有 `.go` 文件，是 `api/<domain>/v1/*.pb.go` 一类的 protoc 产物，不是入口）。但大量文档仍在指导读者使用这些入口：
 
@@ -418,6 +423,8 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 > 这不是「文档写得旧」的小问题：`ports.md` 同时是端口 SSOT（见 §4.2），它既登记了失效命令，又漏登记了真正的外部依赖 `11434`（n100 上的 Ollama）与 `3306`（测试库）。一份 SSOT 同时存在**多写**和**漏写**两类错误。
 >
 > 补记（实测修正）：本节初稿曾把 `18888` / `19032` / `6633` 也列为「实际在用但漏登记」，这是错的——三者**没有任何监听者**，只作为硬编码兜底活在零调用者的死函数里（`moewiring/config.go:169,184,189`、`config.yaml:103` 的 `game_base_url` 占位）。它们已被写进 `ports.md` 新开的「已无监听者的端口」表，而不是在用端口表。
+>
+> 再补（第三批后）：上述 `moewiring/config.go:169,184,189` 三处兜底**已随死函数删除**，按这些行号已找不到东西；`ports.md` 的「已无监听者的端口」表保留，因为它记录的正是「这些端口不该再被任何配置或代码引用」这一事实。
 
 ### 9.2 删文件的连带影响：悬空引用全仓扫描 ✅ 已完成（2026-09-08）
 
@@ -469,7 +476,7 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 
 ## 10. P3 — 仓库卫生
 
-### 10.1 被提交的调试产物 ✅ 已基本清理（2026-09-08，尚未提交）
+### 10.1 被提交的调试产物 ✅ 已基本清理（2026-09-08，已随 `8037287e` 入库）
 
 > **状态**：下表 6 项中，`moe_ui.xml`、`cover.out`、`.pet_exists_check.txt`、`.cursor/_hero_orig.txt` 已删除；
 > 3 个 `.DS_Store` 已不再被跟踪（`git ls-files | grep -i DS_Store` 为空）；
@@ -542,13 +549,27 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 | `showGameNetworkLab` 纳入同一构建期注入机制，并在 CI 加发布卡点（release 构建时断言实验开关为 false） | 无法构建出携带实验 VPN 能力的 release 包。**注**：后半句的「CI 加发布卡点」已被本轮的断言步骤证明可行，可复用同一个 step 追加检查 |
 | ✅ **已完成（2026-09-08）**：删除 `lib/config/moe_api.json` 与 `lib/services/remote_api_config_service.dart`；`initRemoteProductionBaseUrl()` 更名为 `initBaseUrl()`（连带删掉 `_runtimeProductionBaseUrl` 间接层）；`AppConfig` 类改名 `ApiEnvConfig`，消除与 `lib/config/app_config.dart` 的同名冲突 | 死链清除，方法名/类名不再误导。前端基址仍靠改 `lib/utils/config.dart` 源码切换（用户明确要求「暂时都在 config 里面维护」），但发版有 CI 断言兜底 |
 
-### 批次 4 — 清死配置与摆设开关（删除清单 ✅ 已完成，收敛清单未做）
+### 批次 4 — 清死配置与摆设开关（删除清单 ✅ 已完成，收敛清单 ✅ 4 项中 3 项已完成）
 
 **删除清单 ✅ 全部完成（2026-09-08）**：`backend/api/etc/super.yaml` · `config.yaml:35` 关于 `MOE_SUPER_RPC_ENDPOINT` 的注释（连同 `api.super_rpc_endpoints` / `api.super_rpc_timeout_ms` 整块）· `_runtimeProductionBaseUrl` 间接层 · `api_service.dart:192` 关于 `api_env.json` 的注释 · `assets/pet/config/*.json`（10 个）+ `lib/services/pet_career_config.dart` + `pubspec.yaml` 资源声明 · `.pet_exists_check.txt` · `lib/config/moe_api.json` + `lib/services/remote_api_config_service.dart`。
 其中 `backend/.env` 一项经复核为**空指**：磁盘上不存在、git 历史里从未入库（`.gitignore:99-100` 已覆盖），原分析针对的是一个本地未跟踪文件。
 连带影响（悬空引用、两个 deploy-ops 真 bug、两份整篇失效文档、codegraph 重生成）见 §9.2。
 
-**收敛清单（未做，属第 2 步调用点迁移）**：20 个 `moe.*_api_in_process` → 1 个（`single_process`），并把 `game` / `notify` / `life` 三个隐藏开关显式化；恒定 `return true` 的 `KratosPK8GoctlRetired()` / `KratosPureHTTPWithoutLegacy()` 直接删除并把调用点固化为 true；`moewiring/config.go` 中约 10 个 yaml 里不存在的 kratos 键，要么补进 `config.yaml`，要么删掉读取逻辑；**新增**：`api.timeout_ms` 只写不读（`config_override.go:68` → `apiconfig.Config.Timeout`，零读者），随 `apiconfig` 一并清除。
+**第三批新增删除（2026-09-08，见 §15.2）**：`api.timeout_ms` 整条链（6 个文件）· `moewiring/config.go` 的 15 个 Kratos 过渡开关（文件 191 → 80 行）· `wireKratosNotes` 整条链（`git rm wiring/wire_mode.go` + 删函数本体与 `fmt` 导入 + 删 `wire_svc.go:56` 调用点）。
+
+`FeatureFlags`：✅ 已删除 0 引用的 `showLocalModelSettings`、`companionSingleActiveBondPhase1`；**未做**：把 `showGameFeatures` / `arenaGamePrototype` / `showGachaFeatures` 改名以消除「都叫 game」的歧义。
+
+**验收标准**：`config.yaml` 中每个键都能在 Go 代码里找到读取点；每个 `FeatureFlags` 常量都有 ≥1 处 `if` 引用。
+⚠️ **当前未达标**：`moe.kratos_pure_enabled` 与 `moe.kratos_admin_base_url` 两键的唯一读者是 `moeconf/load.go:86`，而 `moeconf.LoadBootstrap()` 的 4 个调用方全在第三批删掉的死函数里 → 该包**零导入方**，两键空转。两键已在 yaml 就地标注，处置随「是否删除 `moeconf` 包」的决定一并落地（见 §15.3）。
+
+**收敛清单（第三批后仅剩 1 项，属第 2 步调用点迁移）**：
+
+| 原计划项 | 现状 |
+|---------|------|
+| 20 个 `moe.*_api_in_process` → 1 个（`single_process`），并把 `game` / `notify` / `life` 三个隐藏开关显式化 | ⏳ **未做**。规模已实测纠正：不是「20 处分支」而是 **40 处装配调用点**，且这三个隐藏开关经冒烟启动验证工作正常（见 §15.1、§15.4）。属「改动大、收益中」 |
+| 恒定 `return true` 的 `KratosPK8GoctlRetired()` / `KratosPureHTTPWithoutLegacy()` 直接删除并把调用点固化为 true | ✅ **已删**（第三批 B 组）。无需固化调用点——实测两者的调用方本身也是死代码 |
+| `moewiring/config.go` 中约 10 个 yaml 里不存在的 kratos 键，要么补进 `config.yaml`，要么删掉读取逻辑 | ✅ **已按「删掉读取逻辑」处置**（第三批 B 组，共 15 个函数）。选择删除而非补键的依据：这些键描述的是 go-zero→Kratos 的过渡形态，而迁移已完成，补进 yaml 等于把过期状态显式化 |
+| `api.timeout_ms` 只写不读，随 `apiconfig` 一并清除 | ✅ **已删**（第三批 A 组，跨 6 个文件）。未等到第 2 步的 `apiconfig` 收敛，因为该字段零读者、删它不需要动任何调用点 |
 
 `FeatureFlags`：✅ 已删除 0 引用的 `showLocalModelSettings`、`companionSingleActiveBondPhase1`；**未做**：把 `showGameFeatures` / `arenaGamePrototype` / `showGachaFeatures` 改名以消除「都叫 game」的歧义。
 
@@ -563,7 +584,7 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 | 仓库内提供 n100 的脱敏 config 模板，消除 `bootstrap.sh` 造成的永久分叉；改为「模板入库 + 机器上只放 secrets」 |
 | 两个 compose 文件合并，或让 `docker-compose.yml` 也支持 `MOE_LLM_*` env；确认 `network_mode: host` 是有意选择（它使容器共享宿主全部网络，且令 `ports:` 失效） |
 | `vps-switch-companion-model.sh` 删除——它是一次性动作的残留，正确的做法是批次 2 的 env 覆盖 |
-| 端口注册表强制化：`18888` / `19032` / `6633` / `11434` 要么登记进 `devports/ports.go` + `ports.md`，要么改为从配置读取 |
+| 端口注册表强制化：~~`18888` / `19032`~~ / `6633` / `11434` 要么登记进 `devports/ports.go` + `ports.md`，要么改为从配置读取。**第三批后范围缩小**：`18888` / `19032` 的硬编码兜底已随死函数删除，两者不再需要登记（`ports.md` 的「已无监听者的端口」表继续作为「不得再引用」的记录）；真正待处理的只剩 `6633`（`api/etc/moe.yaml` 残留值，见 §5.2）与 `11434`（n100 上的 Ollama，`config.yaml:97` + `llminference/client.go:70` 的端口嗅探） |
 
 ### 批次 6 — 仓库卫生与文档对齐
 
@@ -575,6 +596,7 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 - 修正 §9 表中全部文档漂移项
 - **清除 §9.1 的失效启动命令** ✅ **已完成（2026-09-08）**：`ports.md`、`环境配置说明.md`、`cross-platform-dev.md`、`moe-social-runtime.md`、`security-and-stability-backlog.md`、`admin-rpc-runtime-guide.md`、`飞书通知与绑定.md`、`moe-admin.md`、`new-api-kratos.md`、`goctl-generation-hygiene.md`、`kratos-legacy-api-migration.md` 中的 `make rpc` / `make api` / `make rpc-debug` / `make moe-admin-dev` / `make dev` / `make rpc-migrate` / `go run super.go` 已全部改为实际存在的目标（后端唯一入口 `cd backend && make moe-social`），并连带修了 3 个启动脚本与 3 处 Go 运行时提示串（清单见 §9.1）。
   端口表的处理**与本条原计划不同**：实测 `18888` / `19032` / `6633` **没有任何监听者**，只是死函数里的硬编码兜底，因此没有加进「在用端口」表，而是在 `ports.md` 里新开了「已无监听者的端口」表并注明原因；真正需要补的只有 `11434`（n100 上的 Ollama，`config.yaml:97`）和 `3306`（测试库）两个外部依赖。
+  **第三批后**：`18888` / `19032` 的死函数兜底已删除，两者从「代码里还有引用」变为「代码里零可执行引用」；`6633` 未动。
 - `应用配置与全局常量分层约定.md` 补充「环境基址」归属，解决两个 `AppConfig` 同名冲突
 - 明确 AI 指令体系优先级（`AGENTS.md` / `.cursor/rules/` / `.qoder/` / `code_review.md` / `CODE_WIKI.md`）
 
@@ -586,7 +608,10 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 
 ### 12.1 要解决的问题
 
-同一份 `backend/config/config.yaml` 被 **20 处**独立打开：19 个 `viper.New()`（`grep -rn 'viper.New()' backend/ --include='*.go'` 共 21 处，减去 `deploy/config/config.go` 里读另一个文件的 2 处）+ `utils.InitConfig()` 的全局 viper 单例，每处都：
+同一份 `backend/config/config.yaml` 被 **19 处**独立打开：18 个遗留的 `viper.New()`（分布在 16 个文件）+ `utils.InitConfig()` 的全局 viper 单例。每处都：
+
+> **计数修正（2026-09-08 第三批后实测）**：原文写「20 处 = 19 个 `viper.New()` + `utils.InitConfig()`」，多算了 1 处。实测 `grep -rn 'viper.New()' backend/ --include='*.go'` 共 **22** 处命中，需排除 4 处：`deploy/config/config.go` 的 2 处（读的是**另一个** `deploy/config.yaml`）、`pkg/conf/load.go:193` 的 1 处（这是**新加载器自己**，不是遗留读取点）、`pkg/conf/config.go:3` 的 1 处（注释文字）。余下 18 处才是遗留读取点。
+> 第三批**没有改变这个计数**：已核对 HEAD，被删函数所在的 `moewiring/config.go` 在改动前后都只有 1 处 `viper.New()`（在 `moeViper()` 里），被整文件删除的 `wire_mode.go` 是 0 处。
 
 - 各自硬编码一遍 `SetConfigName("config")` + 三条 `AddConfigPath`（`./config`、`../config`、`../../config`）；
 - 各自实现一遍回退链，且**互不一致**：
@@ -619,10 +644,10 @@ backend/pkg/conf/
 2. **装配开关需要 `IsSet`，不能只看 bool 值。** `moe.<domain>_api_in_process` 的语义是「未设置则继承 `single_process || api_in_process`」，而不是「默认 false」。类型化结构体里的 `bool` 分不清「显式 false」和「没写」，所以 `state` 保留了原始 `*viper.Viper` 供 `IsSet` 使用（`load.go:16-27` 有注释说明）。用例 `TestDomainInProcess` 用 `vip_api_in_process: false` 与未出现的 `post` 同时断言两种情况。
 3. **缓存必须在写回后失效。** §5.5 那类 bug 换个形式就会复活。`Reload()` 是为此存在的，管理台 `ApplyRuntimeConfigPatch` 迁移时必须调用它。用例 `TestReload` 断言「改文件后 `Get()` 仍返回旧值、`Reload()` 后才返回新值」——两头都要测，只测后者会漏掉缓存根本没生效的情况。
 
-### 12.4 两个刻意的行为决定
+### 12.4 刻意的行为决定（原 2 项，第三批后仅剩 1 项需签字）
 
 - **`Inference()` 取环境变量的超集**（认全部 4 个 `MOE_LLM_*`）。这意味着 `pkg/moe/runtime` 迁过来之后，`MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` **将开始影响 Bot 调度**（此前只有 `MOE_LLM_API_KEY` 生效）。这是有意的收敛，不是回归；已在 `derive.go` 的 `Inference()` 注释里写明。
-- **`KratosAdminBaseURL()` 的兜底从 `19032` 改为 `runtime.http_port`。** `moewiring/config.go:184,189` 原先兜底 `http://127.0.0.1:19032`，但 19032 已无任何监听者（见 §9.1 实测结论），照抄等于把「拼出一个打不通的地址」这个行为也一起迁移过来。
+- ~~**`KratosAdminBaseURL()` 的兜底从 `19032` 改为 `runtime.http_port`。**~~ **❌ 已作废（第三批）**：该函数连同它的两处 `19032` 兜底已被整体删除（零外部调用方，见 §15.2 B 组），迁移目标不存在了。因此第 2 步**只剩 1 项需要签字的行为变更**（上面那条 `Inference()` 取环境变量超集）。
 
 ### 12.5 第 2 步：调用点迁移顺序
 
@@ -634,8 +659,8 @@ backend/pkg/conf/
 | 2 | `image.*` / `app_client.*` / `auth.*` / `api.*` / `runtime.*` | 各 1–2 | 顺带删掉 §12.1 表里的驼峰死别名；管理台写回处接 `Reload()` |
 | 3 | `llm_inference.*` → `conf.Inference()` | 5 | **收益最大**：一次消掉两条不一致的链，并删除 12 处 `ollama.*` 回退（`config.yaml:126-133` 整段被注释，恒为空） |
 | 4 | `moe.*` 调度器 / 模型 | 5 | `pkg/moe/brain/*` 4 处 + `pkg/moe/runtime/post_model.go` |
-| 5 | `moe.kratos_*` / `pilot.*` / `production.*` | 多 | **最难**：要吸收 `moeconf.LoadBootstrap()` 的 proto `Bootstrap` 映射，并处置 `moewiring` 里 13 个零调用者的死开关（`SingleProcessEnabled`、`KratosPureEnabled`、`KratosGRPCManaged`、`SuperGrpcRetired`、`KratosPK8GoctlRetired`、`KratosInternalHTTPPort`、`KratosAdminBaseURL` 等） |
-| 6 | 删除 `utils.InitConfig()` 全局单例 | 4 个调用者 | `cmd/migrate/main.go:28`、`moeconf/load.go:23`、`moesocial/run_http_only.go:18`、`utils/db.go:35` |
+| 5 | `moe.kratos_*` / `pilot.*` / `production.*` | ~~多~~ **已大幅缩小** | 原评为「最难」：要吸收 `moeconf.LoadBootstrap()` 的 proto `Bootstrap` 映射，并处置 `moewiring` 里 13 个零调用者的死开关。**第三批已把死开关全部删掉（实测 15 个）**，`moewiring` 只剩 8 个函数、全是活的 `*_api_in_process` 装配开关；`moeconf` 则变成零导入方（见 §15.3）。本步现在只剩 `pilot.*` / `production.*` 与 `moeconf` 的处置决定 |
+| 6 | 删除 `utils.InitConfig()` 全局单例 | 4 个调用者（若同时删 `moeconf` 则降为 3） | `cmd/migrate/main.go:28`、`moeconf/load.go:23`、`moesocial/run_http_only.go:18`、`utils/db.go:35`。**建议与 `moeconf` 包的删除合并做**：`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」，两者本就是同一条链（见 §15.3） |
 
 第 5 步完成后，`grep -rn 'viper.New()' backend/ --include='*.go'` 应只剩 `deploy/config/config.go`（Deploy Agent 读的是**另一个** `deploy/config.yaml`，不在本次收敛范围内）。
 
@@ -649,7 +674,7 @@ backend/pkg/conf/
 
 ## 13. 2026-09-08 改动审计
 
-对工作区中尚未提交的全部改动做了一次逐条核实：是否与本文档的判断一致、是否留下悬空引用、是否引入行为变化。
+对工作区中尚未提交的全部改动做了一次逐条核实：是否与本文档的判断一致、是否留下悬空引用、是否引入行为变化。（审计时这些改动尚未提交，现已入库为 `8037287e` + `3ebcf62d`；要复核请用 `git show`，工作区里已看不到。）
 
 ### 13.1 核实为正确的改动（9 项，未作修改）
 
@@ -669,8 +694,8 @@ backend/pkg/conf/
 
 | # | 问题 | 处理 |
 |---|------|------|
-| 1 | `config.yaml:35-40` 的 `api.super_rpc_*` 整块零读者，且注释仍在指导运维设置同样无人消费的 `MOE_SUPER_RPC_ENDPOINT` | 整块删除。保留 `moe.pilot.super_rpc_endpoint`（**另一个键**，`moeconf/load.go:62` 真在读） |
-| 2 | `api.timeout_ms` **只写不读**（新查明）：`config_override.go:68` 灌进 `apiconfig.Config.Timeout` 后无人消费 | 键暂留（清除属第 2 步的 `apiconfig` 收敛），但注释改为如实标注，并指向真正生效的 `llm_inference.timeout_seconds`；`pkg/conf/config.go` 的 `API.TimeoutMS` 字段同步标注 |
+| 1 | `config.yaml:35-40` 的 `api.super_rpc_*` 整块零读者，且注释仍在指导运维设置同样无人消费的 `MOE_SUPER_RPC_ENDPOINT` | 整块删除。保留 `moe.pilot.super_rpc_endpoint`（**另一个键**，`moeconf/load.go:62` 真在读）。**第三批后补注**：`moeconf` 包已变成零导入方（见 §15.3），该键随之也空转了；键与包的处置绑定在同一个决定上 |
+| 2 | `api.timeout_ms` **只写不读**（新查明）：`config_override.go:68` 灌进 `apiconfig.Config.Timeout` 后无人消费 | 本轮先只改注释、指向真正生效的 `llm_inference.timeout_seconds`；**第三批已把整条链删除**（6 个文件：yaml 键、`moe.yaml` 的 `Timeout: 600000`、`apiconfig.Config.Timeout` 字段、`config_override.go` 写入分支、`pkg/conf.API.TimeoutMS`、测试 fixture），未等到第 2 步的 `apiconfig` 收敛——因为零读者意味着删它不需要动任何调用点（见 §15.2 A 组） |
 | 3 | `_runtimeProductionBaseUrl` 死间接层 + `initRemoteProductionBaseUrl()` 误导性方法名（§6 / §9 早已登记，本轮才做） | 删字段、更名 `initBaseUrlFromAppConfig()`，同步 `main.dart:195`、`auth_service.dart:93`、`环境配置说明.md:7`。**后续又更名一次为 `initBaseUrl()`**（随 `AppConfig`→`ApiEnvConfig` 改名，见 §14.2） |
 | 4 | 9 处指向已删文件的悬空引用 | 见 §9.2 表一 |
 | 5 | **`deploy-ops.html` 远程巡检面板恒报假错** —— 读 5 个后端早已不返回的字段，`undefined` 恒为假 | 见 §9.2 表二第 1 条。这是本轮最实质的一处：它会主动把人派去修一个不存在的问题 |
@@ -708,13 +733,16 @@ grep -rn '\.Timeout\b' backend/ --include='*.go'   # 再逐个确认 cfg 的静�
 ```
 
 最后一条是本轮最容易踩的坑：`api.timeout_ms` 表面上「有代码在读」（`config_override.go:68`），`grep .Timeout` 也命中三处 `cfg.Timeout`——但那三处的 `cfg` 是 `llminference.Config`（`time.Duration`），与 `apiconfig.Config.Timeout`（`int64`）毫无关系。**命中不等于消费**，必须确认接收者类型。
+（注：上述 `config_override.go:68` 是**审计当时**的位置，该写入分支已在第三批连同整条链删除，按此行号已找不到代码；结论与删除记录见 §15.2 A 组。）
 
 ### 13.4 尚未开始、且需要先签字的部分
 
-第 2 步（迁移 20 处调用点到 `pkg/conf`）**未开始**。它是第一步会在真实调用点改变行为，且 §12.4 记录了两个刻意的行为收敛需先确认：
+第 2 步（迁移调用点到 `pkg/conf`）**未开始**。它是第一步会在真实调用点改变行为，且 §12.4 原记录了两个刻意的行为收敛需先确认——**第三批之后只剩 1 项**：
 
 1. `Inference()` 取 `MOE_LLM_*` 环境变量的**超集**（认全部 4 个）。迁移后 `MOE_LLM_BASE_URL` / `API_STYLE` / `MODEL` **将开始影响 Bot 调度**（此前只有 `MOE_LLM_API_KEY` 生效）。
-2. `KratosAdminBaseURL()` 兜底从 `19032` 改为 `runtime.http_port`（19032 已无监听者，原兜底会拼出打不通的地址）。
+2. ~~`KratosAdminBaseURL()` 兜底从 `19032` 改为 `runtime.http_port`~~ **❌ 已作废**：该函数在第三批被整体删除（零外部调用方，见 §15.2 B 组），迁移目标不存在。
+
+第三批对第 2 步的净影响是**范围缩小**：`moewiring/config.go` 从 191 行降到 80 行、只剩 8 个活函数，原评为「最难」的第 5 序（见 §12.5）不再需要处置 15 个死开关。但**新增一项待决**：`moeconf` 包现已零导入方，建议与第 6 序的 `utils.InitConfig()` 删除合并处理，不单独删（理由见 §15.3）。
 
 另有两项已知情况：
 
@@ -876,7 +904,133 @@ The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.
 
 **codegraph 无需重生成（已实测）**：跑了一遍 `node scripts/codegraph/gen_all.mjs`，四个 JSON 的内容与 HEAD **逐字节相同**，只有 `generatedAt` 时间戳变化（已还原，避免制造无意义 diff）。原因是 codegraph 是**路由 / 页面 / 服务级**的图，不是符号级的——`rpcMonitor.ts` 删除与 `AppConfig`→`ApiEnvConfig` 改名都落在它的粒度之下（`grep -c 'AppConfig' flutter.json` 本来就是 0）。§13.2 第 8 条那次重生成是必要的（删的是图上的节点），本次不是。
 
-本批全部改动**尚未提交**；工作区里还有并行的无关改动（含未跟踪的 `moe_social_backend/`），刻意未触碰。
+本批（第二批）改动**已提交**为 `3ebcf62d chore: 2026-09-08 配置治理与文档批量修正`（23 文件）；第一批为 `8037287e chore: 清理废弃配置与资源，完成配置治理整改`（80 文件）。**第三批（§15）仍在暂存区未提交**。工作区里还有并行的无关改动（含未跟踪的 `moe_social_backend/`），三批都刻意未触碰。
+
+---
+
+## 15. 2026-09-08 第三批：死配置收敛（批次 4 的一部分）
+
+用户问「死配置能先收掉吗？应该是不影响的吧」。**这个前提一半成立、一半不成立**，先记录不成立的那一半，因为它决定了本批的边界。
+
+### 15.1 前提纠正：`moe.*_api_in_process` **不是死配置**
+
+本文档 §6 早先把它记作「20 个键的信息量等于 1 个键」，暗示可以收敛掉。实测后这个判断要收紧：
+
+| 事实 | 证据 |
+|------|------|
+| 代码真在读的键有 **20 个**，yaml 里写了 **17 个**（缺 `game` / `notify` / `life`） | `grep -rhoE 'moe\.[a-z_]*api_in_process'` vs `grep -oE '^  [a-z_]*api_in_process' config/config.yaml` |
+| 消费点是 **40 处真实装配分支**，形如 `if moewiring.XxxAPIInProcessEnabled() { ctx.XxxApp = … }` | `grep -rn 'APIInProcessEnabled()' --include='*.go' . \| grep -v 'func '` → 40 |
+| 缺键的 3 个域**确实在工作**，走 `defaultInProcessEnabled()` 兜底 | 启动冒烟日志第 11 行：`进程内: vip, user, …, game, life, …, notify, community`（22 个域全在） |
+
+所以「收敛为 1 个键」= **重写 40 个调用点**，回归面覆盖全部业务域的装配路径。运行时值虽然恒为 true，但这属于「改动大、收益中」，**不符合本轮「改动小收益大」的取舍标准，未做**。
+
+真正的死配置是下面 15.2 那批——它们的共同特征是**零调用方**，删掉不需要动任何调用点。
+
+### 15.2 已删除（逐项核实过调用方，不是看 grep 命中）
+
+**A. `api.timeout_ms` 整条链**（§6 / §13.2 第 2 条早已登记为「只写不读」）
+
+| 位置 | 动作 |
+|------|------|
+| `config/config.yaml:31-33` | 删键 + 删警告注释，留一行说明「曾有 timeout_ms，已删；HTTP 超时调 `llm_inference.timeout_seconds`」 |
+| `api/etc/moe.yaml:5` | 删 `Timeout: 600000` |
+| `internal/platform/apiconfig/config.go:8` | 删 `Timeout int64` 字段 |
+| `internal/platform/wiring/config_override.go:67-69` | 删写入块 |
+| `pkg/conf/config.go:75-81` | 删 `API.TimeoutMS` 字段与「只写不读」注释（`API` 现在只剩 `PublicBaseURL`） |
+| `pkg/conf/conf_test.go:31` | 测试 fixture 同步删键，保持与真实 yaml 镜像 |
+
+零读者的判断依据（重犯 §13.3 那个坑的风险最高，所以逐个确认了接收者类型）：`grep -rn '\.Timeout\b'` 共 16 处命中，其中 `biz/llm/platform_common.go:80,89,98`、`pkg/llminference/{models,stream,client}.go`、`pkg/conf/conf_test.go` 的 `cfg.Timeout` 全是 **`llminference.Config.Timeout`（`time.Duration`）**，与 `apiconfig.Config.Timeout`（`int64`）无关；唯一的写入点就是 `config_override.go:68`。
+
+**B. `moewiring/config.go` 的 Kratos 过渡开关族 —— 15 个函数**
+
+这是 go-zero→Kratos 迁移（当前分支名就是 `feat/kratos-hybrid-migration`）完成后留下的残骸。逐个实测调用方：
+
+| 函数 | 删除依据 |
+|------|----------|
+| `KratosPureHTTPWithoutLegacy` | 全仓**零引用** |
+| `KratosHTTPFrontEnabled` | 零调用方（grep 命中的 `pkg/conf/config.go:241` 是**同名字段**，不是调用） |
+| `KratosGRPCManaged` | 同上（`pkg/conf/config.go:242` 是同名字段） |
+| `KratosSuperGRPCNative` | 零引用 |
+| `SuperGrpcRetired` | 零引用 |
+| `KratosHybridHTTPFallback` | 零引用 |
+| `PilotProcessDeprecated` | 零引用 |
+| `KratosInternalHTTPPort` | 零引用；**连带消灭 `18888` 硬编码兜底**（`pkg/conf/config.go:243` 仍是同名字段，非调用） |
+| `KratosPK8GoctlRetired` | 唯一调用方是 `KratosHybridHTTPFallback:152`，而后者本身是死的 |
+| `KratosPureEnabled` | **关键**：它的 5 个「调用方」全部在上述死函数内部（`:113,120,127,134,149`），包外零调用 |
+| `KratosPilotReadEnabled` | 3 个调用方全在 `config.go` 自己内部（`:63,87,98`） |
+| `KratosAdminHTTPEnabled` | 唯一外部调用方是 `wiring/wire_mode.go:14` 的薄封装 |
+| `KratosVipHTTPEnabled` | 同上（`wire_mode.go:18`） |
+| `KratosAdminInsightsHTTPEnabled` | 同上（`wire_mode.go:10`） |
+| `KratosPilotBaseURL` + `KratosAdminBaseURL` | 前者唯一调用方是 `wire_mode.go:6`；后者唯一调用方是前者。**连带消灭 2 处 `19032` 硬编码兜底** |
+
+**C. `wireKratosNotes` 整条链**
+
+- `internal/platform/wiring/wire_mode.go` —— **整个文件删除**（只含上述 4 个薄封装，`git rm`）
+- `internal/platform/wiring/wire_platform.go:68-81` —— 删 `wireKratosNotes`，连带删掉因此不再使用的 `fmt` 导入
+- `internal/platform/wiring/wire_svc.go:56` —— 删调用
+
+**这条链为什么是零影响**：`wireKratosNotes` 只往启动日志写 note，而它依赖的三个闸全部返回 `false`（`moe.kratos_admin_http_enabled` / `kratos_vip_http_enabled` / `kratos_admin_insights_http_enabled` **在 config.yaml 里根本不存在**，`IsSet` 恒假 → 落到默认值 false）。冒烟启动的 46 行日志里**一条 kratos note 都没有**，实测确认它从来没输出过东西。
+
+顺带修了 `config.yaml:197` 的过期注释：原文「管理台 Moe HTTP 优先走 API 进程内 MoeAdmin（**仍需 RPC 处理发帖/记忆端口**）」——RPC 进程早已整体删除（`backend/rpc/` 不存在），改为「各业务域的 HTTP 装配走进程内 biz（单进程 Kratos HTTP，无 RPC）」。
+
+### 15.3 连带发现：`moeconf` 包现已完全孤立（**需要你决定**）
+
+删完上面那批之后浮出一件文档里没预料到的事：
+
+- `moeconf.LoadBootstrap()` 的调用方**只有 4 个，全在被删的死函数里**（`config.go:66,90,101,177`）
+- `grep -rln '"backend/internal/platform/moeconf"' --include='*.go'` → **零导入方**
+- 包规模：`load.go` 98 行 + `load_test.go` 27 行
+- `config.yaml` 的 `moe.kratos_pure_enabled` / `moe.kratos_admin_base_url` 因此也空转了（唯一读者是 `moeconf/load.go:86`）
+
+**未删的理由**：删一个包比删函数的影响面大，且 `moeconf` 会牵到 `internal/conf/moe/v1/pilot.pb.go`（protoc 生成物）——那是 §12.5 第 2 步「删 `utils.InitConfig()` 全局单例」的天然组成部分（`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」）。**建议并入第 2 步一起做，不要单独删。**
+
+已在 `config.yaml` 那两个键上方加 ⚠️ 注释说明其空转状态与处置归属，避免下一个人以为它们还在生效。
+
+### 15.4 验证
+
+| 检查 | 结果 |
+|------|------|
+| `gofmt -l internal/platform/{moewiring,wiring,apiconfig}/ pkg/conf/` | 无输出 |
+| `go build ./...` · `go vet ./...` | 通过 |
+| `make check` | 通过（`cmd/moe-social` 构建 + `moesocial` / `routestats` 测试） |
+| `go test ./...` | **33 包 ok**；唯一 FAIL 是 `pkg/moe/toolaudit` 的既有失败，已确认该包**不依赖**本轮改动的任何包 |
+| `ruby -ryaml` 校验 `config.yaml` / `moe.yaml` | 语法有效；`api.timeout_ms` = nil，`moe.yaml` 无 `Timeout` 键 |
+| **启动冒烟测试**（`go build -o /tmp/moe-smoke ./cmd/moe-social` 后真实启动 14 秒） | 进程未 panic（`grep -icE 'panic\|fatal'` = 0）；监听 `*:8888` 单端口；日志 `moe-social ready: Kratos HTTP-only on port 8888`；**22 个域全部进程内装配**；bot/dream 两个 scheduler 正常启动 |
+
+冒烟测试是本轮唯一的强验证：wiring 启动路径**没有任何测试覆盖**，`go build` + `go test` 全绿也不能证明装配没被破坏。
+
+> ⚠️ 冒烟启动会**真实写入测试库**（`life_items` / `life_entities` / `life_event_logs` 的 upsert，以及过期 `companion_memories` 的清理）——这是后端正常的启动 seeding 行为。库是测试库（用户已确认开发机直连属预期），`make moe-social` 不带 `-migrate`，日志第 2 行确认 `已跳过 AutoMigrate`，无表结构变更。
+
+**端口硬编码收敛成效**：`18888` 在 Go 代码里从 1 处降到 **0 处可执行命中**（唯一残留是我自己写的说明注释）；`19032` 从 11 处降到 10 处，且**剩余 10 处全部是注释、测试 fixture 或 `.pb.go` 生成物里的注释**，生产代码的可执行兜底路径里已经没有这两个无监听者的端口。
+
+### 15.5 文档一致性收尾 + 顺带查出的一个计数错误
+
+删代码会让审查文档里的行号与结论失效，因此本批同时做了一轮就地更新（不新开章节，避免同一事实两处描述）：
+
+| 被更新的章节 | 更新内容 |
+|-------------|---------|
+| 文档头「性质」/「有效性」 | 变更记录范围 §13、§14 → **§13–§15**；新增 ⚠️ 行号提醒（`moewiring/config.go` 191 → 80 行，原 `:62-190` 区间引用全部作废） |
+| §0 速览表第 4、5、6、7 行 | 第 4 行「Go 硬编码短路」一半已消除、剩驼峰死别名（行号修正为 `config_override.go:73,97`）；第 5 行 Agora 段行号 `moe.yaml:12` → `:11`；第 6 行端口越界标 ✅ 已消除；第 7 行死配置标 ⚠️ 部分完成 |
+| §4.2 端口表 | 新增「第三批后状态」列；`19032` 剩余命中性质说明 |
+| §5 开头 / §5.1 / §5.2 / §5.3 / §5.4 | 破口计数 5 类 → **剩 2 类**；`moe.yaml` 行号整体上移 1（因删掉第 5 行 `Timeout: 600000`）；§5.3、§5.4 标 ✅ 已消除并保留「原状」描述以便回溯 |
+| §6 进度块 + 表 | `api.timeout_ms` → ✅ 已删；`*_api_in_process` 两行按实测重写（40 处调用点 / 三个隐藏开关已验证工作正常）；**新增两行**登记 B、C 两组删除，否则只读 §6 会以为它们还在 |
+| §9.1 | 五端口结论补「18888/19032 兜底已删」；末尾「补记」加「再补（第三批后）」说明按原行号已找不到东西 |
+| §11 批次 4 / 批次 5 / 批次 6 | 批次 4 标题改为「收敛清单 4 项中 3 项已完成」，收敛清单改为带现状的表格；验收标准如实标注 ⚠️ **当前未达标**（两个空转键）；批次 5、6 的端口条目缩小范围 |
+| §12.4 / §12.5 / §13.2 / §13.3 / §13.4 | 第 2 个刻意行为决定标 ❌ 已作废（只剩 1 项需签字）；迁移顺序第 5、6 序范围缩小并绑定 `moeconf` 决定；第 1、2 行处理栏补第三批结果；§13.3 的教训段标注行号已失效 |
+
+**顺带查出的计数错误（已修）**：§12.1 原写「同一份 `config.yaml` 被 **20 处**独立打开：19 个 `viper.New()` + `utils.InitConfig()`」。实测 `grep -rn 'viper.New()' backend/ --include='*.go'` 共 **22** 处，要排除 4 处才得到遗留读取点：
+
+| 排除项 | 处数 | 原因 |
+|-------|------|------|
+| `deploy/config/config.go` | 2 | 读的是**另一个** `deploy/config.yaml` |
+| `pkg/conf/load.go:193` | 1 | **新加载器自己**，不是遗留读取点——原文正是把它误算进去了 |
+| `pkg/conf/config.go:3` | 1 | 注释文字命中 |
+
+余 **18** 处遗留 `viper.New()`（分布在 16 个文件）+ `utils.InitConfig()` = **19 处**。`backend/pkg/conf/config.go` 的包注释里有同一个 off-by-one，已同步改为 19/18。
+
+第三批**未改变此计数**，已核对 HEAD：被删函数所在的 `moewiring/config.go` 改动前后都只有 1 处 `viper.New()`（在 `moeViper()` 里），被整文件删除的 `wire_mode.go` 是 0 处。
+
+**教训**：`grep` 计数当作结论写进文档时，必须把「新代码自己」和「注释里的字面命中」排除掉——否则文档会拿新加载器当作它要消灭的问题的证据。这与 §13.3 的「命中不等于消费」是同一类错误的计数版本。
 
 ---
 

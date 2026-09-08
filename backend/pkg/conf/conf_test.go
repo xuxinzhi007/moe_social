@@ -28,7 +28,6 @@ admin:
     password: "admin123"
 
 api:
-  timeout_ms: 600000
   public_base_url: "http://api.example.com:8888/"
 
 database:
