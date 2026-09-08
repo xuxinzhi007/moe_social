@@ -49,8 +49,8 @@ private_message:
 
 ## 3. 图片路径（与现有云空间一致）
 
-- 图片文件落在 **`Image.LocalDir`**（`api/etc/super.yaml`，可被 `backend/config/config.yaml` 的 `image.local_dir` 覆盖）。
-- 对外访问 URL 形态与列表接口一致：`{api_base}/api/images/{filename}`（`api_base` 来自 `GET /api/public/client-config` 或请求 Host，见 `getimagelistlogic`）。
+- 图片文件落在 **`Image.LocalDir`**（`api/etc/moe.yaml:36`，可被 `backend/config/config.yaml` 的 `image.local_dir` 覆盖）。
+- 对外访问 URL 形态与列表接口一致：`{api_base}/api/images/{filename}`（`api_base` 取自 `image.public_base_url`，见 `internal/biz/media/image.go:67`）。
 
 **写入 `private_messages.image_paths` 的约定**：
 

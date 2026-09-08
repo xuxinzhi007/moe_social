@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 停止 start-admin.sh 拉起的 RPC / API（网关在前台，Ctrl+C 即可）
+# 停止 start-admin.sh 拉起的 moe-social / agent / vite
 
 set -euo pipefail
 
@@ -20,8 +20,7 @@ stop_pid() {
   fi
 }
 
-stop_pid rpc
-stop_pid api
+stop_pid moe-social
 stop_pid agent
 stop_pid vite
-echo "完成。"
+echo "完成。若 :8888 仍被占用（go run 子进程未随父进程退出），执行：cd backend && make moe-social-stop"

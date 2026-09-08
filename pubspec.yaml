@@ -143,7 +143,6 @@ flutter:
     - assets/lottie/gifts/
     - assets/pet/
     - assets/pet/room/
-    - assets/pet/config/
     - assets/pet/lpc/
     - assets/pet/lpc/layers/
     - assets/pet/ui/

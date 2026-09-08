@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-01T05:08:49.038Z",
+  "generatedAt": "2026-09-08T11:22:52.609Z",
   "domains": [
     {
       "id": "pet",
@@ -28,9 +28,9 @@
     }
   ],
   "outputs": {
-    "pet": "C:\\Users\\ZhuanZ1\\Desktop\\moe_social\\moe-admin\\public\\dev\\codegraph\\pet.json",
-    "admin": "C:\\Users\\ZhuanZ1\\Desktop\\moe_social\\moe-admin\\public\\dev\\codegraph\\admin.json",
-    "backend": "C:\\Users\\ZhuanZ1\\Desktop\\moe_social\\moe-admin\\public\\dev\\codegraph\\backend.json",
-    "flutter": "C:\\Users\\ZhuanZ1\\Desktop\\moe_social\\moe-admin\\public\\dev\\codegraph\\flutter.json"
+    "pet": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/public/dev/codegraph/pet.json",
+    "admin": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/public/dev/codegraph/admin.json",
+    "backend": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/public/dev/codegraph/backend.json",
+    "flutter": "/Users/xuxinzhi/Documents/gowork/moe_social/moe-admin/public/dev/codegraph/flutter.json"
   }
 }

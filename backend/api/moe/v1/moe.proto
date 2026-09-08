@@ -555,7 +555,7 @@ message GetToolsSchemaReply {
 // MoeAdmin — PK-1 域 SSOT。HTTP 灰度读路径（PK-2）：
 //   GET /api/admin/moe/runtimes
 //   GET /api/admin/moe/brain/pipeline?agent_key=
-// 试点 :19032；灰度 moe.kratos_admin_http_enabled
+// 灰度开关: moe.kratos_admin_http_enabled（由 moewiring.KratosAdminHTTPEnabled 读取）
 service MoeAdmin {
   rpc ListRuntimes(ListRuntimesRequest) returns (ListRuntimesReply) {
     option (google.api.http) = { get: "/api/admin/moe/runtimes" };

@@ -371,7 +371,7 @@
     启动：<code>cd docs && python3 -m http.server 8765</code> →
     <a href="http://localhost:8765/dev/devtools.html" style="color:var(--accent)">工具台</a> ·
     <a href="http://localhost:8765/index.html" style="color:var(--accent)">文档导航</a>
-    · API 需 CORS · 默认读取 <code>lib/config/moe_api.json</code> 或 localhost:8888
+    · API 需 CORS · 默认 <code>127.0.0.1:8888</code>，可在上方 apiBase 输入框改
   </footer>
 
   <script>
@@ -428,18 +428,6 @@
         if (o.autoRefresh) $("autoRefresh").value = o.autoRefresh;
       } catch (_) {}
       if (!$("apiBase").value) $("apiBase").value = DEFAULT_API;
-    }
-
-    async function tryLoadProjectApiConfig() {
-      if ($("apiBase").value && $("apiBase").value !== DEFAULT_API) return;
-      try {
-        const r = await fetch("../../lib/config/moe_api.json");
-        if (!r.ok) return;
-        const j = await r.json();
-        if (j.api_base_url) $("apiBase").value = normalizeBase(j.api_base_url);
-      } catch (_) {
-        $("apiBase").value = DEFAULT_API;
-      }
     }
 
     function normalizeBase(url) {
@@ -997,7 +985,6 @@
     $("btnDelete").onclick = () => deleteSelected().catch((e) => setStatus(e.message, "error"));
 
     loadLocal();
-    tryLoadProjectApiConfig();
     renderPipeline();
     renderTraces();
     log("监控台就绪", "ok");

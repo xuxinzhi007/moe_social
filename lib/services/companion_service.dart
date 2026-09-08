@@ -602,7 +602,7 @@ class CompanionProactiveDeliveryData {
 
 /// 伙伴聊天 / Profile 域服务 —— 接入后端 `/api/companion/*` 与 SSE。
 ///
-/// 一期语义：当前登录用户的「活跃伙伴」一条（见 FeatureFlags.companionSingleActiveBondPhase1）。
+/// 一期语义：当前登录用户的「活跃伙伴」一条（后端 profile 按 user 取）。
 /// 二期多角色：在本域扩展列表/切换，勿改走酒馆 AgentList。
 /// 决策 SSOT：`docs/dev/ai-companion-formal-decisions.md`。
 class CompanionService {

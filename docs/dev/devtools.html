@@ -121,13 +121,13 @@
         label: "RPC 性能监控",
         src: "tools/rpc-monitor.html",
         agentSrc: "http://127.0.0.1:19010/?page=rpc",
-        hint: "Moe Ops 侧栏「RPC 监控」；需 make rpc-debug + make deploy-agent。",
+        hint: "⚠️ 无数据源：:19011 提供方已随 go-zero RPC 进程移除，make rpc-debug 已删；管理台 /ops/rpc 页亦已移除。仅需 make deploy-agent 即可打开本页，但取不到指标。",
         preferAgent: true,
       },
       memory: {
         label: "记忆系统监控",
         src: "memory-system-dashboard.html",
-        hint: "需 API 服务（默认 :8888）与 CORS；可自动读 lib/config/moe_api.json。",
+        hint: "需 API 服务（默认 :8888）与 CORS；API 基址可在看板内输入框修改。",
       },
       deploy: {
         label: "运维部署中心",

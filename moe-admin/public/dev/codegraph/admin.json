@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domain": "admin",
-  "generatedAt": "2026-08-01T05:08:48.975Z",
+  "generatedAt": "2026-09-08T11:22:52.546Z",
   "nodes": [
     {
       "weight": 4,
@@ -132,8 +132,8 @@
       "weight": 2,
       "id": "nav:/biz/pet/avatar",
       "kind": "nav_item",
-      "label": "角色装扮",
-      "summary": "Canvas 叠层 · walk/idle",
+      "label": "序列帧工作台",
+      "summary": "AI 序列帧整理 · 网格 Sheet 导出",
       "ref_id": "/biz/pet/avatar",
       "meta": {
         "to": "/biz/pet/avatar"
@@ -750,19 +750,30 @@
       "id": "route:/biz/pet/avatar",
       "kind": "route",
       "label": "/biz/pet/avatar",
-      "summary": "PetAvatarEditorPage",
+      "summary": "SpriteStudioPage",
       "ref_id": "moe-admin/src/App.tsx",
       "meta": {
-        "page": "PetAvatarEditorPage"
+        "page": "SpriteStudioPage"
       }
     },
     {
       "weight": 2,
-      "id": "page:PetAvatarEditorPage",
+      "id": "page:SpriteStudioPage",
       "kind": "page",
-      "label": "PetAvatarEditorPage",
-      "summary": "moe-admin/src/pages/PetAvatarEditorPage.tsx",
-      "ref_id": "moe-admin/src/pages/PetAvatarEditorPage.tsx"
+      "label": "SpriteStudioPage",
+      "summary": "moe-admin/src/pages/SpriteStudioPage.tsx",
+      "ref_id": "moe-admin/src/pages/SpriteStudioPage.tsx"
+    },
+    {
+      "weight": 1,
+      "id": "route:/biz/pet/sprites",
+      "kind": "route",
+      "label": "/biz/pet/sprites",
+      "summary": "Navigate",
+      "ref_id": "moe-admin/src/App.tsx",
+      "meta": {
+        "page": "Navigate"
+      }
     },
     {
       "weight": 1,
@@ -1333,6 +1344,14 @@
       "label": "moe-content",
       "summary": "moe-admin/src/features/moe-content",
       "ref_id": "moe-admin/src/features/moe-content"
+    },
+    {
+      "weight": 1,
+      "id": "feature:sprite-studio",
+      "kind": "feature",
+      "label": "sprite-studio",
+      "summary": "moe-admin/src/features/sprite-studio",
+      "ref_id": "moe-admin/src/features/sprite-studio"
     }
   ],
   "edges": [
@@ -2142,9 +2161,9 @@
       "weight": 1
     },
     {
-      "id": "e:route:/biz/pet/avatar|implements|page:PetAvatarEditorPage",
+      "id": "e:route:/biz/pet/avatar|implements|page:SpriteStudioPage",
       "source": "route:/biz/pet/avatar",
-      "target": "page:PetAvatarEditorPage",
+      "target": "page:SpriteStudioPage",
       "relation": "implements",
       "weight": 1
     },
@@ -2153,6 +2172,13 @@
       "source": "nav:/biz/pet/avatar",
       "target": "route:/biz/pet/avatar",
       "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:root:admin|registers|route:/biz/pet/sprites",
+      "source": "root:admin",
+      "target": "route:/biz/pet/sprites",
+      "relation": "registers",
       "weight": 1
     },
     {
@@ -2758,13 +2784,6 @@
       "weight": 1
     },
     {
-      "id": "e:page:PetAvatarEditorPage|uses_feature|feature:moe-avatar",
-      "source": "page:PetAvatarEditorPage",
-      "target": "feature:moe-avatar",
-      "relation": "uses_feature",
-      "weight": 1
-    },
-    {
       "id": "e:page:PetFurnitureEditorPage|uses_feature|feature:moe-avatar",
       "source": "page:PetFurnitureEditorPage",
       "target": "feature:moe-avatar",
@@ -2786,24 +2805,24 @@
       "weight": 1
     },
     {
-      "id": "e:page:PetAvatarEditorPage|uses_feature|feature:moe-content",
-      "source": "page:PetAvatarEditorPage",
-      "target": "feature:moe-content",
-      "relation": "uses_feature",
-      "weight": 1
-    },
-    {
       "id": "e:page:PetFurnitureEditorPage|uses_feature|feature:moe-content",
       "source": "page:PetFurnitureEditorPage",
       "target": "feature:moe-content",
       "relation": "uses_feature",
       "weight": 1
+    },
+    {
+      "id": "e:root:admin|contains|feature:sprite-studio",
+      "source": "root:admin",
+      "target": "feature:sprite-studio",
+      "relation": "contains",
+      "weight": 1
     }
   ],
   "stats": {
-    "nodeCount": 136,
+    "nodeCount": 138,
     "edgeCount": 209,
     "navItems": 71,
-    "routes": 43
+    "routes": 44
   }
 }

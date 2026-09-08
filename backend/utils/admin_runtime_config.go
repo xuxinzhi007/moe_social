@@ -97,13 +97,15 @@ func ApplyRuntimeConfigPatch(patch RuntimeConfigPatch) (RuntimeConfigView, error
 		v.Set("api.public_base_url", trimURL(*patch.ApiPublicBaseUrl))
 	}
 	if patch.ImagePublicBaseUrl != nil {
-		v.Set("Image.PublicBaseUrl", trimURL(*patch.ImagePublicBaseUrl))
+		// 键名必须是 config.yaml 实际使用的蛇形键；写成 Image.PublicBaseUrl 会被 viper
+		// 小写化为无下划线的 publicbaseurl 死键，运行时优先读 public_base_url，改动静默丢失。
+		v.Set("image.public_base_url", trimURL(*patch.ImagePublicBaseUrl))
 	}
 	if patch.ImageLocalDir != nil {
-		v.Set("Image.LocalDir", strings.TrimSpace(*patch.ImageLocalDir))
+		v.Set("image.local_dir", strings.TrimSpace(*patch.ImageLocalDir))
 	}
 	if patch.ImageMaxBytes != nil {
-		v.Set("Image.MaxBytes", *patch.ImageMaxBytes)
+		v.Set("image.max_bytes", *patch.ImageMaxBytes)
 	}
 	if err := v.WriteConfig(); err != nil {
 		return RuntimeConfigView{}, fmt.Errorf("写入配置失败: %w", err)

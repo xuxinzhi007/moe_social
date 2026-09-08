@@ -126,7 +126,7 @@ moe_social/
 | `lib/widgets/` | 通用与领域组件 |
 | `lib/models/` | DTO |
 | `lib/utils/` | 工具（含 `config.dart`、`jwt_exp.dart`） |
-| `lib/config/` | `app_config.dart`、`moe_api.json` |
+| `lib/config/` | `app_config.dart`（安全存储配置） |
 | `lib/constants/` | `feature_flags.dart` 等 |
 | `lib/theme/` | 设计 Token 与主题扩展 |
 | `lib/main.dart` | 生产入口 |

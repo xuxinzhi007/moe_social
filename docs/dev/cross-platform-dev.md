@@ -6,15 +6,16 @@
 
 | 能力 | macOS | Windows | 说明 |
 |------|:-----:|:-------:|------|
-| `make rpc` / `make api` / `make dev` | ✅ | ✅ | Go 跨平台 |
+| `make moe-social` / `make moe-social-dev` | ✅ | ✅ | Go 跨平台；单进程 Kratos HTTP :8888 |
+| `make db-migrate` / `make migrate-moe` | ✅ | ✅ | `go run ./cmd/migrate` |
 | `make deploy-agent` | ✅ | ✅ | 首次缺配置时 Go 自动从 example 生成 |
 | `make deploy-config-init` | ✅ | ✅ | Makefile 已分 OS 写法 |
-| `make deploy-agent-stop` | ✅ `lsof` | ✅ PowerShell | |
+| `make deploy-agent-stop` / `make moe-social-stop` | ✅ `lsof` | ✅ PowerShell | |
 | `make admin` | ✅ `start-admin.sh` | ✅ `start-admin.ps1` | |
 | `cd moe-admin && npm run dev` | ✅ | ✅ | Vite |
 | Deploy 本机构建 / Flutter 任务 | ✅ `zsh -l` | ✅ Git Bash 或 cmd | 见 `deploy-platform.md` |
 | `make build-linux` | ✅ | ✅（建议 Git Bash） | 交叉编 Linux |
-| `make gen` / `gen-api` / `gen-rpc` | ✅ | ✅ | 需安装 goctl |
+| `make gen` / `make api-one` / `make gen-moe-admin` | ✅ | ⚠️ 需 bash | Kratos protoc 链，**不再需要 goctl**；先 `make init-proto-tools` |
 | `make gen-swagger` | ✅ | ⚠️ | 输出 `backend/openapi.yaml`（OpenAPI 3.0.3）；详见 [openapi-apifox.md](./openapi-apifox.md) |
 | `make dev-docs` | ✅ `python3` | ✅ `python`/`py` | 需 Python |
 | Flutter `flutter run` / `build macos` | ✅ | ✅ | 各平台目录已有 |
@@ -28,22 +29,23 @@ make deploy-config-init    # 或首次 make deploy-agent 自动创建 config.yam
 # 编辑 deploy/config.yaml：token、api_base_url 等
 
 # 2. 业务
-make rpc-migrate           # 首次
-make dev                   # 或分开 make rpc / make api
+make db-migrate            # 首次（= go run ./cmd/migrate）
+make moe-social            # 单进程 Kratos HTTP :8888
 
 # 3. 管理台（另开终端）
 cd moe-admin && npm ci && npm run dev
 # http://127.0.0.1:5173/ops/login
 
-# 4. 运维（按需）
-make deploy-agent
-make rpc-debug             # RPC 监控需要
+# 4. 运维（按需，make moe-social 不会自动拉起 Agent）
+cd ../backend && make deploy-agent   # :19010
 
 # 一键：make admin  或  ./scripts/start-admin.sh
 # 停止：./scripts/stop-admin.sh
 ```
 
-`config.yaml` **不进 Git**，Mac 新克隆后需从 `config.example.yaml` 复制或 `make deploy-config-init`，再填入本机 token（可从 Windows 用密码管理器同步，见 `deploy-platform.md`）。
+`backend/deploy/config.yaml` **不进 Git**（`.gitignore:38`），Mac 新克隆后需从 `deploy/config.example.yaml` 复制或 `make deploy-config-init`，再填入本机 token（可从 Windows 用密码管理器同步，见 `deploy-platform.md`）。
+
+⚠️ 别和 `backend/config/config.yaml` 搞混——后者是业务配置 SSOT，**进 Git**，新克隆后已存在、无需生成。
 
 ## Windows 注意点
 

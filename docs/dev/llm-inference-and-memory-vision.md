@@ -10,7 +10,7 @@
 | `llm_inference.base_url` | 如 `http://127.0.0.1:6633` |
 | `llm_inference.api_style` | `openai`（默认） |
 | `llm_inference.memory_model` | 记忆提取/总结用模型 |
-| go-zero `etc/super.yaml` | 字段名 `LLMInference`（与 `Ollama` 旧键已统一） |
+| `api/etc/moe.yaml` 片段 | 驼峰字段名 `LLMInference`（与 `Ollama` 旧键已统一）；值由 `config/config.yaml` 覆盖 |
 
 `backend/config/config.yaml` 中的 `ollama.*` 仅作**读取兼容**，新部署勿再配置。
 

@@ -51,7 +51,7 @@ func RuntimeOverview(ctx context.Context) (*RuntimeOverviewResult, error) {
 
 	rpcInfo := RuntimeProcessInfo{Role: "rpc", Reachable: false}
 	layout := "split"
-	note := "make dev 模式：API、RPC、deploy-agent 为独立进程，RSS 为各进程物理内存之和的近似值。"
+	note := "API 进程指标为本进程实测值。"
 	estimated := apiInfo.RssMb
 
 	if live, ok := fetchRPCDebugLive(ctx); ok {
@@ -83,7 +83,7 @@ func RuntimeOverview(ctx context.Context) (*RuntimeOverviewResult, error) {
 			note = note + " deploy-agent（:19010）另有约数十 MB，未计入。"
 		}
 	} else {
-		note = "RPC debug（:19011）未就绪。请使用 make moe-social / make dev -monitor=true 启动。"
+		note = "RPC debug（:19011）端点已随 go-zero RPC 进程移除，无进程提供；RPC 卡片恒为未连接，API 进程指标不受影响。"
 	}
 
 	return &RuntimeOverviewResult{

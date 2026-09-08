@@ -1,6 +1,17 @@
 # P5 — 分体部署（api + rpc 容器）
 
-> **最后更新：2026-05-29**  
+> ⚠️ **历史方案（勿照做）**：本文描述的「api + rpc 双进程」形态已无法装配，逐项核实如下：
+> - `backend/rpc` 目录**不存在**（`14edac0e` 删除），`backend/api` 根目录下**无 Go 文件** → 切流清单第 1、2 步的 `go build ./rpc` / `go build ./api` 均无法执行；
+> - `runtime.grpc_listen` **全仓零读者**，`config.yaml` 里也没有这个键 → 单进程只监听 HTTP（`runtime.http_port`），无 gRPC 监听者；
+> - `api.super_rpc_endpoints`、`api.super_rpc_timeout_ms`、环境变量 `MOE_SUPER_RPC_ENDPOINT` **零读者**，且已于 2026-09-08 从 `config.yaml` 删除 → 下文「分体配置片段」里的 `api:` 段整段无效；
+> - `/migration` 端点与 `p5_super_runtime_pct` 字段**零命中** → 切流清单第 6 步无法执行；
+> - `api/internal/svc`、`rpc/internal/logic` 目录亦已移除。
+>
+> **仍然活着的只有三个闸门**：`moe.register_moe_grpc` / `moe.use_moe_grpc`（`moeconf/load.go:76-77`）与 `moe.super_grpc_retired`（`moewiring/config.go:141`，默认 `true`）仍被读取，
+> 但它们指向的分体回环目标已不存在，**保持单进程默认值即可，不要按本文改成 `false`**。
+> 现行部署形态见 [moe-social-runtime.md](./moe-social-runtime.md) 与 [ports.md](./ports.md)。以下内容仅作 P5 退役过程的历史记录。
+
+> **最后更新：2026-05-29**（2026-09-08 加历史警示横幅，正文未改）  
 > **前置**：P5 Super 退役完成，见 [kratos-migration-status.md](./kratos-migration-status.md)
 
 ---

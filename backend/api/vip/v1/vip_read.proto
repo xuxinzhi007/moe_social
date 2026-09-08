@@ -8,7 +8,7 @@ option go_package = "backend/api/vip/v1;vipv1";
 
 // VipReadAdmin — PK-1 域 SSOT（勿再扩 api/defs/common.api）。
 // HTTP: GET /api/admin/vip/plans?page=&page_size=&keyword=&include_deleted=
-// 试点: make moe-kratos → :19032；生产灰度: moe.kratos_vip_http_enabled
+// 灰度开关: moe.kratos_vip_http_enabled（由 moewiring.KratosVipHTTPEnabled 读取）
 message VipPlanView {
   uint64 id = 1;
   string name = 2;

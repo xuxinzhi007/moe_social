@@ -1,0 +1,262 @@
+// Package conf 统一加载 backend/config/config.yaml，为全仓提供单一配置读取入口。
+//
+// 迁移前同一份 config.yaml 被 20 处独立读取点各自打开（19 个 viper.New() + utils.InitConfig() 全局单例）：每处硬编码一遍搜索路径、
+// 各自实现一遍回退链与环境变量覆盖，键名写错不会报错、只会静默取到零值。
+// 本包把这些收敛成：一次加载 + 类型化结构（config.go）+ 解析方法（derive.go）。
+//
+// 新增配置项：在 config.go 加字段（mapstructure tag = YAML 键名）；
+// 若该项需要环境变量覆盖或历史键回退，在 derive.go 加一个方法。
+package conf
+
+// Config 是 backend/config/config.yaml 的类型化镜像。
+//
+// 字段只反映文件内容本身。环境变量覆盖与历史键回退（llm_inference→ollama、
+// wechat.app→wechat.mobile_app_id 等）一律走 derive.go 的方法，不要在字段上叠默认值，
+// 否则「文件里没写」和「文件里写了 false/0」会分不清。
+//
+// 以下 config.yaml 里存在的段落**故意没有建模**，因为全仓没有任何 Go 代码读它们
+// （逐个 grep 确认过，不是漏掉）：
+//   - server.port / server.host —— 单进程化后端口只认 runtime.http_port，8080 无监听者
+//   - memory.search.* / memory.embedding.* —— 记忆检索当前走关键词，向量/图谱段是死配置
+//   - moe.default_capability_tier / moe.bot_post_daily_limit_default
+//   - temp_mail.api_key（mail.tm 无需鉴权）
+//
+// api.super_rpc_endpoints / api.super_rpc_timeout_ms 曾在此列，2026-09-08 已从 config.yaml 删除：
+// go-zero RPC 进程随 Kratos 单进程迁移移除后二者零读者，而原注释还在指导运维设置
+// 同样无人消费的 MOE_SUPER_RPC_ENDPOINT。注意 moe.pilot.super_rpc_endpoint 是另一个键，
+// moeconf/load.go:62 仍在读，保留。
+//
+// 需要时再加字段；加之前先确认它真的有读者，别再往文件里堆死配置。
+type Config struct {
+	Runtime        Runtime        `mapstructure:"runtime"`
+	Auth           Auth           `mapstructure:"auth"`
+	Admin          Admin          `mapstructure:"admin"`
+	API            API            `mapstructure:"api"`
+	Database       Database       `mapstructure:"database"`
+	Image          Image          `mapstructure:"image"`
+	AppClient      AppClient      `mapstructure:"app_client"`
+	LLMInference   LLMInference   `mapstructure:"llm_inference"`
+	Ollama         Ollama         `mapstructure:"ollama"`
+	LocalModels    LocalModels    `mapstructure:"local_models"`
+	TempMail       TempMail       `mapstructure:"temp_mail"`
+	PrivateMessage PrivateMessage `mapstructure:"private_message"`
+	Feishu         Feishu         `mapstructure:"feishu"`
+	Wechat         Wechat         `mapstructure:"wechat"`
+	Moe            Moe            `mapstructure:"moe"`
+}
+
+// Runtime 进程运行时（对外端口、启动片段路径）。
+type Runtime struct {
+	HTTPHost string `mapstructure:"http_host"`
+	HTTPPort int    `mapstructure:"http_port"`
+	// HandDrawRequireModeration 手绘是否强制过审。
+	// ⚠️ moewiring/api_post.go:63 读的是顶层 hand_draw_require_moderation，
+	//    与本字段所在的 runtime.* 不是同一个键，那条读取恒为 false。
+	HandDrawRequireModeration bool   `mapstructure:"hand_draw_require_moderation"`
+	APIConfigFragment         string `mapstructure:"api_config_fragment"`
+}
+
+// Auth App 端 JWT。缺失不会导致启动失败：utils/auth_jwt_config.go 在每次请求时才报错。
+type Auth struct {
+	AccessSecret        string `mapstructure:"access_secret"`
+	AccessExpireSeconds int64  `mapstructure:"access_expire_seconds"`
+}
+
+// Admin 管理台 JWT 与首启账号（与 App JWT 分离）。
+type Admin struct {
+	JWTSecret        string `mapstructure:"jwt_secret"`
+	TokenExpireHours int64  `mapstructure:"token_expire_hours"`
+	Bootstrap        struct {
+		Username string `mapstructure:"username"`
+		Password string `mapstructure:"password"`
+	} `mapstructure:"bootstrap"`
+}
+
+// API 对外根地址与超时。
+type API struct {
+	// TimeoutMS 只写不读：wiring/config_override.go:68 灌进 apiconfig.Config.Timeout 后无人消费。
+	// LLM 超时走 LLMInference.TimeoutSeconds。保留字段只为忠实镜像文件，勿据此加派生方法。
+	TimeoutMS     int64  `mapstructure:"timeout_ms"`
+	PublicBaseURL string `mapstructure:"public_base_url"`
+}
+
+// Database MySQL 连接。当前指向测试库（开发便利，非生产数据）。
+type Database struct {
+	Host      string `mapstructure:"host"`
+	Port      int    `mapstructure:"port"`
+	User      string `mapstructure:"user"`
+	Password  string `mapstructure:"password"`
+	DBName    string `mapstructure:"dbname"`
+	Charset   string `mapstructure:"charset"`
+	ParseTime bool   `mapstructure:"parsetime"`
+	Loc       string `mapstructure:"loc"`
+}
+
+// Image 图片存储：driver=local 落盘，driver=oss 走阿里云。
+type Image struct {
+	Driver        string   `mapstructure:"driver"`
+	LocalDir      string   `mapstructure:"local_dir"`
+	PublicBaseURL string   `mapstructure:"public_base_url"`
+	MaxBytes      int64    `mapstructure:"max_bytes"`
+	OSS           ImageOSS `mapstructure:"oss"`
+}
+
+// ImageOSS 阿里云对象存储。密钥优先取 MOE_OSS_ACCESS_KEY_ID / MOE_OSS_ACCESS_KEY_SECRET。
+type ImageOSS struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	Bucket          string `mapstructure:"bucket"`
+	AccessKeyID     string `mapstructure:"access_key_id"`
+	AccessKeySecret string `mapstructure:"access_key_secret"`
+	Prefix          string `mapstructure:"prefix"`
+	PublicBaseURL   string `mapstructure:"public_base_url"`
+	Region          string `mapstructure:"region"`
+	ProxyViaAPI     bool   `mapstructure:"proxy_via_api"`
+}
+
+// AppClient GET /api/public/client-config 返回给旧版 App 的公网根。
+type AppClient struct {
+	PublicAPIBaseURL string `mapstructure:"public_api_base_url"`
+}
+
+// LLMInference 统一推理端点（Moe Bot / Companion / 记忆共用）。
+type LLMInference struct {
+	Provider       string `mapstructure:"provider"`
+	BaseURL        string `mapstructure:"base_url"`
+	APIStyle       string `mapstructure:"api_style"`
+	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
+	MemoryModel    string `mapstructure:"memory_model"`
+	ChatModel      string `mapstructure:"chat_model"`
+	APIKey         string `mapstructure:"api_key"`
+	GameBaseURL    string `mapstructure:"game_base_url"`
+	GameModel      string `mapstructure:"game_model"`
+	GameLLMMode    string `mapstructure:"game_llm_mode"`
+	ContextTokens  int    `mapstructure:"context_tokens"`
+}
+
+// Ollama 历史键位。当前 config.yaml 中整段被注释，仅作为 llm_inference 的回退保留；
+// 确认无线上副本依赖后可连同 derive.go 里的 12 处回退一起删除。
+type Ollama struct {
+	BaseURL        string `mapstructure:"base_url"`
+	APIStyle       string `mapstructure:"api_style"`
+	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
+	MemoryModel    string `mapstructure:"memory_model"`
+	APIKey         string `mapstructure:"api_key"`
+}
+
+// LocalModels 手机可下载的离线 GGUF 目录与清单。
+type LocalModels struct {
+	StorageDir string                   `mapstructure:"storage_dir"`
+	Catalog    []LocalModelCatalogEntry `mapstructure:"catalog"`
+}
+
+// LocalModelCatalogEntry 单个离线模型条目。
+type LocalModelCatalogEntry struct {
+	ID          string  `mapstructure:"id"`
+	Name        string  `mapstructure:"name"`
+	Filename    string  `mapstructure:"filename"`
+	SizeBytes   int64   `mapstructure:"size_bytes"`
+	SHA256      string  `mapstructure:"sha256"`
+	Description string  `mapstructure:"description"`
+	ParametersB float64 `mapstructure:"parameters_b"`
+	Recommended bool    `mapstructure:"recommended"`
+}
+
+// TempMail 临时邮箱（make temp-mail-password 与 App 注册用）。
+type TempMail struct {
+	Enabled        bool   `mapstructure:"enabled"`
+	BaseURL        string `mapstructure:"base_url"`
+	FallbackDomain string `mapstructure:"fallback_domain"`
+	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
+}
+
+// PrivateMessage 私信持久化与保留天数。
+type PrivateMessage struct {
+	RetentionDaysDefault int `mapstructure:"retention_days_default"`
+	RetentionDaysNormal  int `mapstructure:"retention_days_normal"`
+	RetentionDaysVIP     int `mapstructure:"retention_days_vip"`
+	BodyMaxRunes         int `mapstructure:"body_max_runes"`
+	ImagePathsMax        int `mapstructure:"image_paths_max"`
+}
+
+// Feishu 企业自建应用机器人 + OAuth 登录。
+type Feishu struct {
+	Enabled             bool   `mapstructure:"enabled"`
+	AppID               string `mapstructure:"app_id"`
+	AppSecret           string `mapstructure:"app_secret"`
+	ReceiveID           string `mapstructure:"receive_id"`
+	ReceiveIDType       string `mapstructure:"receive_id_type"`
+	RedirectURI         string `mapstructure:"redirect_uri"`
+	OAuthScope          string `mapstructure:"oauth_scope"`
+	AppReturnURL        string `mapstructure:"app_return_url"`
+	AutoAddToDirectory  bool   `mapstructure:"auto_add_to_directory"`
+	DefaultDepartmentID string `mapstructure:"default_department_id"`
+	EnterpriseInviteURL string `mapstructure:"enterprise_invite_url"`
+	EnterpriseNotice    string `mapstructure:"enterprise_notice"`
+}
+
+// Wechat 微信开放平台登录。三条 flow（app / website / mp）各自独立凭证，
+// 历史扁平键（mobile_app_id、web_app_id、mp_app_id…）的回退见 derive.go。
+type Wechat struct {
+	Enabled      bool             `mapstructure:"enabled"`
+	RedirectURI  string           `mapstructure:"redirect_uri"`
+	AppReturnURL string           `mapstructure:"app_return_url"`
+	OAuthScope   string           `mapstructure:"oauth_scope"`
+	App          WechatCredential `mapstructure:"app"`
+	Website      WechatCredential `mapstructure:"website"`
+	MP           WechatCredential `mapstructure:"mp"`
+}
+
+// WechatCredential 一条微信 flow 的 AppID / AppSecret。
+type WechatCredential struct {
+	AppID     string `mapstructure:"app_id"`
+	AppSecret string `mapstructure:"app_secret"`
+}
+
+// Moe Intelligence Stack：调度器、模型选择、进程内装配开关。
+type Moe struct {
+	BotPostModel      string `mapstructure:"bot_post_model"`
+	TopicAnalyzeModel string `mapstructure:"topic_analyze_model"`
+
+	BotSchedulerEnabled       bool  `mapstructure:"bot_scheduler_enabled"`
+	BotSchedulerTickSeconds   int64 `mapstructure:"bot_scheduler_tick_seconds"`
+	DreamSchedulerEnabled     bool  `mapstructure:"dream_scheduler_enabled"`
+	DreamSchedulerTickSeconds int64 `mapstructure:"dream_scheduler_tick_seconds"`
+	BotSmartRetryMinutes      int   `mapstructure:"bot_smart_retry_minutes"`
+	BotSmartMinIntervalHours  int   `mapstructure:"bot_smart_min_interval_hours"`
+
+	Pilot      MoePilot      `mapstructure:"pilot"`
+	Production MoeProduction `mapstructure:"production"`
+
+	// 装配开关。这些键的语义是「未设置时继承默认」而非「默认 false」，
+	// 判定必须走 derive.go 的 DomainInProcess / 各 Kratos*Enabled 方法。
+	APIInProcess      bool `mapstructure:"api_in_process"`
+	SingleProcess     bool `mapstructure:"single_process"`
+	LifeEngineEnabled bool `mapstructure:"life_engine_enabled"`
+
+	KratosPureEnabled              bool   `mapstructure:"kratos_pure_enabled"`
+	KratosAdminBaseURL             string `mapstructure:"kratos_admin_base_url"`
+	KratosAdminHTTPEnabled         bool   `mapstructure:"kratos_admin_http_enabled"`
+	KratosVipHTTPEnabled           bool   `mapstructure:"kratos_vip_http_enabled"`
+	KratosAdminInsightsHTTPEnabled bool   `mapstructure:"kratos_admin_insights_http_enabled"`
+	KratosHTTPFrontEnabled         bool   `mapstructure:"kratos_http_front_enabled"`
+	KratosGRPCManaged              bool   `mapstructure:"kratos_grpc_managed"`
+	KratosInternalHTTPPort         int    `mapstructure:"kratos_internal_http_port"`
+	KratosPilotReadEnabled         bool   `mapstructure:"kratos_pilot_read_enabled"`
+}
+
+// MoePilot 历史 pilot 进程地址（单进程化后仅 Bootstrap 映射仍在读）。
+type MoePilot struct {
+	GRPCAddr            string `mapstructure:"grpc_addr"`
+	HTTPAddr            string `mapstructure:"http_addr"`
+	SuperRPCEndpoint    string `mapstructure:"super_rpc_endpoint"`
+	VIPAdminReadEnabled bool   `mapstructure:"vip_admin_read_enabled"`
+}
+
+// MoeProduction 端口口径。ExternalHTTPPort 是字符串（"8888"），与 runtime.http_port 重复。
+type MoeProduction struct {
+	UnifiedEntry     string `mapstructure:"unified_entry"`
+	ExternalHTTPPort string `mapstructure:"external_http_port"`
+	InternalGRPCPort string `mapstructure:"internal_grpc_port"`
+	PilotHTTPPort    string `mapstructure:"pilot_http_port"`
+	PilotGRPCPort    string `mapstructure:"pilot_grpc_port"`
+}
