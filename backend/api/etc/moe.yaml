@@ -2,7 +2,6 @@
 Name: moe-social
 Host: 0.0.0.0
 Port: 8888
-Timeout: 600000
 
 Auth:
   # 由 backend/config/config.yaml 的 auth.* 覆盖；生产可用 MOE_AUTH_ACCESS_SECRET 环境变量

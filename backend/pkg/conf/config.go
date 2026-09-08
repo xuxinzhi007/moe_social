@@ -1,7 +1,7 @@
 // Package conf 统一加载 backend/config/config.yaml，为全仓提供单一配置读取入口。
 //
-// 迁移前同一份 config.yaml 被 20 处独立读取点各自打开（19 个 viper.New() + utils.InitConfig() 全局单例）：每处硬编码一遍搜索路径、
-// 各自实现一遍回退链与环境变量覆盖，键名写错不会报错、只会静默取到零值。
+// 迁移前同一份 config.yaml 被 19 处独立读取点各自打开（18 个 viper.New() + utils.InitConfig() 全局单例）：
+// 每处硬编码一遍搜索路径、各自实现一遍回退链与环境变量覆盖，键名写错不会报错、只会静默取到零值。
 // 本包把这些收敛成：一次加载 + 类型化结构（config.go）+ 解析方法（derive.go）。
 //
 // 新增配置项：在 config.go 加字段（mapstructure tag = YAML 键名）；
@@ -72,11 +72,8 @@ type Admin struct {
 	} `mapstructure:"bootstrap"`
 }
 
-// API 对外根地址与超时。
+// API 对外根地址。
 type API struct {
-	// TimeoutMS 只写不读：wiring/config_override.go:68 灌进 apiconfig.Config.Timeout 后无人消费。
-	// LLM 超时走 LLMInference.TimeoutSeconds。保留字段只为忠实镜像文件，勿据此加派生方法。
-	TimeoutMS     int64  `mapstructure:"timeout_ms"`
 	PublicBaseURL string `mapstructure:"public_base_url"`
 }
 

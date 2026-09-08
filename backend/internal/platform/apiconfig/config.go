@@ -2,10 +2,9 @@ package apiconfig
 
 // Config API 片段（api/etc/moe.yaml）；运行时值以 config/config.yaml 为准。
 type Config struct {
-	Name    string `json:"Name" yaml:"Name"`
-	Host    string `json:"Host" yaml:"Host"`
-	Port    int    `json:"Port" yaml:"Port"`
-	Timeout int64  `json:"Timeout" yaml:"Timeout"`
+	Name string `json:"Name" yaml:"Name"`
+	Host string `json:"Host" yaml:"Host"`
+	Port int    `json:"Port" yaml:"Port"`
 
 	Auth struct {
 		AccessSecret string
@@ -57,8 +56,8 @@ type ImageConf struct {
 	PublicBaseUrl string `json:"PublicBaseUrl" yaml:"PublicBaseUrl"`
 	MaxBytes      int64  `json:"MaxBytes" yaml:"MaxBytes"`
 	// Driver: local | oss（空=local）
-	Driver string    `json:"Driver" yaml:"Driver"`
-	OSS    ImageOSS  `json:"OSS" yaml:"OSS"`
+	Driver string   `json:"Driver" yaml:"Driver"`
+	OSS    ImageOSS `json:"OSS" yaml:"OSS"`
 }
 
 // ImageOSS 阿里云对象存储。

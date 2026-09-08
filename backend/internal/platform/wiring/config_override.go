@@ -64,9 +64,6 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 			c.LocalModels.Catalog = entries
 		}
 	}
-	if timeoutMs := v.GetInt64("api.timeout_ms"); timeoutMs > 0 {
-		c.Timeout = timeoutMs
-	}
 	if u := v.GetString("app_client.public_api_base_url"); u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}
