@@ -118,7 +118,8 @@ curl -sS "http://<host>:8888/api/public/app-release/latest?platform=android"
 | 「未发现任何发布版本」 | 未配置 / 未启用 / URL 空 / versionCode≤0 | 管理台配置并勾选启用 |
 | 「当前已是最新版本」 | 远端 versionCode ≤ 本地 | 提高管理台与 APK 的 versionCode |
 | 能下载但装不上 | debug 与 release **签名不同**，或 versionCode 未升高 | 同签名发版；先卸载再装（Dev 包常见） |
-| 管理台改了 App 仍旧 | App 连的不是这套后端 | 核对 `AppConfig` / `isProduction` 基址 |
+| 管理台改了 App 仍旧 | App 连的不是这套后端 | 核对 `ApiEnvConfig`（`lib/utils/config.dart`）的 `isProduction` 与基址 |
+| 正式包装上后全部请求失败 / 一直转圈 | 基址指向开发机内网（`isProduction` 未切，或 `productionUrl` 填了内网地址） | `flutter-release.yml` 第 7 步断言会拦前者；`test/utils/config_test.dart` 拦后者 |
 | 强制更新关不掉 | `force_update` 已开 | 管理台取消强制并保存 |
 
 ---

@@ -221,7 +221,8 @@ moe-admin/src/
 │   ├── MemoryPlatformTab.tsx         # 自 PlatformPage 抽取
 │   ├── MemoryAgentTab.tsx            # Agent 选择 + 双栏
 │   └── MemoryStatsStrip.tsx          # 共用统计条（可选）
-├── config/menu.ts                    # 新增菜单项
+├── config/workspaceNav.ts            # 新增菜单项（原 config/menu.ts 已于 2928dd82 删除，
+│                                     #   导航 SSOT 现为 WORKSPACES + NAV_BY_WORKSPACE）
 ├── App.tsx                           # 路由 + 重定向
 └── lib/schemaActions.ts              # user_memories → 记忆中心
 ```

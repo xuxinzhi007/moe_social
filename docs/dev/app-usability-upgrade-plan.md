@@ -83,11 +83,13 @@ Moe Social 的正式定位是萌系心情社交，核心是发动态、浏览互
 
 ### P0-A：构建环境与启动基址
 
-**问题证据：** 发布前必须确认安装包使用正确 API 基址；当前项目由 `lib/utils/config.dart` 中的 `AppConfig.isProduction` 和两个基址常量手动控制。
+**问题证据：** 发布前必须确认安装包使用正确 API 基址；当前项目由 `lib/utils/config.dart` 中的 `ApiEnvConfig.isProduction`（类名原为 `AppConfig`）和两个基址常量手动控制。
 
 **产品研究：** 仓库的产品定位和发版速查都要求安装包可直接使用线上服务。外部 Android 文档在受控浏览环境中超时，未绕过访问策略；本切片不将未核验的外部结论作为依据。
 
 **实现与回滚：** 按项目维护者要求，继续采用手动 `isProduction = false/true` 切换；不引入构建变量、CI 覆盖或启动时远程重写地址。回滚只需改回对应布尔值，不涉及数据库与后端契约。
+
+**2026-09-08 补充（不违反上述约束）：** `.github/workflows/flutter-release.yml` 新增第 7 步 `Assert release points at online API`，在构建 APK 前 grep `config.dart` 里的 `isProduction`，不是 `true` 就以 `::error::` 注解失败退出，并把本次发布用的两个基址打进日志。这一步**只读、只检查、不注入**：它不接受 `--dart-define`，不改写任何值，`isProduction` 仍是唯一真源，因此不是「构建变量」也不是「CI 覆盖」。加它的原因是原流程里「忘记切就推 tag」会静默产出一个连开发机内网地址的安装包，且 CI 全绿、Releases 正常上传，只有装机的人才发现打不通。同时 `test/utils/config_test.dart` 增加了「`productionUrl` 不得为内网/回环地址」的断言，覆盖 grep 看不出来的另一半风险。
 
 **已验证：** 默认本地环境的配置单测与定向 `flutter analyze` 通过。发布前必须由维护者手动将该值切到线上，并完成真机验证。
 

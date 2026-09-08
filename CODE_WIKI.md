@@ -8,10 +8,9 @@
 
 | 类别 | 说明 |
 |------|------|
-| **已移除** | 独立向量/图记忆系统（`pkg/memory/`、Flutter `memory_service`、管理台 LearningWorkbench / RpcPage、Chrome `integration_test` 栈） |
+| **已移除** | 独立向量/图记忆系统（`pkg/memory/`、Flutter `memory_service`、管理台 LearningWorkbench / RpcPage、Chrome `integration_test` 栈）；演示入口 `lib/demo_main.dart` 与 `home_redesign_demo.dart` |
 | **AI 推理** | 统一走 `biz/llm/platform_*` + `pkg/llminference`；`llm_inference.api_key` / `MOE_LLM_API_KEY` |
 | **认证** | App JWT 中间件（`internal/server/auth.go`）+ Flutter 主动 refresh（`jwt_exp.dart`） |
-| **演示入口** | `lib/demo_main.dart` → 首页改版对比 `home_redesign_demo.dart` |
 
 ---
 
@@ -125,12 +124,11 @@ moe_social/
 | `lib/providers/` | ChangeNotifier 状态 |
 | `lib/widgets/` | 通用与领域组件 |
 | `lib/models/` | DTO |
-| `lib/utils/` | 工具（含 `config.dart`、`jwt_exp.dart`） |
-| `lib/config/` | `app_config.dart`（安全存储配置） |
+| `lib/utils/` | 工具（含 `config.dart` → `ApiEnvConfig`：后端 API 基址与环境开关；`jwt_exp.dart`） |
+| `lib/config/` | `app_config.dart` → `AppConfig`：第三方 LLM 密钥的安全存储（与 `ApiEnvConfig` 无关） |
 | `lib/constants/` | `feature_flags.dart` 等 |
 | `lib/theme/` | 设计 Token 与主题扩展 |
 | `lib/main.dart` | 生产入口 |
-| `lib/demo_main.dart` | 演示入口（首页改版对比） |
 
 ### 3.3 页面模块（pages/）
 
@@ -279,7 +277,7 @@ Brain 内仍有 `prompt_memory.go` 等**提示词级**记忆辅助，非独立�
 - **栈**：React 19 + TypeScript + Vite  
 - **路由**：`BrowserRouter` **`basename="/ops"`**  
 - **鉴权**：`AdminAuthContext` + `RequireAdmin`  
-- **菜单 SSOT**：`src/config/menu.ts`（`ADMIN_MENU_TREE`）
+- **菜单 / 工作区 SSOT**：`src/config/workspaceNav.ts`（`WORKSPACES` = biz / ai / infra 三个工作区，`NAV_BY_WORKSPACE` = 各区导航树）
 
 ### 5.2 主要路由
 

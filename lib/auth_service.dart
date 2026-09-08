@@ -90,7 +90,7 @@ class AuthService {
     };
 
     // 如果有 token，设置到 ApiService；WebSocket 在 main 启动流程末尾统一 start，
-    // 避免与 ApiService.initBaseUrlFromAppConfig 并行时连到 127.0.0.1。
+    // 避免与 ApiService.initBaseUrl 并行时连到 127.0.0.1。
     if (_token != null && _token!.isNotEmpty) {
       ApiService.setToken(_token);
     }

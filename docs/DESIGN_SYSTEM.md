@@ -353,7 +353,7 @@ Container(
 | 文件 | 职责 |
 |------|------|
 | `lib/theme/moe_tokens.dart` | 全局 Design Tokens SSOT |
-| `lib/theme/moe_theme.dart` | ThemeExtension + light/dark + lerp |
+| `lib/theme/moe_theme_extension.dart` | `MoeTheme` ThemeExtension + light/dark 工厂 + lerp |
 | `lib/widgets/auth_background.dart` | 认证页渐变背景 + 浮动光斑 |
 | `lib/widgets/custom_button.dart` | 统一按钮组件 |
 | `lib/widgets/moe_input_field.dart` | 统一输入框 |

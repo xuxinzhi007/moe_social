@@ -72,7 +72,32 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.jks
 
-      # 7. 构建 APK (Release 模式)
+      # 7. 发布前断言：安装包必须指向线上 API
+      #    isProduction 仍是唯一真源（手动切换，见 .cursor/skills/moe-flutter/SKILL.md §1.9），
+      #    这里只检查、不覆盖 —— 目的是让「忘记切就发版」变成 CI 失败，而不是静默
+      #    发出一个连开发机局域网地址的安装包。
+      - name: Assert release points at online API
+        run: |
+          CFG=lib/utils/config.dart
+          test -f "$CFG" || { echo "::error::找不到 $CFG"; exit 1; }
+
+          # 先把换行折成空格再匹配：dart format 可能把 `= true` 折到下一行，
+          # 逐行 grep 会漏掉从而误拦发版。匹配不到时 VALUE 为空 → 走下面的失败分支，
+          # 即「读不出声明就拦住」（fail-closed），不会静默放行。
+          VALUE=$(tr '\n' ' ' < "$CFG" \
+                  | grep -oE 'static const bool isProduction[[:space:]]*=[[:space:]]*(true|false)' \
+                  | grep -oE '(true|false)$' | head -n1)
+
+          if [ "$VALUE" != "true" ]; then
+            echo "::error::${CFG} 的 isProduction=${VALUE:-<未找到声明>}，发布包会连开发机局域网地址"
+            echo "请先把 isProduction 改为 true、确认 productionUrl 对外可达并完成真机验证，再重新打 tag 发版。"
+            exit 1
+          fi
+
+          echo "✅ isProduction=true，本次发布使用的基址："
+          grep -E 'static const String (productionUrl|developmentUrl)' "$CFG"
+
+      # 8. 构建 APK (Release 模式)
       - name: Build APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -82,7 +107,7 @@ jobs:
             --build-name "${{ steps.meta.outputs.version_name }}" \
             --build-number "${{ steps.meta.outputs.version_code }}"
 
-      # 8. 发布到 GitHub Releases
+      # 9. 发布到 GitHub Releases
       - name: Create Release and Upload APK
         uses: ncipollo/release-action@v1
         with:
@@ -101,7 +126,7 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
 
-      # 9. 回写后端 app_releases（方案 A；失败不阻断发版）
+      # 10. 回写后端 app_releases（方案 A；失败不阻断发版）
       - name: Sync App Release to Backend
         continue-on-error: true
         env:
