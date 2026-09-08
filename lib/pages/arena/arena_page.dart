@@ -9,6 +9,7 @@ import '../../game/arena/arena_battle_game.dart';
 import '../../game/arena/arena_view_model.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
+import 'arena_camp_preview_page.dart';
 
 class ArenaPage extends StatefulWidget {
   const ArenaPage({
@@ -71,6 +72,12 @@ class _ArenaPageState extends State<ArenaPage>
 
   Future<void> _onHomeTrain() async {
     await _model.trainAtHome();
+  }
+
+  Future<void> _openCampPreview(ArenaHero hero) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => ArenaCampPreviewPage(hero: hero)),
+    );
   }
 
   @override
@@ -427,8 +434,7 @@ class _ArenaPageState extends State<ArenaPage>
                       ),
                       MoePressable(
                         onTap: () => _model.navigate(ArenaView.character),
-                        borderRadius:
-                            BorderRadius.circular(MoeTokens.radiusMd),
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -473,6 +479,15 @@ class _ArenaPageState extends State<ArenaPage>
                           body:
                               '完成出征前整理，下场战斗初始生命 +${ArenaViewModel.homeRestHpBonus}。',
                           onTap: () => unawaited(_onHomeTrain()),
+                        ),
+                      ),
+                      const SizedBox(width: MoeTokens.spaceSm),
+                      Expanded(
+                        child: _HomeActionCard(
+                          icon: Icons.park_rounded,
+                          title: '营地预览',
+                          body: '查看共享世界的实时快照，验证英雄入驻前的营地舞台。',
+                          onTap: () => unawaited(_openCampPreview(hero)),
                         ),
                       ),
                       const SizedBox(width: MoeTokens.spaceSm),

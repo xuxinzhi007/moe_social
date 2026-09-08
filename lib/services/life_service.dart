@@ -1,5 +1,6 @@
 import 'api_service.dart';
 import '../models/life_state.dart';
+import 'package:flutter/foundation.dart';
 
 export 'api_service.dart' show ApiException, LifeActionCooldownException;
 
@@ -102,10 +103,21 @@ class LifeService {
     ]);
 
     final world = results[0] as Map<String, dynamic>;
-    final entityMaps = results[1] as List<Map<String, dynamic>>;
+    final entityMaps = (results[1] as List)
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
     final relationships = results[2] as List<LifeRelationship>;
     final events = results[3] as List<LifeEvent>;
 
+    final entities = <LifeEntity>[];
+    for (final raw in entityMaps) {
+      try {
+        entities.add(LifeEntity.fromJson(raw));
+      } catch (error) {
+        debugPrint('Life entity parse skipped: $error');
+      }
+    }
     return LifeInitialState(
       worldId: world['world_id']?.toString() ?? 'default',
       tick: world['tick'] is int
@@ -118,7 +130,7 @@ class LifeService {
                   Map<String, dynamic>.from(world['summary'] as Map),
                 )
               : LifeWorldSummary.empty,
-      entities: entityMaps.map(LifeEntity.fromJson).toList(),
+      entities: entities,
       relationships: relationships,
       events: events,
     );

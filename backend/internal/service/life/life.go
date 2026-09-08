@@ -13,7 +13,8 @@ import (
 
 // Config holds life engine configuration.
 type Config struct {
-	TickInterval int // seconds
+	TickInterval  int // seconds
+	FlushInterval int // seconds
 }
 
 // AppService is the life domain application service.
@@ -33,10 +34,7 @@ type AppService struct {
 // New creates a new life AppService.
 func New(db *gorm.DB, config Config) *AppService {
 	store := lifedata.NewStore(db)
-	cfg := lifebiz.DefaultConfig()
-	if config.TickInterval > 0 {
-		cfg.TickInterval = time.Duration(config.TickInterval) * time.Second
-	}
+	cfg := engineConfig(config)
 
 	// 使用可取消的 context，支持优雅关闭
 	ctx, cancel := context.WithCancel(context.Background())
@@ -64,6 +62,17 @@ func New(db *gorm.DB, config Config) *AppService {
 	lifebiz.StartLifeEngine(ctx, engine)
 
 	return s
+}
+
+func engineConfig(config Config) lifebiz.LifeConfig {
+	cfg := lifebiz.DefaultConfig()
+	if config.TickInterval > 0 {
+		cfg.TickInterval = time.Duration(config.TickInterval) * time.Second
+	}
+	if config.FlushInterval > 0 {
+		cfg.FlushInterval = time.Duration(config.FlushInterval) * time.Second
+	}
+	return cfg
 }
 
 // Shutdown 优雅关闭：取消 context 并等待引擎和持久化 writer 完成最终 flush

@@ -69,6 +69,10 @@ func StartLifeEngine(ctx context.Context, e *LifeEngine) {
 	if err := e.itemSystem.SeedItems(ctx); err != nil {
 		moelog.Errorf("life: failed to seed items: %v", err)
 	}
+	// 先建立可读世界快照，避免较长的待机 Tick 让首个读取请求误判为 404。
+	initialTickCtx, cancelInitialTick := context.WithTimeout(ctx, 30*time.Second)
+	RunLifeTick(initialTickCtx, e)
+	cancelInitialTick()
 
 	go func() {
 		defer func() {
