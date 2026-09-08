@@ -49,11 +49,16 @@ curl http://localhost:8888/api/user/login
 
 ### 2. API地址配置错误
 
-**症状**: 看到 `http://http://...` (重复的http://)
+**症状**: 看到 `http://http://...` (重复的http://)，或改了地址但请求还是发往旧地址
 
-**解决方法**: 已修复，确保API地址格式正确：
-- ✅ 正确: `http://74fd3e66.r3.cpolar.top`
-- ❌ 错误: `http://http://74fd3e66.r3.cpolar.top`
+**格式要求**（`lib/utils/config.dart` 的两个常量）：
+- ✅ 正确: `http://47.106.175.49:8888`
+- ❌ 错误: `http://http://47.106.175.49:8888`（重复 scheme）
+- ❌ 错误: `http://47.106.175.49:8888/`（末尾斜杠）
+- ❌ 错误: `http://47.106.175.49:8888/api`（带路径）
+
+> ⚠️ **真正的坑是它不报错**：`ApiService._normalizeBaseUrl()`（`api_service.dart:172`）对格式不合法的地址返回 `null`，`_applyApiEnvironment()` 拿到 `null` 就**跳过赋值、保留上一个值**。所以写错地址的表现不是异常，而是「请求发往一个你没填过的地址」。
+> `test/utils/config_test.dart` 有一条专门断言两个 URL 都是 `http(s)`、host 非空、无路径、无末尾斜杠，就是为了在 CI 里把这类静默失败变成红灯。
 
 ### 3. CORS跨域问题
 
@@ -61,70 +66,56 @@ curl http://localhost:8888/api/user/login
 
 **解决方法**: 后端已配置CORS，确保后端服务已重启
 
-### 4. 真机连接本地服务
+### 4. 真机 / 模拟器连接本地服务
 
-**Android真机需要配置电脑IP**:
+**基址只有一处**：`lib/utils/config.dart` → `ApiEnvConfig.developmentUrl`。改完**完整重启** App（Stop + Run），const 不参与热重载。
 
-1. 获取电脑IP地址:
+> ⚠️ 旧文档里「按 `Platform.isAndroid` 分支返回地址」「模拟器自动使用 `10.0.2.2` / `localhost`，无需修改配置」的机制**已不存在**。现在没有按平台自动选择，模拟器也不会自动帮你换地址——填错就是连不上。
+
+1. 获取电脑 IP：
    ```bash
    # Windows
    ipconfig
-   
+
    # Mac/Linux
    ifconfig
    ```
 
-2. 修改 `lib/services/api_service.dart` 第50行:
-   ```dart
-   } else if (Platform.isAndroid) {
-     return 'http://192.168.1.16:8888'; // 替换为你的电脑IP
-   }
-   ```
+2. 按下表填 `developmentUrl`：
 
-3. 或者使用生产环境地址:
-   ```dart
-   static const bool _isProduction = true; // 使用生产环境
-   ```
+   | 运行目标 | `developmentUrl` 填什么 |
+   |----------|------------------------|
+   | Android 真机 / iOS 真机 | `http://<电脑局域网IP>:8888`（手机与电脑同一网段） |
+   | Android 模拟器 | `http://10.0.2.2:8888`（`10.0.2.2` 是模拟器里的宿主机别名） |
+   | iOS 模拟器 | `http://127.0.0.1:8888`（与宿主机共享网络栈） |
+   | Web（Chrome） | `http://127.0.0.1:8888` |
 
-### 5. 模拟器连接本地服务
+   > `127.0.0.1` 在**真机**上指向手机自己，永远连不上电脑，这是最常见的一个坑。
 
-**Android模拟器**:
-- 自动使用 `http://10.0.2.2:8888`
-- 无需修改配置
-
-**iOS模拟器**:
-- 自动使用 `http://localhost:8888`
-- 无需修改配置
+3. 或者直接切到线上：把 `ApiEnvConfig.isProduction` 改为 `true`，走 `productionUrl`（见下节）。
 
 ## 📱 不同环境的API地址配置
 
-### 开发环境（本地）
+| 环境 | 取哪个常量 | 当前值 |
+|------|-----------|--------|
+| 本地（`isProduction = false`） | `ApiEnvConfig.developmentUrl` | `http://192.168.124.36:8888`（开发机局域网 IP，换机器/换网段要改） |
+| 线上（`isProduction = true`） | `ApiEnvConfig.productionUrl` | `http://47.106.175.49:8888` |
 
-| 平台 | API地址 | 说明 |
-|------|---------|------|
-| Web | `http://localhost:8888` | 浏览器直接访问 |
-| Android模拟器 | `http://10.0.2.2:8888` | 自动配置 |
-| Android真机 | `http://你的电脑IP:8888` | 需要手动配置 |
-| iOS模拟器 | `http://localhost:8888` | 自动配置 |
-| iOS真机 | `http://你的电脑IP:8888` | 需要手动配置 |
+所有平台共用这两个常量，没有按平台分叉。若临时用穿透域名（cpolar / ngrok），把它填进 `productionUrl`，`ApiService` 会自动附加隧道绕过头；隧道失效就更新该值。
 
-### 生产环境（cpolar隧道）
-
-| 平台 | API地址 | 说明 |
-|------|---------|------|
-| 所有平台 | `http://74fd3e66.r3.cpolar.top` | 统一使用 |
+细节与发版把关见 [环境配置说明.md](./环境配置说明.md)。
 
 ## 🔧 快速切换环境
 
-在 `lib/services/api_service.dart` 第27行：
+改 `lib/utils/config.dart`：
 
 ```dart
-// 开发环境
-static const bool _isProduction = false;
-
-// 生产环境
-static const bool _isProduction = true;
+class ApiEnvConfig {
+  static const bool isProduction = false; // true = 线上；false = 本地
+}
 ```
+
+改完完整重启 App。**不要**再去 `lib/services/api_service.dart` 找 `_isProduction`——那个字段已经删除，`api_service.dart` 只在启动时通过 `ApiService.initBaseUrl()` 读取 `ApiEnvConfig`。
 
 ## 🧪 测试API连接
 
@@ -167,9 +158,11 @@ flutter logs
    - Android: 确认 `AndroidManifest.xml` 中有 `INTERNET` 权限
    - iOS: 确认 `Info.plist` 配置正确
 
-4. **使用生产环境测试**
-   - 如果本地连接有问题，临时使用生产环境地址
-   - 设置 `_isProduction = true`
+4. **临时切到线上 API 验证**
+   - 如果本地连接有问题，可以临时连线上环境排查
+   - 在 `lib/utils/config.dart` 把 `ApiEnvConfig.isProduction` 改为 `true`
+   - `const` 不参与热重载，改完必须 **Stop + Run 完整重启** App
+   - 验证完记得改回 `false`：发版 CI 会断言它为 `true`，但日常开发提交应保持 `false`
 
 ## 🆘 如果还是失败
 

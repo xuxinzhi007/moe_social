@@ -12,7 +12,7 @@ import 'services/behavior_analytics_service.dart';
 import 'utils/behavior_route_observer.dart';
 import 'utils/console_output_filter.dart';
 import 'utils/crash_report_buffer.dart';
-import 'utils/config.dart' as moe_launch_config;
+import 'utils/config.dart';
 import 'widgets/app_message_widget.dart';
 import 'widgets/floating_virtual_avatar_host.dart';
 import 'widgets/notification_popup_host.dart';
@@ -192,7 +192,7 @@ class SplashScreenWrapper extends StatelessWidget {
     startupManager.addTasks([
       StartupTask(
         name: 'API Config',
-        task: () => ApiService.initBaseUrlFromAppConfig(),
+        task: () => ApiService.initBaseUrl(),
         critical: true,
       ),
       StartupTask(
@@ -248,7 +248,7 @@ class SplashScreenWrapper extends StatelessWidget {
     debugPrint('🚀 App starting...');
     debugPrint('📱 Platform: ${_platformLabel()}');
     debugPrint('🧭 API Environment: ${ApiService.runtimeEnvironment} '
-        '(isProduction=${moe_launch_config.AppConfig.isProduction})');
+        '(isProduction=${ApiEnvConfig.isProduction})');
     debugPrint('🌐 API Base URL: ${ApiService.baseUrl}');
     debugPrint('🔐 User logged in: ${AuthService.isLoggedIn}');
     if (kIsWeb && kDebugMode) {

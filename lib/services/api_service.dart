@@ -26,7 +26,7 @@ import '../models/achievement_unlock.dart';
 import '../models/feishu_public_config.dart';
 import '../models/life_state.dart';
 import '../utils/jwt_exp.dart';
-import '../utils/config.dart' as moe_launch_config;
+import '../utils/config.dart';
 import 'api_response.dart';
 
 // 自定义异常类，用于传递错误信息
@@ -149,12 +149,12 @@ class ApiService {
     return response;
   }
 
-  // 环境配置（local / online）：**唯一来源** `lib/utils/config.dart` → [moe_launch_config.AppConfig]
+  // 环境配置（local / online）：**唯一来源** `lib/utils/config.dart` → [ApiEnvConfig]
   static const String _envLocal = 'local';
   static const String _envOnline = 'online';
 
   static String _runtimeEnvironment =
-      moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
+      ApiEnvConfig.isProduction ? _envOnline : _envLocal;
   static String get runtimeEnvironment => _runtimeEnvironment;
 
   /// API 调试日志开关（只在 Debug 模式生效）
@@ -163,11 +163,11 @@ class ApiService {
   /// 是否输出完整请求/响应体（默认关闭，避免 Console 刷屏）
   static final bool _verboseApiLog = kDebugMode;
 
-  // 与 [moe_launch_config.AppConfig] 同源；[initBaseUrlFromAppConfig] 内会再做规范化。
+  // 与 [ApiEnvConfig] 同源；[initBaseUrlFromAppConfig] 内会再做规范化。
   static String _configuredOnlineUrl =
-      moe_launch_config.AppConfig.productionUrl;
+      ApiEnvConfig.productionUrl;
   static String _configuredLocalUrl =
-      moe_launch_config.AppConfig.developmentUrl;
+      ApiEnvConfig.developmentUrl;
 
   static String? _normalizeBaseUrl(String? raw) {
     if (raw == null) return null;
@@ -186,19 +186,19 @@ class ApiService {
     return s;
   }
 
-  /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口）。
-  static void _applyApiEnvironmentFromAppConfig() {
+  /// 从 [ApiEnvConfig] 同步 local/online 基址（唯一配置入口）。
+  static void _applyApiEnvironment() {
     _runtimeEnvironment =
-        moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
+        ApiEnvConfig.isProduction ? _envOnline : _envLocal;
 
     final urlLocal =
-        _normalizeBaseUrl(moe_launch_config.AppConfig.developmentUrl);
+        _normalizeBaseUrl(ApiEnvConfig.developmentUrl);
     if (urlLocal != null) {
       _configuredLocalUrl = urlLocal;
     }
 
     final urlOnline =
-        _normalizeBaseUrl(moe_launch_config.AppConfig.productionUrl);
+        _normalizeBaseUrl(ApiEnvConfig.productionUrl);
     if (urlOnline != null) {
       _configuredOnlineUrl = urlOnline;
     }
@@ -209,12 +209,12 @@ class ApiService {
   }
 
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// isProduction=true → 用 [AppConfig.productionUrl]；false → [developmentUrl]。
+  /// 从 [ApiEnvConfig] 同步 local/online 基址并做规范化；
+  /// online → [ApiEnvConfig.productionUrl]，local → [ApiEnvConfig.developmentUrl]。
   ///
-  /// 纯本地同步，不发任何网络请求（远程解析链 `RemoteApiConfigService` 已删除，
-  /// 故方法名不再带 Remote）。保持 async 只为满足 `StartupTask.task` 的签名。
-  static Future<void> initBaseUrlFromAppConfig() async {
-    _applyApiEnvironmentFromAppConfig();
+  /// 纯本地同步，不发任何网络请求。保持 async 只为满足 `StartupTask.task` 的签名。
+  static Future<void> initBaseUrl() async {
+    _applyApiEnvironment();
 
     if (kDebugMode && _runtimeEnvironment == _envOnline) {
       debugPrint('API: online 模式，基址=$_configuredOnlineUrl（来自 config.dart）');
@@ -769,7 +769,7 @@ class ApiService {
   }
 
   static bool _shouldLogRestPath(String path) {
-    final filter = moe_launch_config.AppConfig.apiLogPathFilter.trim();
+    final filter = ApiEnvConfig.apiLogPathFilter.trim();
     if (filter.isEmpty) return true;
     return path.contains(filter);
   }

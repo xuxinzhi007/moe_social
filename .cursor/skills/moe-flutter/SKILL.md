@@ -127,7 +127,7 @@ Audit 触及导航/菜单时：重复入口记 **R1 Fail**（见下节）。
 6. **Flag = UI** — flag 为 false 时无入口、无 AppBar 动作、无「假开放」路由。
 7. **单一入口** — 见 §0.6；底栏/主路径已有的能力不要在「我的」或同页工具栏再挂一份。
 8. **不整仓换栈** — 保持 Provider + `app_routes`。
-9. **密钥与环境** — 第三方 API key 不得硬编码进仓；现阶段用 `AppConfig` 安全存储 / 设置页配置。基址用 `lib/utils/config.dart` 的 `isProduction` 切换，**上线前再切生产**（勿提前强制 `kReleaseMode`）。
+9. **密钥与环境** — 第三方 API key 不得硬编码进仓；现阶段用 `AppConfig`（`lib/config/app_config.dart`）安全存储 / 设置页配置。基址用 `lib/utils/config.dart` 的 `ApiEnvConfig.isProduction` 切换，**上线前再切生产**（勿提前强制 `kReleaseMode`，也不要引入 `--dart-define` 之类的构建变量）。发版时 `flutter-release.yml` 第 7 步会断言该值为 `true`，不是就红——它只检查不覆盖，切环境的动作永远在 `config.dart`。
 
 ### 1.1 动画 Ticker（运行时硬崩 · 必检）
 

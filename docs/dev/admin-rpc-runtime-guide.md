@@ -19,7 +19,7 @@
 | `make dev` → `cmd/dev/main.go` 编译 `moe-rpc` / `moe-api` | ✗ target 与文件均已删除 |
 | `make rpc-debug` → `rpc/super.go -debug` | ✗ `backend/rpc/` 目录不存在 |
 | `/ops/rpc` React 监控页 `RpcPage.tsx` | ✗ 文件不存在，`moe-admin` 无 `/ops/rpc` 路由 |
-| `moe-admin/src/lib/rpcMonitor.ts` | ⚠️ 文件仍在，但**零 import**，是死文件 |
+| `moe-admin/src/lib/rpcMonitor.ts` | ✅ 已于 2026-09-08 删除（此前零 import 的死文件，本文档 §7 曾建议删除） |
 | `getRuntimeOverview()` 在 `adminClient.ts` | ⚠️ 实在 `systemClient.ts:449`，且**零调用方** |
 | 契约 `backend/api/super.api` + `make gen-api` | ✗ go-zero IDL 与 target 均已删除 |
 | `adminruntimeoverviewlogic.go` | ✗ go-zero logic 层已删；现走 Kratos proto |
@@ -149,7 +149,7 @@ Authorization: Bearer <admin_token>
 | `estimated_rss_mb` | = `api_process.rss_mb` |
 | `processes_note` | 已改为陈述事实的文案，不再指引失效命令 |
 
-**前端侧待办**：`moe-admin/src/api/systemClient.ts:449` 的 `getRuntimeOverview()` 与 `src/lib/rpcMonitor.ts` 均无调用方。若要恢复「本机服务内存」卡片，应新建页面消费 `getRuntimeOverview()` 并只渲染 `api_process`；`rpcMonitor.ts` 建议直接删除。
+**前端侧待办**：`src/lib/rpcMonitor.ts` 已删除（2026-09-08）。剩下 `moe-admin/src/api/systemClient.ts:449` 的 `getRuntimeOverview()` 仍**零调用方**，但后端 `GET /api/admin/runtime/overview` 是活的（见 §4），故先保留这个绑定。若要恢复「本机服务内存」卡片，应新建页面消费 `getRuntimeOverview()` 并只渲染 `api_process`。
 
 **指标说明**
 

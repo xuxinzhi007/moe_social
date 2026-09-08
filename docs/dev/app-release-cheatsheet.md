@@ -8,11 +8,13 @@
 ## 1. 一句话流程
 
 ```text
-推 tag v* → GitHub Actions 打 APK → 上传 Releases
+改 isProduction = true 并提交 → 推 tag v* → CI 断言 isProduction（不是 true 直接红）
+         → GitHub Actions 打 APK → 上传 Releases
          →（可选）CI 回写后端 app_releases
          → App 读 GET /api/public/app-release/latest → 提示更新
 ```
 
+- **发版前置**：`lib/utils/config.dart` 的 `ApiEnvConfig.isProduction` 必须是 `true`，否则 CI 第 7 步就失败（见 §2）  
 - **APK 文件**：在 GitHub Releases  
 - **「有没有新版本」**：看后端库表，不看 GitHub Tag  
 - 后端不在线：打包仍成功；回写失败不挡发版（可稍后管理台补登）
@@ -21,6 +23,8 @@
 
 ## 2. 日常发版（最短路径）
 
+**第 0 步（最容易漏）**：把 `lib/utils/config.dart` 的 `ApiEnvConfig.isProduction` 改为 `true` 并提交。
+
 ```bash
 git tag v1.0.3
 git push origin v1.0.3
@@ -28,8 +32,15 @@ git push origin v1.0.3
 
 然后打开：仓库 → **Actions** → **Build and Release APK**，看是否绿/黄。
 
+CI 第 7 步 `Assert release points at online API` 会 grep 这个常量：不是 `true` 就以 `::error::` 注解**红掉并停在这里**，不会打出包。它只检查、不替你改——基址的唯一真源始终是 `config.dart`。
+
+该断言是**失败即拦**（fail-closed）：读不出字面量 `true`/`false` 时（比如把声明写成 `= kReleaseMode`）会报 `isProduction=<未找到声明>` 并拦下，不会放行。
+
+> 发完版按需要切回 `false` 继续本地调试。切回后**不要**再拿旧 tag 重跑 workflow，会红。
+
 | 检查项 | 在哪看 |
 |--------|--------|
+| 断言是否放行、用的哪个基址 | Actions 日志 → `Assert release points at online API`（会把两个 URL 打出来） |
 | APK 是否上传 | [Releases](https://github.com/xuxinzhi007/moe_social/releases) |
 | 后端版本是否写上 | moe-admin → **业务** → **App 版本更新**（`/biz/update`） |
 | App 能否更新 | 设置 → 关于 → 软件版本 → 检查更新 |
@@ -74,11 +85,14 @@ git push origin v1.0.3
 
 | 名字 | 在哪 | 给谁用 |
 |------|------|--------|
-| `AppConfig.productionUrl` | `lib/utils/config.dart` | **手机 App** 连线上 API |
-| `AppConfig.developmentUrl` | 同上 | **本地调试** App |
-| `isProduction` | 同上 | `true` 用线上，`false` 用本地 |
+| `ApiEnvConfig.productionUrl` | `lib/utils/config.dart` | **手机 App** 连线上 API |
+| `ApiEnvConfig.developmentUrl` | 同上 | **本地调试** App |
+| `ApiEnvConfig.isProduction` | 同上 | `true` 用线上，`false` 用本地；**发版前必须为 `true`** |
 | `MOE_ADMIN_API_BASE` | GitHub Secrets | **CI 回写**版本用 |
 | 管理台数据环境 | moe-admin 顶栏 | 管理台连本机 / 云端 |
+
+> `flutter-release.yml` 里的 `Assert release points at online API` **不是**第四个地址来源：它只读 `config.dart` 做检查，不接受也不注入任何地址。要改基址永远只改 `config.dart`。
+> 另外别把 `ApiEnvConfig` 与 `lib/config/app_config.dart` 的 `AppConfig` 搞混——后者是第三方 LLM 密钥的安全存储，与后端基址无关。
 
 原则：用户装的正式包连哪台后端，CI 的 `MOE_ADMIN_API_BASE` 就应是哪台；否则「发了版但检查更新没反应」。
 
@@ -118,11 +132,13 @@ curl -sS "http://47.106.175.49:8888/api/public/app-release/latest?platform=andro
 
 | 现象 | 先查 |
 |------|------|
+| CI 红在第 7 步 `Assert release points at online API` | `config.dart` 的 `isProduction` 还是 `false`；改 `true` 提交后重新打 tag |
+| 装上了但一直转圈 / 全部请求失败 | 正式包连的是内网地址：`isProduction` 没切，或切了但 `productionUrl` 仍是 `192.168.*` / `127.0.0.1`（后者由 `test/utils/config_test.dart` 拦） |
 | 「未发现任何发布版本」 | 后端未启用 / 未配置 / CI 没回写成功 |
 | 「已是最新」 | 远端 versionCode ≤ 手机本地 |
 | 能下不能装 | 签名不一致（Dev vs Release）或 versionCode 没升高 |
 | CI Sync 失败 | Secrets 错、后端关机、填了内网地址 |
-| 管理台改了 App 仍旧 | App 连的不是这套后端（`isProduction` / URL） |
+| 管理台改了 App 仍旧 | App 连的不是这套后端（`ApiEnvConfig.isProduction` / URL） |
 
 ---
 

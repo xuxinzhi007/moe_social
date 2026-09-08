@@ -2,7 +2,7 @@
 
 > **范围**：`backend/` · `lib/` · `moe-admin/` · `website/` · `deploy/` · `.github/workflows/` · 仓库卫生
 > **基线提交**：`14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）
-> **性质**：只读审查，本文不含任何代码改动。所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。
+> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13、§14 记录审查之后**已落地的改动批次**（含改动内容与验证结果），性质是变更记录而非审查。
 > **有效性**：本文是**绑定基线提交 `14370f93` 的快照**（依 `docs/README.md` 文档维护约定第 3 条）。§11 各批次整改落地后，对应章节即失效，应**直接删除该章节**而非保留 archive stub。所有行号以该基线为准，后续提交可能使其偏移。
 > **前提说明**：当前仓库内的第三方密钥为**开发期临时凭据，正式版会整体更换**。因此本文的重点不是「密钥泄露应急」，而是**为什么结构上会导致密钥只能写在这里**——结构不改，换完新密钥仍会回到同一状态。
 
@@ -29,6 +29,7 @@
 | 13 | ~~本机拉起后端默认直连生产 MySQL root~~ **已澄清：该库是测试库** | ~~P0~~ → 非问题 | 需求方确认 `47.106.175.49` 为**测试库**，开发机直连属预期便利；凭据入库的问题归入第 1 行 | 不整改 |
 | 14 | 文档教的启动命令已整体失效（`make rpc` / `go run super.go`） | P1 → **已完成** | `backend/rpc/` 目录不存在；见 §9.1（2026-09-08 已清理脚本、Go 提示串与 11 份文档） | 批次 6 ✅ |
 | **15** | **同一份 `config.yaml` 被 20 处独立打开，回退链各自实现** | **P1** | 见 §12（19 个 `viper.New()` + `utils.InitConfig()` 全局单例，其中 LLM 有两条不一致的链） | 批次 2（已建 `backend/pkg/conf`，待迁调用点） |
+| **16** | **已发布的 release APK 连的是开发机局域网 IP，且 CI 全绿、Release 正常发布** | **P0（实际已发生）** | `flutter-release.yml` 不带 `--dart-define` + `config.dart` 的 `isProduction` 硬编码 `false` + `developmentUrl = 192.168.124.36`；见 §14.1 | ✅ 已闭环：`flutter-release.yml` 第 7 步发布前断言 + `config_test.dart` 内网地址断言（**不改 `isProduction` 语义**，因与三条既有规则冲突，方案取舍见 §14.1） |
 
 ---
 
@@ -267,9 +268,10 @@ keyPassword   = System.getenv("KEY_PASSWORD")      ?: "moe123456"
 > `FeatureFlags.showLocalModelSettings` 与 `FeatureFlags.companionSingleActiveBondPhase1` 已从 `lib/constants/feature_flags.dart` 移除；
 > pet 模块死配置（`assets/pet/config/*.json` 10 个 + `lib/services/pet_career_config.dart`）已删；
 > `MOE_SUPER_RPC_ENDPOINT` 注释承诺已随 `api.super_rpc_endpoints` / `api.super_rpc_timeout_ms` 整块从 `config.yaml` 删除而消除；
-> `_runtimeProductionBaseUrl` 间接层已删，`initRemoteProductionBaseUrl()` 已更名为 `initBaseUrlFromAppConfig()`。
+> `_runtimeProductionBaseUrl` 间接层已删，`initRemoteProductionBaseUrl()` 已更名为 `initBaseUrl()`。
 > **`backend/.env` 一行已失效**：复核发现该文件磁盘上不存在、git 历史里也从未入库（`.gitignore:99-100` 已覆盖 `.env` / `.env.*`），原分析针对的是一个本地未跟踪文件。
-> **仍未处理**：`moe.*_api_in_process` 开关族（含隐藏的 3 个）、两个同名 `AppConfig`、`api.timeout_ms`（本轮新查明：只写不读）。
+> **两个同名 `AppConfig` 已消除**：`lib/utils/config.dart` 的类改名为 `ApiEnvConfig`，`api_service.dart` / `main.dart` 里的 `as moe_launch_config` 别名随之删掉（见 §14.2）。
+> **仍未处理**：`moe.*_api_in_process` 开关族（含隐藏的 3 个）、`api.timeout_ms`（本轮新查明：只写不读）。
 
 | 项 | 状态 | 证据 |
 |----|------|------|
@@ -284,8 +286,8 @@ keyPassword   = System.getenv("KEY_PASSWORD")      ?: "moe123456"
 | `FeatureFlags.companionSingleActiveBondPhase1` | ✅ **已删**。原仅出现在 `companion_service.dart:605` 的注释里，该注释已改写为不依赖此常量 | `grep -rn 'companionSingleActiveBondPhase1' lib/` → 0 |
 | `FeatureFlags.showExperimentalFeatures` | 无直接判断，仅用于派生 `showAutoGlm`（`showLocalModelSettings` 已删，派生对象只剩一个） | `feature_flags.dart:19,25` |
 | `FeatureFlags.showGachaFeatures` | 仅 1 处挡路由（`app_routes.dart:223`） | 半死 |
-| `_runtimeProductionBaseUrl` | ✅ **已删**。原为残留间接层：local 模式为 null，online 模式直接赋 `_configuredOnlineUrl`，恒等于配置值 | `baseUrl` getter 改为直接返回 `_configuredOnlineUrl`，行为等价（被删字段在 local 模式下根本不被读取）；同时 `initRemoteProductionBaseUrl()` → `initBaseUrlFromAppConfig()`，名字不再暗示「远程拉取」 |
-| 两个同名 `AppConfig` 类 | `lib/utils/config.dart:14`（环境基址）vs `lib/config/app_config.dart`（AI 配置读写），靠 `api_service.dart:29` 的 `as moe_launch_config` 别名规避 | 违反 `应用配置与全局常量分层约定.md` 的分层规则 |
+| `_runtimeProductionBaseUrl` | ✅ **已删**。原为残留间接层：local 模式为 null，online 模式直接赋 `_configuredOnlineUrl`，恒等于配置值 | `baseUrl` getter 改为直接返回 `_configuredOnlineUrl`，行为等价（被删字段在 local 模式下根本不被读取）；方法两次更名 `initRemoteProductionBaseUrl()` → `initBaseUrlFromAppConfig()` → `initBaseUrl()`，最终名不再暗示「远程拉取」或依赖已改名的 `AppConfig` |
+| 两个同名 `AppConfig` 类 | ✅ **已消除**：`lib/utils/config.dart:14` 的类改名为 `ApiEnvConfig`，`api_service.dart:29` 的 `as moe_launch_config` 别名与 `main.dart:15` 的同类别名一并删除。现在全仓只剩 `lib/config/app_config.dart` 一个 `AppConfig`（第三方 LLM 密钥的安全存储），基址开关唯一入口是 `ApiEnvConfig.isProduction` | `grep -rn 'class AppConfig' lib/` → 1 处；`grep -rn 'moe_launch_config' lib/` → 0。**注**：`应用配置与全局常量分层约定.md` 要求的「环境基址搬到 `lib/config/**`」属批次 3 的结构性调整，本轮只解决同名冲突（见 §14.2、§9 表） |
 | `assets/pet/config/*.json` | ✅ **已删**（10 个 JSON + `lib/services/pet_career_config.dart` + `pubspec.yaml:146` 的资源声明）。pet 模块已于 `0ff0ab1b` 删除 | `git ls-files assets/pet/config \| wc -l` → 0；`flutter analyze` 无 error |
 | `ResolveAPIStyle` 的端口嗅探 | `llminference/client.go:70` 在 `api_style` 未设置时按 URL 是否含 `:11434` 判定协议 | 属兜底而非主路径，风险较低，但 `api_style` 已存在时应移除隐式 magic |
 
@@ -309,6 +311,9 @@ static const String developmentUrl = 'http://192.168.124.36:8888';   // 换网�
 `android/app/build.gradle.kts:45-58` 其实**已经建立了环境区分**：`debug` 带 `applicationIdSuffix = ".dev"`（可与正式包共存），`release` 走签名 + minify。但 Dart 侧的 `isProduction` 与 buildType 无任何关联。
 
 > **后果**：可以构建出一个 `release` 签名的正式包，而它连的是 `192.168.124.36` 内网地址。`moe_ui.xml`（`14370f93` 误提交的 UI dump）里 `package="com.example.moe_social.dev"`，且界面上正显示「模型服务调用失败，请检查 API Key、模型和额度后重试」——这类问题的排查成本正来自环境与构建类型不绑定。
+>
+> **进度更新（2026-09-08）**：这条后果**已从「静默发生」变成「CI 失败」**。`.github/workflows/flutter-release.yml` 第 7 步在构建 APK 前断言 `ApiEnvConfig.isProduction == true`，读到 `false` 就以 `::error::` 终止工作流，不会上传 Release、也不会推飞书通知。
+> buildType 与 Dart 环境**仍然脱钩**，这是刻意的：`.cursor/skills/moe-flutter/SKILL.md` §1.9、`product-reference.md:59`、`app-usability-upgrade-plan.md` P0-A 三条既有规则都禁止提前绑定 `kReleaseMode` 或引入 `--dart-define` 一类构建变量（开发期确实需要 release 包连本地后端，见 `SKILL.md:305` S1「不记 Fail」）。所以本轮选择**不改语义、只加检查**，方案取舍见 §14.1。
 
 ### 7.3 发布前需人工记得关闭的开关
 
@@ -362,14 +367,14 @@ if old not in text:
 
 | 文档 | 声称 | 实际 |
 |------|------|------|
-| `docs/dev/环境配置说明.md:13` | `developmentUrl = 'http://127.0.0.1:8888'` | `lib/utils/config.dart:25` 是 `http://192.168.124.36:8888`。**仍未处理**——属 §7.1 前端 IP 管理，随该批次一起做 |
+| `docs/dev/环境配置说明.md:13` | `developmentUrl = 'http://127.0.0.1:8888'` | ✅ **已修**：整节重写，代码样例改为与 `lib/utils/config.dart` 逐字一致（`http://192.168.124.36:8888`），并补了「按构建目标该填什么」的对照表（真机 = 局域网 IP、Android 模拟器 = `10.0.2.2`、iOS 模拟器/Web = `127.0.0.1`）。同类错误在 `API调试指南.md`、`快速调试步骤.md` 里也有，一并修掉（见 §14.4） |
 | `docs/dev/环境配置说明.md`（后端服务节） | 「后端监听与 CORS 见 `config.yaml`、`backend/api/etc/super.yaml`」 | ✅ **已修**：`super.yaml` 已删，该文档现已不含此引用 |
-| `docs/dev/飞书OAuth授权验证指南.md:16,26` | 要求 `redirect_uri` 与 `lib/config/moe_api.json` 的 `api_base_url` 指向同一台 API | ✅ **已修**：`moe_api.json` 已删，两处改指 `lib/utils/config.dart` 的 `AppConfig.productionUrl`；`:93` 同类引用一并修掉 |
+| `docs/dev/飞书OAuth授权验证指南.md:16,26` | 要求 `redirect_uri` 与 `lib/config/moe_api.json` 的 `api_base_url` 指向同一台 API | ✅ **已修**：`moe_api.json` 已删，两处改指 `lib/utils/config.dart` 的 `ApiEnvConfig.productionUrl`；`:93` 同类引用一并修掉 |
 | `docs/dev/moe-admin.md:114,117` | deploy target `api_base_url: http://47.106.175.49:8888` | 与 n100 链路（`192.168.124.77`）并存，未说明何时用哪个。**仍未处理** |
 | `backend/config/config.yaml:35` 注释 | 「Docker 推荐用 compose 环境变量 `MOE_SUPER_RPC_ENDPOINT=rpc:8080`」 | ✅ **已修**：该注释连同 `api.super_rpc_endpoints` / `api.super_rpc_timeout_ms` 整块删除（三者全仓零读者） |
 | `lib/services/api_service.dart:192` 注释 | 「勿再使用 `api_env.json`」 | ✅ **已修**：`api_env.json` 仓库中已不存在，该引用已删 |
-| `ApiService.initRemoteProductionBaseUrl()` | 方法名暗示「从远程拉取生产基址」 | ✅ **已修**：更名 `initBaseUrlFromAppConfig()`，同步改 `main.dart:195`、`auth_service.dart:93`、`环境配置说明.md:7` |
-| `docs/dev/应用配置与全局常量分层约定.md` | `lib/config/**` 放行为、`lib/constants/**` 放数据定义 | 环境基址这个最核心的配置在**第三个位置** `lib/utils/config.dart`，且与 `lib/config/app_config.dart` 的类名冲突。**仍未处理**（结构性，属批次 3） |
+| `ApiService.initRemoteProductionBaseUrl()` | 方法名暗示「从远程拉取生产基址」 | ✅ **已修**（两次更名）：`initRemoteProductionBaseUrl()` → `initBaseUrlFromAppConfig()` → **`initBaseUrl()`**，同步改 `main.dart:195`、`auth_service.dart:93`、`环境配置说明.md`。最终名不再依赖已改名的 `AppConfig` 类 |
+| `docs/dev/应用配置与全局常量分层约定.md` | `lib/config/**` 放行为、`lib/constants/**` 放数据定义 | 环境基址这个最核心的配置仍在**第三个位置** `lib/utils/config.dart`（用户明确要求「暂时都在 config 里面维护」）；**类名冲突部分已解决**——该类改名 `ApiEnvConfig`，全仓只剩一个 `AppConfig`。把文件搬到 `lib/config/**` 属结构性调整，仍在批次 3 |
 | `backend/docs/private_messages.md:52` | 图片落在 `Image.LocalDir`（`api/etc/super.yaml`），可被 `config.yaml` 的 `image.local_dir` 覆盖 | ✅ **已修**：改指 `api/etc/moe.yaml:36`（`Image` 段确在此文件）；同行 `:53` 的 `getimagelistlogic`（已随 go-zero logic 层删除）改指 `internal/biz/media/image.go:67` |
 
 ### 9.1 更严重：文档教的启动命令已整体失效 ✅ 已完成（2026-09-08）
@@ -533,9 +538,9 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 |------|----------|
 | 后端只保留一个 `runtime.public_base_url`，`api.public_base_url` / `feishu.redirect_uri` / `wechat.redirect_uri` / `image.public_base_url` / `app_client.public_api_base_url` 全部由它派生 | `config.yaml` 中该 IP 只出现 1 次 |
 | `nginx-lan.conf` 的 4 份 `proxy_set_header Host` 改为 `$proxy_host` 或单一变量 | Host 头不再逐 location 复制 |
-| Flutter 改用 `--dart-define=API_BASE_URL=...` + 构建类型绑定，删除 `isProduction` 常量；`developmentUrl` 不再硬编码具体内网 IP | `flutter build apk --release` 无需改任何源码；debug/release 自动对应不同基址 |
-| `showGameNetworkLab` 纳入同一构建期注入机制，并在 CI 加发布卡点（release 构建时断言实验开关为 false） | 无法构建出携带实验 VPN 能力的 release 包 |
-| ✅ **已完成（2026-09-08）**：删除 `lib/config/moe_api.json` 与 `lib/services/remote_api_config_service.dart`；`initRemoteProductionBaseUrl()` 更名为 `initBaseUrlFromAppConfig()`（连带删掉 `_runtimeProductionBaseUrl` 间接层） | 死链清除，方法名不再误导。注意：**同批次的 `--dart-define` 改造仍未做**，所以前端基址依然靠改 `lib/utils/config.dart` 源码切换 |
+| ~~Flutter 改用 `--dart-define=API_BASE_URL=...` + 构建类型绑定，删除 `isProduction` 常量~~ **❌ 提案已否决**，改为「CI 发布前断言」——见 §14.1。原提案与三条既有规则冲突（`moe-flutter/SKILL.md` §1.9 勿提前强制 `kReleaseMode`、`product-reference.md:59` 手动切、`app-usability-upgrade-plan.md` P0-A 不引入构建变量）；**已落地的替代方案**：`flutter-release.yml` 第 7 步断言 `ApiEnvConfig.isProduction == true`，`test/utils/config_test.dart` 另断言 `productionUrl` 不是内网地址 | `isProduction` 仍是唯一真源（`flutter build apk --release` 依旧需要改源码，这是刻意保留的开发期能力）；但「忘记切就发版」不再静默——CI 直接红 |
+| `showGameNetworkLab` 纳入同一构建期注入机制，并在 CI 加发布卡点（release 构建时断言实验开关为 false） | 无法构建出携带实验 VPN 能力的 release 包。**注**：后半句的「CI 加发布卡点」已被本轮的断言步骤证明可行，可复用同一个 step 追加检查 |
+| ✅ **已完成（2026-09-08）**：删除 `lib/config/moe_api.json` 与 `lib/services/remote_api_config_service.dart`；`initRemoteProductionBaseUrl()` 更名为 `initBaseUrl()`（连带删掉 `_runtimeProductionBaseUrl` 间接层）；`AppConfig` 类改名 `ApiEnvConfig`，消除与 `lib/config/app_config.dart` 的同名冲突 | 死链清除，方法名/类名不再误导。前端基址仍靠改 `lib/utils/config.dart` 源码切换（用户明确要求「暂时都在 config 里面维护」），但发版有 CI 断言兜底 |
 
 ### 批次 4 — 清死配置与摆设开关（删除清单 ✅ 已完成，收敛清单未做）
 
@@ -666,7 +671,7 @@ backend/pkg/conf/
 |---|------|------|
 | 1 | `config.yaml:35-40` 的 `api.super_rpc_*` 整块零读者，且注释仍在指导运维设置同样无人消费的 `MOE_SUPER_RPC_ENDPOINT` | 整块删除。保留 `moe.pilot.super_rpc_endpoint`（**另一个键**，`moeconf/load.go:62` 真在读） |
 | 2 | `api.timeout_ms` **只写不读**（新查明）：`config_override.go:68` 灌进 `apiconfig.Config.Timeout` 后无人消费 | 键暂留（清除属第 2 步的 `apiconfig` 收敛），但注释改为如实标注，并指向真正生效的 `llm_inference.timeout_seconds`；`pkg/conf/config.go` 的 `API.TimeoutMS` 字段同步标注 |
-| 3 | `_runtimeProductionBaseUrl` 死间接层 + `initRemoteProductionBaseUrl()` 误导性方法名（§6 / §9 早已登记，本轮才做） | 删字段、更名 `initBaseUrlFromAppConfig()`，同步 `main.dart:195`、`auth_service.dart:93`、`环境配置说明.md:7` |
+| 3 | `_runtimeProductionBaseUrl` 死间接层 + `initRemoteProductionBaseUrl()` 误导性方法名（§6 / §9 早已登记，本轮才做） | 删字段、更名 `initBaseUrlFromAppConfig()`，同步 `main.dart:195`、`auth_service.dart:93`、`环境配置说明.md:7`。**后续又更名一次为 `initBaseUrl()`**（随 `AppConfig`→`ApiEnvConfig` 改名，见 §14.2） |
 | 4 | 9 处指向已删文件的悬空引用 | 见 §9.2 表一 |
 | 5 | **`deploy-ops.html` 远程巡检面板恒报假错** —— 读 5 个后端早已不返回的字段，`undefined` 恒为假 | 见 §9.2 表二第 1 条。这是本轮最实质的一处：它会主动把人派去修一个不存在的问题 |
 | 6 | **`deploy-ops.html` 远程配置下拉与后端白名单不一致** —— 提供的 `api/etc/super.yaml` 必被拒绝，白名单里真有的两项反而没选项 | 见 §9.2 表二第 2 条 |
@@ -711,10 +716,167 @@ grep -rn '\.Timeout\b' backend/ --include='*.go'   # 再逐个确认 cfg 的静�
 1. `Inference()` 取 `MOE_LLM_*` 环境变量的**超集**（认全部 4 个）。迁移后 `MOE_LLM_BASE_URL` / `API_STYLE` / `MODEL` **将开始影响 Bot 调度**（此前只有 `MOE_LLM_API_KEY` 生效）。
 2. `KratosAdminBaseURL()` 兜底从 `19032` 改为 `runtime.http_port`（19032 已无监听者，原兜底会拼出打不通的地址）。
 
-另有两项已知但**本轮刻意未动**：
+另有两项已知情况：
 
-- `moewiring/api_post.go:63` 读顶层 `hand_draw_require_moderation`，而 `config.yaml` 把它放在 `runtime:` 下 → 该读取恒为 `false`。这是**活的功能 bug**，但修它会改变手绘过审行为，属产品决定，不宜夹在配置治理里悄悄改。
+- ~~`moewiring/api_post.go:63` 读顶层 `hand_draw_require_moderation`，而 `config.yaml` 把它放在 `runtime:` 下 → 该读取恒为 `false`~~ **✅ 已修（2026-09-08，见 §14.3）**。原判断「修它会改变手绘过审行为」经实测**不成立**：`config.yaml` 里该键的值就是 `false`，与旧的硬编码默认值相同，所以修正键路径后**今日行为零变化**，只是这个开关从此真的接上了。真正的行为变化留给以后把 yaml 改成 `true` 的人——那才是有意的产品决定。
 - `pkg/moe/toolaudit` 的 `TestBuildSchemaItemsCoversAllTools`（期望 ≥6 个工具、实得 5）是**既有失败**，已用 `git worktree` 在干净 HEAD 上复现确认与本轮无关。断言和工具列表哪个对属产品判断。
+
+---
+
+## 14. 2026-09-08 第二批：小改动大收益的收拢
+
+用户约束（逐字）：「目前的 ip 配置我打算的是 暂时都在 config 里面进行维护 这样会比较清晰 ，可以先调整一下 现在存在问题 改动比较小但是收益大的地方 ，逐步推进修复工程吧 ，可以进行收拢」。即：**前端 IP 继续留在 `lib/utils/config.dart`**，不做批次 3 的结构搬迁；只挑「改动小、收益大」的问题收拢。
+
+### 14.1 头号问题：发布包指向开发机局域网 IP —— 以及一次被规则否决的实现
+
+**事实链**：`.github/workflows/flutter-release.yml` 打 release APK 时不带任何 `--dart-define`，而 `lib/utils/config.dart` 的 `isProduction` 是硬编码 `false`，`developmentUrl = http://192.168.124.36:8888`。所以**每一个被上传到 GitHub Releases、并通过飞书通知出去的安装包，连的都是开发者本人电脑的内网地址**——外部用户装上后所有请求必然失败，而 CI 全绿、Release 正常发布、通知正常推送。这是 §7.2「后果」那段从推论变成已发生事实的确认。
+
+**我先做错了一版**：第一次实现给 `isProduction` 加了 `kReleaseMode` 回落，并在 CI 里加 `--dart-define=MOE_API_ENV=online`。技术上是标准做法，但做完一轮文档扫描后发现它与三条**既有成文规则**直接冲突：
+
+| 出处 | 原文约束 |
+|------|----------|
+| `.cursor/skills/moe-flutter/SKILL.md:130`（§1.9） | 勿提前强制 `kReleaseMode` |
+| `.cursor/skills/moe-flutter/product-reference.md:59` | API 基址用 `isProduction` 手动切 |
+| `docs/dev/app-usability-upgrade-plan.md:90`（P0-A） | 不引入构建变量、CI 覆盖或启动时远程重写地址 |
+
+而且 `SKILL.md:305` 的 S1 场景**明确容忍**「开发期 release 包连开发机」并标注「**不记 Fail**」——也就是说这个「失效模式」在当前阶段是被规则有意允许的。我没有静默覆盖规则，而是停下来把冲突摆给用户，用户选择了「CI 加发布前断言，不改语义」。
+
+**已落地的方案**：
+
+1. `lib/utils/config.dart` 回滚，`isProduction` 保持唯一真源，无 `kReleaseMode` 回落、无 `foundation.dart` 导入。
+2. `flutter-release.yml` 新增第 7 步 `Assert release points at online API`，在 Build APK **之前**执行：grep 锚定 `static const bool isProduction = <true|false>` 声明行，值不是 `true` 就打 `::error::` 并 `exit 1`。构建 APK 的命令行恢复为不带 `--dart-define`。
+3. `test/utils/config_test.dart` 补上 CI 覆盖不到的另一半（见下）。
+
+**为什么断言不算违反 P0-A**：那一步只**读**源文件、只做判断、不向构建注入任何值、不改任何语义。它既不是「构建变量」也不是「CI 覆盖」——CI 覆盖指的是流水线用变量把地址改写掉，而这里是让流水线在地址不对时**拒绝发版**。已把这段论证写进 `app-usability-upgrade-plan.md` P0-A 的「2026-09-08 补充」，并把 `SKILL.md` §1.9 的规则**保留原文**、只补一句说明「断言是检查而非覆盖」。
+
+**分工（两道防线，缺一不可）**：
+
+| 防线 | 能拦 | 拦不住 |
+|------|------|--------|
+| CI 第 7 步（grep 源码） | `isProduction` 忘切就发版 | 切了 `true`，但 `productionUrl` 本身写成了内网地址 |
+| `config_test.dart` 的 `_isPrivateOrLoopbackHost` | `productionUrl` 是 `127.*` / `10.*` / `192.168.*` / `172.16-31.*` / `169.254.*` / `localhost` / `::1` / `0.0.0.0`，或与 `developmentUrl` 相同 | 运行时才知道的地址不可达 |
+
+第二道尤其关键：`isProduction = true` 但 `productionUrl` 还是内网的话，发布包照样全挂，而**CI 日志看起来一切正常**。测试里另有一条把 `baseUrl`/`getApiUrl()` 一致性写成**不变量**而非钉死具体值，这样为发版翻 `isProduction` 时不需要同步改测试。
+
+断言脚本用 7 个用例实测通过（把 workflow 第 81–98 行原样抽出来、加 CI 默认 shell 的 `set -e` 后逐个跑）：
+
+| # | 输入 | 期望 | 实测 |
+|---|------|------|------|
+| 1 | `isProduction = true` | 放行 | ✅ PASS，并打印两个 URL |
+| 2 | `isProduction = false` | 拦住 | ✅ BLOCK，`::error::…isProduction=false` |
+| 3 | 声明整行缺失 | 拦住 | ✅ BLOCK，`isProduction=<未找到声明>` |
+| 4 | `dart format` 把 `= true` 折到下一行 | 放行 | ✅ PASS |
+| 5 | `lib/utils/config.dart` 不存在 | 拦住 | ✅ BLOCK |
+| 6 | 声明写成 `= kReleaseMode`（非字面量） | 拦住 | ✅ BLOCK，`<未找到声明>` |
+| 7 | 仓库当前真实文件（`isProduction=false`） | 拦住 | ✅ BLOCK——开发态的树本来就不该能发版 |
+
+**用例 4 抓到了我自己写的一个 bug**：第一版脚本注释声称「容忍空白差异，避免 dart format 换行造成误拦」，但 `grep` 是逐行的，声明一旦被折行就匹配不到 → 报 `<未找到声明>` → **误拦一次正常发版**。已改为先 `tr '\n' ' '` 把换行折成空格再匹配，注释也改成如实描述。方向上这是安全的（误拦而非误放），但会在发版当口逼人 debug CI，所以值得修。
+
+顺带得到的性质：断言是 **fail-closed** 的——凡是读不出字面量 `true`（用例 3/5/6），一律拦下，不存在「解析失败就放行」的路径。
+
+### 14.2 `AppConfig` → `ApiEnvConfig` 改名（消除同名冲突）
+
+全仓曾同时存在两个 `AppConfig`：`lib/utils/config.dart`（环境基址，全 `const`）和 `lib/config/app_config.dart`（第三方 LLM 密钥的安全存储，全 `async`）。两者职责、生命周期、读写方式完全不同，同名靠 `as moe_launch_config` 别名规避——读代码时极易把「同步 const 开关」和「异步安全存储」当成一回事。
+
+已改：`lib/utils/config.dart` 的类改名 `ApiEnvConfig`；`api_service.dart:29`、`main.dart:15` 的导入别名删除（10 处引用同步）；`ApiService.initBaseUrlFromAppConfig()` → **`initBaseUrl()`**（旧名里的 `AppConfig` 已不指这个类，留着会继续误导）；`auth_service.dart:93` 注释、`main.dart:250-251` 启动日志同步。文档层 6 份（`环境配置说明.md`、`app-release-cheatsheet.md`、`飞书OAuth授权验证指南.md`、`飞书通知与绑定.md`、`app-release-backend.md`、`CODE_WIKI.md`）里的 `AppConfig` 按语义分别改为 `ApiEnvConfig` 或明确指向 `lib/config/app_config.dart`。
+
+`app-release-cheatsheet.md` §4 额外补了两条注：**断言步骤不是第四个地址来源**（它只读不写）；别把 `ApiEnvConfig` 和 `AppConfig` 搞混。
+
+### 14.3 `runtime.hand_draw_require_moderation` 键路径（活 bug，但今日零行为变化）
+
+`backend/internal/platform/moewiring/api_post.go` 的 `handDrawRequireModeration()` 原先读顶层键 `hand_draw_require_moderation` 与驼峰别名 `HandDrawRequireModeration`，而 `config.yaml` 把它放在 `runtime:` 段下 → 两个键 `IsSet` 恒为假 → 恒返回硬编码默认值，**把配置改成 `true` 也不会生效**。
+
+已改为读 `runtime.hand_draw_require_moderation`（对齐 `moewiring/config.go` 里 `"moe.api_in_process"` 的既有约定），并删掉驼峰别名——viper 会把所有键小写，`HandDrawRequireModeration` 实际变成 `handdrawrequiremoderation`，永远命中不了。
+
+**用一次性程序实测证明**（临时 `backend/tmp_verify/main.go` 复刻 `moeViper()` 的加载方式，跑完即删）：
+
+```
+IsSet(hand_draw_require_moderation)            = false
+IsSet(HandDrawRequireModeration)               = false
+IsSet(runtime.hand_draw_require_moderation)    = true   GetBool = false
+IsSet(moe.single_process)                      = true   GetBool = true   ← 对照组，证明加载器本身没问题
+```
+
+因为 yaml 里的值恰好就是 `false`，与旧默认值相同，所以**今日行为零变化**——变的只是这个开关从此真的接上了。这修正了 §13.4 原先「修它会改变手绘过审行为」的判断。同类死键还有 `Image.PublicBaseUrl`（viper 小写成 `image.publicbaseurl`），已在 §5.5 修掉。
+
+### 14.4 文档漂移批量修正（同一类缺陷，一次性扫清）
+
+这一批的共性是：**文档教的机制在代码里已经不存在**，照做会白费时间甚至改错文件。
+
+| 文档 | 原文声称 | 实际 |
+|------|----------|------|
+| `API调试指南.md` | 改 `lib/services/api_service.dart` 第 50 行的 `Platform.isAndroid` 分支来切地址；`_isProduction` 在「api_service.dart 第27行」；模拟器「自动使用 `10.0.2.2` / `localhost`，无需修改配置」 | 这套按平台分支的机制**整体不存在**。地址只有两个常量，都在 `lib/utils/config.dart`；模拟器不会自动换地址，得自己把 `developmentUrl` 改成 `10.0.2.2` |
+| `API调试指南.md` | 生产环境「所有平台统一使用 `http://74fd3e66.r3.cpolar.top`」 | cpolar 隧道早已不用，真源是 `productionUrl` |
+| `API调试指南.md:156-158`、`快速调试步骤.md:169-171` | 「设置 `_isProduction = true`」 | 字段已删；改为 `ApiEnvConfig.isProduction`，并注明 `const` 不参与热重载、必须 Stop + Run |
+| `飞书通知与绑定.md:108,136` | `feishu_web_redirect_web.dart`、`feishu_app_launcher.dart`、`feishu_oauth_helper.dart` | 三个文件都已改名/合并为 `oauth_web_history_web.dart`（经 `oauth_web_history.dart` 条件导入）、`oauth_app_launcher.dart`、`oauth_flow_helper.dart`；`MainActivity.kt` 路径补全，channel 名 `com.moe_social/feishu` 核对无误 |
+| `飞书通知与绑定.md:172` | 建 Bot 后走 go-zero hook 发飞书通知 | hook 已随 go-zero 删除，替换为 ⚠️ 记录（见 §14.6） |
+| `CODE_WIKI.md` | 演示入口 `lib/demo_main.dart` + `home_redesign_demo.dart`；管理台菜单 SSOT `src/config/menu.ts`（`ADMIN_MENU_TREE`） | 两个 demo 文件不存在（`find lib -iname '*demo*'` 为空）；菜单 SSOT 实为 `src/config/workspaceNav.ts` 的 `WORKSPACES`（biz/ai/infra）+ `NAV_BY_WORKSPACE`。同处补注了 `lib/utils/`→`ApiEnvConfig`、`lib/config/`→`AppConfig` 的不同职责 |
+| `DESIGN_SYSTEM.md:356` | `lib/theme/moe_theme.dart` | 实为 `lib/theme/moe_theme_extension.dart`（已核对其中的 `class MoeTheme extends ThemeExtension<MoeTheme>` 与 `.light()`/`.dark()`/`lerp`） |
+| `API调试指南.md:55-56` | 把 `http://74fd3e66.r3.cpolar.top` 当作「正确的 API 地址格式」示例 | 换成真实的 `http://47.106.175.49:8888`，并补上真正的坑：`_normalizeBaseUrl()`（`api_service.dart:172`）对非法地址返回 `null`，`_applyApiEnvironment()` 拿到 `null` 就**跳过赋值、保留旧值**——写错地址不报异常，只是请求发往一个你没填过的地方。这正是 `config_test.dart` 那条 URL 格式断言存在的理由 |
+| `moe-admin-memory-center-design.md:224` | 实现清单里的 `config/menu.ts # 新增菜单项` | `menu.ts` 已于 `2928dd82` 删除（`ADMIN_MENU_TREE` 全仓已无），导航 SSOT 是 `35c6ce87` 引入的 `config/workspaceNav.ts`。这份是**待实现的设计稿**，路径写错会让实现者去找一个不存在的文件 |
+
+顺带核对为**仍然准确、未改动**的：`AdminAuthContext`、`RequireAdmin`、`App.tsx:66` 的 `basename="/ops"`、`moe-admin/src/lib/schemaActions.ts`、`docs/dev/admin-rpc-runtime-guide.md` 里对 `rpcMonitor.ts` 已删的标注。
+
+**刻意保留、不改**：`api_service.dart:420,471` 有两处按 `baseUrl.contains('cpolar.top')` / `ngrok.*` 分支给出隧道专属错误文案。这两个分支今天**必然不进**（基址里已无隧道域名），但它们**自守门**——只有 URL 真含该域名时才触发，所以留着零行为影响、零维护成本；而一旦以后把 `developmentUrl` 指回隧道，正确的提示又会立刻生效。删它属「改动小、收益也为零」，不符合本轮取舍标准。
+
+### 14.5 两个小修
+
+- **`backend/internal/server/routestats/proto_routes_gen.go`**：`protoHTTPRouteCount` 315 → 320。这是生成物，用 `cd backend && go run ./scripts/gen/proto-route-count` 重新生成，未手改。`stats_test.go` 拿它和实际注册路由数比对，漂移会让测试红。
+- **`moe-admin/src/lib/rpcMonitor.ts`**：`git rm` 删除。零 import；它是 go-zero RPC 监控面板的数据层，随拆分部署一起退役（`docs/dev/tools/rpc-monitor.html` 已在上一批标注无数据源）。
+
+### 14.6 新发现、本轮未修：飞书「Bot 已创建」通知零调用方
+
+`backend/utils/feishu.go:43` 的 `SendFeishuAgentCreatedNotification()` **全仓零调用方**——go-zero 时代的 hook 被删掉后，没有人在 Kratos 侧把它重新接上。所以「创建 Bot → 飞书通知运营」这个能力**静默不触发**，没有任何报错。
+
+当前真正在跑的飞书链路是 `SendFeishuTestCard`：`internal/biz/user/oauth_feishu.go:136` → `internal/server/protohttp/user/user_login.go:113`。
+
+**未修的理由**：重新接线是功能开发（要决定触发时机、幂等、失败重试、通知内容），不是配置治理，不该夹在这一批里悄悄改。已在 `飞书通知与绑定.md:172` 留 ⚠️ 记录，避免下一个人继续以为它在工作。
+
+同类保留项：`getRuntimeOverview()` 零调用方，但对应后端端点是活的，先留着。
+
+### 14.7 悬空路径扫描：方法与假阳性教训
+
+扫「文档里引用但仓库中不存在的路径」时，第一版检查脚本只尝试 `p` 和 `./p` 两种解析，结果报出 **170 条**「悬空引用」。这个数字是假的：仓库里大量文档路径是**相对 `backend/` 写的**（例如 `internal/biz/...`）。加上 ROOTS 列表（仓库根、`backend/`、`docs/`、`moe-admin/`）与 HISTORICAL 排除列表（明确带「已删除」「历史方案」叙述的段落）后，降到 **22 条可信候选**，其中真正需要改的就是 §14.4 那批。
+
+我没有把 170 这个数字报给用户。**扫描工具的信噪比本身必须先验证**，否则会把一轮清理变成一轮误删。
+
+剩余判定为「目录树片段或显式的已删除叙述」、**不改**的：`backend/docs/dev/kratos-intentional-transport.md` 里的 `transport/oauth.go`/`websocket.go`/`sse.go`/`internal/server/http_transport.go`；`moe-social-runtime.md:83,88` 的 `cmd/dev/main.go`、`api/super.go`、`rpc/super.go`；`private_messages.md:191` 的 `api/internal/types/types.go`；`new-api-kratos.md:62,158` 的 `protohttp/moe_extended.go`、`routestats/proto_routes_gen.go`；`头像框与奖池配置操作流程.md` 的 `assets/frames/star_trail.json`、`lib/gacha_page.dart`。另有 41 处 `api/internal/` 引用多数是合法的历史叙述。`.qoder/repowiki/**` 未跟踪，不处理。
+
+### 14.8 本轮最该记住的教训：`flutter test` 不编译 `lib/main.dart`
+
+回滚 `config.dart` 之后 `flutter test` 报 **99/99 全绿**，但 `flutter analyze` 的问题数从 38 跳到 40：
+
+```
+The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.dart:252:37
+The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.dart:252:88
+```
+
+原因：**测试不会编译 `lib/main.dart`**。没有任何测试 import 它，所以里面写坏了也全绿。凡是动过 `main.dart`，`flutter analyze` 是**强制项**，不能用测试结果代替。已修（启动日志只打 `isProduction`），复验回到 38 issues / 0 error / 99 tests。
+
+同批踩到的另外两个坑，也记在这里：
+
+- **Bash 工具的 cwd 会跨调用保留**。之前一次 `cd backend` 之后，后面的 `grep -rn 'class AppConfig' lib/` 静默返回空——不是「没有」，是「在错误的目录下找」。要么用 Grep 工具，要么显式 `cd` 回项目根。
+- **全仓 grep 会被未跟踪的元数据大文件污染**。`grep -rn 'rpcMonitor' .` 把 `.qoder/repowiki/zh/meta/repowiki-metadata.json` 整个（单行巨型 JSON）倒进输出。全仓搜索必须排除 `.qoder/`，或把范围收窄到 `moe-admin/src`、`docs/` 这类真实目标目录。
+- **环境里没有 YAML 解析器**（node 无 `yaml`/`js-yaml`，python 无 `yaml`），用 `/usr/bin/ruby -ryaml` 代替；它顺带能以编程方式断言 workflow 的步骤顺序、以及 `dart-define` / `github.event` 插值确实不存在。`node` 也不在 PATH 上，要用 `/opt/homebrew/opt/node@20/bin/node`（v20.20.2）。
+
+### 14.9 验证结果（本轮末次全量复验）
+
+| 检查 | 结果 |
+|------|------|
+| `cd backend && gofmt -l internal/platform/moewiring/` | 无输出 |
+| `go build ./...` · `go vet ./...` | 通过 |
+| `go test ./internal/server/routestats/ ./internal/platform/moewiring/...` | ok |
+| `flutter analyze` | **38 issues，0 error / 0 warning**（与基线一致） |
+| `flutter test` | **99/99 通过** |
+| 断言脚本 7 用例（修完 `tr` 折行后重跑） | 全部符合设计，见 §14.1 表；fail-closed 性质成立 |
+| `ruby -ryaml` 校验 3 个 workflow | 语法有效；`flutter-release.yml` 10 步，断言=第 7 步、Build APK=第 8 步（顺序正确）；全文件无 `dart-define`；断言 `run` 块内既无 `github.event` 也无 `secrets.` 插值 |
+| `moe-admin` `tsc -b` | `src/` 零错误 |
+
+**一处既有失败，与本轮无关**：`moe-avatar/core` 的 `tsc` 报 `src/export.ts(1,19): error TS2307: Cannot find module 'jszip'`。`moe-avatar/core/package.json` 声明了 `jszip ^3.10.1`，但该依赖只装在 `moe-admin/node_modules/` 下，`moe-avatar/core` 自己没装。装依赖超出本轮范围，已标记未修。
+
+**codegraph 无需重生成（已实测）**：跑了一遍 `node scripts/codegraph/gen_all.mjs`，四个 JSON 的内容与 HEAD **逐字节相同**，只有 `generatedAt` 时间戳变化（已还原，避免制造无意义 diff）。原因是 codegraph 是**路由 / 页面 / 服务级**的图，不是符号级的——`rpcMonitor.ts` 删除与 `AppConfig`→`ApiEnvConfig` 改名都落在它的粒度之下（`grep -c 'AppConfig' flutter.json` 本来就是 0）。§13.2 第 8 条那次重生成是必要的（删的是图上的节点），本次不是。
+
+本批全部改动**尚未提交**；工作区里还有并行的无关改动（含未跟踪的 `moe_social_backend/`），刻意未触碰。
 
 ---
 
@@ -755,8 +917,11 @@ git ls-files | grep -E 'moe_ui\.xml|_hero_orig|cover\.out|duplication-report|pet
 
 ## 相关文档
 
-- [环境配置说明.md](./环境配置说明.md) — 本地 / 线上 API 基址（**§9 指出其已与代码不符，待批次 3 修正**）
-- [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) — Flutter 侧配置分层（**待补环境基址归属**）
+- [环境配置说明.md](./环境配置说明.md) — 本地 / 线上 API 基址（✅ §14 已重写，与 `ApiEnvConfig` 一致）
+- [app-release-cheatsheet.md](./app-release-cheatsheet.md) — 发版速查（含 §14.1 的发布前断言步骤与排错表）
+- [app-usability-upgrade-plan.md](./app-usability-upgrade-plan.md) — P0-A 记录「不引入构建变量」的原始约束，及断言为何不违反它
+- [API调试指南.md](./API调试指南.md) · [快速调试步骤.md](./快速调试步骤.md) — ✅ §14.4 已清除失效的 `_isProduction` / cpolar / 按平台分支说法
+- [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) — Flutter 侧配置分层（**待补环境基址归属**；同名 `AppConfig` 冲突已消除）
 - [ports.md](./ports.md) — 本地端口表（**§4.2 指出存在越界硬编码**）
 - [kratos-migration-status.md](./kratos-migration-status.md) — Kratos 迁移状态板
 - [full-review-2026-09-02.md](./full-review-2026-09-02.md) — 上一次全栈审查快照

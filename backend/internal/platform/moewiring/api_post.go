@@ -59,8 +59,12 @@ func NewAPIPostService() (*postapp.AppService, error) {
 	return postapp.New(db, handDrawRequireModeration(), imageConfigFromMoe()), nil
 }
 
+// handDrawRequireModeration 读 config.yaml 的 runtime.hand_draw_require_moderation。
+// 注意必须带 runtime. 前缀：早先这里读的是顶层键，IsSet 恒为假、恒返回默认值，
+// 把配置改成 true 也不会生效。驼峰别名同样命中不了（viper 会把键小写，
+// 变成 handdrawrequiremoderation），故一并按 moewiring/config.go 的约定去掉。
 func handDrawRequireModeration() bool {
-	return boolOr(moeViper(), []string{"hand_draw_require_moderation", "HandDrawRequireModeration"}, false)
+	return boolOr(moeViper(), []string{"runtime.hand_draw_require_moderation"}, false)
 }
 
 func NewAPICommentService() (*commentapp.AppService, error) {
