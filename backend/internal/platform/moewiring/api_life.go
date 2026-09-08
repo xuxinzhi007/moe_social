@@ -5,6 +5,8 @@ import (
 	lifeapp "backend/internal/service/life"
 )
 
+const livingWorldIntervalSeconds = 5 * 60
+
 // LifeAPIInProcessEnabled reports whether the life engine should run in-process.
 func LifeAPIInProcessEnabled() bool {
 	return domainInProcessEnabled("moe.life_engine_enabled") || domainInProcessEnabled("moe.life_api_in_process")
@@ -19,8 +21,8 @@ func NewAPILifeService() (*lifeapp.AppService, error) {
 	if err != nil {
 		return nil, err
 	}
-	// moeconfig import reserved for future LLM config
 	return lifeapp.New(db, lifeapp.Config{
-		TickInterval: 5, // seconds
+		TickInterval:  livingWorldIntervalSeconds,
+		FlushInterval: livingWorldIntervalSeconds,
 	}), nil
 }

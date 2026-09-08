@@ -164,10 +164,8 @@ class ApiService {
   static final bool _verboseApiLog = kDebugMode;
 
   // 与 [ApiEnvConfig] 同源；[initBaseUrlFromAppConfig] 内会再做规范化。
-  static String _configuredOnlineUrl =
-      ApiEnvConfig.productionUrl;
-  static String _configuredLocalUrl =
-      ApiEnvConfig.developmentUrl;
+  static String _configuredOnlineUrl = ApiEnvConfig.productionUrl;
+  static String _configuredLocalUrl = ApiEnvConfig.developmentUrl;
 
   static String? _normalizeBaseUrl(String? raw) {
     if (raw == null) return null;
@@ -188,17 +186,14 @@ class ApiService {
 
   /// 从 [ApiEnvConfig] 同步 local/online 基址（唯一配置入口）。
   static void _applyApiEnvironment() {
-    _runtimeEnvironment =
-        ApiEnvConfig.isProduction ? _envOnline : _envLocal;
+    _runtimeEnvironment = ApiEnvConfig.isProduction ? _envOnline : _envLocal;
 
-    final urlLocal =
-        _normalizeBaseUrl(ApiEnvConfig.developmentUrl);
+    final urlLocal = _normalizeBaseUrl(ApiEnvConfig.developmentUrl);
     if (urlLocal != null) {
       _configuredLocalUrl = urlLocal;
     }
 
-    final urlOnline =
-        _normalizeBaseUrl(ApiEnvConfig.productionUrl);
+    final urlOnline = _normalizeBaseUrl(ApiEnvConfig.productionUrl);
     if (urlOnline != null) {
       _configuredOnlineUrl = urlOnline;
     }
@@ -2455,14 +2450,15 @@ class ApiService {
   /// 获取道具定义列表。
   static Future<Map<String, dynamic>> getLifeWorld() async {
     final result = await _request('/api/life/world');
-    final summaryRaw = result['summary'];
-    final worldRaw = result['world'];
+    final payload = ApiResponse.payload(result);
+    final summaryRaw = payload['summary'];
+    final worldRaw = payload['world'];
     return {
       'world_id': worldRaw is Map
           ? (worldRaw['name']?.toString() ?? 'default')
           : 'default',
-      'tick': result['tick_count'] ?? result['tickCount'] ?? 0,
-      'entity_count': result['entity_count'] ?? result['entityCount'] ?? 0,
+      'tick': payload['tick_count'] ?? payload['tickCount'] ?? 0,
+      'entity_count': payload['entity_count'] ?? payload['entityCount'] ?? 0,
       'summary': summaryRaw is Map
           ? Map<String, dynamic>.from(summaryRaw)
           : <String, dynamic>{},
@@ -2471,8 +2467,7 @@ class ApiService {
 
   static Future<List<Map<String, dynamic>>> getLifeEntities() async {
     final result = await _request('/api/life/entities');
-    final raw = result['entities'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(result, keys: const ['entities']);
     return raw.whereType<Map>().map((e) {
       final map = Map<String, dynamic>.from(e);
       return <String, dynamic>{
@@ -2495,8 +2490,7 @@ class ApiService {
 
   static Future<List<LifeRelationship>> getLifeRelationships() async {
     final result = await _request('/api/life/relationships');
-    final raw = result['relationships'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(result, keys: const ['relationships']);
     return raw
         .whereType<Map>()
         .map((e) => LifeRelationship.fromJson(Map<String, dynamic>.from(e)))
@@ -2505,8 +2499,7 @@ class ApiService {
 
   static Future<List<LifeEvent>> getLifeEvents([int limit = 50]) async {
     final result = await _request('/api/life/events?limit=$limit');
-    final raw = result['events'];
-    if (raw is! List) return const [];
+    final raw = ApiResponse.listOf(result, keys: const ['events']);
     return raw.whereType<Map>().map((e) {
       final map = Map<String, dynamic>.from(e);
       return LifeEvent.fromJson({

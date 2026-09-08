@@ -105,7 +105,13 @@ flutter build windows  # Windows
 flutter build macos    # macOS
 flutter build linux    # Linux
 ```
+## Windows 处理方案
 
+### 方式 1：杀掉全部 dart/flutter 进程（最管用，PowerShell 执行）
+```bash
+taskkill /f /im dart.exe
+taskkill /f /im flutter.exe
+```
 ## 项目结构
 
 ```
