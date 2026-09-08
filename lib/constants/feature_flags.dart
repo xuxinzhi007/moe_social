@@ -24,8 +24,6 @@ class FeatureFlags {
   /// AutoGLM 自动化（自用）；入口在「设置 → 高级选项」。
   static const bool showAutoGlm = showExperimentalFeatures;
 
-  static const bool showLocalModelSettings = showExperimentalFeatures;
-
   /// AI 伙伴 — 数字生命个人小世界（「TA 的世界」多居民地图）。
   /// 养成主路径为 [arenaGamePrototype] 星辉；本开关只控制世界入口，不隐藏 Companion 聊天。
   static const bool showLifeEngine = false;
@@ -36,11 +34,6 @@ class FeatureFlags {
   static const bool useFlameLifeWorld = true;
 
   // ── AI 陪伴产品约束（见 docs/dev/ai-companion-formal-decisions.md）────
-
-  /// 一期：每用户一个「当前活跃」伙伴（后端 profile 按 user 取）。
-  /// 二期多角色未定形态前，禁止据此做「永远只能一个」的 UI/死逻辑扩展；
-  /// 多角色应在 Companion 域演进，不要复活酒馆大厅。
-  static const bool companionSingleActiveBondPhase1 = true;
 
   /// AIRI 向轻量语音存在感：Companion 聊天语音输入 + 朗读回复。
   /// 不做 Live2D / 形象驱动（决策 13）；仅本机 STT/TTS。

@@ -1,7 +1,8 @@
-# 释放 make moe-social / make dev 占用的开发端口（Windows）
+# 释放 make moe-social / make moe-social-dev / make deploy-agent 占用的开发端口（Windows）
 # 用法: powershell -NoProfile -ExecutionPolicy Bypass -File deploy/scripts/stop-moe-social.ps1
 $ErrorActionPreference = 'SilentlyContinue'
 
+# 8080（旧 go-zero RPC）与 19011（旧 RPC debug）现已无监听者，保留仅为防御性清扫。
 $ports = @(8080, 8888, 19010, 19011, 19012)
 $killed = @{}
 

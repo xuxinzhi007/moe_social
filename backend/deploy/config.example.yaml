@@ -13,7 +13,9 @@ compose_file: "docker-compose.binary.yml"
 # 任务默认超时（秒）
 job_timeout_seconds: 1800
 
-# RPC debug API（make rpc-debug 后 :19011）；Agent 将 /debug/* 转发到此地址
+# RPC debug API 上游；Agent 将 /debug/* 转发到此地址。
+# ⚠️ :19011 的提供方（go-zero rpc -debug）已随 Kratos 单进程迁移移除，当前无进程监听，转发必然 502。
+#    API 进程指标请走 :8888 的 GET /api/admin/runtime/overview。
 rpc_debug_upstream: "http://127.0.0.1:19011"
 
 # Windows 本机任务 shell：auto（已装 Git 则用 Git Bash，与「Git Bash 终端」PATH 一致）| git-bash | cmd

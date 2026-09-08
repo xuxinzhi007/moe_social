@@ -1,8 +1,11 @@
 # 新接口开发（纯 Kratos · 对齐官网）
 
-> **生产入口**：`make moe-social`（Kratos HTTP `:8888` + gRPC `:8080`）  
-> **目录 SSOT**：[kratos-directory-ssot.md](./kratos-directory-ssot.md)  
-> **勿往** `api/defs/*.api` **加新路由**。
+> **生产入口**：`cd backend && make moe-social` → 单进程 Kratos HTTP `:8888`（**无对外 gRPC 监听**）
+> **目录 SSOT**：[kratos-directory-ssot.md](./kratos-directory-ssot.md)（⚠️ 该篇已标注归档）· [moe-social-runtime.md](./moe-social-runtime.md)
+> **新路由一律走域 proto** `backend/api/<domain>/v1/*.proto` 的 `google.api.http`，改完 `make gen`。
+> **最后核对：2026-09-08**
+
+> ⚠️ 本文旧版描述的 `httplegacy` / `compat` 过渡层**已整体删除**：仓库内无 `httplegacy/` 目录、无 `RegisterCompatHTTP`、无 `compat_envelope.go`、无 `http_compat.go`、无 `internal/server/grpc/`。`api/defs/*.api`（go-zero IDL）目录亦已删除。全部路由现在都是 proto 路由。
 
 ---
 
@@ -10,36 +13,40 @@
 
 ```text
 backend/
-  cmd/moe-social/
-  config/config.yaml
+  cmd/moe-social/                  # 唯一生产入口
+  config/config.yaml               # 配置 SSOT（端口取 runtime.http_port）
 
-  api/<domain>/v1/*.proto          # ★ 契约 SSOT（含 google.api.http）
-  api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go   # make gen
-  openapi.yaml                     # OpenAPI 3.0（make gen 产出）
+  api/<domain>/v1/*.proto                    # ★ 契约 SSOT（含 google.api.http）
+  api/<domain>/v1/*.{pb,grpc.pb,http.pb}.go   # make gen 产出
+  api/etc/moe.yaml                            # API 结构片段（runtime.api_config_fragment）
+  openapi.yaml                                # OpenAPI 3.0（make gen 产出）
 
   internal/biz/<domain>/
   internal/service/<domain>/
 
   internal/server/
-    http.go                 # NewHTTPServer（CORS + 双信封 Filter）
+    http.go                 # NewHTTPServer（CORS + 信封 Filter）；直挂 /health、/kratos/v1/moe/runtimes
     http_envelope.go        # Proto 响应/错误信封
-    compat_envelope.go      # Compat BaseResp.data 压平
-    http_proto.go           # Register*HTTPServer（19 次注册）
-    http_compat.go          # 编排 httplegacy（45 条余量）
-    httplegacy/
-    grpc/<domain>/          # adminapp、llm、vipplans、content…
-    grpc.go
+    http_proto.go           # RegisterProtoHTTP → 28 处 Register*HTTPServer
+    http_deps.go            # ProtoHTTPDeps / ProtoHTTPDepsFromServiceContext
+    auth.go · cors.go · request_log.go · http_ops.go · http_docs.go · deps.go
+    protohttp/<domain>/     # 27 个域的 Server + handler
+    transport/              # websocket / sse / oauth / bind 等非 proto 通道
+    routestats/             # protoHTTPRouteCount（make gen-proto-route-count 产出）
+    swaggerdoc/             # /swagger UI + openapi.yaml 静态服务
 
-  internal/platform/{svc,wiring,moesocial,kratosprogress}/
-  internal/apilegacy/swaggerdoc/   # /swagger UI + openapi.yaml 静态服务
+  internal/platform/{svc,wiring,moesocial,moewiring,moeconf,apicomm,apiconfig,bootstrap,…}/
+  internal/legacy/types/    # 旧 go-zero types（仅存量结构体，无路由）
+```
 
 **生产请求路径**：
 
 ```text
 Client → :8888
-  → RegisterProtoHTTP（proto 生成路由，优先）
-  → RegisterCompatHTTP（httplegacy，仅未迁入 proto 的路由）
-  → internal/service → internal/biz → internal/data
+  → internal/server/http.go  NewHTTPServer(addr, deps)
+  → RegisterProtoHTTP(srv, deps.Proto)        # http_proto.go:113
+  → internal/server/protohttp/<domain>
+  → internal/service/<domain> → internal/biz → internal/data
 ```
 
 ---
@@ -48,19 +55,23 @@ Client → :8888
 
 | 修改 | 命令 | 产出 |
 |------|------|------|
-| 域 proto | **`make gen`** | `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go`、**`openapi.yaml`** |
+| 域 proto + conf + 路由计数 | **`make gen`** | `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go`、**`openapi.yaml`**、`routestats/proto_routes_gen.go` |
 | 仅 OpenAPI 文档 | `make gen-swagger` | `openapi.yaml`（OpenAPI 3.0.3） |
-| 路由表同步 | `make gen-http-routes` | `httplegacy/routes_*_gen.go` |
-| 存量 defs | `make gen-api`（慎用） | handler + 可能在 `api/internal/types` 重生 types |
+| 仅路由计数 | `make gen-proto-route-count` | `internal/server/routestats/proto_routes_gen.go` |
+| 单模块 proto | `make api-one PROTO=api/<mod>/v1/<mod>.proto` | 该模块三个 `.pb.go` |
+| 管理台 gen + 编译 | `make gen-moe-admin` | 见 `scripts/gen/moe-admin.sh` |
+
+> ✗ 已删除的 target：`make gen-api`、`make gen-rpc`、`make gen-http-routes`、`make audit-logic-orphans`（goctl 链，见 [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) 归档说明）。
 
 **OpenAPI / Apifox**：见 [openapi-apifox.md](./openapi-apifox.md)。
 
 **日常只改 proto 时：`make gen` 足够。**
 
-- 新机器若缺 `protoc-gen-go-http`，`make gen` 会**自动 `go install`**。
-- 可选预装：`make init-proto-tools`（仅一次）。
+- 工具链是 `protoc` + `protoc-gen-go` / `-go-grpc` / `-go-http` / `-openapi`，**不再需要 goctl**。
+- 新机器先 `make init-proto-tools`（`go install` 四个插件）。`protoc` 本体需自行安装。
+- ⚠️ 仓库内 `.pb.go` 由 protoc v5.29.3 / protoc-gen-go-grpc v1.6.2 生成。本机版本不同会让 `make gen` 产生**只改版本注释行**的噪音 diff，提交前请检查 `git diff` 是否只有注释变化。
 
-`make gen` **不会**生成 `internal/service` 或 HTTP 注册代码——需在 `http_proto.go` 增加 `Register*HTTPServer`（与 core-platform 相同）。
+`make gen` **不会**生成 `internal/service` 或 HTTP 注册代码——需在 `http_proto.go` 增加 `Register*HTTPServer`。
 
 ---
 
@@ -104,9 +115,9 @@ internal/server/protohttp/example/example_<feature>.go
 
 **文件命名**：`{domain}.go` 放结构体与构造函数；`{domain}_{feature}.go` 按职责拆分（如 `user_login.go`、`post_write.go`）。禁止新增 `app.go` / `service.go` / 域级 `server.go`。
 
-### 3.4 注册 HTTP（官方）
+### 3.4 注册 HTTP
 
-在 `internal/server/http_proto.go` 增加：
+在 `internal/server/http_proto.go` 的 `RegisterProtoHTTP` 内增加：
 
 ```go
 if d.ExampleApp != nil {
@@ -114,14 +125,14 @@ if d.ExampleApp != nil {
 }
 ```
 
-在 `internal/server/http_deps.go` 的 `ProtoHTTPDepsFromPilot` 注入 `ExampleApp`。
-
-**不要**再往 `httplegacy/*_compat.go` 加新路由。
+在 `internal/server/http_deps.go` 的 `ProtoHTTPDeps` 加字段，并在 `ProtoHTTPDepsFromServiceContext`（:34）注入 `ExampleApp`。
 
 ### 3.5 校验
 
 ```bash
-make check && make moe-social
+cd backend
+make check          # go build ./cmd/moe-social + moesocial/routestats 单测
+make moe-social
 curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 ```
 
@@ -131,52 +142,75 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 
 | ❌ | ✅ |
 |----|-----|
-| 新路由进 `api/defs` | `api/<domain>/v1/*.proto` + `google.api.http` |
-| 新路由进 `httplegacy` | `make gen` + `http_proto.go` |
-| 指望 `make gen` 出 handler | 手写 service + Register*HTTPServer |
-| `make gen-api` 扩生产路由 | 仅存量维护 |
+| 找 `api/defs` 加路由 | 目录已删；改 `api/<domain>/v1/*.proto` + `google.api.http` |
+| 找 `httplegacy` 加路由 | 目录已删；`make gen` + `http_proto.go` |
+| 指望 `make gen` 出 handler / service | 手写 `internal/service` + `internal/server/protohttp` |
+| 跑 `make gen-api` / `make gen-rpc` | target 已删；用 `make gen` |
+| 业务写回 `api/internal/logic` | 目录已删；写 `internal/biz` |
 
 ---
 
-## 5. 参考实现（已迁入 proto HTTP · 2026-05-27）
+## 5. 参考实现
+
+`internal/server/protohttp/` 下已有 **27** 个域适配，可直接照抄：
 
 | 域 | Proto | HTTP 适配 | 说明 |
 |----|-------|-----------|------|
-| Post / Gift / Notify | `api/post|gift|notify/v1` | `protohttp/post` 等 | 社交基础 |
+| Post / Comment / Gift / Notify | `api/post|comment|gift|notify/v1` | `protohttp/post` 等 | 社交基础 |
 | User | `api/user/v1/user_messages.proto` | `protohttp/user` | 登录/社交/钱包 |
-| Admin | `api/admin/v1/admin_messages.proto` | `protohttp/adminapp` | 管理台 |
-| MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/moe_extended.go` · `platform/platform_moe.go` | 工具/大脑 |
+| Admin | `api/admin/v1/admin_messages.proto` | `protohttp/adminapp` · `protohttp/admininsights` | 管理台 |
+| MoeAdmin | `api/moe/v1/moe.proto` | `protohttp/moe_extended.go` | 工具/大脑 |
 
-**仍走 httplegacy（45 条，P2）**：`platform`（17）· `community`（7）· `chat` 余量（6）· `ai`（4）· 图片静态（4）· OAuth 回调（2）· `llm_read`（2）· `checkin`（2）· SSE（1）。详见 [kratos-architecture-audit.md §2.4](./kratos-architecture-audit.md)。
+完整目录清单（`ls backend/internal/server/protohttp/`）：
+`achievement` `adminapp` `admininsights` `ai` `arena` `battle` `behavior` `chat` `checkin` `comment` `community` `companion` `content` `game` `gift` `landing` `life` `llm` `media` `notify` `pet` `platform` `post` `user` `vip` `vipplans` `vipread`
+
+> 旧版本文这里列的「仍走 httplegacy（45 条，P2）」清单已作废——compat 层已删除，全部路由均为 proto 路由。
 
 ---
 
 ## 6. 存量接口
 
-老契约在 `api/defs`。**`make gen-api`** 会在 `api/internal/types` 重生 types（已迁到 `internal/legacy/types`），用后需手动合并或避免运行。业务维护在 `internal/biz` + `internal/service`；未迁 proto 的路径仍在 `httplegacy`。
+老契约 `api/defs` 与 `api/internal/types` **均已删除**；残留的旧结构体在 `internal/legacy/types/types.go`，仅供 handler 复用，不再由任何生成器产出。
 
-迁移进度：`GET http://127.0.0.1:8888/migration`（**2026-05-27**：proto **227** · compat **45** · `percent=100`）。
+业务维护在 `internal/biz` + `internal/service`。
+
+迁移进度指标：`internal/server/routestats`（`make gen-proto-route-count` 从 `api/**/v1/*_http.pb.go` 统计）。
+⚠️ 旧文档提到的 `GET :8888/migration` 路由**已不存在**；`internal/server/http.go:35-37` 只直挂 `/health` 与 `/kratos/v1/moe/runtimes`。
 
 ---
 
 ## 7. 响应 JSON
 
-### Proto 路由
+### 成功信封
 
-由 `http_envelope.go` 包装：
+`internal/server/http_envelope.go:84` `marshalEnvelopeSuccess` 实测输出——proto 字段**嵌在 `data` 里**，不是压平到顶层：
 
 ```json
-{ "code": 200, "message": "操作成功", "success": true, "posts": [], "total": 0 }
+{ "code": 200, "success": true, "message": "操作成功", "data": { "posts": [], "total": 0 } }
 ```
 
-错误：`{ "code": <int>, "message": "...", "success": false, "reason": "..." }`。
+### 错误信封
 
-### Compat 路由（P0 已压平）
+`http_envelope.go:53` `EnvelopeErrorEncoder`：
 
-compat handler 仍写 `BaseResp` + `data`，但 **`compat_envelope.go` Filter** 在写出前将 object `data` 合并到顶层，对外形状与 proto 一致。
+```json
+{ "code": 500, "message": "...", "success": false, "reason": "..." }
+```
 
-跳过信封/压平：`/health`、`/migration`、`/swagger`、`/ws` 等。
+`reason` 仅在有值时出现。HTTP 状态码由 `mapErrorHTTPStatus` 从 Kratos 错误码映射。
 
-Flutter：`lib/services/api_response.dart` 仍兼容历史 `data` 嵌套。
+### 跳过信封的路径
 
-**新接口勿再增加 compat 路由。**
+`envelopeSkipPrefixes`（`http_envelope.go:21-25`）实测只有三条前缀：
+
+| 前缀 | 说明 |
+|------|------|
+| `/health` | 健康检查 |
+| `/swagger` | Swagger UI |
+| `/doc` | 文档静态 |
+
+> ⚠️ 旧版本文称 `/migration`、`/ws` 也跳过——`/migration` 路由已不存在；`/ws/*`（`internal/server/transport/websocket.go:23-27`）走 WebSocket 升级，不经过 JSON 编码器。
+
+### Flutter 侧
+
+`lib/services/api_response.dart` 兼容历史 `data` 嵌套，与上述信封一致。

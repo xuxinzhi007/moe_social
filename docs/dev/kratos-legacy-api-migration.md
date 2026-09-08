@@ -1,6 +1,9 @@
 # 存量 HTTP 接口迁移评估
 
 > **状态快照更新：2026-05-27**  
+> ⚠️ **命令已失效（2026-09-08 核对）**：下文 `make gen-http-routes`、`make gen-api` 两个 target 已从 `backend/Makefile` 删除；
+> 本文讨论的 compat / `httplegacy` 过渡层亦已**整体移除**（无目录、无 `RegisterCompatHTTP`），故「compat **45**」现为 **0**，全部路由均为 proto 路由。
+> 现行生成链只有 `make gen` / `make gen-swagger` / `make gen-proto-route-count` / `make api-one`，见 [new-api-kratos.md](./new-api-kratos.md)。  
 > **活跃路由数以** [kratos-migration-status.md §D2](./kratos-migration-status.md) **为准**（proto **227** · compat **45**）。  
 > 下文「263」等为 **P3 历史基线**，勿用于当前进度汇报。  
 > **状态板（勾选 / 汇报用）**：[kratos-migration-status.md](./kratos-migration-status.md)  

@@ -1,5 +1,11 @@
 # 记忆子系统模块地图
 
+> ⚠️ **历史设计（已整体移除，勿照做）**：本文描述的子系统已在 `14edac0e`（2026-06-29「移除了一些不需要的能力」）删除，
+> 共 68 个文件、2116 行。`backend/pkg/memory`、`backend/rpc`、`lib/memory` 三个目录**均已不存在**，
+> `HybridSearch` / `SearchFacing` / `BuildProfiles` / `HybridSearchUserFacingMemories` 全仓零命中。
+> 下文分层职责表、目录约定与迁移计划仅作当初的设计意图参考，**不要据此去找代码或新增实现**。
+> 若要重做记忆能力，先从产品级 SSOT [用户记忆系统-OpenClaw式演进设计.md](../用户记忆系统-OpenClaw式演进设计.md) 重新出发。
+
 通用「记忆文本库」架构的目录约定与迁移计划。产品级 SSOT 见 [用户记忆系统-OpenClaw式演进设计.md](../用户记忆系统-OpenClaw式演进设计.md)。
 
 **文档导航**：[docs/index.html](../../index.html) · **监控台**：[memory-system-dashboard.html](../memory-system-dashboard.html)

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domain": "backend",
-  "generatedAt": "2026-08-01T05:08:48.990Z",
+  "generatedAt": "2026-09-08T11:22:52.554Z",
   "nodes": [
     {
       "weight": 4,
@@ -72,6 +72,28 @@
       "label": "ai",
       "summary": "backend/api/ai",
       "ref_id": "backend/api/ai",
+      "meta": {
+        "layer": "proto"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "proto:arena",
+      "kind": "domain",
+      "label": "arena",
+      "summary": "backend/api/arena",
+      "ref_id": "backend/api/arena",
+      "meta": {
+        "layer": "proto"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "proto:battle",
+      "kind": "domain",
+      "label": "battle",
+      "summary": "backend/api/battle",
+      "ref_id": "backend/api/battle",
       "meta": {
         "layer": "proto"
       }
@@ -341,6 +363,22 @@
     },
     {
       "weight": 2,
+      "id": "service:arena",
+      "kind": "service",
+      "label": "arena service",
+      "summary": "backend/internal/service/arena",
+      "ref_id": "backend/internal/service/arena"
+    },
+    {
+      "weight": 2,
+      "id": "service:battle",
+      "kind": "service",
+      "label": "battle service",
+      "summary": "backend/internal/service/battle",
+      "ref_id": "backend/internal/service/battle"
+    },
+    {
+      "weight": 2,
       "id": "service:behavior",
       "kind": "service",
       "label": "behavior service",
@@ -533,6 +571,22 @@
     },
     {
       "weight": 2,
+      "id": "biz:arena",
+      "kind": "biz",
+      "label": "arena biz",
+      "summary": "backend/internal/biz/arena",
+      "ref_id": "backend/internal/biz/arena"
+    },
+    {
+      "weight": 2,
+      "id": "biz:battle",
+      "kind": "biz",
+      "label": "battle biz",
+      "summary": "backend/internal/biz/battle",
+      "ref_id": "backend/internal/biz/battle"
+    },
+    {
+      "weight": 2,
       "id": "biz:behavior",
       "kind": "biz",
       "label": "behavior biz",
@@ -602,6 +656,14 @@
       "label": "game biz",
       "summary": "backend/internal/biz/game",
       "ref_id": "backend/internal/biz/game"
+    },
+    {
+      "weight": 2,
+      "id": "biz:game_network",
+      "kind": "biz",
+      "label": "game_network biz",
+      "summary": "backend/internal/biz/game_network",
+      "ref_id": "backend/internal/biz/game_network"
     },
     {
       "weight": 2,
@@ -704,7 +766,7 @@
       "id": "httpdomain:adminapp",
       "kind": "http_domain",
       "label": "adminapp",
-      "summary": "76 operations",
+      "summary": "78 operations",
       "ref_id": "backend/openapi.yaml"
     },
     {
@@ -946,6 +1008,32 @@
       "meta": {
         "method": "post",
         "operationId": "AdminApp_AdminPublishAnnouncement",
+        "domain": "adminapp"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/admin/app-release",
+      "kind": "http_op",
+      "label": "GET /api/admin/app-release",
+      "summary": "AdminApp_AdminGetAppRelease",
+      "ref_id": "/api/admin/app-release",
+      "meta": {
+        "method": "get",
+        "operationId": "AdminApp_AdminGetAppRelease",
+        "domain": "adminapp"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:put:/api/admin/app-release",
+      "kind": "http_op",
+      "label": "PUT /api/admin/app-release",
+      "summary": "AdminApp_AdminUpsertAppRelease",
+      "ref_id": "/api/admin/app-release",
+      "meta": {
+        "method": "put",
+        "operationId": "AdminApp_AdminUpsertAppRelease",
         "domain": "adminapp"
       }
     },
@@ -2411,7 +2499,7 @@
       "id": "httpdomain:platform",
       "kind": "http_domain",
       "label": "platform",
-      "summary": "19 operations",
+      "summary": "20 operations",
       "ref_id": "backend/openapi.yaml"
     },
     {
@@ -2438,6 +2526,92 @@
         "method": "get",
         "operationId": "Platform_GetAnnouncement",
         "domain": "platform"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "httpdomain:arena",
+      "kind": "http_domain",
+      "label": "arena",
+      "summary": "6 operations",
+      "ref_id": "backend/openapi.yaml"
+    },
+    {
+      "weight": 1,
+      "id": "op:put:/api/arena/deck",
+      "kind": "http_op",
+      "label": "PUT /api/arena/deck",
+      "summary": "Arena_SaveDeck",
+      "ref_id": "/api/arena/deck",
+      "meta": {
+        "method": "put",
+        "operationId": "Arena_SaveDeck",
+        "domain": "arena"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:put:/api/arena/formation",
+      "kind": "http_op",
+      "label": "PUT /api/arena/formation",
+      "summary": "Arena_SetFormation",
+      "ref_id": "/api/arena/formation",
+      "meta": {
+        "method": "put",
+        "operationId": "Arena_SetFormation",
+        "domain": "arena"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/arena/home/gift",
+      "kind": "http_op",
+      "label": "POST /api/arena/home/gift",
+      "summary": "Arena_HomeGift",
+      "ref_id": "/api/arena/home/gift",
+      "meta": {
+        "method": "post",
+        "operationId": "Arena_HomeGift",
+        "domain": "arena"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/arena/state",
+      "kind": "http_op",
+      "label": "GET /api/arena/state",
+      "summary": "Arena_GetState",
+      "ref_id": "/api/arena/state",
+      "meta": {
+        "method": "get",
+        "operationId": "Arena_GetState",
+        "domain": "arena"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/arena/summon",
+      "kind": "http_op",
+      "label": "POST /api/arena/summon",
+      "summary": "Arena_Summon",
+      "ref_id": "/api/arena/summon",
+      "meta": {
+        "method": "post",
+        "operationId": "Arena_Summon",
+        "domain": "arena"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/arena/tower/clear",
+      "kind": "http_op",
+      "label": "POST /api/arena/tower/clear",
+      "summary": "Arena_ClearTower",
+      "ref_id": "/api/arena/tower/clear",
+      "meta": {
+        "method": "post",
+        "operationId": "Arena_ClearTower",
+        "domain": "arena"
       }
     },
     {
@@ -2576,6 +2750,79 @@
         "method": "put",
         "operationId": "UserService_UpdateUserAvatar",
         "domain": "userservice"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "httpdomain:battleservice",
+      "kind": "http_domain",
+      "label": "battleservice",
+      "summary": "5 operations",
+      "ref_id": "backend/openapi.yaml"
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/battles",
+      "kind": "http_op",
+      "label": "POST /api/battles",
+      "summary": "BattleService_CreateRoom",
+      "ref_id": "/api/battles",
+      "meta": {
+        "method": "post",
+        "operationId": "BattleService_CreateRoom",
+        "domain": "battleservice"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/battles/{roomId}",
+      "kind": "http_op",
+      "label": "GET /api/battles/{roomId}",
+      "summary": "BattleService_GetRoom",
+      "ref_id": "/api/battles/{roomId}",
+      "meta": {
+        "method": "get",
+        "operationId": "BattleService_GetRoom",
+        "domain": "battleservice"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/battles/{roomId}/finish",
+      "kind": "http_op",
+      "label": "POST /api/battles/{roomId}/finish",
+      "summary": "BattleService_FinishRoom",
+      "ref_id": "/api/battles/{roomId}/finish",
+      "meta": {
+        "method": "post",
+        "operationId": "BattleService_FinishRoom",
+        "domain": "battleservice"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/battles/{roomId}/gifts",
+      "kind": "http_op",
+      "label": "POST /api/battles/{roomId}/gifts",
+      "summary": "BattleService_SendBattleGift",
+      "ref_id": "/api/battles/{roomId}/gifts",
+      "meta": {
+        "method": "post",
+        "operationId": "BattleService_SendBattleGift",
+        "domain": "battleservice"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/battles/{roomId}/start",
+      "kind": "http_op",
+      "label": "POST /api/battles/{roomId}/start",
+      "summary": "BattleService_StartRoom",
+      "ref_id": "/api/battles/{roomId}/start",
+      "meta": {
+        "method": "post",
+        "operationId": "BattleService_StartRoom",
+        "domain": "battleservice"
       }
     },
     {
@@ -2789,7 +3036,7 @@
       "id": "httpdomain:companion",
       "kind": "http_domain",
       "label": "companion",
-      "summary": "5 operations",
+      "summary": "21 operations",
       "ref_id": "backend/openapi.yaml"
     },
     {
@@ -2807,6 +3054,45 @@
     },
     {
       "weight": 1,
+      "id": "op:get:/api/companion/community-identity",
+      "kind": "http_op",
+      "label": "GET /api/companion/community-identity",
+      "summary": "Companion_GetCommunityIdentity",
+      "ref_id": "/api/companion/community-identity",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_GetCommunityIdentity",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/context/preview",
+      "kind": "http_op",
+      "label": "GET /api/companion/context/preview",
+      "summary": "Companion_GetContextPreview",
+      "ref_id": "/api/companion/context/preview",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_GetContextPreview",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/events",
+      "kind": "http_op",
+      "label": "GET /api/companion/events",
+      "summary": "Companion_ListEvents",
+      "ref_id": "/api/companion/events",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_ListEvents",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
       "id": "op:get:/api/companion/memories",
       "kind": "http_op",
       "label": "GET /api/companion/memories",
@@ -2815,6 +3101,149 @@
       "meta": {
         "method": "get",
         "operationId": "Companion_ListMemories",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:put:/api/companion/memories/{memoryId}",
+      "kind": "http_op",
+      "label": "PUT /api/companion/memories/{memoryId}",
+      "summary": "Companion_UpdateMemory",
+      "ref_id": "/api/companion/memories/{memoryId}",
+      "meta": {
+        "method": "put",
+        "operationId": "Companion_UpdateMemory",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:delete:/api/companion/memories/{memoryId}",
+      "kind": "http_op",
+      "label": "DELETE /api/companion/memories/{memoryId}",
+      "summary": "Companion_DeleteMemory",
+      "ref_id": "/api/companion/memories/{memoryId}",
+      "meta": {
+        "method": "delete",
+        "operationId": "Companion_DeleteMemory",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/companion/memories/{memoryId}/confirm",
+      "kind": "http_op",
+      "label": "POST /api/companion/memories/{memoryId}/confirm",
+      "summary": "Companion_ConfirmMemory",
+      "ref_id": "/api/companion/memories/{memoryId}/confirm",
+      "meta": {
+        "method": "post",
+        "operationId": "Companion_ConfirmMemory",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/companion/memories/{memoryId}/pin",
+      "kind": "http_op",
+      "label": "POST /api/companion/memories/{memoryId}/pin",
+      "summary": "Companion_SetMemoryPinned",
+      "ref_id": "/api/companion/memories/{memoryId}/pin",
+      "meta": {
+        "method": "post",
+        "operationId": "Companion_SetMemoryPinned",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/memory-conflicts",
+      "kind": "http_op",
+      "label": "GET /api/companion/memory-conflicts",
+      "summary": "Companion_ListMemoryConflicts",
+      "ref_id": "/api/companion/memory-conflicts",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_ListMemoryConflicts",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/companion/memory-conflicts/{conflictId}/resolve",
+      "kind": "http_op",
+      "label": "POST /api/companion/memory-conflicts/{conflictId}/resolve",
+      "summary": "Companion_ResolveMemoryConflict",
+      "ref_id": "/api/companion/memory-conflicts/{conflictId}/resolve",
+      "meta": {
+        "method": "post",
+        "operationId": "Companion_ResolveMemoryConflict",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/proactive-deliveries",
+      "kind": "http_op",
+      "label": "GET /api/companion/proactive-deliveries",
+      "summary": "Companion_ListProactiveDeliveries",
+      "ref_id": "/api/companion/proactive-deliveries",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_ListProactiveDeliveries",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/proactive-settings",
+      "kind": "http_op",
+      "label": "GET /api/companion/proactive-settings",
+      "summary": "Companion_GetProactiveSettings",
+      "ref_id": "/api/companion/proactive-settings",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_GetProactiveSettings",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:put:/api/companion/proactive-settings",
+      "kind": "http_op",
+      "label": "PUT /api/companion/proactive-settings",
+      "summary": "Companion_UpdateProactiveSettings",
+      "ref_id": "/api/companion/proactive-settings",
+      "meta": {
+        "method": "put",
+        "operationId": "Companion_UpdateProactiveSettings",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/companion/proactive/revoke",
+      "kind": "http_op",
+      "label": "POST /api/companion/proactive/revoke",
+      "summary": "Companion_RevokeProactiveDelivery",
+      "ref_id": "/api/companion/proactive/revoke",
+      "meta": {
+        "method": "post",
+        "operationId": "Companion_RevokeProactiveDelivery",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/companion/proactive/{notificationId}/read",
+      "kind": "http_op",
+      "label": "POST /api/companion/proactive/{notificationId}/read",
+      "summary": "Companion_MarkProactiveRead",
+      "ref_id": "/api/companion/proactive/{notificationId}/read",
+      "meta": {
+        "method": "post",
+        "operationId": "Companion_MarkProactiveRead",
         "domain": "companion"
       }
     },
@@ -2846,6 +3275,19 @@
     },
     {
       "weight": 1,
+      "id": "op:get:/api/companion/relationship-events",
+      "kind": "http_op",
+      "label": "GET /api/companion/relationship-events",
+      "summary": "Companion_ListRelationshipEvents",
+      "ref_id": "/api/companion/relationship-events",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_ListRelationshipEvents",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
       "id": "op:get:/api/companion/state",
       "kind": "http_op",
       "label": "GET /api/companion/state",
@@ -2854,6 +3296,19 @@
       "meta": {
         "method": "get",
         "operationId": "Companion_GetState",
+        "domain": "companion"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/companion/timeline",
+      "kind": "http_op",
+      "label": "GET /api/companion/timeline",
+      "summary": "Companion_GetTimeline",
+      "ref_id": "/api/companion/timeline",
+      "meta": {
+        "method": "get",
+        "operationId": "Companion_GetTimeline",
         "domain": "companion"
       }
     },
@@ -3388,6 +3843,209 @@
     },
     {
       "weight": 2,
+      "id": "httpdomain:petlifesim",
+      "kind": "http_domain",
+      "label": "petlifesim",
+      "summary": "15 operations",
+      "ref_id": "backend/openapi.yaml"
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/adventure",
+      "kind": "http_op",
+      "label": "POST /api/pet/adventure",
+      "summary": "PetLifeSim_Adventure",
+      "ref_id": "/api/pet/adventure",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Adventure",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/age-up",
+      "kind": "http_op",
+      "label": "POST /api/pet/age-up",
+      "summary": "PetLifeSim_AgeUp",
+      "ref_id": "/api/pet/age-up",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_AgeUp",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/baby",
+      "kind": "http_op",
+      "label": "POST /api/pet/baby",
+      "summary": "PetLifeSim_HaveBaby",
+      "ref_id": "/api/pet/baby",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_HaveBaby",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/care",
+      "kind": "http_op",
+      "label": "POST /api/pet/care",
+      "summary": "PetLifeSim_Care",
+      "ref_id": "/api/pet/care",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Care",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/dress",
+      "kind": "http_op",
+      "label": "POST /api/pet/dress",
+      "summary": "PetLifeSim_Dress",
+      "ref_id": "/api/pet/dress",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Dress",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/feed",
+      "kind": "http_op",
+      "label": "POST /api/pet/feed",
+      "summary": "PetLifeSim_Feed",
+      "ref_id": "/api/pet/feed",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Feed",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/friend",
+      "kind": "http_op",
+      "label": "POST /api/pet/friend",
+      "summary": "PetLifeSim_AddFriend",
+      "ref_id": "/api/pet/friend",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_AddFriend",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/furniture",
+      "kind": "http_op",
+      "label": "POST /api/pet/furniture",
+      "summary": "PetLifeSim_PlaceFurniture",
+      "ref_id": "/api/pet/furniture",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_PlaceFurniture",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/iap/verify",
+      "kind": "http_op",
+      "label": "POST /api/pet/iap/verify",
+      "summary": "PetLifeSim_VerifyIap",
+      "ref_id": "/api/pet/iap/verify",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_VerifyIap",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/marry",
+      "kind": "http_op",
+      "label": "POST /api/pet/marry",
+      "summary": "PetLifeSim_Marry",
+      "ref_id": "/api/pet/marry",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Marry",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/scene",
+      "kind": "http_op",
+      "label": "POST /api/pet/scene",
+      "summary": "PetLifeSim_SetScene",
+      "ref_id": "/api/pet/scene",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_SetScene",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/shop/buy",
+      "kind": "http_op",
+      "label": "POST /api/pet/shop/buy",
+      "summary": "PetLifeSim_BuySoft",
+      "ref_id": "/api/pet/shop/buy",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_BuySoft",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/pet/state",
+      "kind": "http_op",
+      "label": "GET /api/pet/state",
+      "summary": "PetLifeSim_GetState",
+      "ref_id": "/api/pet/state",
+      "meta": {
+        "method": "get",
+        "operationId": "PetLifeSim_GetState",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/study",
+      "kind": "http_op",
+      "label": "POST /api/pet/study",
+      "summary": "PetLifeSim_Study",
+      "ref_id": "/api/pet/study",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Study",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:post:/api/pet/work",
+      "kind": "http_op",
+      "label": "POST /api/pet/work",
+      "summary": "PetLifeSim_Work",
+      "ref_id": "/api/pet/work",
+      "meta": {
+        "method": "post",
+        "operationId": "PetLifeSim_Work",
+        "domain": "petlifesim"
+      }
+    },
+    {
+      "weight": 2,
       "id": "httpdomain:postservice",
       "kind": "http_domain",
       "label": "postservice",
@@ -3582,6 +4240,19 @@
         "method": "delete",
         "operationId": "PrivateMessageService_ClearPrivateChatHistory",
         "domain": "privatemessageservice"
+      }
+    },
+    {
+      "weight": 1,
+      "id": "op:get:/api/public/app-release/latest",
+      "kind": "http_op",
+      "label": "GET /api/public/app-release/latest",
+      "summary": "Platform_GetLatestAppRelease",
+      "ref_id": "/api/public/app-release/latest",
+      "meta": {
+        "method": "get",
+        "operationId": "Platform_GetLatestAppRelease",
+        "domain": "platform"
       }
     },
     {
@@ -4815,6 +5486,20 @@
       "weight": 1
     },
     {
+      "id": "e:layer:proto|contains|proto:arena",
+      "source": "layer:proto",
+      "target": "proto:arena",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:proto|contains|proto:battle",
+      "source": "layer:proto",
+      "target": "proto:battle",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
       "id": "e:layer:proto|contains|proto:behavior",
       "source": "layer:proto",
       "target": "proto:behavior",
@@ -5008,6 +5693,34 @@
       "source": "layer:service",
       "target": "service:appcfg",
       "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:service|contains|service:arena",
+      "source": "layer:service",
+      "target": "service:arena",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:proto:arena|implements|service:arena",
+      "source": "proto:arena",
+      "target": "service:arena",
+      "relation": "implements",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:service|contains|service:battle",
+      "source": "layer:service",
+      "target": "service:battle",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:proto:battle|implements|service:battle",
+      "source": "proto:battle",
+      "target": "service:battle",
+      "relation": "implements",
       "weight": 1
     },
     {
@@ -5340,6 +6053,34 @@
       "weight": 1
     },
     {
+      "id": "e:layer:biz|contains|biz:arena",
+      "source": "layer:biz",
+      "target": "biz:arena",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:service:arena|calls|biz:arena",
+      "source": "service:arena",
+      "target": "biz:arena",
+      "relation": "calls",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:biz|contains|biz:battle",
+      "source": "layer:biz",
+      "target": "biz:battle",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:service:battle|calls|biz:battle",
+      "source": "service:battle",
+      "target": "biz:battle",
+      "relation": "calls",
+      "weight": 1
+    },
+    {
       "id": "e:layer:biz|contains|biz:behavior",
       "source": "layer:biz",
       "target": "biz:behavior",
@@ -5456,6 +6197,13 @@
       "source": "service:game",
       "target": "biz:game",
       "relation": "calls",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:biz|contains|biz:game_network",
+      "source": "layer:biz",
+      "target": "biz:game_network",
+      "relation": "contains",
       "weight": 1
     },
     {
@@ -5888,6 +6636,34 @@
     {
       "id": "e:op:post:/api/admin/announcements/{announcementId}/publish|http_to_service|service:admin",
       "source": "op:post:/api/admin/announcements/{announcementId}/publish",
+      "target": "service:admin",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:adminapp|exposes|op:get:/api/admin/app-release",
+      "source": "httpdomain:adminapp",
+      "target": "op:get:/api/admin/app-release",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/admin/app-release|http_to_service|service:admin",
+      "source": "op:get:/api/admin/app-release",
+      "target": "service:admin",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:adminapp|exposes|op:put:/api/admin/app-release",
+      "source": "httpdomain:adminapp",
+      "target": "op:put:/api/admin/app-release",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:put:/api/admin/app-release|http_to_service|service:admin",
+      "source": "op:put:/api/admin/app-release",
       "target": "service:admin",
       "relation": "http_to_service",
       "weight": 1
@@ -7475,6 +8251,97 @@
       "weight": 1
     },
     {
+      "id": "e:layer:http|contains|httpdomain:arena",
+      "source": "layer:http",
+      "target": "httpdomain:arena",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:put:/api/arena/deck",
+      "source": "httpdomain:arena",
+      "target": "op:put:/api/arena/deck",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:put:/api/arena/deck|http_to_service|service:arena",
+      "source": "op:put:/api/arena/deck",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:put:/api/arena/formation",
+      "source": "httpdomain:arena",
+      "target": "op:put:/api/arena/formation",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:put:/api/arena/formation|http_to_service|service:arena",
+      "source": "op:put:/api/arena/formation",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:post:/api/arena/home/gift",
+      "source": "httpdomain:arena",
+      "target": "op:post:/api/arena/home/gift",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/arena/home/gift|http_to_service|service:arena",
+      "source": "op:post:/api/arena/home/gift",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:get:/api/arena/state",
+      "source": "httpdomain:arena",
+      "target": "op:get:/api/arena/state",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/arena/state|http_to_service|service:arena",
+      "source": "op:get:/api/arena/state",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:post:/api/arena/summon",
+      "source": "httpdomain:arena",
+      "target": "op:post:/api/arena/summon",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/arena/summon|http_to_service|service:arena",
+      "source": "op:post:/api/arena/summon",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:arena|exposes|op:post:/api/arena/tower/clear",
+      "source": "httpdomain:arena",
+      "target": "op:post:/api/arena/tower/clear",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/arena/tower/clear|http_to_service|service:arena",
+      "source": "op:post:/api/arena/tower/clear",
+      "target": "service:arena",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
       "id": "e:layer:http|contains|httpdomain:userservice",
       "source": "layer:http",
       "target": "httpdomain:userservice",
@@ -7618,6 +8485,83 @@
       "id": "e:op:put:/api/avatar/{userId}|http_to_service|service:user",
       "source": "op:put:/api/avatar/{userId}",
       "target": "service:user",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:http|contains|httpdomain:battleservice",
+      "source": "layer:http",
+      "target": "httpdomain:battleservice",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:battleservice|exposes|op:post:/api/battles",
+      "source": "httpdomain:battleservice",
+      "target": "op:post:/api/battles",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/battles|http_to_service|service:battle",
+      "source": "op:post:/api/battles",
+      "target": "service:battle",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:battleservice|exposes|op:get:/api/battles/{roomId}",
+      "source": "httpdomain:battleservice",
+      "target": "op:get:/api/battles/{roomId}",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/battles/{roomId}|http_to_service|service:battle",
+      "source": "op:get:/api/battles/{roomId}",
+      "target": "service:battle",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:battleservice|exposes|op:post:/api/battles/{roomId}/finish",
+      "source": "httpdomain:battleservice",
+      "target": "op:post:/api/battles/{roomId}/finish",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/battles/{roomId}/finish|http_to_service|service:battle",
+      "source": "op:post:/api/battles/{roomId}/finish",
+      "target": "service:battle",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:battleservice|exposes|op:post:/api/battles/{roomId}/gifts",
+      "source": "httpdomain:battleservice",
+      "target": "op:post:/api/battles/{roomId}/gifts",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/battles/{roomId}/gifts|http_to_service|service:battle",
+      "source": "op:post:/api/battles/{roomId}/gifts",
+      "target": "service:battle",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:battleservice|exposes|op:post:/api/battles/{roomId}/start",
+      "source": "httpdomain:battleservice",
+      "target": "op:post:/api/battles/{roomId}/start",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/battles/{roomId}/start|http_to_service|service:battle",
+      "source": "op:post:/api/battles/{roomId}/start",
+      "target": "service:battle",
       "relation": "http_to_service",
       "weight": 1
     },
@@ -7860,6 +8804,48 @@
       "weight": 1
     },
     {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/community-identity",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/community-identity",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/community-identity|http_to_service|service:companion",
+      "source": "op:get:/api/companion/community-identity",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/context/preview",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/context/preview",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/context/preview|http_to_service|service:companion",
+      "source": "op:get:/api/companion/context/preview",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/events",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/events",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/events|http_to_service|service:companion",
+      "source": "op:get:/api/companion/events",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
       "id": "e:httpdomain:companion|exposes|op:get:/api/companion/memories",
       "source": "httpdomain:companion",
       "target": "op:get:/api/companion/memories",
@@ -7869,6 +8855,160 @@
     {
       "id": "e:op:get:/api/companion/memories|http_to_service|service:companion",
       "source": "op:get:/api/companion/memories",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:put:/api/companion/memories/{memoryId}",
+      "source": "httpdomain:companion",
+      "target": "op:put:/api/companion/memories/{memoryId}",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:put:/api/companion/memories/{memoryId}|http_to_service|service:companion",
+      "source": "op:put:/api/companion/memories/{memoryId}",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:delete:/api/companion/memories/{memoryId}",
+      "source": "httpdomain:companion",
+      "target": "op:delete:/api/companion/memories/{memoryId}",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:delete:/api/companion/memories/{memoryId}|http_to_service|service:companion",
+      "source": "op:delete:/api/companion/memories/{memoryId}",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:post:/api/companion/memories/{memoryId}/confirm",
+      "source": "httpdomain:companion",
+      "target": "op:post:/api/companion/memories/{memoryId}/confirm",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/companion/memories/{memoryId}/confirm|http_to_service|service:companion",
+      "source": "op:post:/api/companion/memories/{memoryId}/confirm",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:post:/api/companion/memories/{memoryId}/pin",
+      "source": "httpdomain:companion",
+      "target": "op:post:/api/companion/memories/{memoryId}/pin",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/companion/memories/{memoryId}/pin|http_to_service|service:companion",
+      "source": "op:post:/api/companion/memories/{memoryId}/pin",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/memory-conflicts",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/memory-conflicts",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/memory-conflicts|http_to_service|service:companion",
+      "source": "op:get:/api/companion/memory-conflicts",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:post:/api/companion/memory-conflicts/{conflictId}/resolve",
+      "source": "httpdomain:companion",
+      "target": "op:post:/api/companion/memory-conflicts/{conflictId}/resolve",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/companion/memory-conflicts/{conflictId}/resolve|http_to_service|service:companion",
+      "source": "op:post:/api/companion/memory-conflicts/{conflictId}/resolve",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/proactive-deliveries",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/proactive-deliveries",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/proactive-deliveries|http_to_service|service:companion",
+      "source": "op:get:/api/companion/proactive-deliveries",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/proactive-settings",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/proactive-settings",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/proactive-settings|http_to_service|service:companion",
+      "source": "op:get:/api/companion/proactive-settings",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:put:/api/companion/proactive-settings",
+      "source": "httpdomain:companion",
+      "target": "op:put:/api/companion/proactive-settings",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:put:/api/companion/proactive-settings|http_to_service|service:companion",
+      "source": "op:put:/api/companion/proactive-settings",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:post:/api/companion/proactive/revoke",
+      "source": "httpdomain:companion",
+      "target": "op:post:/api/companion/proactive/revoke",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/companion/proactive/revoke|http_to_service|service:companion",
+      "source": "op:post:/api/companion/proactive/revoke",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:post:/api/companion/proactive/{notificationId}/read",
+      "source": "httpdomain:companion",
+      "target": "op:post:/api/companion/proactive/{notificationId}/read",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/companion/proactive/{notificationId}/read|http_to_service|service:companion",
+      "source": "op:post:/api/companion/proactive/{notificationId}/read",
       "target": "service:companion",
       "relation": "http_to_service",
       "weight": 1
@@ -7902,6 +9042,20 @@
       "weight": 1
     },
     {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/relationship-events",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/relationship-events",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/relationship-events|http_to_service|service:companion",
+      "source": "op:get:/api/companion/relationship-events",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
       "id": "e:httpdomain:companion|exposes|op:get:/api/companion/state",
       "source": "httpdomain:companion",
       "target": "op:get:/api/companion/state",
@@ -7911,6 +9065,20 @@
     {
       "id": "e:op:get:/api/companion/state|http_to_service|service:companion",
       "source": "op:get:/api/companion/state",
+      "target": "service:companion",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:companion|exposes|op:get:/api/companion/timeline",
+      "source": "httpdomain:companion",
+      "target": "op:get:/api/companion/timeline",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/companion/timeline|http_to_service|service:companion",
+      "source": "op:get:/api/companion/timeline",
       "target": "service:companion",
       "relation": "http_to_service",
       "weight": 1
@@ -8385,6 +9553,223 @@
       "weight": 1
     },
     {
+      "id": "e:layer:http|contains|httpdomain:petlifesim",
+      "source": "layer:http",
+      "target": "httpdomain:petlifesim",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/adventure",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/adventure",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/adventure|http_to_service|service:life",
+      "source": "op:post:/api/pet/adventure",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/age-up",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/age-up",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/age-up|http_to_service|service:life",
+      "source": "op:post:/api/pet/age-up",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/baby",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/baby",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/baby|http_to_service|service:life",
+      "source": "op:post:/api/pet/baby",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/care",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/care",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/care|http_to_service|service:life",
+      "source": "op:post:/api/pet/care",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/dress",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/dress",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/dress|http_to_service|service:life",
+      "source": "op:post:/api/pet/dress",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/feed",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/feed",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/feed|http_to_service|service:life",
+      "source": "op:post:/api/pet/feed",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/friend",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/friend",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/friend|http_to_service|service:life",
+      "source": "op:post:/api/pet/friend",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/furniture",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/furniture",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/furniture|http_to_service|service:life",
+      "source": "op:post:/api/pet/furniture",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/iap/verify",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/iap/verify",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/iap/verify|http_to_service|service:life",
+      "source": "op:post:/api/pet/iap/verify",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/marry",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/marry",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/marry|http_to_service|service:life",
+      "source": "op:post:/api/pet/marry",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/scene",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/scene",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/scene|http_to_service|service:life",
+      "source": "op:post:/api/pet/scene",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/shop/buy",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/shop/buy",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/shop/buy|http_to_service|service:life",
+      "source": "op:post:/api/pet/shop/buy",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:get:/api/pet/state",
+      "source": "httpdomain:petlifesim",
+      "target": "op:get:/api/pet/state",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:get:/api/pet/state|http_to_service|service:life",
+      "source": "op:get:/api/pet/state",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/study",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/study",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/study|http_to_service|service:life",
+      "source": "op:post:/api/pet/study",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:petlifesim|exposes|op:post:/api/pet/work",
+      "source": "httpdomain:petlifesim",
+      "target": "op:post:/api/pet/work",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:op:post:/api/pet/work|http_to_service|service:life",
+      "source": "op:post:/api/pet/work",
+      "target": "service:life",
+      "relation": "http_to_service",
+      "weight": 1
+    },
+    {
       "id": "e:layer:http|contains|httpdomain:postservice",
       "source": "layer:http",
       "target": "httpdomain:postservice",
@@ -8563,6 +9948,13 @@
       "id": "e:httpdomain:privatemessageservice|exposes|op:delete:/api/private-messages/history",
       "source": "httpdomain:privatemessageservice",
       "target": "op:delete:/api/private-messages/history",
+      "relation": "exposes",
+      "weight": 1
+    },
+    {
+      "id": "e:httpdomain:platform|exposes|op:get:/api/public/app-release/latest",
+      "source": "httpdomain:platform",
+      "target": "op:get:/api/public/app-release/latest",
       "relation": "exposes",
       "weight": 1
     },
@@ -9779,11 +11171,11 @@
     }
   ],
   "stats": {
-    "nodeCount": 401,
-    "edgeCount": 716,
-    "httpOps": 296,
-    "serviceDomains": 24,
-    "bizDomains": 25,
-    "protoDomains": 24
+    "nodeCount": 456,
+    "edgeCount": 819,
+    "httpOps": 341,
+    "serviceDomains": 26,
+    "bizDomains": 28,
+    "protoDomains": 26
   }
 }

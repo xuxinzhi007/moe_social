@@ -28,16 +28,11 @@ admin:
     password: "admin123"
 
 api:
-  # go-zero REST 超时（毫秒）。LLM 首次加载模型可能较慢，建议 >= 180000
+  # ⚠️ 只写不读：wiring/config_override.go 把它灌进 apiconfig.Config.Timeout，但全仓无读者。
+  #    LLM 超时请调 llm_inference.timeout_seconds（那个是真生效的）。本键待 Step 2 随 apiconfig 一并清除。
   timeout_ms: 600000
   # 对外 API 根地址（与 Flutter AppConfig.productionUrl 一致；feishu.redirect_uri 留空时用于拼回调）
   public_base_url: "http://47.106.175.49:8888"
-  # API→RPC 地址（可选）。Docker 推荐用 compose 环境变量 MOE_SUPER_RPC_ENDPOINT=rpc:8080；
-  # 本机 go run 勿配置此项，沿用 api/etc/moe.yaml 的 127.0.0.1:8080。
-  # super_rpc_endpoints:
-  #   - rpc:8080
-  # API→RPC gRPC 超时（毫秒）。Moe 试跑/润色/工具执行需与 LLM 同量级，建议 >= 600000
-  super_rpc_timeout_ms: 600000
 
 # 飞书：企业自建应用机器人（非群自定义 Webhook）
 # 1. 开放平台创建企业自建应用，拿到 App ID / App Secret

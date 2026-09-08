@@ -13,7 +13,7 @@
 - [ ] `backend/config/config.yaml` 中 `feishu.enabled: true`，且 `redirect_uri`、`oauth_scope` 已填
 - [ ] API 服务已启动（默认 `:8888`）
 - [ ] **Web**：`redirect_uri` 使用本机可访问地址（如 `http://127.0.0.1:8888/api/auth/feishu/callback`）
-- [ ] **真机 App**：`redirect_uri` 与 `lib/config/moe_api.json` 的 `api_base_url` 指向同一台 API（如 `http://47.106.175.49:8888/api/auth/feishu/callback`）
+- [ ] **真机 App**：`redirect_uri` 与 `lib/utils/config.dart` 的 `AppConfig.productionUrl` 指向同一台 API（如 `http://47.106.175.49:8888/api/auth/feishu/callback`）；真机走 online 需 `isProduction: true`
 - [ ] Flutter 已 `flutter pub get`（含 `app_links`）；修改深链配置后已 **重新安装 App**（非仅热重载）
 
 ---
@@ -23,7 +23,7 @@
 | 检查项 | Web（Chrome） | 真机 App |
 |--------|---------------|----------|
 | 运行方式 | `flutter run -d chrome` | `flutter run` 选 iOS/Android 设备 |
-| `moe_api.json` | 可与 API 一致 | **必须**能访问公网/局域网 API |
+| `AppConfig`（`lib/utils/config.dart`） | `developmentUrl` 可与 API 一致 | `productionUrl` **必须**能访问公网/局域网 API，且 `isProduction: true` |
 | `redirect_uri` 示例 | `http://127.0.0.1:8888/api/auth/feishu/callback` | `http://<API主机>:8888/api/auth/feishu/callback` |
 | OAuth `state` | 当前页 origin | `moesocial://feishu/oauth` |
 | 授权打开方式 | 浏览器整页跳转 | 飞书 App（AppLink） |
@@ -90,7 +90,7 @@ curl -s -X POST "http://127.0.0.1:8888/api/auth/feishu/login" \
 
 > **不要用 Chrome 测 App 流程**。Chrome 走 Web 分支，不会检测飞书安装、也不会走深链。
 
-1. 将 `config.yaml` 的 `redirect_uri` 改为真机可访问的 API（与 `moe_api.json` 一致）。
+1. 将 `config.yaml` 的 `redirect_uri` 改为真机可访问的 API（与 `AppConfig.productionUrl` 一致）。
 2. 飞书开放平台重定向 URL 同步修改。
 3. `flutter run` 安装到真机（修改 `AndroidManifest` / `Info.plist` 后建议完整重装）。
 4. 手机已安装 **飞书**（包名 Android：`com.ss.android.lark`）。

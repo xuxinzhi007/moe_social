@@ -397,9 +397,10 @@
 
   <main>
     <div class="alert" id="setupHint">
-      使用前请先：<code>make rpc-debug</code>，再 <code>make deploy-agent</code> 打开工具台 → RPC 监控标签。
-      Agent 将 <code>/debug/*</code> 转发到 RPC debug（:19011）。
-      然后用浏览器打开本文件（或通过本地静态服务访问）。
+      ⚠️ <strong>本页当前无数据源。</strong>
+      数据来自 RPC debug（:19011），其提供方 <code>rpc/super.go</code> 与 <code>make rpc-debug</code> 已随 Kratos 单进程迁移删除，
+      <strong>没有任何命令能让 :19011 活起来</strong>，Agent 的 <code>/debug/*</code> 转发必然 502。
+      API 进程内存/Goroutine 指标请改用 <code>GET http://127.0.0.1:8888/api/admin/runtime/overview</code>（需 Admin Token）。
     </div>
 
     <div class="status-bar">
@@ -711,8 +712,9 @@
         $('lastUpdate').textContent = '';
         $('setupHint').style.display = 'block';
         $('setupHint').innerHTML =
-          '连接失败：' + escapeHtml(e.message) +
-          '。请先在本机终端执行 <code>make rpc-debug</code>（:19011），再刷新。';
+          '连接失败（预期行为）：' + escapeHtml(e.message) +
+          '。:19011 的提供方已随 go-zero RPC 进程移除，<strong>无命令可恢复</strong>；' +
+          'API 进程指标请改用 <code>:8888/api/admin/runtime/overview</code>。';
       }
     }
 
@@ -789,7 +791,7 @@
           if (lbl) lbl.classList.add('embed-hidden');
           const hint = $('setupHint');
           if (hint) {
-            hint.innerHTML = '使用 <code>make moe-social</code> / <code>make dev</code> 时会自动开启 :19011；数据经 Agent <code>/debug/*</code> 转发。';
+            hint.innerHTML = '数据经 Agent <code>/debug/*</code> 转发到 :19011；该端口的提供方已移除，正常情况下此处不会连通。';
           }
         }
       }

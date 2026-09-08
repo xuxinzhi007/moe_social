@@ -10,11 +10,13 @@
 | [aurora-arena-ssot.md](./aurora-arena-ssot.md) | **星辉远征（Arena）域 SSOT** |
 | [aurora-living-world-plan.md](./aurora-living-world-plan.md) | **星辉活世界方案**（英雄 AI + Life 转向合并，方案已定稿未实施） |
 | [full-review-2026-09-02.md](./full-review-2026-09-02.md) | 全栈审查快照（产品方向 / 代码 / UI + P0-P2 行动项） |
+| [config-hygiene-review-2026-09-08.md](./config-hygiene-review-2026-09-08.md) | **配置治理审查**（凭据 / 地址多副本 / 真源冲突 / 死配置 / 4 套部署链 + 6 批整改路线） |
 | [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层** |
 | [../product/product-positioning.md](../product/product-positioning.md) | 产品定位与边界 |
+| [moe-social-runtime.md](./moe-social-runtime.md) | **后端运行时 SSOT**（单进程 Kratos HTTP :8888、启动/生成/冒烟、已废弃命令对照） |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |
 | [快速调试步骤.md](./快速调试步骤.md) | Flutter 模拟器与运行 |
-| [ports.md](./ports.md) | 本地端口（API 8888、Admin 5173） |
+| [ports.md](./ports.md) | 本地端口（:8888 业务、:19010 Agent、:5173 Admin）· 含「已无监听者的端口」表；硬编码越界见 [配置治理审查 §4.2](./config-hygiene-review-2026-09-08.md) |
 | [API调试指南.md](./API调试指南.md) | 接口调试 |
 | [应用配置与全局常量分层约定.md](./应用配置与全局常量分层约定.md) | 配置分层 |
 | [打包流程.md](./打包流程.md) | 构建发布 |
@@ -31,9 +33,9 @@
 | [openapi-apifox.md](./openapi-apifox.md) | OpenAPI 3.0 / Apifox |
 | [kratos-legacy-api-migration.md](./kratos-legacy-api-migration.md) | 存量 compat 历史清单（§2） |
 | [kratos-server-layout-migration.md](./kratos-server-layout-migration.md) | `internal/server` 目录收敛 |
-| [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) | `make gen-api` 纪律 |
-| [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | 管理台启动、RPC 监控 |
-| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | 可选分体 api/rpc 部署 |
+| [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) | ⚠️ **已归档**：goctl 链（`make gen-api` / `audit-logic-orphans`）整体移除，仅作迁移期记录 |
+| [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) | 管理台启动、运行时内存指标（⚠️ RPC 监控链路已断，见文内 §0） |
+| [kratos-p5-split-deploy.md](./kratos-p5-split-deploy.md) | ⚠️ **已失效**：分体 api/rpc 部署随 `backend/rpc/` 目录删除而不可能，现为单进程 |
 | [kratos-p6-defs-to-proto.md](./kratos-p6-defs-to-proto.md) | P6 契约迁移 |
 | [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | 仓库目录 |
 

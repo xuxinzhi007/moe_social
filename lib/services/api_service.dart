@@ -163,14 +163,11 @@ class ApiService {
   /// 是否输出完整请求/响应体（默认关闭，避免 Console 刷屏）
   static final bool _verboseApiLog = kDebugMode;
 
-  // 与 [moe_launch_config.AppConfig] 同源；[initRemoteProductionBaseUrl] 内会再做规范化。
+  // 与 [moe_launch_config.AppConfig] 同源；[initBaseUrlFromAppConfig] 内会再做规范化。
   static String _configuredOnlineUrl =
       moe_launch_config.AppConfig.productionUrl;
   static String _configuredLocalUrl =
       moe_launch_config.AppConfig.developmentUrl;
-
-  /// online 模式下由 [initRemoteProductionBaseUrl] 写入；未初始化前为 null 时 [baseUrl] 用配置里的 online 地址。
-  static String? _runtimeProductionBaseUrl;
 
   static String? _normalizeBaseUrl(String? raw) {
     if (raw == null) return null;
@@ -189,7 +186,7 @@ class ApiService {
     return s;
   }
 
-  /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口，勿再使用 api_env.json）。
+  /// 从 [moe_launch_config.AppConfig] 同步 local/online 基址（唯一配置入口）。
   static void _applyApiEnvironmentFromAppConfig() {
     _runtimeEnvironment =
         moe_launch_config.AppConfig.isProduction ? _envOnline : _envLocal;
@@ -212,19 +209,15 @@ class ApiService {
   }
 
   /// 在 [main] 里 `WidgetsFlutterBinding` 之后、`AuthService.init` 之前调用一次。
-  /// isProduction=true → 直接用 [AppConfig.productionUrl]；false → [developmentUrl]。
-  static Future<void> initRemoteProductionBaseUrl() async {
+  /// isProduction=true → 用 [AppConfig.productionUrl]；false → [developmentUrl]。
+  ///
+  /// 纯本地同步，不发任何网络请求（远程解析链 `RemoteApiConfigService` 已删除，
+  /// 故方法名不再带 Remote）。保持 async 只为满足 `StartupTask.task` 的签名。
+  static Future<void> initBaseUrlFromAppConfig() async {
     _applyApiEnvironmentFromAppConfig();
 
-    if (_runtimeEnvironment == _envLocal) {
-      _runtimeProductionBaseUrl = null;
-      return;
-    }
-
-    _runtimeProductionBaseUrl = _configuredOnlineUrl;
-    if (kDebugMode) {
-      debugPrint(
-          'API: online 模式，基址=$_runtimeProductionBaseUrl（来自 config.dart）');
+    if (kDebugMode && _runtimeEnvironment == _envOnline) {
+      debugPrint('API: online 模式，基址=$_configuredOnlineUrl（来自 config.dart）');
     }
   }
 
@@ -233,7 +226,7 @@ class ApiService {
     if (_runtimeEnvironment == _envLocal) {
       return _configuredLocalUrl;
     }
-    return _runtimeProductionBaseUrl ?? _configuredOnlineUrl;
+    return _configuredOnlineUrl;
   }
 
   /// 与 [_performRequest] 相同：给任意 `Uri`（含 LLM 页里 `package:http` 直连）合并 ngrok 跳过页头。

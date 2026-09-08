@@ -66,7 +66,11 @@ backend/deploy/.moe-build-cache/
 /coverage/
 backend/cover.out
 backend/coverage.html
+/cover.out
 *.coverprofile
+
+# jscpd / duplication analysis reports (debug artifacts, regenerable)
+duplication-report/
 
 # React ops console
 ops-console/node_modules/

@@ -192,7 +192,7 @@ class SplashScreenWrapper extends StatelessWidget {
     startupManager.addTasks([
       StartupTask(
         name: 'API Config',
-        task: () => ApiService.initRemoteProductionBaseUrl(),
+        task: () => ApiService.initBaseUrlFromAppConfig(),
         critical: true,
       ),
       StartupTask(

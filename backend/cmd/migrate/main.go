@@ -1,4 +1,4 @@
-// 独立 schema 迁移：只连库、跑 AutoMigrate、退出，不启动 RPC/API。
+// 独立 schema 迁移：只连库、跑 AutoMigrate、退出，不启动 moe-social 服务。
 //
 // 用法（在 backend/ 目录）:
 //

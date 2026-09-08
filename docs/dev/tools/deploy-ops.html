@@ -759,7 +759,7 @@
             <button class="btn btn-mint" onclick="runRemotePathCheck()">检查 backend_dir</button>
           </div>
           <div class="panel-body">
-            <pre class="log" id="remoteCheckOut" style="max-height:180px">点击检查：backend_dir、compose、MOE_SUPER_RPC_ENDPOINT=rpc:8080、API 容器环境变量</pre>
+            <pre class="log" id="remoteCheckOut" style="max-height:180px">点击检查：backend_dir、compose 文件、bin/moe-social 是否存在、moe-social 容器运行状态</pre>
           </div>
         </div>
         <div class="panel">
@@ -770,7 +770,8 @@
               <option value="docker-compose.yml">docker-compose.yml</option>
               <option value="config.yaml">config.yaml</option>
               <option value="config/config.yaml">config/config.yaml（运行时）</option>
-              <option value="api/etc/super.yaml">api/etc/super.yaml（go-zero API）</option>
+              <option value="api/etc/moe.yaml">api/etc/moe.yaml（API 结构片段）</option>
+              <option value="Modelfile">Modelfile</option>
             </select>
             <div class="btn-row">
               <button class="btn btn-ghost" onclick="loadRemoteConfig()">读取</button>
@@ -1389,13 +1390,17 @@
       try {
         const data = await api('/api/deploy/remote-check?target=cloud');
         const c = data.check || {};
+        const yn = (v) => (v ? '是' : '否');
         let lines = (c.message || '') + '\n\n';
-        lines += `backend_dir: ${c.backend_dir}\n存在: ${c.backend_dir_exists ? '是' : '否'}\n`;
-        lines += `compose: ${c.compose_file} 存在: ${c.compose_file_exists ? '是' : '否'}\n`;
-        lines += `compose MOE_SUPER_RPC_ENDPOINT: ${c.compose_rpc_env_ok ? 'rpc:8080 已配置' : '未配置/错误'}\n`;
-        lines += `config super_rpc_endpoints: ${c.config_rpc_endpoints_ok ? '是' : '否'}  API 容器 env: ${c.api_container_rpc_env_ok || '—'}\n`;
-        if (c.legacy_super_docker_yaml) lines += '⚠ 仍存在旧版 api/etc/super-docker.yaml，建议删除\n';
-        lines += `API→RPC 配置就绪: ${c.rpc_config_ok ? '是' : '否'}\n`;
+        lines += `backend_dir: ${c.backend_dir}\n存在: ${yn(c.backend_dir_exists)}\n`;
+        lines += `compose: ${c.compose_file} 存在: ${yn(c.compose_file_exists)}\n`;
+        lines += `bin/moe-social 存在: ${yn(c.binary_exists)}\n`;
+        // container_running 是 "yes" | "no" | "na" 三态字符串，不是布尔
+        lines += `容器 moe-social: ${c.container_running === 'yes' ? '运行中'
+          : c.container_running === 'no' ? '已停止' : '不适用（未装 docker 或非容器部署）'}\n`;
+        // ⚠️ 此处原先渲染 MOE_SUPER_RPC_ENDPOINT / super_rpc_endpoints / rpc_config_ok 等字段，
+        //    但 API→RPC 分体部署已随 go-zero 退役，RemoteCheckResult 不再返回它们，
+        //    undefined 恒为假会显示成「未配置/错误」的误报。勿按旧字段名加回来。
         if (c.suggested_backend_dir) lines += `\n建议改为:\n  backend_dir: "${c.suggested_backend_dir}"\n`;
         if ((c.compose_candidates || []).length) lines += '\n发现的 compose:\n' + c.compose_candidates.join('\n');
         if (c.raw_output) lines += '\n---\n' + c.raw_output;

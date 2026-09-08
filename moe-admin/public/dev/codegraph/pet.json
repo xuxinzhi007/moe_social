@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domain": "pet",
-  "generatedAt": "2026-08-01T05:08:48.964Z",
+  "generatedAt": "2026-09-08T11:22:52.540Z",
   "nodes": [
     {
       "weight": 4,
@@ -294,11 +294,55 @@
     },
     {
       "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/top_hoodie_walk.png",
+      "kind": "asset",
+      "label": "top_hoodie_walk.png",
+      "summary": "layers/slots/top_hoodie_walk.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/top_hoodie_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/top_hoodie_idle.png",
+      "kind": "asset",
+      "label": "top_hoodie_idle.png",
+      "summary": "layers/slots/top_hoodie_idle.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/top_hoodie_idle.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
       "id": "pack:admin-public:avatar:item:top_tee",
       "kind": "item",
       "label": "top_tee",
       "summary": "slot=top",
       "ref_id": "moe-admin/public/pet/moe_content/avatar#slots.top.top_tee"
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/top_tee_walk.png",
+      "kind": "asset",
+      "label": "top_tee_walk.png",
+      "summary": "layers/slots/top_tee_walk.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/top_tee_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/top_tee_idle.png",
+      "kind": "asset",
+      "label": "top_tee_idle.png",
+      "summary": "layers/slots/top_tee_idle.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/top_tee_idle.png",
+      "meta": {
+        "exists": true
+      }
     },
     {
       "weight": 1,
@@ -340,6 +384,28 @@
     },
     {
       "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/bottom_jeans_walk.png",
+      "kind": "asset",
+      "label": "bottom_jeans_walk.png",
+      "summary": "layers/slots/bottom_jeans_walk.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/bottom_jeans_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/bottom_jeans_idle.png",
+      "kind": "asset",
+      "label": "bottom_jeans_idle.png",
+      "summary": "layers/slots/bottom_jeans_idle.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/bottom_jeans_idle.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
       "id": "pack:admin-public:avatar:item:shoes_basic",
       "kind": "item",
       "label": "shoes_basic",
@@ -375,6 +441,28 @@
       "label": "shoes_sneaker",
       "summary": "slot=shoes",
       "ref_id": "moe-admin/public/pet/moe_content/avatar#slots.shoes.shoes_sneaker"
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/shoes_sneaker_walk.png",
+      "kind": "asset",
+      "label": "shoes_sneaker_walk.png",
+      "summary": "layers/slots/shoes_sneaker_walk.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/shoes_sneaker_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:admin-public:asset:layers/slots/shoes_sneaker_idle.png",
+      "kind": "asset",
+      "label": "shoes_sneaker_idle.png",
+      "summary": "layers/slots/shoes_sneaker_idle.png",
+      "ref_id": "moe-admin/public/pet/moe_content/avatar/layers/slots/shoes_sneaker_idle.png",
+      "meta": {
+        "exists": true
+      }
     },
     {
       "weight": 2,
@@ -722,11 +810,55 @@
     },
     {
       "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/top_hoodie_walk.png",
+      "kind": "asset",
+      "label": "top_hoodie_walk.png",
+      "summary": "layers/slots/top_hoodie_walk.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/top_hoodie_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/top_hoodie_idle.png",
+      "kind": "asset",
+      "label": "top_hoodie_idle.png",
+      "summary": "layers/slots/top_hoodie_idle.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/top_hoodie_idle.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
       "id": "pack:flutter-assets:avatar:item:top_tee",
       "kind": "item",
       "label": "top_tee",
       "summary": "slot=top",
       "ref_id": "assets/pet/moe_content/avatar#slots.top.top_tee"
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/top_tee_walk.png",
+      "kind": "asset",
+      "label": "top_tee_walk.png",
+      "summary": "layers/slots/top_tee_walk.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/top_tee_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/top_tee_idle.png",
+      "kind": "asset",
+      "label": "top_tee_idle.png",
+      "summary": "layers/slots/top_tee_idle.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/top_tee_idle.png",
+      "meta": {
+        "exists": true
+      }
     },
     {
       "weight": 1,
@@ -768,6 +900,28 @@
     },
     {
       "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/bottom_jeans_walk.png",
+      "kind": "asset",
+      "label": "bottom_jeans_walk.png",
+      "summary": "layers/slots/bottom_jeans_walk.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/bottom_jeans_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/bottom_jeans_idle.png",
+      "kind": "asset",
+      "label": "bottom_jeans_idle.png",
+      "summary": "layers/slots/bottom_jeans_idle.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/bottom_jeans_idle.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
       "id": "pack:flutter-assets:avatar:item:shoes_basic",
       "kind": "item",
       "label": "shoes_basic",
@@ -803,6 +957,28 @@
       "label": "shoes_sneaker",
       "summary": "slot=shoes",
       "ref_id": "assets/pet/moe_content/avatar#slots.shoes.shoes_sneaker"
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/shoes_sneaker_walk.png",
+      "kind": "asset",
+      "label": "shoes_sneaker_walk.png",
+      "summary": "layers/slots/shoes_sneaker_walk.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/shoes_sneaker_walk.png",
+      "meta": {
+        "exists": true
+      }
+    },
+    {
+      "weight": 1,
+      "id": "pack:flutter-assets:asset:layers/slots/shoes_sneaker_idle.png",
+      "kind": "asset",
+      "label": "shoes_sneaker_idle.png",
+      "summary": "layers/slots/shoes_sneaker_idle.png",
+      "ref_id": "assets/pet/moe_content/avatar/layers/slots/shoes_sneaker_idle.png",
+      "meta": {
+        "exists": true
+      }
     }
   ],
   "edges": [
@@ -1038,16 +1214,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:top_hoodie|asset|pack:admin-public:asset:layers/slots/top_basic_walk.png",
+      "id": "e:pack:admin-public:avatar:item:top_hoodie|asset|pack:admin-public:asset:layers/slots/top_hoodie_walk.png",
       "source": "pack:admin-public:avatar:item:top_hoodie",
-      "target": "pack:admin-public:asset:layers/slots/top_basic_walk.png",
+      "target": "pack:admin-public:asset:layers/slots/top_hoodie_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:top_hoodie|asset|pack:admin-public:asset:layers/slots/top_basic_idle.png",
+      "id": "e:pack:admin-public:avatar:item:top_hoodie|asset|pack:admin-public:asset:layers/slots/top_hoodie_idle.png",
       "source": "pack:admin-public:avatar:item:top_hoodie",
-      "target": "pack:admin-public:asset:layers/slots/top_basic_idle.png",
+      "target": "pack:admin-public:asset:layers/slots/top_hoodie_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1059,16 +1235,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:top_tee|asset|pack:admin-public:asset:layers/slots/top_basic_walk.png",
+      "id": "e:pack:admin-public:avatar:item:top_tee|asset|pack:admin-public:asset:layers/slots/top_tee_walk.png",
       "source": "pack:admin-public:avatar:item:top_tee",
-      "target": "pack:admin-public:asset:layers/slots/top_basic_walk.png",
+      "target": "pack:admin-public:asset:layers/slots/top_tee_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:top_tee|asset|pack:admin-public:asset:layers/slots/top_basic_idle.png",
+      "id": "e:pack:admin-public:avatar:item:top_tee|asset|pack:admin-public:asset:layers/slots/top_tee_idle.png",
       "source": "pack:admin-public:avatar:item:top_tee",
-      "target": "pack:admin-public:asset:layers/slots/top_basic_idle.png",
+      "target": "pack:admin-public:asset:layers/slots/top_tee_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1101,16 +1277,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:bottom_jeans|asset|pack:admin-public:asset:layers/slots/bottom_basic_walk.png",
+      "id": "e:pack:admin-public:avatar:item:bottom_jeans|asset|pack:admin-public:asset:layers/slots/bottom_jeans_walk.png",
       "source": "pack:admin-public:avatar:item:bottom_jeans",
-      "target": "pack:admin-public:asset:layers/slots/bottom_basic_walk.png",
+      "target": "pack:admin-public:asset:layers/slots/bottom_jeans_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:bottom_jeans|asset|pack:admin-public:asset:layers/slots/bottom_basic_idle.png",
+      "id": "e:pack:admin-public:avatar:item:bottom_jeans|asset|pack:admin-public:asset:layers/slots/bottom_jeans_idle.png",
       "source": "pack:admin-public:avatar:item:bottom_jeans",
-      "target": "pack:admin-public:asset:layers/slots/bottom_basic_idle.png",
+      "target": "pack:admin-public:asset:layers/slots/bottom_jeans_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1143,16 +1319,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:shoes_sneaker|asset|pack:admin-public:asset:layers/slots/shoes_basic_walk.png",
+      "id": "e:pack:admin-public:avatar:item:shoes_sneaker|asset|pack:admin-public:asset:layers/slots/shoes_sneaker_walk.png",
       "source": "pack:admin-public:avatar:item:shoes_sneaker",
-      "target": "pack:admin-public:asset:layers/slots/shoes_basic_walk.png",
+      "target": "pack:admin-public:asset:layers/slots/shoes_sneaker_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:admin-public:avatar:item:shoes_sneaker|asset|pack:admin-public:asset:layers/slots/shoes_basic_idle.png",
+      "id": "e:pack:admin-public:avatar:item:shoes_sneaker|asset|pack:admin-public:asset:layers/slots/shoes_sneaker_idle.png",
       "source": "pack:admin-public:avatar:item:shoes_sneaker",
-      "target": "pack:admin-public:asset:layers/slots/shoes_basic_idle.png",
+      "target": "pack:admin-public:asset:layers/slots/shoes_sneaker_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1451,16 +1627,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:top_hoodie|asset|pack:flutter-assets:asset:layers/slots/top_basic_walk.png",
+      "id": "e:pack:flutter-assets:avatar:item:top_hoodie|asset|pack:flutter-assets:asset:layers/slots/top_hoodie_walk.png",
       "source": "pack:flutter-assets:avatar:item:top_hoodie",
-      "target": "pack:flutter-assets:asset:layers/slots/top_basic_walk.png",
+      "target": "pack:flutter-assets:asset:layers/slots/top_hoodie_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:top_hoodie|asset|pack:flutter-assets:asset:layers/slots/top_basic_idle.png",
+      "id": "e:pack:flutter-assets:avatar:item:top_hoodie|asset|pack:flutter-assets:asset:layers/slots/top_hoodie_idle.png",
       "source": "pack:flutter-assets:avatar:item:top_hoodie",
-      "target": "pack:flutter-assets:asset:layers/slots/top_basic_idle.png",
+      "target": "pack:flutter-assets:asset:layers/slots/top_hoodie_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1472,16 +1648,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:top_tee|asset|pack:flutter-assets:asset:layers/slots/top_basic_walk.png",
+      "id": "e:pack:flutter-assets:avatar:item:top_tee|asset|pack:flutter-assets:asset:layers/slots/top_tee_walk.png",
       "source": "pack:flutter-assets:avatar:item:top_tee",
-      "target": "pack:flutter-assets:asset:layers/slots/top_basic_walk.png",
+      "target": "pack:flutter-assets:asset:layers/slots/top_tee_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:top_tee|asset|pack:flutter-assets:asset:layers/slots/top_basic_idle.png",
+      "id": "e:pack:flutter-assets:avatar:item:top_tee|asset|pack:flutter-assets:asset:layers/slots/top_tee_idle.png",
       "source": "pack:flutter-assets:avatar:item:top_tee",
-      "target": "pack:flutter-assets:asset:layers/slots/top_basic_idle.png",
+      "target": "pack:flutter-assets:asset:layers/slots/top_tee_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1514,16 +1690,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:bottom_jeans|asset|pack:flutter-assets:asset:layers/slots/bottom_basic_walk.png",
+      "id": "e:pack:flutter-assets:avatar:item:bottom_jeans|asset|pack:flutter-assets:asset:layers/slots/bottom_jeans_walk.png",
       "source": "pack:flutter-assets:avatar:item:bottom_jeans",
-      "target": "pack:flutter-assets:asset:layers/slots/bottom_basic_walk.png",
+      "target": "pack:flutter-assets:asset:layers/slots/bottom_jeans_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:bottom_jeans|asset|pack:flutter-assets:asset:layers/slots/bottom_basic_idle.png",
+      "id": "e:pack:flutter-assets:avatar:item:bottom_jeans|asset|pack:flutter-assets:asset:layers/slots/bottom_jeans_idle.png",
       "source": "pack:flutter-assets:avatar:item:bottom_jeans",
-      "target": "pack:flutter-assets:asset:layers/slots/bottom_basic_idle.png",
+      "target": "pack:flutter-assets:asset:layers/slots/bottom_jeans_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1556,16 +1732,16 @@
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:shoes_sneaker|asset|pack:flutter-assets:asset:layers/slots/shoes_basic_walk.png",
+      "id": "e:pack:flutter-assets:avatar:item:shoes_sneaker|asset|pack:flutter-assets:asset:layers/slots/shoes_sneaker_walk.png",
       "source": "pack:flutter-assets:avatar:item:shoes_sneaker",
-      "target": "pack:flutter-assets:asset:layers/slots/shoes_basic_walk.png",
+      "target": "pack:flutter-assets:asset:layers/slots/shoes_sneaker_walk.png",
       "relation": "asset",
       "weight": 1
     },
     {
-      "id": "e:pack:flutter-assets:avatar:item:shoes_sneaker|asset|pack:flutter-assets:asset:layers/slots/shoes_basic_idle.png",
+      "id": "e:pack:flutter-assets:avatar:item:shoes_sneaker|asset|pack:flutter-assets:asset:layers/slots/shoes_sneaker_idle.png",
       "source": "pack:flutter-assets:avatar:item:shoes_sneaker",
-      "target": "pack:flutter-assets:asset:layers/slots/shoes_basic_idle.png",
+      "target": "pack:flutter-assets:asset:layers/slots/shoes_sneaker_idle.png",
       "relation": "asset",
       "weight": 1
     },
@@ -1578,7 +1754,7 @@
     }
   ],
   "stats": {
-    "nodeCount": 87,
+    "nodeCount": 103,
     "edgeCount": 110,
     "packCount": 2,
     "missingAssets": 0

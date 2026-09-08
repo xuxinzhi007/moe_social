@@ -9,11 +9,12 @@
 |--------|------|
 | **了解当前 UI 视觉升级方向** | [dev/ui-upgrade-iteration-2026-08-29.md](./dev/ui-upgrade-iteration-2026-08-29.md) |
 | **查看最近一次全栈审查**（产品方向 / 代码 / UI） | [dev/full-review-2026-09-02.md](./dev/full-review-2026-09-02.md) |
+| **查看配置治理审查**（凭据 / 环境切换 / 死配置 / 部署链 + 整改路线） | [dev/config-hygiene-review-2026-09-08.md](./dev/config-hygiene-review-2026-09-08.md) |
 | 推理服务 + 记忆怎么配合 | [dev/llm-inference-and-memory-vision.md](./dev/llm-inference-and-memory-vision.md) |
 | 记忆 RPG / Bot 观察 UI | [dev/moe-brain-memory-rpg.md](./dev/moe-brain-memory-rpg.md) |
 | 记忆系统架构 / API | [dev/用户记忆系统-OpenClaw式演进设计.md](./dev/用户记忆系统-OpenClaw式演进设计.md) |
 | 验收记忆 / 混合检索 | [dev/用户级记忆统一改造验收脚本.md](./dev/用户级记忆统一改造验收脚本.md) · [memory-system-dashboard.html](./dev/memory-system-dashboard.html) |
-| 本地跑起来 | [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md) · [dev/ports.md](./dev/ports.md) |
+| 本地跑起来 | 后端唯一入口 `cd backend && make moe-social`（:8888 单进程）· 管理台 `cd moe-admin && npm run dev`（:5173/ops/）→ [dev/ports.md](./dev/ports.md) · [dev/moe-social-runtime.md](./dev/moe-social-runtime.md) · [dev/环境配置说明.md](./dev/环境配置说明.md) · [dev/快速调试步骤.md](./dev/快速调试步骤.md)（Flutter 向） |
 | **OpenAPI / Apifox 同步** | [dev/openapi-apifox.md](./dev/openapi-apifox.md) |
 | 管理台（React） | [../moe-admin/README.md](../moe-admin/README.md) · [dev/moe-admin.md](./dev/moe-admin.md) |
 | 产品定位与边界 | [product/product-positioning.md](./product/product-positioning.md) · [product/IA首屏与空状态设计.md](./product/IA首屏与空状态设计.md) |
@@ -101,4 +102,4 @@ docs/
 
 ---
 
-最后整理：**2026-09-02**（新增全栈审查快照入口：dev/full-review-2026-09-02.md）
+最后整理：**2026-09-08**（① 新增配置治理审查快照 dev/config-hygiene-review-2026-09-08.md；② 清理 go-zero 时代失效启动命令 `make rpc` / `make api` / `make dev` / `make rpc-debug` / `make gen-api` / `go run super.go`，涉及 10 份文档 + `scripts/start-admin.{sh,ps1}` + `scripts/stop-admin.sh`；③ 按实测重写 ports.md / moe-social-runtime.md / admin-rpc-runtime-guide.md / new-api-kratos.md，归档 goctl-generation-hygiene.md）

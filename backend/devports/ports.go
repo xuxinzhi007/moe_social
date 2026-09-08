@@ -9,7 +9,8 @@ import "strconv"
 const (
 	// AgentPort — deploy-agent / devtools hub (make deploy-agent).
 	AgentPort = 19010
-	// RpcDebugPort — RPC -debug pprof API (make rpc-debug); Agent proxies /debug/* here.
+	// RpcDebugPort — reserved. The RPC -debug pprof provider was removed with the
+	// go-zero rpc process, so nothing listens here; Agent still proxies /debug/* to it.
 	RpcDebugPort = 19011
 	// DocsStaticPort — optional static docs (make dev-docs); Agent hub replaces this in most flows.
 	DocsStaticPort = 19012

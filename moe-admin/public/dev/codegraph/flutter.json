@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "domain": "flutter",
-  "generatedAt": "2026-08-01T05:08:49.036Z",
+  "generatedAt": "2026-09-08T11:22:52.607Z",
   "nodes": [
     {
       "weight": 4,
@@ -36,14 +36,14 @@
       "ref_id": "lib/constants/feature_flags.dart"
     },
     {
-      "weight": 1,
+      "weight": 2,
       "id": "route:/login",
       "kind": "route",
       "label": "/login",
-      "summary": "always",
+      "summary": "FeatureFlags.liveGiftPk",
       "ref_id": "lib/app/app_routes.dart",
       "meta": {
-        "gated": null
+        "gated": "liveGiftPk"
       }
     },
     {
@@ -55,25 +55,25 @@
       "ref_id": "lib/app/app_routes.dart"
     },
     {
-      "weight": 1,
+      "weight": 2,
       "id": "route:/register",
       "kind": "route",
       "label": "/register",
-      "summary": "always",
+      "summary": "FeatureFlags.liveGiftPk",
       "ref_id": "lib/app/app_routes.dart",
       "meta": {
-        "gated": null
+        "gated": "liveGiftPk"
       }
     },
     {
-      "weight": 1,
+      "weight": 2,
       "id": "route:/home",
       "kind": "route",
       "label": "/home",
-      "summary": "always",
+      "summary": "FeatureFlags.liveGiftPk",
       "ref_id": "lib/app/app_routes.dart",
       "meta": {
-        "gated": null
+        "gated": "liveGiftPk"
       }
     },
     {
@@ -83,6 +83,28 @@
       "label": "home_page",
       "summary": "lib/pages/feed/home_page.dart",
       "ref_id": "lib/pages/feed/home_page.dart"
+    },
+    {
+      "weight": 2,
+      "id": "route:/battle/room",
+      "kind": "route",
+      "label": "/battle/room",
+      "summary": "FeatureFlags.liveGiftPk",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": "liveGiftPk"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "route:/battle",
+      "kind": "route",
+      "label": "/battle",
+      "summary": "FeatureFlags.liveGiftPk",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": "liveGiftPk"
+      }
     },
     {
       "weight": 1,
@@ -141,6 +163,17 @@
       "id": "route:/message-retention-settings",
       "kind": "route",
       "label": "/message-retention-settings",
+      "summary": "always",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": null
+      }
+    },
+    {
+      "weight": 1,
+      "id": "route:/companion-settings",
+      "kind": "route",
+      "label": "/companion-settings",
       "summary": "always",
       "ref_id": "lib/app/app_routes.dart",
       "meta": {
@@ -517,19 +550,44 @@
       "id": "route:/pet/home",
       "kind": "route",
       "label": "/pet/home",
-      "summary": "FeatureFlags.petLifeSim",
+      "summary": "FeatureFlags.arenaGamePrototype",
       "ref_id": "lib/app/app_routes.dart",
       "meta": {
-        "gated": "petLifeSim"
+        "gated": "arenaGamePrototype"
       }
     },
     {
-      "weight": 1,
-      "id": "page:lib/pages/pet/pet_home_page.dart",
-      "kind": "page",
-      "label": "pet_home_page",
-      "summary": "lib/pages/pet/pet_home_page.dart",
-      "ref_id": "lib/pages/pet/pet_home_page.dart"
+      "weight": 2,
+      "id": "route:/game/arena",
+      "kind": "route",
+      "label": "/game/arena",
+      "summary": "FeatureFlags.arenaGamePrototype",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": "arenaGamePrototype"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "route:/game/arena/home",
+      "kind": "route",
+      "label": "/game/arena/home",
+      "summary": "FeatureFlags.arenaGamePrototype",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": "arenaGamePrototype"
+      }
+    },
+    {
+      "weight": 2,
+      "id": "route:/game-network/lab",
+      "kind": "route",
+      "label": "/game-network/lab",
+      "summary": "FeatureFlags.showGameNetworkLab",
+      "ref_id": "lib/app/app_routes.dart",
+      "meta": {
+        "gated": "showGameNetworkLab"
+      }
     },
     {
       "weight": 2,
@@ -672,6 +730,14 @@
     },
     {
       "weight": 1,
+      "id": "service:ai_model_list_parser",
+      "kind": "service",
+      "label": "ai_model_list_parser",
+      "summary": "lib/services/ai_model_list_parser.dart",
+      "ref_id": "lib/services/ai_model_list_parser.dart"
+    },
+    {
+      "weight": 1,
       "id": "service:ai_models_cache_service",
       "kind": "service",
       "label": "ai_models_cache_service",
@@ -709,6 +775,14 @@
       "label": "ai_provider_service",
       "summary": "lib/services/ai_provider_service.dart",
       "ref_id": "lib/services/ai_provider_service.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:ai_provider_usage_service",
+      "kind": "service",
+      "label": "ai_provider_usage_service",
+      "summary": "lib/services/ai_provider_usage_service.dart",
+      "ref_id": "lib/services/ai_provider_usage_service.dart"
     },
     {
       "weight": 1,
@@ -800,6 +874,30 @@
     },
     {
       "weight": 1,
+      "id": "service:app_storage_service_io",
+      "kind": "service",
+      "label": "app_storage_service_io",
+      "summary": "lib/services/app_storage_service_io.dart",
+      "ref_id": "lib/services/app_storage_service_io.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:app_storage_service_stub",
+      "kind": "service",
+      "label": "app_storage_service_stub",
+      "summary": "lib/services/app_storage_service_stub.dart",
+      "ref_id": "lib/services/app_storage_service_stub.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:arena_service",
+      "kind": "service",
+      "label": "arena_service",
+      "summary": "lib/services/arena_service.dart",
+      "ref_id": "lib/services/arena_service.dart"
+    },
+    {
+      "weight": 1,
       "id": "service:auth_flow_service",
       "kind": "service",
       "label": "auth_flow_service",
@@ -821,6 +919,22 @@
       "label": "avatar_service",
       "summary": "lib/services/avatar_service.dart",
       "ref_id": "lib/services/avatar_service.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:battle_service",
+      "kind": "service",
+      "label": "battle_service",
+      "summary": "lib/services/battle_service.dart",
+      "ref_id": "lib/services/battle_service.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:battle_ws_service",
+      "kind": "service",
+      "label": "battle_ws_service",
+      "summary": "lib/services/battle_ws_service.dart",
+      "ref_id": "lib/services/battle_ws_service.dart"
     },
     {
       "weight": 1,
@@ -885,6 +999,14 @@
       "label": "companion_chat_launcher",
       "summary": "lib/services/companion_chat_launcher.dart",
       "ref_id": "lib/services/companion_chat_launcher.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:companion_interaction_coordinator",
+      "kind": "service",
+      "label": "companion_interaction_coordinator",
+      "summary": "lib/services/companion_interaction_coordinator.dart",
+      "ref_id": "lib/services/companion_interaction_coordinator.dart"
     },
     {
       "weight": 1,
@@ -973,6 +1095,14 @@
       "label": "gallery_service",
       "summary": "lib/services/gallery_service.dart",
       "ref_id": "lib/services/gallery_service.dart"
+    },
+    {
+      "weight": 1,
+      "id": "service:game_network_service",
+      "kind": "service",
+      "label": "game_network_service",
+      "summary": "lib/services/game_network_service.dart",
+      "ref_id": "lib/services/game_network_service.dart"
     },
     {
       "weight": 1,
@@ -1072,22 +1202,6 @@
     },
     {
       "weight": 1,
-      "id": "service:pet_career_config",
-      "kind": "service",
-      "label": "pet_career_config",
-      "summary": "lib/services/pet_career_config.dart",
-      "ref_id": "lib/services/pet_career_config.dart"
-    },
-    {
-      "weight": 1,
-      "id": "service:pet_service",
-      "kind": "service",
-      "label": "pet_service",
-      "summary": "lib/services/pet_service.dart",
-      "ref_id": "lib/services/pet_service.dart"
-    },
-    {
-      "weight": 1,
       "id": "service:post_service",
       "kind": "service",
       "label": "post_service",
@@ -1104,6 +1218,14 @@
     },
     {
       "weight": 1,
+      "id": "service:push_delivery_capabilities",
+      "kind": "service",
+      "label": "push_delivery_capabilities",
+      "summary": "lib/services/push_delivery_capabilities.dart",
+      "ref_id": "lib/services/push_delivery_capabilities.dart"
+    },
+    {
+      "weight": 1,
       "id": "service:push_notification_service",
       "kind": "service",
       "label": "push_notification_service",
@@ -1117,14 +1239,6 @@
       "label": "qr_code_service",
       "summary": "lib/services/qr_code_service.dart",
       "ref_id": "lib/services/qr_code_service.dart"
-    },
-    {
-      "weight": 1,
-      "id": "service:remote_api_config_service",
-      "kind": "service",
-      "label": "remote_api_config_service",
-      "summary": "lib/services/remote_api_config_service.dart",
-      "ref_id": "lib/services/remote_api_config_service.dart"
     },
     {
       "weight": 1,
@@ -1184,6 +1298,14 @@
     },
     {
       "weight": 1,
+      "id": "service:voice_message_service",
+      "kind": "service",
+      "label": "voice_message_service",
+      "summary": "lib/services/voice_message_service.dart",
+      "ref_id": "lib/services/voice_message_service.dart"
+    },
+    {
+      "weight": 1,
       "id": "service:weather_service",
       "kind": "service",
       "label": "weather_service",
@@ -1229,6 +1351,14 @@
       "label": "ws_channel_connector_web",
       "summary": "lib/services/ws_channel_connector_web.dart",
       "ref_id": "lib/services/ws_channel_connector_web.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/settings/companion_settings_page.dart",
+      "kind": "page",
+      "label": "companion_settings_page",
+      "summary": "lib/pages/settings/companion_settings_page.dart",
+      "ref_id": "lib/pages/settings/companion_settings_page.dart"
     },
     {
       "weight": 1,
@@ -1352,6 +1482,14 @@
     },
     {
       "weight": 1,
+      "id": "page:lib/pages/game_network/game_network_lab_page.dart",
+      "kind": "page",
+      "label": "game_network_lab_page",
+      "summary": "lib/pages/game_network/game_network_lab_page.dart",
+      "ref_id": "lib/pages/game_network/game_network_lab_page.dart"
+    },
+    {
+      "weight": 1,
       "id": "page:lib/pages/gallery/cloud_gallery_page.dart",
       "kind": "page",
       "label": "cloud_gallery_page",
@@ -1424,19 +1562,19 @@
     },
     {
       "weight": 1,
+      "id": "page:lib/pages/companion/memory_conflict_card.dart",
+      "kind": "page",
+      "label": "memory_conflict_card",
+      "summary": "lib/pages/companion/memory_conflict_card.dart",
+      "ref_id": "lib/pages/companion/memory_conflict_card.dart"
+    },
+    {
+      "weight": 1,
       "id": "page:lib/pages/community/community_home_page.dart",
       "kind": "page",
       "label": "community_home_page",
       "summary": "lib/pages/community/community_home_page.dart",
       "ref_id": "lib/pages/community/community_home_page.dart"
-    },
-    {
-      "weight": 1,
-      "id": "page:lib/pages/community/community_posts_feed.dart",
-      "kind": "page",
-      "label": "community_posts_feed",
-      "summary": "lib/pages/community/community_posts_feed.dart",
-      "ref_id": "lib/pages/community/community_posts_feed.dart"
     },
     {
       "weight": 1,
@@ -1448,11 +1586,11 @@
     },
     {
       "weight": 1,
-      "id": "page:lib/pages/community/interest_groups_page.dart",
+      "id": "page:lib/pages/community/community_posts_feed.dart",
       "kind": "page",
-      "label": "interest_groups_page",
-      "summary": "lib/pages/community/interest_groups_page.dart",
-      "ref_id": "lib/pages/community/interest_groups_page.dart"
+      "label": "community_posts_feed",
+      "summary": "lib/pages/community/community_posts_feed.dart",
+      "ref_id": "lib/pages/community/community_posts_feed.dart"
     },
     {
       "weight": 1,
@@ -1461,6 +1599,14 @@
       "label": "interest_group_detail_page",
       "summary": "lib/pages/community/interest_group_detail_page.dart",
       "ref_id": "lib/pages/community/interest_group_detail_page.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/community/interest_groups_page.dart",
+      "kind": "page",
+      "label": "interest_groups_page",
+      "summary": "lib/pages/community/interest_groups_page.dart",
+      "ref_id": "lib/pages/community/interest_groups_page.dart"
     },
     {
       "weight": 1,
@@ -1512,19 +1658,19 @@
     },
     {
       "weight": 1,
-      "id": "page:lib/pages/commerce/vip_orders_page.dart",
-      "kind": "page",
-      "label": "vip_orders_page",
-      "summary": "lib/pages/commerce/vip_orders_page.dart",
-      "ref_id": "lib/pages/commerce/vip_orders_page.dart"
-    },
-    {
-      "weight": 1,
       "id": "page:lib/pages/commerce/vip_order_confirm_page.dart",
       "kind": "page",
       "label": "vip_order_confirm_page",
       "summary": "lib/pages/commerce/vip_order_confirm_page.dart",
       "ref_id": "lib/pages/commerce/vip_order_confirm_page.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/commerce/vip_orders_page.dart",
+      "kind": "page",
+      "label": "vip_orders_page",
+      "summary": "lib/pages/commerce/vip_orders_page.dart",
+      "ref_id": "lib/pages/commerce/vip_orders_page.dart"
     },
     {
       "weight": 1,
@@ -1600,14 +1746,6 @@
     },
     {
       "weight": 1,
-      "id": "page:lib/pages/chat/voice_call_initiation_page.dart",
-      "kind": "page",
-      "label": "voice_call_initiation_page",
-      "summary": "lib/pages/chat/voice_call_initiation_page.dart",
-      "ref_id": "lib/pages/chat/voice_call_initiation_page.dart"
-    },
-    {
-      "weight": 1,
       "id": "page:lib/pages/chat/voice_call_page.dart",
       "kind": "page",
       "label": "voice_call_page",
@@ -1621,6 +1759,14 @@
       "label": "voice_call_receiving_page",
       "summary": "lib/pages/chat/voice_call_receiving_page.dart",
       "ref_id": "lib/pages/chat/voice_call_receiving_page.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/battle/live_pk_room_page.dart",
+      "kind": "page",
+      "label": "live_pk_room_page",
+      "summary": "lib/pages/battle/live_pk_room_page.dart",
+      "ref_id": "lib/pages/battle/live_pk_room_page.dart"
     },
     {
       "weight": 1,
@@ -1688,19 +1834,19 @@
     },
     {
       "weight": 1,
-      "id": "page:lib/pages/announcements/announcements_page.dart",
-      "kind": "page",
-      "label": "announcements_page",
-      "summary": "lib/pages/announcements/announcements_page.dart",
-      "ref_id": "lib/pages/announcements/announcements_page.dart"
-    },
-    {
-      "weight": 1,
       "id": "page:lib/pages/announcements/announcement_detail_page.dart",
       "kind": "page",
       "label": "announcement_detail_page",
       "summary": "lib/pages/announcements/announcement_detail_page.dart",
       "ref_id": "lib/pages/announcements/announcement_detail_page.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/announcements/announcements_page.dart",
+      "kind": "page",
+      "label": "announcements_page",
+      "summary": "lib/pages/announcements/announcements_page.dart",
+      "ref_id": "lib/pages/announcements/announcements_page.dart"
     },
     {
       "weight": 1,
@@ -1720,19 +1866,19 @@
     },
     {
       "weight": 1,
-      "id": "page:lib/pages/ai/ai_lorebooks_list_page.dart",
-      "kind": "page",
-      "label": "ai_lorebooks_list_page",
-      "summary": "lib/pages/ai/ai_lorebooks_list_page.dart",
-      "ref_id": "lib/pages/ai/ai_lorebooks_list_page.dart"
-    },
-    {
-      "weight": 1,
       "id": "page:lib/pages/ai/ai_lorebook_editor_page.dart",
       "kind": "page",
       "label": "ai_lorebook_editor_page",
       "summary": "lib/pages/ai/ai_lorebook_editor_page.dart",
       "ref_id": "lib/pages/ai/ai_lorebook_editor_page.dart"
+    },
+    {
+      "weight": 1,
+      "id": "page:lib/pages/ai/ai_lorebooks_list_page.dart",
+      "kind": "page",
+      "label": "ai_lorebooks_list_page",
+      "summary": "lib/pages/ai/ai_lorebooks_list_page.dart",
+      "ref_id": "lib/pages/ai/ai_lorebooks_list_page.dart"
     },
     {
       "weight": 1,
@@ -1813,14 +1959,6 @@
       "label": "achievements_page",
       "summary": "lib/pages/achievements/achievements_page.dart",
       "ref_id": "lib/pages/achievements/achievements_page.dart"
-    },
-    {
-      "weight": 1,
-      "id": "page:lib/pages/achievements/achievement_test_page.dart",
-      "kind": "page",
-      "label": "achievement_test_page",
-      "summary": "lib/pages/achievements/achievement_test_page.dart",
-      "ref_id": "lib/pages/achievements/achievement_test_page.dart"
     }
   ],
   "edges": [
@@ -1853,6 +1991,13 @@
       "weight": 1
     },
     {
+      "id": "e:flags:feature|gates|route:/login",
+      "source": "flags:feature",
+      "target": "route:/login",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
       "id": "e:route:/login|opens|page:lib/app/app_routes.dart",
       "source": "route:/login",
       "target": "page:lib/app/app_routes.dart",
@@ -1864,6 +2009,13 @@
       "source": "layer:routes",
       "target": "route:/register",
       "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/register",
+      "source": "flags:feature",
+      "target": "route:/register",
+      "relation": "gates",
       "weight": 1
     },
     {
@@ -1881,9 +2033,58 @@
       "weight": 1
     },
     {
+      "id": "e:flags:feature|gates|route:/home",
+      "source": "flags:feature",
+      "target": "route:/home",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
       "id": "e:route:/home|opens|page:lib/pages/feed/home_page.dart",
       "source": "route:/home",
       "target": "page:lib/pages/feed/home_page.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/battle/room",
+      "source": "layer:routes",
+      "target": "route:/battle/room",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/battle/room",
+      "source": "flags:feature",
+      "target": "route:/battle/room",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/battle/room|opens|page:lib/app/app_routes.dart",
+      "source": "route:/battle/room",
+      "target": "page:lib/app/app_routes.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/battle",
+      "source": "layer:routes",
+      "target": "route:/battle",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/battle",
+      "source": "flags:feature",
+      "target": "route:/battle",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/battle|opens|page:lib/app/app_routes.dart",
+      "source": "route:/battle",
+      "target": "page:lib/app/app_routes.dart",
       "relation": "opens",
       "weight": 1
     },
@@ -1953,6 +2154,20 @@
     {
       "id": "e:route:/message-retention-settings|opens|page:lib/app/app_routes.dart",
       "source": "route:/message-retention-settings",
+      "target": "page:lib/app/app_routes.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/companion-settings",
+      "source": "layer:routes",
+      "target": "route:/companion-settings",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/companion-settings|opens|page:lib/app/app_routes.dart",
+      "source": "route:/companion-settings",
       "target": "page:lib/app/app_routes.dart",
       "relation": "opens",
       "weight": 1
@@ -2476,9 +2691,72 @@
       "weight": 1
     },
     {
-      "id": "e:route:/pet/home|opens|page:lib/pages/pet/pet_home_page.dart",
+      "id": "e:route:/pet/home|opens|page:lib/app/app_routes.dart",
       "source": "route:/pet/home",
-      "target": "page:lib/pages/pet/pet_home_page.dart",
+      "target": "page:lib/app/app_routes.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/game/arena",
+      "source": "layer:routes",
+      "target": "route:/game/arena",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/game/arena",
+      "source": "flags:feature",
+      "target": "route:/game/arena",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/game/arena|opens|page:lib/app/app_routes.dart",
+      "source": "route:/game/arena",
+      "target": "page:lib/app/app_routes.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/game/arena/home",
+      "source": "layer:routes",
+      "target": "route:/game/arena/home",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/game/arena/home",
+      "source": "flags:feature",
+      "target": "route:/game/arena/home",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/game/arena/home|opens|page:lib/app/app_routes.dart",
+      "source": "route:/game/arena/home",
+      "target": "page:lib/app/app_routes.dart",
+      "relation": "opens",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:routes|registers|route:/game-network/lab",
+      "source": "layer:routes",
+      "target": "route:/game-network/lab",
+      "relation": "registers",
+      "weight": 1
+    },
+    {
+      "id": "e:flags:feature|gates|route:/game-network/lab",
+      "source": "flags:feature",
+      "target": "route:/game-network/lab",
+      "relation": "gates",
+      "weight": 1
+    },
+    {
+      "id": "e:route:/game-network/lab|opens|page:lib/app/app_routes.dart",
+      "source": "route:/game-network/lab",
+      "target": "page:lib/app/app_routes.dart",
       "relation": "opens",
       "weight": 1
     },
@@ -2616,6 +2894,13 @@
       "weight": 1
     },
     {
+      "id": "e:layer:services|contains|service:ai_model_list_parser",
+      "source": "layer:services",
+      "target": "service:ai_model_list_parser",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
       "id": "e:layer:services|contains|service:ai_models_cache_service",
       "source": "layer:services",
       "target": "service:ai_models_cache_service",
@@ -2647,6 +2932,13 @@
       "id": "e:layer:services|contains|service:ai_provider_service",
       "source": "layer:services",
       "target": "service:ai_provider_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:ai_provider_usage_service",
+      "source": "layer:services",
+      "target": "service:ai_provider_usage_service",
       "relation": "contains",
       "weight": 1
     },
@@ -2728,6 +3020,27 @@
       "weight": 1
     },
     {
+      "id": "e:layer:services|contains|service:app_storage_service_io",
+      "source": "layer:services",
+      "target": "service:app_storage_service_io",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:app_storage_service_stub",
+      "source": "layer:services",
+      "target": "service:app_storage_service_stub",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:arena_service",
+      "source": "layer:services",
+      "target": "service:arena_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
       "id": "e:layer:services|contains|service:auth_flow_service",
       "source": "layer:services",
       "target": "service:auth_flow_service",
@@ -2745,6 +3058,20 @@
       "id": "e:layer:services|contains|service:avatar_service",
       "source": "layer:services",
       "target": "service:avatar_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:battle_service",
+      "source": "layer:services",
+      "target": "service:battle_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:battle_ws_service",
+      "source": "layer:services",
+      "target": "service:battle_ws_service",
       "relation": "contains",
       "weight": 1
     },
@@ -2801,6 +3128,13 @@
       "id": "e:layer:services|contains|service:companion_chat_launcher",
       "source": "layer:services",
       "target": "service:companion_chat_launcher",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:companion_interaction_coordinator",
+      "source": "layer:services",
+      "target": "service:companion_interaction_coordinator",
       "relation": "contains",
       "weight": 1
     },
@@ -2878,6 +3212,13 @@
       "id": "e:layer:services|contains|service:gallery_service",
       "source": "layer:services",
       "target": "service:gallery_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:layer:services|contains|service:game_network_service",
+      "source": "layer:services",
+      "target": "service:game_network_service",
       "relation": "contains",
       "weight": 1
     },
@@ -2966,20 +3307,6 @@
       "weight": 1
     },
     {
-      "id": "e:layer:services|contains|service:pet_career_config",
-      "source": "layer:services",
-      "target": "service:pet_career_config",
-      "relation": "contains",
-      "weight": 1
-    },
-    {
-      "id": "e:layer:services|contains|service:pet_service",
-      "source": "layer:services",
-      "target": "service:pet_service",
-      "relation": "contains",
-      "weight": 1
-    },
-    {
       "id": "e:layer:services|contains|service:post_service",
       "source": "layer:services",
       "target": "service:post_service",
@@ -2994,6 +3321,13 @@
       "weight": 1
     },
     {
+      "id": "e:layer:services|contains|service:push_delivery_capabilities",
+      "source": "layer:services",
+      "target": "service:push_delivery_capabilities",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
       "id": "e:layer:services|contains|service:push_notification_service",
       "source": "layer:services",
       "target": "service:push_notification_service",
@@ -3004,13 +3338,6 @@
       "id": "e:layer:services|contains|service:qr_code_service",
       "source": "layer:services",
       "target": "service:qr_code_service",
-      "relation": "contains",
-      "weight": 1
-    },
-    {
-      "id": "e:layer:services|contains|service:remote_api_config_service",
-      "source": "layer:services",
-      "target": "service:remote_api_config_service",
       "relation": "contains",
       "weight": 1
     },
@@ -3064,6 +3391,13 @@
       "weight": 1
     },
     {
+      "id": "e:layer:services|contains|service:voice_message_service",
+      "source": "layer:services",
+      "target": "service:voice_message_service",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
       "id": "e:layer:services|contains|service:weather_service",
       "source": "layer:services",
       "target": "service:weather_service",
@@ -3103,6 +3437,13 @@
       "source": "layer:services",
       "target": "service:ws_channel_connector_web",
       "relation": "contains",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/settings/companion_settings_page.dart|uses_service|service:companion_service",
+      "source": "page:lib/pages/settings/companion_settings_page.dart",
+      "target": "service:companion_service",
+      "relation": "uses_service",
       "weight": 1
     },
     {
@@ -3316,13 +3657,6 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/pet/pet_home_page.dart|uses_service|service:pet_career_config",
-      "source": "page:lib/pages/pet/pet_home_page.dart",
-      "target": "service:pet_career_config",
-      "relation": "uses_service",
-      "weight": 1
-    },
-    {
       "id": "e:page:lib/pages/notifications/notification_center_page.dart|uses_service|service:companion_chat_launcher",
       "source": "page:lib/pages/notifications/notification_center_page.dart",
       "target": "service:companion_chat_launcher",
@@ -3354,6 +3688,13 @@
       "id": "e:page:lib/pages/life/life_world_page.dart|uses_service|service:companion_service",
       "source": "page:lib/pages/life/life_world_page.dart",
       "target": "service:companion_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/game_network/game_network_lab_page.dart|uses_service|service:game_network_service",
+      "source": "page:lib/pages/game_network/game_network_lab_page.dart",
+      "target": "service:game_network_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -3470,6 +3811,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/feed/home_feed_viewmodel.dart|uses_service|service:companion_interaction_coordinator",
+      "source": "page:lib/pages/feed/home_feed_viewmodel.dart",
+      "target": "service:companion_interaction_coordinator",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/feed/home_feed_viewmodel.dart|uses_service|service:like_state_manager",
       "source": "page:lib/pages/feed/home_feed_viewmodel.dart",
       "target": "service:like_state_manager",
@@ -3526,6 +3874,27 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:ai_provider_connectivity_cache",
+      "source": "page:lib/pages/companion/companion_chat_page.dart",
+      "target": "service:ai_provider_connectivity_cache",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:ai_provider_service",
+      "source": "page:lib/pages/companion/companion_chat_page.dart",
+      "target": "service:ai_provider_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:ai_provider_usage_service",
+      "source": "page:lib/pages/companion/companion_chat_page.dart",
+      "target": "service:ai_provider_usage_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:ai_tts_helper",
       "source": "page:lib/pages/companion/companion_chat_page.dart",
       "target": "service:ai_tts_helper",
@@ -3536,6 +3905,13 @@
       "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:companion_service",
       "source": "page:lib/pages/companion/companion_chat_page.dart",
       "target": "service:companion_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/companion/companion_chat_page.dart|uses_service|service:companion_interaction_coordinator",
+      "source": "page:lib/pages/companion/companion_chat_page.dart",
+      "target": "service:companion_interaction_coordinator",
       "relation": "uses_service",
       "weight": 1
     },
@@ -3561,16 +3937,23 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/community/community_home_page.dart|uses_service|service:companion_service",
-      "source": "page:lib/pages/community/community_home_page.dart",
+      "id": "e:page:lib/pages/companion/companion_memories_viewmodel.dart|uses_service|service:companion_interaction_coordinator",
+      "source": "page:lib/pages/companion/companion_memories_viewmodel.dart",
+      "target": "service:companion_interaction_coordinator",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/companion/memory_conflict_card.dart|uses_service|service:companion_service",
+      "source": "page:lib/pages/companion/memory_conflict_card.dart",
       "target": "service:companion_service",
       "relation": "uses_service",
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/community/community_posts_feed.dart|uses_service|service:post_service",
-      "source": "page:lib/pages/community/community_posts_feed.dart",
-      "target": "service:post_service",
+      "id": "e:page:lib/pages/community/community_home_page.dart|uses_service|service:companion_service",
+      "source": "page:lib/pages/community/community_home_page.dart",
+      "target": "service:companion_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -3589,9 +3972,9 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/community/interest_groups_page.dart|uses_service|service:community_service",
-      "source": "page:lib/pages/community/interest_groups_page.dart",
-      "target": "service:community_service",
+      "id": "e:page:lib/pages/community/community_posts_feed.dart|uses_service|service:post_service",
+      "source": "page:lib/pages/community/community_posts_feed.dart",
+      "target": "service:post_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -3605,6 +3988,13 @@
     {
       "id": "e:page:lib/pages/community/interest_group_detail_page.dart|uses_service|service:community_service",
       "source": "page:lib/pages/community/interest_group_detail_page.dart",
+      "target": "service:community_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/community/interest_groups_page.dart|uses_service|service:community_service",
+      "source": "page:lib/pages/community/interest_groups_page.dart",
       "target": "service:community_service",
       "relation": "uses_service",
       "weight": 1
@@ -3631,6 +4021,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/commerce/inventory_page.dart|uses_service|service:enhanced_logger",
+      "source": "page:lib/pages/commerce/inventory_page.dart",
+      "target": "service:enhanced_logger",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/commerce/order_center_page.dart|uses_service|service:commerce_service",
       "source": "page:lib/pages/commerce/order_center_page.dart",
       "target": "service:commerce_service",
@@ -3645,6 +4042,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/commerce/recharge_page.dart|uses_service|service:enhanced_logger",
+      "source": "page:lib/pages/commerce/recharge_page.dart",
+      "target": "service:enhanced_logger",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/commerce/vip_center_page.dart|uses_service|service:commerce_service",
       "source": "page:lib/pages/commerce/vip_center_page.dart",
       "target": "service:commerce_service",
@@ -3654,13 +4058,6 @@
     {
       "id": "e:page:lib/pages/commerce/vip_history_page.dart|uses_service|service:commerce_service",
       "source": "page:lib/pages/commerce/vip_history_page.dart",
-      "target": "service:commerce_service",
-      "relation": "uses_service",
-      "weight": 1
-    },
-    {
-      "id": "e:page:lib/pages/commerce/vip_orders_page.dart|uses_service|service:commerce_service",
-      "source": "page:lib/pages/commerce/vip_orders_page.dart",
       "target": "service:commerce_service",
       "relation": "uses_service",
       "weight": 1
@@ -3687,6 +4084,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/commerce/vip_orders_page.dart|uses_service|service:commerce_service",
+      "source": "page:lib/pages/commerce/vip_orders_page.dart",
+      "target": "service:commerce_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/commerce/vip_purchase_page.dart|uses_service|service:commerce_service",
       "source": "page:lib/pages/commerce/vip_purchase_page.dart",
       "target": "service:commerce_service",
@@ -3704,6 +4108,13 @@
       "id": "e:page:lib/pages/commerce/wallet_page.dart|uses_service|service:commerce_service",
       "source": "page:lib/pages/commerce/wallet_page.dart",
       "target": "service:commerce_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/commerce/wallet_page.dart|uses_service|service:enhanced_logger",
+      "source": "page:lib/pages/commerce/wallet_page.dart",
+      "target": "service:enhanced_logger",
       "relation": "uses_service",
       "weight": 1
     },
@@ -3806,6 +4217,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/chat/direct_chat_page.dart|uses_service|service:voice_message_service",
+      "source": "page:lib/pages/chat/direct_chat_page.dart",
+      "target": "service:voice_message_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/chat/direct_chat_page.dart|uses_service|service:chat_push_service",
       "source": "page:lib/pages/chat/direct_chat_page.dart",
       "target": "service:chat_push_service",
@@ -3869,13 +4287,6 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/chat/voice_call_initiation_page.dart|uses_service|service:chat_service",
-      "source": "page:lib/pages/chat/voice_call_initiation_page.dart",
-      "target": "service:chat_service",
-      "relation": "uses_service",
-      "weight": 1
-    },
-    {
       "id": "e:page:lib/pages/chat/voice_call_page.dart|uses_service|service:chat_service",
       "source": "page:lib/pages/chat/voice_call_page.dart",
       "target": "service:chat_service",
@@ -3893,6 +4304,13 @@
       "id": "e:page:lib/pages/chat/voice_call_receiving_page.dart|uses_service|service:chat_push_service",
       "source": "page:lib/pages/chat/voice_call_receiving_page.dart",
       "target": "service:chat_push_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/battle/live_pk_room_page.dart|uses_service|service:gift_catalog_service",
+      "source": "page:lib/pages/battle/live_pk_room_page.dart",
+      "target": "service:gift_catalog_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -4023,15 +4441,15 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/announcements/announcements_page.dart|uses_service|service:announcement_service",
-      "source": "page:lib/pages/announcements/announcements_page.dart",
+      "id": "e:page:lib/pages/announcements/announcement_detail_page.dart|uses_service|service:announcement_service",
+      "source": "page:lib/pages/announcements/announcement_detail_page.dart",
       "target": "service:announcement_service",
       "relation": "uses_service",
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/announcements/announcement_detail_page.dart|uses_service|service:announcement_service",
-      "source": "page:lib/pages/announcements/announcement_detail_page.dart",
+      "id": "e:page:lib/pages/announcements/announcements_page.dart|uses_service|service:announcement_service",
+      "source": "page:lib/pages/announcements/announcements_page.dart",
       "target": "service:announcement_service",
       "relation": "uses_service",
       "weight": 1
@@ -4149,6 +4567,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/ai/ai_lorebook_editor_page.dart|uses_service|service:ai_agent_cloud_service",
+      "source": "page:lib/pages/ai/ai_lorebook_editor_page.dart",
+      "target": "service:ai_agent_cloud_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/ai/ai_lorebooks_list_page.dart|uses_service|service:ai_agent_cloud_service",
       "source": "page:lib/pages/ai/ai_lorebooks_list_page.dart",
       "target": "service:ai_agent_cloud_service",
@@ -4163,16 +4588,23 @@
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/ai/ai_lorebook_editor_page.dart|uses_service|service:ai_agent_cloud_service",
-      "source": "page:lib/pages/ai/ai_lorebook_editor_page.dart",
-      "target": "service:ai_agent_cloud_service",
+      "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:ai_chat_gateway_service",
+      "source": "page:lib/pages/ai/ai_provider_profiles_page.dart",
+      "target": "service:ai_chat_gateway_service",
       "relation": "uses_service",
       "weight": 1
     },
     {
-      "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:ai_chat_gateway_service",
+      "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:ai_cloud_config_service",
       "source": "page:lib/pages/ai/ai_provider_profiles_page.dart",
-      "target": "service:ai_chat_gateway_service",
+      "target": "service:ai_cloud_config_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:ai_models_cache_service",
+      "source": "page:lib/pages/ai/ai_provider_profiles_page.dart",
+      "target": "service:ai_models_cache_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -4194,6 +4626,13 @@
       "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:ai_provider_service",
       "source": "page:lib/pages/ai/ai_provider_profiles_page.dart",
       "target": "service:ai_provider_service",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
+      "id": "e:page:lib/pages/ai/ai_provider_profiles_page.dart|uses_service|service:api_service",
+      "source": "page:lib/pages/ai/ai_provider_profiles_page.dart",
+      "target": "service:api_service",
       "relation": "uses_service",
       "weight": 1
     },
@@ -4324,6 +4763,13 @@
       "weight": 1
     },
     {
+      "id": "e:page:lib/pages/ai/companion_hub_viewmodel.dart|uses_service|service:companion_interaction_coordinator",
+      "source": "page:lib/pages/ai/companion_hub_viewmodel.dart",
+      "target": "service:companion_interaction_coordinator",
+      "relation": "uses_service",
+      "weight": 1
+    },
+    {
       "id": "e:page:lib/pages/ai/companion_hub_viewmodel.dart|uses_service|service:life_service",
       "source": "page:lib/pages/ai/companion_hub_viewmodel.dart",
       "target": "service:life_service",
@@ -4385,20 +4831,13 @@
       "target": "service:achievement_service",
       "relation": "uses_service",
       "weight": 1
-    },
-    {
-      "id": "e:page:lib/pages/achievements/achievement_test_page.dart|uses_service|service:achievement_service",
-      "source": "page:lib/pages/achievements/achievement_test_page.dart",
-      "target": "service:achievement_service",
-      "relation": "uses_service",
-      "weight": 1
     }
   ],
   "stats": {
-    "nodeCount": 212,
-    "edgeCount": 367,
-    "routes": 41,
-    "services": 86,
-    "pageServiceLinks": 184
+    "nodeCount": 227,
+    "edgeCount": 410,
+    "routes": 47,
+    "services": 94,
+    "pageServiceLinks": 199
   }
 }

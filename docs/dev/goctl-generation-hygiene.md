@@ -1,8 +1,17 @@
 # goctl 生成与合并 Logic 说明
 
-> **更新：2026-05-29**（P5-E 后无 hybrid 构建）
+> **归档（勿当现状）**：本文描述的 goctl 生成链**已整体移除**。实测 2026-09-08：
+> `make gen-api`、`make audit-logic-orphans` 两个 target 已不在 `backend/Makefile`；
+> `backend/api/internal/`（logic / handler / types）、`httplegacy/` 目录、`prune-api-logic-*.sh` 脚本均已删除；
+> goctl 不再是依赖，Kratos 走 `protoc` + `protoc-gen-go` / `-go-grpc` / `-go-http` / `-openapi`。
+> **照本文执行任何命令都会失败。**
+>
+> **仍然有效的唯一结论**：日常契约改动用 `cd backend && make gen`（域 proto + conf + 路由计数 + openapi.yaml），首次需 `make init-proto-tools`。
+> **现行 SSOT**：[moe-social-runtime.md](./moe-social-runtime.md) · [new-api-kratos.md](./new-api-kratos.md) · [backend/LAYOUT.md](../../backend/LAYOUT.md)
 
-## P3 后纪律（必读）
+以下为迁移期历史记录：
+
+## P3 后纪律（历史）
 
 | 事实 | 说明 |
 |------|------|
