@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 func wechatRedirectURI() (string, error) {
-	redirectURI := strings.TrimSpace(viper.GetString("wechat.redirect_uri"))
+	redirectURI := conf.WechatRedirectURI()
 	if redirectURI == "" {
 		return "", fmt.Errorf("wechat redirect_uri is empty")
 	}
@@ -23,10 +23,10 @@ func wechatRedirectURI() (string, error) {
 
 // WechatWebsiteAuthorizeURL 开放平台「网站应用」扫码登录（PC/Web 浏览器可用）。
 func WechatWebsiteAuthorizeURL(state string) (string, error) {
-	if !viper.GetBool("wechat.enabled") {
+	if !conf.Get().Wechat.Enabled {
 		return "", fmt.Errorf("wechat oauth is disabled")
 	}
-	appID, _, err := wechatFlowCredentials("website")
+	appID, _, err := conf.WechatFlowCredential("website")
 	if err != nil {
 		return "", err
 	}
@@ -48,10 +48,11 @@ func WechatWebsiteAuthorizeURL(state string) (string, error) {
 
 // WechatOAuthAuthorizeURL 公众号网页授权（仅适合在微信内置浏览器打开）。
 func WechatOAuthAuthorizeURL(state string) (string, error) {
-	if !viper.GetBool("wechat.enabled") {
+	wx := conf.Get().Wechat
+	if !wx.Enabled {
 		return "", fmt.Errorf("wechat oauth is disabled")
 	}
-	appID, _, err := wechatFlowCredentials("mp")
+	appID, _, err := conf.WechatFlowCredential("mp")
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +63,7 @@ func WechatOAuthAuthorizeURL(state string) (string, error) {
 	if state == "" {
 		state = "moe_social"
 	}
-	scope := strings.TrimSpace(viper.GetString("wechat.oauth_scope"))
+	scope := strings.TrimSpace(wx.OAuthScope)
 	if scope == "" {
 		scope = "snsapi_userinfo"
 	}
@@ -121,14 +122,14 @@ func ExchangeWechatOAuthCode(ctx context.Context, code, flow string) (WechatOAut
 	if code == "" {
 		return WechatOAuthUserInfo{}, fmt.Errorf("wechat oauth code is empty")
 	}
-	if !viper.GetBool("wechat.enabled") {
+	if !conf.Get().Wechat.Enabled {
 		return WechatOAuthUserInfo{}, fmt.Errorf("wechat oauth is disabled")
 	}
 	flow = NormalizeWechatOAuthFlow(flow)
 	if flow == "" {
 		flow = "website"
 	}
-	appID, appSecret, err := wechatFlowCredentials(flow)
+	appID, appSecret, err := conf.WechatFlowCredential(flow)
 	if err != nil {
 		return WechatOAuthUserInfo{}, err
 	}

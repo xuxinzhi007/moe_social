@@ -10,21 +10,23 @@ package conf
 
 // Config 是 backend/config/config.yaml 的类型化镜像。
 //
-// 字段只反映文件内容本身。环境变量覆盖与历史键回退（llm_inference→ollama、
-// wechat.app→wechat.mobile_app_id 等）一律走 derive.go 的方法，不要在字段上叠默认值，
+// 字段只反映文件内容本身。环境变量覆盖与历史键回退（如 wechat.app→wechat.mobile_app_id）
+// 一律走 derive.go 的方法，不要在字段上叠默认值，
 // 否则「文件里没写」和「文件里写了 false/0」会分不清。
 //
 // 以下 config.yaml 里存在的段落**故意没有建模**，因为全仓没有任何 Go 代码读它们
 // （逐个 grep 确认过，不是漏掉）：
 //   - server.port / server.host —— 单进程化后端口只认 runtime.http_port，8080 无监听者
 //   - memory.search.* / memory.embedding.* —— 记忆检索当前走关键词，向量/图谱段是死配置
-//   - moe.default_capability_tier / moe.bot_post_daily_limit_default
+//   - moe.enabled / moe.default_capability_tier / moe.bot_post_daily_limit_default
+//     （moe.enabled 是 2026-09-09 序2 批次补记的：全仓 Go 与非 Go 均零引用）
 //   - temp_mail.api_key（mail.tm 无需鉴权）
 //
 // api.super_rpc_endpoints / api.super_rpc_timeout_ms 曾在此列，2026-09-08 已从 config.yaml 删除：
 // go-zero RPC 进程随 Kratos 单进程迁移移除后二者零读者，而原注释还在指导运维设置
-// 同样无人消费的 MOE_SUPER_RPC_ENDPOINT。注意 moe.pilot.super_rpc_endpoint 是另一个键，
-// moeconf/load.go:62 仍在读，保留。
+// 同样无人消费的 MOE_SUPER_RPC_ENDPOINT。另一个键 moe.pilot.super_rpc_endpoint 原由
+// moeconf/load.go 读取，该包已于 2026-09-09 整包删除，承载它的 MoePilot 一并移除
+// （且 moe.pilot 段在 config.yaml 里从来不存在，那处读取一直是零值）。
 //
 // 需要时再加字段；加之前先确认它真的有读者，别再往文件里堆死配置。
 type Config struct {
@@ -49,9 +51,7 @@ type Config struct {
 type Runtime struct {
 	HTTPHost string `mapstructure:"http_host"`
 	HTTPPort int    `mapstructure:"http_port"`
-	// HandDrawRequireModeration 手绘是否强制过审。
-	// ⚠️ moewiring/api_post.go:63 读的是顶层 hand_draw_require_moderation，
-	//    与本字段所在的 runtime.* 不是同一个键，那条读取恒为 false。
+	// HandDrawRequireModeration 手绘是否强制过审，由 moewiring/api_post.go 读取。
 	HandDrawRequireModeration bool   `mapstructure:"hand_draw_require_moderation"`
 	APIConfigFragment         string `mapstructure:"api_config_fragment"`
 }
@@ -221,32 +221,13 @@ type Moe struct {
 	BotSmartRetryMinutes      int   `mapstructure:"bot_smart_retry_minutes"`
 	BotSmartMinIntervalHours  int   `mapstructure:"bot_smart_min_interval_hours"`
 
-	Pilot      MoePilot      `mapstructure:"pilot"`
 	Production MoeProduction `mapstructure:"production"`
 
 	// 装配开关。这些键的语义是「未设置时继承默认」而非「默认 false」，
-	// 判定必须走 derive.go 的 DomainInProcess / 各 Kratos*Enabled 方法。
+	// 判定必须走 derive.go 的 DomainInProcess。
 	APIInProcess      bool `mapstructure:"api_in_process"`
 	SingleProcess     bool `mapstructure:"single_process"`
 	LifeEngineEnabled bool `mapstructure:"life_engine_enabled"`
-
-	KratosPureEnabled              bool   `mapstructure:"kratos_pure_enabled"`
-	KratosAdminBaseURL             string `mapstructure:"kratos_admin_base_url"`
-	KratosAdminHTTPEnabled         bool   `mapstructure:"kratos_admin_http_enabled"`
-	KratosVipHTTPEnabled           bool   `mapstructure:"kratos_vip_http_enabled"`
-	KratosAdminInsightsHTTPEnabled bool   `mapstructure:"kratos_admin_insights_http_enabled"`
-	KratosHTTPFrontEnabled         bool   `mapstructure:"kratos_http_front_enabled"`
-	KratosGRPCManaged              bool   `mapstructure:"kratos_grpc_managed"`
-	KratosInternalHTTPPort         int    `mapstructure:"kratos_internal_http_port"`
-	KratosPilotReadEnabled         bool   `mapstructure:"kratos_pilot_read_enabled"`
-}
-
-// MoePilot 历史 pilot 进程地址（单进程化后仅 Bootstrap 映射仍在读）。
-type MoePilot struct {
-	GRPCAddr            string `mapstructure:"grpc_addr"`
-	HTTPAddr            string `mapstructure:"http_addr"`
-	SuperRPCEndpoint    string `mapstructure:"super_rpc_endpoint"`
-	VIPAdminReadEnabled bool   `mapstructure:"vip_admin_read_enabled"`
 }
 
 // MoeProduction 端口口径。ExternalHTTPPort 是字符串（"8888"），与 runtime.http_port 重复。

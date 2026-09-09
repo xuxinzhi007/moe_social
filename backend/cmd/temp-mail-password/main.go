@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 func main() {
@@ -47,17 +47,17 @@ func main() {
 }
 
 func loadAccessSecret(configFile string) (string, error) {
-	v := viper.New()
-	v.SetConfigFile(configFile)
-	if err := v.ReadInConfig(); err != nil {
-		alt := filepath.Join("backend", configFile)
-		v.SetConfigFile(alt)
-		if err2 := v.ReadInConfig(); err2 != nil {
+	// -f 指定文件，所以用 LoadFile；失败时按原逻辑再试 backend/ 前缀（从仓库根启动的情况）。
+	if _, err := conf.LoadFile(configFile); err != nil {
+		if _, err2 := conf.LoadFile(filepath.Join("backend", configFile)); err2 != nil {
 			return "", err
 		}
 	}
 
-	secret := strings.TrimSpace(v.GetString("auth.access_secret"))
+	// 只取文件值，不用 conf.AuthAccessSecret()：这是邮箱口令的派生种子，必须与
+	// internal/service/user/user_temp_mail.go 的 tempMailboxPassword 完全一致。
+	// 让 MOE_AUTH_ACCESS_SECRET 参与会导致设置该环境变量后既有临时邮箱全部失效。
+	secret := strings.TrimSpace(conf.Get().Auth.AccessSecret)
 	if secret == "" {
 		secret = "moe-social-temp-mail"
 	}

@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // FeishuOAuthUserInfo 飞书 OAuth 用户资料。
@@ -22,22 +22,11 @@ type FeishuOAuthUserInfo struct {
 	Avatar  string
 }
 
-// FeishuOAuthRedirectURI 回调地址；未配置 feishu.redirect_uri 时用 api.public_base_url 拼接。
-func FeishuOAuthRedirectURI() string {
-	if u := strings.TrimSpace(viper.GetString("feishu.redirect_uri")); u != "" {
-		return u
-	}
-	base := strings.TrimRight(strings.TrimSpace(viper.GetString("api.public_base_url")), "/")
-	if base == "" {
-		return ""
-	}
-	return base + "/api/auth/feishu/callback"
-}
-
 // FeishuOAuthAuthorizeURL 生成飞书网页授权地址。
 func FeishuOAuthAuthorizeURL(state string) (string, error) {
-	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
-	redirectURI := FeishuOAuthRedirectURI()
+	fs := conf.Get().Feishu
+	appID := strings.TrimSpace(fs.AppID)
+	redirectURI := conf.FeishuRedirectURI()
 	if appID == "" {
 		return "", fmt.Errorf("feishu app_id is empty")
 	}
@@ -51,7 +40,7 @@ func FeishuOAuthAuthorizeURL(state string) (string, error) {
 	q.Set("app_id", appID)
 	q.Set("redirect_uri", redirectURI)
 	q.Set("state", state)
-	scope := strings.TrimSpace(viper.GetString("feishu.oauth_scope"))
+	scope := strings.TrimSpace(fs.OAuthScope)
 	if scope == "" {
 		scope = "contact:user.email:readonly"
 	}
@@ -65,9 +54,10 @@ func ExchangeFeishuOAuthCode(ctx context.Context, code string) (FeishuOAuthUserI
 	if code == "" {
 		return FeishuOAuthUserInfo{}, fmt.Errorf("feishu oauth code is empty")
 	}
-	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
-	appSecret := strings.TrimSpace(viper.GetString("feishu.app_secret"))
-	redirectURI := FeishuOAuthRedirectURI()
+	fs := conf.Get().Feishu
+	appID := strings.TrimSpace(fs.AppID)
+	appSecret := strings.TrimSpace(fs.AppSecret)
+	redirectURI := conf.FeishuRedirectURI()
 	if appID == "" || appSecret == "" {
 		return FeishuOAuthUserInfo{}, fmt.Errorf("feishu app credentials missing")
 	}

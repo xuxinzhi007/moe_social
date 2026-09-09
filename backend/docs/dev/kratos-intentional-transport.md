@@ -28,7 +28,6 @@ NewHTTPServer (internal/server/http.go)
 ```text
 make gen
   → gen-moe-proto            # api/**/v1/*.proto → *.pb.go / *_http.pb.go
-  → gen-moe-conf
   → gen-proto-route-count    # 统计 *_http.pb.go → routestats/proto_routes_gen.go
 ```
 
@@ -36,6 +35,7 @@ make gen
 
 | 旧路径 | 替代 |
 |--------|------|
+| `internal/conf/moe/v1` + `gen-moe-conf` | 无（唯一导入方 `moeconf` 已整包删除；配置 SSOT 为 `pkg/conf`） |
 | `internal/server/httplegacy/` | `transport/` + `routestats/` |
 | `wave2_misc_compat.go` | `api/media/v1` + `grpc/media` |
 | `scripts/gen/http-routes/` | `scripts/gen/proto-route-count/` |

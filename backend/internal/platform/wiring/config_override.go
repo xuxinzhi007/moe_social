@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"backend/internal/platform/apiconfig"
+	"backend/pkg/conf"
 	"backend/utils"
 
 	"github.com/spf13/viper"
@@ -26,33 +27,23 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 		c.LLMInference.BaseUrl = base
 	} else if base := v.GetString("llm_inference.base_url"); base != "" {
 		c.LLMInference.BaseUrl = base
-	} else if base := v.GetString("ollama.base_url"); base != "" {
-		c.LLMInference.BaseUrl = base
 	}
 	if style := strings.TrimSpace(os.Getenv("MOE_LLM_API_STYLE")); style != "" {
 		c.LLMInference.ApiStyle = style
 	} else if style := strings.TrimSpace(v.GetString("llm_inference.api_style")); style != "" {
 		c.LLMInference.ApiStyle = style
-	} else if style := strings.TrimSpace(v.GetString("ollama.api_style")); style != "" {
-		c.LLMInference.ApiStyle = style
 	}
 	if ts := v.GetInt("llm_inference.timeout_seconds"); ts > 0 {
-		c.LLMInference.TimeoutSeconds = ts
-	} else if ts := v.GetInt("ollama.timeout_seconds"); ts > 0 {
 		c.LLMInference.TimeoutSeconds = ts
 	}
 	if m := strings.TrimSpace(os.Getenv("MOE_LLM_MODEL")); m != "" {
 		c.LLMInference.MemoryModel = m
 	} else if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
 		c.LLMInference.MemoryModel = m
-	} else if m := strings.TrimSpace(v.GetString("ollama.memory_model")); m != "" {
-		c.LLMInference.MemoryModel = m
 	}
 	if apiKey := strings.TrimSpace(os.Getenv("MOE_LLM_API_KEY")); apiKey != "" {
 		c.LLMInference.ApiKey = apiKey
 	} else if apiKey := strings.TrimSpace(v.GetString("llm_inference.api_key")); apiKey != "" {
-		c.LLMInference.ApiKey = apiKey
-	} else if apiKey := strings.TrimSpace(v.GetString("ollama.api_key")); apiKey != "" {
 		c.LLMInference.ApiKey = apiKey
 	}
 	if dir := v.GetString("local_models.storage_dir"); dir != "" {
@@ -64,78 +55,61 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 			c.LocalModels.Catalog = entries
 		}
 	}
-	if u := v.GetString("app_client.public_api_base_url"); u != "" {
+	// —— 序2：以下各段改由 pkg/conf 读取。
+	// 「仅当值非空/为正才覆盖」的语义必须保留：c 来自 api/etc/moe.yaml 片段，
+	// 片段里的值（如 Image.MaxBytes、Auth.AccessExpire）要在 config.yaml 未设置时存活。
+	if u := conf.Get().AppClient.PublicAPIBaseURL; u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}
-	if d := firstNonEmptyString(v, "image.local_dir", "image.localdir", "Image.LocalDir"); d != "" {
+	img := conf.Get().Image
+	if d := strings.TrimSpace(img.LocalDir); d != "" {
 		c.Image.LocalDir = d
 	}
-	if u := firstNonEmptyString(v, "image.public_base_url", "image.publicbaseurl", "Image.PublicBaseUrl"); u != "" {
+	if u := strings.TrimSpace(img.PublicBaseURL); u != "" {
 		c.Image.PublicBaseUrl = u
 	}
-	if n := firstPositiveInt64(v, "image.max_bytes", "image.maxbytes", "Image.MaxBytes"); n > 0 {
+	if n := img.MaxBytes; n > 0 {
 		c.Image.MaxBytes = n
 	}
-	if d := firstNonEmptyString(v, "image.driver", "Image.Driver"); d != "" {
+	if d := strings.TrimSpace(img.Driver); d != "" {
 		c.Image.Driver = d
 	}
-	if ep := firstNonEmptyString(v, "image.oss.endpoint", "Image.OSS.Endpoint"); ep != "" {
+	oss := img.OSS
+	if ep := strings.TrimSpace(oss.Endpoint); ep != "" {
 		c.Image.OSS.Endpoint = ep
 	}
-	if b := firstNonEmptyString(v, "image.oss.bucket", "Image.OSS.Bucket"); b != "" {
+	if b := strings.TrimSpace(oss.Bucket); b != "" {
 		c.Image.OSS.Bucket = b
 	}
-	if ak := firstNonEmptyString(v, "image.oss.access_key_id", "Image.OSS.AccessKeyID"); ak != "" {
+	// 密钥只取文件值：MOE_OSS_* 兜底由真实消费方 biz/media/store_oss.go:29-34 负责，
+	// 这里再兜一遍是重复的，且会让本层平白多出环境变量影响。
+	if ak := strings.TrimSpace(oss.AccessKeyID); ak != "" {
 		c.Image.OSS.AccessKeyID = ak
 	}
-	if sk := firstNonEmptyString(v, "image.oss.access_key_secret", "Image.OSS.AccessKeySecret"); sk != "" {
+	if sk := strings.TrimSpace(oss.AccessKeySecret); sk != "" {
 		c.Image.OSS.AccessKeySecret = sk
 	}
-	if p := firstNonEmptyString(v, "image.oss.prefix", "Image.OSS.Prefix"); p != "" {
+	if p := strings.TrimSpace(oss.Prefix); p != "" {
 		c.Image.OSS.Prefix = p
 	}
-	if u := firstNonEmptyString(v, "image.oss.public_base_url", "Image.OSS.PublicBaseUrl"); u != "" {
+	if u := strings.TrimSpace(oss.PublicBaseURL); u != "" {
 		c.Image.OSS.PublicBaseUrl = u
 	}
-	if r := firstNonEmptyString(v, "image.oss.region", "Image.OSS.Region"); r != "" {
+	if r := strings.TrimSpace(oss.Region); r != "" {
 		c.Image.OSS.Region = r
 	}
-	if v.IsSet("image.oss.proxy_via_api") {
-		c.Image.OSS.ProxyViaAPI = v.GetBool("image.oss.proxy_via_api")
-	} else if v.IsSet("Image.OSS.ProxyViaAPI") {
-		c.Image.OSS.ProxyViaAPI = v.GetBool("Image.OSS.ProxyViaAPI")
+	if conf.IsSet("image.oss.proxy_via_api") {
+		c.Image.OSS.ProxyViaAPI = oss.ProxyViaAPI
 	}
-	if secret := strings.TrimSpace(os.Getenv("MOE_AUTH_ACCESS_SECRET")); secret != "" {
-		c.Auth.AccessSecret = secret
-	} else if secret := firstNonEmptyString(v, "auth.access_secret"); secret != "" {
+	if secret := conf.AuthAccessSecret(); secret != "" {
 		c.Auth.AccessSecret = secret
 	}
-	if exp := v.GetInt64("auth.access_expire_seconds"); exp > 0 {
+	if exp := conf.Get().Auth.AccessExpireSeconds; exp > 0 {
 		c.Auth.AccessExpire = exp
 	}
-	if secret := firstNonEmptyString(v, "admin.jwt_secret"); secret != "" {
-		hours := v.GetInt64("admin.token_expire_hours")
-		if hours <= 0 {
-			hours = 24
-		}
+	// AdminJWT() 认 MOE_ADMIN_JWT_SECRET；此前这里只读文件，那个环境变量自
+	// LoadAdminJWTFromViper 失去调用方起就是一条无人读取的死通道（见 §19.2）。
+	if secret, hours := conf.AdminJWT(); secret != "" {
 		_ = utils.ConfigureAdminJWT(secret, hours)
 	}
-}
-
-func firstNonEmptyString(v *viper.Viper, keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(v.GetString(key)); value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func firstPositiveInt64(v *viper.Viper, keys ...string) int64 {
-	for _, key := range keys {
-		if value := v.GetInt64(key); value > 0 {
-			return value
-		}
-	}
-	return 0
 }

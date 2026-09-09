@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"backend/model"
+	"backend/pkg/conf"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -23,11 +23,12 @@ func SeedAdminAccount(db *gorm.DB) {
 	if count > 0 {
 		return
 	}
-	username := strings.TrimSpace(viper.GetString("admin.bootstrap.username"))
+	bootstrap := conf.Get().Admin.Bootstrap
+	username := strings.TrimSpace(bootstrap.Username)
 	if username == "" {
 		username = "admin"
 	}
-	password := viper.GetString("admin.bootstrap.password")
+	password := bootstrap.Password
 	if strings.TrimSpace(password) == "" {
 		password = "admin123"
 		log.Printf("[admin] 使用默认超管密码 admin123，请尽快在配置中修改 admin.bootstrap.password 并登录后改密")

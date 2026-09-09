@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // BuildWechatOAuthReturnURL 公众号授权成功后跳回 Web/App（state 由客户端传入）。
@@ -15,7 +15,7 @@ func BuildWechatOAuthReturnURL(state, code string) string {
 	}
 	target := strings.TrimSpace(state)
 	if !isAllowedWechatReturnURL(target) {
-		target = strings.TrimSpace(viper.GetString("wechat.app_return_url"))
+		target = strings.TrimSpace(conf.Get().Wechat.AppReturnURL)
 	}
 	if target == "" {
 		return ""

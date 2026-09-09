@@ -19,8 +19,7 @@ import (
 	"time"
 
 	mediabiz "backend/internal/biz/media"
-
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 func main() {
@@ -28,31 +27,29 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "only list files, do not upload")
 	flag.Parse()
 
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath(*confDir)
-	if err := v.ReadInConfig(); err != nil {
+	// -conf 指定目录，所以必须用 LoadFile 而不是 Load（后者只搜固定三个目录）。
+	if _, err := conf.LoadFile(filepath.Join(*confDir, "config.yaml")); err != nil {
 		log.Fatalf("read config: %v", err)
 	}
 
-	localDir := strings.TrimSpace(v.GetString("image.local_dir"))
+	img := conf.Get().Image
+	localDir := strings.TrimSpace(img.LocalDir)
 	if localDir == "" {
 		localDir = "./data/images"
 	}
 	cfg := mediabiz.ImageConfig{
 		Driver:        mediabiz.DriverOSS,
 		LocalDir:      localDir,
-		PublicBaseURL: v.GetString("image.public_base_url"),
+		PublicBaseURL: img.PublicBaseURL,
 		OSS: mediabiz.OSSConfig{
-			Endpoint:        v.GetString("image.oss.endpoint"),
-			Bucket:          v.GetString("image.oss.bucket"),
-			AccessKeyID:     v.GetString("image.oss.access_key_id"),
-			AccessKeySecret: v.GetString("image.oss.access_key_secret"),
-			Prefix:          v.GetString("image.oss.prefix"),
-			PublicBaseURL:   v.GetString("image.oss.public_base_url"),
-			Region:          v.GetString("image.oss.region"),
-			ProxyViaAPI:     v.GetBool("image.oss.proxy_via_api"),
+			Endpoint:        img.OSS.Endpoint,
+			Bucket:          img.OSS.Bucket,
+			AccessKeyID:     img.OSS.AccessKeyID,
+			AccessKeySecret: img.OSS.AccessKeySecret,
+			Prefix:          img.OSS.Prefix,
+			PublicBaseURL:   img.OSS.PublicBaseURL,
+			Region:          img.OSS.Region,
+			ProxyViaAPI:     img.OSS.ProxyViaAPI,
 		},
 	}
 

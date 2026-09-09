@@ -13,7 +13,7 @@ import (
 	"os"
 	"strings"
 
-	"backend/utils"
+	"backend/pkg/conf"
 )
 
 const (
@@ -139,5 +139,5 @@ func providerKeysEncryptionSecret() string {
 	if secret := strings.TrimSpace(os.Getenv(providerKeysSecretEnv)); secret != "" {
 		return secret
 	}
-	return strings.TrimSpace(utils.ResolveAuthAccessSecret())
+	return conf.AuthAccessSecret()
 }

@@ -9,25 +9,26 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // TryEnsureFeishuDirectoryUser 尝试将用户加入飞书通讯录（需管理员权限与 department_id）。
 // 若用户已在企业内或权限不足，仅记录错误，不阻断登录。
 func TryEnsureFeishuDirectoryUser(ctx context.Context, name, email string) error {
-	if !viper.GetBool("feishu.auto_add_to_directory") {
+	fs := conf.Get().Feishu
+	if !fs.AutoAddToDirectory {
 		return nil
 	}
 	email = strings.TrimSpace(email)
 	if email == "" {
 		return nil
 	}
-	deptID := strings.TrimSpace(viper.GetString("feishu.default_department_id"))
+	deptID := strings.TrimSpace(fs.DefaultDepartmentID)
 	if deptID == "" {
 		return fmt.Errorf("feishu.default_department_id is empty")
 	}
-	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
-	appSecret := strings.TrimSpace(viper.GetString("feishu.app_secret"))
+	appID := strings.TrimSpace(fs.AppID)
+	appSecret := strings.TrimSpace(fs.AppSecret)
 	token, err := getFeishuTenantAccessToken(ctx, appID, appSecret)
 	if err != nil {
 		return err

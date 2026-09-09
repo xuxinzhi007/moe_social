@@ -11,9 +11,9 @@ import (
 
 	userv1 "backend/api/user/v1"
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/utils"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +22,7 @@ func FeishuLogin(ctx context.Context, store UserStore, in *userv1.FeishuLoginReq
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	if !viper.GetBool("feishu.enabled") {
+	if !conf.Get().Feishu.Enabled {
 		return nil, ErrOAuthDisabled
 	}
 	info, err := utils.ExchangeFeishuOAuthCode(ctx, in.GetCode())
@@ -53,7 +53,7 @@ func FeishuLogin(ctx context.Context, store UserStore, in *userv1.FeishuLoginReq
 
 // FeishuAuthorizeURL 生成飞书授权链接。
 func FeishuAuthorizeURL(_ context.Context, in *userv1.FeishuAuthorizeURLReq) (*userv1.FeishuAuthorizeURLResp, error) {
-	if !viper.GetBool("feishu.enabled") {
+	if !conf.Get().Feishu.Enabled {
 		return nil, ErrOAuthDisabled
 	}
 	url, err := utils.FeishuOAuthAuthorizeURL(in.GetState())

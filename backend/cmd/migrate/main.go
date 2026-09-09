@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 
+	"backend/pkg/conf"
 	"backend/utils"
 )
 
@@ -25,7 +26,7 @@ var (
 func main() {
 	flag.Parse()
 
-	if err := utils.InitConfig(); err != nil {
+	if _, err := conf.Load(); err != nil {
 		log.Fatalf("config: %v", err)
 	}
 

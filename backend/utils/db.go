@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"backend/model"
+	"backend/pkg/conf"
 
-	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -29,29 +29,8 @@ func EnsureDB() error {
 }
 
 func ensureConfigLoaded() error {
-	if viper.ConfigFileUsed() != "" {
-		return nil
-	}
-	return InitConfig()
-}
-
-// InitConfig 初始化配置
-func InitConfig() error {
-	// 设置配置文件路径
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-
-	// 添加多个配置文件路径，支持从不同目录读取
-	viper.AddConfigPath("./config")
-	viper.AddConfigPath("../config")
-	viper.AddConfigPath("../../config")
-
-	// 读取配置文件
-	if err := viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取配置文件失败: %v", err)
-	}
-
-	return nil
+	_, err := conf.Load()
+	return err
 }
 
 // InitDB 初始化数据库连接。
@@ -92,17 +71,7 @@ func initDBWithMigrateOnce(opts MigrateOptions) error {
 		DisableForeignKeyConstraintWhenMigrating: true,
 	}
 
-	// 构建MySQL连接DSN
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%t&loc=%s",
-		viper.GetString("database.user"),
-		viper.GetString("database.password"),
-		viper.GetString("database.host"),
-		viper.GetInt("database.port"),
-		viper.GetString("database.dbname"),
-		viper.GetString("database.charset"),
-		viper.GetBool("database.parseTime"),
-		viper.GetString("database.loc"),
-	)
+	dsn := conf.DSN()
 
 	// 连接MySQL数据库
 	var err error

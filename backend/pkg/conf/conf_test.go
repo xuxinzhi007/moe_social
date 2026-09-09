@@ -133,13 +133,6 @@ moe:
   life_engine_enabled: true
   user_api_in_process: true
   vip_api_in_process: false
-  kratos_pure_enabled: true
-  kratos_admin_base_url: "http://127.0.0.1:8888"
-  pilot:
-    grpc_addr: "127.0.0.1:19011"
-    http_addr: "127.0.0.1:19032"
-    super_rpc_endpoint: "127.0.0.1:8080"
-    vip_admin_read_enabled: true
   production:
     unified_entry: moe-social
     external_http_port: "9999"
@@ -204,9 +197,6 @@ func TestTypedMirror(t *testing.T) {
 	}
 	if c.Moe.Production.ExternalHTTPPort != "9999" {
 		t.Errorf("Moe.Production.ExternalHTTPPort = %q", c.Moe.Production.ExternalHTTPPort)
-	}
-	if c.Moe.Pilot.VIPAdminReadEnabled != true || c.Moe.Pilot.GRPCAddr != "127.0.0.1:19011" {
-		t.Errorf("Moe.Pilot = %+v", c.Moe.Pilot)
 	}
 	if c.Feishu.ReceiveIDType != "email" || c.Feishu.AppID != "cli_test" {
 		t.Errorf("Feishu = %+v", c.Feishu)
@@ -426,28 +416,8 @@ func TestDomainInProcessDefaultsFalse(t *testing.T) {
 	}
 }
 
-// TestKratosGates 复现 moewiring 的总闸语义：kratos_pilot_read_enabled 打开时三闸全开。
-func TestKratosGates(t *testing.T) {
-	ResetForTest()
-	t.Cleanup(ResetForTest)
-	path := filepath.Join(t.TempDir(), "config.yaml")
-	body := "runtime:\n  http_port: 8888\nmoe:\n  kratos_pilot_read_enabled: true\n"
-	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := LoadFile(path); err != nil {
-		t.Fatal(err)
-	}
-	if !KratosAdminHTTPEnabled() || !KratosVipHTTPEnabled() || !KratosAdminInsightsHTTPEnabled() {
-		t.Error("kratos_pilot_read_enabled=true 时三闸应全开")
-	}
-	// kratos_admin_base_url 缺失 → 兜底到 runtime.http_port，而不是已无监听者的 19032
-	if got := KratosAdminBaseURL(); got != "http://127.0.0.1:8888" {
-		t.Errorf("KratosAdminBaseURL() = %q, want http://127.0.0.1:8888", got)
-	}
-}
-
-// TestWechatLegacyFallback 复现 wechatFlowCredentials 的历史扁平键回退。
+// TestWechatLegacyFallback 守住历史扁平键回退链。
+// 该链原先在 utils.wechatFlowCredentials，序6 迁移后只存在于 WechatFlowCredential。
 func TestWechatLegacyFallback(t *testing.T) {
 	loadFixture(t)
 

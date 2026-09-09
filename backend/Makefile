@@ -1,6 +1,6 @@
 # 在 backend 目录执行，例如: make gen | make build | make moe-social
 
-.PHONY: all gen gen-moe-proto gen-moe-conf gen-proto-route-count gen-swagger gen-moe-admin \
+.PHONY: all gen gen-moe-proto gen-proto-route-count gen-swagger gen-moe-admin \
 	api-one init-proto-tools check temp-mail-password \
 	moe-social moe-social-dev moe-social-stop \
 	build build-moe-social build-linux env-status \
@@ -17,15 +17,12 @@ init-proto-tools:
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 
-# 日常安全生成：域 proto + conf + 路由计数
+# 日常安全生成：域 proto + 路由计数
 # 注：gen-moe-proto 末尾会调用 openapi.sh，因此 openapi.yaml 会一并更新
-gen: gen-moe-proto gen-moe-conf gen-proto-route-count
+gen: gen-moe-proto gen-proto-route-count
 
 gen-moe-proto:
 	bash scripts/gen/moe-proto.sh
-
-gen-moe-conf:
-	bash scripts/gen/moe-conf.sh
 
 # 从 api/**/v1/*_http.pb.go 统计 → internal/server/routestats/proto_routes_gen.go
 gen-proto-route-count:

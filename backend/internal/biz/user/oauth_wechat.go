@@ -9,9 +9,9 @@ import (
 
 	userv1 "backend/api/user/v1"
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/utils"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -20,8 +20,8 @@ func WechatLogin(ctx context.Context, store UserStore, in *userv1.WechatLoginReq
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	if !viper.GetBool("wechat.enabled") {
-		if !viper.IsSet("wechat.enabled") {
+	if !conf.Get().Wechat.Enabled {
+		if !conf.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
 		}
 		return nil, ErrOAuthDisabled
@@ -34,7 +34,7 @@ func WechatLogin(ctx context.Context, store UserStore, in *userv1.WechatLoginReq
 	if err != nil {
 		msg := "微信授权失败，请重试"
 		errText := err.Error()
-		if strings.Contains(errText, "credentials missing") {
+		if strings.Contains(errText, "凭证缺失") {
 			msg = "服务端未配置微信移动应用凭证"
 		}
 		return nil, fmt.Errorf("%w: %s", ErrUnauthorized, msg)
@@ -62,8 +62,8 @@ func WechatLogin(ctx context.Context, store UserStore, in *userv1.WechatLoginReq
 
 // WechatAuthorizeURL 微信授权 URL。
 func WechatAuthorizeURL(_ context.Context, in *userv1.WechatAuthorizeURLReq) (*userv1.WechatAuthorizeURLResp, error) {
-	if !viper.GetBool("wechat.enabled") {
-		if !viper.IsSet("wechat.enabled") {
+	if !conf.Get().Wechat.Enabled {
+		if !conf.IsSet("wechat.enabled") {
 			return nil, fmt.Errorf("%w: 未配置微信登录", ErrOAuthDisabled)
 		}
 		return nil, ErrOAuthDisabled
