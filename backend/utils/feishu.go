@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 const feishuAPIBase = "https://open.feishu.cn/open-apis"
@@ -84,14 +84,15 @@ func SendFeishuTestCard(ctx context.Context, recipientEmail string) error {
 }
 
 func resolveFeishuRecipient(recipientEmail string) (receiveID, receiveIDType string, err error) {
-	if !viper.GetBool("feishu.enabled") {
+	fs := conf.Get().Feishu
+	if !fs.Enabled {
 		return "", "", fmt.Errorf("feishu is disabled")
 	}
 	receiveID = strings.TrimSpace(recipientEmail)
 	receiveIDType = "email"
 	if receiveID == "" {
-		receiveID = strings.TrimSpace(viper.GetString("feishu.receive_id"))
-		receiveIDType = strings.TrimSpace(viper.GetString("feishu.receive_id_type"))
+		receiveID = strings.TrimSpace(fs.ReceiveID)
+		receiveIDType = strings.TrimSpace(fs.ReceiveIDType)
 		if receiveIDType == "" {
 			receiveIDType = "email"
 		}
@@ -103,11 +104,12 @@ func resolveFeishuRecipient(recipientEmail string) (receiveID, receiveIDType str
 }
 
 func sendFeishuInteractiveCard(ctx context.Context, receiveIDType, receiveID string, card map[string]interface{}) error {
-	if !viper.GetBool("feishu.enabled") {
+	fs := conf.Get().Feishu
+	if !fs.Enabled {
 		return nil
 	}
-	appID := strings.TrimSpace(viper.GetString("feishu.app_id"))
-	appSecret := strings.TrimSpace(viper.GetString("feishu.app_secret"))
+	appID := strings.TrimSpace(fs.AppID)
+	appSecret := strings.TrimSpace(fs.AppSecret)
 	if appID == "" {
 		return fmt.Errorf("feishu app_id is empty")
 	}

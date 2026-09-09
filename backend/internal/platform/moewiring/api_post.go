@@ -7,37 +7,26 @@ import (
 	"backend/internal/platform/appdb"
 	commentapp "backend/internal/service/comment"
 	postapp "backend/internal/service/post"
+	"backend/pkg/conf"
 )
 
 func imageConfigFromMoe() mediabiz.ImageConfig {
-	v := moeViper()
-	if v == nil {
-		return mediabiz.ImageConfig{}
-	}
+	img := conf.Get().Image
 	return mediabiz.ImageConfig{
-		Driver:        firstNonEmpty(v.GetString("image.driver"), v.GetString("Image.Driver")),
-		LocalDir:      firstNonEmpty(v.GetString("image.local_dir"), v.GetString("Image.LocalDir")),
-		PublicBaseURL: firstNonEmpty(v.GetString("image.public_base_url"), v.GetString("Image.PublicBaseUrl")),
+		Driver:        strings.TrimSpace(img.Driver),
+		LocalDir:      strings.TrimSpace(img.LocalDir),
+		PublicBaseURL: strings.TrimSpace(img.PublicBaseURL),
 		OSS: mediabiz.OSSConfig{
-			Endpoint:        firstNonEmpty(v.GetString("image.oss.endpoint"), v.GetString("Image.OSS.Endpoint")),
-			Bucket:          firstNonEmpty(v.GetString("image.oss.bucket"), v.GetString("Image.OSS.Bucket")),
-			AccessKeyID:     firstNonEmpty(v.GetString("image.oss.access_key_id"), v.GetString("Image.OSS.AccessKeyID")),
-			AccessKeySecret: firstNonEmpty(v.GetString("image.oss.access_key_secret"), v.GetString("Image.OSS.AccessKeySecret")),
-			Prefix:          firstNonEmpty(v.GetString("image.oss.prefix"), v.GetString("Image.OSS.Prefix")),
-			PublicBaseURL:   firstNonEmpty(v.GetString("image.oss.public_base_url"), v.GetString("Image.OSS.PublicBaseUrl")),
-			Region:          firstNonEmpty(v.GetString("image.oss.region"), v.GetString("Image.OSS.Region")),
-			ProxyViaAPI:     v.GetBool("image.oss.proxy_via_api"),
+			Endpoint:        strings.TrimSpace(img.OSS.Endpoint),
+			Bucket:          strings.TrimSpace(img.OSS.Bucket),
+			AccessKeyID:     strings.TrimSpace(img.OSS.AccessKeyID),
+			AccessKeySecret: strings.TrimSpace(img.OSS.AccessKeySecret),
+			Prefix:          strings.TrimSpace(img.OSS.Prefix),
+			PublicBaseURL:   strings.TrimSpace(img.OSS.PublicBaseURL),
+			Region:          strings.TrimSpace(img.OSS.Region),
+			ProxyViaAPI:     img.OSS.ProxyViaAPI,
 		},
 	}
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if s := strings.TrimSpace(v); s != "" {
-			return s
-		}
-	}
-	return ""
 }
 
 func PostAPIInProcessEnabled() bool {
@@ -60,11 +49,8 @@ func NewAPIPostService() (*postapp.AppService, error) {
 }
 
 // handDrawRequireModeration 读 config.yaml 的 runtime.hand_draw_require_moderation。
-// 注意必须带 runtime. 前缀：早先这里读的是顶层键，IsSet 恒为假、恒返回默认值，
-// 把配置改成 true 也不会生效。驼峰别名同样命中不了（viper 会把键小写，
-// 变成 handdrawrequiremoderation），故一并按 moewiring/config.go 的约定去掉。
 func handDrawRequireModeration() bool {
-	return boolOr(moeViper(), []string{"runtime.hand_draw_require_moderation"}, false)
+	return conf.Get().Runtime.HandDrawRequireModeration
 }
 
 func NewAPICommentService() (*commentapp.AppService, error) {

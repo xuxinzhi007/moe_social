@@ -217,11 +217,6 @@ moe:
   companion_api_in_process: true
   # 单进程 Kratos HTTP（make moe-social）
   single_process: true
-  # ⚠️ 下面两键已空转：唯一读者是 internal/platform/moeconf/load.go，而 moeconf.LoadBootstrap()
-  #    的 4 个调用方全在 2026-09-08 删掉的 moewiring 过渡开关里，该包现已零导入方。
-  #    键暂留，随「是否删除 moeconf 包」一并处置（见 docs/dev/config-hygiene-review-2026-09-08.md §15）。
-  kratos_pure_enabled: true
-  kratos_admin_base_url: "http://127.0.0.1:8888"
   production:
     unified_entry: moe-social
     external_http_port: "8888"

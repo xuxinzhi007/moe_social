@@ -1,10 +1,9 @@
 package moesocial
 
 import (
-	"strconv"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 const (
@@ -28,8 +27,8 @@ func ResolveStartupPaths(unified, apiOverride string) StartupPaths {
 	if api != "" {
 		return StartupPaths{Unified: u, APIFragment: api}
 	}
-	v := viperForUnified(u)
-	api = strings.TrimSpace(v.GetString("runtime.api_config_fragment"))
+	loadUnified(u)
+	api = strings.TrimSpace(conf.Get().Runtime.APIConfigFragment)
 	if api == "" {
 		api = defaultAPIFragment
 	}
@@ -46,34 +45,24 @@ func (o *Options) NormalizeOptions() {
 	o.APIConfigFile = p.APIFragment
 }
 
-func viperForUnified(unified string) *viper.Viper {
-	v := viper.New()
-	v.SetConfigType("yaml")
-	path := strings.TrimSpace(unified)
-	if path == "" {
-		path = defaultUnifiedConfig
+// loadUnified 让 pkg/conf 的缓存指向 -f 指定的文件。
+//
+// conf.LoadFile 的注释写的就是「对应 cmd/moe-social 的 -f 覆盖」，但此前它零调用方：
+// -f 只影响片段路径与端口，DSN、JWT 密钥、图片等其余读者仍走 searchDirs，同一次启动
+// 读两个文件。Makefile / Dockerfile / deploy/n100 传的 -f 都是 config/config.yaml，
+// 与其 WorkingDirectory 下的 searchDirs[0] 是同一个文件，所以这次收敛对现有部署无变化。
+//
+// -f 读不到时回落 searchDirs，与迁移前 viperForUnified 的静默回退一致。
+func loadUnified(unified string) {
+	if p := strings.TrimSpace(unified); p != "" {
+		if _, err := conf.LoadFile(p); err == nil {
+			return
+		}
 	}
-	v.SetConfigFile(path)
-	if err := v.ReadInConfig(); err != nil {
-		v.SetConfigName("config")
-		v.SetConfigType("yaml")
-		v.AddConfigPath("./config")
-		v.AddConfigPath("../config")
-		v.AddConfigPath("../../config")
-		_ = v.ReadInConfig()
-	}
-	return v
+	_, _ = conf.Load()
 }
 
 func httpPortFromUnified(unified string) int {
-	v := viperForUnified(unified)
-	if p := v.GetInt("runtime.http_port"); p > 0 {
-		return p
-	}
-	if s := strings.TrimSpace(v.GetString("moe.production.external_http_port")); s != "" {
-		if p, err := strconv.Atoi(s); err == nil && p > 0 {
-			return p
-		}
-	}
-	return 0
+	loadUnified(unified)
+	return conf.HTTPPort()
 }

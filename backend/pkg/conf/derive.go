@@ -228,35 +228,6 @@ func InProcessDomains() []string {
 	return out
 }
 
-// KratosAdminHTTPEnabled 管理台读接口是否走 Kratos HTTP。
-// kratos_pilot_read_enabled 为总闸，打开时 admin / vip / insights 一并生效。
-func KratosAdminHTTPEnabled() bool {
-	return Get().Moe.KratosPilotReadEnabled || Get().Moe.KratosAdminHTTPEnabled
-}
-
-// KratosVipHTTPEnabled VIP 套餐读接口是否走 Kratos HTTP。
-func KratosVipHTTPEnabled() bool {
-	return Get().Moe.KratosPilotReadEnabled || Get().Moe.KratosVipHTTPEnabled
-}
-
-// KratosAdminInsightsHTTPEnabled 管理台洞察接口是否走 Kratos HTTP。
-func KratosAdminInsightsHTTPEnabled() bool {
-	return Get().Moe.KratosPilotReadEnabled || Get().Moe.KratosAdminInsightsHTTPEnabled
-}
-
-// KratosAdminBaseURL 管理台内部回环地址。
-// ⚠️ 迁移前 moewiring.KratosAdminBaseURL 的兜底是 http://127.0.0.1:19032，
-// 但 19032 已无任何监听者；此处兜底改为 runtime.http_port，避免拼出打不通的地址。
-func KratosAdminBaseURL() string {
-	if u := strings.TrimSpace(Get().Moe.KratosAdminBaseURL); u != "" {
-		return u
-	}
-	if p := HTTPPort(); p > 0 {
-		return fmt.Sprintf("http://127.0.0.1:%d", p)
-	}
-	return ""
-}
-
 func domainBool(key string) bool {
 	Get()
 	mu.RLock()

@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // BuildFeishuOAuthReturnURL 授权成功后跳回 App（state 由客户端传入当前页 origin）。
@@ -15,7 +15,7 @@ func BuildFeishuOAuthReturnURL(state, code string) string {
 	}
 	target := strings.TrimSpace(state)
 	if !isAllowedReturnURL(target) {
-		target = strings.TrimSpace(viper.GetString("feishu.app_return_url"))
+		target = strings.TrimSpace(conf.Get().Feishu.AppReturnURL)
 	}
 	if target == "" {
 		return ""

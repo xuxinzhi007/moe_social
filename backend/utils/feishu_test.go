@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 func TestBuildFeishuAgentEventCard(t *testing.T) {
@@ -54,12 +54,12 @@ func TestSendFeishuTestCardIntegration(t *testing.T) {
 	if os.Getenv("FEISHU_INTEGRATION_TEST") != "1" {
 		t.Skip("set FEISHU_INTEGRATION_TEST=1 to run live Feishu IM test")
 	}
-	if err := InitConfig(); err != nil {
+	if _, err := conf.Load(); err != nil {
 		t.Fatalf("init config: %v", err)
 	}
 	email := strings.TrimSpace(os.Getenv("FEISHU_TEST_EMAIL"))
 	if email == "" {
-		email = strings.TrimSpace(viper.GetString("feishu.receive_id"))
+		email = strings.TrimSpace(conf.Get().Feishu.ReceiveID)
 	}
 	if email == "" {
 		t.Fatal("set FEISHU_TEST_EMAIL or feishu.receive_id in config")

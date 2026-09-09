@@ -2,13 +2,11 @@ package utils
 
 import (
 	"errors"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/spf13/viper"
 )
 
 const defaultAdminExpireHours = 24
@@ -44,26 +42,6 @@ func ConfigureAdminJWT(secret string, expireHours int64) error {
 	}
 	adminJWTReady = true
 	return nil
-}
-
-// LoadAdminJWTFromViper 从 config.yaml 加载 admin.jwt_secret。
-func LoadAdminJWTFromViper() error {
-	secret := resolveAdminJWTSecret()
-	if secret == "" {
-		return errors.New("admin.jwt_secret 未配置")
-	}
-	hours := viper.GetInt64("admin.token_expire_hours")
-	if hours <= 0 {
-		hours = defaultAdminExpireHours
-	}
-	return ConfigureAdminJWT(secret, hours)
-}
-
-func resolveAdminJWTSecret() string {
-	if s := strings.TrimSpace(os.Getenv("MOE_ADMIN_JWT_SECRET")); s != "" {
-		return s
-	}
-	return strings.TrimSpace(viper.GetString("admin.jwt_secret"))
 }
 
 func adminSigningKey() ([]byte, error) {

@@ -7,6 +7,7 @@ import (
 
 	"backend/internal/platform/bootstrap"
 	apirun "backend/internal/platform/wiring"
+	"backend/pkg/conf"
 	"backend/utils"
 
 	"github.com/go-kratos/kratos/v2"
@@ -15,7 +16,7 @@ import (
 // runHTTPOnly starts the pure Kratos HTTP process on the external port.
 func runHTTPOnly(opts Options) error {
 	opts.NormalizeOptions()
-	if err := utils.InitConfig(); err != nil {
+	if _, err := conf.Load(); err != nil {
 		return fmt.Errorf("config: %w", err)
 	}
 	if opts.Migrate.Enabled {

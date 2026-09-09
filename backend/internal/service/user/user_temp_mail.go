@@ -18,10 +18,10 @@ import (
 	"time"
 
 	userv1 "backend/api/user/v1"
+	"backend/pkg/conf"
 	"backend/utils"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
-	"github.com/spf13/viper"
 )
 
 type mailTmDomainListResponse struct {
@@ -141,16 +141,17 @@ func (s *AppService) GetTempEmailLatestCode(ctx context.Context, in *userv1.GetT
 }
 
 func loadTempMailConfig() (*http.Client, string, error) {
-	if !viper.GetBool("temp_mail.enabled") {
+	tm := conf.Get().TempMail
+	if !tm.Enabled {
 		return nil, "", kerrors.BadRequest("TEMP_MAIL_DISABLED", "临时邮箱功能暂未启用")
 	}
 
-	baseURL := strings.TrimRight(strings.TrimSpace(viper.GetString("temp_mail.base_url")), "/")
+	baseURL := strings.TrimRight(strings.TrimSpace(tm.BaseURL), "/")
 	if baseURL == "" {
 		baseURL = "https://api.mail.tm"
 	}
 
-	timeoutSeconds := viper.GetInt("temp_mail.timeout_seconds")
+	timeoutSeconds := tm.TimeoutSeconds
 	return utils.NewHTTPClient(timeoutSeconds), baseURL, nil
 }
 
@@ -184,7 +185,7 @@ func mailTmPickDomainForGenerate(ctx context.Context, client *http.Client, baseU
 		return cached, nil
 	}
 
-	if fallback := strings.ToLower(strings.TrimSpace(viper.GetString("temp_mail.fallback_domain"))); fallback != "" {
+	if fallback := strings.ToLower(strings.TrimSpace(conf.Get().TempMail.FallbackDomain)); fallback != "" {
 		cacheTempMailDomain(fallback)
 		return fallback, nil
 	}
@@ -387,7 +388,9 @@ func buildTempMailboxLocalPart() string {
 }
 
 func tempMailboxPassword(email string) string {
-	seed := strings.TrimSpace(viper.GetString("auth.access_secret"))
+	// 用文件里的 auth.access_secret 而非 conf.AuthAccessSecret()：这是邮箱口令的派生种子，
+	// 让环境变量参与会导致设置 MOE_AUTH_ACCESS_SECRET 后既有临时邮箱全部失效。
+	seed := strings.TrimSpace(conf.Get().Auth.AccessSecret)
 	if seed == "" {
 		seed = "moe-social-temp-mail"
 	}

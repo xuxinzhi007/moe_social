@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"backend/pkg/conf"
+
 	"github.com/spf13/viper"
 )
 
@@ -68,20 +70,21 @@ func trimURL(u string) string {
 }
 
 // ReadRuntimeConfig 读取统一 config.yaml 中的 App/图片相关配置。
+// 用 Reload 而不是 Get：这个视图要反映磁盘上的当前值，包括运维手改文件的情况
+// （迁移前每次都新开一个 viper 读盘，语义等价；管理台是低频端点，读盘开销可接受）。
 func ReadRuntimeConfig() (RuntimeConfigView, error) {
-	v, path, err := newUnifiedConfigViper()
+	cfg, err := conf.Reload()
 	if err != nil {
 		return RuntimeConfigView{}, err
 	}
-	view := RuntimeConfigView{
-		PublicApiBaseUrl:   trimURL(v.GetString("app_client.public_api_base_url")),
-		ApiPublicBaseUrl:   trimURL(firstViperString(v, "api.public_base_url")),
-		ImagePublicBaseUrl: trimURL(firstViperString(v, "image.public_base_url", "Image.PublicBaseUrl")),
-		ImageLocalDir:      strings.TrimSpace(firstViperString(v, "image.local_dir", "Image.LocalDir")),
-		ImageMaxBytes:      firstViperInt64(v, "image.max_bytes", "Image.MaxBytes"),
-		ConfigFile:         path,
-	}
-	return view, nil
+	return RuntimeConfigView{
+		PublicApiBaseUrl:   trimURL(cfg.AppClient.PublicAPIBaseURL),
+		ApiPublicBaseUrl:   trimURL(cfg.API.PublicBaseURL),
+		ImagePublicBaseUrl: trimURL(cfg.Image.PublicBaseURL),
+		ImageLocalDir:      strings.TrimSpace(cfg.Image.LocalDir),
+		ImageMaxBytes:      cfg.Image.MaxBytes,
+		ConfigFile:         conf.Path(),
+	}, nil
 }
 
 // ApplyRuntimeConfigPatch 写入 config.yaml 并返回最新视图。
@@ -110,28 +113,16 @@ func ApplyRuntimeConfigPatch(patch RuntimeConfigPatch) (RuntimeConfigView, error
 	if err := v.WriteConfig(); err != nil {
 		return RuntimeConfigView{}, fmt.Errorf("写入配置失败: %w", err)
 	}
+	// pkg/conf 没有 setter，写回只能留在 viper；但写完必须让进程内的缓存指向刚写的文件，
+	// 否则其余读者到重启前都看不到本次改动 —— load.go:114 的注释就是这条要求，
+	// 而 Reload 在此之前一直是零调用方。
+	if _, err := conf.LoadFile(path); err != nil {
+		return RuntimeConfigView{}, fmt.Errorf("重载配置失败: %w", err)
+	}
 	view, err := ReadRuntimeConfig()
 	if err != nil {
 		return RuntimeConfigView{}, err
 	}
 	view.ConfigFile = path
 	return view, nil
-}
-
-func firstViperString(v *viper.Viper, keys ...string) string {
-	for _, key := range keys {
-		if value := strings.TrimSpace(v.GetString(key)); value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func firstViperInt64(v *viper.Viper, keys ...string) int64 {
-	for _, key := range keys {
-		if v.IsSet(key) {
-			return v.GetInt64(key)
-		}
-	}
-	return 0
 }

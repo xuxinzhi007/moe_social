@@ -1,11 +1,11 @@
 # 配置治理审查（2026-09-08）
 
 > **范围**：`backend/` · `lib/` · `moe-admin/` · `website/` · `deploy/` · `.github/workflows/` · 仓库卫生
-> **基线提交**：`14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）
-> **提交状态**：第一批（§13）= `8037287e`、第二批（§14）= `3ebcf62d`，两者已入库；**第三批（§15）仍在暂存区未提交**。
-> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13–§15 记录审查之后**已落地的三批改动**（含改动内容与验证结果），性质是变更记录而非审查。
+> **基线提交**：§0–§12 = `14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）；**§16 = `bec11b26 feat(life, arena): 落地M0/M1a活世界营地预览功能`（2026-09-09）**
+> **提交状态**：第一批（§13）= `8037287e`、第二批（§14）= `3ebcf62d`、第三批（§15）= `1d5a45ac`，三批均已入库；§15.5 记录的文档一致性收尾与 §12.1 计数修正随第三批一同提交。**第四批（§16）尚未提交，仍在工作区。**
+> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13–§16 记录审查之后**已落地的四批改动**（含改动内容与验证结果），性质是变更记录而非审查。
 > **有效性**：本文是**绑定基线提交 `14370f93` 的快照**（依 `docs/README.md` 文档维护约定第 3 条）。§11 各批次整改落地后，对应章节即失效，应**直接删除该章节**而非保留 archive stub。所有行号以该基线为准，后续提交可能使其偏移。
-> ⚠️ **行号提醒**：三批改动已使 §0–§12 的部分行号失效（尤其 `moewiring/config.go`——该文件从 191 行降到 80 行，原 `:62-190` 区间的引用全部作废）。凡被 §13–§15 就地更新过的条目，以更新后的文字为准；未更新的条目按基线行号读。
+> ⚠️ **行号提醒**：四批改动已使 §0–§12 的部分行号失效（尤其 `moewiring/config.go`——该文件从 191 行降到 80 行，原 `:62-190` 区间的引用全部作废；§16 又让 `utils/db.go` 原 `:96-105` 塌缩为 `:96` 一行）。凡被 §13–§16 就地更新过的条目，以更新后的文字为准；未更新的条目按基线行号读。
 > **前提说明**：当前仓库内的第三方密钥为**开发期临时凭据，正式版会整体更换**。因此本文的重点不是「密钥泄露应急」，而是**为什么结构上会导致密钥只能写在这里**——结构不改，换完新密钥仍会回到同一状态。
 
 ---
@@ -604,14 +604,19 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 
 ## 12. 统一配置加载器（`backend/pkg/conf`）
 
-> **状态：第 1 步已落地（2026-09-08），纯新增，零调用点迁移。** `grep -rn '"backend/pkg/conf"' backend/ --include='*.go'` 目前为空即为证。
+> **状态：第 1 步已落地（2026-09-08），第 2 步进行中（6 个子步骤完成 1 个）。**
+> 第 1 步是纯新增、零调用点迁移 —— 因此从 2026-09-08 到 2026-09-09 期间，`pkg/conf`（1338 行，含 561 行测试）**一直是死代码**：`go build` 与 `go test` 全绿，但零个外部导入者。当时 `grep -rn '"backend/pkg/conf"' backend/ --include='*.go'` 为空即为证。
+> **2026-09-09 第 2.1 步落地后，`backend/utils` 成为第一个导入者**（见 §16）。
+> ⚠️ 教训：新建统一层不等于收敛完成。**「加载器建好了」和「调用点迁过来了」是两件事，中间隔着一整天没人发现的死代码。** 判断收敛进度只能看反向依赖数，不能看新包是否存在、是否能编译、测试是否通过。
 
 ### 12.1 要解决的问题
 
-同一份 `backend/config/config.yaml` 被 **19 处**独立打开：18 个遗留的 `viper.New()`（分布在 16 个文件）+ `utils.InitConfig()` 的全局 viper 单例。每处都：
+同一份 `backend/config/config.yaml` 被 **18 处**独立打开：17 个遗留的 `viper.New()`（分布在 **14** 个文件）+ `utils.InitConfig()` 的全局 viper 单例。每处都：
 
 > **计数修正（2026-09-08 第三批后实测）**：原文写「20 处 = 19 个 `viper.New()` + `utils.InitConfig()`」，多算了 1 处。实测 `grep -rn 'viper.New()' backend/ --include='*.go'` 共 **22** 处命中，需排除 4 处：`deploy/config/config.go` 的 2 处（读的是**另一个** `deploy/config.yaml`）、`pkg/conf/load.go:193` 的 1 处（这是**新加载器自己**，不是遗留读取点）、`pkg/conf/config.go:3` 的 1 处（注释文字）。余下 18 处才是遗留读取点。
 > 第三批**没有改变这个计数**：已核对 HEAD，被删函数所在的 `moewiring/config.go` 在改动前后都只有 1 处 `viper.New()`（在 `moeViper()` 里），被整文件删除的 `wire_mode.go` 是 0 处。
+> **文件数修正（2026-09-09 复核实测）**：原文写「18 处分布在 16 个文件」。18 处正确，但 16 个文件**与 18 处不同口径** —— 既然把 `deploy/config/config.go` 的 2 处从站点数里排除了，就必须把这个文件也从文件数里排除，正确值是 **15 个文件**（raw grep 22 处命中 / 16 个文件，减 `deploy/config/config.go` 后为 18 处 / 15 个文件）。这与 §15.5 记录的是同一类错误：**分子与分母必须在同一口径上**。
+> **第五批后计数（2026-09-09 实测）**：raw grep 从 22 降到 **21** 处命中 —— `moeconf/load.go:27` 随整包删除消失。排除项不变（仍是 `deploy/config/config.go` 2 处 + `pkg/conf/load.go:193` + `pkg/conf/config.go:3` 注释），故遗留站点为 **17 处 / 14 文件**，总独立打开点 **18 处**。同时 `utils.InitConfig()` 的**生产**调用方从 4 个降到 **3 个**（`cmd/migrate/main.go:28`、`moesocial/run_http_only.go:18`、`utils/db.go:36`；`moeconf/load.go:23` 已随包删除，另有 `utils/feishu_test.go:57` 一处测试调用不计入）。这是 §12.5 序 6 的第一次实际缩减。
 
 - 各自硬编码一遍 `SetConfigName("config")` + 三条 `AddConfigPath`（`./config`、`../config`、`../../config`）；
 - 各自实现一遍回退链，且**互不一致**：
@@ -648,6 +653,7 @@ backend/pkg/conf/
 
 - **`Inference()` 取环境变量的超集**（认全部 4 个 `MOE_LLM_*`）。这意味着 `pkg/moe/runtime` 迁过来之后，`MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` **将开始影响 Bot 调度**（此前只有 `MOE_LLM_API_KEY` 生效）。这是有意的收敛，不是回归；已在 `derive.go` 的 `Inference()` 注释里写明。
 - ~~**`KratosAdminBaseURL()` 的兜底从 `19032` 改为 `runtime.http_port`。**~~ **❌ 已作废（第三批）**：该函数连同它的两处 `19032` 兜底已被整体删除（零外部调用方，见 §15.2 B 组），迁移目标不存在了。因此第 2 步**只剩 1 项需要签字的行为变更**（上面那条 `Inference()` 取环境变量超集）。
+  > **歧义澄清（2026-09-09 第五批）**：上一句删掉的是 **`moewiring` 的遗留函数**。`pkg/conf/derive.go:250` 那个**同名新方法当时并没有删**，它带着「兜底改为 `runtime.http_port`」的注释一直留到第五批——实测 `conf.KratosAdminBaseURL()` 形式的外部调用方为 **0**，即它是一个**生下来就没有调用方的迁移目标**（目标已在第三批消失）。第五批连同另外 3 个 `Kratos*Enabled()` 方法、9 个 `Kratos*` 类型化字段一并删除。<br>⚠️ 同时删掉的还有它的专属用例 `TestKratosGates`（原 `conf_test.go:419-438`，注释自称「复现 moewiring 的总闸语义」）——**这是一个「用测试把死代码保住」的实例**：用例断言的是已删除函数的行为，所以只要它在，那 4 个零调用方的函数就删不掉、`go test` 也永远是绿的。§16.2 的教训是「测试通过 ≠ 已接线」，这一条是它的镜像：**测试通过也可能只是死代码有人看守**。
 
 ### 12.5 第 2 步：调用点迁移顺序
 
@@ -655,12 +661,12 @@ backend/pkg/conf/
 
 | 序 | 目标 | 消费者 | 备注 |
 |----|------|--------|------|
-| 1 | `database.*` → `conf.DSN()` | 1（`utils/db.go:96-105`） | 最简单，先跑通链路 |
-| 2 | `image.*` / `app_client.*` / `auth.*` / `api.*` / `runtime.*` | 各 1–2 | 顺带删掉 §12.1 表里的驼峰死别名；管理台写回处接 `Reload()` |
-| 3 | `llm_inference.*` → `conf.Inference()` | 5 | **收益最大**：一次消掉两条不一致的链，并删除 12 处 `ollama.*` 回退（`config.yaml:126-133` 整段被注释，恒为空） |
+| 1 | `database.*` → `conf.DSN()` | 1（`utils/db.go:96`，原 `:96-105`） | ✅ **已完成（2026-09-09，见 §16.1）**。运行时验证过新旧 DSN 逐字节相同、两侧读到同一个 `config.yaml` |
+| 2 | `image.*` / `app_client.*` / `auth.*` / `api.*` / `runtime.*` | 各 1–2 | ✅ **驼峰死别名已于第五批删完**（见 §17.4）：`config_override.go` 里 **11 处** `image.*` 多键并查折叠为单键直读、1 处不可达的 `Image.OSS.ProxyViaAPI` else-if 删除，`firstNonEmptyString` / `firstPositiveInt64` 两个辅助函数随之整体移除（实测 141 行 → 111 行）。**本步只剩**：管理台写回处（`utils/admin_runtime_config.go`）接 `Reload()` |
+| 3 | `llm_inference.*` → `conf.Inference()` | ~~5~~ **24 处读取 / 7 文件** | **收益最大**：一次消掉两条不一致的链。⚠️ **原评估「5」与序 6 的「4 个调用者」是同一类低估**（数的是 `viper.New()` 站点，不是读取点）——这是该错误第三次出现。实测 13 个文件提及 `llm_inference.`，其中 4 个只是注释或错误消息字符串（`apicomm/llm_inference_client.go`、`protohttp/moe_extended.go`、`runtime/generate.go`、`runtime/host_metrics.go`），正是 §13.3 的「命中≠消费」；真读取为 24 处 / 7 文件（`moeconfig/inference.go` 10、`wiring/config_override.go` 5、`runtime/config_load.go` 5、`apicomm/inference_props.go` 1、`brain/prompt_memory.go` 1、`brain/topic_analyze.go` 1、`runtime/post_model.go` 1）。<br>✅ **`ollama.*` 回退已于第五批全部删除**（原写 12 处，实测 **15 处**，见 §17.3），本步剩余工作量随之缩小 |
 | 4 | `moe.*` 调度器 / 模型 | 5 | `pkg/moe/brain/*` 4 处 + `pkg/moe/runtime/post_model.go` |
-| 5 | `moe.kratos_*` / `pilot.*` / `production.*` | ~~多~~ **已大幅缩小** | 原评为「最难」：要吸收 `moeconf.LoadBootstrap()` 的 proto `Bootstrap` 映射，并处置 `moewiring` 里 13 个零调用者的死开关。**第三批已把死开关全部删掉（实测 15 个）**，`moewiring` 只剩 8 个函数、全是活的 `*_api_in_process` 装配开关；`moeconf` 则变成零导入方（见 §15.3）。本步现在只剩 `pilot.*` / `production.*` 与 `moeconf` 的处置决定 |
-| 6 | 删除 `utils.InitConfig()` 全局单例 | 4 个调用者（若同时删 `moeconf` 则降为 3） | `cmd/migrate/main.go:28`、`moeconf/load.go:23`、`moesocial/run_http_only.go:18`、`utils/db.go:35`。**建议与 `moeconf` 包的删除合并做**：`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」，两者本就是同一条链（见 §15.3） |
+| 5 | ~~`moe.kratos_*` / `pilot.*`~~ / `production.*` | ~~多~~ **只剩端口口径** | 原评为「最难」：要吸收 `moeconf.LoadBootstrap()` 的 proto `Bootstrap` 映射，并处置 `moewiring` 里 13 个零调用者的死开关。**第三批已把死开关全部删掉（实测 15 个）**，`moewiring` 只剩 8 个函数、全是活的 `*_api_in_process` 装配开关。<br>✅ **第五批已把剩余部分做完**（见 §17.2）：`moeconf` 整包删除，`MoePilot` + 9 个 `Kratos*` 字段 + 4 个 `Kratos*` 派生方法一并移除，`config.yaml` 的 `moe.kratos_pure_enabled` / `moe.kratos_admin_base_url` 两键删除，孤立的 `internal/conf/moe/v1`（proto + 生成物）与 `gen-moe-conf` 生成链退役。**本步现在只剩 `production.*`**：`external_http_port`（字符串 "8888"）与 `runtime.http_port`（int）表达同一件事，读取点是 `moesocial/startupconfig.go:70-79` 的回退链 + `derive.go:124 HTTPPort()` |
+| 6 | 删除 `utils.InitConfig()` 全局单例 | ~~4 个调用者~~ **50 处读取 / 16 个文件** | ⚠️ **原评估严重低估（2026-09-09 实测纠正）**：「4 个调用者」数的只是**调用 `InitConfig()` 的地方**（`cmd/migrate/main.go:28`、~~`moeconf/load.go:23`~~、`moesocial/run_http_only.go:18`、`utils/db.go:35`；第五批删掉 `moeconf` 后**只剩 3 个生产调用方**），但真正**依赖它已被调用**的是全局 viper 单例的 **50 处读取点，分布在 16 个文件**：`utils/` 38 处 / 12 文件（`feishu.go` 6、`feishu_oauth.go` 6、`wechat_oauth.go` 5、`private_message.go` 5、`feishu_contact.go` 4、`feishu_public_config.go` 3、`auth_jwt_config.go` 2、`admin_seed.go` 2、`admin_jwt.go` 2、三个 redirect/flow 各 1），`internal/` 12 处 / 4 文件（`service/user/user_temp_mail.go` 5、`biz/user/oauth_wechat.go` 4、`biz/user/oauth_feishu.go` 2、`biz/admin/dashboard.go` 1）。按配置段分：`feishu.*` 23、`wechat.*` 8、`private_message.*` 5、`temp_mail.*` 4、`admin.*` 4、`auth.*` 3、`api.*` 1。<br>✅ **好消息：类型化侧已完全就绪** —— 实测这 50 处读取涉及 **32 个唯一键，`pkg/conf` 已全部建模**（含嵌套的 `Admin.Bootstrap.Username/Password`，`config.go:69-72`）。所以本步**不缺任何结构体，纯属机械改写 50 处读取点**。<br>✅ **「与 `moeconf` 删除合并做」的建议已于第五批执行**（见 §17.1）：`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」，两者本就是同一条链，现已一起收掉 |
 
 第 5 步完成后，`grep -rn 'viper.New()' backend/ --include='*.go'` 应只剩 `deploy/config/config.go`（Deploy Agent 读的是**另一个** `deploy/config.yaml`，不在本次收敛范围内）。
 
@@ -973,7 +979,7 @@ The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.
 
 顺带修了 `config.yaml:197` 的过期注释：原文「管理台 Moe HTTP 优先走 API 进程内 MoeAdmin（**仍需 RPC 处理发帖/记忆端口**）」——RPC 进程早已整体删除（`backend/rpc/` 不存在），改为「各业务域的 HTTP 装配走进程内 biz（单进程 Kratos HTTP，无 RPC）」。
 
-### 15.3 连带发现：`moeconf` 包现已完全孤立（**需要你决定**）
+### 15.3 连带发现：`moeconf` 包现已完全孤立（**已于第五批删除**）
 
 删完上面那批之后浮出一件文档里没预料到的事：
 
@@ -982,9 +988,19 @@ The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.
 - 包规模：`load.go` 98 行 + `load_test.go` 27 行
 - `config.yaml` 的 `moe.kratos_pure_enabled` / `moe.kratos_admin_base_url` 因此也空转了（唯一读者是 `moeconf/load.go:86`）
 
-**未删的理由**：删一个包比删函数的影响面大，且 `moeconf` 会牵到 `internal/conf/moe/v1/pilot.pb.go`（protoc 生成物）——那是 §12.5 第 2 步「删 `utils.InitConfig()` 全局单例」的天然组成部分（`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」）。**建议并入第 2 步一起做，不要单独删。**
+~~**未删的理由**：删一个包比删函数的影响面大，且 `moeconf` 会牵到 `internal/conf/moe/v1/pilot.pb.go`（protoc 生成物）——那是 §12.5 第 2 步「删 `utils.InitConfig()` 全局单例」的天然组成部分（`LoadBootstrap` 的注释写明它「先 InitConfig，再映射 moe 段」）。**建议并入第 2 步一起做，不要单独删。**~~
 
-已在 `config.yaml` 那两个键上方加 ⚠️ 注释说明其空转状态与处置归属，避免下一个人以为它们还在生效。
+> **该建议已于 2026-09-09 第五批被推翻并执行删除**（见 §17.1）。当初三条理由逐条实测后都不成立：
+>
+> | 当初的理由 | 实测结果 |
+> |---|---|
+> | 「删一个包比删函数的影响面大」 | 零导入方 ⇒ 零运行时影响；`go build ./...` 与全量测试均通过。影响面大小取决于**反向依赖数**，不取决于它是包还是函数 |
+> | 「会牵到 `internal/conf/moe/v1/pilot.pb.go`」 | 牵到，但那条链**整体孤立**：`pilot.proto` 无任何 `import` 者，`pilot.pb.go` 的唯一导入方就是 `moeconf`。所以不是「删不干净」，而是「可以一次删干净」——连同 `scripts/gen/moe-conf.sh` 与 `Makefile` 的 `gen-moe-conf` 目标一起退役 |
+> | 「是序 6 删 `InitConfig()` 的天然组成部分，应合并做」 | 合并做的方向反了：删 `moeconf` 让 `InitConfig()` 的**生产调用方从 4 个降到 3 个**，是**推进**序 6，不是与它冲突。等序 6 再做只是让一个已证实孤立的包多活一段时间 |
+>
+> **教训**：「影响面大所以先别动」在没有反向依赖数据时是一种猜测。§16.2 已经确立「判断收敛进度只能看反向依赖数」，同一条判据反过来也成立——**判断能否删除，也只看反向依赖数**。
+>
+> 原先加在 `config.yaml` 那两个键上方的 ⚠️ 空转注释，已随键一起在第五批删除。
 
 ### 15.4 验证
 
@@ -1026,11 +1042,568 @@ The getter 'envOverride' isn't defined for the type 'ApiEnvConfig' • lib/main.
 | `pkg/conf/load.go:193` | 1 | **新加载器自己**，不是遗留读取点——原文正是把它误算进去了 |
 | `pkg/conf/config.go:3` | 1 | 注释文字命中 |
 
-余 **18** 处遗留 `viper.New()`（分布在 16 个文件）+ `utils.InitConfig()` = **19 处**。`backend/pkg/conf/config.go` 的包注释里有同一个 off-by-one，已同步改为 19/18。
+余 **18** 处遗留 `viper.New()`（分布在 **15** 个文件 —— raw 命中的 16 个文件里要同样排除 `deploy/config/config.go`，口径才与站点数一致，见 §12.1 的文件数修正）+ `utils.InitConfig()` = **19 处**。`backend/pkg/conf/config.go` 的包注释里有同一个 off-by-one，已同步改为 19/18。
 
 第三批**未改变此计数**，已核对 HEAD：被删函数所在的 `moewiring/config.go` 改动前后都只有 1 处 `viper.New()`（在 `moeViper()` 里），被整文件删除的 `wire_mode.go` 是 0 处。
 
 **教训**：`grep` 计数当作结论写进文档时，必须把「新代码自己」和「注释里的字面命中」排除掉——否则文档会拿新加载器当作它要消灭的问题的证据。这与 §13.3 的「命中不等于消费」是同一类错误的计数版本。
+
+---
+
+## 16. 2026-09-09 第四批：第 2 步启动（调用点迁移）
+
+> **基线**：`bec11b26 feat(life, arena): 落地M0/M1a活世界营地预览功能`（2026-09-09 02:31）
+> **本批性质**：§12.5 的第 2 步从「未开始」推进到「6 个子步骤完成 1 个」。
+
+### 16.1 已落地：§12.5 序 1（`database.*` → `conf.DSN()`）
+
+| 文件 | 改动 |
+|------|------|
+| `backend/utils/db.go:96` | 原 `:95-105` 的 11 行内联拼装（8 个 `viper.Get*("database.*")` + `fmt.Sprintf`）→ 1 行 `dsn := conf.DSN()` |
+| `backend/utils/db.go:10` | 新增 `"backend/pkg/conf"` 导入 |
+
+**改动前置检查**：
+- `database.*` 的真实消费者确认只有 1 处 —— 全仓 `grep -rn '"database\.'` 仅命中 `utils/db.go:97-104`。`internal/platform/appdb/db.go:15` 的 `Open()` 只是转调 `utils.EnsureDB()`，不自建 DSN。
+- **无循环依赖** —— `pkg/conf` 的 backend 侧依赖只有 `pkg/llminference`（叶子，零 backend 依赖）；`utils` 依赖 `internal/platform/moelog` + `model`。`go list` 确认 `pkg/conf` 的依赖闭包里没有 `backend/utils`。
+- **`ensureConfigLoaded()` 必须保留**（`db.go:83`）—— 见 §16.3，`utils/` 里还有 38 处全局 viper 读取依赖它已装载。本步只换 DSN，不动装载时机。
+
+**验证方式（不是只看编译过）**：临时写了一个等价性测试，同时用**旧路径**（全局 viper + 内联 `fmt.Sprintf`）和**新路径**（`conf.DSN()`）对真实 `config.yaml` 各生成一次 DSN 并逐字节比对，同时比对两侧解析到的配置文件绝对路径。结果：
+
+```
+viper 配置文件 = /…/backend/config/config.yaml
+conf  配置文件 = /…/backend/config/config.yaml     ← 同一个
+旧 DSN = root:****@tcp(47.106.175.49:3306)/go_react_demo?charset=utf8mb4&parseTime=true&loc=Local
+新 DSN = root:****@tcp(47.106.175.49:3306)/go_react_demo?charset=utf8mb4&parseTime=true&loc=Local
+--- PASS
+```
+
+`parseTime=true` 正确出现，即 §12.3 陷阱 1（viper 把 `parseTime` 小写成 `parsetime`，tag 必须写 `mapstructure:"parsetime"`）在真实配置上成立。验证完即删除该临时测试文件，未留在仓内。
+口令在输出中脱敏，未落进任何日志或文档。
+
+### 16.2 最重要的发现：`pkg/conf` 此前一整天是死代码
+
+第 1 步（2026-09-08）交付的 `pkg/conf` 共 **1338 行**（`config.go` 259 + `derive.go` 311 + `load.go` 207 + `conf_test.go` 561），`go build ./...` 通过、`go test ./pkg/conf/` 16/16 通过 —— 但直到 2026-09-09 之前，**反向依赖数为 0**：
+
+```bash
+go list -f '{{.ImportPath}}|{{join .Imports ","}}|{{join .TestImports ","}}' ./... \
+  | awk -F'|' '{ if ($2 ~ /backend\/pkg\/conf/ || $3 ~ /backend\/pkg\/conf/) print $1 }'
+# 2026-09-08 → (空)
+# 2026-09-09 §16.1 之后 → backend/utils
+```
+
+注意 `go list -deps ./... | grep -c 'backend/pkg/conf'` 会返回 **1**，看起来「有人依赖它」——那是 `./...` 把 `pkg/conf` 自己也算进去了。**判断收敛进度只能用反向依赖（谁 import 了它），不能用正向依赖或 grep 命中。**
+
+**教训**：新建统一层 ≠ 收敛完成。「加载器建好了」和「调用点迁过来了」是两件事，中间可以隔着一整天没人发现的死代码，而且全绿。这与 §13.3「命中不等于消费」是同一条纪律的第三种形态：**存在不等于被使用，能编译不等于生效，测试通过不等于接上了。**
+
+### 16.3 §12.5 序 6 的原评估严重低估（已就地更新）
+
+原写「4 个调用者（若同时删 `moeconf` 则降为 3）」。实测：4 是**调用 `InitConfig()` 的地方**，而真正**依赖它已被调用**的是全局 viper 单例的 **50 处读取点 / 16 个文件**（明细见 §12.5 序 6 已更新的单元格）。
+
+按包分：`utils/` 38 处 / 12 文件，`internal/` 12 处 / 4 文件。
+按配置段分：`feishu.*` 23、`wechat.*` 8、`private_message.*` 5、`temp_mail.*` 4、`admin.*` 4、`auth.*` 3、`api.*` 1（余 2 处用变量键，如 `wechat_oauth_flow.go:71` 的 `viper.GetString(k)`）。
+
+✅ **类型化侧已完全就绪**：这 50 处共涉及 **32 个唯一键，`pkg/conf` 已全部建模**，含嵌套的 `Admin.Bootstrap.Username/Password`（`config.go:69-72`）。`Config` 顶层 15 个段（`Runtime`/`Auth`/`Admin`/`API`/`Database`/`Image`/`AppClient`/`LLMInference`/`Ollama`/`LocalModels`/`TempMail`/`PrivateMessage`/`Feishu`/`Wechat`/`Moe`）覆盖了当前全部读取需求。**序 6 不缺任何结构体，纯属机械改写。**
+
+> 核对方法上的一个坑：只收集一层 `mapstructure` tag 会把 `admin.bootstrap.username` 误判为「未建模」——它是匿名嵌套结构体，tag 在里层。必须递归展开后再比对。
+
+### 16.4 新登记：`bec11b26` 引入的硬编码运维参数（§4 同类）
+
+`backend/internal/platform/moewiring/api_life.go:8`：
+
+```go
+const livingWorldIntervalSeconds = 5 * 60
+```
+
+用于 `:24-25` 的 `TickInterval` 与 `FlushInterval`（单位秒，见 `internal/service/life/life.go:16-17`）。提交说明写的是「调整 Life 引擎 Tick/Flush 间隔为 5 分钟，降低服务器空载功耗」——**这是一个运维调优参数，现在被编译进了二进制**，改一次要重新构建 + 部署。
+
+更糟的是它造成了 §4「同一事实的多份副本」：
+
+| 位置 | 值 | 是否生效 |
+|------|-----|---------|
+| `internal/biz/life/types.go:41` | `TickInterval: 5 * time.Second` | ✗ 被覆盖 |
+| `internal/biz/life/types.go:44` | `FlushInterval: 5 * time.Second` | ✗ 被覆盖 |
+| `internal/platform/moewiring/api_life.go:8` | `5 * 60` = 300 秒 | ✅ 生效（`life.go:69-73` 仅在 `> 0` 时覆盖） |
+| `internal/biz/game/world_runner.go:13` | `defaultWorldTickInterval = 45 * time.Second` | ✅ 生效（`:21` 仅在 `interval <= 0` 时兜底） |
+| `config/config.yaml` | 无 `life` / `game` 的 tick 键 | — |
+
+> **补登（2026-09-09 第五批）**：原表只有 3 行，漏了 `world_runner.go:13`。补上后图景更完整也更难看——**同一个「周期 tick」概念在仓里有两套策略**：Life 与 Game 引擎把间隔**编译进二进制**（300 秒 / 45 秒），而 `pkg/moe/runtime/config_load.go:98`（`moe.bot_scheduler_tick_seconds`）与 `pkg/moe/brain/dream_schedule.go:105`（`moe.dream_scheduler_tick_seconds`）的同类调度器**从配置读**。四处硬编码 + 两处可配，没有文档说明为什么两类调度器的可配性不同。
+
+四处表达同一类事实、两处是死值、生效的两处不可配。**建议**：新增 `moe.life_tick_interval_seconds` / `moe.life_flush_interval_seconds` / `moe.game_world_tick_interval_seconds`，由 `pkg/conf` 提供解析方法，`api_life.go`、`world_runner.go` 与 `types.go` 的默认值都改为引用它。此项属批次 5（新配置项接入统一加载器），不阻塞 §12.5。
+
+### 16.5 新登记：`utils/admin_seed.go:32` 的 `admin123` **代码级**兜底
+
+```go
+password := viper.GetString("admin.bootstrap.password")
+if strings.TrimSpace(password) == "" {
+    password = "admin123"
+    log.Printf("[admin] 使用默认超管密码 admin123，请尽快在配置中修改 …")
+}
+```
+
+§3 的 P0 表已登记 `config.yaml:28` 的明文 `admin123`，但**那是配置文件里的值，这一条是代码里的兜底**，性质不同：
+
+- 触发条件是 `admin.bootstrap.password` **缺失或为空**，且仅在超管表为空时（`admin_seed.go:23` `if count > 0 { return }`）
+- **凭据轮换修不掉它** —— 把 `config.yaml` 去跟踪、换成新密钥之后，只要新环境忘了配 `bootstrap.password`，代码就会静默种下 `admin123` 超级管理员
+- 它只打一行日志，不阻断启动
+
+**建议**：改为缺失即启动失败（或拒绝种账号并要求显式初始化），与 P0-1 的 gradle `?: "moe123456"` 是同一处置原则 —— **口令类配置不允许有兜底默认值**。此项与 §12.6 的拆分**互相独立**，可以先做。
+
+### 16.6 核实后确认「不是问题」的两项
+
+为避免把怀疑当结论写进文档，以下两项已查证并排除：
+
+| 一度怀疑 | 核实结果 |
+|---|---|
+| `pkg/conf/conf_test.go:178` 断言 `Admin.Bootstrap.Password != "admin123"`，是否把真实凭据烤进了测试、轮换后会红 | **不是。** `loadFixture()`（`conf_test.go:148-161`）把**合成 fixture** 写进 `t.TempDir()` 再 `LoadFile`，`admin123` 是 fixture 数据，与真实 `config.yaml` 无关 |
+| `TestRealConfigYAMLLoads`（`conf_test.go:508`）读真实 `config.yaml`，是否断言了凭据值 | **不是。** 它只断言**结构性非空**：`Runtime.HTTPPort > 0`、`Database.DBName != ""`、`Database.Host != ""`、`Database.ParseTime == true`、`Path() != ""`。**凭据轮换后仍然通过** —— 这个设计是对的，可作为 §12.6 拆分后冒烟用例的范本 |
+
+### 16.7 验证
+
+| 检查 | 结果 |
+|------|------|
+| `go build ./...` | ✅ 通过 |
+| `go vet ./utils/ ./pkg/conf/` | ✅ 通过 |
+| `gofmt -l utils/db.go` | ✅ 无输出 |
+| `go test ./utils/ ./pkg/conf/` | ✅ 均 `ok` |
+| DSN 新旧等价性（真实 config.yaml） | ✅ 逐字节相同，见 §16.1 |
+| `go test ./...` 全量 | ⚠️ 仅 1 个失败：`pkg/moe/toolaudit` 的 `TestBuildSchemaItemsCoversAllTools`（`expected >=6 tools, got 5`）。**已确认为既有失败且与本批无关**：`go list -deps ./pkg/moe/toolaudit` 不含 `backend/utils` 也不含 `backend/pkg/conf`；把 `utils/db.go` 的改动 `git stash` 之后该测试**同样失败** |
+| `pkg/conf` 反向依赖 | ✅ 从 0 → 1（`backend/utils`） |
+| 遗留 `viper.New()` | 20 处（含 `deploy/config/config.go` 的 2 处）→ 口径对齐后仍为 **18 处 / 15 文件**。本批**未减少**该计数：序 1 消除的是 `viper.Get*` 读取，不是 `viper.New()` 实例；`utils/db.go` 本来就不在 18 处之内（它走全局单例） |
+
+---
+
+## 17. 2026-09-09 第五批：冗余收拢（纯删除，零行为变化）
+
+> 需求方问「是否有些冗余的功能可以进行收拢」，本批是对该问题的第一轮回答。
+> **四项全是删除，没有一项改变运行时行为**：每一项的依据都是「反向依赖数为 0」或「读取目标恒不存在」，不是「看起来没用」。
+> 顺序上刻意排在 §12.5 序 3–6 之前：**先删再迁**，否则同一批文件要改两遍。
+
+### 17.1 已删除：`moeconf` 整包 + 孤立的 `internal/conf` 生成链
+
+| 删除物 | 规模 | 依据 |
+|---|---|---|
+| `internal/platform/moeconf/{load.go,load_test.go}` | 125 行 | 零导入方（§15.3 已实测，本批复测仍为 0） |
+| `internal/conf/moe/v1/{pilot.proto,pilot.pb.go}` | 563 行 | `pilot.proto` 无任何 `import` 者；`pilot.pb.go` 唯一导入方就是 `moeconf` |
+| `internal/conf/README.md` | 14 行 | 只描述上面那个包 |
+| `scripts/gen/moe-conf.sh` | 26 行 | 只生成上面那个包 |
+| `Makefile` 的 `gen-moe-conf` 目标 | 3 处（`.PHONY` / `gen:` 依赖 / 目标体） | 同上。`make -n gen` 实测从 3 步降为 2 步 |
+| `config.yaml` 的 `moe.kratos_pure_enabled` / `moe.kratos_admin_base_url` | 2 键 + 3 行 ⚠️ 注释 | 唯一读者是 `moeconf/load.go:86,80` |
+
+连带修改：`backend/scripts/README.md`（活跃脚本清单）、`backend/docs/dev/kratos-intentional-transport.md`（`make gen` 链路图 + 「已退役」表补一行）、`internal/platform/moewiring/config.go:78-82`（原注释指向已删文件）。
+
+**§15.3 那条「不要单独删」的建议被推翻**，三条理由的逐条实测见 §15.3 内的表格。
+
+### 17.2 已删除：`pkg/conf` 里生下来就没有调用方的 `Kratos*` 层
+
+这是本批最值得注意的是**位置**：死代码长在**新建的 SSOT 内部**。
+
+| 删除物 | 位置 | 实测依据 |
+|---|---|---|
+| 4 个导出方法 `KratosAdminHTTPEnabled` / `KratosVipHTTPEnabled` / `KratosAdminInsightsHTTPEnabled` / `KratosAdminBaseURL` | `derive.go:231-258` | `conf.Xxx()` 形式的外部调用方**均为 0**；它们在 `moewiring` 的迁移目标已于第三批删除（`moewiring/config.go:66-69` 记录了那 15 个开关） |
+| 9 个类型化字段 `KratosPureEnabled` … `KratosPilotReadEnabled` | `config.go:233-241` | 零外部读取方。其中 **7 个对应的键在 `config.yaml` 里根本不存在**（实测该文件只有 `kratos_pure_enabled` / `kratos_admin_base_url` 两个 `kratos_*` 键） |
+| `MoePilot` 类型 + `Config.Moe.Pilot` 字段 | `config.go:224,244-250` | 唯一消费者是 `moeconf` 的 Bootstrap 映射；且 `moe.pilot` 段在 `config.yaml` 里**从来不存在**（`grep pilot config/config.yaml` exit 1），4 个字段一直读零值 |
+| 专属用例 `TestKratosGates` | `conf_test.go:419-438` | 断言的是上面 4 个已删函数。**这是「用测试把死代码保住」的实例**，详见 §12.4 的澄清 |
+| fixture 里的 `kratos_pure_enabled` / `kratos_admin_base_url` / `pilot:` 段 | `conf_test.go:136-142` | 对应字段已删 |
+
+`viper.Unmarshal` 未设 `ErrorUnused`（实测 `pkg/conf/load.go:199` 只有裸 `Unmarshal`），所以删字段不会因 YAML 里残留键而报错——这也意味着**删字段是安全的，但反过来「字段存在」不能证明「键存在」**。
+
+### 17.3 已删除：15 处恒零值的 `ollama.*` 回退
+
+分布是**同一段 5 键回退链被逐字复制三遍**：
+
+| 文件 | 处数 |
+|---|---|
+| `internal/adapter/moeconfig/inference.go:25-52` | 5 |
+| `internal/platform/wiring/config_override.go:29-57` | 5 |
+| `pkg/moe/runtime/config_load.go:24-46` | 5 |
+
+5 个键：`ollama.base_url` / `api_style` / `api_key` / `memory_model` / `timeout_seconds`。
+
+**两层证据说明它们恒为零值**：
+
+1. `config.yaml:122-125` 的 `ollama:` 段**整段被注释掉**。
+2. 更强的一层：那个被注释的段**只定义过 2 个键**（`base_url`、`timeout_seconds`）。所以 `ollama.api_style` / `api_key` / `memory_model` 这 **9 处读取的目标键，在配置文件的任何历史版本里都不存在过**——它们不是「曾经能用的回退」，是抄的时候顺手编出来的。
+
+删除后 `grep -rn '"ollama\.' --include='*.go'` 全仓归零。`llm_inference.*` 主路径与 `MOE_LLM_*` 环境变量优先级完全不变。
+
+### 17.4 已删除：`config_override.go` 的驼峰死别名（比 §12.1 记录的多）
+
+§12.1 只举了一处（`image.local_dir` 三键并查）。实测**同一模式共 11 处 `image.*` 调用 + 1 处不可达 else-if**：
+
+- 3 处三键并查：`image.local_dir` / `image.public_base_url` / `image.max_bytes`，第 2、3 个参数分别是无下划线变体与驼峰变体
+- 8 处两键并查：`image.driver` 与 `image.oss.{endpoint,bucket,access_key_id,access_key_secret,prefix,public_base_url,region}`，第二个参数是驼峰变体
+- 1 处不可达分支：`v.IsSet("image.oss.proxy_via_api")` 的 `else if v.IsSet("Image.OSS.ProxyViaAPI")`
+
+**为什么全是死的**：viper 把查找键整体小写化，所以 `"Image.OSS.Endpoint"` 与 `"image.oss.endpoint"` 是**同一个键**——两键并查等于把同一个键查两遍。而无下划线变体（`image.localdir` 等）与驼峰变体在任何 YAML 里都不存在：`config.yaml` 的 `image:` 段全是 snake_case（`:152-166` 实测），驼峰写法属于**另一个文件** `api/etc/moe.yaml:34-35`（`Image:` / `LocalDir:`），那个文件走 `yaml.Unmarshal` 进 `apiconfig.Config`，**不经 viper**。本函数的 `v` 只 `SetConfigName("config")`，永远加载不到它。
+
+折叠为单键直读后，`firstNonEmptyString` / `firstPositiveInt64` 两个辅助函数再无多键调用方，整体删除（文件 141 → 111 行）。
+
+### 17.5 本批的判据：只删「永远不会再被调用」的，保留「等待迁移」的
+
+删除过程中遇到一个真实的判断点，值得记下来因为它会反复出现：
+
+`derive.go:126 HTTPPort()` 的**唯一调用方**就是零调用方的 `KratosAdminBaseURL()`。删掉后者，前者就变成零调用方——按「反向依赖为 0 就删」的机械判据，它也该删。
+
+**但它不该删。** 区别在于：
+
+| | `Kratos*` 那 4 个方法 | `HTTPPort()` |
+|---|---|---|
+| 迁移目标 | 已在第三批**被删除** | §12.5 序 2 **尚未开始** |
+| 未来是否会有调用方 | 永远不会 | 会（`runtime.*` 迁移时） |
+| 处置 | 删 | 保留 |
+
+**判据**：`pkg/conf` 现在是一个**只建了一半的 SSOT**，它的导出函数里有两类零调用方——「目标已消失」的和「目标还没来」的。二者在 `grep` 上完全无法区分，只能靠**去查它对应的那条迁移路线是否还存在**来区分。§12.5 的表就是这份判据的来源。
+
+同理保留的还有 `MoeProduction`（`derive.go:130` 在读 `ExternalHTTPPort`，且 `startupconfig.go:73` 仍读同一个 YAML 键）与 `Inference()` / `GameInference()` 等。
+
+### 17.6 新发现（本批未修，已记账）
+
+| # | 发现 | 证据 | 影响 |
+|---|---|---|---|
+| a | **`make check` 既不跑 `gofmt` 也不跑 `go vet`** | `Makefile` 的 `check:` 只有 `go build -o /dev/null ./cmd/moe-social` + `go test ./internal/platform/moesocial/... ./internal/server/routestats/...` | 实测 `gofmt -l` 命中 **92 个文件**（如 `utils/retry.go` 的 struct 字段对齐）。**这是既有状态，与本批无关**——本批改动的 7 个文件 `gofmt -l` 全部为空。但它意味着文档里历次「`make check` 通过」的**证据强度被高估了**：它验证的范围比名字暗示的小得多 |
+| b | **`pkg/moe/toolaudit` 失败根因确定：测试阈值过期于产品决定** | `record_test.go:11` 硬编码 `len(items) < 6` 即 fatal；`pkg/moe/tools/registry.go` 实测只有 **5** 个 `Name:`；最后一次改动是 `14edac0e`「移除了一些不需要的能力」 | 不是回归，是**测试没跟上主动删能力的决定**。该包只依赖 `backend/pkg/moe/core`，与本批及第四批均无关（§16.7 已用两种方式证明过既有性）。处置需产品侧确认阈值该是几 |
+| c | **`apiconfig.Config.Image` 用 `json`/`yaml` 驼峰 tag，是序 3 的迁移陷阱** | `internal/platform/apiconfig/*.go:55-72`：`LocalDir string \`json:"LocalDir" yaml:"LocalDir"\`` 等 | viper 的 `Unmarshal` **只认 `mapstructure`**。序 2/序 3 若图省事把 `apiconfig.Config` 直接喂给 viper，所有字段会**静默落空**——正是 §12.1 的「静默取零值」。迁移时必须逐字段显式赋值，或给 `apiconfig` 补 `mapstructure` tag |
+| d | 仓库里有一个**二进制产物** `backend/bin/moe-social` | `grep -rn moeconf` 时命中 `Binary file backend/bin/moe-social matches` | 仓库卫生问题（§11 批次 6 范围）。二进制里还留着已删包的字符串，会让基于 grep 的审计出现幽灵命中 |
+| e | **第三梯队冗余：已记账，本批刻意不动** | `moesocial/run.go:19-21` 是单行透传（`Run` → `runHTTPOnly`），`pure` / `http_only` 等限定词在单进程化后不再区分任何东西；`firstNonEmpty` 有 **6 份语义等价实现**（其中 3 份逐字节相同）+ 2 个变体；两个 `main` 重复 3 个 flag 声明 | 均为**低价值或有反效果**：为 6 行私有纯函数新建 `pkg/strutil` 属于过度抽象，代价是新增一层跨层依赖；启动链改名会碰两个入口。判断是「记账不动手」，不是「没看见」 |
+
+### 17.7 验证
+
+| 检查 | 结果 |
+|------|------|
+| `go build ./...` | ✅ 通过 |
+| `go vet ./...` | ✅ 无输出 |
+| `gofmt -l`（本批改动的 7 个文件） | ✅ 全部为空 |
+| `go test ./...` 全量 | ⚠️ 仅 1 个失败：`pkg/moe/toolaudit`，根因见 §17.6 b，与本批无关（该包只依赖 `pkg/moe/core`，不引用本批任何改动文件） |
+| `go test ./pkg/conf/ ./internal/platform/...` | ✅ 全部 `ok` |
+| `make -n gen` | ✅ 从 3 步降为 2 步（`moe-proto.sh` + `proto-route-count`） |
+| 残留 `"ollama.` 读取点 | ✅ 15 → **0** |
+| 残留 `firstNonEmptyString` | ✅ → **0** |
+| 残留 `moeconf`（精确匹配，排除同名的活包 `moeconfig`） | ✅ 21 → **2**，且两处都是**有意保留的历史注释**（`moewiring/config.go:78`、`pkg/conf/config.go:27`） |
+| 遗留 `viper.New()` | 18 处 / 15 文件 → **17 处 / 14 文件**（见 §12.1 第五批计数） |
+| `utils.InitConfig()` 生产调用方 | 4 → **3** |
+| `pkg/conf` 反向依赖 | 1（`backend/utils`），**本批未增加**——纯删除不产生新接线 |
+
+> ⚠️ **本批自己踩到的口径陷阱**：用 `grep -rn 'moeconf'` 做残留检查会得到 **18 处**，看起来像没删干净。实际其中 16 处是 **`moeconfig`**（`internal/adapter/moeconfig`，一个活包，被 `bootstrap/scheduler.go` 与 `moewiring/api_*.go` 共 5 个文件使用）——`moeconf` 只是它的**子串**。必须用 `grep -rnE 'moeconf([^i]|$)'` 才是真口径。**这与 §15.5、§12.1 的分子分母错误、§13.3 的命中≠消费是同一族错误：grep 的字面命中不等于要问的那个东西。**
+
+---
+
+## 18. 进度计量口径（2026-09-09 建立，后续各批统一用这个）
+
+本文档此前多次出现「完成度」表述，但从来没有定义过分子分母，导致 §12.5 的「5」「4 个调用者」连续三次低估。本节把口径钉死，**以后报百分比只准用这一套**。
+
+### 18.1 唯一分母：配置键引用（口径 F）
+
+> **一个「键引用」= Go 源码里一个形如 `"<段>.<子键>"` 的字符串字面量**，不论它被传给哪种查找形式。
+> 排除：`_test.go`、`pkg/conf/`（SSOT 自己）、`deploy/`（读的是另一个 `deploy/config.yaml`）、`api/`（生成的 proto —— 里面 `"admin.v1.AdminApp"` `"moe.v1.MoeAdmin"` 是 **gRPC 服务名**，会被段名正则误命中，实测 3 处）。
+
+**为什么必须按「键字面量」而不是按「行」或按「`v.Get*(` 出现次数」计**：实测仓内存在**六种**读取形式，任何按调用形态枚举的口径都会漏。
+
+| # | 形式 | 例子 | 位置 |
+|---|------|------|------|
+| ① | 全局单例直读 | `viper.GetString("feishu.app_id")` | `utils/feishu.go` 等 16 文件 |
+| ② | 局部实例直读 | `v.GetString("llm_inference.base_url")` | `moeconfig/inference.go` 等 |
+| ③ | 辅助函数（`v` 作首参，变参键） | `firstNonEmptyString(v, "image.local_dir", …)` | `config_override.go`（第五批已删） |
+| ④ | 辅助函数（`v` 由内部取，键在 slice 里） | `boolOr(moeViper(), []string{"moe.api_in_process"}, false)` | `moewiring/config.go:28,45,50,55` |
+| ⑤ | 变参键列表（内部用全局单例） | `firstNonEmptyConfig("wechat.app.app_id", …)` | `utils/wechat_oauth_flow.go:69` |
+| ⑥ | 辅助函数（`v` + 变参键，另一份实现） | `firstViperString(v, "image.max_bytes", "Image.MaxBytes")` | `utils/admin_runtime_config.go:121,130` |
+
+> ⚠️ **建立本节口径时我自己连续漏了三次，过程记下来防复发**：
+> 第一版只数 ①② → 得到「172 处」；发现 `config_override.go` 在第五批后**从 22 涨到 26**（看起来变差），追出 ③ → 修正为「185 处」，并以为口径已经稳了。
+> 直到把唯一键清单打出来，发现 **`moe.api_in_process` / `moe.single_process` 凭空消失** —— 而这两个是 §12.3 陷阱 2 明确认定的**活**开关，不可能消失。追下去才找到 ④：它们藏在 `boolOr(moeViper(), []string{…})` 里，**19 个 `moe.<domain>_api_in_process` 域开关对前两版口径全部不可见**。再往下又翻出 ⑤⑥。
+> 三版分母：172 → 185 → **254**，差了 48%。
+> **教训：口径要按「数据形态」（键字面量）定义，不要按「调用形态」枚举。按形态枚举的口径，每多一个辅助函数就漏一批，而且漏掉的往往正是被封装得最好的那部分代码。**
+
+### 18.2 两个百分比：消除率 vs 有效收敛率
+
+需求方 2026-09-09 指定：**按「整体有效的提升」核算**。所以本节给两个数，且**只有第二个算成绩**。
+
+| 指标 | 基线（第五批开工前 HEAD） | 第五批后 | **第六批后（批6a + 序6）** | 累计变化 |
+|------|------|------|------|------|
+| 键引用出现次数 | 254 | 192 | **116** | −138（−54.3%） |
+| 唯一键数 | 155 | 118 | **65** | −90（−58.1%） |
+| 涉及文件数 | 48 | 46 | **31** | −17 |
+| 遗留 `viper.New()` 站点 | 20 处 / 16 文件 | 19 处 / 15 文件 | **19 处 / 15 文件** | −1（§17.1 删 `moeconf`） |
+| `utils.InitConfig()` 生产调用方 | 4 | 3 | **0（函数已删）** | −4 |
+| `pkg/conf` 反向依赖（导入方文件数） | 0 | 1 | **17** | +17 |
+| **有效收敛率（定义见下）** | 0 / 105 | 8 / 105 | **41 / 105** | **39.0%** |
+
+> 「遗留 `viper.New()`」一行此前记作 18/15 → 17/14，与附录 A 的命令口径不一致（差 2 处）。本表统一为**排除 `_test.go` 与 `pkg/conf/` 自身**后的实测值，复核命令见附录 A。
+> **当前 HEAD 就是第五批开工前的 HEAD**（第五、六批全部未提交），已用口径 F 实测核对：HEAD 同为 254 出现次数 / 155 唯一键，故基线列无需重算。
+
+> **有效收敛率 = 已改由 `pkg/conf` 读取的唯一键 ÷ 真实需要收敛的唯一键。**
+> **删除死代码记 0 分** —— 它缩小的是噪音，不是把任何一处配置变得更可管理。这条定义直接把「删掉 40 处死代码」从成绩里剔除了，也正是 §18.2 上面那张表里 54.3% 与 39.0% 差距的全部来源。
+> **一个键只有在其非 `pkg/conf` 读者归零时才算收敛。** 按这条判定，序 6 覆盖的 38 个键里只有 33 个真收敛 —— 剩下 5 个（`auth.access_secret` `auth.access_expire_seconds` `admin.jwt_secret` `admin.token_expire_hours` `api.public_base_url`）在 `config_override.go` / `admin_runtime_config.go` / `cmd/temp-mail-password` 里还有读者，那些属序 2，详见 §19.3。
+
+**分母 105 的来历**（基线 155 唯一键 − 50 个死键；第六批后再次交叉验证：现存 65 唯一键里有 1 个 `wechat.enabled` 已收敛但仍以字面量形式存在于 `conf.IsSet()` 调用中，故未收敛 = 64，64 + 41 = **105** ✅）：
+
+| 死键类别 | 键数 | 状态 |
+|---------|-----|------|
+| `ollama.*`（config.yaml 无此段，回退恒零值） | 5 | ✅ 已删（§17.3） |
+| `moe.kratos_*` | 8 | ✅ 已删（§15.2 / §17.2） |
+| `moe.pilot.*`（config.yaml 从来不存在） | 4 | ✅ 已删（§17.1） |
+| `moe.production.{internal_grpc_port,pilot_grpc_port,pilot_http_port,unified_entry}` | 4 | ✅ 已删（§17.1） |
+| `moe.{use,register}_{moe,v1}_grpc` | 4 | ✅ 已删（§17.1）——**本节新登记**：config.yaml 0 命中，唯一读者是 `moeconf/load.go:76-77`，即「死键被死代码读」 |
+| `image.{localdir,maxbytes,publicbaseurl}` + `Image.OSS.ProxyViaAPI` | 4 | ✅ 已删（§17.4） |
+| `Image.*` 驼峰别名（`api_post.go` 10 + `admin_runtime_config.go` 3，去重 11） | 11 | ✅ **已删（§19.1 批6a）** |
+| `wechat.*` 历史拼写（20 键里只有 10 键在 config.yaml 存在） | 10 | ✅ **已删（§19.2 序6，随 `wechatFlowCredentials` 一并消失）** |
+| 合计 | **50** | **全部已删** |
+
+> ⚠️ **§17.4 的「已删完」是错的，此处更正（已于 §19.1 批6a 修复）**：那一批只清了 `config_override.go`。同一类驼峰死别名当时在**另外两个文件**里还活着 —— `internal/platform/moewiring/api_post.go:18-28`（10 处）与 `utils/admin_runtime_config.go:79-81`（3 处）。
+> 更讽刺的是 `api_post.go:64` 自己的注释就写着「驼峰别名同样命中不了（viper 会把键小写）」，而它上面 46 行正在用 10 个驼峰别名。
+> 这 10 处又分两种死法：`Image.Driver`/`Image.OSS.Endpoint`/`Bucket`/`Prefix`/`Region` 小写化后**与第一个参数是同一个键**（`firstNonEmpty` 里查两遍同一个键）；`Image.LocalDir`/`PublicBaseUrl`/`MaxBytes`/`OSS.AccessKeyID`/`AccessKeySecret`/`OSS.PublicBaseUrl` 小写化后是 `image.localdir` 之类**在任何 YAML 里都不存在的键**（`api/etc/moe.yaml:37` 的 `MaxBytes` 走 `yaml.Unmarshal`，不经这个 viper，见 §17.4）。
+
+### 18.3 到 50% 有效的路径（2026-09-09 序2 完成后重算）
+
+**50% = 53 / 105。** 序2 已落地，实测 **63 / 105 = 60.0%**，比本节上一版预测的 62（59.0%）多 1 键，多出的那键见下方更正。各块键数按实测唯一键计、已扣除死键：
+
+| 块 | 覆盖的段 | 真实唯一键 | 累计 | **有效收敛率** | 状态 |
+|----|---------|-----------|------|--------------|------|
+| **已完成** | 序1 `database.*` 8 + 序6 实收 33（`feishu` 12 · `wechat` 10 · `private_message` 5 · `temp_mail` 4 · `admin` 2）+ 序2 实收 22（`image.*` 12 · `runtime.*` 3 · `auth.*` 2 · `admin.*` 2 · `app_client.*` 1 · `api.*` 1 · **`moe.production.external_http_port` 1**） | **63** | 63 | **60.0%** | ✅ 已跨过 50% |
+| 序 3 | `llm_inference.*` 10 · `local_models.*` 2 | +12 | 75 | 71.4% | ❌ 待签字 §12.4 |
+| 序 4 / 序 5 | `moe.*` **30**（19 个 `*_api_in_process` + 3 个全局闸 + 8 个调度器/模型） | +30 | 105 | 100% | ❌ |
+
+> **记账更正（第三版）：序2 实收 22 键，不是预测的 21。**
+> 差的 1 键是 **`moe.production.external_http_port`** —— 它按段名属于 `moe.*`，上一版整块划给序4/序5；但它唯一的非 `pkg/conf` 读者是 `moesocial/startupconfig.go:73` 的 `v.GetString(...)`，被序2 的增量 2f 一并换成 `conf.HTTPPort()` 后就归零了，按 §18.2 的判定规则只能记在序2 名下。所以序4/序5 的 `moe.*` 从 31 缩到 **30**，总数仍是 105（41 + 22 + 12 + 30 = 105 ✅）。
+> `runtime.*` 记 3 不是 4：config.yaml 里有 4 个 `runtime` 叶子键，但 `runtime.http_host` 从来没有出现在 `pkg/conf` 之外的字面量里（`moesocial/run.go:38-52` 的 `apiListenAddr` 读的是 **API 片段**的 `Host`，不是这个键），因此它不在 §19.3 那份 64 键的普查里，两头都不计。
+
+> **上一版最重要的结论已被证实：过 50% 确实只需要序 2 一步，且不需要签字。** 序6 → 39.0%，序2 → **60.0%**。上一版的「累计 62」也算对了，只是拆分从「序2 21」变成「序2 22」。
+
+> ✅ **§18.3 上一版登记的三个障碍，处置结果：**
+> 1. ~~`admin_runtime_config.go` 是「读—改—写」路径，`pkg/conf` 没有 setter~~ → **读路径已迁**（`ReadRuntimeConfig` 改用 `conf.Reload()`），**写路径按预判保留 viper**（`v.Set()` ×5 + `v.WriteConfig()`）。这 5 个 `v.Set` 字面量是口径 F 里仅剩的**写路径**命中，不是读者，见 §20.2。
+> 2. ~~`conf.Reload()` 零调用方 → 管理台写回后缓存陈旧~~ → **已修**，`Reload()` 现有 1 个调用方（`admin_runtime_config.go:76`），且写回后追加了 `conf.LoadFile(path)`（`:119`）让缓存指向刚写的文件。这是序2 唯一的真风险点，已用往返探针验证，见 §20.4。
+> 3. ~~`image.oss.access_key_id/secret` 会新增环境变量兜底~~ → **未发生**。实测真实消费方 `biz/media/store_oss.go:29-34` 已经做了「文件优先、`MOE_OSS_*` 兜底」，本层再兜一遍是重复的，所以改为只取文件值（`config_override.go`），行为零变化。这条障碍是我上一版**评估过头**了。
+
+> ✅ 上一版另一条预判成立：`config_override.go` 的 `MOE_AUTH_ACCESS_SECRET` → `auth.access_secret` 层叠与 `conf.AuthAccessSecret()` 逐字同义，直接替换即可。
+> ⚠️ 序3 会撞上 §17.6(c) 那个 tag 陷阱，而它**已经是一个活 bug**，实测证据见 §19.4（登记为待办 #27，修法与签字无关）。
+
+---
+
+## 19. 2026-09-09 第六批：批6a 死别名清理 + 序6 全局单例迁移
+
+本批两步：批6a 是序6 的前置清理（先把「同一个键查两遍」的噪音删掉，序6 的迁移面才干净），序6 是本文档到目前为止**唯一一次真正拆掉全局 viper 单例**的改动，也是有效收敛率从 7.6% 跳到 39.0% 的那一步。
+
+### 19.1 批6a：删掉最后 11 处驼峰死别名
+
+§17.4 当时宣布「驼峰死别名已删完」是错的（已在 §18.2 就地更正）。实测还剩两个文件：
+
+| 文件 | 处数 | 处置 |
+|------|-----|------|
+| `internal/platform/moewiring/api_post.go:18-28` | 10 | 删掉 `firstNonEmpty` 里的驼峰第二参数 |
+| `utils/admin_runtime_config.go:79-81` | 3 | 连同 `firstViperString` / `firstViperInt64` 两个**零调用方**辅助函数一起删 |
+
+去重后 11 个唯一键，两种死法见 §18.2 的更正块。
+
+> **口径 F 的副作用收益**：`admin_runtime_config.go` 那两个辅助函数删掉后，§18.1 表格里的读取形式 **⑥ 从此在仓内不存在**，六种读取形式降到四种。口径 F 按数据形态定义，所以这个变化不影响计量，但确实让后续批次更难再漏。
+
+**批6a 实测**：出现次数 192 → 179，唯一键 118 → 107，驼峰别名归零。**按 §18.2 的定义本步记 0 分** —— 删的是死代码，没有任何一处配置因此变得更可管理。
+
+### 19.2 序6：50 处全局单例读取 → `pkg/conf`，并删掉 `utils.InitConfig()`
+
+迁移面 16 个文件、50 处读取，逐文件记录：
+
+| 文件 | 处数 | 收敛方式 |
+|------|-----|---------|
+| `utils/feishu.go` | 6 | `fs := conf.Get().Feishu` 单次快照 → `.Enabled/.ReceiveID/.ReceiveIDType/.AppID/.AppSecret` |
+| `utils/feishu_oauth.go` | 6 | 同上 + `conf.FeishuRedirectURI()`；**顺带删掉零调用方的 `FeishuOAuthRedirectURI()`** |
+| `utils/wechat_oauth.go` | 5 | `conf.Get().Wechat` 快照 + `conf.WechatFlowCredential(flow)` + `conf.WechatRedirectURI()` |
+| `utils/private_message.go` | 5 | `conf.Get().PrivateMessage` 快照；90/30 硬编码兜底**原样保留** |
+| `internal/service/user/user_temp_mail.go` | 5 | `conf.Get().TempMail` 快照；口令种子处**故意偏离**，见下 |
+| `utils/feishu_contact.go` | 4 | `fs := conf.Get().Feishu` → `.AutoAddToDirectory/.DefaultDepartmentID/.AppID/.AppSecret` |
+| `internal/biz/user/oauth_wechat.go` | 4 | `conf.Get().Wechat.Enabled` + **`conf.IsSet("wechat.enabled")` 必须保留**，见下 |
+| `utils/feishu_public_config.go` | 3 | `fs := conf.Get().Feishu` → `.EnterpriseNotice/.Enabled/.EnterpriseInviteURL` |
+| `utils/admin_seed.go` | 2 | `conf.Get().Admin.Bootstrap`；`admin123` 兜底**故意保留**（那是未授权的 #18） |
+| `utils/auth_jwt_config.go` | 2 | **死代码删除**，非迁移，见下 |
+| `utils/admin_jwt.go` | 2 | **死代码删除**，非迁移，见下 |
+| `internal/biz/user/oauth_feishu.go` | 2 | `conf.Get().Feishu.Enabled` ×2 |
+| `utils/feishu_oauth_redirect.go` | 1 | `conf.Get().Feishu.AppReturnURL` |
+| `utils/wechat_oauth_redirect.go` | 1 | `conf.Get().Wechat.AppReturnURL` |
+| `internal/biz/ai/provider_keys.go` | 1 | `conf.AuthAccessSecret()`（该文件唯一的 `utils.` 用途，导入随之换掉） |
+| `internal/biz/admin/dashboard.go` | 1 | `conf.Get().Feishu.Enabled` |
+
+**`utils.InitConfig()` 已删除。** 删前先跑了一道决定性安全闸：枚举全仓所有包级 `viper.X(` 直读，确认删掉单例后不会留下「孤儿读者静默拿零值」。结果（同口径对照 HEAD）：
+
+| | HEAD | 序6 后 |
+|---|---|---|
+| 全局单例直读 `viper.GetString/GetBool/IsSet/...(` | **64 处** | **0 处** |
+
+> ⚠️ **两个入口点必须换成 `conf.Load()` 并传出 error，不能直接删调用。**
+> `InitConfig()`（原 `utils/db.go:40-56`）实测只有 `SetConfigName` + `SetConfigType` + 3× `AddConfigPath` + `ReadInConfig`，**没有 `AutomaticEnv()`、没有 `SetDefault()`** —— 所以逐键替换不改变环境变量与默认值语义，这是序6 能当机械活做的前提。
+> 但它**返回 error**，是响亮的启动失败；而 `conf.Get()` 读不到文件时**静默返回零值 Config**（`load.go:44-45` 注释明说）。因此 `moesocial/run_http_only.go:18` 与 `cmd/migrate/main.go:28` 都改成了 `if _, err := conf.Load(); err != nil { … }`。否则「配置读不到」会从启动失败退化成全零值静默运行 —— 正是 §5.5 那类 bug 的放大版。`load.go` 的 `searchDirs`（`:14`）与被删的 3 个 `AddConfigPath` **顺序完全一致**，故路径解析可证等价。
+
+> ✅ **对 §18.3 原计划的一处偏离，且是更好的做法**：原文要求 `utils/db.go:32-37` 的 `ensureConfigLoaded()` 把 `viper.ConfigFileUsed() != ""` 哨兵换成 `conf.Err()` / `conf.Path()` 判定。实际改成了 `_, err := conf.Load(); return err`。理由：`Err()` 只**报告**上次失败、不重试，而 `Load()`（`load.go:76`）在一次失败的 `Get()` 之后**总会重试并返回错误**；这个返回值正是阻止 `conf.DSN()` 静默拼出一条垃圾 DSN 的东西。该函数保留是因为它有 2 个调用方（`EnsureDB:26`、`initDBWithMigrateOnce:84`）。
+
+> ⚠️ **50 处里有 3 处藏在死函数里，按「有效」口径它们记 0 分。**
+> `utils/auth_jwt_config.go` 的 `LoadJWTFromViper()`（注释写着「RPC 使用」，而 go-zero RPC 已退役）、`ResolveAuthAccessSecret()`、`resolveAuthAccessSecret()`，以及 `utils/admin_jwt.go` 的 `LoadAdminJWTFromViper()`、`resolveAdminJWTSecret()` —— **全部零调用方**。活的接线是 `wiring/wire_svc.go:24` 与 `wiring/config_override.go:109` → `utils.ConfigureAdminJWT(secret, hours)`。这些是**删除**而不是迁移；把死代码指向新读法只会让噪音换个地方继续存在。
+> 连带删掉 `envAuthAccessSecret = "MOE_AUTH_ACCESS_SECRET"` 常量 —— 它是 `derive.go:20` `envAuthSecret` 的重复定义。
+
+> ⚠️ **`wechat` 那条链是「替换 + 消掉 10 个死键」，不是逐键平移。**
+> `utils/wechat_oauth_flow.go` 的 `wechatFlowCredentials()` 对每个凭证尝试 3 种历史拼写（16 个键引用），其中 **10 个键在 config.yaml 里根本不存在**。`derive.go:177` 的 `WechatFlowCredential()` 已把这条链收敛成一次调用，所以整个函数与 `firstNonEmptyConfig()` 一并删除，文件只剩 `NormalizeWechatOAuthFlow`。
+> `:36` 那句注释（「勿回退公众号(mp)：移动应用 code 只能用 wechat.app 凭证换取，混用会报 10005」）是**业务约束**，已确认原样保留在 `derive.go` 里，没有随 `switch` 被简化掉。
+> **代价**：`NormalizeWechatOAuthFlow` 的归一化现在与 `derive.go:179` 的 `switch` 重复。这是结构上无法消除的 —— `utils` → `pkg/conf` → `utils` 会成环。
+
+> ⚠️ **两处故意不改成「更干净」的写法**：
+> 1. `internal/service/user/user_temp_mail.go` 的 `tempMailboxPassword()` 用 `conf.Get().Auth.AccessSecret`（**只读文件**），而不是 `conf.AuthAccessSecret()`（**env 优先**）。该值是临时邮箱口令的派生种子，让环境变量参与会导致「一旦设置 `MOE_AUTH_ACCESS_SECRET`，既有临时邮箱全部失效」。代码里留了注释说明。
+> 2. `internal/biz/user/oauth_wechat.go` 保留 `conf.IsSet("wechat.enabled")`。两个分支产生**不同的用户可见文案**（「未配置微信登录」vs 通用 `ErrOAuthDisabled`），类型化的 `bool` 表达不了「未设置」与「显式 false」的区别。这也是 65 个剩余键字面量里 `wechat.enabled` 那 1 个的来源。
+
+> 🔧 **顺带修掉一个会静默降级的文案耦合**：`oauth_wechat.go` 原来判 `strings.Contains(errText, "credentials missing")`，而 `conf.WechatFlowCredential` 返回的是 `"conf: wechat %s 凭证缺失（config.yaml）"`。不改的话错误文案会静默退化成通用的「微信授权失败，请重试」。已改为匹配 `"凭证缺失"`。
+> 🔧 `provider_keys.go` 的 `providerKeysEncryptionSecret()` 是**已存 provider API 密钥的 AES 密钥来源**，任何行为变化都会让存量密钥解不开。已逐条核对 `conf.AuthAccessSecret()` 与原 `utils.ResolveAuthAccessSecret()` **字节级同义**（同样 env 优先、同样 `auth.access_secret` 兜底、同样已 trim）。
+
+### 19.3 记账更正：序6 实收 33 键，不是预测的 38 键
+
+§18.3 上一版预测序6 收敛 38 键 → 43.8%。实测 **33 键 → 39.0%**。**我自己的预测错了，此处按实测更正，不按预测记账。**
+
+根因是少了一条判定规则，现已补进 §18.2：
+
+> **一个键只有在其非 `pkg/conf` 读者归零时才算收敛。**
+
+按这条，下面 5 个键虽然序6 已经把主要读者迁走了，但在**序2 的文件**里还有读者，所以不能记在序6 名下：
+
+| 键 | 剩余读者（精确位置） | 归属 |
+|----|-------------------|------|
+| `auth.access_secret` | `internal/platform/wiring/config_override.go:98` · `cmd/temp-mail-password/main.go:60` | 序2 |
+| `auth.access_expire_seconds` | `config_override.go:101` | 序2 |
+| `admin.jwt_secret` | `config_override.go:104` | 序2 |
+| `admin.token_expire_hours` | `config_override.go:105` | 序2 |
+| `api.public_base_url` | `utils/admin_runtime_config.go:78`（读）· **`:97`（`v.Set` 写回）** | 序2 |
+
+> **累计终点没变，只是拆分错了**：41 + 21 = 62 = 59.0%，与上一版「序6 + 序2 = 62」一致。所以文档的**总和**是对的，**分块**是错的。可执行的后果是计划变了 —— 上一版说「过 50% 必须序6 + 序2 一起做」，现在**序2 单独一步就过**。
+
+> **分母 105 复核（曾算出 106，是个真 off-by-one）**：剩余 65 个键字面量里，`wechat.enabled` **既是已收敛、又仍是字面量**（在 `conf.IsSet()` 调用里），被两头各数了一次。剔除后未收敛 = 64，64 + 41 = **105** ✅。
+
+### 19.4 新发现（已实测证实，本批未修）：`local_models.catalog` 的 `parameters_b` 是**活 bug**
+
+§17.6(c) 把「`apiconfig.Config` 用 `json`/`yaml` 驼峰 tag，而 viper 要 `mapstructure`」登记为**迁移陷阱**。本次实测发现它不只是陷阱 —— **它今天就在丢数据**。
+
+`internal/platform/apiconfig/config.go:23-32` 的 `LocalModelCatalogEntry` 实测有 **41 个 `json:` tag、0 个 `mapstructure:` tag**。`config_override.go:53` 用 `v.UnmarshalKey("local_models.catalog", &entries)` 灌它，走的是 mapstructure 的**默认按字段名大小写不敏感匹配**，于是带下划线的蛇形键匹配不上驼峰字段。用**非零合成值**跑对照实验（真配置里 `size_bytes: 0`，零值区分不出「被丢」还是「本来就是零」）：
+
+| 字段 | config.yaml | `apiconfig` 路径（现网） | `pkg/conf` 路径 |
+|------|------------|----------------------|---------------|
+| `size_bytes` | 4242 | **0** ❌ | 4242 ✅ |
+| `parameters_b` | 0.5 | **0** ❌ | 0.5 ✅ |
+| `id`/`filename`/`sha256`/`description`/`recommended` | — | 全部正确 ✅ | 全部正确 ✅ |
+
+规律很清楚：**只有含下划线的键被丢**（`size_bytes`→`SizeBytes`、`parameters_b`→`ParametersB`），单词键靠大小写不敏感匹配侥幸命中。
+
+**影响必须精确界定，不能夸大成「两个字段都坏了」**：
+
+- `SizeBytes` —— **被兜底掩盖**。`apicomm/local_models.go:108-111` 在 `size <= 0` 时回落到 `st.Size()`（磁盘真实大小），比配置值更准。加上 config.yaml 本来就写的 `size_bytes: 0`，**今天零可见影响**。
+- `Sha256` —— 本来就匹配得上（无下划线），且 `:112-118` 另有真实 SHA256 兜底。
+- `ParametersB` —— **无任何兜底**。`local_models.go:128` 直接透传 `entry.ParametersB`，配置里的 `0.5` 变成 `0`，经 `LlmLocalModelCatalogItem.parameters_b` 出到 API。**App 的离线模型列表把 Qwen2.5 0.5B 显示成 0B 参数。**
+
+**已确认是既有缺陷，非本轮引入**：`git show HEAD:` 比对，`config_override.go` 的 catalog 块与 `apiconfig` 的 tag 缺失在 HEAD 上**逐字相同**；本轮对该文件的 diff 只删了 `ollama.*` 回退。
+
+**修法与签字无关**：序3 的签字（§12.4）是关于 `MOE_LLM_*` 环境变量要开始影响 Bot 调度；而这个 bug 只需给 `apiconfig.LocalModelCatalogEntry` 补 8 个 `mapstructure` tag（或直接改用 `conf.Get().LocalModels.Catalog`，后者 tag 已正确），**零语义风险**。本批未动，等授权。
+
+### 19.5 验证
+
+不只看编译通过 —— 编译通过不等于有效，测试通过也可能只是死代码有守卫。
+
+| 层级 | 手段 | 结果 |
+|------|------|------|
+| 编译/静态 | `go build ./...` · `go vet ./...` | 全绿 |
+| 回归 | `go test ./...` | 全绿，除 `toolaudit.TestBuildSchemaItemsCoversAllTools`（**已用 HEAD worktree 复现同样失败，证明既有**，见 §17.6(b)） |
+| 格式 | 逐文件 `gofmt -l` + 与 `git show HEAD:$f` 交叉比对 | 唯一未格式化文件 `utils/admin_runtime_config.go` 在 HEAD 上**已经**如此（§17.6(a) 那 92 个之一），非本轮引入 |
+| **失败路径** | 从无 config 的目录跑真实二进制 | 响亮报 `config: conf: 未在 [...] 找到 config.yaml`，**退出码 1** ✅ |
+| **快乐路径** | 一次性测试加载真 config.yaml，逐个打印新消费的 typed 字段 | 全部 `mapstructure` tag 正确填充 ✅ —— 这正是关掉 §17.6(c) 那个「静默零值」陷阱的关键，因为这些字段在本批之前**零消费方**，填错了不会有任何测试报警 |
+| **全局单例归零** | 同口径 grep 对照 HEAD | 64 → **0**（见 §19.2 表） |
+
+> ⚠️ **本轮差点又踩一次「空输出当通过」**：`gofmt -l $FILES` 对 33 个变更路径**什么都没打印**，我几乎据此写下「本批无格式漂移」。单独 `gofmt -l utils/admin_runtime_config.go` 却**确实**报了该文件。根因是路径列表里含 3 个已删除文件、且 `2>/dev/null` 把 gofmt 的报错吞了。改成逐文件跑、把 `$?` 与输出分开判、再逐个与 HEAD 交叉比对才得到真结论。**这与本次工作里三次算错分母是同一类错误：静默为空的校验命令是假清白，不是通过。**
+
+---
+
+## 20. 2026-09-09 第七批：序2 —— 有效收敛率 39.0% → 60.0%
+
+序2 是「过 50%」那一步。按增量推进，每个增量单独过 gofmt / build / vet / test，避免一次性大改后无法定位。
+
+### 20.1 迁移面：6 个增量、6 个文件
+
+| 增量 | 文件 | 覆盖的段 | 收敛方式 |
+|------|------|---------|---------|
+| 2a | `internal/platform/wiring/config_override.go` | `app_client` · `image`(含 OSS 8) · `auth` · `admin` | `conf.Get()` 快照 + `conf.AuthAccessSecret()` + `conf.AdminJWT()` + `conf.IsSet("image.oss.proxy_via_api")`。**`llm_inference.*` 与 `local_models.*` 故意留在本地 `v` 上给序3** |
+| 2b | `internal/platform/moewiring/api_post.go` | `image` · `runtime` | `imageConfigFromMoe()` 整体改读 `conf.Get().Image`；`handDrawRequireModeration()` → `conf.Get().Runtime.HandDrawRequireModeration`。顺带删掉 `if v == nil` 守卫（`conf.Get()` 不返回 nil，零值 `ImageConfig` 等价）与那段已过期的注释 |
+| 2c | `cmd/migrate-media-oss/main.go` | `image` | `-conf` 是**目录**，故用 `conf.LoadFile(filepath.Join(dir,"config.yaml"))` 而非 `Load()`（后者只搜固定三目录） |
+| 2d | `utils/admin_runtime_config.go` | `app_client` · `api` · `image` | **读路径**改 `conf.Reload()`（5 个 typed 字段）；**写路径按 §18.3 预判保留 viper**（`v.Set()` ×5 + `WriteConfig()`），并在写回后补 `conf.LoadFile(path)` |
+| 2e | `cmd/temp-mail-password/main.go` | `auth` | `-f` → `conf.LoadFile`，失败时保留原有的 `backend/` 前缀重试。**口令种子仍只取文件值**，不用 `conf.AuthAccessSecret()`（理由同 §19.2 故意偏离 1） |
+| 2f | `internal/platform/moesocial/startupconfig.go` | `runtime` · `moe.production` | 删掉私有 `viperForUnified()`，改 `loadUnified()` → `conf.LoadFile(-f)`；`httpPortFromUnified()` 收敛到既有的 `conf.HTTPPort()`（`derive.go:126` 的注释本就写着「与 moesocial.httpPortFromUnified 一致」，此前零调用方） |
+
+> 🔧 **2d 修掉了 §18.3 障碍 2**：`conf.Reload()` 此前零调用方，而 `conf.Get()` 首次加载后永久缓存。管理台写回 config.yaml 后若不失效缓存，「改了图片配置不生效」会从局部小问题升级成全局问题。现在 `Reload()` 有 1 个调用方（`:76`），写回后再 `conf.LoadFile(path)`（`:119`）让缓存指向刚写的文件 —— `load.go:114` 那条注释要求的东西，到此才真正存在。
+> 🔧 **2e 的等价性是逐条核对的，不是假定的**：CLI 的 `tempMailboxPassword` 与 `internal/service/user/user_temp_mail.go:390-399` 字节级同构（同样 `TrimSpace(只读文件的 secret)` → 同样兜底 `"moe-social-temp-mail"` → 同样 `sha256(email|seed)` 取前 16 字节 hex）。改完后用 HEAD worktree 跑同一条命令对照，口令 `2ad900214b50fed06ff1a64a752ab798` **两边完全一致**。
+
+### 20.2 口径 F 实测
+
+| 指标 | 序6 后 | **序2 后** |
+|------|-------|----------|
+| 出现次数 | 116 | **68** |
+| 唯一键字面量 | 65 | **49** |
+| 其中**真有非 `pkg/conf` 读者**的键 | 64 | **42** |
+| 涉及文件 | 31 | **28** |
+| `pkg/conf` 反向依赖 | 17 | **23** |
+| 遗留 `viper.New()` | 19 | **16** |
+| **有效收敛率** | 41/105 = 39.0% | **63/105 = 60.0%** |
+
+**49 与 42 的差是 7 个「有字面量但已无读者」的键**，必须逐类说清，否则会被当成漏迁：
+
+| 类别 | 键 | 为什么不是读者 |
+|------|----|--------------|
+| `conf.IsSet()` 实参（3 处） | `wechat.enabled` ×2 · `image.oss.proxy_via_api` ×1 | 调的是 `pkg/conf` 自己的 API。保留 `IsSet` 的理由见 §19.2 故意偏离 2（要区分「未设置」与「显式 false」）与 §18.3（OSS 覆盖语义） |
+| `v.Set()` 写回（5 处） | `api.public_base_url` · `app_client.public_api_base_url` · `image.public_base_url` · `image.local_dir` · `image.max_bytes` | `pkg/conf` **没有 setter**，管理台的写路径只能留在 viper。这是**写**不是读 |
+
+剩下 42 个真读者 = `moe.*` 30 + `llm_inference.*` 10 + `local_models.*` 2，正好是序3（12）与序4/序5（30）。
+
+### 20.3 本批唯一的行为变化：`-f` 从此对全进程权威
+
+2f 之前，`conf.LoadFile()`（`load.go:100`，注释写着「对应 cmd/moe-social 的 -f 覆盖」）**零调用方**。后果是同一次启动读两个文件：`-f` 只决定 API 片段路径与 HTTP 端口，而 DSN、JWT 密钥、图片配置等所有 `pkg/conf` 读者走的是 `searchDirs`。
+
+用 HEAD worktree 跑同一份探针做**负对照**，把这个裂脑拍成了实证：给 `-f /tmp/…/alt.yaml`（内含 `http_port: 9955`），HEAD 上端口确实取到 9955，但 `conf.Path()` 仍是 `backend/config/config.yaml` —— **端口来自 A 文件，其余一切来自 B 文件**。改完后该断言通过，并已固化为常驻回归测试 `TestUnifiedFlagIsAuthoritativeForAllReaders`（同一测试在 HEAD 上 FAIL，在新代码上 PASS）。
+
+> ✅ **对现有部署零可观测变化**，这一点是逐个入口核过的，不是推定的：
+>
+> | 入口 | `-f` 实际取值 | cwd | 解析结果 |
+> |------|-------------|-----|---------|
+> | `backend/Makefile:67` | 无（用 flag 默认 `config/config.yaml`） | `backend/` | `backend/config/config.yaml` = `searchDirs[0]` |
+> | `backend/Dockerfile:20` | `config/config.yaml` | `WORKDIR /app`（`:17` 把配置 COPY 到 `/app/config/config.yaml`） | 同一文件 |
+> | `deploy/n100/moe-social.service:9` | `config/config.yaml` | `WorkingDirectory=%h/moe-runtime`（`:8`） | 同一文件 |
+>
+> 三处都是相对路径 `config/config.yaml`，与其 cwd 下的 `searchDirs[0]` 指向**同一个文件**，所以 `LoadFile` 与 `Load` 结果相同。
+> ✅ `-f` 读不到时回落 `searchDirs`，与迁移前 `viperForUnified()` 的静默回退**逐条等价**（`load.go:14` 的 `searchDirs` 与被删的 3 个 `AddConfigPath` 顺序一致）。
+> ✅ 启动顺序核过：`run_http_only.go:18` 的 `NormalizeOptions()` 先跑（→ `loadUnified` → `LoadFile`），`:19` 的 `conf.Load()` 后跑；而 `Load()` 在 `current != nil` 时直接返回缓存，**不会把 `-f` 覆盖回 searchDirs**。失败路径也保留：`-f` 与 searchDirs 都读不到时 `:19` 仍然响亮返回 error。
+> ✅ 全仓无包级 `var … = conf.Get()/Load()` 持有旧指针（实测 grep 为空），故替换缓存不会产生陈旧快照。
+
+### 20.4 验证
+
+| 层级 | 手段 | 结果 |
+|------|------|------|
+| 编译/静态 | `go build ./...` · `go vet ./...`（单独判 `$?`，不经管道） | 全绿，vet 输出 0 行、退出码 0 |
+| 回归 | `go test ./...` | 32 包 ok，唯一失败仍是 `toolaudit.TestBuildSchemaItemsCoversAllTools`（§17.6(b)，已用 HEAD worktree 证明既有） |
+| 格式 | `gofmt -l` 逐目录 | 本批 6 个文件零漂移 |
+| **2c 真机执行** | 跑真实二进制；再只给假的 `MOE_OSS_*` 环境变量跑一次 | 后者能走到 `found 0 local objects under /app/data/images`，证明 endpoint/bucket/local_dir **确实来自文件**而不是环境变量 |
+| **2d 往返探针** | 临时目录里做 读 → 写回 → 重载 五断言 | 全过；真 `config/config.yaml` 的 sha 前后均为 `dec63ea4a3e0c59c68d823bbabb1c768117e46db`，**未被探针改动** |
+| **2e 等价对照** | HEAD worktree 跑同命令，覆盖 `-email` / `-json` / 位置参数 / 仓库根启动 / 不存在的 `-f` / 非法邮箱 六条路径 | 口令全部逐字相同；唯一差异是失败文案多了 `conf: 读取 <file> 失败:` 前缀（**更响**，退出码同为 1） |
+| **2f 端到端启动** | 复制真配置到临时文件、改 `runtime.http_port: 18899`，`moe-social -f <tmp>` 真实启动 | 9 秒 ready，**监听 18899 而非 8888**，`curl` 返回应用级 `401 {"code":401,"message":"缺少认证信息，请先登录"}`（证明路由+鉴权中间件全链路通）；8888 未被占用；关停后端口释放 |
+| 安全闸复跑 | 全局单例直读 grep（含 HEAD 对照） | 工作树 **0**，HEAD **64** —— 序6 的闸门在序2 之后依然成立 |
+
+启动日志同时佐证了 2a/2b：`图片: dir=/app/data/images public=http://47.106.175.49:8888 max=1073741824` —— 三个值都来自那份临时 `-f` 文件经 `conf.Get().Image` 的 typed 路径。
+
+### 20.5 顺带实测到的既有缺陷（本批未修）：10 个文件自带 `searchDirs`，永远看不见 `-f`
+
+2f 的启动实验意外给出裂脑的**现场证据**：我在临时 `-f` 文件里把 `moe.bot_scheduler_enabled` / `moe.dream_scheduler_enabled` / `moe.life_engine_enabled` 都写成 `false`，日志却照样打出 `moe bot scheduler started tick=1m0s` 与 `moe dream scheduler started tick=5m0s`。
+
+根因不是 flag 失效，而是**读它的地方根本不读 `-f` 那个文件**：`pkg/moe/runtime/config_load.go:64-70` 与 `pkg/moe/brain/dream_schedule.go:96` 各自 `viper.New()` + 硬编码三个 `AddConfigPath`，于是加载的是 `backend/config/config.yaml`（真配置里这两个开关是 `true`）。
+
+实测带硬编码 `searchDirs` 的文件共 **10 个**（`config_override.go` 剩余部分、`moewiring/config.go`、`apicomm/inference_props.go`、`moeconfig/inference.go`、`pkg/moe/runtime/config_load.go`、`pkg/moe/runtime/post_model.go`、`pkg/moe/brain/` 下 4 个），正是序3 + 序4/序5 的迁移面。**在它们迁完之前，`-f` 仍然只对 `pkg/conf` 读者权威** —— 这一条必须写在明处，否则「`-f` 已权威」会被误读成全局成立。
+
+> ⚠️ **一处需要更正的说法，以及一个顺带查出的死键。** 我原先想写「序3/序4/序5 同样不需要新字段，`Moe` 结构体 31 个 `moe.*` 叶子键已齐」——**实测不成立**，逐键核对后的真实情况是：
+>
+> | | 数量 | 明细 |
+> |---|---|---|
+> | config.yaml 的 `moe.*` 叶子键 | **31** | — |
+> | `pkg/conf` 已覆盖 | **28** | 12 个静态 `mapstructure` tag（`config.go:212-230` + `MoeProduction` 5 个，其中只有 12 个在 config.yaml 里真被设置）+ 16 个动态 `moe.<domain>_api_in_process`（`derive.go:199-217` 的 19 域表拼出，config.yaml 里实际写了 16 个） |
+> | **未建模** | **3** | `moe.default_capability_tier` · `moe.bot_post_daily_limit_default` · **`moe.enabled`** |
+>
+> 前两个**不是遗漏**：`pkg/conf/config.go:17-22` 那段注释已把它们连同 `server.*`、`memory.search/embedding.*`、`temp_mail.api_key` 一起登记为「全仓无 Go 读者、故意不建模」的死键。
+> 第三个 **`moe.enabled` 是本批新查出的死键**：`git grep` 全仓（Go 与非 Go）**零引用**，config.yaml 里 `enabled: true` 静静躺着，且它**不在** `config.go` 那份死键清单里 —— 那份清单自称「逐个 grep 确认过，不是漏掉」，这一条就是漏掉的。已补进注释。
+>
+> ✅ **所以「序4/序5 不需要新增结构体字段」这个结论仍然成立，但理由要换**：不是因为 31 个键都建模了，而是因为 28 个**活键**已全部建模，剩下 3 个是死键（处置方式应是删配置或继续留注释，不是加字段）。这也与 §18.3「已扣除死键」的分母口径一致 —— 105 里本来就不含它们。
 
 ---
 
@@ -1065,6 +1638,60 @@ grep -n 'ops' moe-admin/deploy/sync-lan.ps1 .github/workflows/n100-deploy.yml
 
 # 仓库卫生
 git ls-files | grep -E 'moe_ui\.xml|_hero_orig|cover\.out|duplication-report|pet_exists'
+
+# §18 进度口径 F：配置键引用（按数据形态计，不按调用形态枚举，见 §18.1）
+# ⚠️ 必须在**仓库根**执行。EXCL 的四个模式都是 `backend/…` 前缀，
+#    若在 backend/ 里跑，路径变成 ./pkg/conf/…，排除会**静默全部失效**，
+#    数出来 129/78 而不是 116/65（本轮实测踩过）。
+SECTIONS='database|runtime|auth|admin|app_client|image|Image|local_models|llm_inference|ollama|feishu|wechat|private_message|temp_mail|moe|memory|server|jwt|api'
+KEYRE="\"($SECTIONS)(\.[A-Za-z0-9_]+)+\""
+EXCL='_test\.go|backend/pkg/conf/|backend/deploy/|backend/api/'
+grep -rnE "$KEYRE" backend/ --include='*.go' | grep -vE "$EXCL" > /tmp/F_WORK.txt
+grep -oE "$KEYRE" /tmp/F_WORK.txt | wc -l                 # 出现次数 → 68（基线 254 / 第五批后 192 / 序6后 116）
+grep -oE "$KEYRE" /tmp/F_WORK.txt | tr -d '"' | sort -u | wc -l   # 唯一键 → 49（基线 155 / 第五批后 118 / 序6后 65）
+cut -d: -f1 /tmp/F_WORK.txt | sort -u | wc -l             # 涉及文件 → 28（基线 48 / 第五批后 46 / 序6后 31）
+grep -c 'backend/pkg/conf/' /tmp/F_WORK.txt               # 必须 0，否则 EXCL 失效（见上面的 ⚠️）
+# 唯一键 ≠ 未收敛键：49 里有 7 个已无读者（3 处 conf.IsSet 实参 + 5 处 v.Set 写回，见 §20.2）。
+# 有效收敛率的分子必须用「真读者」这一列，否则会把写路径当成漏迁。
+grep -vE '\.Set\(|conf\.IsSet\(' /tmp/F_WORK.txt > /tmp/F_READ.txt        # 真读者命中 → 59
+grep -oE "$KEYRE" /tmp/F_READ.txt | tr -d '"' | sort -u | wc -l           # 真读者唯一键 → 42
+# 有效收敛率 = (105 - 42) / 105 = 63/105 = 60.0%；42 按段分布应为 moe 30 · llm_inference 10 · local_models 2
+grep -oE "$KEYRE" /tmp/F_READ.txt | tr -d '"' | sort -u | awk -F. '{print $1}' | uniq -c
+# 基线同口径（git grep -E 不支持 \b，只能用字符类；输出前缀 HEAD: 要剥掉）
+git grep -nE "$KEYRE" HEAD -- 'backend/*.go' | sed 's/^HEAD://' | grep -vE "$EXCL" > /tmp/F_HEAD.txt
+# 唯一键差集 = 本批消失的键，逐个分类成「已迁移」还是「死键删除」（§18.2 那张表）
+comm -23 <(grep -oE "$KEYRE" /tmp/F_HEAD.txt | tr -d '"' | sort -u) \
+         <(grep -oE "$KEYRE" /tmp/F_WORK.txt | tr -d '"' | sort -u)
+# 反向校验：找出「有键字面量但该行不含任何查找调用」的行，即 §13.3 的命中≠消费
+# 注：firstViperString/firstViperInt64 已随 §19.1 批6a 删除，firstNonEmptyConfig 已随 §19.2 序6 删除，
+#     留在正则里是为了仍能扫描 HEAD 及更早的快照。
+LOOKUP='(v|v2|viper|moeViper\(\))\.(GetString|GetInt|GetInt64|GetBool|GetFloat64|GetStringSlice|IsSet|GetDuration|UnmarshalKey|Set)\(|first(NonEmptyString|PositiveInt64|NonEmpty|ViperString|ViperInt64|NonEmptyConfig)\(|boolOr\(|domainInProcessEnabled\(|getBool\('
+grep -vE "$LOOKUP" /tmp/F_WORK.txt
+
+# 收敛的真实指标：pkg/conf 的反向依赖（§16.2 / §19.2 / §20.2）
+grep -rln '"backend/pkg/conf"' backend/ --include='*.go' \
+  | grep -v 'backend/pkg/conf/' | grep -v '_test.go' | wc -l              # → 23（基线 0 / 第五批后 1 / 序6后 17）
+grep -rn 'viper\.New()' backend/ --include='*.go' \
+  | grep -v '_test.go' | grep -v 'backend/pkg/conf/' | wc -l              # → 16（基线 20 / 序6后 19）
+
+# 序6 的决定性安全闸：全局单例直读必须归零（§19.2）
+# ⚠️ 空输出要用 HEAD 对照验证正则本身有效，否则是假清白（HEAD 应为 64）
+GS='viper\.\(GetString\|GetInt\|GetInt64\|GetBool\|IsSet\|Set\|Get\|ConfigFileUsed\|ReadInConfig\|SetConfigName\|AddConfigPath\)('
+grep -rn "$GS" backend/ --include='*.go' | grep -v '_test.go' | grep -v 'backend/pkg/conf/' | wc -l   # → 0
+git grep -n "$GS" HEAD -- 'backend/*.go' | grep -v '_test.go' | grep -v 'backend/pkg/conf/' | wc -l   # → 64（对照组）
+grep -rn 'InitConfig' backend/ --include='*.go'          # → 仅 pkg/conf/config.go:3 的注释，0 处代码
+
+# 序2 的两道闸（§18.3 障碍 2 / §20.3）：这两个函数此前都是零调用方
+grep -rn 'conf\.Reload()' backend/ --include='*.go'      # → 1 处：utils/admin_runtime_config.go:76（序2 前为空）
+grep -rn 'conf\.LoadFile(' backend/ --include='*.go' | grep -v 'backend/pkg/conf/'
+#   → 5 处：migrate-media-oss:31 · temp-mail-password:51,52 · moesocial/startupconfig.go:58 · admin_runtime_config.go:119
+# -f 权威性的常驻回归测试（该测试在 HEAD 上 FAIL，见 §20.3）
+go test ./internal/platform/moesocial/ -run TestUnifiedFlagIsAuthoritativeForAllReaders
+# §20.5：仍然看不见 -f 的文件（各自硬编码 searchDirs）→ 10 个，即序3 + 序4/序5 的迁移面
+grep -rln 'AddConfigPath("\.\./\.\./config")' backend/ --include='*.go' \
+  | grep -v '_test.go' | grep -v 'backend/pkg/conf/' | wc -l              # → 10
+# §19.4 的活 bug：apiconfig 缺 mapstructure tag
+grep -ohE '`(json|yaml|mapstructure):' backend/internal/platform/apiconfig/*.go | sort | uniq -c   # → 41 json / 0 mapstructure
 ```
 
 ---

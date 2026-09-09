@@ -24,7 +24,6 @@ OpenAPI / Apifox：[docs/dev/openapi-apifox.md](../../docs/dev/openapi-apifox.md
 scripts/gen/
   moe-proto.sh
   openapi.sh
-  moe-conf.sh
   proto-route-count/
 ```
 

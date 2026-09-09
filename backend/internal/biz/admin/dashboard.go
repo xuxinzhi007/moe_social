@@ -10,9 +10,9 @@ import (
 
 	adminv1 "backend/api/admin/v1"
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/utils"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -33,7 +33,7 @@ func Dashboard(ctx context.Context, store AdminStore, _ *adminv1.AdminDashboardR
 		LandingFeedbackTotal: int32(feedbackTotal),
 		UserTotal:            int32(userTotal),
 		ServerTime:           time.Now().Format(time.RFC3339),
-		FeishuEnabled:        viper.GetBool("feishu.enabled"),
+		FeishuEnabled:        conf.Get().Feishu.Enabled,
 	}, nil
 }
 
