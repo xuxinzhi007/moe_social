@@ -32,7 +32,7 @@
 | 14 | 文档教的启动命令已整体失效（`make rpc` / `go run super.go`） | P1 → **已完成** | `backend/rpc/` 目录不存在；见 §9.1（2026-09-08 已清理脚本、Go 提示串与 11 份文档） | 批次 6 ✅ |
 | **15** | **同一份 `config.yaml` 被 20 处独立打开，回退链各自实现** | P1 → **已完成** | ✅ **第九批闭环**（见 §22）：有效收敛率 **100%**（105 键的真读者归零），`viper.New()` 20 → **2**（第十一批删掉第 3 处后，只剩 `deploy/config/config.go` 那两处，读的是另一个文件、本就不在收敛范围内）且逐个有据，自带 `searchDirs` 的文件 10 → **0**，`pkg/conf` 反向依赖 0 → **49** 个文件。原见 §12 | 批次 2 ✅ |
 | **16** | **已发布的 release APK 连的是开发机局域网 IP，且 CI 全绿、Release 正常发布** | **P0（实际已发生）** | `flutter-release.yml` 不带 `--dart-define` + `config.dart` 的 `isProduction` 硬编码 `false` + `developmentUrl = 192.168.124.36`；见 §14.1 | ✅ 已闭环：`flutter-release.yml` 第 7 步发布前断言 + `config_test.dart` 内网地址断言（**不改 `isProduction` 语义**，因与三条既有规则冲突，方案取舍见 §14.1） |
-| **17** | **`life_items` 每次进程启动插入 6 条重复道具**（种子 `OnConflict{DoNothing}` 永不触发） | **P2（数据在持续膨胀）** | `internal/data/life/store.go:259` 的 `DoNothing` 需要唯一键冲突，但 `model/life_item.go:8` 的 `Name` **没有 `uniqueIndex`**；实测两次启动之间行数 582 → 588；第十一批（§24.9）真实启动再测一次，**594 → 600**，仍在按每次启动 +6 累积。差分启动顺带照出，见 §22.7 | 待决（需改共享测试库表结构，属迁移操作） |
+| **17** | **`life_items` 每次进程启动插入 6 条重复道具**（种子 `OnConflict{DoNothing}` 永不触发） | **P2（数据在持续膨胀）** | `internal/data/life/store.go:259` 的 `DoNothing` 需要唯一键冲突，但 `model/life_item.go:8` 的 `Name` **没有 `uniqueIndex`**；实测两次启动之间行数 582 → 588；第十一批（§24.9）真实启动再测一次，**594 → 600**，仍在按每次启动 +6 累积。差分启动顺带照出，见 §22.7 | ✅ **已修复（第十二批）**：`Name` 加 `uniqueIndex:idx_life_items_name` 让 DoNothing 生效；迁移框架新增 BeforeMigrate 钩子，建索引前先合并重复行（含库存外键重指向），共享测试库实测 **600 → 6 行**、悬空引用 0。见 §22.7 ↪️ |
 | **18** | **全仓没有任何文档提到 `pkg/conf`**，24 处文档陈述已失真（其中 1 处在 `alwaysApply: true` 的工程规则 SSOT 里） | **P1** | `.cursor/rules/moe-social-engineering.mdc:336` 教人用 `-conf ./config` 启动，而 `cmd/moe-social/main.go:18` 只有 `-f`，照做必报 `flag provided but not defined: -conf`；其余 23 处见 §23 | 批次 6（文档对齐）→ §23 |
 | **19** | **管理台点一次「保存」会销毁 `config.yaml` 全部 79 行注释**，并静默把 3 个 float 降级成 int | **P1（破坏性，写在 HEAD 上就有）** | 旧 `ApplyRuntimeConfigPatch` 走 `viper.Set` + `WriteConfig()`，实测真实文件 10073→**4416** 字节、265→**154** 行、注释 79→**0** 行；被抹掉的注释里有只此一处的运维知识（本地地址备选 `:133`、CDN 回退语义 `:164`、被注释掉的 `ollama:` 段 `:122-126`、本地数据库段 `:257-265`）。见 §24.4 | 批次 11 ✅ → §24.4 |
 | **20** | **配置的读路径与写路径对「哪个文件是权威」答案不一致**，且 `Reload()` 有一个跨整次读盘的未加载窗口 | **P1** | 读路径 `ReadRuntimeConfig` → `conf.Reload()` → `current.path` 尊重 `-f`；写路径 `resolveUnifiedConfigPath()` 从不查 `conf.Path()`，只试 3 个 cwd 硬编码候选，写完还 `conf.LoadFile(那个路径)` 把整个进程的配置源劫持走。`Reload()` 旧实现先置 `current = nil` 再读盘，窗口内并发 `Get()` 落到包级 `searchDirs` 而非 `-f`，实测 **0.25 秒内 459501 次错值读取**（cwd 下没有 `config/` 时读到零值 `Config`：`DSN()` 空连接串、`AuthAccessSecret()` 空密钥）。见 §24.2 / §24.3 | 批次 11 ✅ → §24.2–§24.3 |
@@ -1838,6 +1838,8 @@ INSERT INTO `life_items` (…) VALUES (6 条) ON DUPLICATE KEY UPDATE `id`=`id` 
 - **与本批无关**：`internal/data/life/` 与 `model/life_item.go` 都不在改动面里，两个二进制执行的 SQL 逐字节相同。这是差分启动这个手段**顺带**照出来的既有缺陷，不是本批引入的回归。
 - **本批的启动确实各贡献了 6 行**（4 次启动共 24 行）。目标库是需求方确认过的测试库，但仍应记账。
 - **修法需要动共享库的表结构**（先去重、再加 `uniqueIndex`），属迁移操作，不该由配置治理顺手做掉。已登记为待决项。
+
+> ↪️ **第十二批已处置（问题 17）**：`model/life_item.go` 的 `Name` 加 `uniqueIndex:idx_life_items_name`；`utils` 迁移框架给 `MigrateEntry` 加 `BeforeMigrate` 钩子（仅该表本次需要迁移时执行），`life_items` 条目挂 `dedupeLifeItemsByName` —— 建唯一索引前先把同名重复行归并（保留最小 ID；`life_inventory` 是唯一外键读者，挂在重复行上的背包先累加/改指到保留行再删行，全程一个事务且幂等）。共享测试库实测：**600 → 6 行**、`life_inventory` 悬空引用 **0**、唯一索引 Non_unique=0。判别性测试见 `utils/life_items_dedupe_test.go`（旧表形态用 raw SQL 模拟，覆盖累加/改指/多 dup 三种归并与 RunAutoMigrate 集成）。
 - 连带影响：`life_items` 里同名道具现在有约 98 份副本，任何按名字取道具的路径都会拿到任意一条 —— 后果严重程度取决于消费方，本次未追。
 
 ### 22.8 未处置
@@ -2325,7 +2327,7 @@ return LoadFile(path)
 | `go test -race ./utils/` | ok（含新增的 3 个测试、8 个子测试） |
 | 真实启动 | 成功，`-f` 权威性 + 迁移后默认值均在活进程上实证（§24.9） |
 | 被跟踪的 `config/config.yaml` | `git diff --stat` 为空，**逐字节未变** |
-| 测试库副作用 | `life_items` 594 → 600（一次启动的已知非幂等 seed） |
+| 测试库副作用 | `life_items` 594 → 600（一次启动的已知非幂等 seed；第十二批已修：600 → 6 并建唯一索引，见 §22.7 ↪️） |
 
 **判别力声明**（每条新测试都靠「临时改坏实现看它是否失败」验证过，不是写完就算）：
 
