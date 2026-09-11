@@ -3,6 +3,8 @@ package conf
 import (
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -543,6 +545,79 @@ func TestReload(t *testing.T) {
 	}
 	if got := Get().Runtime.HTTPPort; got != 9000 {
 		t.Errorf("Reload 后 HTTPPort = %d, want 9000", got)
+	}
+}
+
+// TestReloadNeverExposesUnloadedWindow 固化 Reload 的原子性：重读期间并发的 Get 必须始终
+// 看到 -f 指定的那个文件，既不能看到零值 Config，也不能看到 searchDirs 解析出的另一个文件。
+//
+// 判别力：把 Reload 改回「先在写锁内置 current=nil 再解锁、然后才 LoadFile」本测试就会失败。
+// 关键在于 chdir 到一个深层临时目录 —— ./config、../config、../../config 三个候选都不存在，
+// 于是窗口内的 loadLocked→resolvePath 必定失败，Get 返回 empty（Runtime.HTTPPort == 0），
+// 读者立刻能观测到。旧窗口横跨一次完整读盘，因此 1000 轮 Reload 足以稳定命中。
+func TestReloadNeverExposesUnloadedWindow(t *testing.T) {
+	deep := filepath.Join(t.TempDir(), "a", "b", "c", "d")
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(deep)
+	for _, dir := range searchDirs {
+		if _, err := os.Stat(filepath.Join(dir, "config.yaml")); err == nil {
+			t.Fatalf("前置条件不成立：%s/config.yaml 不该存在", dir)
+		}
+	}
+
+	path := filepath.Join(t.TempDir(), "custom.yaml")
+	if err := os.WriteFile(path, []byte("runtime:\n  http_port: 8888\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ResetForTest()
+	t.Cleanup(ResetForTest)
+	if _, err := LoadFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if got := Get().Runtime.HTTPPort; got != 8888 {
+		t.Fatalf("初始 HTTPPort = %d, want 8888", got)
+	}
+
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	var bad atomic.Int64
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				if got := Get().Runtime.HTTPPort; got != 8888 {
+					bad.Add(1)
+				}
+			}
+		}()
+	}
+
+	for i := 0; i < 1000; i++ {
+		if _, err := Reload(); err != nil {
+			close(stop)
+			wg.Wait()
+			t.Fatalf("第 %d 次 Reload 失败: %v", i, err)
+		}
+	}
+	close(stop)
+	wg.Wait()
+
+	if n := bad.Load(); n > 0 {
+		t.Errorf("Reload 期间有 %d 次 Get 读到了非 -f 文件的值（零值或 searchDirs 结果）", n)
+	}
+	if got := Get().Runtime.HTTPPort; got != 8888 {
+		t.Errorf("1000 轮 Reload 后 HTTPPort = %d, want 8888", got)
+	}
+	if Path() == "" {
+		t.Error("Reload 后 Path() 不应为空")
 	}
 }
 

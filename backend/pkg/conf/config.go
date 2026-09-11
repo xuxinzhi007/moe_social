@@ -19,7 +19,9 @@ package conf
 //   - server.port / server.host —— 单进程化后端口只认 runtime.http_port，8080 无监听者
 //   - memory.search.* / memory.embedding.* —— 记忆检索当前走关键词，向量/图谱段是死配置
 //   - moe.enabled / moe.default_capability_tier / moe.bot_post_daily_limit_default
-//     （moe.enabled 是 2026-09-09 序2 批次补记的：全仓 Go 与非 Go 均零引用）
+//     / moe.production.unified_entry
+//     （moe.enabled 是 2026-09-09 序2 批次补记的：全仓 Go 与非 Go 均零引用；
+//     unified_entry 于 2026-09-11 随 MoeProduction 的另三个 gRPC/pilot 端口字段一并摘除）
 //   - temp_mail.api_key（mail.tm 无需鉴权）
 //
 // api.super_rpc_endpoints / api.super_rpc_timeout_ms 曾在此列，2026-09-08 已从 config.yaml 删除：
@@ -230,11 +232,13 @@ type Moe struct {
 	LifeEngineEnabled bool `mapstructure:"life_engine_enabled"`
 }
 
-// MoeProduction 端口口径。ExternalHTTPPort 是字符串（"8888"），与 runtime.http_port 重复。
+// MoeProduction 端口口径。ExternalHTTPPort 是字符串（"8888"），与 runtime.http_port 重复，
+// 由 derive.go 的 HTTPPort() 作为回退读取。
+//
+// 这里曾还有 UnifiedEntry / InternalGRPCPort / PilotHTTPPort / PilotGRPCPort 四个字段，
+// 全仓零读者已删：后三个连 config.yaml 里都不存在（单进程 HTTP-only，既无 gRPC 监听者也
+// 无 pilot 进程，是 MoePilot 移除时的残留），unified_entry 在文件里但没人读 ——
+// 四个都记在 Config 头部的死配置清单与变更记录 §18.2 的「50 个死键」里。
 type MoeProduction struct {
-	UnifiedEntry     string `mapstructure:"unified_entry"`
 	ExternalHTTPPort string `mapstructure:"external_http_port"`
-	InternalGRPCPort string `mapstructure:"internal_grpc_port"`
-	PilotHTTPPort    string `mapstructure:"pilot_http_port"`
-	PilotGRPCPort    string `mapstructure:"pilot_grpc_port"`
 }
