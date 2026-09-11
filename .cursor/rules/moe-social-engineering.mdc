@@ -259,7 +259,10 @@ cd moe-admin && npm run build
 
 ### R07. 配置不硬编码
 
-- URL、密钥、超时等走配置文件（`backend/config/`）或环境变量。
+- URL、密钥、超时等走配置文件（`backend/config/config.yaml`）或环境变量。
+- 读配置**只走 `backend/pkg/conf`**（`conf.Inference()` / `conf.DSN()` / `conf.DomainInProcess("moe")` 等）。
+  业务层不要自己 `viper.New()`，也不要拼 `"<段>.<子键>"` 字符串到处 `Get`——新增配置项就在
+  `pkg/conf/config.go` 加字段、`pkg/conf/derive.go` 加一个导出函数。
 - 禁止在代码中出现生产地址、密码。
 
 ### R08. 日志有结构
@@ -333,10 +336,11 @@ cd moe-admin && npm run build
 | `cd backend && make moe-social` | 启动 Kratos HTTP :8888 |
 | `cd backend && make build` | 本机编译 `bin/moe-social` |
 | `cd backend && make build-linux` | 交叉编译 Linux `bin/moe-social` |
-| `cd backend && go run ./cmd/moe-social/ -conf ./config` | 本地运行（指定配置） |
+| `cd backend && go run ./cmd/moe-social -f config/config.yaml` | 本地运行（指定配置；`-f` 默认值就是它） |
 | `cd backend && go build ./...` | 全量编译检查 |
 | `cd backend && make db-migrate` | 数据库 schema 迁移 |
-| `cd backend && make moe-social-dev` | 开发模式（+ deploy-agent :19010） |
+| `cd backend && make moe-social-dev` | 开发模式（`moe-social-stack -agent=false`，**不带** deploy-agent） |
+| `cd backend && make deploy-agent` | 单独起 deploy-agent :19010 |
 | `cd backend && make moe-social-stop` | 释放开发端口 |
 
 ### Flutter

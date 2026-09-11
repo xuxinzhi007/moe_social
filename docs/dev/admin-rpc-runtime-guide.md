@@ -13,7 +13,7 @@
 
 | 旧文档说法 | 实测结果（2026-09-08） |
 |------------|----------------------|
-| `make moe-social` = `go run ./cmd/moe-social-stack` | ✗ 实为 `go run ./cmd/moe-social`（`Makefile:69-70`） |
+| `make moe-social` = `go run ./cmd/moe-social-stack` | ✗ 实为 `go run ./cmd/moe-social`（`Makefile:66-67`；`:70-71` 的 `moe-social-dev` 才是 `moe-social-stack`，且带 `-agent=false`） |
 | `make moe-social` 默认带 Agent :19010 + RPC debug :19011 | ✗ `cmd/moe-social` **没有** `-agent` / `-monitor` / `-debug` flag，只有 `-f` / `-f-api` / `-migrate` |
 | HTTP :8888 + gRPC :8080 同进程 | ✗ 无 gRPC 监听；`internal/platform/moesocial/` 下无 `transport/grpc` |
 | `make dev` → `cmd/dev/main.go` 编译 `moe-rpc` / `moe-api` | ✗ target 与文件均已删除 |

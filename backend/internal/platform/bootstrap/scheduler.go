@@ -3,11 +3,11 @@ package bootstrap
 import (
 	"context"
 
-	"backend/internal/adapter/moeconfig"
 	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
 	"backend/internal/platform/appdb"
 	"backend/internal/platform/moewiring"
+	"backend/pkg/conf"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/runtime"
@@ -25,10 +25,10 @@ func StartDreamScheduler(parent context.Context, deps Deps) {
 	if err != nil {
 		return
 	}
-	inf := moeconfig.InferenceFromViper()
+	inf := conf.Inference()
 	refineDeps := brain.RefineDeps{DB: db, RPC: appPort, Inference: inf}
 	rpgDeps := brain.RpgDeps{DB: db, RPC: appPort, Inference: refineDeps}
-	runDreamSchedulerLoop(parent, db, rpgDeps, brain.LoadDreamSchedulerOptsFromViper())
+	runDreamSchedulerLoop(parent, db, rpgDeps, brain.LoadDreamSchedulerOpts())
 }
 
 // StartMoeBotScheduler starts bot post scheduling in the HTTP process.
@@ -41,7 +41,7 @@ func StartMoeBotScheduler(parent context.Context, deps Deps) {
 	if err != nil {
 		return
 	}
-	inf := moeconfig.InferenceFromViper()
+	inf := conf.Inference()
 	runtimeDeps := runtime.Deps{
 		DB:        db,
 		RPC:       appPort,
@@ -50,6 +50,6 @@ func StartMoeBotScheduler(parent context.Context, deps Deps) {
 			return moebiz.ResolvePostingPlan(ctx, moedata.NewStore(gdb), agentKey)
 		},
 	}
-	sched := runtime.LoadSchedulerOptsFromViper()
+	sched := runtime.LoadSchedulerOpts()
 	runtime.StartScheduler(parent, runtimeDeps, sched.SchedulerOpts, sched.Smart)
 }

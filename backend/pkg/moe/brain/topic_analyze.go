@@ -7,9 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
-
-	"github.com/spf13/viper"
 )
 
 var topicAnalyzeJSONFence = regexp.MustCompile("(?s)```(?:json)?\\s*([\\s\\S]*?)```")
@@ -282,32 +281,13 @@ func openingSlice(content string, maxRunes int) string {
 }
 
 func resolveTopicAnalyzeModel(deps Deps) string {
-	if m := strings.TrimSpace(loadTopicAnalyzeModelFromViper()); m != "" {
+	if m := strings.TrimSpace(conf.TopicAnalyzeModel()); m != "" {
 		return m
 	}
 	if m := strings.TrimSpace(deps.Inference.DefaultModel); m != "" {
 		return m
 	}
 	return "qwen2"
-}
-
-func loadTopicAnalyzeModelFromViper() string {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return ""
-	}
-	if m := strings.TrimSpace(v.GetString("moe.topic_analyze_model")); m != "" {
-		return m
-	}
-	if m := strings.TrimSpace(v.GetString("llm_inference.memory_model")); m != "" {
-		return m
-	}
-	return ""
 }
 
 // NoteRejectedContent 试跑/生成被拒时记录话题，便于同会话内避重复。

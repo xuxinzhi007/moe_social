@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // InferenceSlotInfo 从 llama-server /props 或配置读取的上下文信息。
@@ -31,27 +31,10 @@ func EstimateTokens(text string) int {
 	return t
 }
 
-// ContextLimitFromViper 配置兜底（llm_inference.context_tokens）。
-func ContextLimitFromViper() int {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return 8192
-	}
-	if n := v.GetInt("llm_inference.context_tokens"); n > 0 {
-		return n
-	}
-	return 8192
-}
-
 // FetchInferenceSlotInfo 尝试 GET {base}/props 读取 default_generation_settings.n_ctx。
 func FetchInferenceSlotInfo(ctx context.Context, client *http.Client, baseURL string) InferenceSlotInfo {
 	fallback := InferenceSlotInfo{
-		ContextLimit: ContextLimitFromViper(),
+		ContextLimit: conf.ContextTokens(),
 		Source:       "config",
 	}
 	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")

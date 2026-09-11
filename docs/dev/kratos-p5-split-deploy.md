@@ -7,11 +7,15 @@
 > - `/migration` 端点与 `p5_super_runtime_pct` 字段**零命中** → 切流清单第 6 步无法执行；
 > - `api/internal/svc`、`rpc/internal/logic` 目录亦已移除。
 >
-> **仍然活着的只有三个闸门**：`moe.register_moe_grpc` / `moe.use_moe_grpc`（`moeconf/load.go:76-77`）与 `moe.super_grpc_retired`（`moewiring/config.go:141`，默认 `true`）仍被读取，
-> 但它们指向的分体回环目标已不存在，**保持单进程默认值即可，不要按本文改成 `false`**。
+> **三个闸门已全数退役（2026-09-11 复核）**：
+> - `moe.register_moe_grpc` / `moe.use_moe_grpc` → **全仓零命中**（`moeconf` 整包已于 2026-09-09 删除）；
+> - `moe.super_grpc_retired` → **零读者**，`moewiring.SuperGrpcRetired()` 已删（现仅在 `moewiring/config.go:32-35` 留一行墓碑注释）；
+> - 唯一还活着的是 `moe.single_process`（`moewiring.SingleProcessEnabled()` 与 `conf.DefaultInProcessEnabled()`，即各域 `*_api_in_process` 未设置时的继承值）。
+>
+> 也就是说本文「何时使用」表里那一列 `moe.super_grpc_retired` 已无意义，**不要往 `config.yaml` 里加回这些键**。
 > 现行部署形态见 [moe-social-runtime.md](./moe-social-runtime.md) 与 [ports.md](./ports.md)。以下内容仅作 P5 退役过程的历史记录。
 
-> **最后更新：2026-05-29**（2026-09-08 加历史警示横幅，正文未改）  
+> **最后更新：2026-05-29**（2026-09-08 加历史警示横幅；2026-09-11 复核：三个闸门已全数退役、末尾命令标死。正文未改）  
 > **前置**：P5 Super 退役完成，见 [kratos-migration-status.md](./kratos-migration-status.md)
 
 ---
@@ -98,10 +102,10 @@ flowchart LR
 
 ---
 
-## 相关命令
+## 相关命令（**全部已失效，勿执行**）
 
 ```bash
-cd backend && make build          # api + rpc + moe-social 二进制
-cd backend && make split-deploy-smoke
-GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/... -count=1
+cd backend && make build          # ✗ 现仅产 bin/moe-social（Makefile:82-86），不含 api/rpc
+cd backend && make split-deploy-smoke   # ✗ 非 Makefile target
+GRPC_SMOKE=1 go test ./internal/platform/grpcsmoke/... -count=1   # ✗ 该包目录不存在
 ```

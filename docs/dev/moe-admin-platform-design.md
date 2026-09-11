@@ -1,5 +1,11 @@
 # Moe Admin 完整后台设计方案
 
+> ⚠️ **历史设计稿（2026-09-11 标注）**：本文把技术栈钉死为「go-zero + RPC + React（ops-console）」，三者**均已过期**——
+> `go-zero` 已从 `go.mod` 完全移除（0 处引用）、`backend/rpc/` 目录不存在、`ops-console/` 已重命名为 `moe-admin/`。
+> 文中 3 处 `@server(group: ...)` 是 go-zero IDL 语法，现路由一律走域 proto 的 `google.api.http`；
+> 提到的 `GET /api/admin/captcha` 在 proto 中**零命中**（未实现）。
+> **产品定位、权限模型、功能清单部分仍有参考价值；技术栈与接口细节请以 [moe-admin/README.md](../../moe-admin/README.md) 与 [admin-rpc-runtime-guide.md](./admin-rpc-runtime-guide.md) 为准。**
+
 > 目标：做出与 **gin-vue-admin 同级能力** 的专用管理后台，但技术栈固定为 **go-zero + RPC + React（ops-console）**，只服务 Moe Social 本项目。  
 > 原则：**登录进后台即可用**；业务管理接口走 `/api/admin/*`，**不要求 App 用户 JWT**，也不做 Casbin 级复杂鉴权（v1）。
 
@@ -51,9 +57,9 @@ flowchart LR
 | 账号表 | 新建 `admin_account`（与 App `users` 分离，避免混用） |
 | 登录 | `POST /api/admin/login` → 返回 `admin_token`（专用 JWT 或随机 session id） |
 | 鉴权头 | `X-Admin-Token: <token>`（或 HttpOnly Cookie，推荐 Header 便于 Agent 代理） |
-| 有效期 | 例如 24h，可配置 `admin.session_expire_hours` |
-| 中间件 | 仅 `@server(group: admin)` 下 **需登录** 的路由校验 `X-Admin-Token` |
-| 公开 | `POST /api/admin/login`、`GET /api/admin/captcha`（可选） |
+| 有效期 | 可配置 **`admin.token_expire_hours`**（`config.yaml:25`，当前 `168` = 7 天）；读取入口 `conf.AdminJWT()` 返回 `(secret, hours)`，env `MOE_ADMIN_JWT_SECRET` 可覆盖密钥。⚠️ 没有 `admin.session_expire_hours` 这个键，写它会静默落空 |
+| 中间件 | admin 域 proto（`backend/api/admin/v1/*.proto`）下 **需登录** 的路由校验 `X-Admin-Token` |
+| 公开 | `POST /api/admin/login`（`GET /api/admin/captcha` 在 proto 中零命中，未实现） |
 
 **管理员角色（v1 两级即可）**
 

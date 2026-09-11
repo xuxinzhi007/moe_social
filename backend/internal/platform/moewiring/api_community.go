@@ -3,10 +3,11 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	communityapp "backend/internal/service/community"
+	"backend/pkg/conf"
 )
 
 func CommunityAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.community_api_in_process")
+	return conf.DomainInProcess("community")
 }
 
 func NewAPICommunityService() (*communityapp.AppService, error) {

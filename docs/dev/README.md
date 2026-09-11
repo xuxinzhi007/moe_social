@@ -10,8 +10,9 @@
 | [aurora-arena-ssot.md](./aurora-arena-ssot.md) | **星辉远征（Arena）域 SSOT** |
 | [aurora-living-world-plan.md](./aurora-living-world-plan.md) | **星辉活世界方案**（英雄 AI + Life 转向合并，方案已定稿未实施） |
 | [full-review-2026-09-02.md](./full-review-2026-09-02.md) | 全栈审查快照（产品方向 / 代码 / UI + P0-P2 行动项） |
-| [config-hygiene-review-2026-09-08.md](./config-hygiene-review-2026-09-08.md) | **配置治理审查**（凭据 / 地址多副本 / 真源冲突 / 死配置 / 4 套部署链 + 6 批整改路线） |
-| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层** |
+| [config-hygiene-review-2026-09-08.md](./config-hygiene-review-2026-09-08.md) | **配置治理审查**（凭据 / 地址多副本 / 真源冲突 / 死配置 / 4 套部署链 + 九批整改记录；**有效收敛率已 100%**，105/105 键只在 `pkg/conf` 内读取） |
+| [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md) | **推理服务 + 记忆分层**（2026-09-11 重写配置节：生效值是局域网 Ollama，不是 `api/etc/moe.yaml` 片段里的 llama-server 默认值） |
+| [../../backend/LAYOUT.md](../../backend/LAYOUT.md) | **后端目录布局**，含 `pkg/conf` 三个文件的职责与「新增配置项该改哪里」（配置读取 SSOT，49 个反向依赖） |
 | [../product/product-positioning.md](../product/product-positioning.md) | 产品定位与边界 |
 | [moe-social-runtime.md](./moe-social-runtime.md) | **后端运行时 SSOT**（单进程 Kratos HTTP :8888、启动/生成/冒烟、已废弃命令对照） |
 | [环境配置说明.md](./环境配置说明.md) | 本地 / 线上 API 基址 |
@@ -43,9 +44,9 @@
 
 | 文档 | 用途 |
 |------|------|
-| [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **记忆架构 SSOT** |
-| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1 |
-| [memory/README.md](./memory/README.md) | 代码模块地图 |
+| [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **记忆架构 SSOT**（⚠️ 向量/Embedding 半边已于 2026-06-29 移除，仅关键词记忆文本库仍有效；见文首横幅） |
+| [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1（⚠️ `moe.default_capability_tier` 是死键，默认档位实为编译期常量） |
+| [memory/README.md](./memory/README.md) | 代码模块地图（⚠️ **历史设计**：`pkg/memory`、`backend/rpc`、`lib/memory` 三个目录均已不存在，勿据此找代码） |
 | [local-llm-tools.md](./local-llm-tools.md) | 本机 GGUF |
 | [moe-brain-memory-rpg.md](./moe-brain-memory-rpg.md) | 记忆 RPG UI |
 

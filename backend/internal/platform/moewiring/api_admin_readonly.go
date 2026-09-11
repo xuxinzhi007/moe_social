@@ -3,11 +3,12 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	adminapp "backend/internal/service/admin"
+	"backend/pkg/conf"
 )
 
 // AdminReadonlyAPIInProcessEnabled config.yaml: moe.admin_readonly_api_in_process
 func AdminReadonlyAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.admin_readonly_api_in_process")
+	return conf.DomainInProcess("admin_readonly")
 }
 
 // NewAPIAdminReadonlyService API 进程内 Admin 只读应用服务。

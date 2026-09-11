@@ -3,11 +3,12 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	chatapp "backend/internal/service/chat"
+	"backend/pkg/conf"
 )
 
 // ChatAPIInProcessEnabled config.yaml: moe.chat_api_in_process
 func ChatAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.chat_api_in_process")
+	return conf.DomainInProcess("chat")
 }
 
 // NewAPIChatService API 进程内 Chat 应用服务。

@@ -3,10 +3,11 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	giftapp "backend/internal/service/gift"
+	"backend/pkg/conf"
 )
 
 func GiftAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.gift_api_in_process")
+	return conf.DomainInProcess("gift")
 }
 
 func NewAPIGiftService() (*giftapp.AppService, error) {

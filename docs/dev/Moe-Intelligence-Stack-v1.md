@@ -75,14 +75,18 @@ llama-server **无全局会话**；Bot 发帖用 `moe.bot_post_model` + `post_ru
 
 ## 2. 能力档位（7B = S2）
 
-| 档位 | 常量 | 典型模型 | v1 允许的工具 |
+| 档位 | 常量 | 典型模型 | v1 允许的工具（`core.AllowsTool`，`pkg/moe/core/tier.go:32-45`） |
 |------|------|----------|----------------|
-| S0 | `s0` | ≤1.5B | 无（仅路由，预留） |
-| S1 | `s1` | 2B～3B | `post_search`, `memory_search` |
-| **S2** | `s2` | **7B 默认** | S1 + `post_create`, `post_get`, `memory_save` |
-| S3 | `s3` | 云端 | 全部 + 多步（后续） |
+| S0 | `s0` | ≤1.5B | **无**（一律 `false`，仅路由，预留） |
+| S1 | `s1` | 2B～3B | `memory_search`, `memory_get`, `post_search`, `post_get` |
+| **S2** | `s2` | **7B 默认** | S1 + `memory_save`, `post_create`, `brain_refine_episode`, `brain_curate_memories` |
+| S3 | `s3` | 云端 | 全部（`return true`） |
 
-执行器按 `CapabilityTier` 校验；未配置 Agent 时按 `moe.default_capability_tier`（默认 `s2`）。
+执行器按 `CapabilityTier` 校验；未配置 Agent 时取**编译期常量** `core.DefaultTier = TierS2`（`tier.go:16`），`ParseTier` 的 `default` 分支同样返回 `TierS2`。
+
+> ⚠️ `moe.default_capability_tier` **是死键**：`config/config.yaml:184` 虽写着 `s2`，但全仓**零读者**
+> （`pkg/conf/config.go:21` 已把它与 `moe.enabled` / `moe.bot_post_daily_limit_default` 一并记名为不进 struct 的死配置）。
+> 改它不会有任何效果。要让默认档位可配，需先在 `pkg/conf` 里加字段与派生函数、再让执行器读它——目前二者都没有。
 
 ---
 

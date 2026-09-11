@@ -1,8 +1,16 @@
 # Moe Social (萌社交) Code Wiki
 
 > **项目版本**: 1.0.0+1  
-> **最后更新**: 2026-06-29  
+> **最后更新**: 2026-09-11（配置层修订；§4.6 / §4.7 已按实测重写）  
 > **技术栈**: Flutter + Go/Kratos + React
+
+### 近期变更摘要（2026-09-11）
+
+| 类别 | 说明 |
+|------|------|
+| **配置读取统一** | 唯一入口 `backend/pkg/conf`（49 个反向依赖）。此前散落 10 个文件的 `viper.New()` + 硬编码 searchDirs 已清零，`-f` 指定的配置文件现在对每一项都权威（实测：探针配置里的 `tick=7s/11s` 压过同目录 `./config` 的 60/300） |
+| **过渡键删除** | `moeconf` 整包、`moe.kratos_pure_enabled` / `kratos_admin_base_url` / `super_grpc_retired` / `register_moe_grpc` / `use_moe_grpc`、`api.super_rpc_*`、`runtime.grpc_listen` 均已删除且零读者；18888 / 19032 两个无监听端口的硬编码兜底随之消失 |
+| **LLM 环境变量** | `MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` / `MOE_LLM_API_KEY` **四个全部生效**且作用域统一。下方 2026-06-29 摘要只提 `MOE_LLM_API_KEY`，那是当时的实况（另三个到不了 Bot 调度），现已过期 |
 
 ### 近期变更摘要（2026-06-29）
 
@@ -247,22 +255,26 @@ Brain 内仍有 `prompt_memory.go` 等**提示词级**记忆辅助，非独立�
 
 ### 4.6 配置要点（config/config.yaml）
 
+**读取入口只有一个**：`backend/pkg/conf`（`conf.Inference()` / `conf.DSN()` / `conf.HTTPPort()` / `conf.DomainInProcess("moe")` …）。
+业务层不要自己 `viper.New()`，也不要到处拼 `"<段>.<子键>"`——第九批后全仓已无第二处读取点，`-f` 指定的文件对每一项都权威。
+
 | 块 | 说明 |
 |----|------|
-| `auth` | `access_secret`、过期时间；环境变量 `MOE_AUTH_ACCESS_SECRET` |
-| `llm_inference` | 默认 DeepSeek；**`api_key`** + `MOE_LLM_API_KEY`；`memory_model` |
-| `moe` | `single_process: true`、`kratos_pure_enabled: true` |
-| `runtime` | HTTP `:8888`，片段 `api/etc/moe.yaml` |
-| `memory.search` | 配置残留（hybrid/vector 均 disabled），无独立 memory 服务 |
+| `auth` | `access_secret`、过期时间；环境变量 `MOE_AUTH_ACCESS_SECRET`（**env 优先于文件**） |
+| `llm_inference` | 当前 `provider: ollama` + `base_url: http://192.168.124.77:11434` + `memory_model: qwen2.5:3b-instruct`（`config.yaml:89-94`）。四个环境变量 `MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` / `MOE_LLM_API_KEY` 全部生效且作用域统一（第九批前只有 `API_KEY` 能到达 Bot 调度） |
+| `moe` | `single_process: true`，以及 19 个 `<domain>_api_in_process` 开关（未显式设置时继承 `single_process`，故用 `conf.IsSet` 判定）。`kratos_pure_enabled` / `kratos_admin_base_url` / `super_grpc_retired` 等过渡键已于 2026-09-08 删除 |
+| `runtime` | HTTP `:8888`（`conf.HTTPPort()`），片段 `api/etc/moe.yaml` |
+| `memory.search` | **死配置**（hybrid/vector/graph 全 disabled 且零读者，`pkg/conf/config.go:20` 已记名），记忆检索当前走关键词 |
 
 ### 4.7 Makefile 常用目标
 
 | 命令 | 作用 |
 |------|------|
 | `make gen` | proto + conf + 路由统计 |
-| `make check` | 编译 + 核心测试 |
-| `make moe-social` | 生产单进程 |
-| `make moe-social-dev` | 后端 + deploy-agent :19010 |
+| `make check` | 编译 + 核心测试（**注意**：只 `go build ./cmd/moe-social` + 两个包的单测，**不跑 gofmt / go vet**，别当成全量门禁） |
+| `make moe-social` | 生产单进程（`:8888`，不带 agent） |
+| `make moe-social-dev` | 同一套启动，`moe-social-stack -agent=false`，**也不带** deploy-agent |
+| `make deploy-agent` | 单独起 deploy-agent `:19010` |
 | `make db-migrate` | 数据库迁移 |
 | `make build-linux` | Linux 二进制 |
 

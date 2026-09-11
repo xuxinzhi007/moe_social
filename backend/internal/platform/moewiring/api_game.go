@@ -3,14 +3,14 @@ package moewiring
 import (
 	"context"
 
-	"backend/internal/adapter/moeconfig"
 	"backend/internal/platform/appdb"
 	gameapp "backend/internal/service/game"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 )
 
 func GameAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.game_api_in_process")
+	return conf.DomainInProcess("game")
 }
 
 func NewAPIGameService() (*gameapp.AppService, error) {
@@ -21,7 +21,7 @@ func NewAPIGameService() (*gameapp.AppService, error) {
 	if err != nil {
 		return nil, err
 	}
-	inf, gameModel, gameMode := moeconfig.GameInferenceFromViper()
+	inf, gameModel, gameMode := conf.GameInference()
 	gameModel = llminference.ResolveModelName(context.Background(), inf, gameModel)
 	return gameapp.New(db, gameapp.Deps{
 		Inference: inf,

@@ -30,11 +30,11 @@ func imageConfigFromMoe() mediabiz.ImageConfig {
 }
 
 func PostAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.post_api_in_process")
+	return conf.DomainInProcess("post")
 }
 
 func CommentAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.comment_api_in_process")
+	return conf.DomainInProcess("comment")
 }
 
 func NewAPIPostService() (*postapp.AppService, error) {

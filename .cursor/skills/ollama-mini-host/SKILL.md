@@ -21,22 +21,26 @@ OpenClaw Docker ─────────────────────�
 
 ## 当前仓库的配置
 
-统一配置 SSOT 是 `backend/config/config.yaml` 的 `llm_inference`。旧的 `ollama.*` 仅作兼容读取，不要新增第二套配置入口：
+统一配置 SSOT 是 `backend/config/config.yaml` 的 `llm_inference`，读取入口是 `backend/pkg/conf`（`conf.Inference()`）。旧的 `ollama.*` 仅作兼容回退（`pkg/conf/derive.go:55`，当前 config.yaml 里整段被注释），不要新增第二套配置入口：
 
 ```yaml
 llm_inference:
   provider: ollama
   base_url: http://<小主机局域网地址>:11434
-  model: qwen3:4b
+  memory_model: qwen3:4b      # ← 注意：键名是 memory_model，没有 model 这个键
   api_style: ollama
   timeout_seconds: 120
 ```
 
+> ⚠️ `llm_inference.model` **不是有效键**（`pkg/conf/config.go:120-130` 只有 `memory_model` / `chat_model` / `game_model`）。
+> 写错了不会报错，只会静默落空、继续用原模型——这是最难查的一类配置错误。
+> `memory_model` 同时是 `conf.Inference().DefaultModel` 的来源；环境变量 `MOE_LLM_MODEL` 优先于它。
+
 关键实现位置：
 
-- `backend/pkg/llminference/client.go`：模型列表、非流式 `/api/chat`。
+- `backend/pkg/llminference/client.go`：模型列表、非流式 `/api/chat`；`ConfigFrom` / `ResolveAPIStyle` 负责归一化。
 - `backend/pkg/llminference/stream.go`：流式 `/api/chat`，逐行解析 Ollama JSON。
-- `backend/internal/adapter/moeconfig/inference.go`：读取统一配置。
+- `backend/pkg/conf/derive.go`：读取统一配置（`ResolveInference` / `Inference` / `GameInference`）。原 `backend/internal/adapter/moeconfig/` 整包已于 2026-09-09 删除。
 - `docs/dev/openclaw-ollama-moe-social-integration-plan.md`：部署拓扑和验收清单。
 
 ## 标准调用流程
@@ -81,7 +85,9 @@ curl -fsS http://<小主机地址>:11434/api/chat \
 
 ```bash
 make check
-go test ./pkg/llminference/... ./internal/adapter/moeconfig/...
+go test ./pkg/llminference/... ./pkg/conf/...
+# ↑ 原命令里的 ./internal/adapter/moeconfig/... 已随该包于 2026-09-09 删除，
+#   照抄会得到 "lstat ./internal/adapter/moeconfig/: no such file or directory" + [setup failed]
 ```
 
 再通过现有 Companion/API 入口发起一次中文对话，确认后端日志不打印 API Key、完整 Prompt 或响应正文。
@@ -89,7 +95,7 @@ go test ./pkg/llminference/... ./internal/adapter/moeconfig/...
 ## 故障排查顺序
 
 1. `/api/tags` 失败：检查 Ollama systemd 状态、监听地址、防火墙和端口 `11434`。
-2. `/api/tags` 成功但模型不存在：模型名与配置不一致，使用返回的 `name` 原样配置。
+2. `/api/tags` 成功但模型不存在：模型名与配置不一致，使用返回的 `name` 原样填进 **`llm_inference.memory_model`**（不是 `model`，那个键不存在、写了静默无效）；临时覆盖可用环境变量 `MOE_LLM_MODEL`。
 3. `/api/chat` 超时：先缩短上下文或换 `qwen2.5:3b`，再调整 `timeout_seconds`；不要无限增大超时。
 4. 后端能访问但 App 失败：检查 App 是否仍走后端 API、JWT、SSE/WS，而不是把小主机地址硬编码进页面。
 5. Ollama 停止：应触发现有云 Provider 回退或给用户可理解的失败提示，不要静默伪造回复。

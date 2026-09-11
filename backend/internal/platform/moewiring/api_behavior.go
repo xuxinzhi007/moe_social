@@ -3,11 +3,12 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	behaviorapp "backend/internal/service/behavior"
+	"backend/pkg/conf"
 )
 
 // BehaviorAPIInProcessEnabled config.yaml: moe.behavior_api_in_process
 func BehaviorAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.behavior_api_in_process")
+	return conf.DomainInProcess("behavior")
 }
 
 // NewAPIBehaviorService API 进程内 Behavior 应用服务。

@@ -3,10 +3,11 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	achievementapp "backend/internal/service/achievement"
+	"backend/pkg/conf"
 )
 
 func AchievementAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.achievement_api_in_process")
+	return conf.DomainInProcess("achievement")
 }
 
 func NewAPIAchievementService() (*achievementapp.AppService, error) {

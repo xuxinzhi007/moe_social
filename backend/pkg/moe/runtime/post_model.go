@@ -4,8 +4,7 @@ import (
 	"strings"
 
 	"backend/model"
-
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
 // communityPostGuardrails Bot 发帖场景（与 App 酒馆聊天隔离；模型协议由 llm_inference.api_style 决定）。
@@ -20,7 +19,7 @@ func ResolvePostModel(deps Deps, rt model.MoeAgentRuntime) string {
 
 // resolvePostModel 发帖专用模型：优先使用统一配置中的 Bot 模型，不使用酒馆派生模型名。
 func resolvePostModel(deps Deps, rt model.MoeAgentRuntime) string {
-	if m := strings.TrimSpace(loadBotPostModelFromViper()); m != "" {
+	if m := strings.TrimSpace(conf.BotPostModelConfigured()); m != "" {
 		return m
 	}
 	if m := strings.TrimSpace(deps.Inference.DefaultModel); m != "" {
@@ -31,25 +30,6 @@ func resolvePostModel(deps Deps, rt model.MoeAgentRuntime) string {
 		return m
 	}
 	return "qwen2"
-}
-
-func loadBotPostModelFromViper() string {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return ""
-	}
-	if m := strings.TrimSpace(v.GetString("moe.bot_post_model")); m != "" {
-		return m
-	}
-	if m := strings.TrimSpace(v.GetString("llm_inference.chat_model")); m != "" {
-		return m
-	}
-	return ""
 }
 
 // looksLikeDerivedAgentModel 过滤遗留的酒馆「创建角色」派生模型名。

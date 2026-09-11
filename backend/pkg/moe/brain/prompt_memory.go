@@ -7,10 +7,10 @@ import (
 	"unicode/utf8"
 
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/port"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -61,7 +61,7 @@ func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort,
 		}
 	}
 	est := core.EstimateTokens(block)
-	limit := defaultContextLimit()
+	limit := conf.ContextTokens()
 	usedPct := 0.0
 	if limit > 0 && est > 0 {
 		usedPct = float64(est) / float64(limit)
@@ -80,22 +80,6 @@ func BuildGenerationMeta(ctx context.Context, db *gorm.DB, rpc port.MoeToolPort,
 		ContextUsedPct:     usedPct,
 		Note:               "社区 Bot 发帖会结合自传记忆与 Bot 用户画像生成内容。",
 	}
-}
-
-func defaultContextLimit() int {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return 8192
-	}
-	if n := v.GetInt("llm_inference.context_tokens"); n > 0 {
-		return n
-	}
-	return 8192
 }
 
 func formatEpisodesForPrompt(episodes []model.MoeBotEpisode) string {

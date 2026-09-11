@@ -7,11 +7,12 @@ import (
 	aidata "backend/internal/data/ai"
 	"backend/internal/platform/appdb"
 	aiapp "backend/internal/service/ai"
+	"backend/pkg/conf"
 )
 
 // AIAPIInProcessEnabled config.yaml: moe.ai_api_in_process
 func AIAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.ai_api_in_process")
+	return conf.DomainInProcess("ai")
 }
 
 // NewAPIAIService API 进程内 AI 资源应用服务。

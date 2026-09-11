@@ -3,19 +3,19 @@ package moewiring
 import (
 	"context"
 
-	"backend/internal/adapter/moeconfig"
 	companionbiz "backend/internal/biz/companion"
 	lifebiz "backend/internal/biz/life"
 	companiondata "backend/internal/data/companion"
 	"backend/internal/platform/appdb"
 	companionapp "backend/internal/service/companion"
 	lifeapp "backend/internal/service/life"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 )
 
 // CompanionAPIInProcessEnabled reports whether the companion service should run in-process.
 func CompanionAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.companion_api_in_process")
+	return conf.DomainInProcess("companion")
 }
 
 // NewAPICompanionService creates the companion AppService when the feature flag is on.
@@ -28,7 +28,7 @@ func NewAPICompanionService(lifeApp *lifeapp.AppService) (*companionapp.AppServi
 		return nil, err
 	}
 	// 复用全局 LLM 推理配置
-	inf := moeconfig.InferenceFromViper()
+	inf := conf.Inference()
 	model := llminference.ResolveModelName(context.Background(), inf, inf.DefaultModel)
 
 	// 尝试获取 life store（可选依赖）

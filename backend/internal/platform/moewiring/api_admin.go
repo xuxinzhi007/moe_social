@@ -3,11 +3,11 @@ package moewiring
 import (
 	"context"
 
-	"backend/internal/adapter/moeconfig"
 	moebiz "backend/internal/biz/moe"
 	moedata "backend/internal/data/moe"
 	"backend/internal/platform/appdb"
 	moeadmin "backend/internal/service/moe"
+	"backend/pkg/conf"
 	"backend/pkg/moe/brain"
 	"backend/pkg/moe/flowexec"
 	"backend/pkg/moe/port"
@@ -28,7 +28,7 @@ func NewAPIAdminService(appPort port.MoeToolPort) (*moeadmin.AdminService, error
 		return nil, err
 	}
 	admin := moeadmin.NewAdmin(db)
-	inf := moeconfig.InferenceFromViper()
+	inf := conf.Inference()
 
 	admin.AttachMoeToolPort(func(context.Context) port.MoeToolPort { return sp })
 	admin.AttachRuntimeDeps(func(context.Context) runtime.Deps {

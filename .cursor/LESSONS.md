@@ -7,7 +7,7 @@
 
 - 改 `backend/api/**` proto 后必须 `cd backend && make gen`，再 `make check`；禁止手改 `*.pb.go`、`*_http.pb.go`。
 - `make gen` 后检查空壳 logic；有则删空壳、保留业务实现文件。
-- 管理台类型对齐：改 admin 相关 API 后跑 `backend/scripts/gen-moe-admin.sh`（若存在），再改 `moe-admin/src/api/`。
+- 管理台类型对齐：改 admin 相关 API 后跑 `cd backend && make gen-moe-admin`（实为 `bash scripts/gen/moe-admin.sh`，注意脚本在 `gen/` 子目录下，不是 `scripts/gen-moe-admin.sh`），再改 `moe-admin/src/api/`。
 
 ## 三栈边界
 

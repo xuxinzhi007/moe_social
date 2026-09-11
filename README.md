@@ -78,20 +78,25 @@ API 地址在 **`lib/utils/config.dart`** 中配置（`isProduction` / `producti
 
 ```bash
 cd backend
-# 配置 config/config.yaml 中的数据库等
+# 配置 config/config.yaml 中的数据库等（读取入口统一是 backend/pkg/conf）
 go mod download
 make gen          # 修改 api/<domain>/v1/*.proto 后重新生成
-make build        # 或分别启动 api / rpc
+make build        # 产出 bin/moe-social（单进程；已无 api / rpc 双进程形态）
 go test ./...
 ```
 
-Docker 二进制部署示例（在 `backend/` 目录）：
+Docker 二进制部署示例（在 `backend/` 目录，**需先 `make build`**，compose 挂载的是 `./bin/moe-social`）：
 
 ```bash
-docker compose -f docker-compose.binary.yml up -d --build
-docker logs moe-social-api
-docker logs moe-social-rpc
+make build                                    # 前置：产出 bin/moe-social
+docker compose -f docker-compose.binary.yml up -d
+docker logs moe-social                        # 只有一个 service，容器名就是 moe-social
 ```
+
+> compose 里只有 **一个** service `moe-social`（`image: alpine:latest` + `network_mode: host`），
+> 没有 `moe-social-api` / `moe-social-rpc`；也没有 `build:` 段，所以 `--build` 是空操作。
+> 容器启动命令是 `/app/moe-social -f config/config.yaml`，并通过 `MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` /
+> `MOE_LLM_MODEL` / `MOE_LLM_API_KEY` 四个环境变量覆盖推理配置（这四个现已全部生效且作用域一致）。
 
 环境联调说明：[docs/dev/环境配置说明.md](docs/dev/环境配置说明.md) · [docs/dev/快速调试步骤.md](docs/dev/快速调试步骤.md)
 

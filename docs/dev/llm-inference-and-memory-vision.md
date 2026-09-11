@@ -1,18 +1,28 @@
 # 推理服务与记忆系统（SSOT）
 
-> **推理**：本机 **llama-server**（OpenAI 兼容，`llm_inference.base_url`）。  
+> **推理（当前生效值）**：局域网 n100 小主机上的 **Ollama** `http://192.168.124.77:11434`，`api_style: ollama`，`memory_model: qwen2.5:3b-instruct`（`backend/config/config.yaml:89-94`）。  
 > **记忆**：**数据库**为长期存储；**单次 prompt** 为工作上下文（受 n_ctx 限制）。
+>
+> ⚠️ 别照 `api/etc/moe.yaml` 片段里的 `BaseUrl: http://127.0.0.1:6633` / `ApiStyle: openai` 去配——那是**结构模板的默认值**，
+> 启动时被 `config/config.yaml` 的 `llm_inference` 段覆盖（`wiring/config_override.go:21-33`，仅当值非空/为正才覆盖）。
+> 本机 llama-server（OpenAI 兼容，:6633）是**另一种可选部署**，不是当前状态。
 
 ## 配置
 
-| 键 | 说明 |
-|----|------|
-| `llm_inference.base_url` | 如 `http://127.0.0.1:6633` |
-| `llm_inference.api_style` | `openai`（默认） |
-| `llm_inference.memory_model` | 记忆提取/总结用模型 |
-| `api/etc/moe.yaml` 片段 | 驼峰字段名 `LLMInference`（与 `Ollama` 旧键已统一）；值由 `config/config.yaml` 覆盖 |
+**读取入口只有一个**：`conf.Inference()`（返回归一化后的 `llminference.Config`）；
+需要原值时用 `conf.ResolveInference()`（不去末尾斜杠、不推断 `api_style`、不兜底超时），文字游戏独立端点用 `conf.GameInference()`。
 
-`backend/config/config.yaml` 中的 `ollama.*` 仅作**读取兼容**，新部署勿再配置。
+| 键 | 说明 | 当前值 |
+|----|------|--------|
+| `llm_inference.base_url` | 后端进程可访问的推理端点（**不是** Flutter 客户端地址） | `http://192.168.124.77:11434` |
+| `llm_inference.api_style` | `ollama` 或 `openai`；留空时按 URL 是否含 `:11434` 推断，否则判为 openai（`llminference.ResolveAPIStyle`） | `ollama` |
+| `llm_inference.memory_model` | 记忆提取/总结用模型，同时是 `Inference().DefaultModel` 的来源 | `qwen2.5:3b-instruct` |
+| `llm_inference.timeout_seconds` | ≤0 时兜底 120s（`llminference.ConfigFrom`） | `120` |
+| `api/etc/moe.yaml` 片段 | 驼峰字段名 `LLMInference`（`apiconfig.LLMInferenceConf`，`json`/`yaml` tag）；**apiconfig 里没有 `Ollama` 字段**，历史 `ollama.*` 回退只存在于 `pkg/conf/derive.go:55` | 仅作结构模板 |
+
+环境变量 `MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` / `MOE_LLM_API_KEY` 优先于文件，第九批后四者作用域统一（此前只有 `API_KEY` 能到达 Bot 调度）。
+
+`backend/config/config.yaml` 中的 `ollama.*` 仅作**读取兼容**（当前整段被注释，`:122-126`），新部署勿再配置。
 
 ## 对话要不要存库、要不要「学习」？
 
