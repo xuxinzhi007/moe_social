@@ -1,11 +1,18 @@
 package utils
 
-import "backend/model"
+import (
+	"backend/model"
+
+	"gorm.io/gorm"
+)
 
 // MigrateEntry describes one model that should participate in AutoMigrate.
 type MigrateEntry struct {
 	Key   string
 	Model interface{}
+	// BeforeMigrate 可选的数据迁移钩子：在该表 AutoMigrate 之前执行（仅当该表本次需要迁移时）。
+	// 用于「先清数据再改表结构」的场景，如 life_items 建唯一索引前先合并重复行。
+	BeforeMigrate func(db *gorm.DB) error
 }
 
 // MigrateModelRegistry keeps the AutoMigrate list in one place.
@@ -91,7 +98,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "life_worlds", Model: &model.LifeWorld{}},
 		{Key: "life_event_logs", Model: &model.LifeEventLog{}},
 		{Key: "life_relationships", Model: &model.LifeRelationship{}},
-		{Key: "life_items", Model: &model.LifeItem{}},
+		{Key: "life_items", Model: &model.LifeItem{}, BeforeMigrate: dedupeLifeItemsByName},
 		{Key: "life_inventory", Model: &model.LifeInventory{}},
 		{Key: "life_daily_claim", Model: &model.LifeDailyClaim{}},
 		{Key: "pet_profiles", Model: &model.PetProfile{}},

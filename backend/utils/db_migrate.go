@@ -72,6 +72,11 @@ func RunAutoMigrate(db *gorm.DB, opts MigrateOptions) error {
 		}
 
 		t0 := time.Now()
+		if entry.BeforeMigrate != nil {
+			if err := entry.BeforeMigrate(db); err != nil {
+				return fmt.Errorf("pre-migrate %s (%s): %w", entry.Key, tableName, err)
+			}
+		}
 		if err := db.AutoMigrate(entry.Model); err != nil {
 			return fmt.Errorf("migrate %s (%s): %w", entry.Key, tableName, err)
 		}
