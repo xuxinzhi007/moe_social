@@ -901,6 +901,11 @@ func TestRevokeProactiveDeliveryWritesAuditableEvent(t *testing.T) {
 }
 
 type fakeStore struct {
+	// mu 保护下面所有字段。Engine.pushProactive 会并发调用 recordCompanionEvent →
+	// CreateCompanionEvent，没有锁 go test -race 就报数据竞争 —— 那会让整个仓库
+	// 无法用竞态检测器当门禁。真实 store 走数据库、每个调用各自事务，所以这只是
+	// 测试替身的缺陷，不是生产竞态。所有方法都返回副本而非内部指针，故加锁即完备。
+	mu                 sync.Mutex
 	profiles           map[uint]*model.CompanionProfile
 	memories           []model.CompanionMemory
 	logs               []model.CompanionChatLog
@@ -914,6 +919,9 @@ func newFakeStore() *fakeStore {
 }
 
 func (s *fakeStore) GetProfileByUserID(_ context.Context, userID uint) (*model.CompanionProfile, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	profile := s.profiles[userID]
 	if profile == nil {
 		return nil, nil
@@ -923,6 +931,9 @@ func (s *fakeStore) GetProfileByUserID(_ context.Context, userID uint) (*model.C
 }
 
 func (s *fakeStore) UpsertProfile(_ context.Context, profile *model.CompanionProfile) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	profileCopy := *profile
 	if existing := s.profiles[profile.UserID]; existing != nil {
 		profileCopy.ID = existing.ID
@@ -946,6 +957,9 @@ func (s *fakeStore) UpdateProactiveSettings(
 	enabled bool,
 	dailyLimit, quietStart, quietEnd, timezoneOffset int,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	row := s.profiles[userID]
 	if row == nil {
 		return nil
@@ -959,6 +973,9 @@ func (s *fakeStore) UpdateProactiveSettings(
 }
 
 func (s *fakeStore) UpdateIntimacy(_ context.Context, userID uint, intimacy float64, level int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	row := s.profiles[userID]
 	if row == nil {
 		return nil
@@ -969,6 +986,9 @@ func (s *fakeStore) UpdateIntimacy(_ context.Context, userID uint, intimacy floa
 }
 
 func (s *fakeStore) ListProfileUserIDs(_ context.Context) ([]uint, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	userIDs := make([]uint, 0, len(s.profiles))
 	for userID := range s.profiles {
 		userIDs = append(userIDs, userID)
@@ -977,6 +997,9 @@ func (s *fakeStore) ListProfileUserIDs(_ context.Context) ([]uint, error) {
 }
 
 func (s *fakeStore) ListProfileUserIDsByLifeEntityID(_ context.Context, entityID uint) ([]uint, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	userIDs := make([]uint, 0)
 	for userID, profile := range s.profiles {
 		if profile.LifeEntityID == int(entityID) {
@@ -987,12 +1010,18 @@ func (s *fakeStore) ListProfileUserIDsByLifeEntityID(_ context.Context, entityID
 }
 
 func (s *fakeStore) CreateMemory(_ context.Context, memory *model.CompanionMemory) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	memory.ID = uint(len(s.memories) + 1)
 	s.memories = append(s.memories, *memory)
 	return nil
 }
 
 func (s *fakeStore) ListActiveMemories(_ context.Context, userID uint, limit int) ([]model.CompanionMemory, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]model.CompanionMemory, 0, len(s.memories))
 	for _, m := range s.memories {
 		if m.UserID == userID {
@@ -1006,6 +1035,9 @@ func (s *fakeStore) ListActiveMemories(_ context.Context, userID uint, limit int
 }
 
 func (s *fakeStore) GetMemoryByID(_ context.Context, userID, memoryID uint) (*model.CompanionMemory, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i := range s.memories {
 		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
 			row := s.memories[i]
@@ -1016,6 +1048,9 @@ func (s *fakeStore) GetMemoryByID(_ context.Context, userID, memoryID uint) (*mo
 }
 
 func (s *fakeStore) DeleteMemory(_ context.Context, userID, memoryID uint) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i := range s.memories {
 		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
 			s.memories = append(s.memories[:i], s.memories[i+1:]...)
@@ -1032,6 +1067,9 @@ func (s *fakeStore) UpdateMemoryPinned(
 	importance int,
 	expiresAt *time.Time,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i := range s.memories {
 		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
 			s.memories[i].Pinned = pinned
@@ -1049,6 +1087,9 @@ func (s *fakeStore) CorrectMemoryContent(
 	content string,
 	confirmedAt time.Time,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i := range s.memories {
 		if s.memories[i].ID == memoryID && s.memories[i].UserID == userID {
 			s.memories[i].Content = content
@@ -1068,6 +1109,9 @@ func (s *fakeStore) UpdateMemoryRecord(
 	expiresAt *time.Time,
 	confidence float64,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for index := range s.memories {
 		memory := &s.memories[index]
 		if memory.ID == memoryID && memory.UserID == userID && !memory.UserConfirmed {
@@ -1084,6 +1128,9 @@ func (s *fakeStore) UpdateMemoryRecord(
 }
 
 func (s *fakeStore) ConfirmMemory(_ context.Context, userID, memoryID uint, confirmedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for index := range s.memories {
 		if s.memories[index].ID == memoryID && s.memories[index].UserID == userID {
 			s.memories[index].UserConfirmed = true
@@ -1095,10 +1142,16 @@ func (s *fakeStore) ConfirmMemory(_ context.Context, userID, memoryID uint, conf
 }
 
 func (s *fakeStore) CleanupExpiredMemories(_ context.Context) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return 0, nil
 }
 
 func (s *fakeStore) CreateMemoryConflict(_ context.Context, conflict *model.CompanionMemoryConflict) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, existing := range s.conflicts {
 		if existing.DedupeKey == conflict.DedupeKey {
 			return gorm.ErrDuplicatedKey
@@ -1110,6 +1163,9 @@ func (s *fakeStore) CreateMemoryConflict(_ context.Context, conflict *model.Comp
 }
 
 func (s *fakeStore) ListMemoryConflicts(_ context.Context, userID uint, limit int) ([]model.CompanionMemoryConflict, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]model.CompanionMemoryConflict, 0, len(s.conflicts))
 	for _, conflict := range s.conflicts {
 		if conflict.UserID == userID && conflict.Status == "pending" {
@@ -1123,6 +1179,9 @@ func (s *fakeStore) ListMemoryConflicts(_ context.Context, userID uint, limit in
 }
 
 func (s *fakeStore) GetMemoryConflict(_ context.Context, userID, conflictID uint) (*model.CompanionMemoryConflict, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for index := range s.conflicts {
 		if s.conflicts[index].ID == conflictID && s.conflicts[index].UserID == userID {
 			row := s.conflicts[index]
@@ -1133,6 +1192,9 @@ func (s *fakeStore) GetMemoryConflict(_ context.Context, userID, conflictID uint
 }
 
 func (s *fakeStore) ResolveMemoryConflict(_ context.Context, userID, conflictID uint, status string, resolvedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for index := range s.conflicts {
 		if s.conflicts[index].ID == conflictID && s.conflicts[index].UserID == userID && s.conflicts[index].Status == "pending" {
 			s.conflicts[index].Status = status
@@ -1144,11 +1206,17 @@ func (s *fakeStore) ResolveMemoryConflict(_ context.Context, userID, conflictID 
 }
 
 func (s *fakeStore) AppendChatLog(_ context.Context, chatLog *model.CompanionChatLog) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.logs = append(s.logs, *chatLog)
 	return nil
 }
 
 func (s *fakeStore) ListRecentChatLogs(_ context.Context, userID uint, limit int) ([]model.CompanionChatLog, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]model.CompanionChatLog, 0, len(s.logs))
 	for index := len(s.logs) - 1; index >= 0; index-- {
 		if s.logs[index].UserID == userID {
@@ -1165,6 +1233,9 @@ func (s *fakeStore) ListRecentChatLogs(_ context.Context, userID uint, limit int
 }
 
 func (s *fakeStore) CreateRelationshipEvent(_ context.Context, event *model.CompanionRelationshipEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	event.ID = uint(len(s.relationshipEvents) + 1)
 	s.relationshipEvents = append(s.relationshipEvents, *event)
 	return nil
@@ -1175,6 +1246,9 @@ func (s *fakeStore) ListRelationshipEvents(
 	userID uint,
 	limit int,
 ) ([]model.CompanionRelationshipEvent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]model.CompanionRelationshipEvent, 0, len(s.relationshipEvents))
 	for index := len(s.relationshipEvents) - 1; index >= 0; index-- {
 		event := s.relationshipEvents[index]
@@ -1189,6 +1263,9 @@ func (s *fakeStore) ListRelationshipEvents(
 }
 
 func (s *fakeStore) CreateCompanionEvent(_ context.Context, event *model.CompanionEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, existing := range s.companionEvents {
 		if existing.DedupeKey == event.DedupeKey {
 			return nil
@@ -1204,6 +1281,9 @@ func (s *fakeStore) ListCompanionEvents(
 	userID uint,
 	limit int,
 ) ([]model.CompanionEvent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	out := make([]model.CompanionEvent, 0, len(s.companionEvents))
 	for index := len(s.companionEvents) - 1; index >= 0; index-- {
 		event := s.companionEvents[index]

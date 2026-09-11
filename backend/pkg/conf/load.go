@@ -110,17 +110,25 @@ func LoadFile(path string) (*Config, error) {
 	return loaded.cfg, nil
 }
 
-// Reload 丢弃缓存并重读当前文件。
+// Reload 重读当前文件并把结果原子换入。
 // 管理台 ApplyRuntimeConfigPatch 写回 config.yaml 后必须调用，否则改动到重启前都不生效。
+//
+// 不清空 current：LoadFile 无条件重读，并在写锁内整体换入一个新的 *state，旧指针不被改写，
+// 所以并发读者要么看到旧快照要么看到新快照。若先把 current 置 nil 再解锁，就会开出一个窗口：
+// 并发的 Get 看到 nil 后走 loadLocked→resolvePath，而 resolvePath 认的是包级 searchDirs，
+// 不是 -f 指定的路径。
+//
+// 这个窗口不窄 —— 它横跨一次完整读盘。TestReloadNeverExposesUnloadedWindow 在旧实现下
+// 0.25 秒内观测到 459501 次错值读取。后果取决于部署：cwd 下存在 ./config 时读到的是
+// searchDirs 那个文件（n100 恰好与 -f 同一个，所以看不出问题）；自定义 -f 或 cwd 下没有
+// config/ 时读到的是零值 Config —— DSN() 返回空连接串、AuthAccessSecret() 返回空密钥。
 func Reload() (*Config, error) {
-	mu.Lock()
+	mu.RLock()
 	path := ""
 	if current != nil {
 		path = current.path
 	}
-	current = nil
-	autoFailed = false
-	mu.Unlock()
+	mu.RUnlock()
 
 	if path == "" {
 		return Load()
