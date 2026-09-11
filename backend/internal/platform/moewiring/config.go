@@ -1,66 +1,32 @@
 package moewiring
 
 import (
-	"sync"
-
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
-var (
-	configOnce sync.Once
-	configV    *viper.Viper
-)
-
-func moeViper() *viper.Viper {
-	configOnce.Do(func() {
-		v := viper.New()
-		v.SetConfigName("config")
-		v.SetConfigType("yaml")
-		v.AddConfigPath("./config")
-		v.AddConfigPath("../config")
-		v.AddConfigPath("../../config")
-		_ = v.ReadInConfig()
-		configV = v
-	})
-	return configV
-}
-
-func boolOr(v *viper.Viper, keys []string, def bool) bool {
-	if v == nil {
-		return def
-	}
-	for _, key := range keys {
-		if v.IsSet(key) {
-			return v.GetBool(key)
-		}
-	}
-	return def
-}
-
-func defaultInProcessEnabled() bool {
-	return SingleProcessEnabled() || APIInProcessEnabled()
-}
-
-func domainInProcessEnabled(key string) bool {
-	return boolOr(moeViper(), []string{key}, defaultInProcessEnabled())
-}
+// 序4：本文件此前自己养了一个 viper 单例（configOnce + configV + moeViper()）和一个
+// 通用的 boolOr(keys, def) 回退器，19 个 moe.<domain>_api_in_process 开关都从这里读。
+// 那套东西与 pkg/conf 的 DomainInProcess 是同一件事的两份实现，且它硬编码 searchDirs，
+// 因此看不见 cmd/moe-social 的 -f（§20.5 的 10 个文件之一）。现在只剩薄封装：
+// 导出的 <Domain>APIInProcessEnabled() 保留，因为 wiring/wire_*.go 有 20 处调用方，
+// 但判定一律下沉到 pkg/conf。
 
 // APIInProcessEnabled reports whether legacy in-process app wiring remains enabled.
 func APIInProcessEnabled() bool {
-	return boolOr(moeViper(), []string{"moe.api_in_process"}, false)
+	return conf.Get().Moe.APIInProcess
 }
 
 // SingleProcessEnabled reports whether the repo standard single-process moe-social mode is on.
 func SingleProcessEnabled() bool {
-	return boolOr(moeViper(), []string{"moe.single_process"}, false)
+	return conf.Get().Moe.SingleProcess
 }
 
 func UserAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.user_api_in_process")
+	return conf.DomainInProcess("user")
 }
 
 func VIPAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.vip_api_in_process")
+	return conf.DomainInProcess("vip")
 }
 
 // 这里曾有一族 go-zero→Kratos 迁移期的过渡开关（KratosPureEnabled / KratosHTTPFrontEnabled /

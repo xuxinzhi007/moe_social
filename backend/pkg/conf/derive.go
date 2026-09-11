@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"backend/pkg/llminference"
 )
@@ -23,31 +24,53 @@ const (
 	envOSSKeySecret = "MOE_OSS_ACCESS_KEY_SECRET"
 )
 
-// DefaultContextTokens 是 llm_inference.context_tokens 缺失时的兜底，
-// 与 apicomm.ContextLimitFromViper 保持一致。
+// DefaultContextTokens 是 llm_inference.context_tokens 缺失时的兜底。
+// 迁移前这个 8192 在 apicomm 与 brain 两处各写了一遍，现在只有这一处。
 const DefaultContextTokens = 8192
 
-// Inference 解析统一推理端点：环境变量 → llm_inference.* → ollama.*（历史键位）。
+// RawInference 是 llm_inference 段套用 MOE_LLM_* 覆盖后的**原值**：api_style 还是
+// "ollama"/"openai" 这样的字面量，超时还是秒数，都没经过 llminference 的解析。
+// wiring/config_override.go 要把这些原样写回 apiconfig 片段，用的是这个形状；
+// Inference() 是它的解析版。
+type RawInference struct {
+	BaseURL        string
+	APIStyle       string
+	TimeoutSeconds int
+	MemoryModel    string
+	APIKey         string
+}
+
+// ResolveInference 解析统一推理端点的原值：环境变量 → llm_inference.* → ollama.*（历史键位）。
 //
 // ⚠️ 行为合并提示：迁移前有两个同职能读取点，回退链并不一致 ——
 // moeconfig.InferenceFromViper 认全部 4 个 MOE_LLM_* 环境变量，
 // runtime.LoadInferenceFromViper 只认 MOE_LLM_API_KEY。
-// 本方法取超集（认全部 4 个）。runtime 侧迁移过来后，设置 MOE_LLM_BASE_URL /
-// MOE_LLM_API_STYLE / MOE_LLM_MODEL 将开始对 Bot 调度生效，这是有意的收敛。
-func Inference() llminference.Config {
+// 本方法取超集（认全部 4 个）。两处都收敛到这里之后，设置 MOE_LLM_BASE_URL /
+// MOE_LLM_API_STYLE / MOE_LLM_MODEL 也开始对 Bot 调度生效（此前只影响记忆抽取与 Companion）。
+// 这是有意的收敛：那三个变量的唯一设置处是 backend/docker-compose.binary.yml:10-12，
+// 默认值都是空串；运维真去设它，意图就是把整个 LLM 端点搬走，
+// 让 Bot 调度继续连旧端点才是错的（§12.1「同一件事两条链」）。
+func ResolveInference() RawInference {
 	c := Get().LLMInference
 	o := Get().Ollama
-	return llminference.ConfigFrom(
-		firstNonEmpty(env(envLLMBaseURL), c.BaseURL, o.BaseURL),
-		firstNonEmpty(env(envLLMAPIStyle), c.APIStyle, o.APIStyle),
-		firstPositiveInt(c.TimeoutSeconds, o.TimeoutSeconds),
-		firstNonEmpty(env(envLLMModel), c.MemoryModel, o.MemoryModel),
-		firstNonEmpty(env(envLLMAPIKey), c.APIKey, o.APIKey),
-	)
+	return RawInference{
+		BaseURL:        firstNonEmpty(env(envLLMBaseURL), c.BaseURL, o.BaseURL),
+		APIStyle:       firstNonEmpty(env(envLLMAPIStyle), c.APIStyle, o.APIStyle),
+		TimeoutSeconds: firstPositiveInt(c.TimeoutSeconds, o.TimeoutSeconds),
+		MemoryModel:    firstNonEmpty(env(envLLMModel), c.MemoryModel, o.MemoryModel),
+		APIKey:         firstNonEmpty(env(envLLMAPIKey), c.APIKey, o.APIKey),
+	}
+}
+
+// Inference 是 ResolveInference 的解析版，供 llminference.Chat 直接使用。
+func Inference() llminference.Config {
+	r := ResolveInference()
+	return llminference.ConfigFrom(r.BaseURL, r.APIStyle, r.TimeoutSeconds, r.MemoryModel, r.APIKey)
 }
 
 // GameInference 文字游戏专用端点：game_base_url 留空时复用 Inference。
-// 返回值与 moeconfig.GameInferenceFromViper 一致（配置、模型、narrator|agent 模式）。
+// 返回（配置、模型、narrator|agent 模式）；取值与迁移前的
+// moeconfig.GameInferenceFromViper 逐条一致，含 api_style 空→openai、超时 ≤0→300 两个兜底。
 func GameInference() (llminference.Config, string, string) {
 	global := Inference()
 	c := Get().LLMInference
@@ -76,11 +99,15 @@ func ContextTokens() int {
 	return DefaultContextTokens
 }
 
-// BotPostModel Bot 发帖模型：moe.bot_post_model → llm_inference.chat_model → 统一 memory_model。
-// runtime.resolvePostModel 在此之后还有两级兜底（agent runtime 的 model_name、硬编码 "qwen2"），
-// 那两级要调用方传入运行时数据，故意留在那里。
-func BotPostModel() string {
-	return firstNonEmpty(Get().Moe.BotPostModel, Get().LLMInference.ChatModel, Inference().DefaultModel)
+// BotPostModelConfigured Bot 发帖模型的文件层：moe.bot_post_model → llm_inference.chat_model。
+//
+// 故意**不**接 Inference().DefaultModel 那一级：两个调用方（runtime.resolvePostModel、
+// brain.resolveRefineModel）紧接着就查各自的 deps.Inference.DefaultModel，
+// 那是调用方注入的运行时数据。在这里再兜一遍会把注入值悄悄盖掉。
+// 迁移前这两处各有一个同名 loadBotPostModelFromViper，回退链还不一致
+// （runtime 认 chat_model，brain 不认），现已统一到本方法。
+func BotPostModelConfigured() string {
+	return firstNonEmpty(Get().Moe.BotPostModel, Get().LLMInference.ChatModel)
 }
 
 // TopicAnalyzeModel 话题分析模型：moe.topic_analyze_model → llm_inference.memory_model。
@@ -214,11 +241,42 @@ func DefaultInProcessEnabled() bool {
 // DomainInProcess 报告某域是否走进程内装配（moewiring.domainInProcessEnabled 的等价实现）。
 // 键未设置时继承 DefaultInProcessEnabled，而不是取 false —— 这个区别是 IsSet 存在的理由。
 func DomainInProcess(domain string) bool {
-	key := "moe." + strings.TrimSpace(domain) + "_api_in_process"
-	if IsSet(key) {
-		return domainBool(key)
+	return inheritBool("moe."+strings.TrimSpace(domain)+"_api_in_process", DefaultInProcessEnabled())
+}
+
+// LifeEngineEnabled 报告 moe.life_engine_enabled。
+// 它不是 *_api_in_process 形状，DomainInProcess 拼不出来，但继承语义完全相同：
+// 迁移前 moewiring/api_life.go 就是把它和 moe.life_api_in_process 一起丢给
+// domainInProcessEnabled 的，未设置时同样继承全局闸。
+func LifeEngineEnabled() bool {
+	return inheritBool("moe.life_engine_enabled", DefaultInProcessEnabled())
+}
+
+// BotScheduler Bot 发帖调度器：moe.bot_scheduler_enabled **未设置时为 true**（不是 false），
+// tick 缺省 60 秒。与迁移前 runtime.LoadSchedulerOptsFromViper 的取值逐条一致。
+func BotScheduler() (enabled bool, tick time.Duration) {
+	enabled = inheritBool("moe.bot_scheduler_enabled", true)
+	tick = 60 * time.Second
+	if s := Get().Moe.BotSchedulerTickSeconds; s > 0 {
+		tick = time.Duration(s) * time.Second
 	}
-	return DefaultInProcessEnabled()
+	return enabled, tick
+}
+
+// DreamScheduler 入梦调度器：moe.dream_scheduler_enabled 未设置时为 true，tick 缺省 300 秒。
+func DreamScheduler() (enabled bool, tick time.Duration) {
+	enabled = inheritBool("moe.dream_scheduler_enabled", true)
+	tick = 300 * time.Second
+	if s := Get().Moe.DreamSchedulerTickSeconds; s > 0 {
+		tick = time.Duration(s) * time.Second
+	}
+	return enabled, tick
+}
+
+// SmartRetry 智能发送间隔（分钟）与最小间隔（小时）。返回 0 表示文件里没写或写了非正数，
+// 由调用方保留自身默认 —— 与迁移前 runtime.LoadSmartOptsFromViper 的 `if m > 0` 一致。
+func SmartRetry() (retryMinutes, minIntervalHours int) {
+	return Get().Moe.BotSmartRetryMinutes, Get().Moe.BotSmartMinIntervalHours
 }
 
 // InProcessDomains 返回全部受开关控制的域名，供装配处遍历或自检。
@@ -226,6 +284,15 @@ func InProcessDomains() []string {
 	out := make([]string, len(inProcessDomains))
 	copy(out, inProcessDomains)
 	return out
+}
+
+// inheritBool 读取「未设置即继承」语义的布尔键：IsSet 才取值，否则用 def。
+// 类型化字段表达不了这个区别（未设置和显式 false 都是 false），所以这几个键走原始 viper。
+func inheritBool(key string, def bool) bool {
+	if IsSet(key) {
+		return domainBool(key)
+	}
+	return def
 }
 
 func domainBool(key string) bool {

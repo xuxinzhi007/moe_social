@@ -3,7 +3,7 @@
 > **生产入口**：`cd backend && make moe-social` → 单进程 Kratos HTTP `:8888`（**无对外 gRPC 监听**）
 > **目录 SSOT**：[kratos-directory-ssot.md](./kratos-directory-ssot.md)（⚠️ 该篇已标注归档）· [moe-social-runtime.md](./moe-social-runtime.md)
 > **新路由一律走域 proto** `backend/api/<domain>/v1/*.proto` 的 `google.api.http`，改完 `make gen`。
-> **最后核对：2026-09-08**
+> **最后核对：2026-09-11**（目录树删掉已不存在的 `moeconf`、补上 `appdb`/`yamlconf` 等 5 个实际存在的包；`27 个域` 与 `28 处 Register*HTTPServer` 经 `ls` / `grep -c` 实测确认无误）
 
 > ⚠️ 本文旧版描述的 `httplegacy` / `compat` 过渡层**已整体删除**：仓库内无 `httplegacy/` 目录、无 `RegisterCompatHTTP`、无 `compat_envelope.go`、无 `http_compat.go`、无 `internal/server/grpc/`。`api/defs/*.api`（go-zero IDL）目录亦已删除。全部路由现在都是 proto 路由。
 
@@ -35,7 +35,9 @@ backend/
     routestats/             # protoHTTPRouteCount（make gen-proto-route-count 产出）
     swaggerdoc/             # /swagger UI + openapi.yaml 静态服务
 
-  internal/platform/{svc,wiring,moesocial,moewiring,moeconf,apicomm,apiconfig,bootstrap,…}/
+  internal/platform/{svc,wiring,moesocial,moewiring,apicomm,apiconfig,appdb,yamlconf,moelog,chatdelivery,socialhook,bootstrap}/
+    # ↑ moeconf 已于 2026-09-09 整包删除；配置读取 SSOT 现在是 backend/pkg/conf（不在 platform 下）
+    # yamlconf 只加载 -f-api 指定的 API 结构片段（api/etc/moe.yaml），不读 config.yaml
   internal/legacy/types/    # 旧 go-zero types（仅存量结构体，无路由）
 ```
 

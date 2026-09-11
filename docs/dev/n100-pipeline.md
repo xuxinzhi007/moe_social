@@ -17,7 +17,12 @@ GitHub（手动 workflow_dispatch）
 
 - 不在 N100 打 Flutter APK（继续用 `.github/workflows/flutter-release.yml`）。
 - 不覆盖 `~/moe-runtime/config/config.yaml`（密钥只留机器上）。
-- 当前仓库生产入口实际是 `backend/cmd/moe-social-stack`（`-agent=false`），二进制仍命名为 `moe-social`。
+- **本流水线（N100 预发）**编的是 `backend/cmd/moe-social-stack`（`.github/workflows/n100-deploy.yml:37`），二进制仍命名为 `moe-social`。
+  原因：`deploy/n100/moe-social.service:9` 的 `ExecStart` 传了 `-agent=false`，而这个 flag **只有 `moe-social-stack` 定义**
+  （`cmd/moe-social` 只有 `-f` / `-f-api` / `-migrate`），换成 `cmd/moe-social` 会直接 `flag provided but not defined: -agent`。
+- ⚠️ **注意这与云端生产入口不是同一个**：`make build` / `make build-linux` / `docker-compose.binary.yml` 编的都是 `cmd/moe-social`
+  （其 `main.go:1` 自称「生产入口」）。即预发环境跑的进程与生产不是同一份代码路径，两者当前行为一致（`-agent=false` 时 stack 等价于单进程 HTTP），
+  但任何只加在其中一个入口上的改动都不会被另一侧覆盖到。
 
 ## 影响范围
 
@@ -43,7 +48,9 @@ GitHub：https://github.com/xuxinzhi007/moe_social/settings/actions/runners/new
 
 1. 跑 `bootstrap.sh`，确认 `systemctl --user status moe-social` 能起来（配置和库先抄一份能连的 `config.yaml`）。
 2. 注册 runner，在 Actions 里 `workflow_dispatch`，先只选 `backend`。
-3. 本机访问 `http://192.168.124.77:8888/migration` 或健康接口确认。
+3. 本机确认服务活着：`curl -s http://192.168.124.77:8888/health`（`internal/server/http.go:36` 直挂）。
+   想看装配情况再 `curl -s http://192.168.124.77:8888/kratos/v1/moe/runtimes`。
+   ⚠️ 旧版这一步写的 `/migration` 端点**已删除**（`git grep '"/migration"'` 在 `backend` 的 `.go` 中零命中），访问会 404，别据此判定部署失败。
 4. 再跑一次选 `admin`，打开 `http://192.168.124.77/ops/`。
 5. 公网仍走现有 Quick tunnel → Nginx `:80`；等后端在 N100 稳定后再改 Nginx `/api` 指本机 8888。
 

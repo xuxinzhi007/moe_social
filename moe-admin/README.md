@@ -8,12 +8,12 @@ Moe Social 专属管理台：浅色 Element 风格布局 + 现有 Admin API / De
 
 | 终端 | 命令 |
 |------|------|
-| backend | `make moe-social` 或 `make dev`（**默认含** deploy-agent `:19010`） |
+| backend | `make moe-social`（`:8888`）；需要运维页再另开 `make deploy-agent`（`:19010`） |
 | **本目录** | `npm install` → **`npm run dev`** |
 
-`make moe-social` / `make dev` 会顺带拉起 deploy-agent（首次运行会从 `deploy/config.example.yaml` 生成 `deploy/config.yaml`）。  
-仅需 API 时不要 Agent：`go run ./cmd/moe-social-stack -agent=false` 或 `go run ./cmd/dev -agent=false`。  
-单独补 Agent：`make deploy-agent`。
+`make moe-social` = `go run ./cmd/moe-social`，**不带** deploy-agent。`make moe-social-dev` 也一样（它跑的是 `cmd/moe-social-stack -agent=false`）。  
+要 Agent：`make deploy-agent`（首次运行会从 `deploy/config.example.yaml` 生成 `deploy/config.yaml`）。  
+要 API + Agent 一起：`go run ./cmd/moe-social-stack -agent=true`。
 
 浏览器：**http://127.0.0.1:5173/ops/**（登录 `/ops/login`）
 

@@ -39,9 +39,11 @@
 
 ## 本轮已处理（2026-05）
 
+> ⚠️ **本节为历史归档**：除 `utils/auth_jwt_config.go` 外，下表引用的 `ai_resource_helpers` / `ai_resources_logic` / `resource_logic` / `userconfiglogic` / `chatlogic` 五个文件经 `git ls-files` 核实**已全部不存在**（go-zero 时代产物）。不要照表找文件。
+
 | 项 | 处理方式 |
 |----|----------|
-| JWT 多处硬编码 | 统一 `backend/config/config.yaml` → `auth.access_secret`；`utils/auth_jwt_config.go:26` `ConfigureJWT`；由 `internal/platform/wiring/config_override.go:113` 在启动时加载 |
+| JWT 多处硬编码 | 统一 `backend/config/config.yaml` → `auth.access_secret`；`utils/auth_jwt_config.go:22` `ConfigureJWT`；**调用方 `internal/platform/wiring/wire_svc.go:24`**，密钥先由 `config_override.go:96` 用 `conf.AuthAccessSecret()`（env `MOE_AUTH_ACCESS_SECRET` 优先于文件）合并进 `c.Auth.AccessSecret` |
 | JSON `Marshal` 忽略错误 | `ai_resource_helpers`、`ai_resources_logic`、`resource_logic`、`userconfiglogic`、私信/帖子图片序列化 |
 | 记忆缓存无上限 | `chatlogic.go`：TTL 保留 + 最多 512 用户条目 + 过期/最旧淘汰 |
 | 后台记忆提取无界 | `backgroundMemoryExtractContext` 上限 60s |
@@ -72,8 +74,10 @@ curl -s http://127.0.0.1:8888/health
 go list -deps ./cmd/moe-social | grep go-zero    # 应无输出
 ```
 
-> ⚠️ **`auth.access_secret` 缺失不会导致启动失败。** `utils/auth_jwt_config.go:65-72` 的 `jwtSigningKey()` 是在**每次请求时**才返回 `jwt not configured: set auth.access_secret in backend/config/config.yaml`，进程照常起来、`/health` 照常 200。
-> 后果：漏配密钥时服务看起来是健康的，只有登录/鉴权接口逐个报错——比启动 fatal 更难发现。建议改为启动期强校验（见 [配置治理审查](./config-hygiene-review-2026-09-08.md) 的统一加载器 `Validate()` 设计）。
+> ✅ **（2026-09-11 复核并推翻原结论）`auth.access_secret` 缺失会导致启动 fatal，原「不会失败」的警告已过期。**
+> 传播链实测：`api/etc/moe.yaml:8` 的 `AccessSecret` 默认空串 → `ConfigureJWT` 对空值返回 error（`utils/auth_jwt_config.go:24-26`）→ `wire_svc.go:24-26` → `wiring/server.go:26-28` → `run_http_only.go:29-32` 包成 `wire: %w` → `cmd/moe-social/main.go` `log.Fatal(err)`。进程起不来，不存在「服务看着健康、只有鉴权接口逐个报错」的窗口。
+> 原文建议的「改为启动期强校验」**因此无需再做**。`jwtSigningKey()`（`utils/auth_jwt_config.go:39-46`，注意全文只有 47 行，原引的 `:65-72` 不存在）仍是请求期的二次防线，属纵深防御，保留。
+> 仍待办的是 [配置治理审查](./config-hygiene-review-2026-09-08.md) 里更大范围的统一 `Validate()`（其余键目前仍可能静默取零值）。
 
 ---
 

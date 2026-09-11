@@ -3,9 +3,14 @@
 目标：验证“前端登录 → 发帖 → 获取实时通知 → WebSocket 消息”的完整链路可用，并能定位问题属于 **HTTP API / WS / 鉴权 / 数据一致性** 哪一层。
 
 ### 0. 环境准备
-- 后端 API：`backend/api` 已启动（默认 `:8888`）
-- 后端 RPC：`backend/rpc` 已启动（默认 `:8080`），并确保 API 的 `SuperRpc` 可连通
+- 后端：`cd backend && make moe-social` → 单进程 Kratos HTTP **`:8888`**（唯一业务入口，端口来自 `config.yaml` → `runtime.http_port`，读取入口 `conf.HTTPPort()`）
+- 冒烟：`curl -s http://127.0.0.1:8888/health`
 - 前端：运行 App（真机/模拟器/Web 均可）
+
+> ⚠️ **不存在「后端 RPC」这一前置。** `backend/rpc/` 目录已删除、`:8080` 无监听者、`SuperRpc` 与
+> `api.super_rpc_endpoints` / `runtime.grpc_listen` 等键均已移除且零读者。旧版清单要求的
+> 「`backend/rpc` 已启动（`:8080`）+ API 的 `SuperRpc` 可连通」无法满足，也不是环境搭错——架构已是单进程 HTTP-only。
+> 详见 [moe-social-runtime.md](../dev/moe-social-runtime.md) 与 [ports.md](../dev/ports.md)。
 
 ### 1. 登录（HTTP）
 - **操作**：用已注册账号登录

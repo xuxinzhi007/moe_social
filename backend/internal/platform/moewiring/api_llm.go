@@ -1,13 +1,13 @@
 package moewiring
 
 import (
-	"backend/internal/adapter/moeconfig"
 	"backend/internal/platform/appdb"
 	llmapp "backend/internal/service/llm"
+	"backend/pkg/conf"
 )
 
 func LLMAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.llm_api_in_process")
+	return conf.DomainInProcess("llm")
 }
 
 func NewAPILLMService() (*llmapp.AppService, error) {
@@ -19,6 +19,6 @@ func NewAPILLMService() (*llmapp.AppService, error) {
 		return nil, err
 	}
 	return llmapp.New(db, llmapp.Deps{
-		Inference: moeconfig.InferenceFromViper(),
+		Inference: conf.Inference(),
 	}), nil
 }

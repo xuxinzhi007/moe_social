@@ -1,54 +1,19 @@
 package runtime
 
 import (
-	"os"
-	"strings"
-	"time"
-
-	"backend/pkg/llminference"
-
-	"github.com/spf13/viper"
+	"backend/pkg/conf"
 )
 
-// LoadInferenceFromViper 从 backend/config/config.yaml 读取 llm_inference。
-func LoadInferenceFromViper() llminference.Config {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return llminference.Config{}
-	}
-	base := v.GetString("llm_inference.base_url")
-	style := v.GetString("llm_inference.api_style")
-	ts := v.GetInt("llm_inference.timeout_seconds")
-	model := v.GetString("llm_inference.memory_model")
-	apiKey := strings.TrimSpace(os.Getenv("MOE_LLM_API_KEY"))
-	if apiKey == "" {
-		apiKey = strings.TrimSpace(v.GetString("llm_inference.api_key"))
-	}
-	return llminference.ConfigFrom(base, style, ts, model, apiKey)
-}
-
-// LoadSmartOptsFromViper 读取智能发送调度参数。
-func LoadSmartOptsFromViper() SmartOpts {
+// LoadSmartOpts 读取智能发送调度参数。
+// 序4：此前这里自己开 viper 并硬编码 searchDirs，因此看不见 cmd/moe-social 的 -f。
+func LoadSmartOpts() SmartOpts {
 	opts := DefaultSmartOpts()
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return opts
+	retry, minInterval := conf.SmartRetry()
+	if retry > 0 {
+		opts.RetryIntervalMinutes = retry
 	}
-	if m := v.GetInt("moe.bot_smart_retry_minutes"); m > 0 {
-		opts.RetryIntervalMinutes = m
-	}
-	if h := v.GetInt("moe.bot_smart_min_interval_hours"); h > 0 {
-		opts.MinIntervalHours = h
+	if minInterval > 0 {
+		opts.MinIntervalHours = minInterval
 	}
 	return opts
 }
@@ -59,29 +24,14 @@ type SchedulerOptsWithSmart struct {
 	Smart SmartOpts
 }
 
-// LoadSchedulerOptsFromViper 读取 Bot 调度器配置。
-func LoadSchedulerOptsFromViper() SchedulerOptsWithSmart {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	_ = v.ReadInConfig()
-
-	enabled := true
-	if v.IsSet("moe.bot_scheduler_enabled") {
-		enabled = v.GetBool("moe.bot_scheduler_enabled")
-	}
-	tickSec := int64(60)
-	if s := v.GetInt64("moe.bot_scheduler_tick_seconds"); s > 0 {
-		tickSec = s
-	}
+// LoadSchedulerOpts 读取 Bot 调度器配置。
+func LoadSchedulerOpts() SchedulerOptsWithSmart {
+	enabled, tick := conf.BotScheduler()
 	return SchedulerOptsWithSmart{
 		SchedulerOpts: SchedulerOpts{
 			Enabled:      enabled,
-			TickInterval: time.Duration(tickSec) * time.Second,
+			TickInterval: tick,
 		},
-		Smart: LoadSmartOptsFromViper(),
+		Smart: LoadSmartOpts(),
 	}
 }

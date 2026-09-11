@@ -1,8 +1,22 @@
 # 用户记忆系统：统一架构（SSOT）
 
-> **文档定位**：记忆子系统唯一事实源，禁止并行多套方案。  
-> **核心隐喻**：账号级 **记忆文本库**（后端 PostgreSQL），支持 **查询 / 写入 / 注入**；聊天模型只是消费者。  
-> **推理服务**（llama-server、`llm_inference.*`）：见 [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)  
+> ⚠️ **本文的「向量 / Embedding / 混合检索」半边已于 2026-06-29 随 `backend/pkg/memory/` 整体删除，下文相关段落均已失效（2026-09-11 逐项实测）：**
+>
+> | 本文说法 | 实测结果 |
+> |---|---|
+> | 后端 **PostgreSQL** | ✗ 是 **MySQL**（`backend` 的 `.go` 与 `go.mod` 中 `postgres` 零命中） |
+> | `HybridSearchUserFacingMemories` / `HybridSearchEnhanced` | ✗ 两个函数**全仓不存在** |
+> | `ollama.base_url` + `memory.embedding.ollama_model` | ✗ **零读者**；且 `ollama_model` 根本不是键——`config.yaml:237-240` 的 `memory.embedding` 只有 `openai_base_url` / `openai_api_key` / `openai_model` |
+> | `memory.embedding.providers[]` 按 `priority` 覆盖 | ✗ 无此键、无此机制 |
+> | `memory.search` / `memory.embedding` 段「配置见 config.yaml」 | ✗ 整段是**死配置**（`pkg/conf/config.go:20` 已记名：记忆检索当前走关键词） |
+> | `POST /api/user/{id}/memories/reindex`、`GET .../memories/search` | ⚠️ 路由在 proto 里声明、生成的 `_http.pb.go` 也挂上了，但 `protohttp/llm` 的 `Server` 内嵌 `UnimplementedLlmChatServer` 且**没有任何记忆方法实现** → 实际返回 `codes.Unimplemented: method SearchUserMemories not implemented` |
+>
+> **仍然有效的部分**：账号级「记忆文本库」这个隐喻、`user_memories` 的关键词 CRUD 与注入。
+> 因此 [用户级记忆统一改造验收脚本.md](./用户级记忆统一改造验收脚本.md) 的 **Case G（混合检索）整节当前无法执行**，不是「待修」而是「功能已下线」。
+>
+> **文档定位（原）**：记忆子系统唯一事实源，禁止并行多套方案。  
+> **核心隐喻**：账号级 **记忆文本库**（后端 MySQL），支持 **查询 / 写入 / 注入**；聊天模型只是消费者。  
+> **推理服务**（`llm_inference.*`，当前生效值是局域网 Ollama 而非 llama-server）：见 [llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)  
 > **导航**：[docs/index.html](../index.html) · **推理**：[llm-inference-and-memory-vision.md](./llm-inference-and-memory-vision.md)
 
 ---

@@ -27,7 +27,7 @@
 
 ## 2. 保留天数（VIP 与普通用户）
 
-配置位置：`backend/config/config.yaml`（与数据库等同级，RPC 启动时已 `InitConfig` 可读）。
+配置位置：`backend/config/config.yaml:169-174`（与 `database` 同级）。读取入口是 `backend/pkg/conf`——启动早期 `run_http_only.go:19` 调 `conf.Load()`，业务侧在 `utils/private_message.go:15` 取 `conf.Get().PrivateMessage`。（原「RPC 启动时已 `InitConfig` 可读」的说法已过期：`backend/rpc/` 目录不存在，`utils.InitConfig` 这个函数也没有。）
 
 ```yaml
 private_message:

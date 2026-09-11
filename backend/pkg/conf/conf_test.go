@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // fixture 覆盖迁移前 20 处读取点会碰到的全部形状：驼峰键（database.parseTime）、
@@ -151,6 +152,21 @@ func loadFixture(t *testing.T) *Config {
 		t.Fatalf("LoadFile 失败: %v", err)
 	}
 	return cfg
+}
+
+// loadBody 载入自定义 YAML。fixture 把键写全了，表达不了「键完全不存在」这种形状，
+// 而未设置与显式 false 的区分正是 inheritBool 一族的存在理由。
+func loadBody(t *testing.T, body string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatalf("写配置失败: %v", err)
+	}
+	ResetForTest()
+	t.Cleanup(ResetForTest)
+	if _, err := LoadFile(path); err != nil {
+		t.Fatalf("LoadFile 失败: %v", err)
+	}
 }
 
 // TestTypedMirror 断言类型化结构与 YAML 逐字段对应。
@@ -527,5 +543,150 @@ func TestReload(t *testing.T) {
 	}
 	if got := Get().Runtime.HTTPPort; got != 9000 {
 		t.Errorf("Reload 后 HTTPPort = %d, want 9000", got)
+	}
+}
+
+// TestResolveInferenceIsRaw 固化 ResolveInference 与 Inference 的分界：前者是**原值**，
+// 供 wiring/config_override.go 逐字段写回 apiconfig 片段。三个断言各对应一个
+// 「解析版会改掉、写回时必须保留」的形状 —— 斜杠不去、风格不猜、超时不填兜底。
+// 最后一条尤其要紧：若原值也返回 120，config_override 里 `if TimeoutSeconds > 0`
+// 的守卫就会把文件没写的超时凭空写进片段。
+func TestResolveInferenceIsRaw(t *testing.T) {
+	loadBody(t, "llm_inference:\n  base_url: \"http://raw:11434/\"\n  api_style: \"\"\n  timeout_seconds: 0\n  memory_model: \" raw-model \"\n")
+
+	r := ResolveInference()
+	if r.BaseURL != "http://raw:11434/" {
+		t.Errorf("BaseURL = %q, want 保留末尾斜杠", r.BaseURL)
+	}
+	if r.APIStyle != "" {
+		t.Errorf("APIStyle = %q, want 空（原值不按 :11434 猜风格）", r.APIStyle)
+	}
+	if r.TimeoutSeconds != 0 {
+		t.Errorf("TimeoutSeconds = %d, want 0（原值不填 120 兜底）", r.TimeoutSeconds)
+	}
+	if r.MemoryModel != "raw-model" {
+		t.Errorf("MemoryModel = %q, want raw-model（两侧空格仍要去除）", r.MemoryModel)
+	}
+
+	p := Inference()
+	if p.BaseURL != "http://raw:11434" {
+		t.Errorf("Inference().BaseURL = %q, want 去掉末尾斜杠", p.BaseURL)
+	}
+	if string(p.APIStyle) != "ollama" {
+		t.Errorf("Inference().APIStyle = %q, want ollama（按 :11434 推断）", p.APIStyle)
+	}
+	if p.Timeout.Seconds() != 120 {
+		t.Errorf("Inference().Timeout = %v, want 120s 兜底", p.Timeout)
+	}
+}
+
+// TestBotPostModelConfiguredStopsAtFileLayer 守住「只到文件层为止」这条契约。
+// 关键断言是第三个：两级都空时必须返回空串，把决定权留给调用方注入的
+// deps.Inference.DefaultModel（generate_test.go 就靠这个可注入性构造 Deps）。
+// 若这里再兜 memory_model，注入值会被文件值悄悄盖掉。
+func TestBotPostModelConfiguredStopsAtFileLayer(t *testing.T) {
+	loadFixture(t)
+	if got := BotPostModelConfigured(); got != "qwen2" {
+		t.Errorf("BotPostModelConfigured() = %q, want qwen2", got)
+	}
+
+	loadBody(t, "moe:\n  bot_post_model: \"\"\nllm_inference:\n  chat_model: \"chat-model\"\n  memory_model: \"memory-model\"\n")
+	if got := BotPostModelConfigured(); got != "chat-model" {
+		t.Errorf("BotPostModelConfigured() = %q, want chat-model（bot_post_model 为空时回落）", got)
+	}
+
+	loadBody(t, "llm_inference:\n  memory_model: \"memory-model\"\n")
+	if got := BotPostModelConfigured(); got != "" {
+		t.Errorf("BotPostModelConfigured() = %q, want 空（不得回落 memory_model）", got)
+	}
+}
+
+// TestTopicAnalyzeModel 与上一条形成对照：这条链**是**要落到 memory_model 的，
+// 顺序与迁移前 brain/topic_analyze.go 的 loadTopicAnalyzeModelFromViper 逐条一致。
+func TestTopicAnalyzeModel(t *testing.T) {
+	loadBody(t, "llm_inference:\n  memory_model: \"memory-model\"\n")
+	if got := TopicAnalyzeModel(); got != "memory-model" {
+		t.Errorf("TopicAnalyzeModel() = %q, want memory-model", got)
+	}
+
+	loadBody(t, "moe:\n  topic_analyze_model: \"analyze-model\"\nllm_inference:\n  memory_model: \"memory-model\"\n")
+	if got := TopicAnalyzeModel(); got != "analyze-model" {
+		t.Errorf("TopicAnalyzeModel() = %q, want analyze-model（moe 段优先）", got)
+	}
+}
+
+// TestSchedulersInheritTrueWhenUnset 验证两个调度器开关的「未设置即 true」语义。
+// 类型化 bool 会把缺失当成 false，于是没写开关的部署会静默停掉 Bot 发帖与入梦 ——
+// 这正是 inheritBool 走原始 viper 的理由。
+func TestSchedulersInheritTrueWhenUnset(t *testing.T) {
+	loadFixture(t)
+	if en, tick := BotScheduler(); !en || tick != 60*time.Second {
+		t.Errorf("BotScheduler() = (%v, %v), want (true, 60s)", en, tick)
+	}
+	if en, tick := DreamScheduler(); !en || tick != 300*time.Second {
+		t.Errorf("DreamScheduler() = (%v, %v), want (true, 300s)", en, tick)
+	}
+
+	loadBody(t, "runtime:\n  http_port: 8888\n")
+	if en, tick := BotScheduler(); !en || tick != 60*time.Second {
+		t.Errorf("未设置时 BotScheduler() = (%v, %v), want (true, 60s)", en, tick)
+	}
+	if en, tick := DreamScheduler(); !en || tick != 300*time.Second {
+		t.Errorf("未设置时 DreamScheduler() = (%v, %v), want (true, 300s)", en, tick)
+	}
+
+	loadBody(t, "moe:\n  bot_scheduler_enabled: false\n  bot_scheduler_tick_seconds: 15\n  dream_scheduler_enabled: false\n  dream_scheduler_tick_seconds: 900\n")
+	if en, tick := BotScheduler(); en || tick != 15*time.Second {
+		t.Errorf("显式 false 时 BotScheduler() = (%v, %v), want (false, 15s)", en, tick)
+	}
+	if en, tick := DreamScheduler(); en || tick != 900*time.Second {
+		t.Errorf("显式 false 时 DreamScheduler() = (%v, %v), want (false, 900s)", en, tick)
+	}
+
+	// tick_seconds 写了非正数 → 保留缺省，不能被 0 冲成「立刻循环」
+	loadBody(t, "moe:\n  bot_scheduler_tick_seconds: 0\n  dream_scheduler_tick_seconds: -5\n")
+	if _, tick := BotScheduler(); tick != 60*time.Second {
+		t.Errorf("tick_seconds=0 时 BotScheduler() tick = %v, want 60s", tick)
+	}
+	if _, tick := DreamScheduler(); tick != 300*time.Second {
+		t.Errorf("tick_seconds=-5 时 DreamScheduler() tick = %v, want 300s", tick)
+	}
+}
+
+// TestSmartRetry 断言缺失时返回 (0, 0) 而不是兜底值 ——
+// runtime.LoadSmartOpts 靠这个 0 判断「文件没写，保留 DefaultSmartOpts」。
+func TestSmartRetry(t *testing.T) {
+	loadFixture(t)
+	if retry, minInterval := SmartRetry(); retry != 30 || minInterval != 2 {
+		t.Errorf("SmartRetry() = (%d, %d), want (30, 2)", retry, minInterval)
+	}
+
+	loadBody(t, "runtime:\n  http_port: 8888\n")
+	if retry, minInterval := SmartRetry(); retry != 0 || minInterval != 0 {
+		t.Errorf("未设置时 SmartRetry() = (%d, %d), want (0, 0)", retry, minInterval)
+	}
+}
+
+// TestLifeEngineEnabledInherits 覆盖 life_engine_enabled 的四种组合。
+// 它不是 *_api_in_process 形状，DomainInProcess 拼不出来，但继承语义相同。
+func TestLifeEngineEnabledInherits(t *testing.T) {
+	loadFixture(t)
+	if !LifeEngineEnabled() {
+		t.Error("fixture 显式 true，LifeEngineEnabled() = false")
+	}
+
+	loadBody(t, "moe:\n  single_process: true\n")
+	if !LifeEngineEnabled() {
+		t.Error("未设置且全局闸开，LifeEngineEnabled() = false, want true")
+	}
+
+	loadBody(t, "moe:\n  single_process: false\n  api_in_process: false\n")
+	if LifeEngineEnabled() {
+		t.Error("未设置且全局闸关，LifeEngineEnabled() = true, want false")
+	}
+
+	loadBody(t, "moe:\n  single_process: true\n  life_engine_enabled: false\n")
+	if LifeEngineEnabled() {
+		t.Error("显式 false 不应被继承覆盖，LifeEngineEnabled() = true")
 	}
 }

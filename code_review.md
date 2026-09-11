@@ -26,5 +26,5 @@ If no findings are found, say that explicitly and list residual risks or testing
 
 ## Repo-Specific Checks
 - Flutter: check `flutter analyze`, relevant `flutter test`, state handling, and whether logic was misplaced into pages instead of services/providers.
-- Backend: check `backend/api/super.api`, `backend/rpc/super.proto`, generated artifacts, `go test ./...`, and separation between handler and logic layers.
+- Backend: contract is `backend/api/<domain>/v1/*.proto` (`google.api.http`) → `cd backend && make gen`; **never hand-edit** `*.pb.go` / `*_http.pb.go`. Layering is `service → biz → data`. Gates: `make check` (narrow — only `go build ./cmd/moe-social` + two packages' tests, **no gofmt / no vet**), so also run `go build ./...`, `go vet ./...` and `go test ./...`. Config must be read via `backend/pkg/conf` — reject a new `viper.New()` or an inline `"<section>.<key>"` lookup in business code.
 - Docs: reject long generic guidance when a short repo-specific rule or a linked doc would be clearer.

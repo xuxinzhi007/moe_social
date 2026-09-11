@@ -12,6 +12,7 @@ import (
 	moebiz "backend/internal/biz/moe"
 	apicomm "backend/internal/platform/apicomm"
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/core"
 	"backend/pkg/moe/runtime"
@@ -71,7 +72,7 @@ func (s *Server) GetInferenceStatus(ctx context.Context, in *moev1pb.GetInferenc
 		return nil, err
 	}
 	cfg, err := apicomm.InferenceFromLLMConf(s.inferenceCfg)
-	deps := runtime.Deps{Inference: runtime.LoadInferenceFromViper()}
+	deps := runtime.Deps{Inference: conf.Inference()}
 	preferred := runtime.ConfiguredPostModel(deps, model.MoeAgentRuntime{})
 
 	out := &moev1pb.GetInferenceStatusReply{

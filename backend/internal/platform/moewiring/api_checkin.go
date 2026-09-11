@@ -3,10 +3,11 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	checkinapp "backend/internal/service/checkin"
+	"backend/pkg/conf"
 )
 
 func CheckInAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.checkin_api_in_process")
+	return conf.DomainInProcess("checkin")
 }
 
 func NewAPICheckInService() (*checkinapp.AppService, error) {

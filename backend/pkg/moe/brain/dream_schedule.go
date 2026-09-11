@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"backend/pkg/conf"
+
 	"github.com/robfig/cron/v3"
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -82,28 +83,12 @@ type DreamSchedulerOpts struct {
 	TickInterval time.Duration
 }
 
-// LoadDreamSchedulerOptsFromViper 读取 moe.dream_scheduler_*。
-func LoadDreamSchedulerOptsFromViper() DreamSchedulerOpts {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	_ = v.ReadInConfig()
-
-	enabled := true
-	if v.IsSet("moe.dream_scheduler_enabled") {
-		enabled = v.GetBool("moe.dream_scheduler_enabled")
-	}
-	tickSec := int64(300)
-	if s := v.GetInt64("moe.dream_scheduler_tick_seconds"); s > 0 {
-		tickSec = s
-	}
-	return DreamSchedulerOpts{
-		Enabled:      enabled,
-		TickInterval: time.Duration(tickSec) * time.Second,
-	}
+// LoadDreamSchedulerOpts 读取 moe.dream_scheduler_*。
+// 序4：改走 pkg/conf。「未设置即 true」的继承语义与 300 秒 tick 兜底都由
+// conf.DreamScheduler 承载；此前这里硬编码 searchDirs，看不见 -f。
+func LoadDreamSchedulerOpts() DreamSchedulerOpts {
+	enabled, tick := conf.DreamScheduler()
+	return DreamSchedulerOpts{Enabled: enabled, TickInterval: tick}
 }
 
 // LoadRpgConfigFromDB 读取 agent 的 RPG config_json。

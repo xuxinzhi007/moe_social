@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"backend/model"
+	"backend/pkg/conf"
 	"backend/pkg/llminference"
 	"backend/pkg/moe/port"
 
 	postv1 "backend/api/post/v1"
 
-	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -338,7 +338,7 @@ func poeticStyleScore(content string) int {
 }
 
 func resolveRefineModel(deps RefineDeps, rt model.MoeAgentRuntime) string {
-	if m := strings.TrimSpace(loadBotPostModelFromViper()); m != "" {
+	if m := strings.TrimSpace(conf.BotPostModelConfigured()); m != "" {
 		return m
 	}
 	if m := strings.TrimSpace(deps.Inference.DefaultModel); m != "" {
@@ -348,20 +348,4 @@ func resolveRefineModel(deps RefineDeps, rt model.MoeAgentRuntime) string {
 		return m
 	}
 	return "qwen2"
-}
-
-func loadBotPostModelFromViper() string {
-	v := viper.New()
-	v.SetConfigName("config")
-	v.SetConfigType("yaml")
-	v.AddConfigPath("./config")
-	v.AddConfigPath("../config")
-	v.AddConfigPath("../../config")
-	if err := v.ReadInConfig(); err != nil {
-		return ""
-	}
-	if m := strings.TrimSpace(v.GetString("moe.bot_post_model")); m != "" {
-		return m
-	}
-	return ""
 }

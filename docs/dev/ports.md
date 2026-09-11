@@ -2,7 +2,7 @@
 
 本仓库 **19010–19019** 预留给开发/运维工具，避免与 Flutter DevTools (`9100`)、cpolar (`6060`)、常见 HTTP 端口冲突。
 
-> **现状（2026-09-08 核对）**：Kratos 迁移后后端已是**单进程 HTTP-only**，全仓库只有一个业务监听端口 `8888`。
+> **现状（2026-09-11 核对）**：Kratos 迁移后后端已是**单进程 HTTP-only**，全仓库只有一个业务监听端口 `8888`，且只能经 `backend/pkg/conf` 读到（`conf.HTTPPort()`）。
 > `backend/rpc/` 目录与 `api/super.go` 已删除，`make rpc` / `make api` / `make rpc-debug` / `make dev` / `make moe-admin-dev` / `make rpc-migrate` 这些目标**在 `backend/Makefile` 中已不存在**。
 
 ## 实际监听的端口
@@ -23,16 +23,19 @@ Deploy Agent 配置：`backend/deploy/config.yaml` → `listen` / `rpc_debug_ups
 |------|-----------|------|
 | **8080** | go-zero RPC 业务进程 | ✗ 无监听。`config.yaml:1-3` 的 `server: {port: 8080, host: 0.0.0.0}` 段**零读取方**，属死配置 |
 | **19011** | RPC `-debug` pprof API | ✗ 无监听。`devports.RpcDebugPort` 仍被 Deploy Agent 当作 `/debug/*` 上游代理，但已无进程提供 |
-| **18888** | Kratos 内部 HTTP | ✗ 无监听。仅 `internal/platform/moewiring/config.go:169` 的硬编码兜底，其导出函数 `KratosInternalHTTPPort()` 零调用方 |
-| **19032** | Kratos Admin 试点 HTTP | ✗ 无监听。仅 `moewiring/config.go:184,189` 硬编码兜底 |
-| **6633** | 文字游戏推理端点 | ✗ 无监听。仅 `config.yaml:103` `llm_inference.game_base_url: "http://127.0.0.1:6633"` 的占位值 |
+| **18888** | Kratos 内部 HTTP | ✗ 无监听，**且残留已清除**。原 `moewiring/config.go:169` 的硬编码兜底随 15 个过渡开关（含 `KratosInternalHTTPPort()`）于 2026-09-08 整族删除，现全仓零命中 |
+| **19032** | Kratos Admin 试点 HTTP | ✗ 无监听，**且残留已清除**。原 `moewiring/config.go:184,189` 硬编码兜底同批删除，现全仓零命中 |
+| **6633** | 文字游戏推理端点 | ✗ 无监听。仅 `config.yaml:97` `llm_inference.game_base_url: "http://127.0.0.1:6633"` 的占位值 |
 
 ## 外部依赖端口（非本仓库进程）
 
-| 端口 | 服务 | 配置项 |
-|------|------|--------|
-| **11434** | Ollama（n100 小主机 `192.168.124.77`） | `config.yaml:97` `llm_inference.base_url` |
-| **3306** | MySQL（测试库 `47.106.175.49`） | `config.yaml:253-259` `database.*` |
+| 端口 | 服务 | 配置项 | 读取入口 |
+|------|------|--------|----------|
+| **11434** | Ollama（n100 小主机 `192.168.124.77`） | `config.yaml:91` `llm_inference.base_url` | `conf.Inference().BaseURL` |
+| **3306** | MySQL（测试库 `47.106.175.49`） | `config.yaml:244-252` `database.*` | `conf.DSN()` |
+
+> 8888 同理走 `conf.HTTPPort()`。全仓已无第二处 `viper.New()` 读这些键（第九批后硬编码 searchDirs 的文件数 = 0），
+> 因此 `-f` 指定的配置文件对以上每一项都权威。
 
 > 端口/地址多副本与硬编码越界问题见 [配置治理审查 §4.2](./config-hygiene-review-2026-09-08.md)。
 

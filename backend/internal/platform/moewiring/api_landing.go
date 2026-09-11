@@ -3,11 +3,12 @@ package moewiring
 import (
 	"backend/internal/platform/appdb"
 	landingapp "backend/internal/service/landing"
+	"backend/pkg/conf"
 )
 
 // LandingAPIInProcessEnabled config.yaml: moe.landing_api_in_process
 func LandingAPIInProcessEnabled() bool {
-	return domainInProcessEnabled("moe.landing_api_in_process")
+	return conf.DomainInProcess("landing")
 }
 
 // NewAPILandingService API 进程内 Landing 应用服务。
