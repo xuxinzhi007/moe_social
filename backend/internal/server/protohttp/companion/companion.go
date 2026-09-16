@@ -146,6 +146,18 @@ func (s *Server) UpdateMemory(ctx context.Context, in *companionv1.UpdateMemoryR
 	return app.UpdateMemory(ctx, userID, in)
 }
 
+func (s *Server) ConfirmMemory(ctx context.Context, in *companionv1.ConfirmMemoryRequest) (*companionv1.ConfirmMemoryReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ConfirmMemory(ctx, userID, in)
+}
+
 func (s *Server) ListMemoryConflicts(ctx context.Context, in *companionv1.ListMemoryConflictsRequest) (*companionv1.ListMemoryConflictsReply, error) {
 	app, err := s.requireApp()
 	if err != nil {
@@ -216,6 +228,30 @@ func (s *Server) GetTimeline(ctx context.Context, in *companionv1.ListEventsRequ
 		return nil, err
 	}
 	return app.GetTimeline(ctx, userID, in)
+}
+
+func (s *Server) ListProactiveDeliveries(ctx context.Context, in *companionv1.ListProactiveDeliveriesRequest) (*companionv1.ListProactiveDeliveriesReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.ListProactiveDeliveries(ctx, userID, in)
+}
+
+func (s *Server) RevokeProactiveDelivery(ctx context.Context, in *companionv1.RevokeProactiveDeliveryRequest) (*companionv1.RevokeProactiveDeliveryReply, error) {
+	app, err := s.requireApp()
+	if err != nil {
+		return nil, err
+	}
+	userID, err := actorUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return app.RevokeProactiveDelivery(ctx, userID, in)
 }
 
 func (s *Server) MarkProactiveRead(ctx context.Context, in *companionv1.MarkProactiveReadRequest) (*companionv1.MarkProactiveReadReply, error) {

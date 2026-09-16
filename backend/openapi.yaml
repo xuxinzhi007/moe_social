@@ -4240,24 +4240,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.LlmChatResp'
-    /api/llm/chat/raw:
-        post:
-            tags:
-                - Platform
-            operationId: Platform_LlmChatRaw
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/platform.v1.LlmRawProxyReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
     /api/llm/chat/turn:
         post:
             tags:
@@ -4348,36 +4330,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.BaseResp'
-    /api/llm/models/raw:
-        get:
-            tags:
-                - Platform
-            operationId: Platform_LlmModelsRaw
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
-    /api/llm/show/raw:
-        post:
-            tags:
-                - Platform
-            operationId: Platform_LlmShowRaw
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/platform.v1.LlmRawProxyReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.LlmRawProxyResp'
     /api/moe/tools/execute:
         post:
             tags:
@@ -12985,12 +12937,6 @@ components:
                     type: string
                 content:
                     type: string
-        platform.v1.LlmRawProxyReq:
-            type: object
-            properties: {}
-        platform.v1.LlmRawProxyResp:
-            type: object
-            properties: {}
         platform.v1.MoeToolExecuteData:
             type: object
             properties:

@@ -200,5 +200,6 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if platformDepsValid(d.PlatformDeps) {
 		platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(d.PlatformDeps))
+		platformhttp.RegisterLLMRawHTTP(srv, d.PlatformDeps)
 	}
 }
