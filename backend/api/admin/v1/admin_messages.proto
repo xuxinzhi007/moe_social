@@ -137,12 +137,6 @@ message AdminAuditLogItem {
   string created_at = 9;
 }
 
-message AdminBootstrapAccountReq {}
-
-message AdminBootstrapAccountResp {
-  int32 created = 1;
-}
-
 message AdminBootstrapAchievementsReq {}
 
 message AdminBootstrapAchievementsResp {
@@ -1699,12 +1693,6 @@ message PingReply {}
 service AdminApp {
   rpc Ping(PingRequest) returns (PingReply);
 
-  rpc AdminBootstrapAccount(AdminBootstrapAccountReq) returns (AdminBootstrapAccountResp) {
-    option (google.api.http) = {
-      post: "/api/admin/bootstrap/account"
-      body: "*"
-    };
-  }
   rpc AdminLogin(AdminLoginReq) returns (AdminLoginResp) {
     option (google.api.http) = { post: "/api/admin/login" body: "*" };
   }

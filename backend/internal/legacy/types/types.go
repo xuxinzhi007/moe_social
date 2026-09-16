@@ -130,15 +130,6 @@ type AdminAuditLogItem struct {
 	CreatedAt  string `json:"created_at"`
 }
 
-type AdminBootstrapAccountData struct {
-	Created int `json:"created"`
-}
-
-type AdminBootstrapAccountResp struct {
-	BaseResp
-	Data AdminBootstrapAccountData `json:"data"`
-}
-
 type AdminBootstrapAchievementsData struct {
 	Created int `json:"created"`
 }

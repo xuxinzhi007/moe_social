@@ -512,24 +512,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminListAuditLogsResp'
-    /api/admin/bootstrap/account:
-        post:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminBootstrapAccount
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminBootstrapAccountReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminBootstrapAccountResp'
     /api/admin/comments:
         get:
             tags:
@@ -7421,15 +7403,6 @@ components:
                     type: string
                 createdAt:
                     type: string
-        admin.v1.AdminBootstrapAccountReq:
-            type: object
-            properties: {}
-        admin.v1.AdminBootstrapAccountResp:
-            type: object
-            properties:
-                created:
-                    type: integer
-                    format: int32
         admin.v1.AdminBootstrapAchievementsReq:
             type: object
             properties: {}
@@ -12023,6 +11996,14 @@ components:
                         $ref: '#/components/schemas/moe.v1.MoePipelineStep'
                 hostMetrics:
                     $ref: '#/components/schemas/moe.v1.MoeHostMetrics'
+                running:
+                    type: boolean
+                currentPhase:
+                    type: string
+                runStartedAt:
+                    type: string
+                activeStepKey:
+                    type: string
         moe.v1.GetBrainPresenceReply:
             type: object
             properties:
@@ -14367,7 +14348,7 @@ components:
             description: |-
                 VipReadAdmin — PK-1 域 SSOT（勿再扩 api/defs/common.api）。
                  HTTP: GET /api/admin/vip/plans?page=&page_size=&keyword=&include_deleted=
-                 试点: make moe-kratos → :19032；生产灰度: moe.kratos_vip_http_enabled
+                 灰度开关: moe.kratos_vip_http_enabled（由 moewiring.KratosVipHTTPEnabled 读取）
         vip.v1.VipRecord:
             type: object
             properties:
@@ -14412,7 +14393,7 @@ tags:
         MoeAdmin — PK-1 域 SSOT。HTTP 灰度读路径（PK-2）：
            GET /api/admin/moe/runtimes
            GET /api/admin/moe/brain/pipeline?agent_key=
-         试点 :19032；灰度 moe.kratos_admin_http_enabled
+         灰度开关: moe.kratos_admin_http_enabled（由 moewiring.KratosAdminHTTPEnabled 读取）
     - name: NotifyService
     - name: PetLifeSim
       description: PetLifeSim 养成完整域服务。

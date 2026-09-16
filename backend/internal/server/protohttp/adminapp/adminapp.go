@@ -49,14 +49,6 @@ func (s *Server) Ping(ctx context.Context, in *adminv1.PingRequest) (*adminv1.Pi
 	return &adminv1.PingReply{}, nil
 }
 
-func (s *Server) AdminBootstrapAccount(ctx context.Context, in *adminv1.AdminBootstrapAccountReq) (*adminv1.AdminBootstrapAccountResp, error) {
-	app, err := s.requireApp()
-	if err != nil {
-		return nil, err
-	}
-	return app.AdminBootstrapAccount(ctx, in)
-}
-
 func (s *Server) AdminLogin(ctx context.Context, in *adminv1.AdminLoginReq) (*adminv1.AdminLoginResp, error) {
 	app, err := s.requireApp()
 	if err != nil {

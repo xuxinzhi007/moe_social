@@ -65,7 +65,7 @@ func jwtAuthFilter(next http.Handler) http.Handler {
 		path := r.URL.Path
 
 		if strings.HasPrefix(path, "/api/admin/") {
-			if path == "/api/admin/login" || path == "/api/admin/bootstrap/account" {
+			if path == "/api/admin/login" {
 				next.ServeHTTP(w, r)
 				return
 			}

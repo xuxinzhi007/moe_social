@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -91,7 +92,28 @@ func RunAutoMigrate(db *gorm.DB, opts MigrateOptions) error {
 		"schema migrate done: migrated=%d skipped=%d total=%d elapsed=%s",
 		migrated, skipped, len(entries), time.Since(start).Round(time.Millisecond),
 	)
+
+	// 只在 admin_accounts 确实在本次迁移范围内时种账号：RunAutoMigrate 支持 Models 过滤，
+	// 按 key 局部迁移时那张表可能根本没建。
+	if migrateEntriesInclude(entries, "admin_accounts") {
+		if err := SeedAdminAccount(db); err != nil {
+			if errors.Is(err, ErrAdminBootstrapPasswordUnset) {
+				log.Printf("[admin] !! 未创建默认超管：%v。请在 config.yaml 设置 admin.bootstrap.password 后重跑迁移，否则管理后台无法登录", err)
+			} else {
+				return fmt.Errorf("seed admin account: %w", err)
+			}
+		}
+	}
 	return nil
+}
+
+func migrateEntriesInclude(entries []MigrateEntry, key string) bool {
+	for _, e := range entries {
+		if strings.EqualFold(e.Key, key) {
+			return true
+		}
+	}
+	return false
 }
 
 func filterMigrateEntries(keys []string) []MigrateEntry {

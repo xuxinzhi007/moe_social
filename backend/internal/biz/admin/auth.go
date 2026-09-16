@@ -53,14 +53,3 @@ func AdminLogin(ctx context.Context, store AdminStore, in *adminv1.AdminLoginReq
 		ExpireAt: exp.Unix(),
 	}, nil
 }
-
-// BootstrapAdminAccount 无管理员时创建默认超管。
-func BootstrapAdminAccount(ctx context.Context, store AdminStore, in *adminv1.AdminBootstrapAccountReq) (*adminv1.AdminBootstrapAccountResp, error) {
-	_ = ctx
-	_ = in
-	if store == nil {
-		return nil, gorm.ErrInvalidDB
-	}
-	created := utils.BootstrapAdminAccount(store.Raw())
-	return &adminv1.AdminBootstrapAccountResp{Created: created}, nil
-}
