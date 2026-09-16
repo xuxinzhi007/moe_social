@@ -2,4 +2,4 @@
 
 package routestats
 
-const protoHTTPRouteCount = 319
+const protoHTTPRouteCount = 316

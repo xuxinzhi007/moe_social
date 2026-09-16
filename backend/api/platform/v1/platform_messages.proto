@@ -46,10 +46,6 @@ message ListUserContentResp {
   int32 total = 5;
 }
 
-message LlmRawProxyReq {}
-
-message LlmRawProxyResp {}
-
 message GetLlmConfigReq {}
 
 message GetLlmConfigResp {
@@ -241,17 +237,8 @@ service Platform {
   rpc ListUserContent(ListUserContentReq) returns (ListUserContentResp) {
     option (google.api.http) = { get: "/api/user/{user_id}/content" };
   }
-  rpc LlmChatRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
-    option (google.api.http) = { post: "/api/llm/chat/raw" body: "*" };
-  }
   rpc GetLlmConfig(GetLlmConfigReq) returns (GetLlmConfigResp) {
     option (google.api.http) = { get: "/api/llm/config" };
-  }
-  rpc LlmModelsRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
-    option (google.api.http) = { get: "/api/llm/models/raw" };
-  }
-  rpc LlmShowRaw(LlmRawProxyReq) returns (LlmRawProxyResp) {
-    option (google.api.http) = { post: "/api/llm/show/raw" body: "*" };
   }
   rpc MoeExecuteTool(MoeToolExecuteReq) returns (MoeToolExecuteResp) {
     option (google.api.http) = { post: "/api/moe/tools/execute" body: "*" };

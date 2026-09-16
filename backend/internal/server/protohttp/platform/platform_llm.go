@@ -12,26 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func (s *Server) LlmChatRaw(ctx context.Context, _ *platformv1.LlmRawProxyReq) (*platformv1.LlmRawProxyResp, error) {
-	if !s.hasDeps() {
-		return nil, errPlatformUnavailable
-	}
-	w, r, ok := httpFromContext(ctx)
-	if !ok {
-		return nil, errPlatformUnavailable
-	}
-	if s.deps.LLMApp != nil {
-		if err := s.deps.LLMApp.ForwardChatRaw(w, r); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}
-	if err := llmbiz.ForwardChatRaw(w, r, s.deps.InferenceConfig); err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
-
 func (s *Server) GetLlmConfig(ctx context.Context, _ *platformv1.GetLlmConfigReq) (*platformv1.GetLlmConfigResp, error) {
 	if !s.hasDeps() {
 		return nil, errPlatformUnavailable
@@ -47,46 +27,6 @@ func (s *Server) GetLlmConfig(ctx context.Context, _ *platformv1.GetLlmConfigReq
 		return nil, err
 	}
 	return &platformv1.GetLlmConfigResp{Code: 200, Message: "获取 LLM 配置成功", Success: true, Data: dataStruct}, nil
-}
-
-func (s *Server) LlmModelsRaw(ctx context.Context, _ *platformv1.LlmRawProxyReq) (*platformv1.LlmRawProxyResp, error) {
-	if !s.hasDeps() {
-		return nil, errPlatformUnavailable
-	}
-	w, r, ok := httpFromContext(ctx)
-	if !ok {
-		return nil, errPlatformUnavailable
-	}
-	if s.deps.LLMApp != nil {
-		if err := s.deps.LLMApp.ForwardModelsRaw(w, r); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}
-	if err := llmbiz.ForwardModelsRaw(w, r, s.deps.InferenceConfig); err != nil {
-		return nil, err
-	}
-	return nil, nil
-}
-
-func (s *Server) LlmShowRaw(ctx context.Context, _ *platformv1.LlmRawProxyReq) (*platformv1.LlmRawProxyResp, error) {
-	if !s.hasDeps() {
-		return nil, errPlatformUnavailable
-	}
-	w, r, ok := httpFromContext(ctx)
-	if !ok {
-		return nil, errPlatformUnavailable
-	}
-	if s.deps.LLMApp != nil {
-		if err := s.deps.LLMApp.ForwardShowRaw(w, r); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}
-	if err := llmbiz.ForwardShowRaw(w, r, s.deps.InferenceConfig); err != nil {
-		return nil, err
-	}
-	return nil, nil
 }
 
 func (s *Server) LlmCreateAgent(ctx context.Context, in *platformv1.LlmCreateAgentReq) (*platformv1.BaseResp, error) {

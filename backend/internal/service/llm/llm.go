@@ -65,6 +65,13 @@ func (s *AppService) ConfigSnapshot() llmbiz.ConfigSnapshot {
 	}
 }
 
+func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
+	if s == nil {
+		return nil, errors.New("llm app unavailable")
+	}
+	return llminference.ListModels(ctx, s.deps.Inference)
+}
+
 func (s *AppService) ForwardChatRaw(w http.ResponseWriter, r *http.Request) error {
 	if s == nil {
 		return errors.New("llm app unavailable")
