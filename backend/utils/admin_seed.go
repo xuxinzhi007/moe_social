@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 
@@ -10,37 +12,48 @@ import (
 	"gorm.io/gorm"
 )
 
-// SeedAdminAccount 首次迁移时创建默认超管（仅当表为空）。
-func SeedAdminAccount(db *gorm.DB) {
+// ErrAdminBootstrapPasswordUnset 表示 admin.bootstrap.password 未配置，此时拒绝创建默认超管。
+var ErrAdminBootstrapPasswordUnset = errors.New("admin.bootstrap.password 未配置")
+
+// SeedAdminAccount 在从未存在过管理员时创建超管，由 RunAutoMigrate 在迁移末尾调用。
+//
+// 口令类配置不允许有兜底默认值：password 缺失时返回 ErrAdminBootstrapPasswordUnset 且不写库。
+// 旧实现在这里回落到 "admin123"，而它当时唯一的调用方是免鉴权的
+// POST /api/admin/bootstrap/account（internal/server/auth.go 的白名单），于是任何人在空库
+// 部署上都能造出一个口令众所周知的 super_admin 再登录拿全权 token。该端点已连同 RPC 一起
+// 删除，种账号现在只发生在运维手动执行的迁移里，不再有任何网络入口。
+//
+// Count 带 Unscoped 是必须的：AdminAccount 有软删除，只数未删行的话「把管理员全部软删」
+// 就会让表看起来是空的而重新触发种账号；同时 username 上有 uniqueIndex，软删行仍占着索引，
+// 再次 Create 必然撞唯一键。Unscoped 把这两个问题一并关掉。
+func SeedAdminAccount(db *gorm.DB) error {
 	if db == nil {
-		return
+		return nil
 	}
 	var count int64
-	if err := db.Model(&model.AdminAccount{}).Count(&count).Error; err != nil {
-		log.Printf("[admin] count accounts: %v", err)
-		return
+	if err := db.Unscoped().Model(&model.AdminAccount{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("count admin accounts: %w", err)
 	}
 	if count > 0 {
-		return
+		return nil
 	}
 	bootstrap := conf.Get().Admin.Bootstrap
+	if strings.TrimSpace(bootstrap.Password) == "" {
+		return ErrAdminBootstrapPasswordUnset
+	}
 	username := strings.TrimSpace(bootstrap.Username)
 	if username == "" {
 		username = "admin"
 	}
-	password := bootstrap.Password
-	if strings.TrimSpace(password) == "" {
-		password = "admin123"
-		log.Printf("[admin] 使用默认超管密码 admin123，请尽快在配置中修改 admin.bootstrap.password 并登录后改密")
-	}
 	row := model.AdminAccount{
 		Username: username,
-		Password: password,
+		// 明文只活在这一行；model.AdminAccount.BeforeSave 钩子会 bcrypt 后再落库。
+		Password: bootstrap.Password,
 		Role:     "super_admin",
 	}
 	if err := db.Create(&row).Error; err != nil {
-		log.Printf("[admin] seed account failed: %v", err)
-		return
+		return fmt.Errorf("seed admin account: %w", err)
 	}
 	log.Printf("[admin] 已创建默认超管账号: %s", username)
+	return nil
 }

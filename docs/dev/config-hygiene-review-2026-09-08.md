@@ -548,6 +548,16 @@ Kratos 迁移删除了 go-zero 时代的双进程入口——`backend/rpc/` **�
 
 ### 批次 2 — 拆配置：模板入库，真值出库
 
+> ⛔ **本批次的核心动作（按环境拆 config）已于 2026-09-16 被需求方否决，不要再执行。** 原话、理由与「不要再提」的约定见 §12.6 的 ⛔ 块，摘要见 §25.8。下表**保留原样**作为决策痕迹，但逐行的现状是：
+>
+> | 行 | 现状 |
+> |---|---|
+> | `config.yaml` → `config.example.yaml` + gitignore | **挂起**。前提是先有 `secrets.yaml` 可拆出去；拆分取消了，这行没有落点 |
+> | per-env 覆盖片段 / 内网 IP 不得入库 | **作废**。per-env 就是被否决的那件事；IP 配置需求方已明确「暂时都在 `lib/utils/config.dart` 里维护，这样比较清晰」 |
+> | ~~`admin_runtime_config.go:100` 键名~~ | 早已完成（§5.5），与本批次无关 |
+> | `Agora` 段并入 `config.yaml` 或明确 `api/etc/moe.yaml` 职责边界 | **仍然有效**。这是 SSOT 归并问题，跟拆不拆文件无关，随时可做 |
+> | 「轮换凭据要在批次 2 落地后再换」 | **前置条件已消失**。需求方已确认现有第三方密钥与数据库口令都是开发期临时值、正式版整体更换，后端连的也是测试库；既然不再拆文件，轮换就不必再等什么，按正式版发布节奏走即可 |
+
 | 动作 | 验收标准 |
 |------|----------|
 | `backend/config/config.yaml` → `config.example.yaml`（脱敏模板，入库）+ `config.yaml`（加入 `.gitignore`） | `git ls-files backend/config/` 只有 example |
@@ -698,6 +708,16 @@ backend/pkg/conf/
 `config.yaml` → `config.yaml`（入库骨架）+ `env.{local,vps,n100}.yaml` + `secrets.example.yaml` / `secrets.yaml`（gitignore）；加载顺序 base → env → secrets → `MOE_*`；`MOE_ENV` 缺省 `local`。这一步与 §11 批次 2 是同一件事，**必须在凭据轮换之前落地**，否则新密钥会再次写进被跟踪的文件。
 
 > **排期（2026-09-08）**：需求方明确「config 的拆分可以晚一点进行调整」，本步**暂缓**。但上面那句约束不变——它必须排在凭据轮换之前，否则新密钥会重复入库。
+
+> ⛔ **取消（2026-09-16，需求方原话）**：「这个暂时不做 ，因为我这个还在开发 需要来回切换的 ，这个暂时不调整 不要总是高环境什么的 我是多机器开发 不方便」
+>
+> 这是**取消**，不是又一次延期。上面 09-08 那条「暂缓」已被本条取代。理由与代码质量无关，是使用方式决定的：需求方在多机器上开发，需要在环境之间来回切换，`env.{local,vps,n100}.yaml` + `MOE_ENV` 这套分层会把「切换」从一个改文件动作变成一个改环境变量再重启的动作，对他而言更麻烦。**不要再把环境分层当待办重新提出。**
+>
+> 连带影响：§11 批次 2 / 任务 #17「`config.yaml` 去跟踪」的前提就是先有 `secrets.yaml` 可拆出去，前提没了，该项一并**挂起**（不是完成，也不是取消——它取决于将来是否还轮换凭据）。
+>
+> 凭据问题并没有因此消失，只是换了处置方式：需求方已确认当前这些第三方密钥与数据库口令都是**开发期临时值，正式版会整体更换**，后端连的也是**测试库**。所以「密钥在被跟踪的文件里」这件事在开发期是可接受的已知状态，不需要靠拆文件来解决。
+>
+> 真正被 P0 处置的是另一类兜底：**代码里写死的口令默认值**。`admin_seed.go` 的 `admin123` 回退与 `build.gradle.kts` 的 `?: "moe123456"` 属于这一类——它们不依赖拆文件，任何时候都该删。前者已随 §25 删除，后者仍是任务 #16。
 
 ---
 
@@ -1171,6 +1191,18 @@ if strings.TrimSpace(password) == "" {
 
 **建议**：改为缺失即启动失败（或拒绝种账号并要求显式初始化），与 P0-1 的 gradle `?: "moe123456"` 是同一处置原则 —— **口令类配置不允许有兜底默认值**。此项与 §12.6 的拆分**互相独立**，可以先做。
 
+> ↪️ **第十二批已处置（§25.2 / §25.3），并且要更正本条对严重度的判断。**
+>
+> 本条把它记成「代码会**静默种下** `admin123` 超级管理员」，落点在弱口令。**这个定性低估了。** 当时写了「仅在超管表为空时」这个触发条件，却没有继续问一句：**那谁来触发它？** 追下去才发现 `SeedAdminAccount` 的唯一调用方是 `POST /api/admin/bootstrap/account`——一个和 `/api/admin/login` 并列写在 `internal/server/auth.go` 免鉴权白名单里的端点，请求体 `AdminBootstrapAccountReq` 还是个**空消息**，结构上就没有能携带校验凭据的字段。
+>
+> 所以真实性质不是「配置疏忽会导致弱口令」，是**未授权提权**：任何人在空库部署上 POST 一次，就能造出 `super_admin` 再登录拿全权 token。完整六环证据链见 §25.2。
+>
+> 这是**第 1 类陷阱（读了函数，却没追调用方拿它做什么）的又一次实例**，而且比通常那种更隐蔽：本条的分析在「函数内部」这个尺度上完全正确——触发条件、日志行为、轮换修不掉它，逐条都对。错的是尺度停早了。一个只在「表为空时」被调用的种账号函数，「谁能在表为空时调用它」就是它的全部安全性，而这恰恰是没问的那个问题。
+>
+> 连带后果：**只删这个兜底是安全表演**。被跟踪的 `config/config.yaml:28` 显式写着 `password: "admin123"`，代码不兜底，那个免鉴权端点照样能造出弱口令超管。所以处置不是「删兜底」，是「删端点 + 把种账号搬到运维本地执行的迁移里」（§25.3）。兜底也确实删了，但它是这条链上最不要紧的一环。
+>
+> 本条「与 §12.6 的拆分互相独立，可以先做」这个判断是**对的**，并且已经被执行；§12.6 的拆分随后被需求方取消，也没有影响到它。
+
 ### 16.6 核实后确认「不是问题」的两项
 
 为避免把怀疑当结论写进文档，以下两项已查证并排除：
@@ -1283,8 +1315,8 @@ if strings.TrimSpace(password) == "" {
 
 | # | 发现 | 证据 | 影响 |
 |---|---|---|---|
-| a | **`make check` 既不跑 `gofmt` 也不跑 `go vet`** | `Makefile` 的 `check:` 只有 `go build -o /dev/null ./cmd/moe-social` + `go test ./internal/platform/moesocial/... ./internal/server/routestats/...` | 实测 `gofmt -l backend/` 命中 **127 / 928** 个跟踪 `.go` 文件（0 个是 `.pb.go` 生成物），最集中的是 `backend/model` 22 个与 `internal/service/admin` 18 个。⚠️ **本行原记的「92」是错的，第九批中途改记的「94」也是错的** —— 两次都是命令口径问题，正确口径与那个「在 `backend/` 里跑 `git ls-files 'backend/*.go'` 会静默返回空」的假清白陷阱一并写在附录 A 里。<br>**这是既有状态，与各批改动无关**：第五批的 7 个文件、第九批的 31 个文件里，只有 `pkg/moe/brain/refine.go` 在列，而它的 gofmt 差异（结构体 tag 对齐）在 HEAD 版逐字节相同。但它意味着文档里历次「`make check` 通过」的**证据强度被高估了**：它验证的范围比名字暗示的小得多 |
-| b | **`pkg/moe/toolaudit` 失败根因确定：测试阈值过期于产品决定** | `record_test.go:11` 硬编码 `len(items) < 6` 即 fatal；`pkg/moe/tools/registry.go` 实测只有 **5** 个 `Name:`；最后一次改动是 `14edac0e`「移除了一些不需要的能力」 | 不是回归，是**测试没跟上主动删能力的决定**。该包只依赖 `backend/pkg/moe/core`，与本批及第四批均无关（§16.7 已用两种方式证明过既有性）。处置需产品侧确认阈值该是几 |
+| a | **`make check` 既不跑 `gofmt` 也不跑 `go vet`** | `Makefile` 的 `check:` 只有 `go build -o /dev/null ./cmd/moe-social` + `go test ./internal/platform/moesocial/... ./internal/server/routestats/...` | 实测 `gofmt -l backend/` 命中 **127 / 928** 个跟踪 `.go` 文件（0 个是 `.pb.go` 生成物），最集中的是 `backend/model` 22 个与 `internal/service/admin` 18 个。⚠️ **本行原记的「92」是错的，第九批中途改记的「94」也是错的** —— 两次都是命令口径问题，正确口径与那个「在 `backend/` 里跑 `git ls-files 'backend/*.go'` 会静默返回空」的假清白陷阱一并写在附录 A 里。<br>**这是既有状态，与各批改动无关**：第五批的 7 个文件、第九批的 31 个文件里，只有 `pkg/moe/brain/refine.go` 在列，而它的 gofmt 差异（结构体 tag 对齐）在 HEAD 版逐字节相同。但它意味着文档里历次「`make check` 通过」的**证据强度被高估了**：它验证的范围比名字暗示的小得多<br>↪️ **第十二批已处置一半（§25.4）**：本行证据栏逐字引用的那个 `check:` 目标**已被改写**，现在是 `go build -o /dev/null ./cmd/moe-social` + `$(MAKE) test`（全仓、写死 `CGO_ENABLED=1`）。所以「验证范围比名字暗示的小得多」这半条**已关闭**——`make check` 现在真的覆盖全仓。<br>**但本行的主标题依旧成立**：`gofmt` 与 `go vet` 仍然不在 `check` 里，127/928 未格式化文件一个没动。刻意不并入：那会让 `make check` 因为一批与本批无关的历史文件而常红，等于把新门禁一上来就废掉。正确顺序是先单独跑一次 `gofmt -w` 清完存量，再把检查加进 `check` |
+| b | **`pkg/moe/toolaudit` 失败根因确定：测试阈值过期于产品决定** | `record_test.go:11` 硬编码 `len(items) < 6` 即 fatal；`pkg/moe/tools/registry.go` 实测只有 **5** 个 `Name:`；最后一次改动是 `14edac0e`「移除了一些不需要的能力」 | 不是回归，是**测试没跟上主动删能力的决定**。该包只依赖 `backend/pkg/moe/core`，与本批及第四批均无关（§16.7 已用两种方式证明过既有性）。处置需产品侧确认阈值该是几<br>↪️ **第十二批已修（§25.5(c)），且没有去「确认阈值该是几」**：把数量断言换成 `len(BuildSchemaItems()) == len(tools.OpenAISchemaList())` 之后，「阈值」这个概念本身就不必存在了——用例断言的是「展示层必须与注册表逐项对齐」，注册表增删时它自动跟随，不需要任何人再去决定一个数字。顺带把旧用例里两处**看起来在断言、实际什么都没断言**的地方（空 if 体、`_ = AllowsTool(...)`）换成真断言。**本行原记的「需产品侧确认」到此作废。** 另：本文档中历次「唯一失败是 `toolaudit`」的记录（§17.6 表尾、§18、§19、§20、§22 等处）都是**当时的真实状态**，按惯例保留不改，读到那些行请连同本条一起看 |
 | c | ~~**`apiconfig.Config.Image` 用 `json`/`yaml` 驼峰 tag，是序 3 的迁移陷阱**~~ ✅ **已关闭（序2.5，见 §21）** | `internal/platform/apiconfig/*.go:55-72`：`LocalDir string \`json:"LocalDir" yaml:"LocalDir"\`` 等；41 个 `json` tag / **0** 个 `mapstructure` tag（这个事实没变） | viper 的 `Unmarshal` **只认 `mapstructure`**，所以当初的担心是：序2/序3 若图省事把 `apiconfig.Config` 直接喂给 viper，所有字段会**静默落空**——正是 §12.1 的「静默取零值」。<br>✅ **序2.5 之后它不再是隐患**：`apiconfig` 结构已经不当任何 mapstructure 解码的目标（非生成代码里 `UnmarshalKey` 的**实际调用点为 0**），改为逐字段显式赋值。**故意不补 `mapstructure` tag**——补了也没人用，等于再养一个死别名（§21.5） |
 | d | 仓库里有一个**二进制产物** `backend/bin/moe-social` | `grep -rn moeconf` 时命中 `Binary file backend/bin/moe-social matches` | 仓库卫生问题（§11 批次 6 范围）。二进制里还留着已删包的字符串，会让基于 grep 的审计出现幽灵命中 |
 | e | **第三梯队冗余：已记账，本批刻意不动** | `moesocial/run.go:19-21` 是单行透传（`Run` → `runHTTPOnly`），`pure` / `http_only` 等限定词在单进程化后不再区分任何东西；`firstNonEmpty` 有 **6 份语义等价实现**（其中 3 份逐字节相同）+ 2 个变体；两个 `main` 重复 3 个 flag 声明 | 均为**低价值或有反效果**：为 6 行私有纯函数新建 `pkg/strutil` 属于过度抽象，代价是新增一层跨层依赖；启动链改名会碰两个入口。判断是「记账不动手」，不是「没看见」。<br>↪️ 第九批顺带消掉其中 1 份：`moeconfig/inference.go` 的 `firstNonEmpty` 随整包删除；`pkg/conf/derive.go` 那份现在是主实现 |
@@ -1440,7 +1472,7 @@ if strings.TrimSpace(password) == "" {
 | `utils/feishu_contact.go` | 4 | `fs := conf.Get().Feishu` → `.AutoAddToDirectory/.DefaultDepartmentID/.AppID/.AppSecret` |
 | `internal/biz/user/oauth_wechat.go` | 4 | `conf.Get().Wechat.Enabled` + **`conf.IsSet("wechat.enabled")` 必须保留**，见下 |
 | `utils/feishu_public_config.go` | 3 | `fs := conf.Get().Feishu` → `.EnterpriseNotice/.Enabled/.EnterpriseInviteURL` |
-| `utils/admin_seed.go` | 2 | `conf.Get().Admin.Bootstrap`；`admin123` 兜底**故意保留**（那是未授权的 #18） |
+| `utils/admin_seed.go` | 2 | `conf.Get().Admin.Bootstrap`；`admin123` 兜底**故意保留**（那是未授权的 #18）<br>↪️ **第十二批已删除并重写该文件（§25.3）**：兜底没了，缺口令即返回 `ErrAdminBootstrapPasswordUnset` 且不写库；`Count` 加了 `Unscoped()`；函数改为返回 `error`，调用方从免鉴权端点换成 `RunAutoMigrate` 末尾。读 `conf.Get().Admin.Bootstrap` 这一点不变 |
 | `utils/auth_jwt_config.go` | 2 | **死代码删除**，非迁移，见下 |
 | `utils/admin_jwt.go` | 2 | **死代码删除**，非迁移，见下 |
 | `internal/biz/user/oauth_feishu.go` | 2 | `conf.Get().Feishu.Enabled` ×2 |
@@ -2296,7 +2328,7 @@ return LoadFile(path)
 2. 在 `backend/` 目录里启动 `-f /tmp/dashf/custom.yaml`；
 3. 日志 `moe-social ready: Kratos HTTP-only on port 18899`，`lsof` 确认监听在 `*:18899` → **`-f` 权威，没有被 `./config` 盖掉**；
 4. `tick=1m0s` / `tick=5m0s` → #33 的默认值在运行时实证；
-5. `POST /api/admin/login`（`admin`/`admin123`，来自 `admin.bootstrap`）拿 token；
+5. `POST /api/admin/login`（`admin`/`admin123`，来自 `admin.bootstrap`）拿 token；<br>↪️ 这一步是当时的真实记录，**今天仍然成立**，但账号的**来源**在第十二批之后变了：新部署的超管由 `RunAutoMigrate` 读 `admin.bootstrap.password` 创建（§25.3），那个免鉴权的 `POST /api/admin/bootstrap/account` 已删除。测试库里这一行是历史遗留，所以登录照旧可用；`config.yaml:28` 的 `admin123` 也仍在，正式版随凭据轮换一起换掉；
 6. `GET /api/admin/runtime-config` → `config_file` 返回 **`/tmp/dashf/custom.yaml`**；
 7. `PUT` 两处改动（`image.max_bytes` + `image.local_dir`）→ 对 `-f` 文件 `diff` 出**恰好 2 行**；对被跟踪的 `backend/config/config.yaml` 做 `md5` 比对 → **不变**；`git diff --stat -- config/config.yaml` → **空**；
 8. 保留性核验：注释 **79 → 79** 行、总行数 **265 → 265**、字节 10074 → 10073（差的 1 字节是新值本身短一个字符）、权限 `-rw-r--r--` 保留（这个文件含数据库口令与第三方密钥，不能顺手放宽）；
@@ -2335,6 +2367,258 @@ return LoadFile(path)
 - `TestPatchYAMLFilePreservesComments`：把 `patchYAMLFile` 换回 `viper.Set` + `WriteConfig` → 失败（注释 79→0）；换成 `yaml.Marshal(&node)` → **也失败**（行数 265→241）；
 - `TestResolveUnifiedConfigPathHonorsDashF`：把 `conf.Path()` 那一顺位去掉 → 失败，且断言消息会点名它错选了哪个哨兵文件；
 - `TestPatchYAMLFileMissingKey`：其中一个子测试曾经**真抓到一个缺陷**——`locateYAMLNode` 的错误信息只报最后一段（「不存在键 max_bytes」），因为 `full` 是在递归里用剩余路径重新拼的。修法是让调用方把完整点路径一路传下去。这条不是我推理出来的，是测试逼出来的。
+
+---
+
+## §25 2026-09-16 第十二批：一个免鉴权的超管创建端点 + 一个让全仓测试静默失效的门禁
+
+本批起点是 §11 P0-3「`admin_seed.go` 里有 `admin123` 代码级兜底」。按老规矩从**攻击者能看到的出口**往回追，而不是停在被报告的症状上——结果发现兜底只是这条链上最不要紧的一环，真正的洞是一个任何人都能调的 HTTP 端点；而在给修复写变异测试的过程中，又撞上了本仓迄今最严重的一次假干净：**全仓所有依赖数据库的测试用例一直在静默跳过，`go test ./...` 报 ok 什么都没证明**。
+
+### 25.1 结论
+
+| 项 | 结论 |
+|---|---|
+| P0-3 的真实严重度 | 不是「弱口令兜底」，是**未授权提权**：空库部署上任何人 POST 一次即可造出 `super_admin` 并拿到全权 token |
+| 处置 | 需求方选定「迁移时种账号 + 删端点」：RPC、两个 message、免鉴权白名单条目、service/biz/utils 三层实现、legacy 死类型**全部删除**；种账号改由 `RunAutoMigrate` 在末尾执行 |
+| 只删兜底够不够 | **不够，且属于安全表演**——被跟踪的 `config/config.yaml:28` 显式写着 `password: "admin123"`，代码里不兜底，端点照样能造出弱口令超管 |
+| 门禁假干净 | `go env CGO_ENABLED` 本机持久为 **0** → gorm 的 sqlite 驱动不可用 → 各处 helper `t.Skip` / 整文件 `//go:build cgo` 排除 → `go test ./...` **报 ok** |
+| 被藏住的失败用例 | **3 条**，全部为长期潜伏，与本批改动无关（已在 HEAD `0459e256` 上逐条复现） |
+| 机制 | 新增 `utils/cgo_canary_test.go`（`//go:build !cgo` 哨兵）+ Makefile `test` / `test-race` 强制 `CGO_ENABLED=1` + `check` 改为跑全仓 |
+| 收口状态 | `make check` rc=0（**34 包全 ok，0 FAIL**）· `make test-race` rc=0（无 DATA RACE）· `go build` / `go vet` rc=0 · gofmt clean |
+
+### 25.2 证据链：这个洞为什么是真的
+
+从出口往回追，六环缺一不可，每一环都实测过：
+
+| # | 环节 | 位置 | 为什么致命 |
+|---|------|------|-----------|
+| 1 | `POST /api/admin/bootstrap/account` 在**免鉴权白名单**里 | `internal/server/auth.go`，与 `/api/admin/login` 并列 | 不带任何 token 即可抵达 handler |
+| 2 | `AdminBootstrapAccountReq` 是**空消息** `{}` | `api/admin/v1/admin_messages.proto` | 结构上就不存在任何能携带校验凭据的字段——想加校验都没地方加 |
+| 3 | biz 层写着 `_ = ctx; _ = in` | `internal/biz/admin/auth.go`（旧 `:57-66`） | 显式声明「入参我不看」，即「没有校验」这件事是写在代码里的 |
+| 4 | `utils.BootstrapAdminAccount` 回落到 `admin123` | `utils/admin_seed.go`（旧 `:33-34`） | 造出来的超管口令众所周知 |
+| 5 | `Count` **不含 `Unscoped`** | 同上 | `AdminAccount` 有 `gorm.DeletedAt` 软删除——把管理员全部软删，表就「看起来空了」，洞**可以重新打开**；而 `Username` 上有 `uniqueIndex`，软删行仍占索引，再 `Create` 必撞唯一键 |
+| 6 | `RunAutoMigrate` 从不种账号 | `utils/db_migrate.go` | 于是这个端点是**首次超管的唯一入口**，`admin_seed.go` 自己那句注释「首次迁移时创建默认超管」是**假的** |
+
+第 6 环是闭合点：正因为迁移不种账号，这个端点才不能被简单删掉了事——删了它，新部署永远登不进管理后台。所以处置必须是「换一个入口」而不是「关掉入口」。
+
+**它不是理论风险，是被写进运维手册的正式流程**：`docs/dev/moe-admin.md:61` 把 `POST /api/admin/bootstrap/account（无需 Token，表为空时）` 列为「首次超管」的官方做法，`backend/openapi.yaml` 也导出了它。同时在 `moe-admin/` 与 `lib/` 里**零调用方**——手册教人手工 curl 一个免鉴权提权接口。
+
+### 25.3 处置：迁移时种账号 + 删端点
+
+proto 与生成物（用 `make api-one PROTO=api/admin/v1/admin_messages.proto` 单模块重生，避免把本机 protoc 版本戳进所有域）：
+
+| 文件 | 变化 |
+|------|------|
+| `api/admin/v1/admin_messages.proto` | 删 `rpc AdminBootstrapAccount` + `AdminBootstrapAccountReq` + `AdminBootstrapAccountResp`；`AdminBootstrapAchievementsReq` **保留**（那个端点需要 admin token） |
+| `admin_messages.pb.go` | 2480 行 diff —— 删一个 message 会让后续所有 `msgTypes[N]` 索引重排，**这个量级是正常的**，不是改坏了 |
+| `admin_messages_grpc.pb.go` / `_http.pb.go` | 42 / 41 行 |
+| `openapi.yaml` | 39 行，路径数 → **291** |
+| `internal/server/routestats/proto_routes_gen.go:5` | `protoHTTPRouteCount` **320 → 319** |
+
+Go 层：
+
+| 文件 | 变化 |
+|------|------|
+| `internal/server/auth.go:68` | 白名单只剩 `/api/admin/login` |
+| `internal/server/protohttp/adminapp/adminapp.go` | 删 `(*Server).AdminBootstrapAccount` |
+| `internal/service/admin/admin_login.go` | 删 `(*AppService).AdminBootstrapAccount`，文件只剩 `AdminLogin` |
+| `internal/biz/admin/auth.go` | 删 `BootstrapAdminAccount`（11 行纯删除）；`utils.GenerateAdminToken` 与 `gorm.ErrInvalidDB` 仍被 `AdminLogin` 用着，两个 import 都保留 |
+| `utils/bootstrap.go` | 删 `BootstrapAdminAccount(db) int32`——它用 `err != nil \|\| count > 0` 吞掉了 Count 的错误，使「表不存在」与「已种过」不可区分 |
+| `utils/admin_seed.go` | **重写**：返回 `error`；无 `admin123` 兜底，缺口令即返回 `ErrAdminBootstrapPasswordUnset`（`:16`）且不写库；`Count` 加 `Unscoped()`（`:34`） |
+| `utils/db_migrate.go:98-108` | `RunAutoMigrate` 末尾种账号，用 `migrateEntriesInclude(entries, "admin_accounts")` 守卫 |
+| `internal/legacy/types/types.go` | 删死类型 `AdminBootstrapAccountData` / `AdminBootstrapAccountResp`（全仓 grep 只有自引用） |
+| `docs/dev/moe-admin.md` | 重写「首次超管」那一行 + 加「不要再把这个端点加回来」的告警块，把上面六环写进去 |
+
+**两处刻意的取舍**：
+
+1. **`admin.bootstrap.password` 未配置时是响亮跳过，不是硬失败。** `db_migrate.go:101` 打印 `[admin] !! 未创建默认超管：…请在 config.yaml 设置 admin.bootstrap.password 后重跑迁移，否则管理后台无法登录` 然后**继续**。理由：一个配置层面的技术性缺失不应该让整个服务起不来（需求方的底线是「每一次调整完程序都是正确可运行」）。但也不是静默——日志里带 `!!` 和补救步骤。
+2. **种账号必须被迁移范围守卫。** `RunAutoMigrate` 支持 `MigrateOptions.Models` 按 registry key 局部迁移；`Models: ["users"]` 时 `admin_accounts` 表根本没建，此时去 `Count` 会报 `no such table`，而那不是 `ErrAdminBootstrapPasswordUnset`，会让**整次迁移失败**。守卫不是防御性冗余，是必需项——变异 4 实测证明了这点（§25.6）。
+
+### 25.4 门禁级假干净：`CGO_ENABLED=0` 让全仓 DB 用例静默跳过
+
+本批最重要的产出不是那个安全修复，是这条。
+
+**发现过程**：给新的种账号测试做变异验证时，变异 1（把 `admin123` 兜底加回去）**返回了 `ok backend/utils`**。按既定纪律，「该失败的没失败」必须先怀疑验证命令本身而不是接受结果——加 `-v` 重跑，看到全部 sqlite 用例都是 `--- SKIP`，包括仓里原有的 `TestRunAutoMigrateSkipsUnchanged`。
+
+**根因**：`go env CGO_ENABLED` 在本机被持久写成 **0**。三处机制各自把这件事变成静默：
+
+| 位置 | 机制 |
+|------|------|
+| `utils/db_migrate_test.go:88-100` `testMigrateDB` | `gorm.Open(sqlite…)` 报错且错误串含 `CGO_ENABLED` → `t.Skip` |
+| `internal/biz/admin/topic_tags_write_test.go:19` `openTestDB` | 同上，`t.Skip("sqlite in-memory test requires CGO")` |
+| `pkg/achievement/activity_test.go:1` | `//go:build cgo` —— **整个文件不参与编译**，连 SKIP 都看不到 |
+
+而 `/usr/bin/clang` 是**在的**，`CGO_ENABLED=1` 完全能跑。也就是说这不是环境缺能力，是环境配置把能力关掉了，而测试选择了对此沉默。
+
+**量化证据**（在 HEAD `0459e256` 上、不含本批任何改动跑出来的）：
+
+```
+CGO_ENABLED=0 go test ./internal/biz/admin/ ./pkg/achievement/  → ok / ok     （7 个 --- SKIP）
+CGO_ENABLED=1 go test ./internal/biz/admin/ ./pkg/achievement/  → FAIL / FAIL （0 个 SKIP）
+```
+
+放到全仓范围，这个差值更能说明问题：
+
+```
+CGO_ENABLED=0 go test -v ./...  → 19 个 --- SKIP
+CGO_ENABLED=1 go test -v ./...  →  1 个 --- SKIP
+```
+
+**剩下的那 1 个是正当的**：`TestSendFeishuTestCardIntegration`（`feishu_test.go:55`）由 `FEISHU_INTEGRATION_TEST=1` 显式选择，要连真实飞书 IM 接口。它跳过是因为「没有授权去打外部服务」，而不是因为「环境缺一件本该有的能力却没人说」——这两者的区别正是本节要划的那条线。18 个静默跳过归零，1 个有据跳过保留。
+
+**为什么能烂这么久**——三层门禁同时失效，任何一层生效都会立刻暴露：
+
+| 层 | 状态 |
+|---|------|
+| `make check`（旧） | 只跑 `./internal/platform/moesocial/... ./internal/server/routestats/...` **两个包**，出事的三个包一个都不在里面 |
+| CI | `.github/workflows/` 里**没有任何 `go test`**；唯一提到 CGO 的是 `n100-deploy.yml:37` 的 `CGO_ENABLED=0 go build` |
+| 本地 `go test ./...` | 被 §25.4 的静默跳过吃掉了 |
+
+这与 §23.8（缺「文档引用的文件/行是否还存在」的断言）、以及「正对照钉在 HEAD 上、修合一提交就腐烂」是**同一类缺陷**：不是某次判断错了，是**没有任何机制会在它错的时候发出声音**。所以本批的处置重心放在机制上，不是放在「下次记得加 CGO_ENABLED=1」。
+
+**加的机制**：
+
+| 文件 | 作用 |
+|------|------|
+| `utils/cgo_canary_test.go`（新） | `//go:build !cgo` 哨兵，只在 CGO 关闭时编译进来，直接 `t.Fatal` 并给出正确命令。实测：`CGO_ENABLED=0 go test -run TestDBTestsRequireCGO ./utils/` → FAIL + 完整提示语 |
+| `Makefile:54-58` | 新增 `test` / `test-race`，两者都写死 `CGO_ENABLED=1` |
+| `Makefile:61-63` | `check` 由「编译 + 测 2 个包」改为「编译 + `$(MAKE) test`（全仓）」 |
+| `Makefile:4` | `test` / `test-race` 登记进 `.PHONY` |
+| `AGENTS.md:16,29-38` | 命令表里的裸 `go test ./...` 换成 `make test` / `make test-race`；覆盖率命令补 `CGO_ENABLED=1` 前缀并注明「cover.out 照样生成、只是这些路径全被算成未覆盖且无报错」 |
+| `.cursor/rules/moe-social-engineering.mdc:137-149,343-345` | §7.1 质量门禁同步改写并加 ⚠️ 块；命令速查表里 `make check` 的说明「核心包单测」已失真（现在是全仓），一并修正 |
+
+最后两行不是顺手改文档：**规则 SSOT 与 AGENTS.md 里那三处命令，本身就是假干净的再生产装置**。哨兵能让人在跑错命令时看到失败，但如果规则文件继续把错命令写成标准做法，每个人都会先撞一次哨兵再去查为什么。机制要闭合，就得连「文档教人跑哪条命令」一起改。
+
+`t.Skip` **保留**：没有 C 工具链的机器确实跑不了 sqlite，让它硬失败是错的。错的是「没人知道自己跳过了」，哨兵解决的正是这一件事——它把静默通过换成一条自解释的响亮失败，而且**绑在编译标签上，不会随用例数量增减而腐烂**。
+
+### 25.5 被它藏住的 3 条失败用例
+
+三条全部在 HEAD 上复现过，与本批改动无关（`git diff --stat` 显示 `pkg/achievement` **零改动**，`internal/biz/admin` 只有 11 行纯删除）。
+
+**(a) `TestDeduplicateGiftsByName` —— 出生即不可能通过**
+
+```
+topic_tags_write_test.go:54: UNIQUE constraint failed: gifts.name
+```
+
+`git log -S'uniqueIndex' -- backend/model/gift.go` → 唯一命中 **`8c701f61 feat(api): 新增话题标签与礼物去重功能`**。同一个提交干了三件事：加 `DeduplicateGiftsByName`、给 `model/gift.go:10` 的 `Name` 加 `uniqueIndex`、加这个会插入两条同名礼物的测试。**索引与夹具从第一天起就互相矛盾**，第二条 `Create` 必然被拒，用例根本走不到被测函数。它从未执行过一次，所以从未有人发现。
+
+被测函数**不是死代码**——`internal/service/admin/admin_gift.go:76` 是真调用方。它的服务对象是「索引上线之前就已经有重复行的老库」（例如那台远程测试 MySQL），全新库上它天然无事可做。所以修法不是删测试，是**让夹具还原它真正针对的那个前提**：插入前先 `db.Migrator().DropIndex(&model.Gift{}, "Name")`。用 Migrator 按字段名丢，避免把 GORM 生成的 `idx_gifts_name` 写死。
+
+**(b) `TestBumpDailyActivityRevivesSoftDeletedRow` —— 夹具两处，第二处是「约定用了一半」**
+
+第一处显而易见：`no such table: user_weekly_activity`。`bumpDailyActivity` 在 `activity.go:184` 会调 `syncWeeklyActivity` 写周表，夹具只 `AutoMigrate` 了日表。
+
+补上表之后**仍然失败**，才露出第二处：
+
+```
+activity_test.go:52: load row: record not found
+```
+
+production 写入的是 `activityStorageDate(day)`（**UTC 零点**，`activity.go:115` 的 `dates[0]`，函数注释写明「避免写入 MySQL 时因会话时区变成前一天」），而夹具直接写了 `todayDate(time.Now())`（**上海零点，带 `+08:00` 偏移**）。于是 `findDailyActivity` 的 `DATE(activity_date) = ?` 和用例自己末尾那句断言查询都匹配不到这行。
+
+值得记下来的是：**同一个测试文件里，写入用了一个约定，断言查询用了另一个约定**（第 49 行已经在用 `activityStorageDate(date)`）。作者知道这个约定，只应用了一半。这类缺陷在只会读一遍的评审里几乎必然漏掉——只有真跑起来才会撞到。
+
+**(c) `TestBuildSchemaItemsCoversAllTools` —— 写死的数量阈值必然腐烂**
+
+```
+record_test.go:12: expected >=6 tools, got 5
+```
+
+注册表 `pkg/moe/tools/registry.go` 现在正好 5 个：`post_search` / `post_get` / `post_create` / `brain_refine_episode` / `brain_curate_memories`。而旧测试**自己的注释**（`:19`）点名的是 `memory_search`——这个工具早就不在注册表里了。阈值写死的那天就注定会随注册表增减而失效。
+
+旧用例还有两处**看起来在断言、实际什么都没断言**：
+
+```go
+if len(it.AllowedTiers) == 0 && it.Name != "" {
+    // s0 allows nothing — memory_search should still have tiers   ← 空 if 体
+}
+_ = core.TierS2.AllowsTool("post_create")                          ← 丢弃返回值
+```
+
+重写为三条真断言：① `len(items) == len(tools.OpenAISchemaList())`——从注册表推导，**不再有魔法数字可腐烂**；② 逐工具逐档位比对 `AllowedTiers` 与 `AllowsTool` 必须一致，且 `s0` 不得出现在任何工具的档位里（`AllowedTiers` 是给管理台看的展示层，`AllowsTool` 是真正放行的执行层，两者不同源就等于管理台在说谎）；③ `post_create` 在 s0/s1 必须被拒、s2/s3 必须放行——这条是**策略断言**，改档位策略时必须同时改它，是有意的。
+
+### 25.6 判别力声明（每条都靠临时改坏实现验证，不是写完就算）
+
+种账号与鉴权，5 条变异全部正确变红：
+
+| # | 变异 | 结果 |
+|---|------|------|
+| 1 | `admin_seed.go` 加回 `admin123` 兜底 | FAIL `TestSeedAdminAccountRefusesWithoutPassword`：`err = <nil>, want ErrAdminBootstrapPasswordUnset` |
+| 2 | 去掉 `Count` 的 `Unscoped()` | FAIL `TestSeedAdminAccountDoesNotResurrectAfterSoftDelete` |
+| 3 | 删掉 `RunAutoMigrate` 末尾的 `SeedAdminAccount` 调用 | FAIL `TestRunAutoMigrateSeedsAdminOnFullMigration`：`全量迁移后应存在 super_admin: record not found`。**其余 3 条种账号用例仍然全 PASS** —— 这正是它存在的理由：没有这条，前 3 条只证明 helper 本身正确，证不出**有人调它**；端点删掉之后迁移是首次超管的唯一入口，接线断了等于新部署永远登不进后台 |
+| 4 | 去掉 `migrateEntriesInclude(…, "admin_accounts")` 守卫 | FAIL `TestRunAutoMigrateSkipsSeedingWhenAdminAccountsOutOfScope`：`按 users 局部迁移失败: seed admin account: count admin accounts: no such table: admin_accounts` |
+| 5 | `auth.go` 加回 `\|\| path == "/api/admin/bootstrap/account"` | FAIL `TestJWTAuthFilterAdminPaths//api/admin/bootstrap/account`：`在没有 admin token 的情况下到达了 handler` |
+
+变异 3 的那句「其余 3 条仍然 PASS」是这批里最有价值的一个观测：**它直接量化了「helper 正确」与「helper 被接线」是两件事**。
+
+toolaudit 重写，2 条变异正确变红：
+
+| # | 变异 | 结果 |
+|---|------|------|
+| A | `BuildSchemaItems` 丢掉注册表首项 | FAIL：`工具数与注册表不一致：BuildSchemaItems 返回 4 项，注册表有 5 项` |
+| B | `AllowedTiers` 不再由 `AllowsTool` 推导，写死四档 | FAIL，一次报出 6+ 条：`post_get 的 AllowedTiers 含 s0`、`post_create 在 s1 档不一致：AllowedTiers=true，AllowsTool=false` …… |
+
+(a)(b) 两条夹具修复的判别力由**修复前后的实际序列**给出：改之前分别报 `UNIQUE constraint failed` / `no such table` / `record not found`，改之后 PASS，中间没有别的改动。
+
+### 25.7 登记不修的已知项
+
+| 项 | 位置 | 处置与理由 |
+|---|------|-----------|
+| 已删端点仍留在代码图快照里 | `moe-admin/public/dev/codegraph/backend.json:1055-1062, 6686-6694` | 入库的**快照产物，仓内没有生成器**。不手改 6000+ 行 JSON——手改一个无法重生的产物只会让下次重生时更难对账。登记为已知陈旧 |
+| 工具生成的 wiki 仍引用旧函数 | `.qoder/repowiki/…/管理端业务层（Admin Biz）/架构设计.md:5` 提到 `BootstrapAdminAccount` | 同上，工具产物，不手改 |
+| **中文乱码（GBK 误编码）** | `deploy/config/config.go:53,56,100`（`"璇诲彇 config.local.yaml: %w"` 应为「读取」）· `internal/server/protohttp/adminapp/adminapp.go:13,23`（`// Server 闂佽楠哄﹢閬嶅磻…`） | **是一类缺陷，不是两处笔误**：某次编辑用错了编码。其中 `config.go:100` 那条在**错误信息字符串**里，会直接展示给运维。本批未动（不在范围内），但值得单独开一批扫全仓 |
+| `AllowsTool` 仍放行三个已不存在的工具 | `pkg/moe/core/tier.go:39,43` 的 `memory_search` / `memory_get` / `memory_save` | 放行一个不存在的工具本身无害，属死条目。**没删**：`AllowsTool` 可能被喂进历史审计记录里的旧工具名，我没有追完全部调用方，不拿猜测当结论 |
+| `scripts/archive/rpc-defs/common.proto:1117,1119` 仍有 `AdminBootstrapAccountReq/Resp` | 归档目录 | `scripts/gen/` 与 `Makefile` **零引用**，实测确认是死档。归档就该保持归档时的样子，不动 |
+
+### 25.8 §12.6 拆文件已被取消
+
+需求方 2026-09-16 明确否决了「按环境拆分 config」，原话与理由已写进 §12.6 的 ⛔ 块，**取代**了 09-08 那条「暂缓」。一句话摘要：多机器开发、需要来回切换，环境分层会把「改文件」变成「改环境变量再重启」，对他更麻烦。连带 §11 批次 2 / 任务 #17「`config.yaml` 去跟踪」一并挂起（前提是先有 `secrets.yaml` 可拆）。
+
+**不要再把环境分层当待办重新提出。** 本批动 config 的地方只有 `admin.bootstrap.password` 的语义（去掉代码兜底），与拆不拆文件无关。
+
+### 25.9 验证汇总
+
+| 项 | 结果 |
+|---|------|
+| `make check`（编译 + 全仓 `CGO_ENABLED=1 go test`） | **rc=0，34 包全 ok，0 FAIL** —— 这是全仓测试**第一次真正跑起来还是绿的** |
+| `make test-race` | rc=0，34 ok，无 `DATA RACE` |
+| `go build ./...` / `go vet ./...` | rc=0 / rc=0 |
+| `gofmt -l`（本批触碰的全部文件） | 空。（`gofmt -l ./...` 仍列出 §17.6(a) 那批历史未格式化文件，**无一属于本批**） |
+| 哨兵 | `CGO_ENABLED=0` → `--- FAIL: TestDBTestsRequireCGO` + 完整提示语 |
+| 已删端点残留 | `bootstrap/account` / `AdminBootstrapAccount` / `BootstrapAdminAccount` 在 `*.go` `*.proto` `*.yaml` `*.ts(x)` `*.dart` 中的命中，**只剩本批自己写的守卫注释与测试用例名**，外加 §25.7 登记的归档目录 |
+| `openapi.yaml` | 291 条路径，`bootstrap/account` 残留 **0** |
+| 路由计数 | `protoHTTPRouteCount` = **319** |
+| 被跟踪的 `config/config.yaml` | 逐字节未变（本批只改**读取语义**，没改文件） |
+
+**本批对方法论的追加**：`t.Skip` 与 `//go:build` 排除是两种**比空输出更危险**的假干净——空输出至少看着可疑，而 `ok backend/utils` 是一个**正面的、可信的、错误的**信号。凡是「环境不满足就跳过」的 helper，都必须配一个「环境不满足就响亮失败」的哨兵，否则它保护的从来不是测试，是绿灯。
+
+### 25.10 真机启动验证（端到端，两轮）
+
+单测与静态检查都过了，但「删掉一个 RPC」这类改动只有把进程真拉起来打一遍才算闭合。做法：复制 `config/config.yaml` 到 `/tmp` 只改端口（**不动被跟踪的那份**），`go build` 出二进制后 `-f` 指向副本启动，不带 `-migrate`。
+
+| 探测 | 结果 | 说明 |
+|---|---|---|
+| 启动 | `moe-social ready: Kratos HTTP-only on port 18903` | 删 RPC 后进程正常起来，端口只由 `runtime.http_port` 决定 |
+| `POST /api/admin/login`（admin/admin123） | **200**，`data.token` 长度 199，`role=super_admin`，`admin_id=1` | 管理后台登录链路完好。响应体是**包了一层**的（`{"code":200,"data":{...}}`），token 在 `data.token`，第一轮按顶层 `token` 解析得到长度 0，是**我读错了包结构**，不是接口坏了 |
+| `GET /api/admin/accounts`（带 token） | **200** | **正对照**：证明「什么都 404」不会伪装成「删除成功」 |
+| `GET /api/admin/runtime-config`（带 token） | **200** | 第二个正对照 |
+| `POST /api/admin/bootstrap/account`（**带 token**） | **404 `404 page not found`** | **决定性一条**：路由确实已注销 |
+| `POST /api/admin/bootstrap/account`（无 token） | **401** | auth 过滤器在 mux 之前跑，所以这一条**只证明鉴权层在挡，不证明路由不存在** |
+| `GET /api/admin/accounts`（无 token） | **401** | 同上，白名单收窄后其余 admin 路径一律要求登录 |
+| 种账号日志 | **无** | 不带 `-migrate` 的普通启动不种账号，符合 `main.go:20` 的 `migrate` 默认 false |
+| 进程 / panic·fatal | ALIVE / **0** | 无崩溃、无致命日志 |
+
+**为什么必须打第二轮**：第一轮拿到的是 `401`，当时差点就此收尾。但 401 是 `internal/server/auth.go` 的过滤器发的，它在路由匹配**之前**执行——一个根本没注册的路径，只要前缀是 `/api/admin/` 且不在白名单里，同样会得到 401。也就是说第一轮的结果对「端点是否真的删掉」是**无信息量**的。带上有效 token 让请求穿过鉴权层，才能把两种情况分开：404 = 路由不存在，2xx = 端点还活着。实测 404，且两个正对照都是 200，结论成立。
+
+**如实登记的两条限制**：
+
+| 限制 | 影响与补偿 |
+|---|---|
+| **没有**对远端测试库跑 `make db-migrate` | 那台 `47.106.175.49` 是**共享的测试库**，跑迁移会真的改表结构，不该拿验证当借口去动它。种账号路径改由 sqlite 单测（`utils/admin_seed_test.go` 5 例）+ 变异 3/4（切断 `RunAutoMigrate → SeedAdminAccount` 的接线）覆盖。**代价**：迁移在真实 MySQL 上的行为本批未经真机验证 |
+| 登录探测会往测试库写 `last_login_at` | `admin` 账号的最后登录时间被这次验证刷新了。无法避免——不登录就拿不到 token，拿不到 token 就分不出 404 和 401。写的是测试库、写的是时间戳字段，判定为可接受 |
+
+验证脚本与产物（`/tmp/moe_e2e*.sh`、`/tmp/moe-e2e*/`）已在收尾时删除，未落进仓库。
 
 ---
 

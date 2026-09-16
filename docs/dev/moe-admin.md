@@ -58,10 +58,19 @@ gin-vue-admin 是一整套 **Gin + GORM + Vue3 + Element Plus** 工程，自带�
 | 操作 | 命令 / 入口 | 作用 |
 |------|-------------|------|
 | **仅建表** | `cd backend && make db-migrate`（= `go run ./cmd/migrate`） | GORM AutoMigrate，**不**写入 VIP/礼物/成就等业务数据 |
-| **首次超管** | `POST /api/admin/bootstrap/account`（无需 Token，表为空时） | 创建默认管理员，再登录 Moe Admin |
+| **首次超管** | 同上 `make db-migrate`（读 `admin.bootstrap.username` / `password`） | 迁移末尾执行：**仅当 `admin_accounts` 从未有过任何行**时创建 super_admin（口令经 bcrypt 落库），随后登录 Moe Admin |
 | **运营目录** | Moe Admin 内「导入默认套餐/礼物」等 | 表为空时幂等导入；日常改价改文案走 CRUD |
 
 成就定义：`POST /api/admin/achievements/bootstrap`（需 Admin Token，表为空时）。
+
+> ⚠️ **不要再加回 `POST /api/admin/bootstrap/account`。** 该端点曾与 `/api/admin/login` 一起被
+> `internal/server/auth.go` 列进免鉴权白名单，而 `AdminBootstrapAccountReq` 是**空消息**
+> （没有任何字段能携带校验凭据），biz 层还写着 `_ = in`。后果是：只要 `admin_accounts`
+> 为空，任何人都能 POST 一次造出 super_admin 再登录拿全权 token；又因为 `Count` 不含软删行，
+> 把管理员全部软删即可**重新打开**这个洞。2026-09-16 已连同 RPC、消息、白名单条目、
+> `utils.BootstrapAdminAccount` 一并删除，改由迁移在运维本地触发。
+> 另：`admin.bootstrap.password` 未配置时**不再有 `admin123` 兜底**，迁移会打印
+> `[admin] !! 未创建默认超管` 并跳过，管理后台因此无法登录 —— 这是刻意的响亮失败。
 
 ## 启动方式（跨平台）
 

@@ -135,10 +135,18 @@ alwaysApply: true
 ### 7.1 后端
 
 ```bash
-cd backend && make check          # 编译 + 核心包单测
+cd backend && make check          # 编译生产入口 + 全仓单测（内部走 make test）
 cd backend && go build ./...      # 全量编译检查
-cd backend && go test ./...       # 全量单测
+cd backend && make test           # 全量单测
+cd backend && make test-race      # 全量单测 + 竞态检测
 ```
+
+> ⚠️ **不要用裸 `go test ./...` 当门禁。** `gorm.io/driver/sqlite` 依赖 cgo，而开发机上
+> `go env CGO_ENABLED` 可能持久为 0；此时 `gorm.Open` 直接报错，各处 helper 一律 `t.Skip`，
+> `go test ./...` **照样报 ok**——实测全仓 19 个用例被这样静默跳过，其中 3 个是长期红着的。
+> `make test` / `make test-race` 已写死 `CGO_ENABLED=1`；`backend/utils/cgo_canary_test.go`
+> 是配套哨兵（`//go:build !cgo`），CGO 关闭时它会直接失败并提示正确命令。
+> 详见 `docs/dev/config-hygiene-review-2026-09-08.md` §25.4。
 
 ### 7.2 Flutter
 
@@ -332,7 +340,9 @@ cd moe-admin && npm run build
 | 命令 | 说明 |
 |------|------|
 | `cd backend && make gen` | proto + conf + HTTP 路由计数 |
-| `cd backend && make check` | 编译检查 + 核心包单测 |
+| `cd backend && make check` | 编译生产入口 + 全仓单测（内部调 `make test`） |
+| `cd backend && make test` | 全仓单测，已写死 `CGO_ENABLED=1`（见 §7.1 警告） |
+| `cd backend && make test-race` | 同上并开启 `-race` |
 | `cd backend && make moe-social` | 启动 Kratos HTTP :8888 |
 | `cd backend && make build` | 本机编译 `bin/moe-social` |
 | `cd backend && make build-linux` | 交叉编译 Linux `bin/moe-social` |

@@ -1,7 +1,7 @@
 # 在 backend 目录执行，例如: make gen | make build | make moe-social
 
 .PHONY: all gen gen-moe-proto gen-proto-route-count gen-swagger gen-moe-admin \
-	api-one init-proto-tools check temp-mail-password \
+	api-one init-proto-tools check test test-race temp-mail-password \
 	moe-social moe-social-dev moe-social-stop \
 	build build-moe-social build-linux env-status \
 	db-migrate migrate-moe \
@@ -47,10 +47,20 @@ api-one:
 		--go-http_out=. --go-http_opt=module=backend \
 		$(PROTO)
 
-# 日常检查：编译生产入口 + 核心包单测
+# 全仓单测。CGO_ENABLED=1 是必须的，不是可选优化：
+# gorm 的 sqlite 驱动依赖 cgo，关掉它 gorm.Open 直接报错，各处 helper 一律 t.Skip，
+# go test ./... 照样报 ok —— 实测两个包各有失败用例被这样藏了很久（§25.4）。
+# utils/cgo_canary_test.go 是配套的哨兵：CGO_ENABLED=0 时它会编译进来并直接失败。
+test:
+	CGO_ENABLED=1 go test ./... -count=1
+
+test-race:
+	CGO_ENABLED=1 go test -race ./... -count=1
+
+# 日常检查：编译生产入口 + 全仓单测
 check:
 	go build -o /dev/null ./cmd/moe-social
-	go test ./internal/platform/moesocial/... ./internal/server/routestats/... -count=1
+	$(MAKE) test
 
 # 计算临时邮箱对应的 mail.tm 内部密码
 # 用法：make temp-mail-password EMAIL=foo@web-library.net
