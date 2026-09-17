@@ -64,7 +64,7 @@ func TestParseUserID(t *testing.T) {
 		t.Fatalf("parseUserID failed: id=%d err=%v", id, err)
 	}
 	if _, err := parseUserID(""); err == nil {
-	 t.Fatal("expected error for empty user id")
+		t.Fatal("expected error for empty user id")
 	}
 }
 

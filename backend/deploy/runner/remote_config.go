@@ -12,11 +12,11 @@ import (
 
 // Allowed remote config paths (relative to backend_dir on VPS).
 var allowedRemoteConfigPaths = map[string]bool{
-	"docker-compose.binary.yml":  true,
-	"docker-compose.yml":         true,
-	"config.yaml":                true,
-	"config/config.yaml":         true,
-	"api/etc/moe.yaml":         true,
+	"docker-compose.binary.yml": true,
+	"docker-compose.yml":        true,
+	"config.yaml":               true,
+	"config/config.yaml":        true,
+	"api/etc/moe.yaml":          true,
 	"Modelfile":                 true,
 }
 

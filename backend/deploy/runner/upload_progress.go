@@ -8,12 +8,12 @@ import (
 
 // uploadProgressWriter reports SFTP upload progress to LogSink.
 type uploadProgressWriter struct {
-	sink     LogSink
-	label    string
-	total    int64
-	written  int64
-	lastPct  int
-	mu       sync.Mutex
+	sink    LogSink
+	label   string
+	total   int64
+	written int64
+	lastPct int
+	mu      sync.Mutex
 }
 
 func newUploadProgressWriter(sink LogSink, label string, total int64) *uploadProgressWriter {

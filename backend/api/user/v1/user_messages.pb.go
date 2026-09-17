@@ -781,8 +781,16 @@ func (*DeleteUserResp) Descriptor() ([]byte, []int) {
 }
 
 type FeishuAuthorizeURLReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	State         string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 已废弃（编号保留以免破坏线上旧客户端的 wire 兼容）：旧协议把这个字段当回跳地址，
+	// 服务端会 302 到它并把授权码带过去 —— 那是开放重定向。新协议**完全忽略**此字段，
+	// 回跳地址只认 return_url，state 由服务端生成并在响应里下发。
+	State string `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// 授权成功后的回跳地址，必须精确命中服务端 config.yaml 的 oauth.allowed_return_urls。
+	ReturnUrl string `protobuf:"bytes,2,opt,name=return_url,json=returnUrl,proto3" json:"return_url,omitempty"`
+	// BASE64URL(SHA256(code_verifier))，无填充。verifier 由客户端生成并自行保管，
+	// 登录时出示原文；服务端只存 challenge，因此拿到事务也换不出登录态。
+	CodeChallenge string `protobuf:"bytes,3,opt,name=code_challenge,json=codeChallenge,proto3" json:"code_challenge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -824,9 +832,27 @@ func (x *FeishuAuthorizeURLReq) GetState() string {
 	return ""
 }
 
+func (x *FeishuAuthorizeURLReq) GetReturnUrl() string {
+	if x != nil {
+		return x.ReturnUrl
+	}
+	return ""
+}
+
+func (x *FeishuAuthorizeURLReq) GetCodeChallenge() string {
+	if x != nil {
+		return x.CodeChallenge
+	}
+	return ""
+}
+
 type FeishuAuthorizeURLResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthorizeUrl  string                 `protobuf:"bytes,1,opt,name=authorize_url,json=authorizeUrl,proto3" json:"authorize_url,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizeUrl string                 `protobuf:"bytes,1,opt,name=authorize_url,json=authorizeUrl,proto3" json:"authorize_url,omitempty"`
+	// 服务端生成的一次性 state（已绑定 return_url / challenge / 供应商配置 / 期限）。
+	// 客户端应记下它与本次 verifier 的对应关系，回调回来后核对，
+	// 以免把别的授权流程的结果当成自己的。
+	State         string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -868,9 +894,22 @@ func (x *FeishuAuthorizeURLResp) GetAuthorizeUrl() string {
 	return ""
 }
 
+func (x *FeishuAuthorizeURLResp) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
 type FeishuLoginReq struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 已废弃（编号保留）：旧的 code-only 通路已关闭 —— 任何人截获授权码就能登录。
+	// 新协议下此字段非空即拒绝；授权码由服务端在回调时封存进 ticket。
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// 回调 302 带回的一次性票据（oauth_ticket）。
+	Ticket string `protobuf:"bytes,2,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// 与授权时 code_challenge 配对的原文（oauth_verifier 由客户端本地保管，不经回跳传递）。
+	CodeVerifier  string `protobuf:"bytes,3,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -908,6 +947,20 @@ func (*FeishuLoginReq) Descriptor() ([]byte, []int) {
 func (x *FeishuLoginReq) GetCode() string {
 	if x != nil {
 		return x.Code
+	}
+	return ""
+}
+
+func (x *FeishuLoginReq) GetTicket() string {
+	if x != nil {
+		return x.Ticket
+	}
+	return ""
+}
+
+func (x *FeishuLoginReq) GetCodeVerifier() string {
+	if x != nil {
+		return x.CodeVerifier
 	}
 	return ""
 }
@@ -7321,9 +7374,16 @@ func (x *GetUserEmojiPacksResp) GetData() []*EmojiPack {
 
 type WechatAuthorizeURLReq struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	State string                 `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
-	// website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
-	Flow          string `protobuf:"bytes,2,opt,name=flow,proto3" json:"flow,omitempty"`
+	// 已废弃（编号保留）：旧协议把它当回跳地址，新协议完全忽略，回跳只认 return_url。
+	State string `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
+	// website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）；
+	// app=原生 SDK：此 flow 不下发 authorize_url，只签发一个绑定 challenge 的 state，
+	// 由客户端拿它去唤起微信 SDK。
+	Flow string `protobuf:"bytes,2,opt,name=flow,proto3" json:"flow,omitempty"`
+	// 授权成功后的回跳地址，必须精确命中 oauth.allowed_return_urls；flow=app 时留空。
+	ReturnUrl string `protobuf:"bytes,3,opt,name=return_url,json=returnUrl,proto3" json:"return_url,omitempty"`
+	// BASE64URL(SHA256(code_verifier))，无填充。
+	CodeChallenge string `protobuf:"bytes,4,opt,name=code_challenge,json=codeChallenge,proto3" json:"code_challenge,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7372,9 +7432,25 @@ func (x *WechatAuthorizeURLReq) GetFlow() string {
 	return ""
 }
 
+func (x *WechatAuthorizeURLReq) GetReturnUrl() string {
+	if x != nil {
+		return x.ReturnUrl
+	}
+	return ""
+}
+
+func (x *WechatAuthorizeURLReq) GetCodeChallenge() string {
+	if x != nil {
+		return x.CodeChallenge
+	}
+	return ""
+}
+
 type WechatAuthorizeURLResp struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthorizeUrl  string                 `protobuf:"bytes,1,opt,name=authorize_url,json=authorizeUrl,proto3" json:"authorize_url,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizeUrl string                 `protobuf:"bytes,1,opt,name=authorize_url,json=authorizeUrl,proto3" json:"authorize_url,omitempty"`
+	// 服务端生成的一次性 state，语义同 FeishuAuthorizeURLResp.state。
+	State         string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7416,11 +7492,27 @@ func (x *WechatAuthorizeURLResp) GetAuthorizeUrl() string {
 	return ""
 }
 
+func (x *WechatAuthorizeURLResp) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
 type WechatLoginReq struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Code  string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// 授权码。**仅 flow=app 可用**：原生 SDK 在进程内直接返回 code，没有浏览器回调，
+	// 因而没有 ticket。website/mp 走浏览器回调，code 由服务端封存进 ticket，
+	// 此字段必须留空 —— 非空即拒绝，堵住旧的 code-only 通路。
+	Code string `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
 	// app=移动应用 SDK；website=网站应用扫码；mp=公众号
-	Flow          string `protobuf:"bytes,2,opt,name=flow,proto3" json:"flow,omitempty"`
+	Flow string `protobuf:"bytes,2,opt,name=flow,proto3" json:"flow,omitempty"`
+	// 浏览器 flow（website/mp）：回调 302 带回的一次性票据（oauth_ticket）。
+	Ticket string `protobuf:"bytes,3,opt,name=ticket,proto3" json:"ticket,omitempty"`
+	// 与授权时 code_challenge 配对的原文，由客户端本地保管。
+	CodeVerifier string `protobuf:"bytes,4,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"`
+	// 原生 flow（app）：WechatAuthorizeURL(flow=app) 下发的 state。
+	State         string `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7465,6 +7557,27 @@ func (x *WechatLoginReq) GetCode() string {
 func (x *WechatLoginReq) GetFlow() string {
 	if x != nil {
 		return x.Flow
+	}
+	return ""
+}
+
+func (x *WechatLoginReq) GetTicket() string {
+	if x != nil {
+		return x.Ticket
+	}
+	return ""
+}
+
+func (x *WechatLoginReq) GetCodeVerifier() string {
+	if x != nil {
+		return x.CodeVerifier
+	}
+	return ""
+}
+
+func (x *WechatLoginReq) GetState() string {
+	if x != nil {
+		return x.State
 	}
 	return ""
 }
@@ -7805,13 +7918,19 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\fnotification\x18\x01 \x01(\v2\x15.user.v1.NotificationR\fnotification\"(\n" +
 	"\rDeleteUserReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x10\n" +
-	"\x0eDeleteUserResp\"-\n" +
+	"\x0eDeleteUserResp\"s\n" +
 	"\x15FeishuAuthorizeURLReq\x12\x14\n" +
-	"\x05state\x18\x01 \x01(\tR\x05state\"=\n" +
+	"\x05state\x18\x01 \x01(\tR\x05state\x12\x1d\n" +
+	"\n" +
+	"return_url\x18\x02 \x01(\tR\treturnUrl\x12%\n" +
+	"\x0ecode_challenge\x18\x03 \x01(\tR\rcodeChallenge\"S\n" +
 	"\x16FeishuAuthorizeURLResp\x12#\n" +
-	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\"$\n" +
+	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\"a\n" +
 	"\x0eFeishuLoginReq\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"j\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x16\n" +
+	"\x06ticket\x18\x02 \x01(\tR\x06ticket\x12#\n" +
+	"\rcode_verifier\x18\x03 \x01(\tR\fcodeVerifier\"j\n" +
 	"\x0fFeishuLoginResp\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1e\n" +
@@ -8282,15 +8401,22 @@ const file_api_user_v1_user_messages_proto_rawDesc = "" +
 	"\x14GetUserEmojiPacksReq\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"?\n" +
 	"\x15GetUserEmojiPacksResp\x12&\n" +
-	"\x04data\x18\x01 \x03(\v2\x12.user.v1.EmojiPackR\x04data\"A\n" +
+	"\x04data\x18\x01 \x03(\v2\x12.user.v1.EmojiPackR\x04data\"\x87\x01\n" +
 	"\x15WechatAuthorizeURLReq\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x12\n" +
-	"\x04flow\x18\x02 \x01(\tR\x04flow\"=\n" +
+	"\x04flow\x18\x02 \x01(\tR\x04flow\x12\x1d\n" +
+	"\n" +
+	"return_url\x18\x03 \x01(\tR\treturnUrl\x12%\n" +
+	"\x0ecode_challenge\x18\x04 \x01(\tR\rcodeChallenge\"S\n" +
 	"\x16WechatAuthorizeURLResp\x12#\n" +
-	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\"8\n" +
+	"\rauthorize_url\x18\x01 \x01(\tR\fauthorizeUrl\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\"\x8b\x01\n" +
 	"\x0eWechatLoginReq\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x12\n" +
-	"\x04flow\x18\x02 \x01(\tR\x04flow\"j\n" +
+	"\x04flow\x18\x02 \x01(\tR\x04flow\x12\x16\n" +
+	"\x06ticket\x18\x03 \x01(\tR\x06ticket\x12#\n" +
+	"\rcode_verifier\x18\x04 \x01(\tR\fcodeVerifier\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\"j\n" +
 	"\x0fWechatLoginResp\x12!\n" +
 	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1e\n" +

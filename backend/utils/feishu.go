@@ -16,7 +16,14 @@ import (
 	"backend/pkg/conf"
 )
 
-const feishuAPIBase = "https://open.feishu.cn/open-apis"
+// feishuAPIBase 是飞书开放平台根地址。
+//
+// 它是 var 而不是 const，唯一原因是测试要把它指向 httptest 起的假飞书服务端，
+// 好在不触网的前提下跑通「授权码 → user_access_token → 用户资料」的完整链路
+// （#50 的验收要求假供应商 + 实际 HTTP 服务）。生产路径从不改写它；
+// 改写它的用例不得调用 t.Parallel()。跨包（如 internal/biz/user）改写
+// 走 OverrideOAuthAPIBaseForTest —— 这个 var 未导出，包外碰不到。
+var feishuAPIBase = "https://open.feishu.cn/open-apis"
 
 // FeishuAgentCreatedNotification 兼容旧字段名（CreatedAt → EventAt）。
 type FeishuAgentCreatedNotification struct {

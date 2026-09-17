@@ -1,9 +1,9 @@
 package communityapp
 
 import (
-	"context"
 	communityv1 "backend/api/community/v1"
 	communitybiz "backend/internal/biz/community"
+	"context"
 )
 
 func (s *AppService) GetGroups(ctx context.Context, in *communityv1.GetGroupsRequest) (*communityv1.GetGroupsReply, error) {

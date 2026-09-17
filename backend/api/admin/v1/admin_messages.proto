@@ -324,12 +324,6 @@ message AdminDeleteGroupReq {
 
 message AdminDeleteGroupResp {}
 
-message AdminDeleteMemoryReq {
-  uint64 memory_id = 1;
-}
-
-message AdminDeleteMemoryResp {}
-
 message AdminDeleteMenuReq {
   string menu_key = 1;
 }
@@ -423,60 +417,9 @@ message AdminGetGrowthStatsResp {
   AdminGrowthStats stats = 1;
 }
 
+// AdminGetMemoryStatsReq 是 AdminAnalyticsOverview 的入参，别当成孤儿删掉。
+// 同名的 AdminGetMemoryStats RPC 已在 #42 死接口清理中删除。
 message AdminGetMemoryStatsReq {}
-
-message AdminGetMemoryStatsResp {
-  AdminMemoryStats stats = 1;
-}
-
-// AdminGetMemoryHealthReq 记忆子系统健康（混合检索 / embedding / llama.cpp）。
-message AdminGetMemoryHealthReq {}
-
-message AdminEmbeddingProbe {
-  bool ok = 1;
-  string provider_type = 2;
-  string model = 3;
-  string base_url = 4;
-  string message = 5;
-}
-
-message AdminGetMemoryHealthResp {
-  AdminMemoryStats stats = 1;
-  double embedding_index_ratio = 2;
-  bool hybrid_enabled = 3;
-  double vector_weight = 4;
-  double keyword_weight = 5;
-  bool rerank_enabled = 6;
-  bool graph_enabled = 7;
-  AdminEmbeddingProbe embedding_probe = 8;
-  bool llm_inference_online = 9;
-  string llm_inference_base_url = 10;
-  string memory_model = 11;
-  repeated string hints = 12;
-}
-
-message AdminRebuildMemoryEmbeddingsReq {
-  string user_id = 1;
-}
-
-message AdminRebuildMemoryEmbeddingsResp {
-  int32 indexed = 1;
-  string provider = 2;
-  string model = 3;
-  string message = 4;
-}
-
-message AdminExportLearningDatasetReq {
-  string user_id = 1;
-  string agent_id = 2;
-}
-
-message AdminExportLearningDatasetResp {
-  string jsonl = 1;
-  int32 line_count = 2;
-  string agent_name = 3;
-  string hint = 4;
-}
 
 message AdminGetMoeBrainPipelineReq {
   string agent_key = 1;
@@ -759,19 +702,6 @@ message AdminListLevelConfigsResp {
   repeated AdminLevelConfigItem items = 1;
 }
 
-message AdminListMemoriesReq {
-  int32 page = 1;
-  int32 page_size = 2;
-  string user_id = 3;
-  string keyword = 4;
-  string memory_type = 5;
-}
-
-message AdminListMemoriesResp {
-  repeated AdminMemoryItem items = 1;
-  int32 total = 2;
-}
-
 message AdminListMenusReq {}
 
 message AdminListMenusResp {
@@ -897,26 +827,9 @@ message AdminLoginResp {
   int64 expire_at = 5;
 }
 
-message AdminMemoryItem {
-  string id = 1;
-  string user_id = 2;
-  string username = 3;
-  string key = 4;
-  string value = 5;
-  string memory_type = 6;
-  double confidence = 7;
-  string source = 8;
-  string updated_at = 9;
-}
-
-message AdminMemoryStats {
-  int32 total_memories = 1;
-  int32 users_with_memories = 2;
-  int32 total_feedbacks = 3;
-  int32 total_embeddings = 4;
-  repeated AdminMemoryTypeStat by_type = 5;
-}
-
+// AdminMemoryTypeStat 仍在用：AdminAnalyticsOverviewData.memory_by_type 引它，
+// apicomm/admin_insights.go 在活路径上转换它。#42 删掉的是 AdminMemoryItem 与
+// AdminMemoryStats（只服务于那批已删的记忆 RPC），别顺手把这个也删了。
 message AdminMemoryTypeStat {
   string memory_type = 1;
   int32 count = 2;
@@ -1913,24 +1826,6 @@ service AdminApp {
   }
   rpc AdminDeleteMediaImage(AdminDeleteMediaImageReq) returns (AdminDeleteMediaImageResp) {
     option (google.api.http) = { delete: "/api/admin/media/images/{filename}" };
-  }
-  rpc AdminListMemories(AdminListMemoriesReq) returns (AdminListMemoriesResp) {
-    option (google.api.http) = { get: "/api/admin/memories" };
-  }
-  rpc AdminDeleteMemory(AdminDeleteMemoryReq) returns (AdminDeleteMemoryResp) {
-    option (google.api.http) = { delete: "/api/admin/memories/{memory_id}" };
-  }
-  rpc AdminGetMemoryStats(AdminGetMemoryStatsReq) returns (AdminGetMemoryStatsResp) {
-    option (google.api.http) = { get: "/api/admin/memories/stats" };
-  }
-  rpc AdminGetMemoryHealth(AdminGetMemoryHealthReq) returns (AdminGetMemoryHealthResp) {
-    option (google.api.http) = { get: "/api/admin/memories/health" };
-  }
-  rpc AdminRebuildMemoryEmbeddings(AdminRebuildMemoryEmbeddingsReq) returns (AdminRebuildMemoryEmbeddingsResp) {
-    option (google.api.http) = { post: "/api/admin/memories/reindex" body: "*" };
-  }
-  rpc AdminExportLearningDataset(AdminExportLearningDatasetReq) returns (AdminExportLearningDatasetResp) {
-    option (google.api.http) = { post: "/api/admin/learning/export-dataset" body: "*" };
   }
   rpc AdminListMenus(AdminListMenusReq) returns (AdminListMenusResp) {
     option (google.api.http) = { get: "/api/admin/menus" };

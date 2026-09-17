@@ -5,10 +5,10 @@ import (
 	"errors"
 	"net/http"
 
-	aibiz "backend/internal/biz/ai"
-	aidata "backend/internal/data/ai"
-	llmbiz "backend/internal/biz/llm"
 	llmv1 "backend/api/llm/v1"
+	aibiz "backend/internal/biz/ai"
+	llmbiz "backend/internal/biz/llm"
+	aidata "backend/internal/data/ai"
 	"backend/pkg/llminference"
 
 	"gorm.io/gorm"
@@ -98,18 +98,4 @@ func (s *AppService) CreateAgent(ctx context.Context, in llmbiz.CreateAgentInput
 		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
 	}
 	return llmbiz.CreateOllamaAgent(ctx, s.deps.Inference, in, cache)
-}
-
-func (s *AppService) DeleteModel(ctx context.Context, model string, cache llmbiz.ModelCacheClearer) llmbiz.PlatformWriteResult {
-	if s == nil {
-		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
-	}
-	return llmbiz.DeleteOllamaModel(ctx, s.deps.Inference, model, cache)
-}
-
-func (s *AppService) DownloadModel(ctx context.Context, model string, cache llmbiz.ModelCacheClearer) llmbiz.PlatformWriteResult {
-	if s == nil {
-		return llmbiz.PlatformWriteResult{Code: 500, Message: "llm app unavailable", Success: false}
-	}
-	return llmbiz.DownloadOllamaModel(ctx, s.deps.Inference, model, cache)
 }

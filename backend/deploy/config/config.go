@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
 	"backend/devports"
@@ -12,22 +12,22 @@ import (
 
 // Config holds Deploy Agent settings.
 type Config struct {
-	Listen            string `mapstructure:"listen"`
-	Token             string `mapstructure:"token"`
-	WorkspaceRoot     string `mapstructure:"workspace_root"`
-	BackendDir        string `mapstructure:"backend_dir"`
-	ComposeFile       string `mapstructure:"compose_file"`
-	JobTimeoutSeconds int    `mapstructure:"job_timeout_seconds"`
-	RpcDebugUpstream  string `mapstructure:"rpc_debug_upstream"`
-	WindowsShell   string `mapstructure:"windows_shell"`
-	LocalPathExtra string `mapstructure:"local_path_extra"`
-	BuildCacheDir  string `mapstructure:"build_cache_dir"`
-	GitHub         GitHubConfig   `mapstructure:"github"`
-	Targets        []DeployTarget `mapstructure:"targets"`
-	workspaceAbs   string
-	backendAbs     string
-	buildCacheAbs  string
-	configDir      string
+	Listen            string         `mapstructure:"listen"`
+	Token             string         `mapstructure:"token"`
+	WorkspaceRoot     string         `mapstructure:"workspace_root"`
+	BackendDir        string         `mapstructure:"backend_dir"`
+	ComposeFile       string         `mapstructure:"compose_file"`
+	JobTimeoutSeconds int            `mapstructure:"job_timeout_seconds"`
+	RpcDebugUpstream  string         `mapstructure:"rpc_debug_upstream"`
+	WindowsShell      string         `mapstructure:"windows_shell"`
+	LocalPathExtra    string         `mapstructure:"local_path_extra"`
+	BuildCacheDir     string         `mapstructure:"build_cache_dir"`
+	GitHub            GitHubConfig   `mapstructure:"github"`
+	Targets           []DeployTarget `mapstructure:"targets"`
+	workspaceAbs      string
+	backendAbs        string
+	buildCacheAbs     string
+	configDir         string
 }
 
 // GitHubConfig optional integration for Releases / Actions.
@@ -50,10 +50,10 @@ func Load(path string) (*Config, error) {
 		v2 := viper.New()
 		v2.SetConfigFile(localPath)
 		if err := v2.ReadInConfig(); err != nil {
-			return nil, fmt.Errorf("璇诲彇 config.local.yaml: %w", err)
+			return nil, fmt.Errorf("读取 config.local.yaml: %w", err)
 		}
 		if err := v.MergeConfigMap(v2.AllSettings()); err != nil {
-			return nil, fmt.Errorf("鍚堝苟 config.local.yaml: %w", err)
+			return nil, fmt.Errorf("合并 config.local.yaml: %w", err)
 		}
 	}
 	var c Config
@@ -97,7 +97,7 @@ func Load(path string) (*Config, error) {
 	c.backendAbs = be
 
 	if st, err := os.Stat(c.workspaceAbs); err != nil || !st.IsDir() {
-		return nil, fmt.Errorf("workspace_root 鏃犳晥锛堣В鏋愪负 %s锛夛細璇锋鏌?deploy/config.yaml 鎴栬缃?MOE_DEPLOY_WORKSPACE", c.workspaceAbs)
+		return nil, fmt.Errorf("workspace_root 无效（解析为 %s）：请检查 deploy/config.yaml 或设置 MOE_DEPLOY_WORKSPACE", c.workspaceAbs)
 	}
 	if st, err := os.Stat(c.backendAbs); err != nil || !st.IsDir() {
 		return nil, fmt.Errorf("backend_dir invalid: %s", c.backendAbs)

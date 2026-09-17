@@ -39,18 +39,14 @@ const OperationAdminAppAdminDeleteFollow = "/admin.v1.AdminApp/AdminDeleteFollow
 const OperationAdminAppAdminDeleteGift = "/admin.v1.AdminApp/AdminDeleteGift"
 const OperationAdminAppAdminDeleteGroup = "/admin.v1.AdminApp/AdminDeleteGroup"
 const OperationAdminAppAdminDeleteMediaImage = "/admin.v1.AdminApp/AdminDeleteMediaImage"
-const OperationAdminAppAdminDeleteMemory = "/admin.v1.AdminApp/AdminDeleteMemory"
 const OperationAdminAppAdminDeleteMenu = "/admin.v1.AdminApp/AdminDeleteMenu"
 const OperationAdminAppAdminDeletePost = "/admin.v1.AdminApp/AdminDeletePost"
 const OperationAdminAppAdminDeleteTagDictionary = "/admin.v1.AdminApp/AdminDeleteTagDictionary"
 const OperationAdminAppAdminDeleteTopicTag = "/admin.v1.AdminApp/AdminDeleteTopicTag"
 const OperationAdminAppAdminDeleteVipPlan = "/admin.v1.AdminApp/AdminDeleteVipPlan"
-const OperationAdminAppAdminExportLearningDataset = "/admin.v1.AdminApp/AdminExportLearningDataset"
 const OperationAdminAppAdminGetAnnouncement = "/admin.v1.AdminApp/AdminGetAnnouncement"
 const OperationAdminAppAdminGetAppRelease = "/admin.v1.AdminApp/AdminGetAppRelease"
 const OperationAdminAppAdminGetGift = "/admin.v1.AdminApp/AdminGetGift"
-const OperationAdminAppAdminGetMemoryHealth = "/admin.v1.AdminApp/AdminGetMemoryHealth"
-const OperationAdminAppAdminGetMemoryStats = "/admin.v1.AdminApp/AdminGetMemoryStats"
 const OperationAdminAppAdminGetRuntimeConfig = "/admin.v1.AdminApp/AdminGetRuntimeConfig"
 const OperationAdminAppAdminGetUser = "/admin.v1.AdminApp/AdminGetUser"
 const OperationAdminAppAdminGetUserProfile = "/admin.v1.AdminApp/AdminGetUserProfile"
@@ -69,7 +65,6 @@ const OperationAdminAppAdminListGifts = "/admin.v1.AdminApp/AdminListGifts"
 const OperationAdminAppAdminListGroups = "/admin.v1.AdminApp/AdminListGroups"
 const OperationAdminAppAdminListLevelConfigs = "/admin.v1.AdminApp/AdminListLevelConfigs"
 const OperationAdminAppAdminListMediaImages = "/admin.v1.AdminApp/AdminListMediaImages"
-const OperationAdminAppAdminListMemories = "/admin.v1.AdminApp/AdminListMemories"
 const OperationAdminAppAdminListMenus = "/admin.v1.AdminApp/AdminListMenus"
 const OperationAdminAppAdminListPostReports = "/admin.v1.AdminApp/AdminListPostReports"
 const OperationAdminAppAdminListPosts = "/admin.v1.AdminApp/AdminListPosts"
@@ -79,7 +74,6 @@ const OperationAdminAppAdminListVipOrders = "/admin.v1.AdminApp/AdminListVipOrde
 const OperationAdminAppAdminLogin = "/admin.v1.AdminApp/AdminLogin"
 const OperationAdminAppAdminMe = "/admin.v1.AdminApp/AdminMe"
 const OperationAdminAppAdminPublishAnnouncement = "/admin.v1.AdminApp/AdminPublishAnnouncement"
-const OperationAdminAppAdminRebuildMemoryEmbeddings = "/admin.v1.AdminApp/AdminRebuildMemoryEmbeddings"
 const OperationAdminAppAdminRuntimeOverview = "/admin.v1.AdminApp/AdminRuntimeOverview"
 const OperationAdminAppAdminSendNotification = "/admin.v1.AdminApp/AdminSendNotification"
 const OperationAdminAppAdminUpdateAccount = "/admin.v1.AdminApp/AdminUpdateAccount"
@@ -118,18 +112,14 @@ type AdminAppHTTPServer interface {
 	AdminDeleteGift(context.Context, *AdminDeleteGiftReq) (*AdminDeleteGiftResp, error)
 	AdminDeleteGroup(context.Context, *AdminDeleteGroupReq) (*AdminDeleteGroupResp, error)
 	AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error)
-	AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error)
 	AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error)
 	AdminDeletePost(context.Context, *AdminDeletePostReq) (*AdminDeletePostResp, error)
 	AdminDeleteTagDictionary(context.Context, *AdminDeleteTagDictionaryReq) (*AdminDeleteTagDictionaryResp, error)
 	AdminDeleteTopicTag(context.Context, *AdminDeleteTopicTagReq) (*AdminDeleteTopicTagResp, error)
 	AdminDeleteVipPlan(context.Context, *AdminDeleteVipPlanReq) (*AdminDeleteVipPlanResp, error)
-	AdminExportLearningDataset(context.Context, *AdminExportLearningDatasetReq) (*AdminExportLearningDatasetResp, error)
 	AdminGetAnnouncement(context.Context, *AdminGetAnnouncementReq) (*AdminGetAnnouncementResp, error)
 	AdminGetAppRelease(context.Context, *AdminGetAppReleaseReq) (*AdminGetAppReleaseResp, error)
 	AdminGetGift(context.Context, *AdminGetGiftReq) (*AdminGetGiftResp, error)
-	AdminGetMemoryHealth(context.Context, *AdminGetMemoryHealthReq) (*AdminGetMemoryHealthResp, error)
-	AdminGetMemoryStats(context.Context, *AdminGetMemoryStatsReq) (*AdminGetMemoryStatsResp, error)
 	AdminGetRuntimeConfig(context.Context, *AdminGetRuntimeConfigReq) (*AdminGetRuntimeConfigResp, error)
 	AdminGetUser(context.Context, *AdminGetUserReq) (*AdminGetUserResp, error)
 	AdminGetUserProfile(context.Context, *AdminGetUserProfileReq) (*AdminGetUserProfileResp, error)
@@ -148,7 +138,6 @@ type AdminAppHTTPServer interface {
 	AdminListGroups(context.Context, *AdminListGroupsReq) (*AdminListGroupsResp, error)
 	AdminListLevelConfigs(context.Context, *AdminListLevelConfigsReq) (*AdminListLevelConfigsResp, error)
 	AdminListMediaImages(context.Context, *AdminListMediaImagesReq) (*AdminListMediaImagesResp, error)
-	AdminListMemories(context.Context, *AdminListMemoriesReq) (*AdminListMemoriesResp, error)
 	AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error)
 	AdminListPostReports(context.Context, *AdminListPostReportsReq) (*AdminListPostReportsResp, error)
 	AdminListPosts(context.Context, *AdminListPostsReq) (*AdminListPostsResp, error)
@@ -158,7 +147,6 @@ type AdminAppHTTPServer interface {
 	AdminLogin(context.Context, *AdminLoginReq) (*AdminLoginResp, error)
 	AdminMe(context.Context, *AdminMeReq) (*AdminMeResp, error)
 	AdminPublishAnnouncement(context.Context, *AdminPublishAnnouncementReq) (*AdminPublishAnnouncementResp, error)
-	AdminRebuildMemoryEmbeddings(context.Context, *AdminRebuildMemoryEmbeddingsReq) (*AdminRebuildMemoryEmbeddingsResp, error)
 	AdminRuntimeOverview(context.Context, *AdminGetRuntimeOverviewReq) (*AdminGetRuntimeOverviewResp, error)
 	AdminSendNotification(context.Context, *AdminSendNotificationReq) (*AdminSendNotificationResp, error)
 	AdminUpdateAccount(context.Context, *AdminUpdateAccountReq) (*AdminUpdateAccountResp, error)
@@ -241,12 +229,6 @@ func RegisterAdminAppHTTPServer(s *http.Server, srv AdminAppHTTPServer) {
 	r.GET("/api/admin/me", _AdminApp_AdminMe0_HTTP_Handler(srv))
 	r.GET("/api/admin/media/images", _AdminApp_AdminListMediaImages0_HTTP_Handler(srv))
 	r.DELETE("/api/admin/media/images/{filename}", _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv))
-	r.GET("/api/admin/memories", _AdminApp_AdminListMemories0_HTTP_Handler(srv))
-	r.DELETE("/api/admin/memories/{memory_id}", _AdminApp_AdminDeleteMemory0_HTTP_Handler(srv))
-	r.GET("/api/admin/memories/stats", _AdminApp_AdminGetMemoryStats0_HTTP_Handler(srv))
-	r.GET("/api/admin/memories/health", _AdminApp_AdminGetMemoryHealth0_HTTP_Handler(srv))
-	r.POST("/api/admin/memories/reindex", _AdminApp_AdminRebuildMemoryEmbeddings0_HTTP_Handler(srv))
-	r.POST("/api/admin/learning/export-dataset", _AdminApp_AdminExportLearningDataset0_HTTP_Handler(srv))
 	r.GET("/api/admin/menus", _AdminApp_AdminListMenus0_HTTP_Handler(srv))
 	r.PUT("/api/admin/menus", _AdminApp_AdminUpsertMenu0_HTTP_Handler(srv))
 	r.DELETE("/api/admin/menus/{menu_key}", _AdminApp_AdminDeleteMenu0_HTTP_Handler(srv))
@@ -1592,129 +1574,6 @@ func _AdminApp_AdminDeleteMediaImage0_HTTP_Handler(srv AdminAppHTTPServer) func(
 	}
 }
 
-func _AdminApp_AdminListMemories0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminListMemoriesReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminListMemories)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminListMemories(ctx, req.(*AdminListMemoriesReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminListMemoriesResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminDeleteMemory0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminDeleteMemoryReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindVars(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminDeleteMemory)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminDeleteMemory(ctx, req.(*AdminDeleteMemoryReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminDeleteMemoryResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminGetMemoryStats0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminGetMemoryStatsReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminGetMemoryStats)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminGetMemoryStats(ctx, req.(*AdminGetMemoryStatsReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminGetMemoryStatsResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminGetMemoryHealth0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminGetMemoryHealthReq
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminGetMemoryHealth)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminGetMemoryHealth(ctx, req.(*AdminGetMemoryHealthReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminGetMemoryHealthResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminRebuildMemoryEmbeddings0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminRebuildMemoryEmbeddingsReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminRebuildMemoryEmbeddings)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminRebuildMemoryEmbeddings(ctx, req.(*AdminRebuildMemoryEmbeddingsReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminRebuildMemoryEmbeddingsResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _AdminApp_AdminExportLearningDataset0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in AdminExportLearningDatasetReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationAdminAppAdminExportLearningDataset)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.AdminExportLearningDataset(ctx, req.(*AdminExportLearningDatasetReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*AdminExportLearningDatasetResp)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _AdminApp_AdminListMenus0_HTTP_Handler(srv AdminAppHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in AdminListMenusReq
@@ -1922,18 +1781,14 @@ type AdminAppHTTPClient interface {
 	AdminDeleteGift(ctx context.Context, req *AdminDeleteGiftReq, opts ...http.CallOption) (rsp *AdminDeleteGiftResp, err error)
 	AdminDeleteGroup(ctx context.Context, req *AdminDeleteGroupReq, opts ...http.CallOption) (rsp *AdminDeleteGroupResp, err error)
 	AdminDeleteMediaImage(ctx context.Context, req *AdminDeleteMediaImageReq, opts ...http.CallOption) (rsp *AdminDeleteMediaImageResp, err error)
-	AdminDeleteMemory(ctx context.Context, req *AdminDeleteMemoryReq, opts ...http.CallOption) (rsp *AdminDeleteMemoryResp, err error)
 	AdminDeleteMenu(ctx context.Context, req *AdminDeleteMenuReq, opts ...http.CallOption) (rsp *AdminDeleteMenuResp, err error)
 	AdminDeletePost(ctx context.Context, req *AdminDeletePostReq, opts ...http.CallOption) (rsp *AdminDeletePostResp, err error)
 	AdminDeleteTagDictionary(ctx context.Context, req *AdminDeleteTagDictionaryReq, opts ...http.CallOption) (rsp *AdminDeleteTagDictionaryResp, err error)
 	AdminDeleteTopicTag(ctx context.Context, req *AdminDeleteTopicTagReq, opts ...http.CallOption) (rsp *AdminDeleteTopicTagResp, err error)
 	AdminDeleteVipPlan(ctx context.Context, req *AdminDeleteVipPlanReq, opts ...http.CallOption) (rsp *AdminDeleteVipPlanResp, err error)
-	AdminExportLearningDataset(ctx context.Context, req *AdminExportLearningDatasetReq, opts ...http.CallOption) (rsp *AdminExportLearningDatasetResp, err error)
 	AdminGetAnnouncement(ctx context.Context, req *AdminGetAnnouncementReq, opts ...http.CallOption) (rsp *AdminGetAnnouncementResp, err error)
 	AdminGetAppRelease(ctx context.Context, req *AdminGetAppReleaseReq, opts ...http.CallOption) (rsp *AdminGetAppReleaseResp, err error)
 	AdminGetGift(ctx context.Context, req *AdminGetGiftReq, opts ...http.CallOption) (rsp *AdminGetGiftResp, err error)
-	AdminGetMemoryHealth(ctx context.Context, req *AdminGetMemoryHealthReq, opts ...http.CallOption) (rsp *AdminGetMemoryHealthResp, err error)
-	AdminGetMemoryStats(ctx context.Context, req *AdminGetMemoryStatsReq, opts ...http.CallOption) (rsp *AdminGetMemoryStatsResp, err error)
 	AdminGetRuntimeConfig(ctx context.Context, req *AdminGetRuntimeConfigReq, opts ...http.CallOption) (rsp *AdminGetRuntimeConfigResp, err error)
 	AdminGetUser(ctx context.Context, req *AdminGetUserReq, opts ...http.CallOption) (rsp *AdminGetUserResp, err error)
 	AdminGetUserProfile(ctx context.Context, req *AdminGetUserProfileReq, opts ...http.CallOption) (rsp *AdminGetUserProfileResp, err error)
@@ -1952,7 +1807,6 @@ type AdminAppHTTPClient interface {
 	AdminListGroups(ctx context.Context, req *AdminListGroupsReq, opts ...http.CallOption) (rsp *AdminListGroupsResp, err error)
 	AdminListLevelConfigs(ctx context.Context, req *AdminListLevelConfigsReq, opts ...http.CallOption) (rsp *AdminListLevelConfigsResp, err error)
 	AdminListMediaImages(ctx context.Context, req *AdminListMediaImagesReq, opts ...http.CallOption) (rsp *AdminListMediaImagesResp, err error)
-	AdminListMemories(ctx context.Context, req *AdminListMemoriesReq, opts ...http.CallOption) (rsp *AdminListMemoriesResp, err error)
 	AdminListMenus(ctx context.Context, req *AdminListMenusReq, opts ...http.CallOption) (rsp *AdminListMenusResp, err error)
 	AdminListPostReports(ctx context.Context, req *AdminListPostReportsReq, opts ...http.CallOption) (rsp *AdminListPostReportsResp, err error)
 	AdminListPosts(ctx context.Context, req *AdminListPostsReq, opts ...http.CallOption) (rsp *AdminListPostsResp, err error)
@@ -1962,7 +1816,6 @@ type AdminAppHTTPClient interface {
 	AdminLogin(ctx context.Context, req *AdminLoginReq, opts ...http.CallOption) (rsp *AdminLoginResp, err error)
 	AdminMe(ctx context.Context, req *AdminMeReq, opts ...http.CallOption) (rsp *AdminMeResp, err error)
 	AdminPublishAnnouncement(ctx context.Context, req *AdminPublishAnnouncementReq, opts ...http.CallOption) (rsp *AdminPublishAnnouncementResp, err error)
-	AdminRebuildMemoryEmbeddings(ctx context.Context, req *AdminRebuildMemoryEmbeddingsReq, opts ...http.CallOption) (rsp *AdminRebuildMemoryEmbeddingsResp, err error)
 	AdminRuntimeOverview(ctx context.Context, req *AdminGetRuntimeOverviewReq, opts ...http.CallOption) (rsp *AdminGetRuntimeOverviewResp, err error)
 	AdminSendNotification(ctx context.Context, req *AdminSendNotificationReq, opts ...http.CallOption) (rsp *AdminSendNotificationResp, err error)
 	AdminUpdateAccount(ctx context.Context, req *AdminUpdateAccountReq, opts ...http.CallOption) (rsp *AdminUpdateAccountResp, err error)
@@ -2249,19 +2102,6 @@ func (c *AdminAppHTTPClientImpl) AdminDeleteMediaImage(ctx context.Context, in *
 	return &out, nil
 }
 
-func (c *AdminAppHTTPClientImpl) AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemoryReq, opts ...http.CallOption) (*AdminDeleteMemoryResp, error) {
-	var out AdminDeleteMemoryResp
-	pattern := "/api/admin/memories/{memory_id}"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminDeleteMemory))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *AdminAppHTTPClientImpl) AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...http.CallOption) (*AdminDeleteMenuResp, error) {
 	var out AdminDeleteMenuResp
 	pattern := "/api/admin/menus/{menu_key}"
@@ -2327,19 +2167,6 @@ func (c *AdminAppHTTPClientImpl) AdminDeleteVipPlan(ctx context.Context, in *Adm
 	return &out, nil
 }
 
-func (c *AdminAppHTTPClientImpl) AdminExportLearningDataset(ctx context.Context, in *AdminExportLearningDatasetReq, opts ...http.CallOption) (*AdminExportLearningDatasetResp, error) {
-	var out AdminExportLearningDatasetResp
-	pattern := "/api/admin/learning/export-dataset"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAdminAppAdminExportLearningDataset))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *AdminAppHTTPClientImpl) AdminGetAnnouncement(ctx context.Context, in *AdminGetAnnouncementReq, opts ...http.CallOption) (*AdminGetAnnouncementResp, error) {
 	var out AdminGetAnnouncementResp
 	pattern := "/api/admin/announcements/{announcement_id}"
@@ -2371,32 +2198,6 @@ func (c *AdminAppHTTPClientImpl) AdminGetGift(ctx context.Context, in *AdminGetG
 	pattern := "/api/admin/gifts/{gift_id}"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationAdminAppAdminGetGift))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminGetMemoryHealth(ctx context.Context, in *AdminGetMemoryHealthReq, opts ...http.CallOption) (*AdminGetMemoryHealthResp, error) {
-	var out AdminGetMemoryHealthResp
-	pattern := "/api/admin/memories/health"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminGetMemoryHealth))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminGetMemoryStats(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...http.CallOption) (*AdminGetMemoryStatsResp, error) {
-	var out AdminGetMemoryStatsResp
-	pattern := "/api/admin/memories/stats"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminGetMemoryStats))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -2639,19 +2440,6 @@ func (c *AdminAppHTTPClientImpl) AdminListMediaImages(ctx context.Context, in *A
 	return &out, nil
 }
 
-func (c *AdminAppHTTPClientImpl) AdminListMemories(ctx context.Context, in *AdminListMemoriesReq, opts ...http.CallOption) (*AdminListMemoriesResp, error) {
-	var out AdminListMemoriesResp
-	pattern := "/api/admin/memories"
-	path := binding.EncodeURL(pattern, in, true)
-	opts = append(opts, http.Operation(OperationAdminAppAdminListMemories))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
 func (c *AdminAppHTTPClientImpl) AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...http.CallOption) (*AdminListMenusResp, error) {
 	var out AdminListMenusResp
 	pattern := "/api/admin/menus"
@@ -2761,19 +2549,6 @@ func (c *AdminAppHTTPClientImpl) AdminPublishAnnouncement(ctx context.Context, i
 	pattern := "/api/admin/announcements/{announcement_id}/publish"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationAdminAppAdminPublishAnnouncement))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *AdminAppHTTPClientImpl) AdminRebuildMemoryEmbeddings(ctx context.Context, in *AdminRebuildMemoryEmbeddingsReq, opts ...http.CallOption) (*AdminRebuildMemoryEmbeddingsResp, error) {
-	var out AdminRebuildMemoryEmbeddingsResp
-	pattern := "/api/admin/memories/reindex"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationAdminAppAdminRebuildMemoryEmbeddings))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

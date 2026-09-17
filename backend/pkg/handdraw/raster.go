@@ -12,8 +12,8 @@ import (
 )
 
 type cardJSON struct {
-	V  int         `json:"v"`
-	Bg int64       `json:"bg"`
+	V  int          `json:"v"`
+	Bg int64        `json:"bg"`
 	S  []strokeJSON `json:"s"`
 }
 

@@ -1,18 +1,10 @@
 package gamebiz
 
-
-
 import (
-
 	"testing"
 
-
-
 	"backend/model"
-
 )
-
-
 
 func TestAllInputRoutesToAgent(t *testing.T) {
 
@@ -31,8 +23,6 @@ func TestAllInputRoutesToAgent(t *testing.T) {
 	}
 
 }
-
-
 
 func TestOfflinePickupRouting(t *testing.T) {
 
@@ -54,8 +44,6 @@ func TestOfflinePickupRouting(t *testing.T) {
 
 }
 
-
-
 func TestOfflineEnvironmentCheck(t *testing.T) {
 
 	snap := &SessionSnapshot{Scene: model.GameScene{Name: "迷雾小镇"}}
@@ -70,8 +58,6 @@ func TestOfflineEnvironmentCheck(t *testing.T) {
 
 }
 
-
-
 func TestObserveSurroundingsRoutesToInspect(t *testing.T) {
 	snap := &SessionSnapshot{Scene: model.GameScene{Name: "迷雾小镇"}}
 	cmd := parseOfflineCommand("观察周围", snap)
@@ -79,5 +65,3 @@ func TestObserveSurroundingsRoutesToInspect(t *testing.T) {
 		t.Fatalf("expected CmdInspectScene, got %s", cmd.Kind)
 	}
 }
-
-

@@ -19,10 +19,10 @@ type turnLLMLine struct {
 
 type turnLLMOutput struct {
 	Prose            string                 `json:"prose"`
-	Narrative        []turnLLMLine            `json:"narrative"`
+	Narrative        []turnLLMLine          `json:"narrative"`
 	GameTime         string                 `json:"game_time"`
 	FavorDeltas      map[string]int         `json:"favor_deltas"`
-	NewMemories      []turnLLMMemory          `json:"new_memories"`
+	NewMemories      []turnLLMMemory        `json:"new_memories"`
 	FlagsPatch       map[string]interface{} `json:"flags_patch"`
 	NewScene         *turnLLMScene          `json:"new_scene"`
 	NewNPCs          []turnLLMNpcSpawn      `json:"new_npcs"`
@@ -630,9 +630,9 @@ func varyRepeatedProse(prose string, intent PlayerIntent, turnCount int) string 
 		return prose
 	}
 	suffix := map[string]string{
-		"talk":    " 对方似乎还想说什么，却又把话咽了回去。",
-		"travel":  " 你注意到路边有些不寻常的痕迹。",
-		"observe": " 这次你发现了先前忽略的细节。",
+		"talk":     " 对方似乎还想说什么，却又把话咽了回去。",
+		"travel":   " 你注意到路边有些不寻常的痕迹。",
+		"observe":  " 这次你发现了先前忽略的细节。",
 		"interact": " 世界的回应与刚才略有不同。",
 	}
 	if s, ok := suffix[intent.Type]; ok {

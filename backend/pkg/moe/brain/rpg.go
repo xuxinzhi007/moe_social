@@ -38,16 +38,16 @@ type RpgConfig struct {
 
 // RpgView 管理端 Memory RPG 快照。
 type RpgView struct {
-	AgentKey       string         `json:"agent_key"`
-	Level          int            `json:"level"`
-	XP             int            `json:"xp"`
-	XPToNext       int            `json:"xp_to_next"`
-	StabilityScore int            `json:"stability_score"`
-	Skills         []RpgSkill     `json:"skills"`
-	Fragments      []RpgFragment  `json:"fragments"`
-	RecentDreams   []RpgDreamItem `json:"recent_dreams"`
-	Stats          RpgStats       `json:"stats"`
-	LastDreamAt    string         `json:"last_dream_at"`
+	AgentKey              string         `json:"agent_key"`
+	Level                 int            `json:"level"`
+	XP                    int            `json:"xp"`
+	XPToNext              int            `json:"xp_to_next"`
+	StabilityScore        int            `json:"stability_score"`
+	Skills                []RpgSkill     `json:"skills"`
+	Fragments             []RpgFragment  `json:"fragments"`
+	RecentDreams          []RpgDreamItem `json:"recent_dreams"`
+	Stats                 RpgStats       `json:"stats"`
+	LastDreamAt           string         `json:"last_dream_at"`
 	DreamEnabled          bool           `json:"dream_enabled"`
 	DreamCron             string         `json:"dream_cron"`
 	NextDreamAt           string         `json:"next_dream_at"`
@@ -105,14 +105,14 @@ type DreamResult struct {
 
 // CompressResult 压缩记忆结果。
 type CompressResult struct {
-	MemoryKey       string `json:"memory_key"`
-	Summary         string `json:"summary"`
-	SourceCount     int    `json:"source_count"`
-	XPGained        int    `json:"xp_gained"`
-	SweptCount      int    `json:"swept_count"`
-	MergedClusters  int    `json:"merged_clusters"`
-	MarkedCount     int    `json:"marked_count"`
-	PendingRemaining int   `json:"pending_remaining"`
+	MemoryKey        string `json:"memory_key"`
+	Summary          string `json:"summary"`
+	SourceCount      int    `json:"source_count"`
+	XPGained         int    `json:"xp_gained"`
+	SweptCount       int    `json:"swept_count"`
+	MergedClusters   int    `json:"merged_clusters"`
+	MarkedCount      int    `json:"marked_count"`
+	PendingRemaining int    `json:"pending_remaining"`
 }
 
 // TidyResult 整理碎片结果。

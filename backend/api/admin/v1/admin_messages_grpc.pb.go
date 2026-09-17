@@ -19,84 +19,78 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AdminApp_Ping_FullMethodName                         = "/admin.v1.AdminApp/Ping"
-	AdminApp_AdminLogin_FullMethodName                   = "/admin.v1.AdminApp/AdminLogin"
-	AdminApp_AdminListAccounts_FullMethodName            = "/admin.v1.AdminApp/AdminListAccounts"
-	AdminApp_AdminCreateAccount_FullMethodName           = "/admin.v1.AdminApp/AdminCreateAccount"
-	AdminApp_AdminUpdateAccount_FullMethodName           = "/admin.v1.AdminApp/AdminUpdateAccount"
-	AdminApp_AdminDeleteAccount_FullMethodName           = "/admin.v1.AdminApp/AdminDeleteAccount"
-	AdminApp_AdminBootstrapAchievements_FullMethodName   = "/admin.v1.AdminApp/AdminBootstrapAchievements"
-	AdminApp_AdminListAiAgents_FullMethodName            = "/admin.v1.AdminApp/AdminListAiAgents"
-	AdminApp_AdminDeleteAiAgent_FullMethodName           = "/admin.v1.AdminApp/AdminDeleteAiAgent"
-	AdminApp_AdminListAnnouncements_FullMethodName       = "/admin.v1.AdminApp/AdminListAnnouncements"
-	AdminApp_AdminCreateAnnouncement_FullMethodName      = "/admin.v1.AdminApp/AdminCreateAnnouncement"
-	AdminApp_AdminGetAnnouncement_FullMethodName         = "/admin.v1.AdminApp/AdminGetAnnouncement"
-	AdminApp_AdminUpdateAnnouncement_FullMethodName      = "/admin.v1.AdminApp/AdminUpdateAnnouncement"
-	AdminApp_AdminDeleteAnnouncement_FullMethodName      = "/admin.v1.AdminApp/AdminDeleteAnnouncement"
-	AdminApp_AdminPublishAnnouncement_FullMethodName     = "/admin.v1.AdminApp/AdminPublishAnnouncement"
-	AdminApp_AdminListAuditLogs_FullMethodName           = "/admin.v1.AdminApp/AdminListAuditLogs"
-	AdminApp_AdminListComments_FullMethodName            = "/admin.v1.AdminApp/AdminListComments"
-	AdminApp_AdminDeleteComment_FullMethodName           = "/admin.v1.AdminApp/AdminDeleteComment"
-	AdminApp_AdminListGroups_FullMethodName              = "/admin.v1.AdminApp/AdminListGroups"
-	AdminApp_AdminDeleteGroup_FullMethodName             = "/admin.v1.AdminApp/AdminDeleteGroup"
-	AdminApp_AdminListGifts_FullMethodName               = "/admin.v1.AdminApp/AdminListGifts"
-	AdminApp_AdminCreateGift_FullMethodName              = "/admin.v1.AdminApp/AdminCreateGift"
-	AdminApp_AdminGetGift_FullMethodName                 = "/admin.v1.AdminApp/AdminGetGift"
-	AdminApp_AdminUpdateGift_FullMethodName              = "/admin.v1.AdminApp/AdminUpdateGift"
-	AdminApp_AdminDeleteGift_FullMethodName              = "/admin.v1.AdminApp/AdminDeleteGift"
-	AdminApp_AdminBootstrapGifts_FullMethodName          = "/admin.v1.AdminApp/AdminBootstrapGifts"
-	AdminApp_AdminDedupeGifts_FullMethodName             = "/admin.v1.AdminApp/AdminDedupeGifts"
-	AdminApp_AdminListAchievements_FullMethodName        = "/admin.v1.AdminApp/AdminListAchievements"
-	AdminApp_AdminUpdateAchievement_FullMethodName       = "/admin.v1.AdminApp/AdminUpdateAchievement"
-	AdminApp_AdminListLevelConfigs_FullMethodName        = "/admin.v1.AdminApp/AdminListLevelConfigs"
-	AdminApp_AdminUpdateLevelConfig_FullMethodName       = "/admin.v1.AdminApp/AdminUpdateLevelConfig"
-	AdminApp_AdminBootstrapLevels_FullMethodName         = "/admin.v1.AdminApp/AdminBootstrapLevels"
-	AdminApp_AdminListCheckInRewards_FullMethodName      = "/admin.v1.AdminApp/AdminListCheckInRewards"
-	AdminApp_AdminUpdateCheckInReward_FullMethodName     = "/admin.v1.AdminApp/AdminUpdateCheckInReward"
-	AdminApp_AdminBroadcastNotification_FullMethodName   = "/admin.v1.AdminApp/AdminBroadcastNotification"
-	AdminApp_AdminSendNotification_FullMethodName        = "/admin.v1.AdminApp/AdminSendNotification"
-	AdminApp_AdminListGiftPurchaseOrders_FullMethodName  = "/admin.v1.AdminApp/AdminListGiftPurchaseOrders"
-	AdminApp_AdminListVipOrders_FullMethodName           = "/admin.v1.AdminApp/AdminListVipOrders"
-	AdminApp_AdminListPostReports_FullMethodName         = "/admin.v1.AdminApp/AdminListPostReports"
-	AdminApp_AdminListPosts_FullMethodName               = "/admin.v1.AdminApp/AdminListPosts"
-	AdminApp_AdminDeletePost_FullMethodName              = "/admin.v1.AdminApp/AdminDeletePost"
-	AdminApp_AdminListFollows_FullMethodName             = "/admin.v1.AdminApp/AdminListFollows"
-	AdminApp_AdminDeleteFollow_FullMethodName            = "/admin.v1.AdminApp/AdminDeleteFollow"
-	AdminApp_AdminListFriendRequests_FullMethodName      = "/admin.v1.AdminApp/AdminListFriendRequests"
-	AdminApp_AdminListTagDictionary_FullMethodName       = "/admin.v1.AdminApp/AdminListTagDictionary"
-	AdminApp_AdminCreateTagDictionary_FullMethodName     = "/admin.v1.AdminApp/AdminCreateTagDictionary"
-	AdminApp_AdminUpdateTagDictionary_FullMethodName     = "/admin.v1.AdminApp/AdminUpdateTagDictionary"
-	AdminApp_AdminDeleteTagDictionary_FullMethodName     = "/admin.v1.AdminApp/AdminDeleteTagDictionary"
-	AdminApp_AdminUpdateTopicTag_FullMethodName          = "/admin.v1.AdminApp/AdminUpdateTopicTag"
-	AdminApp_AdminDeleteTopicTag_FullMethodName          = "/admin.v1.AdminApp/AdminDeleteTopicTag"
-	AdminApp_AdminBootstrapTopicTags_FullMethodName      = "/admin.v1.AdminApp/AdminBootstrapTopicTags"
-	AdminApp_AdminListUsers_FullMethodName               = "/admin.v1.AdminApp/AdminListUsers"
-	AdminApp_AdminGetUser_FullMethodName                 = "/admin.v1.AdminApp/AdminGetUser"
-	AdminApp_AdminUpdateUser_FullMethodName              = "/admin.v1.AdminApp/AdminUpdateUser"
-	AdminApp_AdminGetUserProfile_FullMethodName          = "/admin.v1.AdminApp/AdminGetUserProfile"
-	AdminApp_AdminGetVipPlan_FullMethodName              = "/admin.v1.AdminApp/AdminGetVipPlan"
-	AdminApp_AdminUpdateVipPlan_FullMethodName           = "/admin.v1.AdminApp/AdminUpdateVipPlan"
-	AdminApp_AdminDeleteVipPlan_FullMethodName           = "/admin.v1.AdminApp/AdminDeleteVipPlan"
-	AdminApp_AdminBootstrapVipPlans_FullMethodName       = "/admin.v1.AdminApp/AdminBootstrapVipPlans"
-	AdminApp_AdminUpdateAiAgent_FullMethodName           = "/admin.v1.AdminApp/AdminUpdateAiAgent"
-	AdminApp_AdminMe_FullMethodName                      = "/admin.v1.AdminApp/AdminMe"
-	AdminApp_AdminListMediaImages_FullMethodName         = "/admin.v1.AdminApp/AdminListMediaImages"
-	AdminApp_AdminDeleteMediaImage_FullMethodName        = "/admin.v1.AdminApp/AdminDeleteMediaImage"
-	AdminApp_AdminListMemories_FullMethodName            = "/admin.v1.AdminApp/AdminListMemories"
-	AdminApp_AdminDeleteMemory_FullMethodName            = "/admin.v1.AdminApp/AdminDeleteMemory"
-	AdminApp_AdminGetMemoryStats_FullMethodName          = "/admin.v1.AdminApp/AdminGetMemoryStats"
-	AdminApp_AdminGetMemoryHealth_FullMethodName         = "/admin.v1.AdminApp/AdminGetMemoryHealth"
-	AdminApp_AdminRebuildMemoryEmbeddings_FullMethodName = "/admin.v1.AdminApp/AdminRebuildMemoryEmbeddings"
-	AdminApp_AdminExportLearningDataset_FullMethodName   = "/admin.v1.AdminApp/AdminExportLearningDataset"
-	AdminApp_AdminListMenus_FullMethodName               = "/admin.v1.AdminApp/AdminListMenus"
-	AdminApp_AdminUpsertMenu_FullMethodName              = "/admin.v1.AdminApp/AdminUpsertMenu"
-	AdminApp_AdminDeleteMenu_FullMethodName              = "/admin.v1.AdminApp/AdminDeleteMenu"
-	AdminApp_AdminBootstrapMenus_FullMethodName          = "/admin.v1.AdminApp/AdminBootstrapMenus"
-	AdminApp_AdminGetRuntimeConfig_FullMethodName        = "/admin.v1.AdminApp/AdminGetRuntimeConfig"
-	AdminApp_AdminUpdateRuntimeConfig_FullMethodName     = "/admin.v1.AdminApp/AdminUpdateRuntimeConfig"
-	AdminApp_AdminRuntimeOverview_FullMethodName         = "/admin.v1.AdminApp/AdminRuntimeOverview"
-	AdminApp_AdminGetAppRelease_FullMethodName           = "/admin.v1.AdminApp/AdminGetAppRelease"
-	AdminApp_AdminUpsertAppRelease_FullMethodName        = "/admin.v1.AdminApp/AdminUpsertAppRelease"
+	AdminApp_Ping_FullMethodName                        = "/admin.v1.AdminApp/Ping"
+	AdminApp_AdminLogin_FullMethodName                  = "/admin.v1.AdminApp/AdminLogin"
+	AdminApp_AdminListAccounts_FullMethodName           = "/admin.v1.AdminApp/AdminListAccounts"
+	AdminApp_AdminCreateAccount_FullMethodName          = "/admin.v1.AdminApp/AdminCreateAccount"
+	AdminApp_AdminUpdateAccount_FullMethodName          = "/admin.v1.AdminApp/AdminUpdateAccount"
+	AdminApp_AdminDeleteAccount_FullMethodName          = "/admin.v1.AdminApp/AdminDeleteAccount"
+	AdminApp_AdminBootstrapAchievements_FullMethodName  = "/admin.v1.AdminApp/AdminBootstrapAchievements"
+	AdminApp_AdminListAiAgents_FullMethodName           = "/admin.v1.AdminApp/AdminListAiAgents"
+	AdminApp_AdminDeleteAiAgent_FullMethodName          = "/admin.v1.AdminApp/AdminDeleteAiAgent"
+	AdminApp_AdminListAnnouncements_FullMethodName      = "/admin.v1.AdminApp/AdminListAnnouncements"
+	AdminApp_AdminCreateAnnouncement_FullMethodName     = "/admin.v1.AdminApp/AdminCreateAnnouncement"
+	AdminApp_AdminGetAnnouncement_FullMethodName        = "/admin.v1.AdminApp/AdminGetAnnouncement"
+	AdminApp_AdminUpdateAnnouncement_FullMethodName     = "/admin.v1.AdminApp/AdminUpdateAnnouncement"
+	AdminApp_AdminDeleteAnnouncement_FullMethodName     = "/admin.v1.AdminApp/AdminDeleteAnnouncement"
+	AdminApp_AdminPublishAnnouncement_FullMethodName    = "/admin.v1.AdminApp/AdminPublishAnnouncement"
+	AdminApp_AdminListAuditLogs_FullMethodName          = "/admin.v1.AdminApp/AdminListAuditLogs"
+	AdminApp_AdminListComments_FullMethodName           = "/admin.v1.AdminApp/AdminListComments"
+	AdminApp_AdminDeleteComment_FullMethodName          = "/admin.v1.AdminApp/AdminDeleteComment"
+	AdminApp_AdminListGroups_FullMethodName             = "/admin.v1.AdminApp/AdminListGroups"
+	AdminApp_AdminDeleteGroup_FullMethodName            = "/admin.v1.AdminApp/AdminDeleteGroup"
+	AdminApp_AdminListGifts_FullMethodName              = "/admin.v1.AdminApp/AdminListGifts"
+	AdminApp_AdminCreateGift_FullMethodName             = "/admin.v1.AdminApp/AdminCreateGift"
+	AdminApp_AdminGetGift_FullMethodName                = "/admin.v1.AdminApp/AdminGetGift"
+	AdminApp_AdminUpdateGift_FullMethodName             = "/admin.v1.AdminApp/AdminUpdateGift"
+	AdminApp_AdminDeleteGift_FullMethodName             = "/admin.v1.AdminApp/AdminDeleteGift"
+	AdminApp_AdminBootstrapGifts_FullMethodName         = "/admin.v1.AdminApp/AdminBootstrapGifts"
+	AdminApp_AdminDedupeGifts_FullMethodName            = "/admin.v1.AdminApp/AdminDedupeGifts"
+	AdminApp_AdminListAchievements_FullMethodName       = "/admin.v1.AdminApp/AdminListAchievements"
+	AdminApp_AdminUpdateAchievement_FullMethodName      = "/admin.v1.AdminApp/AdminUpdateAchievement"
+	AdminApp_AdminListLevelConfigs_FullMethodName       = "/admin.v1.AdminApp/AdminListLevelConfigs"
+	AdminApp_AdminUpdateLevelConfig_FullMethodName      = "/admin.v1.AdminApp/AdminUpdateLevelConfig"
+	AdminApp_AdminBootstrapLevels_FullMethodName        = "/admin.v1.AdminApp/AdminBootstrapLevels"
+	AdminApp_AdminListCheckInRewards_FullMethodName     = "/admin.v1.AdminApp/AdminListCheckInRewards"
+	AdminApp_AdminUpdateCheckInReward_FullMethodName    = "/admin.v1.AdminApp/AdminUpdateCheckInReward"
+	AdminApp_AdminBroadcastNotification_FullMethodName  = "/admin.v1.AdminApp/AdminBroadcastNotification"
+	AdminApp_AdminSendNotification_FullMethodName       = "/admin.v1.AdminApp/AdminSendNotification"
+	AdminApp_AdminListGiftPurchaseOrders_FullMethodName = "/admin.v1.AdminApp/AdminListGiftPurchaseOrders"
+	AdminApp_AdminListVipOrders_FullMethodName          = "/admin.v1.AdminApp/AdminListVipOrders"
+	AdminApp_AdminListPostReports_FullMethodName        = "/admin.v1.AdminApp/AdminListPostReports"
+	AdminApp_AdminListPosts_FullMethodName              = "/admin.v1.AdminApp/AdminListPosts"
+	AdminApp_AdminDeletePost_FullMethodName             = "/admin.v1.AdminApp/AdminDeletePost"
+	AdminApp_AdminListFollows_FullMethodName            = "/admin.v1.AdminApp/AdminListFollows"
+	AdminApp_AdminDeleteFollow_FullMethodName           = "/admin.v1.AdminApp/AdminDeleteFollow"
+	AdminApp_AdminListFriendRequests_FullMethodName     = "/admin.v1.AdminApp/AdminListFriendRequests"
+	AdminApp_AdminListTagDictionary_FullMethodName      = "/admin.v1.AdminApp/AdminListTagDictionary"
+	AdminApp_AdminCreateTagDictionary_FullMethodName    = "/admin.v1.AdminApp/AdminCreateTagDictionary"
+	AdminApp_AdminUpdateTagDictionary_FullMethodName    = "/admin.v1.AdminApp/AdminUpdateTagDictionary"
+	AdminApp_AdminDeleteTagDictionary_FullMethodName    = "/admin.v1.AdminApp/AdminDeleteTagDictionary"
+	AdminApp_AdminUpdateTopicTag_FullMethodName         = "/admin.v1.AdminApp/AdminUpdateTopicTag"
+	AdminApp_AdminDeleteTopicTag_FullMethodName         = "/admin.v1.AdminApp/AdminDeleteTopicTag"
+	AdminApp_AdminBootstrapTopicTags_FullMethodName     = "/admin.v1.AdminApp/AdminBootstrapTopicTags"
+	AdminApp_AdminListUsers_FullMethodName              = "/admin.v1.AdminApp/AdminListUsers"
+	AdminApp_AdminGetUser_FullMethodName                = "/admin.v1.AdminApp/AdminGetUser"
+	AdminApp_AdminUpdateUser_FullMethodName             = "/admin.v1.AdminApp/AdminUpdateUser"
+	AdminApp_AdminGetUserProfile_FullMethodName         = "/admin.v1.AdminApp/AdminGetUserProfile"
+	AdminApp_AdminGetVipPlan_FullMethodName             = "/admin.v1.AdminApp/AdminGetVipPlan"
+	AdminApp_AdminUpdateVipPlan_FullMethodName          = "/admin.v1.AdminApp/AdminUpdateVipPlan"
+	AdminApp_AdminDeleteVipPlan_FullMethodName          = "/admin.v1.AdminApp/AdminDeleteVipPlan"
+	AdminApp_AdminBootstrapVipPlans_FullMethodName      = "/admin.v1.AdminApp/AdminBootstrapVipPlans"
+	AdminApp_AdminUpdateAiAgent_FullMethodName          = "/admin.v1.AdminApp/AdminUpdateAiAgent"
+	AdminApp_AdminMe_FullMethodName                     = "/admin.v1.AdminApp/AdminMe"
+	AdminApp_AdminListMediaImages_FullMethodName        = "/admin.v1.AdminApp/AdminListMediaImages"
+	AdminApp_AdminDeleteMediaImage_FullMethodName       = "/admin.v1.AdminApp/AdminDeleteMediaImage"
+	AdminApp_AdminListMenus_FullMethodName              = "/admin.v1.AdminApp/AdminListMenus"
+	AdminApp_AdminUpsertMenu_FullMethodName             = "/admin.v1.AdminApp/AdminUpsertMenu"
+	AdminApp_AdminDeleteMenu_FullMethodName             = "/admin.v1.AdminApp/AdminDeleteMenu"
+	AdminApp_AdminBootstrapMenus_FullMethodName         = "/admin.v1.AdminApp/AdminBootstrapMenus"
+	AdminApp_AdminGetRuntimeConfig_FullMethodName       = "/admin.v1.AdminApp/AdminGetRuntimeConfig"
+	AdminApp_AdminUpdateRuntimeConfig_FullMethodName    = "/admin.v1.AdminApp/AdminUpdateRuntimeConfig"
+	AdminApp_AdminRuntimeOverview_FullMethodName        = "/admin.v1.AdminApp/AdminRuntimeOverview"
+	AdminApp_AdminGetAppRelease_FullMethodName          = "/admin.v1.AdminApp/AdminGetAppRelease"
+	AdminApp_AdminUpsertAppRelease_FullMethodName       = "/admin.v1.AdminApp/AdminUpsertAppRelease"
 )
 
 // AdminAppClient is the client API for AdminApp service.
@@ -166,12 +160,6 @@ type AdminAppClient interface {
 	AdminMe(ctx context.Context, in *AdminMeReq, opts ...grpc.CallOption) (*AdminMeResp, error)
 	AdminListMediaImages(ctx context.Context, in *AdminListMediaImagesReq, opts ...grpc.CallOption) (*AdminListMediaImagesResp, error)
 	AdminDeleteMediaImage(ctx context.Context, in *AdminDeleteMediaImageReq, opts ...grpc.CallOption) (*AdminDeleteMediaImageResp, error)
-	AdminListMemories(ctx context.Context, in *AdminListMemoriesReq, opts ...grpc.CallOption) (*AdminListMemoriesResp, error)
-	AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemoryReq, opts ...grpc.CallOption) (*AdminDeleteMemoryResp, error)
-	AdminGetMemoryStats(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*AdminGetMemoryStatsResp, error)
-	AdminGetMemoryHealth(ctx context.Context, in *AdminGetMemoryHealthReq, opts ...grpc.CallOption) (*AdminGetMemoryHealthResp, error)
-	AdminRebuildMemoryEmbeddings(ctx context.Context, in *AdminRebuildMemoryEmbeddingsReq, opts ...grpc.CallOption) (*AdminRebuildMemoryEmbeddingsResp, error)
-	AdminExportLearningDataset(ctx context.Context, in *AdminExportLearningDatasetReq, opts ...grpc.CallOption) (*AdminExportLearningDatasetResp, error)
 	AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...grpc.CallOption) (*AdminListMenusResp, error)
 	AdminUpsertMenu(ctx context.Context, in *AdminUpsertMenuReq, opts ...grpc.CallOption) (*AdminUpsertMenuResp, error)
 	AdminDeleteMenu(ctx context.Context, in *AdminDeleteMenuReq, opts ...grpc.CallOption) (*AdminDeleteMenuResp, error)
@@ -821,66 +809,6 @@ func (c *adminAppClient) AdminDeleteMediaImage(ctx context.Context, in *AdminDel
 	return out, nil
 }
 
-func (c *adminAppClient) AdminListMemories(ctx context.Context, in *AdminListMemoriesReq, opts ...grpc.CallOption) (*AdminListMemoriesResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminListMemoriesResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminListMemories_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminDeleteMemory(ctx context.Context, in *AdminDeleteMemoryReq, opts ...grpc.CallOption) (*AdminDeleteMemoryResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminDeleteMemoryResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminDeleteMemory_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminGetMemoryStats(ctx context.Context, in *AdminGetMemoryStatsReq, opts ...grpc.CallOption) (*AdminGetMemoryStatsResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminGetMemoryStatsResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminGetMemoryStats_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminGetMemoryHealth(ctx context.Context, in *AdminGetMemoryHealthReq, opts ...grpc.CallOption) (*AdminGetMemoryHealthResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminGetMemoryHealthResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminGetMemoryHealth_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminRebuildMemoryEmbeddings(ctx context.Context, in *AdminRebuildMemoryEmbeddingsReq, opts ...grpc.CallOption) (*AdminRebuildMemoryEmbeddingsResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminRebuildMemoryEmbeddingsResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminRebuildMemoryEmbeddings_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminAppClient) AdminExportLearningDataset(ctx context.Context, in *AdminExportLearningDatasetReq, opts ...grpc.CallOption) (*AdminExportLearningDatasetResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdminExportLearningDatasetResp)
-	err := c.cc.Invoke(ctx, AdminApp_AdminExportLearningDataset_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *adminAppClient) AdminListMenus(ctx context.Context, in *AdminListMenusReq, opts ...grpc.CallOption) (*AdminListMenusResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminListMenusResp)
@@ -1038,12 +966,6 @@ type AdminAppServer interface {
 	AdminMe(context.Context, *AdminMeReq) (*AdminMeResp, error)
 	AdminListMediaImages(context.Context, *AdminListMediaImagesReq) (*AdminListMediaImagesResp, error)
 	AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error)
-	AdminListMemories(context.Context, *AdminListMemoriesReq) (*AdminListMemoriesResp, error)
-	AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error)
-	AdminGetMemoryStats(context.Context, *AdminGetMemoryStatsReq) (*AdminGetMemoryStatsResp, error)
-	AdminGetMemoryHealth(context.Context, *AdminGetMemoryHealthReq) (*AdminGetMemoryHealthResp, error)
-	AdminRebuildMemoryEmbeddings(context.Context, *AdminRebuildMemoryEmbeddingsReq) (*AdminRebuildMemoryEmbeddingsResp, error)
-	AdminExportLearningDataset(context.Context, *AdminExportLearningDatasetReq) (*AdminExportLearningDatasetResp, error)
 	AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error)
 	AdminUpsertMenu(context.Context, *AdminUpsertMenuReq) (*AdminUpsertMenuResp, error)
 	AdminDeleteMenu(context.Context, *AdminDeleteMenuReq) (*AdminDeleteMenuResp, error)
@@ -1251,24 +1173,6 @@ func (UnimplementedAdminAppServer) AdminListMediaImages(context.Context, *AdminL
 }
 func (UnimplementedAdminAppServer) AdminDeleteMediaImage(context.Context, *AdminDeleteMediaImageReq) (*AdminDeleteMediaImageResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminDeleteMediaImage not implemented")
-}
-func (UnimplementedAdminAppServer) AdminListMemories(context.Context, *AdminListMemoriesReq) (*AdminListMemoriesResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminListMemories not implemented")
-}
-func (UnimplementedAdminAppServer) AdminDeleteMemory(context.Context, *AdminDeleteMemoryReq) (*AdminDeleteMemoryResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminDeleteMemory not implemented")
-}
-func (UnimplementedAdminAppServer) AdminGetMemoryStats(context.Context, *AdminGetMemoryStatsReq) (*AdminGetMemoryStatsResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminGetMemoryStats not implemented")
-}
-func (UnimplementedAdminAppServer) AdminGetMemoryHealth(context.Context, *AdminGetMemoryHealthReq) (*AdminGetMemoryHealthResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminGetMemoryHealth not implemented")
-}
-func (UnimplementedAdminAppServer) AdminRebuildMemoryEmbeddings(context.Context, *AdminRebuildMemoryEmbeddingsReq) (*AdminRebuildMemoryEmbeddingsResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminRebuildMemoryEmbeddings not implemented")
-}
-func (UnimplementedAdminAppServer) AdminExportLearningDataset(context.Context, *AdminExportLearningDatasetReq) (*AdminExportLearningDatasetResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method AdminExportLearningDataset not implemented")
 }
 func (UnimplementedAdminAppServer) AdminListMenus(context.Context, *AdminListMenusReq) (*AdminListMenusResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminListMenus not implemented")
@@ -2452,114 +2356,6 @@ func _AdminApp_AdminDeleteMediaImage_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminApp_AdminListMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminListMemoriesReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminListMemories(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminListMemories_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminListMemories(ctx, req.(*AdminListMemoriesReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminDeleteMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminDeleteMemoryReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminDeleteMemory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminDeleteMemory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminDeleteMemory(ctx, req.(*AdminDeleteMemoryReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminGetMemoryStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminGetMemoryStatsReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminGetMemoryStats(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminGetMemoryStats_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminGetMemoryStats(ctx, req.(*AdminGetMemoryStatsReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminGetMemoryHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminGetMemoryHealthReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminGetMemoryHealth(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminGetMemoryHealth_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminGetMemoryHealth(ctx, req.(*AdminGetMemoryHealthReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminRebuildMemoryEmbeddings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminRebuildMemoryEmbeddingsReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminRebuildMemoryEmbeddings(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminRebuildMemoryEmbeddings_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminRebuildMemoryEmbeddings(ctx, req.(*AdminRebuildMemoryEmbeddingsReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminApp_AdminExportLearningDataset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AdminExportLearningDatasetReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminAppServer).AdminExportLearningDataset(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminApp_AdminExportLearningDataset_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminAppServer).AdminExportLearningDataset(ctx, req.(*AdminExportLearningDatasetReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _AdminApp_AdminListMenus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AdminListMenusReq)
 	if err := dec(in); err != nil {
@@ -2980,30 +2776,6 @@ var AdminApp_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminDeleteMediaImage",
 			Handler:    _AdminApp_AdminDeleteMediaImage_Handler,
-		},
-		{
-			MethodName: "AdminListMemories",
-			Handler:    _AdminApp_AdminListMemories_Handler,
-		},
-		{
-			MethodName: "AdminDeleteMemory",
-			Handler:    _AdminApp_AdminDeleteMemory_Handler,
-		},
-		{
-			MethodName: "AdminGetMemoryStats",
-			Handler:    _AdminApp_AdminGetMemoryStats_Handler,
-		},
-		{
-			MethodName: "AdminGetMemoryHealth",
-			Handler:    _AdminApp_AdminGetMemoryHealth_Handler,
-		},
-		{
-			MethodName: "AdminRebuildMemoryEmbeddings",
-			Handler:    _AdminApp_AdminRebuildMemoryEmbeddings_Handler,
-		},
-		{
-			MethodName: "AdminExportLearningDataset",
-			Handler:    _AdminApp_AdminExportLearningDataset_Handler,
 		},
 		{
 			MethodName: "AdminListMenus",

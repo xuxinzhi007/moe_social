@@ -72,11 +72,11 @@ func InitLevelConfigs() error {
 // InitCheckInRewards 初始化签到奖励配置
 func InitCheckInRewards() error {
 	rewards := []model.CheckInReward{
-		{ConsecutiveDays: 1, ExpReward: 0, ExtraReward: `{}`},     // 第1天基础签到无额外奖励
-		{ConsecutiveDays: 3, ExpReward: 5, ExtraReward: `{}`},     // 连续3天+5经验
-		{ConsecutiveDays: 7, ExpReward: 20, ExtraReward: `{}`},    // 连续7天+20经验
-		{ConsecutiveDays: 15, ExpReward: 50, ExtraReward: `{}`},   // 连续15天+50经验
-		{ConsecutiveDays: 30, ExpReward: 100, ExtraReward: `{}`},  // 连续30天+100经验
+		{ConsecutiveDays: 1, ExpReward: 0, ExtraReward: `{}`},    // 第1天基础签到无额外奖励
+		{ConsecutiveDays: 3, ExpReward: 5, ExtraReward: `{}`},    // 连续3天+5经验
+		{ConsecutiveDays: 7, ExpReward: 20, ExtraReward: `{}`},   // 连续7天+20经验
+		{ConsecutiveDays: 15, ExpReward: 50, ExtraReward: `{}`},  // 连续15天+50经验
+		{ConsecutiveDays: 30, ExpReward: 100, ExtraReward: `{}`}, // 连续30天+100经验
 	}
 
 	db := utils.GetDB()

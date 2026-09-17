@@ -20,30 +20,6 @@ void main() {
     expect(conflict.status, 'pending');
   });
 
-  test('CompanionContextPreviewData parses canonical context metadata', () {
-    final preview = CompanionContextPreviewData.fromMap({
-      'scene': 'study',
-      'history_count': 6,
-      'memory_count': 3,
-      'relationship_level': 4,
-      'intimacy_score': 38.5,
-      'world_bind_status': 'bound_ok',
-      'first_chat': false,
-      'relationship_event_count': 3,
-      'unfinished_topic_count': 2,
-    });
-
-    expect(preview.scene, 'study');
-    expect(preview.historyCount, 6);
-    expect(preview.memoryCount, 3);
-    expect(preview.relationshipLevel, 4);
-    expect(preview.intimacyScore, 38.5);
-    expect(preview.worldBindStatus, 'bound_ok');
-    expect(preview.firstChat, isFalse);
-    expect(preview.relationshipEventCount, 3);
-    expect(preview.unfinishedTopicCount, 2);
-  });
-
   test('CompanionProactiveDeliveryData parses durable status fields', () {
     final delivery = CompanionProactiveDeliveryData.fromMap({
       'delivery_key': 'proactive:7:2026-08-02:1:100',

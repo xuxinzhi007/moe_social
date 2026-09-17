@@ -24,6 +24,8 @@ import '../../utils/oauth_web_history.dart';
 import 'feishu_login_page.dart';
 import 'feishu_login_result.dart';
 import '../../services/daily_growth_service.dart';
+import '../../services/oauth_begin.dart';
+import '../../services/oauth_pending_store.dart';
 import '../../services/wechat_sdk_service.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/motion/moe_pressable.dart';
@@ -60,70 +62,142 @@ class _LoginPageState extends State<LoginPage> {
       _feishuLinkSub = OAuthAppLauncher.uriLinkStream.listen((uri) {
         if (!isFeishuOAuthReturnUri(uri)) return;
         unawaited(
-          _completeFeishuLoginWithCode(
-            readOAuthCodeFromUri(uri, feishuCodeParameter),
+          _completeFromCallback(
+            OauthBeginService.feishu,
+            OauthCallback.fromUri(uri),
           ),
         );
       });
       _wechatLinkSub = OAuthAppLauncher.uriLinkStream.listen((uri) {
         if (!isWechatOAuthReturnUri(uri)) return;
         unawaited(
-          _completeWechatLoginWithCode(
-            readOAuthCodeFromUri(uri, wechatCodeParameter),
+          _completeFromCallback(
+            OauthBeginService.wechat,
+            OauthCallback.fromUri(uri),
           ),
         );
       });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_tryResumeFeishuOAuthFromUrl());
-      unawaited(_tryResumeWechatOAuthFromUrl());
-      if (!kIsWeb) {
-        unawaited(_tryResumeFeishuOAuthFromDeepLink());
-        unawaited(_tryResumeWechatOAuthFromDeepLink());
+      if (kIsWeb) {
+        unawaited(_resumeOAuthFromBrowserUrl());
+      } else {
+        unawaited(_resumeFeishuOAuthFromDeepLink());
+        unawaited(_resumeWechatOAuthFromDeepLink());
       }
     });
   }
 
-  /// Web：服务端 302 到 `/?feishu_code=` 后在此页 loading 并完成登录。
-  Future<void> _tryResumeFeishuOAuthFromUrl() async {
-    if (!kIsWeb) return;
-    final code = readOAuthCodeFromCurrentUrl(feishuCodeParameter);
-    if (code == null || code.isEmpty) return;
-    clearOAuthCodeFromBrowserUrl();
-    await _completeFeishuLoginWithCode(code);
+  static const String _noPendingAuthMessage = '未找到本次授权记录，请重新登录。\n'
+      '常见原因：授权已超时，或授权是在别的标签页 / 别的设备上发起的。';
+
+  /// Web：服务端 302 回当前页并带上 `oauth_ticket` / `oauth_state`。
+  ///
+  /// 回跳参数里不含 provider —— 两家用的是同一对参数名，靠本地待处理事务的
+  /// state 认领。这同时保证了「本页没发起过授权」的回跳被拒绝，
+  /// 而不是拿着别人递来的 ticket 去登录。
+  Future<void> _resumeOAuthFromBrowserUrl() async {
+    final callback = OauthCallback.fromCurrentBrowserUrl();
+    if (callback == null || !callback.isValid) return;
+    // 先把参数从地址栏抹掉：ticket 是一次性的，留在 URL 上只会被刷新或分享带走。
+    clearOAuthParamsFromBrowserUrl();
+
+    for (final provider in [
+      OauthBeginService.feishu,
+      OauthBeginService.wechat,
+    ]) {
+      final pending =
+          await OauthPendingStore.takeForState(provider, callback.state);
+      if (pending != null) {
+        await _completeOAuthLogin(pending, callback.ticket);
+        return;
+      }
+    }
+    if (mounted) {
+      MoeToast.error(context, _noPendingAuthMessage);
+    }
   }
 
-  /// App：飞书授权后 302 到 `moesocial://feishu/oauth?feishu_code=`。
-  Future<void> _tryResumeFeishuOAuthFromDeepLink() async {
-    if (kIsWeb) return;
-    final uri = await OAuthAppLauncher.getInitialOAuthUri(isFeishuOAuthReturnUri);
-    final code = readOAuthCodeFromUri(uri, feishuCodeParameter);
-    if (code == null || code.isEmpty) return;
-    await _completeFeishuLoginWithCode(code);
-  }
-
-  Future<void> _completeFeishuLoginWithCode(String? code) async {
-    if (code == null || code.isEmpty || !mounted) return;
-    final loadingProvider = context.read<LoadingProvider>();
-    await loadingProvider.executeOperation<AuthResult>(
-      operation: () => AuthService.loginWithFeishu(code),
-      key: LoadingKeys.feishuLogin,
-      onSuccess: (authResult) {
-        if (!mounted) return;
-        if (!authResult.success) {
-          MoeToast.error(
-            context,
-            authResult.errorMessage ?? '飞书登录失败',
-          );
-          return;
-        }
-        unawaited(_onFeishuLoginSuccess());
-      },
-      onError: (_) {
-        if (!mounted) return;
-        MoeToast.error(context, '飞书登录异常，请稍后重试');
-      },
+  /// App：飞书授权后服务端 302 到 `moesocial://feishu/oauth?oauth_ticket=…`。
+  Future<void> _resumeFeishuOAuthFromDeepLink() async {
+    final uri =
+        await OAuthAppLauncher.getInitialOAuthUri(isFeishuOAuthReturnUri);
+    await _completeFromCallback(
+      OauthBeginService.feishu,
+      OauthCallback.fromUri(uri),
     );
+  }
+
+  /// App：微信浏览器 flow（扫码 / 公众号）授权后 302 到 `moesocial://wechat/oauth`。
+  Future<void> _resumeWechatOAuthFromDeepLink() async {
+    final uri =
+        await OAuthAppLauncher.getInitialOAuthUri(isWechatOAuthReturnUri);
+    await _completeFromCallback(
+      OauthBeginService.wechat,
+      OauthCallback.fromUri(uri),
+    );
+  }
+
+  /// 核对 state 并取出本地事务；对不上就静默返回。
+  ///
+  /// deep link 能被任何 App 触发，冷启动时也总会走一遍，
+  /// 所以「没有匹配事务」是常态而不是错误 —— 只有 Web 那条路径才需要提示用户。
+  Future<void> _completeFromCallback(
+    String provider,
+    OauthCallback? callback,
+  ) async {
+    if (callback == null || !callback.isValid) return;
+    final pending =
+        await OauthPendingStore.takeForState(provider, callback.state);
+    if (pending == null) return;
+    await _completeOAuthLogin(pending, callback.ticket);
+  }
+
+  /// 用回调带回的一次性 ticket + 本地保管的 verifier 换 token。
+  ///
+  /// 请求发出后无论成败都清除本地事务：ticket 在服务端是一次性消费的，
+  /// 留着记录只会让重复送达的 deep link 或页面刷新拿着已作废的 ticket 再试一次。
+  /// 若因网络中断没登录成功，用户重点一次登录按钮即可（会重新发起授权）。
+  Future<void> _completeOAuthLogin(
+    OauthPendingAuth pending,
+    String ticket,
+  ) async {
+    if (!mounted) return;
+    final isFeishu = pending.provider == OauthBeginService.feishu;
+    final providerName = isFeishu ? '飞书' : '微信';
+    final loadingProvider = context.read<LoadingProvider>();
+    try {
+      await loadingProvider.executeOperation<AuthResult>(
+        operation: () => isFeishu
+            ? AuthService.loginWithFeishu(
+                ticket: ticket,
+                codeVerifier: pending.codeVerifier,
+              )
+            : AuthService.loginWithWechatTicket(
+                flow: pending.flow,
+                ticket: ticket,
+                codeVerifier: pending.codeVerifier,
+              ),
+        key: isFeishu ? LoadingKeys.feishuLogin : LoadingKeys.wechatLogin,
+        onSuccess: (authResult) {
+          if (!mounted) return;
+          if (!authResult.success) {
+            MoeToast.error(
+              context,
+              authResult.errorMessage ?? '$providerName登录失败',
+            );
+            return;
+          }
+          unawaited(_onOAuthLoginSuccess(providerName));
+        },
+        onError: (_) {
+          if (!mounted) return;
+          MoeToast.error(context, '$providerName登录异常，请稍后重试');
+        },
+      );
+    } finally {
+      await OauthPendingStore.clear(pending.provider);
+    }
   }
 
   void _onEmailTextChanged() {
@@ -184,32 +258,30 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _feishuLogin() async {
     if (kIsWeb) {
       try {
-        final url = await AuthFlowService.getFeishuAuthorizeUrl(
-          state: buildFeishuOAuthState(),
-        );
+        final begin = await OauthBeginService.feishuAuth();
         final hint = oauthRedirectConfigMismatchHint(
           'Feishu',
-          url,
+          begin.authorizeUrl,
           AuthFlowService.apiBaseUrl,
         );
         if (hint != null && mounted) {
           MoeToast.error(context, hint);
           return;
         }
-        await OAuthAppLauncher.navigateBrowserToOAuthAuthorize(url);
+        await OAuthAppLauncher.navigateBrowserToOAuthAuthorize(
+          begin.authorizeUrl,
+        );
       } catch (e) {
-        if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
+        if (mounted) MoeToast.error(context, _beginFailureCopy('飞书', e));
       }
       return;
     }
 
     try {
-      final url = await AuthFlowService.getFeishuAuthorizeUrl(
-        state: buildFeishuOAuthState(),
-      );
+      final begin = await OauthBeginService.feishuAuth();
       final hint = oauthRedirectConfigMismatchHint(
         'Feishu',
-        url,
+        begin.authorizeUrl,
         AuthFlowService.apiBaseUrl,
       );
       if (!mounted) return;
@@ -222,7 +294,8 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
 
       if (installed) {
-        final opened = await OAuthAppLauncher.openOAuthAuthorize(url);
+        final opened =
+            await OAuthAppLauncher.openOAuthAuthorize(begin.authorizeUrl);
         if (!mounted) return;
         if (opened) {
           MoeToast.info(
@@ -233,117 +306,124 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
 
-      await _feishuLoginInAppWebView();
+      await _feishuLoginInAppWebView(begin);
     } catch (e) {
-      if (mounted) MoeToast.error(context, '无法打开飞书授权：$e');
+      if (mounted) MoeToast.error(context, _beginFailureCopy('飞书', e));
     }
   }
 
-  /// App 内 WebView 授权（回调走服务端 /api/auth/feishu/callback，再 302 到深链或带回 code）。
-  Future<void> _feishuLoginInAppWebView() async {
+  /// 发起阶段的失败文案。
+  ///
+  /// 这里的异常大多来自服务端（回跳地址没登记进 `oauth.allowed_return_urls`、
+  /// 供应商未启用）或本地存不下事务，都不是「网络不好重试一下」能解决的，
+  /// 所以要把原始原因摆出来而不是笼统说失败。
+  String _beginFailureCopy(String providerName, Object e) =>
+      '无法发起$providerName授权：'
+      '${MoeErrorCopy.toast(e, scene: MoeErrorScene.generic)}';
+
+  /// App 内 WebView 授权：回调仍走服务端 `/api/auth/feishu/callback`，
+  /// 再 302 到深链或本页；WebView 只认精确命中回跳地址的那一跳。
+  Future<void> _feishuLoginInAppWebView(OauthBegin begin) async {
     final result = await Navigator.of(context).push<FeishuLoginResult>(
-      MaterialPageRoute(builder: (_) => const FeishuLoginPage()),
+      MaterialPageRoute(
+        builder: (_) => FeishuLoginPage(
+          authorizeUrl: begin.authorizeUrl,
+          expectedState: begin.state,
+          returnUrl: begin.returnUrl,
+        ),
+      ),
     );
     if (!mounted || result == null) return;
     if (result.errorMessage != null && result.errorMessage!.isNotEmpty) {
       MoeToast.error(context, result.errorMessage!);
       return;
     }
-    if (!result.hasAuthCode) return;
-    await _completeFeishuLoginWithCode(result.authCode);
-  }
-
-  Future<void> _tryResumeWechatOAuthFromUrl() async {
-    if (!kIsWeb) return;
-    final code = readOAuthCodeFromCurrentUrl(wechatCodeParameter);
-    if (code == null || code.isEmpty) return;
-    clearOAuthCodeFromBrowserUrl();
-    await _completeWechatLoginWithCode(code, flow: defaultWechatOAuthFlow());
-  }
-
-  Future<void> _tryResumeWechatOAuthFromDeepLink() async {
-    if (kIsWeb) return;
-    final uri = await OAuthAppLauncher.getInitialOAuthUri(isWechatOAuthReturnUri);
-    final code = readOAuthCodeFromUri(uri, wechatCodeParameter);
-    if (code == null || code.isEmpty) return;
-    await _completeWechatLoginWithCode(code, flow: defaultWechatOAuthFlow());
-  }
-
-  Future<void> _completeWechatLoginWithCode(
-    String? code, {
-    String flow = 'website',
-  }) async {
-    if (code == null || code.isEmpty || !mounted) return;
-    final loadingProvider = context.read<LoadingProvider>();
-    await loadingProvider.executeOperation<AuthResult>(
-      operation: () => AuthService.loginWithWechat(code, flow: flow),
-      key: LoadingKeys.wechatLogin,
-      onSuccess: (authResult) {
-        if (!mounted) return;
-        if (!authResult.success) {
-          MoeToast.error(
-            context,
-            authResult.errorMessage ?? '微信登录失败',
-          );
-          return;
-        }
-        unawaited(_onWechatLoginSuccess());
-      },
-      onError: (_) {
-        if (!mounted) return;
-        MoeToast.error(context, '微信登录异常，请稍后重试');
-      },
+    if (!result.hasTicket) return;
+    final pending = await OauthPendingStore.takeForState(
+      OauthBeginService.feishu,
+      result.state ?? '',
     );
+    if (pending == null) {
+      if (mounted) MoeToast.error(context, _noPendingAuthMessage);
+      return;
+    }
+    await _completeOAuthLogin(pending, result.ticket!);
   }
 
   /// Web/PC：开放平台网站应用扫码；App：fluwx 唤起微信授权。
+  ///
+  /// 原生 flow 也必须先向服务端换 state：SDK 返回的 code 要配着那个 state 才能登录，
+  /// 服务端靠它找回授权事务并校验 verifier。只在客户端比对 state 挡不住
+  /// 「另一个 App 塞一个 code 进来」。
   Future<void> _wechatLogin() async {
+    final flow = defaultWechatOAuthFlow();
+    final OauthBegin begin;
+    try {
+      begin = await OauthBeginService.wechatAuth(flow);
+    } catch (e) {
+      if (mounted) MoeToast.error(context, _beginFailureCopy('微信', e));
+      return;
+    }
+
     if (kIsWeb) {
       try {
-        final url = await AuthFlowService.getWechatAuthorizeUrl(
-          state: buildWechatOAuthState(),
-          flow: defaultWechatOAuthFlow(),
+        await OAuthAppLauncher.navigateBrowserToWechatAuthorize(
+          begin.authorizeUrl,
         );
-        await OAuthAppLauncher.navigateBrowserToWechatAuthorize(url);
       } catch (e) {
         if (mounted) MoeToast.error(context, '无法打开微信扫码登录：$e');
       }
       return;
     }
 
+    if (!mounted) return;
     final loadingProvider = context.read<LoadingProvider>();
-    await loadingProvider.executeOperation<AuthResult>(
-      operation: () async {
-        try {
-          final code = await WechatSdkService.instance.requestAuthCode();
-          return AuthService.loginWithWechat(
-            code,
-            flow: defaultWechatOAuthFlow(),
+    try {
+      await loadingProvider.executeOperation<AuthResult>(
+        operation: () async {
+          final pending = await OauthPendingStore.takeForState(
+            OauthBeginService.wechat,
+            begin.state,
           );
-        } on StateError catch (e) {
-          return AuthResult.failure(e.message);
-        }
-      },
-      key: LoadingKeys.wechatLogin,
-      onSuccess: (authResult) {
-        if (!mounted) return;
-        if (!authResult.success) {
-          MoeToast.error(
-            context,
-            authResult.errorMessage ?? '微信登录失败',
-          );
-          return;
-        }
-        unawaited(_onWechatLoginSuccess());
-      },
-      onError: (_) {
-        if (!mounted) return;
-        MoeToast.error(context, '微信登录异常，请稍后重试');
-      },
-    );
+          if (pending == null) {
+            return AuthResult.failure(_noPendingAuthMessage);
+          }
+          try {
+            final code = await WechatSdkService.instance
+                .requestAuthCode(state: begin.state);
+            return AuthService.loginWithWechatSdkCode(
+              code: code,
+              state: begin.state,
+              codeVerifier: pending.codeVerifier,
+            );
+          } on StateError catch (e) {
+            return AuthResult.failure(e.message);
+          }
+        },
+        key: LoadingKeys.wechatLogin,
+        onSuccess: (authResult) {
+          if (!mounted) return;
+          if (!authResult.success) {
+            MoeToast.error(
+              context,
+              authResult.errorMessage ?? '微信登录失败',
+            );
+            return;
+          }
+          unawaited(_onOAuthLoginSuccess('微信'));
+        },
+        onError: (_) {
+          if (!mounted) return;
+          MoeToast.error(context, '微信登录异常，请稍后重试');
+        },
+      );
+    } finally {
+      // SDK 返回的 code 同样是一次性的，无论成败都不该留下可重放的事务。
+      await OauthPendingStore.clear(OauthBeginService.wechat);
+    }
   }
 
-  Future<void> _onWechatLoginSuccess() async {
+  Future<void> _onOAuthLoginSuccess(String providerName) async {
     try {
       context.read<NotificationProvider>().init();
     } catch (_) {}
@@ -352,21 +432,7 @@ class _LoginPageState extends State<LoginPage> {
       unawaited(AchievementHooks.ensureReady(uid));
     }
     if (!mounted) return;
-    MoeToast.success(context, '微信登录成功');
-    Navigator.pushReplacementNamed(context, '/home');
-    DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
-  }
-
-  Future<void> _onFeishuLoginSuccess() async {
-    try {
-      context.read<NotificationProvider>().init();
-    } catch (_) {}
-    final uid = AuthService.currentUser;
-    if (uid != null) {
-      unawaited(AchievementHooks.ensureReady(uid));
-    }
-    if (!mounted) return;
-    MoeToast.success(context, '飞书登录成功');
+    MoeToast.success(context, '$providerName登录成功');
     Navigator.pushReplacementNamed(context, '/home');
     DailyGrowthService.instance.scheduleAutoCheckInAfterLogin();
   }

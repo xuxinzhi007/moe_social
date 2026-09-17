@@ -156,16 +156,66 @@ class AuthService {
     return AuthResult.failure('登录失败，请稍后重试');
   }
 
-  /// 微信 OAuth：用授权码登录；未注册则自动注册并绑定 openid。
-  static Future<AuthResult> loginWithWechat(
-    String code, {
-    String flow = 'app',
+  /// 微信浏览器 flow（website / mp）：回调带回的一次性 ticket + 本地 verifier 换 JWT；
+  /// 未注册则自动注册并绑定 openid。
+  static Future<AuthResult> loginWithWechatTicket({
+    required String flow,
+    required String ticket,
+    required String codeVerifier,
+  }) =>
+      _oauthLogin(
+        '微信',
+        () => ApiService.wechatLoginWithTicket(
+          flow: flow,
+          ticket: ticket,
+          codeVerifier: codeVerifier,
+        ),
+      );
+
+  /// 微信原生 flow（app）：SDK 在进程内返回 code，没有浏览器回调因而没有 ticket；
+  /// [state] 必须是发起授权时服务端下发的那一个。
+  static Future<AuthResult> loginWithWechatSdkCode({
+    required String code,
+    required String state,
+    required String codeVerifier,
+  }) =>
+      _oauthLogin(
+        '微信',
+        () => ApiService.wechatLoginWithSdkCode(
+          code: code,
+          state: state,
+          codeVerifier: codeVerifier,
+        ),
+      );
+
+  /// 飞书 OAuth：回调 ticket + 本地 verifier 换 JWT；
+  /// 未注册则自动注册并绑定 open_id / 邮箱 / 显示名。
+  static Future<AuthResult> loginWithFeishu({
+    required String ticket,
+    required String codeVerifier,
+  }) =>
+      _oauthLogin(
+        '飞书',
+        () =>
+            ApiService.feishuLogin(ticket: ticket, codeVerifier: codeVerifier),
+        rememberEmail: true,
+      );
+
+  /// 三个 OAuth 入口共用的收尾：解析会话、落盘、启动在线状态相关服务。
+  ///
+  /// [rememberEmail] 只对飞书开启 —— 微信侧拿不到邮箱。占位邮箱
+  /// `@feishu.oauth.local` 是服务端为「飞书没给邮箱」的用户合成的，
+  /// 写进预填框只会让用户下次看到一串假地址。
+  static Future<AuthResult> _oauthLogin(
+    String providerName,
+    Future<Map<String, dynamic>> Function() request, {
+    bool rememberEmail = false,
   }) async {
     try {
-      final result = await ApiService.wechatLogin(code, flow: flow);
+      final result = await request();
       final session = ApiResponse.authSession(result);
       if (session == null) {
-        return AuthResult.failure('微信登录响应异常');
+        return AuthResult.failure('$providerName登录响应异常');
       }
       _currentUser = ApiResponse.coerceUserId(session.user['id']);
       if (_currentUser == null) {
@@ -177,40 +227,11 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await _purgeAllUserInfoCaches(prefs);
 
-      ApiService.setToken(_token);
-      PresenceService.start();
-      ChatPushService.start();
-      CompanionPresenceProvider.instance.start();
-      return AuthResult.success();
-    } on ApiException catch (e) {
-      return AuthResult.failure(e.message);
-    } catch (e) {
-      return AuthResult.failure('微信登录失败: $e');
-    }
-  }
-
-  /// 飞书 OAuth：用授权码登录；未注册则自动注册并绑定 open_id / 邮箱 / 显示名。
-  static Future<AuthResult> loginWithFeishu(String code) async {
-    try {
-      final result = await ApiService.feishuLogin(code);
-      final session = ApiResponse.authSession(result);
-      if (session == null) {
-        return AuthResult.failure('飞书登录响应异常');
-      }
-      _currentUser = ApiResponse.coerceUserId(session.user['id']);
-      if (_currentUser == null) {
-        return AuthResult.failure('登录响应异常');
-      }
-      _token = session.token;
-      final userData = session.user;
-
-      await _saveAuthData();
-      final prefs = await SharedPreferences.getInstance();
-      await _purgeAllUserInfoCaches(prefs);
-
-      final email = (userData['email'] as String?)?.trim() ?? '';
-      if (email.isNotEmpty && !email.endsWith('@feishu.oauth.local')) {
-        await prefs.setString(_lastLoginAccountKey, email);
+      if (rememberEmail) {
+        final email = (session.user['email'] as String?)?.trim() ?? '';
+        if (email.isNotEmpty && !email.endsWith('@feishu.oauth.local')) {
+          await prefs.setString(_lastLoginAccountKey, email);
+        }
       }
 
       ApiService.setToken(_token);
@@ -221,7 +242,7 @@ class AuthService {
     } on ApiException catch (e) {
       return AuthResult.failure(e.message);
     } catch (e) {
-      return AuthResult.failure('飞书登录失败: $e');
+      return AuthResult.failure('$providerName登录失败: $e');
     }
   }
 

@@ -8,8 +8,9 @@ Moe Social 后端：**单进程 Kratos HTTP**（`make moe-social` → `:8888`）
 cd backend
 make moe-social          # 生产 / 本地
 make moe-social-dev      # 默认不带 deploy-agent
-make gen                 # proto + conf + 路由计数
-make check               # 编译 + 单测
+make gen                 # 固定工具链生成 proto pb/grpc/http + openapi.yaml
+make check-gen           # 只读校验：临时目录重生成并比较当前工作树产物
+make check               # 格式门禁 + vet + 编译生产入口 + 全仓单测
 ```
 
 | 文档 | 用途 |

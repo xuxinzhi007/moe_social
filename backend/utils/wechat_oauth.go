@@ -13,6 +13,13 @@ import (
 	"backend/pkg/conf"
 )
 
+// wechatAPIBase 是微信开放平台 API 根地址。
+//
+// 与 feishuAPIBase 同理做成 var：测试要把它指向 httptest 起的假微信服务端，
+// 在不触网的前提下跑通「授权码 → access_token/openid → 用户资料」。
+// 生产路径从不改写它；改写它的用例不得调用 t.Parallel()。
+var wechatAPIBase = "https://api.weixin.qq.com"
+
 func wechatRedirectURI() (string, error) {
 	redirectURI := conf.WechatRedirectURI()
 	if redirectURI == "" {
@@ -34,8 +41,9 @@ func WechatWebsiteAuthorizeURL(state string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	state = strings.TrimSpace(state)
 	if state == "" {
-		state = "moe_social"
+		return "", fmt.Errorf("wechat oauth state is empty")
 	}
 	q := url.Values{}
 	q.Set("appid", appID)
@@ -60,8 +68,9 @@ func WechatOAuthAuthorizeURL(state string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	state = strings.TrimSpace(state)
 	if state == "" {
-		state = "moe_social"
+		return "", fmt.Errorf("wechat oauth state is empty")
 	}
 	scope := strings.TrimSpace(wx.OAuthScope)
 	if scope == "" {
@@ -169,7 +178,7 @@ func wechatOAuthAccessToken(ctx context.Context, appID, appSecret, code string) 
 	q.Set("secret", appSecret)
 	q.Set("code", code)
 	q.Set("grant_type", "authorization_code")
-	endpoint := "https://api.weixin.qq.com/sns/oauth2/access_token?" + q.Encode()
+	endpoint := wechatAPIBase + "/sns/oauth2/access_token?" + q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -204,7 +213,7 @@ func wechatFetchUserInfo(ctx context.Context, accessToken, openID string) (wecha
 	q.Set("access_token", accessToken)
 	q.Set("openid", openID)
 	q.Set("lang", "zh_CN")
-	endpoint := "https://api.weixin.qq.com/sns/userinfo?" + q.Encode()
+	endpoint := wechatAPIBase + "/sns/userinfo?" + q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {

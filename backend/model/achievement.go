@@ -8,17 +8,17 @@ import (
 
 // Achievement rule types (stored in achievement_definitions.rule_type).
 const (
-	RuleTypeOnce              = "once"
-	RuleTypeCounter           = "counter"
-	RuleTypeSum               = "sum"
-	RuleTypeMax               = "max"
-	RuleTypeTimeWindowCount   = "time_window_count"
-	RuleTypeFollowerCount     = "follower_count"
-	RuleTypeLevelReached      = "level_reached"
-	RuleTypeHanddrawApproved  = "handdraw_approved"
-	RuleTypeMoodTagPosts      = "mood_tag_posts"
-	RuleTypeDailyComboDays    = "daily_combo_days"
-	RuleTypeWeeklyComboWeeks  = "weekly_combo_weeks"
+	RuleTypeOnce             = "once"
+	RuleTypeCounter          = "counter"
+	RuleTypeSum              = "sum"
+	RuleTypeMax              = "max"
+	RuleTypeTimeWindowCount  = "time_window_count"
+	RuleTypeFollowerCount    = "follower_count"
+	RuleTypeLevelReached     = "level_reached"
+	RuleTypeHanddrawApproved = "handdraw_approved"
+	RuleTypeMoodTagPosts     = "mood_tag_posts"
+	RuleTypeDailyComboDays   = "daily_combo_days"
+	RuleTypeWeeklyComboWeeks = "weekly_combo_weeks"
 )
 
 // AchievementDefinition 成就徽章配置表
@@ -63,17 +63,17 @@ func (UserAchievementProgress) TableName() string {
 
 // UserDailyActivity 用户每日活跃（日常/周常任务）
 type UserDailyActivity struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	UserID       uint           `gorm:"not null;uniqueIndex:uk_user_activity_date" json:"user_id"`
-	ActivityDate time.Time      `gorm:"type:date;not null;uniqueIndex:uk_user_activity_date" json:"activity_date"`
-	PostCount    int            `gorm:"not null;default:0" json:"post_count"`
-	CommentCount int            `gorm:"not null;default:0" json:"comment_count"`
-	CheckIn      bool           `gorm:"not null;default:false" json:"check_in"`
-	TaskScore    int            `gorm:"not null;default:0" json:"task_score"`
-	DailyComboCounted bool        `gorm:"not null;default:false" json:"daily_combo_counted"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                uint           `gorm:"primarykey" json:"id"`
+	UserID            uint           `gorm:"not null;uniqueIndex:uk_user_activity_date" json:"user_id"`
+	ActivityDate      time.Time      `gorm:"type:date;not null;uniqueIndex:uk_user_activity_date" json:"activity_date"`
+	PostCount         int            `gorm:"not null;default:0" json:"post_count"`
+	CommentCount      int            `gorm:"not null;default:0" json:"comment_count"`
+	CheckIn           bool           `gorm:"not null;default:false" json:"check_in"`
+	TaskScore         int            `gorm:"not null;default:0" json:"task_score"`
+	DailyComboCounted bool           `gorm:"not null;default:false" json:"daily_combo_counted"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (UserDailyActivity) TableName() string {

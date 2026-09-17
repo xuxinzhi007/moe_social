@@ -431,7 +431,6 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     if (!_pageActive) return;
     final loadingProvider = context.read<LoadingProvider>();
     loadingProvider.setOperationLoading(LoadingKeys.saveAgent, true);
-    var didPop = false;
     try {
       final isNewAgent = widget.agent == null || _isEphemeralDraft;
       final name = _nameController.text.trim();
@@ -478,42 +477,43 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         await AiAgentCloudService().updateAgent(agent);
       }
 
-      if (mounted && _pageActive) {
-        MoeToast.success(
-          context,
-          isNewAgent ? '角色卡已保存' : '修改已保存',
-        );
-        _pageActive = false;
-        didPop = true;
-        Navigator.pop(context, true);
-      }
-
+      String? syncError;
       if (shouldCreateOllamaModel || shouldSyncOllamaModel) {
-        unawaited(
-          _postSaveOllamaSideEffects(
+        try {
+          await _postSaveOllamaSideEffects(
             agent: agent,
             shouldCreate: shouldCreateOllamaModel,
             shouldSync: shouldSyncOllamaModel,
             baseModel: modelForChat,
             prompt: prompt,
             displayName: name,
-          ),
-        );
+          );
+        } catch (e) {
+          syncError = e.toString();
+        }
+      }
+
+      if (mounted && _pageActive) {
+        if (syncError != null) {
+          MoeToast.error(context, '角色卡已保存，但同步服务器模型失败：$syncError');
+        } else {
+          MoeToast.success(
+            context,
+            isNewAgent ? '角色卡已保存' : '修改已保存',
+          );
+        }
+        _pageActive = false;
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted && _pageActive) {
         MoeToast.error(context, _userFacingSaveError(e));
       }
     } finally {
-      if (mounted && _pageActive && !didPop) {
-        context
-            .read<LoadingProvider>()
-            .setOperationLoading(LoadingKeys.saveAgent, false);
-      }
+      loadingProvider.setOperationLoading(LoadingKeys.saveAgent, false);
     }
   }
 
-  /// 仅「内置 Ollama」且用户显式开启高级选项时，在后台同步服务器 Modelfile。
   Future<void> _postSaveOllamaSideEffects({
     required AiAgent agent,
     required bool shouldCreate,
@@ -534,13 +534,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
         ollamaModelName = safeName;
       }
     }
-    try {
-      await _createOrUpdateModelInOllama(
-        modelName: ollamaModelName,
-        baseModel: baseModel,
-        prompt: prompt,
-      );
-    } catch (_) {}
+    await _createOrUpdateModelInOllama(
+      modelName: ollamaModelName,
+      baseModel: baseModel,
+      prompt: prompt,
+    );
   }
 
   Future<void> _createOrUpdateModelInOllama({

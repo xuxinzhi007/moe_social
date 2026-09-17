@@ -1,9 +1,6 @@
 package handler
 
-
-
 import (
-
 	"bytes"
 
 	"io"
@@ -15,10 +12,7 @@ import (
 	"strings"
 
 	"time"
-
 )
-
-
 
 func (h *Handler) adminLoginProxy(w http.ResponseWriter, r *http.Request) {
 
@@ -34,8 +28,6 @@ func (h *Handler) adminLoginProxy(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-
 func (h *Handler) adminAPIProxy(w http.ResponseWriter, r *http.Request) {
 
 	suffix := strings.TrimPrefix(r.URL.Path, "/api/deploy/admin")
@@ -50,15 +42,11 @@ func (h *Handler) adminAPIProxy(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
-
 func (h *Handler) adminDashboardProxy(w http.ResponseWriter, r *http.Request) {
 
 	h.forwardToAPI(w, r, "/api/admin/dashboard")
 
 }
-
-
 
 func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath string) {
 
@@ -80,8 +68,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 	}
 
-
-
 	upstream, err := url.Parse(apiBase)
 
 	if err != nil {
@@ -91,7 +77,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 			"success": false,
 
 			"message": "无效的 api_base_url",
-
 		})
 
 		return
@@ -100,15 +85,11 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 	upstream.Path = apiPath
 
-
-
 	q := r.URL.Query()
 
 	q.Del("target")
 
 	upstream.RawQuery = q.Encode()
-
-
 
 	var body io.Reader
 
@@ -128,8 +109,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 	}
 
-
-
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, upstream.String(), body)
 
 	if err != nil {
@@ -139,8 +118,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 		return
 
 	}
-
-
 
 	if ct := r.Header.Get("Content-Type"); ct != "" {
 
@@ -154,8 +131,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 	}
 
-
-
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	resp, err := client.Do(req)
@@ -167,7 +142,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 			"success": false,
 
 			"message": "无法连接 API: " + err.Error(),
-
 		})
 
 		return
@@ -175,8 +149,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 	}
 
 	defer resp.Body.Close()
-
-
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 
@@ -187,8 +159,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 		return
 
 	}
-
-
 
 	for k, vals := range resp.Header {
 
@@ -210,8 +180,6 @@ func (h *Handler) forwardToAPI(w http.ResponseWriter, r *http.Request, apiPath s
 
 }
 
-
-
 func (h *Handler) platformHealth(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodGet {
@@ -222,31 +190,24 @@ func (h *Handler) platformHealth(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-
-
 	local := h.probeAPIHealth("local")
 
 	cloud := h.probeAPIHealth("cloud")
 
-
-
 	writeJSON(w, http.StatusOK, map[string]any{
 
-		"success":        true,
+		"success": true,
 
-		"agent":          map[string]any{"online": true, "listen": h.Cfg.Listen},
+		"agent": map[string]any{"online": true, "listen": h.Cfg.Listen},
 
-		"local_api":      local,
+		"local_api": local,
 
-		"cloud_api":      cloud,
+		"cloud_api": cloud,
 
 		"default_target": h.Cfg.DefaultTarget(),
-
 	})
 
 }
-
-
 
 func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 
@@ -262,12 +223,11 @@ func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 
 	out := map[string]any{
 
-		"target":   targetID,
+		"target": targetID,
 
 		"base_url": apiBase,
 
-		"online":   false,
-
+		"online": false,
 	}
 
 	u, err := url.Parse(apiBase)
@@ -289,8 +249,6 @@ func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 	q.Set("page_size", "1")
 
 	u.RawQuery = q.Encode()
-
-
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 
@@ -333,5 +291,3 @@ func (h *Handler) probeAPIHealth(targetID string) map[string]any {
 	return out
 
 }
-
-

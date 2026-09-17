@@ -40,7 +40,7 @@ func main() {
 	cfg := mediabiz.ImageConfig{
 		Driver:        mediabiz.DriverOSS,
 		LocalDir:      localDir,
-		PublicBaseURL: img.PublicBaseURL,
+		PublicBaseURL: conf.ImagePublicBaseURL(),
 		OSS: mediabiz.OSSConfig{
 			Endpoint:        img.OSS.Endpoint,
 			Bucket:          img.OSS.Bucket,

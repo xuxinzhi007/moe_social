@@ -2,10 +2,10 @@
 package userapp
 
 import (
-	"context"
+	userv1 "backend/api/user/v1"
 	notifybiz "backend/internal/biz/notify"
 	userbiz "backend/internal/biz/user"
-	userv1 "backend/api/user/v1"
+	"context"
 )
 
 // Package userapp 通知收件箱。

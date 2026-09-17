@@ -34,8 +34,8 @@ func allSchemas() []core.ToolSchema {
 			Parameters: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"content":   map[string]any{"type": "string"},
-					"mood_tag":  map[string]any{"type": "string"},
+					"content":  map[string]any{"type": "string"},
+					"mood_tag": map[string]any{"type": "string"},
 				},
 				"required": []string{"content"},
 			},

@@ -1,9 +1,9 @@
 package communityapp
 
 import (
-	"context"
 	communityv1 "backend/api/community/v1"
 	communitybiz "backend/internal/biz/community"
+	"context"
 )
 
 func (s *AppService) CreateGroupPost(ctx context.Context, in *communityv1.CreateGroupPostRequest) (*communityv1.CreateGroupPostReply, error) {

@@ -519,46 +519,6 @@ class CompanionEventData {
   }
 }
 
-class CompanionContextPreviewData {
-  final String scene;
-  final int historyCount;
-  final int memoryCount;
-  final int relationshipLevel;
-  final double intimacyScore;
-  final String worldBindStatus;
-  final bool firstChat;
-  final int relationshipEventCount;
-  final int unfinishedTopicCount;
-
-  const CompanionContextPreviewData({
-    required this.scene,
-    required this.historyCount,
-    required this.memoryCount,
-    required this.relationshipLevel,
-    required this.intimacyScore,
-    required this.worldBindStatus,
-    required this.firstChat,
-    required this.relationshipEventCount,
-    required this.unfinishedTopicCount,
-  });
-
-  factory CompanionContextPreviewData.fromMap(Map<String, dynamic> map) {
-    return CompanionContextPreviewData(
-      scene: map['scene']?.toString() ?? '',
-      historyCount: (map['history_count'] as num?)?.toInt() ?? 0,
-      memoryCount: (map['memory_count'] as num?)?.toInt() ?? 0,
-      relationshipLevel: (map['relationship_level'] as num?)?.toInt() ?? 0,
-      intimacyScore: (map['intimacy_score'] as num?)?.toDouble() ?? 0,
-      worldBindStatus: map['world_bind_status']?.toString() ?? 'unbound',
-      firstChat: map['first_chat'] == true,
-      relationshipEventCount:
-          (map['relationship_event_count'] as num?)?.toInt() ?? 0,
-      unfinishedTopicCount:
-          (map['unfinished_topic_count'] as num?)?.toInt() ?? 0,
-    );
-  }
-}
-
 class CompanionProactiveDeliveryData {
   final String deliveryKey;
   final int notificationId;
@@ -791,20 +751,6 @@ class CompanionService {
     } catch (_) {
       return listEvents(limit: limit);
     }
-  }
-
-  Future<CompanionContextPreviewData> getContextPreview({String? scene}) async {
-    _requireUserId();
-    final normalizedScene = scene?.trim() ?? '';
-    final query = normalizedScene.isEmpty
-        ? ''
-        : '?scene=${Uri.encodeQueryComponent(normalizedScene)}';
-    final result = await ApiService.get(
-      '/api/companion/context/preview$query',
-    );
-    return CompanionContextPreviewData.fromMap(
-      ApiResponse.object(result),
-    );
   }
 
   Future<List<CompanionProactiveDeliveryData>> listProactiveDeliveries({

@@ -1,4 +1,5 @@
 import '../models/feishu_public_config.dart';
+import '../models/oauth_authorize_url.dart';
 import '../models/user.dart';
 import 'api_client.dart';
 import 'api_service.dart';
@@ -20,14 +21,25 @@ class AuthFlowService {
   static Future<FeishuPublicConfig> getFeishuPublicConfig() =>
       ApiService.getFeishuPublicConfig();
 
-  static Future<String> getFeishuAuthorizeUrl({required String state}) =>
-      ApiService.getFeishuAuthorizeUrl(state: state);
-
-  static Future<String> getWechatAuthorizeUrl({
-    required String state,
-    String flow = 'website',
+  static Future<OauthAuthorizeUrl> getFeishuAuthorizeUrl({
+    required String returnUrl,
+    required String codeChallenge,
   }) =>
-      ApiService.getWechatAuthorizeUrl(state: state, flow: flow);
+      ApiService.getFeishuAuthorizeUrl(
+        returnUrl: returnUrl,
+        codeChallenge: codeChallenge,
+      );
+
+  static Future<OauthAuthorizeUrl> getWechatAuthorizeUrl({
+    required String flow,
+    required String codeChallenge,
+    String returnUrl = '',
+  }) =>
+      ApiService.getWechatAuthorizeUrl(
+        flow: flow,
+        codeChallenge: codeChallenge,
+        returnUrl: returnUrl,
+      );
 
   static Future<Map<String, dynamic>> sendResetPasswordCode(String email) =>
       ApiService.sendResetPasswordCode(email);

@@ -181,14 +181,6 @@ message LlmChatResp {
   bool summarized = 6;
 }
 
-message LlmDeleteModelReq {
-  string model = 1;
-}
-
-message LlmDownloadModelReq {
-  string model = 1;
-}
-
 // 用户侧公告（仅 published）。
 message AnnouncementItem {
   string id = 1;
@@ -261,17 +253,15 @@ service Platform {
   rpc GetVoiceToken(GetVoiceTokenReq) returns (GetVoiceTokenResp) {
     option (google.api.http) = { get: "/api/voice/token" };
   }
+  // LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+  // lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+  // 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+  // 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
   rpc LlmCreateAgent(LlmCreateAgentReq) returns (BaseResp) {
     option (google.api.http) = { post: "/api/llm/agents" body: "*" };
   }
   rpc LlmChat(LlmChatReq) returns (LlmChatResp) {
     option (google.api.http) = { post: "/api/llm/chat" body: "*" };
-  }
-  rpc LlmDeleteModel(LlmDeleteModelReq) returns (BaseResp) {
-    option (google.api.http) = { post: "/api/llm/models/delete" body: "*" };
-  }
-  rpc LlmDownloadModel(LlmDownloadModelReq) returns (BaseResp) {
-    option (google.api.http) = { post: "/api/llm/models/download" body: "*" };
   }
   rpc ListAnnouncements(ListAnnouncementsReq) returns (ListAnnouncementsResp) {
     option (google.api.http) = { get: "/api/announcements" };

@@ -68,6 +68,10 @@ class LlmApiService {
     if (!ApiResponse.isSuccess(result)) {
       throw Exception(result['message']?.toString() ?? '同步失败');
     }
+    final payload = ApiResponse.payload(result);
+    if (!ApiResponse.isSuccess(payload)) {
+      throw Exception(payload['message']?.toString() ?? '同步失败');
+    }
   }
 
   /// 从 Ollama `/api/show` 解析 FROM 基座模型名；失败时回退 [modelName]。

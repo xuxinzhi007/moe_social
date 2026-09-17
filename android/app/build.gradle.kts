@@ -24,9 +24,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("release.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "moe123456"
+            storePassword = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotBlank() }
             keyAlias = "key"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "moe123456"
+            keyPassword = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotBlank() }
         }
     }
 
@@ -61,6 +61,22 @@ android {
 
 flutter {
     source = "../.."
+}
+
+val validateReleaseSigningCredentials = tasks.register("validateReleaseSigningCredentials") {
+    doLast {
+        val missing = listOf("KEYSTORE_PASSWORD", "KEY_PASSWORD")
+            .filter { System.getenv(it).isNullOrBlank() }
+        if (missing.isNotEmpty()) {
+            throw GradleException("Release signing requires non-blank environment variables: ${missing.joinToString()}")
+        }
+    }
+}
+
+tasks.matching {
+    name in listOf("validateSigningRelease", "packageRelease", "signReleaseBundle")
+}.configureEach {
+    dependsOn(validateReleaseSigningCredentials)
 }
 
 dependencies {

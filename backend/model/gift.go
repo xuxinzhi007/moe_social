@@ -19,7 +19,7 @@ type Gift struct {
 
 // GiftRecord 礼物赠送记录
 type GiftRecord struct {
-	ID        uint      `gorm:"primarykey" json:"id"`
+	ID         uint      `gorm:"primarykey" json:"id"`
 	FromUserID uint      `gorm:"not null;index" json:"from_user_id"`
 	ToUserID   uint      `gorm:"not null;index" json:"to_user_id"`
 	GiftID     uint      `gorm:"not null;index" json:"gift_id"`

@@ -1,17 +1,28 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
-import '../../services/auth_flow_service.dart';
 import '../../utils/oauth_flow_helper.dart';
 import '../../utils/webview_platform_init.dart';
 import 'feishu_login_result.dart';
 
-/// 仅负责飞书授权并带回 [code]；登录页显示 loading 并换 token。
+/// 仅负责在 WebView 里完成飞书授权，并把回跳带上的一次性 ticket 交回登录页。
+///
+/// 授权地址与期望的 state 由登录页在发起阶段备好：verifier 的生成与本地保管
+/// 只有一处实现（`OauthBeginService`），这个页面碰不到它，也就不可能把它泄漏出去。
 class FeishuLoginPage extends StatefulWidget {
-  const FeishuLoginPage({super.key});
+  const FeishuLoginPage({
+    super.key,
+    required this.authorizeUrl,
+    required this.expectedState,
+    required this.returnUrl,
+  });
+
+  final String authorizeUrl;
+  final String expectedState;
+
+  /// 服务端 302 的目标；只有精确命中它的那一跳才被视为授权结果。
+  final String returnUrl;
 
   @override
   State<FeishuLoginPage> createState() => _FeishuLoginPageState();
@@ -35,8 +46,6 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
       if (WebViewPlatform.instance == null) {
         throw Exception('当前环境无法使用内置授权页，请升级 App 后重试');
       }
-      final url = await AuthFlowService.getFeishuAuthorizeUrl(
-          state: buildOAuthState(feishuAppOAuthReturnUri));
       final controller = WebViewController();
       // Web 端 webview_flutter 未实现 setJavaScriptMode，跳过即可。
       if (!kIsWeb) {
@@ -46,20 +55,20 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
         NavigationDelegate(
           onPageStarted: (pageUrl) {
             if (mounted && !_returning) setState(() => _loading = true);
-            _tryReturnCode(pageUrl);
+            _tryReturnTicket(pageUrl);
           },
           onPageFinished: (_) {
             if (mounted && !_returning) setState(() => _loading = false);
           },
           onNavigationRequest: (request) {
-            final code = _extractOAuthCode(request.url);
-            if (code != null) {
-              _returnCodeToLogin(code);
+            final callback = _matchReturn(request.url);
+            if (callback != null) {
+              _returnTicketToLogin(callback);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
-          onUrlChange: (change) => _tryReturnCode(change.url),
+          onUrlChange: (change) => _tryReturnTicket(change.url),
           onWebResourceError: (err) {
             if (!mounted || _returning) return;
             setState(() {
@@ -69,7 +78,7 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
           },
         ),
       );
-      await controller.loadRequest(Uri.parse(url));
+      await controller.loadRequest(Uri.parse(widget.authorizeUrl));
       if (!mounted) return;
       setState(() {
         _controller = controller;
@@ -78,46 +87,61 @@ class _FeishuLoginPageState extends State<FeishuLoginPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = _friendlyInitError(e);
+        _error = e.toString();
         _loading = false;
       });
     }
   }
 
-  String _friendlyInitError(Object e) {
-    final msg = e.toString();
-    final api = AuthFlowService.apiBaseUrl;
-    if (!kIsWeb && msg.contains('127.0.0.1')) {
-      return '飞书回调地址须与 App 访问的 API 一致。\n'
-          '请将 config 中 feishu.redirect_uri 设为：\n'
-          'http://$api/api/auth/feishu/callback\n'
-          '并在飞书开放平台添加相同重定向 URL。';
-    }
-    return msg;
+  void _tryReturnTicket(String? raw) {
+    final callback = _matchReturn(raw);
+    if (callback != null) _returnTicketToLogin(callback);
   }
 
-  void _tryReturnCode(String? raw) {
-    final code = _extractOAuthCode(raw);
-    if (code != null) _returnCodeToLogin(code);
-  }
-
-  String? _extractOAuthCode(String? raw) {
+  /// 只认「服务端 302 到本次回跳地址」这一跳上的 oauth_ticket。
+  ///
+  /// 旧实现在任意 URL 上看到 `code` 参数就截获 —— 授权过程中的任何一跳
+  /// 只要带上 `?code=…` 就会被当成最终结果，中间页的凭证冒充了回调。
+  /// 现在地址必须精确等于本次的 [FeishuLoginPage.returnUrl]，state 也必须匹配。
+  OauthCallback? _matchReturn(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     final uri = Uri.tryParse(raw);
-    if (uri == null) return null;
-    final code = uri.queryParameters['code']?.trim();
-    if (code == null || code.isEmpty) return null;
-    if (uri.path.contains('/api/auth/feishu/callback') ||
-        uri.queryParameters.containsKey('code')) {
-      return code;
-    }
-    return null;
+    if (uri == null || !_isExpectedReturn(uri)) return null;
+    final callback = OauthCallback.fromUri(uri);
+    if (callback == null || !callback.isValid) return null;
+    if (callback.state != widget.expectedState) return null;
+    return callback;
   }
 
-  void _returnCodeToLogin(String code) {
+  bool _isExpectedReturn(Uri uri) {
+    final expected = Uri.tryParse(widget.returnUrl);
+    if (expected == null || expected.host.isEmpty) return false;
+    if (uri.scheme != expected.scheme ||
+        uri.host != expected.host ||
+        uri.port != expected.port) {
+      return false;
+    }
+    return _normalizePath(uri.path) == _normalizePath(expected.path);
+  }
+
+  static String _normalizePath(String path) {
+    if (path.isEmpty) return '/';
+    var normalized = path;
+    while (normalized.length > 1 && normalized.endsWith('/')) {
+      normalized = normalized.substring(0, normalized.length - 1);
+    }
+    return normalized;
+  }
+
+  void _returnTicketToLogin(OauthCallback callback) {
     if (_returning || !mounted) return;
     _returning = true;
-    Navigator.of(context).pop(FeishuLoginResult.authorized(code));
+    Navigator.of(context).pop(
+      FeishuLoginResult.authorized(
+        ticket: callback.ticket,
+        state: callback.state,
+      ),
+    );
   }
 
   @override

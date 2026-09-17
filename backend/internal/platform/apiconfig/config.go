@@ -12,28 +12,11 @@ type Config struct {
 	} `json:"Auth" yaml:"Auth"`
 
 	LLMInference LLMInferenceConf `json:"LLMInference" yaml:"LLMInference"`
-	LocalModels  LocalModelsConf  `json:"LocalModels" yaml:"LocalModels"`
 	Agora        AgoraConf        `json:"Agora" yaml:"Agora"`
 	Image        ImageConf        `json:"Image" yaml:"Image"`
 
 	// ClientPublicApiBaseUrl 由 wiring 从 config/config.yaml 写入；不参与 api/etc 解析。
 	ClientPublicApiBaseUrl string `json:"-" yaml:"-"`
-}
-
-type LocalModelCatalogEntry struct {
-	Id          string  `json:"Id" yaml:"id"`
-	Name        string  `json:"Name" yaml:"name"`
-	Filename    string  `json:"Filename" yaml:"filename"`
-	SizeBytes   int64   `json:"SizeBytes" yaml:"size_bytes"`
-	Sha256      string  `json:"Sha256" yaml:"sha256"`
-	Description string  `json:"Description" yaml:"description"`
-	ParametersB float64 `json:"ParametersB" yaml:"parameters_b"`
-	Recommended bool    `json:"Recommended" yaml:"recommended"`
-}
-
-type LocalModelsConf struct {
-	StorageDir string                   `json:"StorageDir" yaml:"storage_dir"`
-	Catalog    []LocalModelCatalogEntry `json:"Catalog" yaml:"catalog"`
 }
 
 type LLMInferenceConf struct {

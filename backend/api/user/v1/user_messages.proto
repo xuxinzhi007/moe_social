@@ -85,15 +85,33 @@ message DeleteUserResp {
 }
 
 message FeishuAuthorizeURLReq {
+  // 已废弃（编号保留以免破坏线上旧客户端的 wire 兼容）：旧协议把这个字段当回跳地址，
+  // 服务端会 302 到它并把授权码带过去 —— 那是开放重定向。新协议**完全忽略**此字段，
+  // 回跳地址只认 return_url，state 由服务端生成并在响应里下发。
   string state = 1;
+  // 授权成功后的回跳地址，必须精确命中服务端 config.yaml 的 oauth.allowed_return_urls。
+  string return_url = 2;
+  // BASE64URL(SHA256(code_verifier))，无填充。verifier 由客户端生成并自行保管，
+  // 登录时出示原文；服务端只存 challenge，因此拿到事务也换不出登录态。
+  string code_challenge = 3;
 }
 
 message FeishuAuthorizeURLResp {
   string authorize_url = 1;
+  // 服务端生成的一次性 state（已绑定 return_url / challenge / 供应商配置 / 期限）。
+  // 客户端应记下它与本次 verifier 的对应关系，回调回来后核对，
+  // 以免把别的授权流程的结果当成自己的。
+  string state = 2;
 }
 
 message FeishuLoginReq {
+  // 已废弃（编号保留）：旧的 code-only 通路已关闭 —— 任何人截获授权码就能登录。
+  // 新协议下此字段非空即拒绝；授权码由服务端在回调时封存进 ticket。
   string code = 1;
+  // 回调 302 带回的一次性票据（oauth_ticket）。
+  string ticket = 2;
+  // 与授权时 code_challenge 配对的原文（oauth_verifier 由客户端本地保管，不经回跳传递）。
+  string code_verifier = 3;
 }
 
 message FeishuLoginResp {
@@ -741,19 +759,37 @@ message GetUserEmojiPacksResp {
 }
 
 message WechatAuthorizeURLReq {
+  // 已废弃（编号保留）：旧协议把它当回跳地址，新协议完全忽略，回跳只认 return_url。
   string state = 1;
-  // website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
+  // website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）；
+  // app=原生 SDK：此 flow 不下发 authorize_url，只签发一个绑定 challenge 的 state，
+  // 由客户端拿它去唤起微信 SDK。
   string flow = 2;
+  // 授权成功后的回跳地址，必须精确命中 oauth.allowed_return_urls；flow=app 时留空。
+  string return_url = 3;
+  // BASE64URL(SHA256(code_verifier))，无填充。
+  string code_challenge = 4;
 }
 
 message WechatAuthorizeURLResp {
   string authorize_url = 1;
+  // 服务端生成的一次性 state，语义同 FeishuAuthorizeURLResp.state。
+  string state = 2;
 }
 
 message WechatLoginReq {
+  // 授权码。**仅 flow=app 可用**：原生 SDK 在进程内直接返回 code，没有浏览器回调，
+  // 因而没有 ticket。website/mp 走浏览器回调，code 由服务端封存进 ticket，
+  // 此字段必须留空 —— 非空即拒绝，堵住旧的 code-only 通路。
   string code = 1;
   // app=移动应用 SDK；website=网站应用扫码；mp=公众号
   string flow = 2;
+  // 浏览器 flow（website/mp）：回调 302 带回的一次性票据（oauth_ticket）。
+  string ticket = 3;
+  // 与授权时 code_challenge 配对的原文，由客户端本地保管。
+  string code_verifier = 4;
+  // 原生 flow（app）：WechatAuthorizeURL(flow=app) 下发的 state。
+  string state = 5;
 }
 
 message WechatLoginResp {

@@ -823,7 +823,7 @@ class _CheckInPageState extends State<CheckInPage>
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$completedCount / ${tasks.length} 瀹屾垚',
+                  '$completedCount / ${tasks.length} 完成',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

@@ -389,14 +389,6 @@ type AdminDeleteMediaImageResp struct {
 	BaseResp
 }
 
-type AdminDeleteMemoryReq struct {
-	MemoryId uint64 `path:"memory_id"`
-}
-
-type AdminDeleteMemoryResp struct {
-	BaseResp
-}
-
 type AdminDeleteMenuReq struct {
 	MenuKey string `path:"menu_key"`
 }
@@ -511,11 +503,6 @@ type AdminGetGiftResp struct {
 type AdminGetGrowthStatsResp struct {
 	BaseResp
 	Data AdminGrowthStats `json:"data"`
-}
-
-type AdminGetMemoryStatsResp struct {
-	BaseResp
-	Data AdminMemoryStats `json:"data"`
 }
 
 type AdminGetMoeBotFlowData struct {
@@ -937,24 +924,6 @@ type AdminListMediaImagesResp struct {
 	Data AdminListMediaImagesData `json:"data"`
 }
 
-type AdminListMemoriesData struct {
-	Items []AdminMemoryItem `json:"items"`
-	Total int               `json:"total"`
-}
-
-type AdminListMemoriesReq struct {
-	Page       int    `form:"page,optional,default=1"`
-	PageSize   int    `form:"page_size,optional,default=30"`
-	UserId     string `form:"user_id,optional"`
-	Keyword    string `form:"keyword,optional"`
-	MemoryType string `form:"memory_type,optional"`
-}
-
-type AdminListMemoriesResp struct {
-	BaseResp
-	Data AdminListMemoriesData `json:"data"`
-}
-
 type AdminListMenusResp struct {
 	BaseResp
 	Data []AdminMenuItem `json:"data"`
@@ -1157,26 +1126,9 @@ type AdminMediaOwnerSummary struct {
 	TotalBytes   int64  `json:"total_bytes"`
 }
 
-type AdminMemoryItem struct {
-	Id         string  `json:"id"`
-	UserId     string  `json:"user_id"`
-	Username   string  `json:"username,optional"`
-	Key        string  `json:"key"`
-	Value      string  `json:"value"`
-	MemoryType string  `json:"memory_type"`
-	Confidence float64 `json:"confidence"`
-	Source     string  `json:"source"`
-	UpdatedAt  string  `json:"updated_at"`
-}
-
-type AdminMemoryStats struct {
-	TotalMemories     int                   `json:"total_memories"`
-	UsersWithMemories int                   `json:"users_with_memories"`
-	TotalFeedbacks    int                   `json:"total_feedbacks"`
-	TotalEmbeddings   int                   `json:"total_embeddings"`
-	ByType            []AdminMemoryTypeStat `json:"by_type"`
-}
-
+// AdminMemoryTypeStat 是同族里唯一活下来的：AdminAnalyticsOverviewData.MemoryByType
+// 引它，apicomm/admin_insights.go 在活路径上填充它。
+// #42 删掉的是 AdminMemoryItem 与 AdminMemoryStats（只服务于那批已删的记忆 RPC）。
 type AdminMemoryTypeStat struct {
 	MemoryType string `json:"memory_type"`
 	Count      int    `json:"count"`
@@ -2905,31 +2857,6 @@ type LlmCreateAgentReq struct {
 	Name         string `json:"name"`
 	BaseModel    string `json:"base_model"`
 	SystemPrompt string `json:"system_prompt"`
-}
-
-type LlmDeleteModelReq struct {
-	Model string `json:"model"`
-}
-
-type LlmDownloadModelReq struct {
-	Model string `json:"model"`
-}
-
-type LlmLocalModelCatalogItem struct {
-	Id           string  `json:"id"`
-	Name         string  `json:"name"`
-	Filename     string  `json:"filename"`
-	SizeBytes    int64   `json:"size_bytes"`
-	Sha256       string  `json:"sha256"`
-	Description  string  `json:"description"`
-	ParametersB  float64 `json:"parameters_b"`
-	Recommended  bool    `json:"recommended"`
-	DownloadPath string  `json:"download_path"`
-}
-
-type LlmLocalModelsCatalogResp struct {
-	BaseResp
-	Items []LlmLocalModelCatalogItem `json:"items"`
 }
 
 type LlmMessage struct {

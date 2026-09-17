@@ -28,8 +28,6 @@ const OperationPlatformListAnnouncements = "/platform.v1.Platform/ListAnnounceme
 const OperationPlatformListUserContent = "/platform.v1.Platform/ListUserContent"
 const OperationPlatformLlmChat = "/platform.v1.Platform/LlmChat"
 const OperationPlatformLlmCreateAgent = "/platform.v1.Platform/LlmCreateAgent"
-const OperationPlatformLlmDeleteModel = "/platform.v1.Platform/LlmDeleteModel"
-const OperationPlatformLlmDownloadModel = "/platform.v1.Platform/LlmDownloadModel"
 const OperationPlatformMoeExecuteTool = "/platform.v1.Platform/MoeExecuteTool"
 const OperationPlatformMoeToolsSchema = "/platform.v1.Platform/MoeToolsSchema"
 const OperationPlatformVoiceAnswer = "/platform.v1.Platform/VoiceAnswer"
@@ -46,9 +44,11 @@ type PlatformHTTPServer interface {
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
+	// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
 	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*BaseResp, error)
-	LlmDeleteModel(context.Context, *LlmDeleteModelReq) (*BaseResp, error)
-	LlmDownloadModel(context.Context, *LlmDownloadModelReq) (*BaseResp, error)
 	MoeExecuteTool(context.Context, *MoeToolExecuteReq) (*MoeToolExecuteResp, error)
 	MoeToolsSchema(context.Context, *MoeToolSchemaReq) (*MoeToolSchemaResp, error)
 	VoiceAnswer(context.Context, *VoiceAnswerReq) (*VoiceAnswerResp, error)
@@ -71,8 +71,6 @@ func RegisterPlatformHTTPServer(s *http.Server, srv PlatformHTTPServer) {
 	r.GET("/api/voice/token", _Platform_GetVoiceToken0_HTTP_Handler(srv))
 	r.POST("/api/llm/agents", _Platform_LlmCreateAgent0_HTTP_Handler(srv))
 	r.POST("/api/llm/chat", _Platform_LlmChat0_HTTP_Handler(srv))
-	r.POST("/api/llm/models/delete", _Platform_LlmDeleteModel0_HTTP_Handler(srv))
-	r.POST("/api/llm/models/download", _Platform_LlmDownloadModel0_HTTP_Handler(srv))
 	r.GET("/api/announcements", _Platform_ListAnnouncements0_HTTP_Handler(srv))
 	r.GET("/api/announcements/{announcement_id}", _Platform_GetAnnouncement0_HTTP_Handler(srv))
 	r.GET("/api/public/app-release/latest", _Platform_GetLatestAppRelease0_HTTP_Handler(srv))
@@ -330,50 +328,6 @@ func _Platform_LlmChat0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Conte
 	}
 }
 
-func _Platform_LlmDeleteModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in LlmDeleteModelReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationPlatformLlmDeleteModel)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.LlmDeleteModel(ctx, req.(*LlmDeleteModelReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*BaseResp)
-		return ctx.Result(200, reply)
-	}
-}
-
-func _Platform_LlmDownloadModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
-	return func(ctx http.Context) error {
-		var in LlmDownloadModelReq
-		if err := ctx.Bind(&in); err != nil {
-			return err
-		}
-		if err := ctx.BindQuery(&in); err != nil {
-			return err
-		}
-		http.SetOperation(ctx, OperationPlatformLlmDownloadModel)
-		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
-			return srv.LlmDownloadModel(ctx, req.(*LlmDownloadModelReq))
-		})
-		out, err := h(ctx, &in)
-		if err != nil {
-			return err
-		}
-		reply := out.(*BaseResp)
-		return ctx.Result(200, reply)
-	}
-}
-
 func _Platform_ListAnnouncements0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
 	return func(ctx http.Context) error {
 		var in ListAnnouncementsReq
@@ -443,9 +397,11 @@ type PlatformHTTPClient interface {
 	ListAnnouncements(ctx context.Context, req *ListAnnouncementsReq, opts ...http.CallOption) (rsp *ListAnnouncementsResp, err error)
 	ListUserContent(ctx context.Context, req *ListUserContentReq, opts ...http.CallOption) (rsp *ListUserContentResp, err error)
 	LlmChat(ctx context.Context, req *LlmChatReq, opts ...http.CallOption) (rsp *LlmChatResp, err error)
+	// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
 	LlmCreateAgent(ctx context.Context, req *LlmCreateAgentReq, opts ...http.CallOption) (rsp *BaseResp, err error)
-	LlmDeleteModel(ctx context.Context, req *LlmDeleteModelReq, opts ...http.CallOption) (rsp *BaseResp, err error)
-	LlmDownloadModel(ctx context.Context, req *LlmDownloadModelReq, opts ...http.CallOption) (rsp *BaseResp, err error)
 	MoeExecuteTool(ctx context.Context, req *MoeToolExecuteReq, opts ...http.CallOption) (rsp *MoeToolExecuteResp, err error)
 	MoeToolsSchema(ctx context.Context, req *MoeToolSchemaReq, opts ...http.CallOption) (rsp *MoeToolSchemaResp, err error)
 	VoiceAnswer(ctx context.Context, req *VoiceAnswerReq, opts ...http.CallOption) (rsp *VoiceAnswerResp, err error)
@@ -566,37 +522,15 @@ func (c *PlatformHTTPClientImpl) LlmChat(ctx context.Context, in *LlmChatReq, op
 	return &out, nil
 }
 
+// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
 func (c *PlatformHTTPClientImpl) LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...http.CallOption) (*BaseResp, error) {
 	var out BaseResp
 	pattern := "/api/llm/agents"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationPlatformLlmCreateAgent))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *PlatformHTTPClientImpl) LlmDeleteModel(ctx context.Context, in *LlmDeleteModelReq, opts ...http.CallOption) (*BaseResp, error) {
-	var out BaseResp
-	pattern := "/api/llm/models/delete"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationPlatformLlmDeleteModel))
-	opts = append(opts, http.PathTemplate(pattern))
-	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-func (c *PlatformHTTPClientImpl) LlmDownloadModel(ctx context.Context, in *LlmDownloadModelReq, opts ...http.CallOption) (*BaseResp, error) {
-	var out BaseResp
-	pattern := "/api/llm/models/download"
-	path := binding.EncodeURL(pattern, in, false)
-	opts = append(opts, http.Operation(OperationPlatformLlmDownloadModel))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {

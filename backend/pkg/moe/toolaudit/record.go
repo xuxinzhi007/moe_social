@@ -13,16 +13,16 @@ import (
 
 // RecordInput 单次工具调用埋点入参。
 type RecordInput struct {
-	Tool             string
-	ArgumentsJSON    string
-	ActorUserID      uint
-	BotUserID        uint
-	AgentKey         string
-	Ok               bool
-	ErrorMsg         string
-	LatencyMs        int
-	Source           string
-	IdempotencyKey   string
+	Tool           string
+	ArgumentsJSON  string
+	ActorUserID    uint
+	BotUserID      uint
+	AgentKey       string
+	Ok             bool
+	ErrorMsg       string
+	LatencyMs      int
+	Source         string
+	IdempotencyKey string
 }
 
 // Record 异步安全地写入调用记录（失败仅打日志，不影响主流程）。
@@ -68,8 +68,8 @@ func truncate(s string, max int) string {
 
 // SchemaItem 管理台展示的工具定义项。
 type SchemaItem struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
 	AllowedTiers []string `json:"allowed_tiers"`
 }
 

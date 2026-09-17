@@ -947,24 +947,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/landing.v1.ListLandingFeedbackReply'
-    /api/admin/learning/export-dataset:
-        post:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminExportLearningDataset
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminExportLearningDatasetReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminExportLearningDatasetResp'
     /api/admin/login:
         post:
             tags:
@@ -1048,101 +1030,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/admin.v1.AdminDeleteMediaImageResp'
-    /api/admin/memories:
-        get:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminListMemories
-            parameters:
-                - name: page
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageSize
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: userId
-                  in: query
-                  schema:
-                    type: string
-                - name: keyword
-                  in: query
-                  schema:
-                    type: string
-                - name: memoryType
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminListMemoriesResp'
-    /api/admin/memories/health:
-        get:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminGetMemoryHealth
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminGetMemoryHealthResp'
-    /api/admin/memories/reindex:
-        post:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminRebuildMemoryEmbeddings
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/admin.v1.AdminRebuildMemoryEmbeddingsReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminRebuildMemoryEmbeddingsResp'
-    /api/admin/memories/stats:
-        get:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminGetMemoryStats
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminGetMemoryStatsResp'
-    /api/admin/memories/{memoryId}:
-        delete:
-            tags:
-                - AdminApp
-            operationId: AdminApp_AdminDeleteMemory
-            parameters:
-                - name: memoryId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/admin.v1.AdminDeleteMemoryResp'
     /api/admin/menus:
         get:
             tags:
@@ -2651,35 +2538,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ai.v1.DeleteAiResourceResp'
-    /api/ai/memory/settings:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_GetAiMemorySettings
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.GetAiMemorySettingsResp'
-        put:
-            tags:
-                - LlmChat
-            operationId: LlmChat_PutAiMemorySettings
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.PutAiMemorySettingsReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.PutAiMemorySettingsResp'
     /api/ai/providers:
         get:
             tags:
@@ -2887,6 +2745,22 @@ paths:
             parameters:
                 - name: state
                   in: query
+                  description: |-
+                    已废弃（编号保留以免破坏线上旧客户端的 wire 兼容）：旧协议把这个字段当回跳地址，
+                     服务端会 302 到它并把授权码带过去 —— 那是开放重定向。新协议**完全忽略**此字段，
+                     回跳地址只认 return_url，state 由服务端生成并在响应里下发。
+                  schema:
+                    type: string
+                - name: returnUrl
+                  in: query
+                  description: 授权成功后的回跳地址，必须精确命中服务端 config.yaml 的 oauth.allowed_return_urls。
+                  schema:
+                    type: string
+                - name: codeChallenge
+                  in: query
+                  description: |-
+                    BASE64URL(SHA256(code_verifier))，无填充。verifier 由客户端生成并自行保管，
+                     登录时出示原文；服务端只存 challenge，因此拿到事务也换不出登录态。
                   schema:
                     type: string
             responses:
@@ -2934,11 +2808,25 @@ paths:
             parameters:
                 - name: state
                   in: query
+                  description: 已废弃（编号保留）：旧协议把它当回跳地址，新协议完全忽略，回跳只认 return_url。
                   schema:
                     type: string
                 - name: flow
                   in: query
-                  description: website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）
+                  description: |-
+                    website=开放平台网站应用扫码；mp=公众号网页授权（仅微信内）；
+                     app=原生 SDK：此 flow 不下发 authorize_url，只签发一个绑定 challenge 的 state，
+                     由客户端拿它去唤起微信 SDK。
+                  schema:
+                    type: string
+                - name: returnUrl
+                  in: query
+                  description: 授权成功后的回跳地址，必须精确命中 oauth.allowed_return_urls；flow=app 时留空。
+                  schema:
+                    type: string
+                - name: codeChallenge
+                  in: query
+                  description: BASE64URL(SHA256(code_verifier))，无填充。
                   schema:
                     type: string
             responses:
@@ -3544,23 +3432,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/companion.v1.GetCommunityIdentityReply'
-    /api/companion/context/preview:
-        get:
-            tags:
-                - Companion
-            operationId: Companion_GetContextPreview
-            parameters:
-                - name: scene
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/companion.v1.ContextPreviewReply'
     /api/companion/events:
         get:
             tags:
@@ -4208,6 +4079,11 @@ paths:
         post:
             tags:
                 - Platform
+            description: |-
+                LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+                 lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+                 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+                 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
             operationId: Platform_LlmCreateAgent
             requestBody:
                 content:
@@ -4240,24 +4116,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.LlmChatResp'
-    /api/llm/chat/turn:
-        post:
-            tags:
-                - LlmChat
-            operationId: LlmChat_RecordLlmChatTurn
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.RecordLlmChatTurnReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.RecordLlmChatTurnResp'
     /api/llm/config:
         get:
             tags:
@@ -4270,18 +4128,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.GetLlmConfigResp'
-    /api/llm/local-models/catalog:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_ListLlmLocalModelsCatalog
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.ListLlmLocalModelsCatalogResp'
     /api/llm/models:
         get:
             tags:
@@ -4294,42 +4140,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/llm.v1.ListLlmModelsResp'
-    /api/llm/models/delete:
-        post:
-            tags:
-                - Platform
-            operationId: Platform_LlmDeleteModel
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/platform.v1.LlmDeleteModelReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.BaseResp'
-    /api/llm/models/download:
-        post:
-            tags:
-                - Platform
-            operationId: Platform_LlmDownloadModel
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/platform.v1.LlmDownloadModelReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/platform.v1.BaseResp'
     /api/moe/tools/execute:
         post:
             tags:
@@ -6411,194 +6221,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/checkin.v1.GetUserLevelReply'
-    /api/user/{userId}/memories:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_GetUserMemories
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-                - name: offset
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.GetUserMemoriesResp'
-        post:
-            tags:
-                - LlmChat
-            operationId: LlmChat_UpsertUserMemory
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.UpsertUserMemoryReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.UpsertUserMemoryResp'
-        delete:
-            tags:
-                - LlmChat
-            operationId: LlmChat_DeleteUserMemory
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: key
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.DeleteUserMemoryResp'
-    /api/user/{userId}/memories/display:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_GetUserMemoriesDisplay
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.GetUserMemoriesDisplayResp'
-    /api/user/{userId}/memories/feedback:
-        post:
-            tags:
-                - LlmChat
-            operationId: LlmChat_SubmitUserMemoryFeedback
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.SubmitUserMemoryFeedbackReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.SubmitUserMemoryFeedbackResp'
-    /api/user/{userId}/memories/profiles:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_GetUserMemoryProfiles
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.GetUserMemoryProfilesResp'
-    /api/user/{userId}/memories/reindex:
-        post:
-            tags:
-                - LlmChat
-            operationId: LlmChat_RebuildUserMemoryEmbeddings
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/llm.v1.RebuildUserMemoryEmbeddingsReq'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.RebuildUserMemoryEmbeddingsResp'
-    /api/user/{userId}/memories/search:
-        get:
-            tags:
-                - LlmChat
-            operationId: LlmChat_SearchUserMemories
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: q
-                  in: query
-                  schema:
-                    type: string
-                - name: limit
-                  in: query
-                  schema:
-                    type: integer
-                    format: int32
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/llm.v1.SearchUserMemoriesResp'
     /api/user/{userId}/password:
         put:
             tags:
@@ -7566,9 +7188,6 @@ components:
         admin.v1.AdminDeleteMediaImageResp:
             type: object
             properties: {}
-        admin.v1.AdminDeleteMemoryResp:
-            type: object
-            properties: {}
         admin.v1.AdminDeleteMenuResp:
             type: object
             properties: {}
@@ -7584,19 +7203,6 @@ components:
         admin.v1.AdminDeleteVipPlanResp:
             type: object
             properties: {}
-        admin.v1.AdminEmbeddingProbe:
-            type: object
-            properties:
-                ok:
-                    type: boolean
-                providerType:
-                    type: string
-                model:
-                    type: string
-                baseUrl:
-                    type: string
-                message:
-                    type: string
         admin.v1.AdminExportAiChatMessagesResp:
             type: object
             properties:
@@ -7607,25 +7213,6 @@ components:
                     format: int32
                 truncated:
                     type: boolean
-        admin.v1.AdminExportLearningDatasetReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                agentId:
-                    type: string
-        admin.v1.AdminExportLearningDatasetResp:
-            type: object
-            properties:
-                jsonl:
-                    type: string
-                lineCount:
-                    type: integer
-                    format: int32
-                agentName:
-                    type: string
-                hint:
-                    type: string
         admin.v1.AdminFollowItem:
             type: object
             properties:
@@ -7680,43 +7267,6 @@ components:
             properties:
                 stats:
                     $ref: '#/components/schemas/admin.v1.AdminGrowthStats'
-        admin.v1.AdminGetMemoryHealthResp:
-            type: object
-            properties:
-                stats:
-                    $ref: '#/components/schemas/admin.v1.AdminMemoryStats'
-                embeddingIndexRatio:
-                    type: number
-                    format: double
-                hybridEnabled:
-                    type: boolean
-                vectorWeight:
-                    type: number
-                    format: double
-                keywordWeight:
-                    type: number
-                    format: double
-                rerankEnabled:
-                    type: boolean
-                graphEnabled:
-                    type: boolean
-                embeddingProbe:
-                    $ref: '#/components/schemas/admin.v1.AdminEmbeddingProbe'
-                llmInferenceOnline:
-                    type: boolean
-                llmInferenceBaseUrl:
-                    type: string
-                memoryModel:
-                    type: string
-                hints:
-                    type: array
-                    items:
-                        type: string
-        admin.v1.AdminGetMemoryStatsResp:
-            type: object
-            properties:
-                stats:
-                    $ref: '#/components/schemas/admin.v1.AdminMemoryStats'
         admin.v1.AdminGetRuntimeConfigResp:
             type: object
             properties:
@@ -7976,16 +7526,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/admin.v1.AdminMediaOwnerSummary'
-        admin.v1.AdminListMemoriesResp:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/admin.v1.AdminMemoryItem'
-                total:
-                    type: integer
-                    format: int32
         admin.v1.AdminListMenusResp:
             type: object
             properties:
@@ -8115,47 +7655,6 @@ components:
                     format: int32
                 totalBytes:
                     type: string
-        admin.v1.AdminMemoryItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                userId:
-                    type: string
-                username:
-                    type: string
-                key:
-                    type: string
-                value:
-                    type: string
-                memoryType:
-                    type: string
-                confidence:
-                    type: number
-                    format: double
-                source:
-                    type: string
-                updatedAt:
-                    type: string
-        admin.v1.AdminMemoryStats:
-            type: object
-            properties:
-                totalMemories:
-                    type: integer
-                    format: int32
-                usersWithMemories:
-                    type: integer
-                    format: int32
-                totalFeedbacks:
-                    type: integer
-                    format: int32
-                totalEmbeddings:
-                    type: integer
-                    format: int32
-                byType:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/admin.v1.AdminMemoryTypeStat'
         admin.v1.AdminMemoryTypeStat:
             type: object
             properties:
@@ -8164,6 +7663,10 @@ components:
                 count:
                     type: integer
                     format: int32
+            description: |-
+                AdminMemoryTypeStat 仍在用：AdminAnalyticsOverviewData.memory_by_type 引它，
+                 apicomm/admin_insights.go 在活路径上转换它。#42 删掉的是 AdminMemoryItem 与
+                 AdminMemoryStats（只服务于那批已删的记忆 RPC），别顺手把这个也删了。
         admin.v1.AdminMenuItem:
             type: object
             properties:
@@ -8249,23 +7752,6 @@ components:
                 wsSent:
                     type: integer
                     format: int32
-        admin.v1.AdminRebuildMemoryEmbeddingsReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-        admin.v1.AdminRebuildMemoryEmbeddingsResp:
-            type: object
-            properties:
-                indexed:
-                    type: integer
-                    format: int32
-                provider:
-                    type: string
-                model:
-                    type: string
-                message:
-                    type: string
         admin.v1.AdminRuntimeProcessInfo:
             type: object
             properties:
@@ -10311,33 +9797,6 @@ components:
             properties:
                 memoryId:
                     type: string
-        companion.v1.ContextPreviewReply:
-            type: object
-            properties:
-                scene:
-                    type: string
-                historyCount:
-                    type: integer
-                    format: int32
-                memoryCount:
-                    type: integer
-                    format: int32
-                relationshipLevel:
-                    type: integer
-                    format: int32
-                intimacyScore:
-                    type: number
-                    format: double
-                worldBindStatus:
-                    type: string
-                firstChat:
-                    type: boolean
-                relationshipEventCount:
-                    type: integer
-                    format: int32
-                unfinishedTopicCount:
-                    type: integer
-                    format: int32
         companion.v1.DeleteMemoryReply:
             type: object
             properties: {}
@@ -11206,14 +10665,6 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/life.v1.LifeRelationship'
-        llm.v1.DeleteUserMemoryResp:
-            type: object
-            properties: {}
-        llm.v1.GetAiMemorySettingsResp:
-            type: object
-            properties:
-                autoLearn:
-                    type: boolean
         llm.v1.GetAiUserConfigResp:
             type: object
             properties:
@@ -11224,42 +10675,6 @@ components:
                 providerApiKeysJson:
                     type: string
                     description: 已明确开启账号同步的 Provider API Key；服务端只保存密文。
-        llm.v1.GetUserMemoriesDisplayResp:
-            type: object
-            properties:
-                data:
-                    $ref: '#/components/schemas/llm.v1.UserMemoryDisplayData'
-        llm.v1.GetUserMemoriesResp:
-            type: object
-            properties:
-                memories:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.UserMemory'
-                total:
-                    type: string
-                limit:
-                    type: integer
-                    format: int32
-                offset:
-                    type: integer
-                    format: int32
-                hasMore:
-                    type: boolean
-        llm.v1.GetUserMemoryProfilesResp:
-            type: object
-            properties:
-                profiles:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.UserMemoryProfile'
-        llm.v1.ListLlmLocalModelsCatalogResp:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.LlmLocalModelCatalogItem'
         llm.v1.ListLlmModelsResp:
             type: object
             properties:
@@ -11267,109 +10682,6 @@ components:
                     type: array
                     items:
                         type: string
-        llm.v1.LlmLocalModelCatalogItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                name:
-                    type: string
-                filename:
-                    type: string
-                sizeBytes:
-                    type: string
-                sha256:
-                    type: string
-                description:
-                    type: string
-                parametersB:
-                    type: number
-                    format: double
-                recommended:
-                    type: boolean
-                downloadPath:
-                    type: string
-        llm.v1.PutAiMemorySettingsReq:
-            type: object
-            properties:
-                autoLearn:
-                    type: boolean
-        llm.v1.PutAiMemorySettingsResp:
-            type: object
-            properties:
-                autoLearn:
-                    type: boolean
-        llm.v1.RebuildUserMemoryEmbeddingsReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-        llm.v1.RebuildUserMemoryEmbeddingsResp:
-            type: object
-            properties:
-                indexed:
-                    type: integer
-                    format: int32
-                provider:
-                    type: string
-                model:
-                    type: string
-        llm.v1.RecordLlmChatTurnReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                sessionId:
-                    type: string
-                sourceMsgId:
-                    type: string
-                model:
-                    type: string
-                role:
-                    type: string
-                content:
-                    type: string
-        llm.v1.RecordLlmChatTurnResp:
-            type: object
-            properties:
-                ok:
-                    type: boolean
-        llm.v1.SearchUserMemoriesData:
-            type: object
-            properties:
-                query:
-                    type: string
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.UserMemoryDisplayItem'
-                total:
-                    type: integer
-                    format: int32
-        llm.v1.SearchUserMemoriesResp:
-            type: object
-            properties:
-                data:
-                    $ref: '#/components/schemas/llm.v1.SearchUserMemoriesData'
-        llm.v1.SubmitUserMemoryFeedbackReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                key:
-                    type: string
-                feedbackType:
-                    type: string
-                    description: accept | reject | correct
-                correctedValue:
-                    type: string
-                reason:
-                    type: string
-        llm.v1.SubmitUserMemoryFeedbackResp:
-            type: object
-            properties:
-                memory:
-                    $ref: '#/components/schemas/llm.v1.UserMemory'
         llm.v1.UpsertAiUserConfigReq:
             type: object
             properties:
@@ -11397,111 +10709,6 @@ components:
                     type: string
                 providerApiKeysJson:
                     type: string
-        llm.v1.UpsertUserMemoryReq:
-            type: object
-            properties:
-                userId:
-                    type: string
-                key:
-                    type: string
-                value:
-                    type: string
-                memoryType:
-                    type: string
-                confidence:
-                    type: number
-                    format: double
-                source:
-                    type: string
-                sourceMsgId:
-                    type: string
-                sessionId:
-                    type: string
-        llm.v1.UpsertUserMemoryResp:
-            type: object
-            properties:
-                memory:
-                    $ref: '#/components/schemas/llm.v1.UserMemory'
-        llm.v1.UserMemory:
-            type: object
-            properties:
-                id:
-                    type: string
-                userId:
-                    type: string
-                key:
-                    type: string
-                value:
-                    type: string
-                memoryType:
-                    type: string
-                confidence:
-                    type: number
-                    format: double
-                source:
-                    type: string
-                createdAt:
-                    type: string
-                updatedAt:
-                    type: string
-                sourceMsgId:
-                    type: string
-                sessionId:
-                    type: string
-        llm.v1.UserMemoryDisplayData:
-            type: object
-            properties:
-                headline:
-                    type: string
-                profiles:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.UserMemoryDisplayProfile'
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/llm.v1.UserMemoryDisplayItem'
-                total:
-                    type: integer
-                    format: int32
-        llm.v1.UserMemoryDisplayItem:
-            type: object
-            properties:
-                id:
-                    type: string
-                key:
-                    type: string
-                title:
-                    type: string
-                content:
-                    type: string
-                category:
-                    type: string
-                updatedAt:
-                    type: string
-        llm.v1.UserMemoryDisplayProfile:
-            type: object
-            properties:
-                title:
-                    type: string
-                summary:
-                    type: string
-                itemCount:
-                    type: integer
-                    format: int32
-        llm.v1.UserMemoryProfile:
-            type: object
-            properties:
-                memoryType:
-                    type: string
-                summary:
-                    type: string
-                itemCount:
-                    type: integer
-                    format: int32
-                confidence:
-                    type: number
-                    format: double
         media.v1.DeleteImageReply:
             type: object
             properties: {}
@@ -12920,16 +12127,6 @@ components:
                     type: string
                 systemPrompt:
                     type: string
-        platform.v1.LlmDeleteModelReq:
-            type: object
-            properties:
-                model:
-                    type: string
-        platform.v1.LlmDownloadModelReq:
-            type: object
-            properties:
-                model:
-                    type: string
         platform.v1.LlmMessage:
             type: object
             properties:
@@ -13411,11 +12608,26 @@ components:
             properties:
                 authorizeUrl:
                     type: string
+                state:
+                    type: string
+                    description: |-
+                        服务端生成的一次性 state（已绑定 return_url / challenge / 供应商配置 / 期限）。
+                         客户端应记下它与本次 verifier 的对应关系，回调回来后核对，
+                         以免把别的授权流程的结果当成自己的。
         user.v1.FeishuLoginReq:
             type: object
             properties:
                 code:
                     type: string
+                    description: |-
+                        已废弃（编号保留）：旧的 code-only 通路已关闭 —— 任何人截获授权码就能登录。
+                         新协议下此字段非空即拒绝；授权码由服务端在回调时封存进 ticket。
+                ticket:
+                    type: string
+                    description: 回调 302 带回的一次性票据（oauth_ticket）。
+                codeVerifier:
+                    type: string
+                    description: 与授权时 code_challenge 配对的原文（oauth_verifier 由客户端本地保管，不经回跳传递）。
         user.v1.FeishuLoginResp:
             type: object
             properties:
@@ -14003,14 +13215,30 @@ components:
             properties:
                 authorizeUrl:
                     type: string
+                state:
+                    type: string
+                    description: 服务端生成的一次性 state，语义同 FeishuAuthorizeURLResp.state。
         user.v1.WechatLoginReq:
             type: object
             properties:
                 code:
                     type: string
+                    description: |-
+                        授权码。**仅 flow=app 可用**：原生 SDK 在进程内直接返回 code，没有浏览器回调，
+                         因而没有 ticket。website/mp 走浏览器回调，code 由服务端封存进 ticket，
+                         此字段必须留空 —— 非空即拒绝，堵住旧的 code-only 通路。
                 flow:
                     type: string
                     description: app=移动应用 SDK；website=网站应用扫码；mp=公众号
+                ticket:
+                    type: string
+                    description: 浏览器 flow（website/mp）：回调 302 带回的一次性票据（oauth_ticket）。
+                codeVerifier:
+                    type: string
+                    description: 与授权时 code_challenge 配对的原文，由客户端本地保管。
+                state:
+                    type: string
+                    description: 原生 flow（app）：WechatAuthorizeURL(flow=app) 下发的 state。
         user.v1.WechatLoginResp:
             type: object
             properties:

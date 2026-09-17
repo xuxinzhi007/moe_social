@@ -2,9 +2,9 @@
 package userapp
 
 import (
-	"context"
-	userbiz "backend/internal/biz/user"
 	userv1 "backend/api/user/v1"
+	userbiz "backend/internal/biz/user"
+	"context"
 )
 
 // Package userapp 认证相关方法（登录、注册、OAuth）。
@@ -29,12 +29,12 @@ func (s *AppService) Register(ctx context.Context, in *userv1.RegisterReq) (*use
 
 // FeishuLogin 飞书 OAuth 登录。
 func (s *AppService) FeishuLogin(ctx context.Context, in *userv1.FeishuLoginReq) (*userv1.FeishuLoginResp, error) {
-	return userbiz.FeishuLogin(ctx, s.store, in)
+	return userbiz.FeishuLogin(ctx, s.store, s.oauthTx, in)
 }
 
 // FeishuAuthorizeURL 飞书授权地址。
 func (s *AppService) FeishuAuthorizeURL(ctx context.Context, in *userv1.FeishuAuthorizeURLReq) (*userv1.FeishuAuthorizeURLResp, error) {
-	return userbiz.FeishuAuthorizeURL(ctx, in)
+	return userbiz.FeishuAuthorizeURL(ctx, s.oauthTx, in)
 }
 
 // BindFeishu 绑定飞书。
@@ -54,10 +54,10 @@ func (s *AppService) SendFeishuTestCard(ctx context.Context, in *userv1.SendFeis
 
 // WechatLogin 微信 OAuth 登录。
 func (s *AppService) WechatLogin(ctx context.Context, in *userv1.WechatLoginReq) (*userv1.WechatLoginResp, error) {
-	return userbiz.WechatLogin(ctx, s.store, in)
+	return userbiz.WechatLogin(ctx, s.store, s.oauthTx, in)
 }
 
 // WechatAuthorizeURL 微信授权地址。
 func (s *AppService) WechatAuthorizeURL(ctx context.Context, in *userv1.WechatAuthorizeURLReq) (*userv1.WechatAuthorizeURLResp, error) {
-	return userbiz.WechatAuthorizeURL(ctx, in)
+	return userbiz.WechatAuthorizeURL(ctx, s.oauthTx, in)
 }

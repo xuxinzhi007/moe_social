@@ -11,6 +11,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
 func TestApplyEventWelcomeAndFirstPost(t *testing.T) {
 	db := openTestDB(t)
 	seedDefinitions(t, db)

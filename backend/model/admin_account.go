@@ -9,14 +9,14 @@ import (
 
 // AdminAccount Moe Admin 运维后台账号（与 App users 分离）。
 type AdminAccount struct {
-	ID           uint           `gorm:"primarykey" json:"id"`
-	Username     string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
-	Password     string         `gorm:"size:100;not null" json:"-"`
-	Role         string         `gorm:"size:20;not null;default:admin" json:"role"` // admin | super_admin
-	LastLoginAt  *time.Time     `json:"last_login_at,omitempty"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	ID          uint           `gorm:"primarykey" json:"id"`
+	Username    string         `gorm:"uniqueIndex;size:50;not null" json:"username"`
+	Password    string         `gorm:"size:100;not null" json:"-"`
+	Role        string         `gorm:"size:20;not null;default:admin" json:"role"` // admin | super_admin
+	LastLoginAt *time.Time     `json:"last_login_at,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (a *AdminAccount) BeforeSave(tx *gorm.DB) error {

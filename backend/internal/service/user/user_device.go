@@ -2,9 +2,9 @@
 package userapp
 
 import (
-	"context"
-	userbiz "backend/internal/biz/user"
 	userv1 "backend/api/user/v1"
+	userbiz "backend/internal/biz/user"
+	"context"
 )
 
 // Package userapp 用户设备同步。

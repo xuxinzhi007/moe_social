@@ -35,15 +35,15 @@ func TestDecayAttributes(t *testing.T) {
 	// 基础衰减率：hunger=0.8, energy=0.45, mood=0.18
 	// juvenile decay mult=0.5, adolescent=0.8, adult=1.0, elderly=1.5
 	tests := []struct {
-		name          string
-		stage         string
-		initHunger    float64
-		initEnergy    float64
-		initMood      float64
-		wantHungerGt  float64 // decay后hunger应 > 此值
-		wantHungerLt  float64 // decay后hunger应 < 此值
-		wantEnergyGt  float64
-		wantEnergyLt  float64
+		name         string
+		stage        string
+		initHunger   float64
+		initEnergy   float64
+		initMood     float64
+		wantHungerGt float64 // decay后hunger应 > 此值
+		wantHungerLt float64 // decay后hunger应 < 此值
+		wantEnergyGt float64
+		wantEnergyLt float64
 	}{
 		{
 			"juvenile衰减减半", StageJuvenile,

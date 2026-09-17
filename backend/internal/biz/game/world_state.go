@@ -35,9 +35,9 @@ func defaultWorldFlags() WorldFlags {
 		StoryPhase:    0,
 		Discovered:    []string{"古老钟楼", "广场长椅"},
 		NpcActivity: map[string]string{
-			"老人":     "坐在长椅上望着钟楼，抽着烟斗",
+			"老人":   "坐在长椅上望着钟楼，抽着烟斗",
 			"酒馆老板": "在酒馆门口擦拭木牌",
-			"乞丐":     "蜷缩在角落，用破布裹紧身体",
+			"乞丐":   "蜷缩在角落，用破布裹紧身体",
 		},
 		VisitedScenes: []string{"迷雾小镇"},
 	}

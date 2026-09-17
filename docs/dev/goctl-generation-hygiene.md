@@ -6,7 +6,7 @@
 > goctl 不再是依赖，Kratos 走 `protoc` + `protoc-gen-go` / `-go-grpc` / `-go-http` / `-openapi`。
 > **照本文执行任何命令都会失败。**
 >
-> **仍然有效的唯一结论**：日常契约改动用 `cd backend && make gen`（域 proto + conf + 路由计数 + openapi.yaml），首次需 `make init-proto-tools`。
+> **仍然有效的唯一结论**：日常契约改动用 `cd backend && make gen`（域 proto pb/grpc/http + openapi.yaml）；工具版本固定，安装与只读检查见 [new-api-kratos.md](./new-api-kratos.md)。
 > **现行 SSOT**：[moe-social-runtime.md](./moe-social-runtime.md) · [new-api-kratos.md](./new-api-kratos.md) · [backend/LAYOUT.md](../../backend/LAYOUT.md)
 
 以下为迁移期历史记录：

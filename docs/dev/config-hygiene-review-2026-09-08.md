@@ -1,11 +1,11 @@
 # 配置治理审查（2026-09-08）
 
 > **范围**：`backend/` · `lib/` · `moe-admin/` · `website/` · `deploy/` · `.github/workflows/` · 仓库卫生
-> **基线提交**：§0–§12 = `14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）；§16–§20 = `bec11b26 feat(life, arena): 落地M0/M1a活世界营地预览功能`（2026-09-09）；§21–§22 = `4f51845e refactor: 移除旧的配置系统，迁移到统一的pkg/conf`（2026-09-09）；**§23–§24 = `c083ce8a chore: 完成第九批配置治理整改，统一配置读取入口`（2026-09-11）**
-> **提交状态**：第一批（§13）= `8037287e`、第二批（§14）= `3ebcf62d`、第三批（§15）= `1d5a45ac`；第四至第七批（§16 第2步调用点迁移 · §17 第五批冗余收拢 · §19 批6a+序6 · §20 序2）合并入库于 `4f51845e`（已实测确认：`conf.DSN()` 由该提交引入，而 `bec11b26` 对配置治理零改动）；**第八批（§21）、第九批（§22）与第十批（§23）合并入库于 `c083ce8a`**。**第十一批（§24，对抗式自审）未提交，仍在工作区**（5 改 + 1 新增：`pkg/conf/load.go`、`pkg/conf/config.go`、`pkg/conf/conf_test.go`、`utils/admin_runtime_config.go`、`internal/biz/companion/engine_test.go`、新增 `utils/admin_runtime_config_test.go`）。
-> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13–§24 记录审查之后**已落地的十一批改动**（含改动内容与验证结果），性质是变更记录而非审查。
+> **基线提交**：§0–§12 = `14370f93 feat: 批量更新LLM推理链路与管理台体验`（2026-09-06）；§16–§20 = `bec11b26 feat(life, arena): 落地M0/M1a活世界营地预览功能`（2026-09-09）；§21–§22 = `4f51845e refactor: 移除旧的配置系统，迁移到统一的pkg/conf`（2026-09-09）；§23–§24 = `c083ce8a chore: 完成第九批配置治理整改，统一配置读取入口`（2026-09-11）；**§25 = `a4f476d5 refactor(admin): 移除免鉴权超管创建端点，重构账号初始化逻辑`（2026-09-16）**；**§26 = `54c5aa45 refactor(llm): LLM raw 透传端点迁移到 Kratos 原生路由并补全适配层`（2026-09-17）+ 本批工作区改动**；**§27 = 与 §26 同一基线 `54c5aa45` + 本批工作区改动（#41/#42/#48/#49 尚未提交）**；**§28 = 与 §27 同一基线 + 工作区改动（#19 尚未提交）**；**§29 = 与 §28 同一基线 + 工作区改动（#43 尚未提交）**
+> **提交状态**：第一批（§13）= `8037287e`、第二批（§14）= `3ebcf62d`、第三批（§15）= `1d5a45ac`；第四至第七批（§16 第2步调用点迁移 · §17 第五批冗余收拢 · §19 批6a+序6 · §20 序2）合并入库于 `4f51845e`（已实测确认：`conf.DSN()` 由该提交引入，而 `bec11b26` 对配置治理零改动）；第八批（§21）、第九批（§22）与第十批（§23）合并入库于 `c083ce8a`；**第十一批（§24）= `e1f03a86`**（早先记为「未提交」，已入库）；第十二批的 `life_items` 去重 = `0459e256`；**第十三批的 #39/#40 = `54c5aa45`，#41/#48/#49 仍在工作区**（5 改 + 1 删：`internal/server/auth.go`、`auth_test.go`、`transport/oauth.go`、`transport/sse.go`、`internal/biz/companion/engine_test.go`，删 `transport/bind.go`）；**第十四批（§27 / #42）全部在工作区**：43 文件 +1941/−8868，其中 5 个整文件删除（`apicomm/admin_memory.go`、`apicomm/local_models.go`、`apicomm/local_models_test.go`、`transport/bind.go`、`_probe/mint/main.go`）。**第十五批（§28 / #19）全部在工作区**：7 文件纯改、零删除（`pkg/conf/config.go`、`pkg/conf/derive.go`、`pkg/conf/conf_test.go`、`config/config.yaml`、`moewiring/api_life.go`、`moewiring/api_game.go`、`internal/service/game/game.go`）。**第十六批（§29 / #43）全部在工作区**：8 文件改 + 1 文件新增、零删除（改：`internal/service/companion/companion_api.go`、`deploy/config/config.go`、`internal/server/protohttp/adminapp/adminapp.go`、`lib/pages/checkin/checkin_page.dart`、`pkg/conf/derive.go`、`utils/admin_runtime_config.go`、`pkg/moe/core/tier.go`、`pkg/moe/toolaudit/record_test.go`、`internal/biz/appcfg/public.go`、`docs/dev/Moe-Intelligence-Stack-v1.md`；新增：`internal/biz/appcfg/public_test.go`）。
+> **性质**：§0–§12 是**只读审查**，所有结论均给出 `文件:行号` 证据，可按附录 A 的命令复核。§13–§29 记录审查之后**已落地的十六批改动**（含改动内容与验证结果），性质是变更记录而非审查。**§25–§27 已超出「配置治理」范畴**：这几批是在推进配置项时顺带挖出的**活 bug 与安全缺陷**（免鉴权端点、门禁失效、鉴权白名单、开放重定向、假成功信封），按需求方「先修活 bug，再推配置项」的决定优先处置；**§28 起回到配置项本身**。
 > **有效性**：本文是**绑定基线提交 `14370f93` 的快照**（依 `docs/README.md` 文档维护约定第 3 条）。§11 各批次整改落地后，对应章节即失效，应**直接删除该章节**而非保留 archive stub。所有行号以该基线为准，后续提交可能使其偏移。
-> ⚠️ **行号提醒**：前十一批改动已使 §0–§12 的部分行号失效（尤其 `moewiring/config.go`——该文件从 191 行降到 **48** 行，原 `:62-190` 区间的引用全部作废；§16 又让 `utils/db.go` 原 `:96-105` 塌缩为 `:96` 一行；§22 让 `runtime/config_load.go` 从 87 行降到 37 行，并删掉了 `internal/adapter/moeconfig/` 整个目录；§24 摘掉了 `pkg/conf/config.go` 里 `MoeProduction` 的 4 个字段、并重写了 `utils/admin_runtime_config.go` 的写回实现，早先章节对这两个文件的行号引用一律作废）。凡被 §13–§24 就地更新过的条目，以更新后的文字为准；未更新的条目按基线行号读。
+> ⚠️ **行号提醒**：前十六批改动已使 §0–§12 的部分行号失效（尤其 `moewiring/config.go`——该文件从 191 行降到 **48** 行，原 `:62-190` 区间的引用全部作废；§16 又让 `utils/db.go` 原 `:96-105` 塌缩为 `:96` 一行；§22 让 `runtime/config_load.go` 从 87 行降到 37 行，并删掉了 `internal/adapter/moeconfig/` 整个目录；§24 摘掉了 `pkg/conf/config.go` 里 `MoeProduction` 的 4 个字段、并重写了 `utils/admin_runtime_config.go` 的写回实现；§25 删掉了免鉴权的超管创建端点及其路由；§26 把 `internal/server/auth.go` 的 `publicPaths` 单表拆成读/写两张表并删了 10 条死条目——**该文件所有行号引用一律作废**，`transport/bind.go` 也已整文件删除；**§27 删掉 21 个操作，`backend/openapi.yaml` −983 行——该文件所有行号引用一律作废**，同样作废的还有 `legacy/types/types.go`（删 9 个类型）、四个 proto 及其 `.pb.go`（llm / admin / companion / platform）、`apiconfig/config.go`、`wiring/config_override.go`、`pkg/conf/config.go`、`config/config.yaml`（`local_models:` 段消失，其后行号整体前移）、`api/etc/moe.yaml`、`biz/llm/platform_common.go`（原 `:126-148` 两个 501 桩已删）、`lib/services/companion_service.dart`；`apicomm/local_models.go` 与其测试整文件删除；**§28 删掉了 `moewiring/api_life.go:8` 的 `livingWorldIntervalSeconds` 常量并重写了该文件的装配段——§16.4 对它的引用（含那张四行副本表的第 3 行）一律作废**，同时作废的还有 `pkg/conf/derive.go`（`:31-36` 插入新常量、`:285-313` 插入两个新函数，其后行号整体后移）、`pkg/conf/config.go` 与 `config/config.yaml`（各插入 3 个新键 / 5 行，其后行号再次后移）、`pkg/conf/conf_test.go`、`internal/service/game/game.go`、`moewiring/api_game.go`；**§29 摘掉了 `pkg/moe/core/tier.go` 里三个幽灵工具名并重写了 `AllowsTool`——它从 `:32-45` 移到 `:38-51`，§25.7 对 `tier.go:39,43` 的引用与 §23 第 29 行对 `tier.go:32-45` 的引用一律作废**；同批 `pkg/moe/toolaudit/record_test.go` 追加 37 行、`pkg/conf/derive.go` 因导出 `TrimURL` 再次后移（现 `:382-402`）、`utils/admin_runtime_config.go` 删掉私有 `trimURL` 并把 6 个调用点改指 `conf.TrimURL`、`internal/biz/appcfg/public.go` 重写并新增同目录 `public_test.go`、`companion_api.go`（3 行）/ `deploy/config/config.go`（3 行）/ `adminapp.go`（2 行）/ `checkin_page.dart`（1 行）修乱码、`docs/dev/Moe-Intelligence-Stack-v1.md` 的 §2 档位表与 §4 工具清单已重写。**§23 第 29 行引的 `config.yaml:184` 现为 `:171`**（`local_models` 整块 13 行被删所致，是上移不是下移））。凡被 §13–§29 就地更新过的条目，以更新后的文字为准；未更新的条目按基线行号读。
 > **前提说明**：当前仓库内的第三方密钥为**开发期临时凭据，正式版会整体更换**。因此本文的重点不是「密钥泄露应急」，而是**为什么结构上会导致密钥只能写在这里**——结构不改，换完新密钥仍会回到同一状态。
 
 ---
@@ -36,6 +36,16 @@
 | **18** | **全仓没有任何文档提到 `pkg/conf`**，24 处文档陈述已失真（其中 1 处在 `alwaysApply: true` 的工程规则 SSOT 里） | **P1** | `.cursor/rules/moe-social-engineering.mdc:336` 教人用 `-conf ./config` 启动，而 `cmd/moe-social/main.go:18` 只有 `-f`，照做必报 `flag provided but not defined: -conf`；其余 23 处见 §23 | 批次 6（文档对齐）→ §23 |
 | **19** | **管理台点一次「保存」会销毁 `config.yaml` 全部 79 行注释**，并静默把 3 个 float 降级成 int | **P1（破坏性，写在 HEAD 上就有）** | 旧 `ApplyRuntimeConfigPatch` 走 `viper.Set` + `WriteConfig()`，实测真实文件 10073→**4416** 字节、265→**154** 行、注释 79→**0** 行；被抹掉的注释里有只此一处的运维知识（本地地址备选 `:133`、CDN 回退语义 `:164`、被注释掉的 `ollama:` 段 `:122-126`、本地数据库段 `:257-265`）。见 §24.4 | 批次 11 ✅ → §24.4 |
 | **20** | **配置的读路径与写路径对「哪个文件是权威」答案不一致**，且 `Reload()` 有一个跨整次读盘的未加载窗口 | **P1** | 读路径 `ReadRuntimeConfig` → `conf.Reload()` → `current.path` 尊重 `-f`；写路径 `resolveUnifiedConfigPath()` 从不查 `conf.Path()`，只试 3 个 cwd 硬编码候选，写完还 `conf.LoadFile(那个路径)` 把整个进程的配置源劫持走。`Reload()` 旧实现先置 `current = nil` 再读盘，窗口内并发 `Get()` 落到包级 `searchDirs` 而非 `-f`，实测 **0.25 秒内 459501 次错值读取**（cwd 下没有 `config/` 时读到零值 `Config`：`DSN()` 空连接串、`AuthAccessSecret()` 空密钥）。见 §24.2 / §24.3 | 批次 11 ✅ → §24.2–§24.3 |
+| **21** | **`POST /api/admin/moe/bootstrap` 让任何人无需登录就能把自己创建成超管** | **P0（免鉴权提权）** | 该端点在 `publicWritePrefixes` 之外的旧 `publicPaths` 里被前缀放行，且自身不校验任何凭据；实测裸 `curl` 即可拿到 `super_admin` token。见 §25.2 | ✅ 批次 12：迁移时种账号 + 删端点（§25.3） |
+| **22** | **`CGO_ENABLED=0` 让全仓 DB 用例静默 `t.Skip`，`make check` 全绿但什么都没验** | **P1（门禁失效）** | 本机 `go env CGO_ENABLED` 持久为 0，gorm sqlite 依赖 cgo；被它藏住的有 3 条真实失败用例。见 §25.4 / §25.5 | ✅ 批次 12：`make test` 写死 `CGO_ENABLED=1` + `utils/cgo_canary_test.go` 哨兵 |
+| **23** | **缺 HTTP 适配层的 RPC 不报 404、不报编译错，被内嵌 `Unimplemented*Server` 桩答成永久 501** | **P1（一类，非一处）** | LLM raw 透传端点两条、`/api/admin/moe/brain/pipeline/stream` 等；`prototest.AssertRPCsAdapted` 之后这类漏洞在测试期就会红。见 §26.1 | ✅ 批次 13：补适配层 + 落门禁 |
+| **24** | **鉴权白名单不分 HTTP 方法，前缀命中即一律放行** → `POST /api/llm/models/delete`、`POST /api/llm/models/download`、`DELETE /api/images/{filename}` 三条写接口免鉴权 | **P0（免鉴权写）** | 旧 `publicPaths` 32 条一视同仁；实测三条写路由在无任何凭据时穿透过滤器。拆成读/写两张表后写路由恢复 401，读路由（含终端模式的 `/api/llm/models/raw`）逐条保住。见 §26.2 | ✅ 批次 13：`publicReadPrefixes` / `publicWritePrefixes` 分表 |
+| **25** | **三个 GET 路由用 body 解码器 `ctx.Bind`，永远 400 `unregister Content-Type: `**；且 `make check` 每天 9 小时必红 | **P1 + 门禁失效** | 前者：`transport/oauth.go` 两个回调 + `transport/sse.go`，而 legacy `types.go` 只有 `form:` tag，`BindQuery` 同样填不进去（见 §26.3）；后者：`TestPushProactiveOnlyAfterInactivityCooldown` 用 `defaultProfile()` 的 22:30–07:30 UTC 免打扰窗口，而 `pushProactive` 读 `time.Now().UTC()`，实测 UTC 02:31 红、17:07 绿（见 §26.4）。修 #25b 时顺带照出**免打扰早退分支此前零覆盖**（变异 MC 改坏实现全仓无一用例变红） | ✅ 批次 13：三条改读 query + 钉死时钟 + 补 `TestPushProactiveSkipsInsideQuietHours` |
+| **26** | **OAuth `state` 同时充当回跳地址，校验只看 scheme 不看 host** → 免鉴权 302 可把**真实授权码**送到任意站点，构成账号接管；`state` 被这样消耗掉也意味着整条 OAuth 流程**零 CSRF 防护** | **P0** | `utils/feishu_oauth_redirect.go:11-51` 的 `isAllowedReturnURL` 对 `http`/`https` 直接 `return true`；纯函数探针实测 `state="https://evil.example/steal"` → `"https://evil.example/steal?feishu_code=CODE-ABC"`（wechat 同构）；链条第一环 `q.Set("state", state)` 原样透传，而 `authorize-url` 本身免鉴权。见 §26.5 | ⛔ **登记不修**：早于本批（wechat 一直可达），回退飞书白名单会重新打断飞书登录；host 白名单是策略决定，与需求方「多机开发 / 隧道来回切」的约束冲突 |
+| **27** | **`POST /api/user/reset-password` 不校验任何验证码，仅凭 email 就能改掉该账号密码** | **P0（账号接管）** | `ResetPasswordReq` 里连 `code` 字段都没有；`publicWritePrefixes` 放行三条找回密码路由，其中两条后端未实现（404），第三条实现完整且无校验。见 §26.5 | ⛔ **登记不修（需求方决定「这个暂时不做处理」）**：保持原样放行，不要顺手改它的语义 |
+| **28** | **业务失败被当载荷返回，客户端只校验外层信封 → 弹绿色成功提示却什么都没做** | **P1（对用户撒谎，比报错更坏）** | `platform_llm.go:37` 是 `return platformWriteToBaseResp(result), nil`，**error 恒为 nil**；真机实测 `POST /api/llm/agents` 回 `{"code":200,"data":{"code":501,"message":"未实现"},"message":"操作成功","success":true}`。Dart 侧只看外层：`api_service.dart:483,492,498` + `api_response.dart:7-13`（`code==200` 属白名单）→ `llm_api_service.dart:68` 判成功 → `chat_page.dart:817` 弹 `'系统提示词已更新并同步到服务器模型'`。见 §27.5 | #51（**原记录「每次必弹红色错误」是错的，已改写**）；`platformWriteToBaseResp` 目前仅 1 个调用点，但同形适配方法会继承这个假成功 |
+| **29** | **两个引擎的世界节奏是编译期常量，调一次要重新构建部署整个后端**；且 `45` 这个数在仓里有两份副本，把下游的兜底守卫顶成了死代码 | P2 | §16.4 登记的四处硬编码 + 两处可配；生效的两处是 `moewiring/api_life.go:8` 的 `livingWorldIntervalSeconds = 5*60`，与 `service/game/game.go` 里另一个 `45*time.Second`（与 `gamebiz.defaultWorldTickInterval` 同值，导致 `world_runner.go:20` 的 `interval <= 0` 永不可达）。见 §28 | ✅ 批次 15：新增 `moe.life_tick_seconds` / `life_flush_seconds` / `world_tick_seconds`，真机双跑实测生效（300/300 vs 30/45）。**两处 biz 层缺省值故意保留**，理由见 §28.2 / §28.3 |
+| **30** | **同一件事在仓里有三份各执一词的描述，分叉时全都不报错**：URL 规范化有三份逐字节相同的副本、档位闸放行三个注册表里不存在的工具名、文档工具清单列了五个不存在的工具 | P2 | ① `pkg/conf/derive.go` · `utils/admin_runtime_config.go` · `internal/biz/appcfg/public.go` 三份「TrimSpace + 去尾斜杠」逐字节相同，规范化的是同一批 `public_base_url`；② `tier.go` 的 `AllowsTool` 放行 `memory_search`/`memory_get`/`memory_save`，而注册表只有 5 项；③ `Moe-Intelligence-Stack-v1.md` §4 列 8 个工具、§25.7 只登记 5 处乱码（实测 9 处，含 2 处终端用户可见）。见 §29 | ✅ 批次 16：三份副本全部委托到导出的 `conf.TrimURL`（**第四份 `media/image.go:66` 兜底值不同，刻意不并**，归 #44）；摘掉三个幽灵工具名并新增回归钉，变异证明**旧套件对此失明**；9 处乱码全修，恢复结果与仓内自带的干净同胞逐字节相同；真机实测 `public_api_base_url: "/"` 由「200 + 空基址」变为 **404**（本批唯一行为变更）。#43 仅剩 #16（gradle 口令）未做 |
 
 ---
 
@@ -1173,6 +1183,12 @@ const livingWorldIntervalSeconds = 5 * 60
 
 四处表达同一类事实、两处是死值、生效的两处不可配。**建议**：新增 `moe.life_tick_interval_seconds` / `moe.life_flush_interval_seconds` / `moe.game_world_tick_interval_seconds`，由 `pkg/conf` 提供解析方法，`api_life.go`、`world_runner.go` 与 `types.go` 的默认值都改为引用它。此项属批次 5（新配置项接入统一加载器），不阻塞 §12.5。
 
+> ✅ **已于批次 15 落地（见 §28），但落地方式与本段建议有三处偏差、本段另有一处漏登，均以 §28 为准**：
+> ① 键名实际是 `moe.life_tick_seconds` / `life_flush_seconds` / `world_tick_seconds`（对齐同段 `bot_scheduler_tick_seconds` 的既有命名，去掉冗余的 `_interval_` 与 `game_`）；
+> ② **`world_runner.go:13` 与 `types.go:41,44` 的默认值故意没有改为引用配置层** —— 照本段建议做会造出第三、第四份副本，与本条要消灭的问题同类（理由见 §28.2 / §28.3）；
+> ③ 本段的表格把 `types.go:41` 标为「✗ 被覆盖」是对的，但没写出它是 **5 秒**（单元测试用缺省）而非 5 分钟；`LifeIntervals()` 未配置时若返回 0 让下游兜底，世界节奏会凭空快 60 倍，所以配置层必须显式给出 300 秒（见 §28.2）。
+> ④ 本段漏登了 `internal/service/game/game.go` 里另一个硬编码的 `45*time.Second` —— 它与 `world_runner.go:13` 同值，使 `:20` 的 `interval <= 0` 守卫永不可达。§28.3 已清掉。
+
 ### 16.5 新登记：`utils/admin_seed.go:32` 的 `admin123` **代码级**兜底
 
 ```go
@@ -1476,8 +1492,8 @@ if strings.TrimSpace(password) == "" {
 | `utils/auth_jwt_config.go` | 2 | **死代码删除**，非迁移，见下 |
 | `utils/admin_jwt.go` | 2 | **死代码删除**，非迁移，见下 |
 | `internal/biz/user/oauth_feishu.go` | 2 | `conf.Get().Feishu.Enabled` ×2 |
-| `utils/feishu_oauth_redirect.go` | 1 | `conf.Get().Feishu.AppReturnURL` |
-| `utils/wechat_oauth_redirect.go` | 1 | `conf.Get().Wechat.AppReturnURL` |
+| `utils/feishu_oauth_redirect.go` | 1 | `conf.Get().Feishu.AppReturnURL`<br>↪️ **第十七批随 #50 整体删除（§30.2）**：回跳地址改由 `oauth.allowed_return_urls` 白名单裁定，`AppReturnURL` 配置键不复存在。当时的迁移是真的，只是产物后来没了 |
+| `utils/wechat_oauth_redirect.go` | 1 | `conf.Get().Wechat.AppReturnURL`<br>↪️ 同上，**已随 #50 删除** |
 | `internal/biz/ai/provider_keys.go` | 1 | `conf.AuthAccessSecret()`（该文件唯一的 `utils.` 用途，导入随之换掉） |
 | `internal/biz/admin/dashboard.go` | 1 | `conf.Get().Feishu.Enabled` |
 
@@ -1878,8 +1894,8 @@ INSERT INTO `life_items` (…) VALUES (6 条) ON DUPLICATE KEY UPDATE `id`=`id` 
 
 - **`ollama.*` 回退现在可以删了。** §17.3 当时删掉 15 处恒零值回退，但 `ResolveInference()` 里还留着 5 处（`base_url` / `api_style` / `timeout_seconds` / `memory_model` / `api_key`）。本批之后 `Config.Ollama` 结构体**只剩这一个读者**，且 `config.yaml` 里该段整段被注释。删除前仍需按 §17.5 的判据确认「没有线上副本依赖它」——VPS 上的 `config.yaml` 与仓库已永久分叉（§0 第 9 行），仓库里注释掉不代表线上没有。
 - §17.6 的 (a) `make check` 不跑 gofmt/vet（**127** 个文件不洁）、(b) `toolaudit` 阈值、(d) 被提交的二进制 `backend/bin/moe-social` 造成 grep 幽灵命中、(e) 三级冗余，均仍只记账未修。
-- #19（Life 引擎 Tick/Flush 间隔是编译期常量）、#29（离线模型死链路删或接线）仍待产品决定。
-- **config 拆分（§12.6 / 批次 2）仍未开始**，按需求方「可以晚一点」的排期暂缓；但「必须排在凭据轮换之前」这条约束不变。本批让 `-f` 成为全局权威，实际上**降低**了拆分的难度：拆分后多文件合并只需发生在 `pkg/conf` 一处，不会再有 10 个各自为政的 searchDirs 需要同步。
+- ~~#19（Life 引擎 Tick/Flush 间隔是编译期常量）、#29（离线模型死链路删或接线）仍待产品决定。~~ → **两项均已结**：#29 由第十四批决策为「整链删除」并落地（§27.3）；#19 由第十五批落地为三个配置键（§28），无需产品决定 —— 它不是「删还是补活」，是「可配还是不可配」。
+- **config 拆分（§12.6 / 批次 2）已被需求方取消，不是「暂缓」**（2026-09-16 原话见 §12.6 的 ⛔ 块，§25.9 亦有摘要）：多机器开发要来回切换，环境分层会把「改文件」变成「改环境变量再重启」，对需求方更麻烦。**不要再把它当待办推进，也不要再提环境分层方案。** 连带 #17「`config.yaml` 去跟踪」一并挂起。本批让 `-f` 成为全局权威这一点对该决定无影响 —— 它的收益（配置只有一个权威来源）不依赖拆分是否发生。
 
 ---
 
@@ -2092,7 +2108,7 @@ pgrep -fl 'moe-work|moe-head'; lsof -nP -iTCP:8888 -sTCP:LISTEN
 | 26 | `docs/dev/用户级记忆统一改造验收脚本.md:68` | 第 4 步关闭 `memory.search.hybrid_enabled` | 零读者（`pkg/conf/config.go:20` 记名死配置）→ 该步永不生效 | 见 #27，本条被更大的发现吸收 |
 | 27 | 同上 `:66-67`、`:72,76` | Case G/H 调 `memories/reindex`、`memories/search`、`POST/GET /memories` | **路由有、实现无**：见 §23.3(3) | Case G 整节标为「已下线，无法执行」，原步骤收进 `<details>`；Case H 逐步标 ✗/✅（只有 `/devices` 属 user 域、仍可验证） |
 | 28 | `docs/dev/用户记忆系统-OpenClaw式演进设计.md:4,108,113,120` | PostgreSQL；`HybridSearchUserFacingMemories` / `HybridSearchEnhanced`；`ollama.base_url` + `memory.embedding.ollama_model`；`providers[]` | 实为 MySQL（`postgres` 在 backend 的 `.go`+`go.mod` 零命中）；两函数全仓不存在；`ollama_model` 根本不是键（`config.yaml:237-240` 只有 openai_*）；无 `providers[]` | 加逐项实测对照横幅。**本文自称「唯一事实源，禁止并行多套方案」，此类文档失真危害最大** |
-| 29 | `docs/dev/Moe-Intelligence-Stack-v1.md:85` | 未配置 Agent 时按 `moe.default_capability_tier` | 该键**零读者**（`config.yaml:184` 写着 s2 但没人读）；真实默认是编译期常量 `core.DefaultTier = TierS2`（`tier.go:16`），`ParseTier` 的 default 分支同样返回 S2 | 改为编译期常量，并加「改 config.yaml 无效」的警告。档位工具表也与 `AllowsTool`（`tier.go:32-45`）不符，一并按代码补全 |
+| 29 | `docs/dev/Moe-Intelligence-Stack-v1.md:85` | 未配置 Agent 时按 `moe.default_capability_tier` | 该键**零读者**（`config.yaml:171` 写着 s2 但没人读；~~原记 `:184`~~，`local_models` 整块 13 行在 #42 被删后**上移**到 `:171`）；真实默认是编译期常量 `core.DefaultTier = TierS2`（`tier.go:16`），`ParseTier` 的 default 分支同样返回 S2 | 改为编译期常量，并加「改 config.yaml 无效」的警告。档位工具表也与 `AllowsTool`（现 `tier.go:38-51`；~~原记 `:32-45`~~，§29 摘掉三个幽灵工具名后下移）不符，一并按代码补全。**但本行「按代码补全」的处置只对了一半**：§29 发现该文档 §4 的工具清单列了 **5 个从不存在的工具**，其中 2 个还被注明「由 Flutter 本地处理」，而那条 Flutter 链路整条不存在 —— 详见 §29.5 |
 | 30 | `backend/docs/private_messages.md:30` | 「RPC 启动时已 `InitConfig` 可读」 | `backend/rpc/` 不存在、`utils.InitConfig` 无此函数。但**配置本身是活的**：`utils/private_message.go:15` 读 `conf.Get().PrivateMessage` | 换成实测读取链（`run_http_only.go:19` → `utils/private_message.go:15`） |
 | 31 | `docs/testing/E2E测试清单.md:6-7` | 前置：`backend/api` 已启动；`backend/rpc` 已启动 :8080 + `SuperRpc` 可连通 | `backend/api` 是 proto 目录不是进程；`backend/rpc/` 不存在、:8080 无监听、`SuperRpc` 与相关键已删 | 改为 `make moe-social` + `curl /health`，并明确「不存在后端 RPC 这一前置，不是环境搭错」 |
 | 32 | `README.md:84,92-93` | `make build # 或分别启动 api / rpc`；`docker logs moe-social-api` / `-rpc` | compose 只有**一个** service，`container_name: moe-social`（`docker-compose.binary.yml:3-6`）→ 那两条 `docker logs` 必得 no such container；且无 `build:` 段，`--build` 是空操作 | 改正，并补上被漏掉的依赖关系：compose 挂载 `./bin/moe-social`，故 `make build` 是**前置**步骤 |
@@ -2567,8 +2583,8 @@ toolaudit 重写，2 条变异正确变红：
 |---|------|-----------|
 | 已删端点仍留在代码图快照里 | `moe-admin/public/dev/codegraph/backend.json:1055-1062, 6686-6694` | 入库的**快照产物，仓内没有生成器**。不手改 6000+ 行 JSON——手改一个无法重生的产物只会让下次重生时更难对账。登记为已知陈旧 |
 | 工具生成的 wiki 仍引用旧函数 | `.qoder/repowiki/…/管理端业务层（Admin Biz）/架构设计.md:5` 提到 `BootstrapAdminAccount` | 同上，工具产物，不手改 |
-| **中文乱码（GBK 误编码）** | `deploy/config/config.go:53,56,100`（`"璇诲彇 config.local.yaml: %w"` 应为「读取」）· `internal/server/protohttp/adminapp/adminapp.go:13,23`（`// Server 闂佽楠哄﹢閬嶅磻…`） | **是一类缺陷，不是两处笔误**：某次编辑用错了编码。其中 `config.go:100` 那条在**错误信息字符串**里，会直接展示给运维。本批未动（不在范围内），但值得单独开一批扫全仓 |
-| `AllowsTool` 仍放行三个已不存在的工具 | `pkg/moe/core/tier.go:39,43` 的 `memory_search` / `memory_get` / `memory_save` | 放行一个不存在的工具本身无害，属死条目。**没删**：`AllowsTool` 可能被喂进历史审计记录里的旧工具名，我没有追完全部调用方，不拿猜测当结论 |
+| **中文乱码（GBK 误编码）** | `deploy/config/config.go:53,56,100`（`"璇诲彇 config.local.yaml: %w"` 应为「读取」）· `internal/server/protohttp/adminapp/adminapp.go:13,23`（`// Server 闂佽楠哄﹢閬嶅磻…`） | **是一类缺陷，不是两处笔误**：某次编辑用错了编码。其中 `config.go:100` 那条在**错误信息字符串**里，会直接展示给运维。~~本批未动（不在范围内），但值得单独开一批扫全仓~~ → **✅ 已在第十六批（§29.2）扫全仓并全部修完**。本行登记的 5 处只是**运维/源码可见**的那一类；全仓扫描实测 **9 处 / 4 文件**，另有**两处终端用户可见**的本行完全没提到：`companion_api.go:374,378,385`（Kratos HTTP 错误的 `message`，直接进 App 弹窗）与 `lib/pages/checkin/checkin_page.dart:826`（签到页进度文案）。影响面比本行记载的严重 |
+| `AllowsTool` 仍放行三个已不存在的工具 | `pkg/moe/core/tier.go:39,43` 的 `memory_search` / `memory_get` / `memory_save` | 放行一个不存在的工具本身无害，属死条目。~~**没删**：`AllowsTool` 可能被喂进历史审计记录里的旧工具名，我没有追完全部调用方，不拿猜测当结论~~ → **✅ 已在第十六批（§29.4）追完并摘除**：调用方恰好 2 个（`tools/executor.go:33`、`toolaudit/record.go:90`），两处的名字都来自 5 项注册表；`flow_run.go` 只可能把 `post_create` 交给 `Execute`，历史审计行进不来。唯一可观测差异是一条**本就在失败**的路径上的文案。`tier.go` 行号已变为 `:38-51` |
 | `scripts/archive/rpc-defs/common.proto:1117,1119` 仍有 `AdminBootstrapAccountReq/Resp` | 归档目录 | `scripts/gen/` 与 `Makefile` **零引用**，实测确认是死档。归档就该保持归档时的样子，不动 |
 
 ### 25.8 §12.6 拆文件已被取消
@@ -2622,6 +2638,701 @@ toolaudit 重写，2 条变异正确变红：
 
 ---
 
+## §26 2026-09-17 第十三批：活 bug 收口 —— 一个免鉴权的写接口群 + 三个永远 400 的 GET 路由
+
+需求方定的顺序是「先修活 bug，再推配置项」，本批就是这个「先」。前四项（#39 反射 panic、#40 缺适配方法、#41 鉴权洞、#48 GET 解码器）已随 `54c5aa45` 与本批工作区改动落地；过程中另外挖出两项**登记不修**的安全缺陷（#47 免鉴权改密码、#50 OAuth 开放重定向）和一项**门禁缺陷**（#49 挂钟依赖用例）。
+
+### 26.1 结论
+
+| 编号 | 缺陷 | 线上表现 | 处置 |
+|---|---|---|---|
+| #39 | `httpFromContext` 反射读非导出字段 | 三个 raw 透传端点**必然 panic**，全废 | 已修（`54c5aa45`）：迁到 Kratos 原生路由，直接拿 `ResponseWriter` |
+| #40 | Companion 三个 RPC + `ListLlmModels` 没写 HTTP 适配方法 | 生产**永远 501**，且不报错、不 404 | 已修（`54c5aa45`）：补齐适配 + 新增 `prototest.AssertRPCsAdapted` 反射审计 |
+| #41 | `publicPaths` 白名单不分 HTTP 方法 | 前缀命中的**写路由一律免鉴权** | 已修：拆成读/写两张表，删 10 条死条目，补 1 条飞书回调 |
+| #48 | 三个 GET 路由用 `ctx.Bind`（body 解码器） | 浏览器重定向过来的 GET 没有 `Content-Type` → **400 CODEC**，回调逻辑一行都执行不到 | 已修：直接读查询串；`transport/bind.go` 随之删除 |
+| #49 | 用例依赖 `time.Now().UTC()` 的小时数 | `make check` **每天 9 小时必红**，门禁不是确定性的 | 已修：钉死免打扰窗口；顺带补上被它掩盖的零覆盖 |
+| #47 | `POST /api/user/reset-password` 免鉴权且不校验验证码 | 知道邮箱即可改任意账号密码（**账号接管**） | **登记不修**：需求方 2026-09-17 明确「这个暂时不做处理」 |
+| #50 | OAuth `state` 被当回跳地址，只校验 scheme 不校验 host | 302 到任意外部站点**并把授权码带过去** | **登记不修**：修法需要先定 host 白名单策略，与多机器开发冲突 |
+
+### 26.2 #41 证据链：白名单不分方法 = 写接口免鉴权
+
+`requiresAuth` 的旧实现只有一张 `publicPaths`（**32 条**），前缀命中就 `return false`。它下面那段「区分写方法与 GET」的分支**两个 `return` 都是 `true`**，是彻底的死代码，还和它自己的注释「所有写操作强制认证」正好相反。于是判定退化成：**路径前缀命中 ⇒ 任何方法都放行**。
+
+同一套假 Ollama + 同一份 config 副本，分别用 HEAD 二进制与工作区二进制各跑一遍全量探针（差异只可能来自本次改动）：
+
+| 探测 | BEFORE（HEAD） | AFTER（本批） | 判定 |
+|---|---|---|---|
+| `POST /api/llm/models/delete` 无 token | **http=200**，`data.code=501 未实现` | **401** `缺少认证信息，请先登录` | 洞已关。BEFORE 那个 200 说明请求**穿过鉴权打到了 llmbiz**，只因函数还是 501 桩才没真删模型 |
+| `POST /api/llm/models/download` 无 token | 同上 200/501 | **401** 过滤器措辞 | 同上；未认证即可让服务器去拉模型 |
+| `DELETE /api/images/x.png` 无 token | 401 `unauthorized` | 401 **`缺少认证信息，请先登录`** | **措辞变了才是关键**：BEFORE 是 media 适配层自己再查一次 claims 挡住的（防线在错的那一层），AFTER 是过滤器挡的 |
+| `DELETE /api/images/x.png` **带** token | 403 `forbidden` | 403 `forbidden` | 未回归：带身份的请求照样穿过过滤器、由适配层判归属 |
+| `GET /api/images/x.png` 无 token | 404 `图片不存在` | 404 `图片不存在` | **未过度收紧**：公开图片仍然公开 |
+| `GET /api/llm/models` 无 token | 200 + 真模型列表 | 200 + 真模型列表 | 客户端 `mergeTunnelHeaders` 不带 bearer，这条必须继续公开 |
+| `GET /api/llm/models/raw` 无 token | 418 + 假 Ollama 标记 | 418 + 假 Ollama 标记 | 终端模式的 `modelsUri()` 靠 `/api/llm/models` **前缀**覆盖，改成精确匹配就会静默 401 |
+| `GET /api/images` 无 token（列表） | 401 | 401 | 前缀带斜杠的边界正确：列表要登录，取图才公开 |
+| `POST /api/user/login`…`/api/landing/feedback` 共 7 条无 token | 全部非 401 | 全部非 401 | 换 token 之前的引导写流程一条没被误伤 |
+| `GET /api/admin/accounts` 无 token | 401 `请先登录管理后台` | 401 `请先登录管理后台` | **删掉 `/api/admin/` 那条白名单零影响**：admin 分支在 `requiresAuth` 之前就仲裁完了 |
+| `POST /api/admin/login` | 非 401 | 非 401 | 免鉴权登录未变 |
+| 10 条死条目（`/api/platform/config`、`/api/doc`、`/api/media/upload`…） | 404 | **401**（`/api/llm/models-raw` 仍 404） | BEFORE 的 404 已经证明这些路由**全仓不存在**，删白名单条目不影响任何调用方。`models-raw` 仍 404 是因为它被读表的 `/api/llm/models` 前缀盖住、放行后撞上 mux |
+| `GET /api/user/login` 无 token | **500** `invalid argument` | **401** | 唯一一处行为收紧。proto 只注册了 `post:`（`api/user/v1/*.proto:783`），Flutter 只在 `api_service.dart:614` POST，全仓零 GET 调用方 |
+| #39 回归 `POST /api/llm/chat/raw`、`/api/llm/show/raw` | 418 + 标记 | 418 + 标记 | 未回归 |
+| #40 回归 confirm / proactive-deliveries / revoke | 404 `COMPANION_MEMORY_NOT_FOUND` / 200 / 500 guard | 完全一致 | 未回归 |
+| 待删接口 `context/preview`、`local-models/catalog` | 501 | 501 | 阳性对照：探针看得见 501，所以上面「不再是 501」的结论有意义 |
+
+汇总计数（同一份探针、同一台机器、间隔 20 分钟）：
+
+| 指标 | BEFORE | AFTER |
+|---|---|---|
+| 过滤器措辞 `缺少认证信息，请先登录` | 3 | **13** |
+| 适配层措辞 `unauthorized` | 1 | **0** |
+| 400 CODEC `unregister Content-Type` | 10 | **8** |
+| `http=401` | 6 | **15** |
+| `http=000`（探针没打到服务，必须为 0） | 0 | 0 |
+
+白名单：**32 条 → 13 读 + 10 写**。删掉 10 条死条目、补 1 条飞书回调，其余按方法归位。
+
+### 26.3 #48 证据链：GET 路由用 body 解码器
+
+Kratos 的 `ctx.Bind(v)` 走的是 **body 解码器**（`transport/http/context.go:100` 的 `srv.decBody`），不是查询串解码器。而 `DefaultRequestDecoder` 在没有 `Content-Type` 时直接回：
+
+```
+400 {"code":400,"message":"unregister Content-Type: ","reason":"CODEC","success":false}
+```
+
+浏览器重定向打过来的 OAuth 回调 GET 恰恰没有 `Content-Type`。BEFORE 实测三条全中：
+
+| 路由 | BEFORE | AFTER |
+|---|---|---|
+| `GET /api/auth/feishu/callback?code&state` | **401** 过滤器措辞（白名单里只有 wechat） | **200**，返回「飞书授权」页（`meta refresh` 到 `about:blank`） |
+| `GET /api/auth/wechat/callback?code&state` | **400 CODEC** | **200**，返回「微信授权」页 |
+| `GET /api/admin/moe/brain/pipeline/stream?agent_key=x`（带 admin token） | **400 CODEC** | **200**，`event: error` + `data:{"code":500,"message":"record not found"}` —— SSE 流起来了，错误来自 `GetBrainPipeline` 查不到这个 agent，**不是解码失败** |
+
+**这里有个必须一起修的陷阱**：飞书回调的 401 与 400 CODEC 是**串联**的两道故障。只把它加进白名单，401 会当场退化成 400 —— 用户看到的还是「飞书登录走不完」，而排查的人会以为白名单已经修好了。所以 #41 与 #48 必须同批验证，不能分开收口。
+
+**为什么不能改用 `ctx.BindQuery`**：它走 `decQuery`，而 Kratos 的 form 编解码器把 tag 名设成了 **`json`**（`encoding/form/form.go:27-30`）。`types.FeishuOAuthCallbackReq` 这些 go-zero 时代的 legacy 结构体**只有 `form` tag**（`internal/legacy/types/types.go:2141-2144, 3807-3810, 579-581`），换过去照样绑不上，只是错误从 400 变成静默空值 —— 更难查。所以改成显式 `r.URL.Query().Get(...)`，并把只剩这一个用途的 `transport/bind.go` 删掉。
+
+回调页把 `code` 回显到 HTML 里，两处都过了 `html.EscapeString`（`oauth_callback.go:41,66`），无 XSS。页面写「授权成功」不是 bug：回调只做**浏览器中继**，真正拿 code 去换用户资料的是后续 `POST /api/auth/{feishu,wechat}/login`。
+
+### 26.4 #49 门禁级缺陷：用例挂在挂钟上
+
+`make check` 在本批第一次跑就红了：
+
+```
+--- FAIL: TestPushProactiveOnlyAfterInactivityCooldown
+    engine_test.go:535: messages=[], want one interview follow-up
+```
+
+连跑三次全红，不是 flake。根因：这条用例用**默认** profile，而默认免打扰窗口是 `1350→450`（`engine.go:1536-1537`，即 **22:30–07:30 UTC**）；`pushProactive` 用 `time.Now().UTC()` 判定（`engine.go:137-141`）。取证时刻是 **UTC 02:31**，`minuteOfDay=151 < 450`，正好落在窗口里 → 直接早退 → `messages` 为空。
+
+| 时刻 | 结果 |
+|---|---|
+| UTC 17:07（第十二批验证时） | **通过** —— 所以那时 `make check` 是真的绿 |
+| UTC 02:31（本批） | **失败** |
+
+也就是说 `make check` **每天有 9 个小时必红、15 个小时绿**，绿灯不代表代码对，红灯也不代表代码错。这与 §25.4 的 `CGO_ENABLED=0` 是同一类问题的反面：那次是「该红的永远绿」，这次是「该绿的周期性红」。两者都让门禁失去意义。
+
+修法与同文件 5 条兄弟用例一致：显式把 `ProactiveQuietStart/End` 置 0。
+
+**顺带挖出一个零覆盖**：修完之后做变异验证，把 `pushProactive` 里的免打扰早退改成恒假 —— **全仓没有任何用例失败**。6 条 `pushProactive` 用例全都把 quiet 置成 0/0，另外两条 quiet 用例只测**钳制与持久化**，没测**推送时的门禁**。原先那条挂钟用例是唯一（且是坏的）覆盖。故补 `TestPushProactiveSkipsInsideQuietHours`：按当前 UTC 分钟现场算出 `[minute-1, minute+3)` 的窗口，因此**不依赖挂钟**；穷举 1440 个分钟验证该推导恒成立且窗口恒为 4 分钟（跨零点时 `start > end`，`inQuietHours` 走 `||` 分支，表达的正是这 4 个回绕分钟）。
+
+### 26.5 登记不修的两条安全缺陷
+
+#### #47 `POST /api/user/reset-password`：免鉴权改任意账号密码
+
+`ResetPasswordReq` 只有 `{ email, new_password }`（`api/user/v1/*.proto:445-448`），**连 code 字段都没有**；`userbiz.ResetPassword` 直接 `FindUserByEmail` 然后覆盖密码，适配层 `user_profile.go:41-46` 也没有任何 actor 校验。实测用**绝不存在的邮箱**取证（用真邮箱会当场改掉别人的密码）：BEFORE/AFTER 都返回 **500 `user not found`** —— 说明未认证请求已经走到查库改密的逻辑里了，且全程零写入。
+
+配套事实：后端**全仓零 SMTP、零验证码存储**；`/api/user/send-reset-code` 与 `/api/user/verify-reset-code` 两条路由**根本不存在**（实测 404），而 Flutter 的 `verify_code_page.dart:49,71` 已经在打它们 —— 找回密码流程在第 2 步就死了，这大概就是这个洞一直没人发现的原因。`api_service.dart:689-693` 的 `resetPassword(email, code, newPassword)` 收了 `code` 参数但**只发 `email` 与 `new_password`**，code 被静默丢弃。
+
+需求方 2026-09-17 原话：「这个暂时不做处理」。三条 reset 前缀**保持在写白名单里、语义一字未改**，并在 `auth.go` 与 `auth_test.go` 各钉了一条注释/用例，让将来真要修的时候必须先动那两行。
+
+#### #50 OAuth `state` 被当回跳地址：开放重定向 + 授权码外泄
+
+`state` 在 OAuth 里本该是 CSRF 随机数，这里被复用成「授权完跳回哪」。链路三段全是公开可达：
+
+1. `GET /api/auth/feishu/authorize-url` 在**公开读白名单**里，`FeishuAuthorizeURL(in.GetState())` 把调用方传入的 `state` **原样**嵌进授权链接（`utils/feishu_oauth.go:42` `q.Set("state", state)`，无校验、无签名、无 HMAC，只在空值时兜底成 `moe_social`）。
+2. 回调把它交给 `BuildFeishuOAuthReturnURL(state, code)`，`isAllowedReturnURL`（`utils/feishu_oauth_redirect.go:33-51`）**只校验 scheme**：`http`/`https` 一律 `true`，**完全不看 host**。
+3. 命中就 `http.Redirect(302)`，并把授权码挂到查询串上一起送出去。
+
+纯函数实测（不碰网络不碰库）：
+
+| `state` | 飞书 | 微信 |
+|---|---|---|
+| `https://evil.example/steal` | `https://evil.example/steal?feishu_code=CODE-ABC` | `…?wechat_code=CODE-ABC` |
+| `http://attacker.test/a/b?c=1` | `http://attacker.test/a/b?c=1&feishu_code=CODE-ABC` | 同构 |
+| `moesocial://feishu/oauth` | 放行（App 深链，符合设计） | 拒绝 |
+| `moesocial://otherhost/oauth` | **拒绝**（host 有校验） | 拒绝 |
+| `javascript:alert(1)` | **拒绝** | 拒绝 |
+
+完整利用链：攻击者**无需登录**取到 `authorize-url?state=<攻击者站>` → 发给受害者 → 受害者授权 → 服务端 302 到攻击者站并带上**真实授权码** → 攻击者拿它打 `/api/auth/feishu/login` 即可以受害者身份登录（账号接管）。附带缺陷：`state` 被这么用掉之后，整条 OAuth 流程**没有任何 CSRF 防护**（登录 CSRF：可强制受害者浏览器登入攻击者的账号）。
+
+**本批与它的关系必须如实写清**：这个洞在 HEAD 就存在，微信侧一直是公开可达的；**#41 把飞书回调加进白名单之后，飞书侧也变得可达了**。但这不构成回退理由 —— 回调必须公开可达，否则飞书登录根本走不完（那正是 #41 修的 bug）。真正的修法是给 `isAllowedReturnURL` 加 host 白名单，而白名单该收哪些 host（`public_base_url`？两个 `app_return_url`？ngrok 隧道？局域网 IP？）是个策略决定；需求方是多机器开发且明确要求别影响来回切换，故本轮**只登记不修**。
+
+> ↪️ **第十七批已修（#50），上面的实测证据与利用链原样保留作为依据，处置结果见 §30.4。**
+> 简述：`state` 字段被完全忽略、回跳改由 `oauth.allowed_return_urls` **精确命中**裁定、授权码封进一次性 ticket（302 只带 `oauth_ticket`/`oauth_state`）、登录须出示 `ticket` + `code_verifier` 并核验 `S256(verifier) == challenge`。
+> 实际做法比这里设想的「加 host 白名单」更严：**`app_return_url` 这个配置键连同两个 redirect 文件一起被删除**，白名单该收哪些地址的策略问题改由运维显式维护一份列表来回答。
+> 上表那两行 `?feishu_code=` / `?wechat_code=` 现由 `internal/oauthflow/store_test.go` 的 `TestAppendTicketQueryCarriesNoCode` 反向钉住。
+
+### 26.6 判别力声明（每条都靠临时改坏实现验证）
+
+#41/#48 三条新用例（`TestRequiresAuthSplitsReadAndWrite` 30 行、`TestPublicPrefixListsDisjoint`、`TestJWTAuthFilterWhitelistSplits` 7 行）——**双向**变异：
+
+| 变异 | 预期 | 实测 |
+|---|---|---|
+| **M1** `requiresAuth` 退回不分方法的单表（永远查读表） | 写路由用例变红 | FAIL **12 行**，点名 `POST /api/llm/models/delete`、`/download`、`DELETE /api/images/a.png`，以及 8 条引导写路由 |
+| **M2** 从读表删掉 `/api/images/` | 读路由用例变红 | FAIL，精确点名 `GET /api/images/a.png` |
+| **M3** 把 `/api/llm/models` 复制进写表（两表重叠） | 结构不变量用例变红 | **三条用例同时红**，`TestPublicPrefixListsDisjoint` 报「同时在 publicReadPrefixes 与 publicWritePrefixes 里：写方法会被重新放行」 |
+
+M1 证明「过度放行」会被抓，M2 证明「过度收紧」也会被抓 —— 只有单向判别力的白名单用例等于没写。`TestPublicPrefixListsDisjoint` 里另有一条防空转断言：两张表任一为空就直接 `t.Fatal`，否则「删光所有条目」会让它绿得毫无意义。
+
+#49 两条用例：
+
+| 变异 | 预期 | 实测 |
+|---|---|---|
+| **MA** 冷却阈值 `24h → 26h`（日志是 25h 前） | 变红 | FAIL `messages=[], want one interview follow-up` |
+| **MB** 每日限额 `>= dailyLimit` → `>= dailyLimit+1` | 变红 | FAIL，`messages` 里出现**两条**同样的追问 |
+| **MC** 免打扰早退改成恒假 | 修 #49 之前：**无人变红** | 修之前 rc=0（这就是零覆盖的证据）；补了 `TestPushProactiveSkipsInsideQuietHours` 之后 rc=1，报「免打扰时段内仍然推送了 …，quiet 窗口被无视了」 |
+
+全部变异跑完都做了**逐字节还原校验**（`diff -q` 通过），并 grep 确认 `MUTATION` / `false &&` / `26*time.Hour` / `dailyLimit+1` 残留均为 **0**。
+
+### 26.7 验证汇总
+
+| 项 | 结果 |
+|---|---|
+| 新增/既有鉴权用例 | **45 PASS / 0 FAIL**（含既有的 `TestJWTAuthFilterAdminPaths`） |
+| `make check` | **rc=0，35 包全 ok，0 FAIL，0 SKIP** —— 且这一轮跑在 **UTC 02:3x，正是 #49 的最坏窗口**，所以它证明的比 §25.9 那次（UTC 17:07）更多 |
+| `go vet ./internal/server/... ./internal/biz/companion/...` | rc=0 |
+| `gofmt -l`（本批触碰的 5 个文件） | 空 |
+| 真机 BEFORE/AFTER | 同一份探针、同一套假 Ollama、同一份 config 副本，两个二进制 `cmp` 确认不同；`http=000` 双侧均为 0（探针确实打到了服务） |
+| 进程日志（两个二进制各一轮） | `panic=0 fatal=0 reflect_err=0 Unimplemented=0`，端口 18906/18905 复验后均已释放 |
+| 路由计数 / openapi | `protoHTTPRouteCount = 316`、openapi **288** 条路径 —— 本批**均未变化**（只改鉴权与解码，没动路由） |
+| 共享测试库 | 98 张表全量行数快照，前后 diff **只有 `life_event_logs` +3** |
+
+**+3 行的精确归因**（不宣称「净零」，逐条查清）：这张表 `SHOW COLUMNS` 实测**根本没有 `user_id` 列**，字段是 `world_id / entity_id / entity_type / event_type / description / position_x / position_y / created_at / importance` —— 它是**世界**级事件流，不可能由某个用户的 HTTP 请求直接写入。三行分别是 `world_resource_depletion`、`world_weather_rain`、`wandering`，`world_id=default`、`entity_id` 为 `0` 或 `23743`，时间戳 02:46–02:50 落在两次起服务的窗口内；最近 30 分钟内**没有任何非后台 tick 类型**；探针 uid `999999` 在全部带 `user_id` 的表里均为 **0** 行、`users.id=999999` 不存在、`description LIKE '%probe%'` 为 **0**。结论：全部由 `life_engine_enabled: true` 的后台 tick 产生。
+
+**探针的零副作用约定**：所有「必须非 401」的写路由探针**一律不带 body、不带 Content-Type** —— `jwtAuthFilter` 在路由与解码之前执行，所以只要不是 401 就已证明穿过了鉴权，而 Kratos 的 body 解码器会立刻回 400 CODEC，handler 一行都执行不到。（`register` / `landing-feedback` 若带 `{}` 可能真插入一行，所以统一用这个更保守的打法。）`revoke` 故意用**错前缀**的 `delivery_key` 触发引擎 guard 报错而非成功路径，避免插入 `companion_events`。
+
+### 26.8 本批对方法论的追加
+
+| # | 教训 |
+|---|---|
+| xiv | **对称注册 + 不对称白名单**：两个回调在 `transport/oauth.go:11-12` 完全对称地注册，白名单里却只有 wechat。只盯白名单看不出问题，必须**把两处注册点并排比** |
+| xv | **修好一个 401 可能只是把它变成 400**：串联故障要一路追到 handler 体内。只加白名单的话，飞书回调会从 401 变成 400 CODEC，用户看到的症状一字不变 |
+| xvi | **`openapi.yaml` 看不见手写路由与原生路由**：本批复核的 6 类共 40+ 条路由（`/ws/*`、`/api/images/*`、`/api/llm/*/raw`、两个 OAuth 回调、SSE、arena/pet/life/game 全家）**都不在 openapi 里**。只用 openapi 做鉴权审计会漏掉一半攻击面 |
+| xvii | **两种 401 措辞是层级判别器**：过滤器说 `缺少认证信息，请先登录`，media 适配层说 `unauthorized`。同一个 401 状态码，措辞不同就说明防线在不同层 —— 「状态码没变」不等于「行为没变」 |
+| xviii | **挂钟依赖是门禁缺陷，不是 flake**：连跑三次全红只能排除随机性，排除不了周期性。凡是生产代码里出现 `time.Now()` 的 `Hour()`/`Weekday()`/`Day()` 分支，就要回头查测它的用例有没有钉死时钟 |
+| xix | **别把长跑服务与探针串在同一条命令里**：后台进程占住管道 fd → `tail` 一直等 EOF → 工具超时杀掉整个进程组 → 探针全部 `http=000`。必须拆成两次调用，且后台进程 `</dev/null` + 输出重定向到文件 + `disown` |
+| xx | **空结果不是干净结果**：归因脚本里三条查询返回空，差点被当成「探针没写库」。实际是列名写错（表里没有 `user_id`）而 stderr 被 `2>/dev/null` 吞了。归因脚本**必须让错误可见** |
+
+### 26.9 需要修订的旧结论
+
+| 旧结论 | 位置 | 修订 |
+|---|---|---|
+| 路由计数 319 | §25.9 | **316**（`54c5aa45` 删了 3 个必坏 RPC） |
+| openapi 291 条路径 | §25.9 | **288** |
+| `make check` 34 包全 ok | §25.9 | **35 包**；且那次绿灯跑在 UTC 17:07，**不能证明全天绿** —— 见 §26.4 |
+| 用户记忆死 RPC「8 个」 | 前批多处 | **10 个**（`RecordLlmChatTurn`、`AiMemorySettings` 读写两条、`GetContextPreview` 需并入 #42 的清单一起算） |
+| 任何声称 `api/etc/moe.yaml` 是 go-zero 死残留的说法 | 前批 | **它是活的**：被当作 `runtime.api_config_fragment` 引用，且是 Agora 凭据的唯一来源。#44 明确**不删** |
+
+### 26.10 下一批（#42）已确认的待删清单
+
+死接口 19 条 + 本批新增 3 条候选，逐条需在删除前**重新验证零调用方**（grep 命中 ≠ 有消费者）：
+
+- **LlmChat 12 条**：`DeleteUserMemory`、`GetAiMemorySettings`、`GetUserMemories`、`GetUserMemoriesDisplay`、`GetUserMemoryProfiles`、`ListLlmLocalModelsCatalog`、`PutAiMemorySettings`、`RebuildUserMemoryEmbeddings`、`RecordLlmChatTurn`、`SearchUserMemories`、`SubmitUserMemoryFeedback`、`UpsertUserMemory`
+- **AdminApp 6 条** memory RPC
+- **Companion 1 条**：`GetContextPreview`（本批实测仍 501，见 §26.2 阳性对照）
+- **`local_models` 整链**（GGUF 下载/清单，#29 的决策落地）
+- **本批新增候选 3 条**：Platform 的 `LlmDeleteModel` / `LlmDownloadModel` / `LlmCreateAgent` —— llmbiz 里是 501 桩（`platform_common.go:126-148`），Flutter 与管理台**零调用方**。注意 #41 关掉免鉴权之后，这三条已经没有未认证入口了，删除纯属清理
+
+删完必须重新生成 `.pb.go` + `openapi.yaml` + `routestats/proto_routes_gen.go`，并清空 `adminMemoryRPCsPendingDeletion` / `llmDeadRPCsPendingDeletion` / Companion 测试里的 `"GetContextPreview"` 待删清单。
+
+---
+
+## §27 2026-09-17 第十四批（#42）：死接口整链删除 —— 21 个操作、一个离线模型孤岛、以及一条被探针翻出来的「假成功」
+
+> 落地 §26.10 的待删清单。性质是**纯删除**（无新增能力），但删除范围横跨 proto → 生成物 → 适配层 → biz → service → legacy types → pkg/conf → 两份 YAML → Flutter service → 测试，任何一环漏删都会留下「编译通过但永远 501/404」的残肢。
+> 净变化：**43 文件，+1941 / −8868 行**（5 删 40 改）。
+
+### 27.1 删了什么：21 个操作，四族
+
+| 族 | 数量 | 具体操作 |
+|---|---|---|
+| LlmChat | 12 | `GET/PUT /api/ai/memory/settings`、`POST /api/llm/chat/turn`、`GET /api/llm/local-models/catalog`、`GET/POST/DELETE /api/user/{userId}/memories`、`GET /api/user/{userId}/memories/display`、`POST /api/user/{userId}/memories/feedback`、`GET /api/user/{userId}/memories/profiles`、`POST /api/user/{userId}/memories/reindex`、`GET /api/user/{userId}/memories/search` |
+| AdminApp | 6 | `GET /api/admin/memories`、`/health`、`/stats`、`DELETE /api/admin/memories/{memoryId}`、`POST /api/admin/memories/reindex`、`POST /api/admin/learning/export-dataset` |
+| Companion | 1 | `GET /api/companion/context/preview` |
+| Platform | 2 | `POST /api/llm/models/delete`、`POST /api/llm/models/download` |
+
+三条独立口径互相印证，全部落在 **21**：
+
+| 口径 | before → after | 差值 |
+|---|---|---|
+| openapi **操作数**（method 级） | 337 → 316 | **−21**，新增 **0** |
+| openapi **路径数** | 288 → 270 | −18 ⚠️ |
+| `routestats.protoHTTPRouteCount` | 316 → **295** | **−21** |
+
+**路径数为什么少 3**（这是本批唯一一处三个数字不齐的地方，必须解释清楚而不是含糊过去）：消失的 18 条路径里有两条**各自承载多个方法** —— `/api/user/{userId}/memories` 是 GET+POST+DELETE（3 操作 1 路径），`/api/ai/memory/settings` 是 GET+PUT（2 操作 1 路径）。16 条单操作路径 + 1 条双 + 1 条三 = 18 路径 / 21 操作。**只比路径数会漏掉 3 个删除，也会漏掉「同一 path 下只删了半个方法」这种情况** —— 所以复核一律用操作级 diff（脚本 `/tmp` 内 `opsdiff42.py`，按 `path + method` 取集合差）。
+
+### 27.2 §26.10 的清单有一处判断是错的：`LlmCreateAgent` 不能删
+
+§26.10 把 Platform 三条并列成「Flutter 与管理台**零调用方**，删除纯属清理」。实测**只有两条成立**：
+
+| RPC | 客户端调用方 | 处置 |
+|---|---|---|
+| `LlmDeleteModel` | 零 | ✅ 已删 |
+| `LlmDownloadModel` | 零 | ✅ 已删 |
+| `LlmCreateAgent` | **`lib/services/llm_api_service.dart:63` → `chat_page.dart:814` 与 `agent_editor_page.dart`，两个活调用点** | ⛔ **保留**，登记 #51 |
+
+删掉它只会把 501 变成 404，用户看到的症状一字不变（甚至更糟，见 §27.5）。这是「grep 命中 ≠ 有消费者」的**反向**教训：**grep 没在 proto 同族文件里命中，也不等于没有消费者** —— 调用点藏在 `llm_api_service.dart` 这个包装层里，按 `LlmCreateAgent` / `createAgent` 搜是搜不到的，得按 **URL 字符串** `/api/llm/agents` 搜。
+
+### 27.3 `local_models` 离线模型孤岛：整链删除（#29 的决策落地）
+
+删除前逐侧验证**四个方向全为零**：后端零路由、外部 Go 零引用（`ResolveLocalModelsStorageDir` / `LoadLocalModelCatalog` / `FindLocalModelByID` / `ParseHTTPByteRange` / `LocalModelMeta`）、Dart 零引用、`moe-admin/src` 零引用。
+
+| 层 | 删除内容 |
+|---|---|
+| `internal/platform/apicomm/` | `local_models.go`（5181 B）、`local_models_test.go`（435 B，只测 `ParseHTTPByteRange`）**整文件删除** |
+| `internal/platform/apiconfig/config.go` | `LocalModels` 字段 + `LocalModelsConf` + `LocalModelCatalogEntry` |
+| `internal/platform/wiring/config_override.go` | local_models 覆盖块 + `localModelCatalog()` 辅助函数（净 −30 行） |
+| `pkg/conf/config.go` | `Root.LocalModels` 字段 + 两个类型 |
+| `config/config.yaml` | `local_models:` 整段（原 `:105-116`） |
+| `api/etc/moe.yaml` | `LocalModels:` 片段（原 `:27-31`）。**文件本身保留** —— 它是活的 `runtime.api_config_fragment`，见 §26.9 |
+| `legacy/types/types.go` | `LlmDeleteModelReq`、`LlmDownloadModelReq`、`LlmLocalModelCatalogItem`、`LlmLocalModelsCatalogResp` |
+
+**两处不能顺手删的**：
+
+1. `apiconfig.Config` 是用**非严格** `yaml.Unmarshal` 解的（全仓无 `KnownFields` / `UnmarshalStrict`），所以删掉结构体字段后 YAML 里那个键会被**静默忽略**而不报错 —— 这就是为什么 `moe.yaml` 的片段必须一起删，光删 Go 字段会留下一段永远读不到的死 YAML。
+2. `config_override.go` 里那段覆盖块**捎带着一条只此一处的历史注释**（mapstructure 下划线键陷阱）。删块即删注释，该陷阱的知识已在 §21.3 留档，此处不再重复。
+
+### 27.4 删除时差点丢掉的三样东西
+
+| 险情 | 怎么发现的 | 处置 |
+|---|---|---|
+| `wiring/config_override_test.go` 看着像 local_models 的纯脚手架，实际它的 `TestOverridesLeaveFragmentValuesWhenConfSilent` 是 **§21.3「viper 失败不得短路全部覆盖」那个修复的唯一钉子** | 删之前读了文件头注释 | **重写而非删除**：把载体从已删的 local_models 换成今天仍活的 `Image` / `Auth` 两段，并**新增一条反向钉子** `TestOverridesApplyConfValuesOverFragment`。两条都用变异法证明有判别力（无条件写 `MaxBytes` → 第 1 条红；去掉 `LocalDir` 覆盖 → 第 2 条红），随后从备份还原并复验全绿 |
+| `pkg/conf` **失去「列表套结构体」这一解码形状的覆盖** | `grep -n "\[\]" pkg/conf/config.go` 只有一处命中 —— `local_models.catalog` 是 pkg/conf **唯一的切片型键** | fixture 里删掉 `local_models:` 块与两条 `Catalog` 断言，并把文件头「覆盖全部形状」的说法**改写成如实陈述缺口**：将来新增列表型键时这里没有现成钉子，需自行补 fixture |
+| `auth.go` / `auth_test.go` 的注释与用例把已删的 `/api/llm/models/delete|download` 当作**现行路由**叙述 | 删除后回头读注释 | 不删历史（它解释了读/写分表**为什么存在**），改为标注「已在 #42 删除」，并把承重示例换成今天仍活的 `DELETE /api/images/{filename}`（实测在 `api/media/v1/media_http.pb.go:38` + `protohttp/media/media_http.go:18`）。测试里留一条合成路径 `POST /api/llm/models/any-write` 当探针，钉住「长读前缀下的写方法默认要鉴权」 |
+
+`legacy/types/types.go` 同族里 **`AdminMemoryTypeStat` 必须保留**：`AdminAnalyticsOverviewData.MemoryByType` 引它，`apicomm/admin_insights.go` 在活路径上填充（真机复验 `GET /api/admin/analytics/overview` → 200 即为证）。删掉的那 9 个类型逐个用「打印全部实际命中 + 阳性对照」的脚本复核为真零引用。
+
+### 27.5 真机复验：30 项全过，但探针翻出一条比 #51 原记录更严重的缺陷
+
+判据设计：`jwtAuthFilter` 在路由匹配**之前**执行，未带 token 的请求无论路由是否存在都回 401，**401 分不出「路由还在但要登录」和「路由已删」**。所以必须带合法 token 穿过过滤器才能拿到路由器真正的 404（一次性 token 工具放在 `backend/_tokengen/` 下划线目录，`go ./...` 会忽略，**验完即删，不入库** —— `backend/_probe/mint/main.go` 曾在 `54c5aa45` 里被误提交，这次是显式删除的）。
+
+| 组 | 项数 | 结果 |
+|---|---|---|
+| 阳性对照（不存在的路径必须 404，否则整个判据失效） | 2 | 用户侧 + 管理侧均 404 ✅ |
+| 21 个已删操作必须 404 | 21 | **全 404** ✅ |
+| 7 条存活路由必须非 404 | 7 | 全非 404 ✅（`/health` 200、`/api/llm/config` 200、`/api/admin/analytics/overview` 200、`/api/companion/profile` 200、`/api/ai/providers` 200） |
+| 无 token 必须仍 401（验证 #41 分表未被本批削弱） | 3 | 全 401 ✅，其中 `POST /api/llm/models/delete` 的 401 证明读/写分表在路由已删的情况下仍生效 |
+
+**汇总 `pass=30 fail=0`。** 但「非 404」这个判据本身不够 —— 两条存活路由的返回值与预期不符，逐个查了响应体：
+
+1. `GET /api/llm/models` → **500** `{"code":500,"message":"Get \"http://192.168.124.77:11434/api/tags\": context deadline exceeded"}`。**环境性**，非回归：n100 的局域网 Ollama 在本机不可达，路由与适配层接线正确。
+2. `POST /api/llm/agents` → **HTTP 200**，响应体：
+   ```json
+   {"code":200,"data":{"code":501,"message":"未实现"},"message":"操作成功","success":true}
+   ```
+   我原先给 #51 记的症状是「chat_page 每次必弹**红色**错误」—— **这条记录是错的，真实症状更糟**：
+
+   - Go 侧 `platform_llm.go:37` 是 `return platformWriteToBaseResp(result), nil` —— **error 恒为 nil**，501 被塞进 `BaseResp` 当**载荷**，于是外层信封是 `code:200 / success:true / "操作成功"`。
+   - Dart 侧**只看外层**：`api_service.dart:483`（`result['success'] == false` 才抛）、`:492`（HTTP 状态码 2xx 即放行）、`:498` 原样返回整个信封；随后 `llm_api_service.dart:68` 的 `ApiResponse.isSuccess(result)`（`api_response.dart:7-13`）读的也是外层 `success` 与 `code`，`200` 属白名单 → **返回 true**。
+   - 结果：`chat_page.dart:817` 弹的是**绿色成功提示** `'系统提示词已更新并同步到服务器模型（已开启新对话）'`，而服务器模型**从未被创建**。用户被明确告知成功了。
+
+   `platformWriteToBaseResp` 目前**只有这一个调用点**，所以现在是 1 处而非一类；但「适配层把业务失败当载荷返回、客户端只校验外层信封」这个**组合**是系统性的，任何新增的同形适配方法都会继承这个假成功。#51 已据此改写描述与严重度。
+
+### 27.6 门禁与验证记录
+
+| 项 | 结果 |
+|---|---|
+| `go build ./...` | rc=0（每一步删除后各跑一次） |
+| `go vet`（全部触碰包） | rc=0 |
+| `make check` | **rc=0，35 包 ok，0 FAIL，0 SKIP** |
+| `flutter analyze` | 38 条 info，**0 error / 0 warning**，无一条落在本批触碰的文件里（`grep -in companion` 空） |
+| `flutter test test/companion_service_test.dart` | rc=0，**14/14** |
+| `adapter_coverage_test.go` | 两份待删白名单清空后 `pending` 字段对 28 个 service 全 nil，**连字段一起摘掉** → 28 个 service 一律零豁免 |
+| `companion_adapter_test.go` | 不再豁免 `GetContextPreview` |
+| `gofmt` | 本批触碰文件中有 2 个不干净（`internal/biz/llm/platform_common.go`、`internal/service/llm/llm.go`），已用 `gofmt -d` 对比 `git show HEAD:` 版本确认**字节级同差异 = 历史遗留**，留给 #45 统一扫，避免污染本批 diff 的可归因性 |
+
+**一次假警报，值得记下来**：`make gen-proto-route-count` 重写 `proto_routes_gen.go` 后紧接着跑 `make check`，得到 rc=2 与 `FAIL backend/internal/server/routestats [build failed]`，**日志里一条编译器诊断都没有**。没有当成真失败也没有当成噪声：`go vet ./internal/server/routestats/` 干净、单独 `go test` 该包 ok、读 Makefile 确认 `check` 实际跑什么，再跑一次 `make check` → rc=0 全绿。判定为**代码生成物刚被改写导致的构建缓存陈旧产物**。
+
+### 27.7 本批对方法论的追加
+
+| # | 教训 |
+|---|---|
+| xxi | **openapi 复核要比「操作数」而不是「路径数」**：一个 path 可以挂 GET+POST+DELETE 三个操作。本批路径数 −18 而操作数 −21，差值 3 全藏在两条多方法路径里；只看路径数既会少算删除量，也看不出「同 path 下只删了半个方法」 |
+| xxii | **「非 404」不足以证明一条路由是健康的**：`POST /api/llm/agents` 以 HTTP 200 通过了存活检查，载荷里却写着 501。存活探针**必须连响应体一起看**，否则会给一个正在对用户撒谎的接口盖「正常」章 |
+| xxiii | **代码生成后紧跟门禁可能报无诊断的 `[build failed]`**：先把该包单独 build/vet/test 一遍再决定是重跑还是真修，别直接采信也别直接忽略 |
+| xxiv | **删除测试文件前先读它的文件头注释**：一个看着纯属已删功能脚手架的测试，可能是另一条老修复（§21.3）的唯一钉子。删掉它不会有任何报错，只会在将来静默失去保护 |
+| xxv | **「grep 没命中」同样不是结论**：`LlmCreateAgent` 按 RPC 名/驼峰名在 Dart 侧搜不到调用方，真实调用点藏在 `llm_api_service.dart` 包装层里。判定死接口要按 **URL 字符串**搜，而不是按符号名 |
+| xxvi | **删掉唯一的切片型配置键会顺带删掉一种解码形状的覆盖**：删键之前先看它是不是某个类型形状（列表/嵌套/指针）的唯一载体，是就得把「不再覆盖」写进 fixture 注释，别让文件头继续宣称全覆盖 |
+
+### 27.8 需要修订的旧结论
+
+| 旧结论 | 位置 | 修订 |
+|---|---|---|
+| 路由计数 316 / openapi 288 条路径 | §26.7、§26.9 | **295** / **270 条路径（316 个操作）** |
+| Platform 三条 RPC 均「零调用方，删除纯属清理」 | §26.10 | **`LlmCreateAgent` 有 2 个活调用点，已保留**，见 §27.2 |
+| #51 症状「每次必弹红色错误」 | #51 登记项 | **实为绿色成功提示 + 静默假成功**，见 §27.5 |
+| 离线模型链路「删除还是补活」待定 | #29 | **已决策并落地：整链删除**，#29 可关闭 |
+| `pkg/conf` fixture「覆盖全部形状」 | `pkg/conf/conf_test.go` 头注释 | 已改为如实陈述：**列表型形状不再被覆盖** |
+
+---
+
+## §28 2026-09-17 第十五批（#19）：把两个编译期常量搬进配置 —— 以及差点顺手把世界节奏改快 60 倍
+
+> 落地 §16.4 登记的建议。§16.4 指出「周期 tick」这一个概念在仓里有**四处硬编码 + 两处可配**，且没有任何文档解释为什么 `bot_scheduler` / `dream_scheduler` 可配而 Life / Game 引擎不可配。本批把**生效的**那两处硬编码接上 `pkg/conf`，并顺带清掉一个此前没人发现的第三份副本。
+> 净变化：**7 文件**（`pkg/conf/config.go`、`pkg/conf/derive.go`、`pkg/conf/conf_test.go`、`internal/platform/moewiring/api_life.go`、`internal/platform/moewiring/api_game.go`、`internal/service/game/game.go`、`config/config.yaml`），零删除文件。
+
+### 28.1 §16.4 的建议与实际落地的三处偏差（记下来，别被当成漏做）
+
+| §16.4 原建议 | 实际落地 | 为什么偏 |
+|---|---|---|
+| 键名 `moe.life_tick_interval_seconds` / `moe.life_flush_interval_seconds` / `moe.game_world_tick_interval_seconds` | `moe.life_tick_seconds` / `moe.life_flush_seconds` / `moe.world_tick_seconds`（`config.go:210,211,217`） | 同段已有 `bot_scheduler_tick_seconds` / `dream_scheduler_tick_seconds` 的先例，`_interval_` 是冗余词；`game_` 前缀也去掉，`moe.` 段下没有第二个「世界」 |
+| `world_runner.go` 与 `types.go` 的默认值「都改为引用它」 | **两处都保持原样** | 见 28.2 / 28.3：照原建议做会造出第三、第四份副本，正是本批要消灭的东西 |
+| 一个统一解析方法 | **两个契约相反的函数**：`LifeIntervals()` 未配置返回 300s，`WorldTickInterval()` 未配置返回 **0** | 见 28.3：契约不同不是不一致，是「让每个数在仓里只存一份」的必然结果 |
+
+### 28.2 差点犯下的 60 倍回归：`lifebiz.DefaultConfig()` 是 5 **秒**，不是 5 分钟
+
+第一版 `LifeIntervals()` 写的是「未配置返回 0，让下游兜底」—— 直觉上最干净（配置层不该知道业务缺省值）。它会静默把世界节奏改快 60 倍：
+
+```
+conf.LifeIntervals() 未配置 → 0
+  → lifeapp.Config{TickInterval: 0}
+    → lifeapp.engineConfig() 的 `if config.TickInterval > 0`（life.go:69）不成立，不覆盖
+      → 保留 lifebiz.DefaultConfig() 的值
+        → types.go:41 = 5 * time.Second   ← 5 秒，不是 5 分钟
+```
+
+生产路径**从来都是** `moewiring` 显式传 300 秒把那个 5 秒盖掉的（§16.4 的表里就标着「✗ 被覆盖」）。也就是说 biz 层的 5 秒不是「生产缺省值」，是**单元测试用的引擎缺省**。所以：
+
+- `defaultLifeInterval = 5 * time.Minute` 落在 `derive.go:36`，缺省值必须在配置层显式给出（`derive.go:299`）。
+- `types.go:41,44` 的 5 秒**故意不动**，它继续只服务于单元测试。
+- 钉这条的用例叫 `TestLifeIntervalsNeverFallThroughToBizDefault`（`conf_test.go:734`），函数名直接写明它在防什么。
+
+> **教训**：`TickInterval: 5 * time.Second` 与 `livingWorldIntervalSeconds = 5 * 60` 里那个「5」是完全不同的量级，而 §16.4 的表格把前者标为「✗ 被覆盖」时也没写出它的单位含义。要读**那一层的实际数值和单位**，不要读变量名，也不要直接采信上一份文档的结论。
+
+### 28.3 顺带发现的第三份副本：`service/game/game.go` 里另一个 45 秒
+
+`gamebiz.defaultWorldTickInterval = 45 * time.Second`（`world_runner.go:13`）本来是唯一副本，`StartWorldRunner` 的 `if interval <= 0`（`:20-21`）是它的兜底守卫。但 `internal/service/game/game.go` 的 `New()` 里**直接硬编码 `45*time.Second` 传进去**，于是：
+
+- 45 这个数在仓里有两份；
+- `interval <= 0` 那条守卫**永远不可达**，等于死代码。
+
+处置：`Deps` 增加 `WorldTick time.Duration`（`game.go:22`），`New()` 原样转交给 `StartWorldRunner`（`game.go:33`），`moewiring/api_game.go:30` 填 `conf.WorldTickInterval()`。而 `WorldTickInterval()` **未配置时返回 0**（`derive.go:308-312`），让 biz 层那条守卫重新可达、45 只存一份。
+
+这就是两个函数契约**必须相反**的原因：Life 的下游缺省值量级是错的（5 秒），配置层必须显式兜底；Game 的下游缺省值是对的（45 秒且只此一份），配置层必须让位。两处理由都写进了函数注释，否则后来者会把这种「不一致」当不整洁去统一，副本随之复活。
+
+### 28.4 观测点选启动日志，不选 `/ws/life`
+
+真机复验原本想用 `/ws/life` 的广播频率当可观测量（tick 变快 → 消息变密）。放弃：`transport/websocket.go:29` 那条路由**不在 `publicReadPrefixes` 里**，探它需要有效 JWT，等于又要造一次性 token 工具（§27.6 刚把上一个删掉）。
+
+改成在 `api_life.go:30` 打一行启动日志，且**打的是换算之后真正交给引擎的那两个整数**，不是 `conf` 返回的 `Duration`：
+
+```go
+tick, flush := conf.LifeIntervals()
+tickSec, flushSec := int(tick/time.Second), int(flush/time.Second)
+moelog.Infof("life: engine intervals tick=%ds flush=%ds (moe.life_tick_seconds / life_flush_seconds)", tickSec, flushSec)
+```
+
+第一版打的是 `tick` / `flush` 本身，那样证明不了 `int(tick/time.Second)` 这个换算写对了没有（漏掉 `/time.Second` 会打出纳秒数，而 `Duration` 用 `%d` 同样是个大整数，看日志的人未必能立刻察觉）。现在这一行同时证明两件事：**配置读到了** + **秒数换算对了**，而且对运维长期有用。
+
+### 28.5 验证记录
+
+**① 变异测试（证明新断言有判别力，不是摆设）**
+
+| # | 变异 | 预期变红的用例 | 实测 |
+|---|---|---|---|
+| M1 | `derive.go:299` `return defaultLifeInterval` → `return 0` | `TestLifeIntervalsNeverFallThroughToBizDefault` | ✅ FAIL |
+| M2 | `derive.go:312` `return 0` → `return 45 * time.Second` | `TestWorldTickIntervalUnsetMeansZero` | ✅ FAIL |
+| M3 | `config.go:210` tag `life_tick_seconds` → `life_tick_second`（少一个 s） | `TestRealConfigYAMLLoads` + `TestLifeIntervalsNeverFallThroughToBizDefault` | ✅ 两条都 FAIL |
+
+M3 是既有纪律的直接应用：**mapstructure tag 写错一个字母不会报错，只会静默拿到 0**（§17.6(c) 那一类）。所以 `TestRealConfigYAMLLoads` 里新增的断言（`conf_test.go:506`）不查「字段存在」，而查**真实 `config.yaml` 里这三个键确实解出了非零值**。三次变异后都用 `cmp` 逐字节确认还原，还原后重跑全绿。
+
+**② 真机双跑对比（同一个二进制，两份配置，两个不同输出）**
+
+| 跑 | 命令 | 配置里的值 | 启动日志 |
+|---|---|---|---|
+| A | `/tmp/moe19 -f config/config.yaml` | `life_tick_seconds: 300` / `life_flush_seconds: 300` | `life: engine intervals tick=300s flush=300s` ✅ |
+| B | `/tmp/moe19 -f /tmp/life19/config.yaml` | `30` / `45` | `life: engine intervals tick=30s flush=45s` ✅ |
+
+两次输出不同 ⇒ 这三个键是**活的**，不是装饰 —— 正是 §0 第 4 行「改 yaml 可能不生效」要防的失败模式。两跑均**未传 `-migrate`**（日志第 2 行 `已跳过 AutoMigrate` 为证），跑完立即 `pkill` 并用 `pgrep` 确认无残留进程（rc=1）：后端连的是**共享测试库**，`life_engine_enabled: true` 会持续往 `life_event_logs` 写行。
+
+> 跑 A 的日志里另有 `life: dedupe removed duplicate "团子" id=23749 (keep=23743)`，这是引擎自身的启动去重（第十二批 §22.7 的产物），非本批引入。
+
+**③ 门禁**
+
+| 项 | 结果 |
+|---|---|
+| `go build ./...` | rc=0，日志为空（rc 直接取，不经管道，见 28.6 xxx） |
+| `make check` | **rc=0 · 35 ok · 0 FAIL · 0 个真 `--- SKIP`** |
+| `gofmt -l`（6 个 `.go` 改动文件） | 空 |
+| 一次性产物 | `/tmp/moe19`、`/tmp/life19/`、变异脚本与 `.bak` 全部删除，未入库 |
+
+### 28.6 本批对方法论的追加
+
+| # | 教训 |
+|---|---|
+| xxvii | **「未配置就返回 0，让下游兜底」不是天然安全的做法**：先去读下游兜底值的**实际数值和单位**。本批下游是 5 *秒*，而我（和 §16.4 的表格）都当成 5 *分钟*，差 60 倍且全程无报错 |
+| xxviii | **同批新增的两个配置函数可以有相反的契约**，只要各自都让某个数在仓里只存一份。「不一致」不是缺陷，「副本」才是；但必须把为什么相反写进函数注释，否则会被后来者当不整洁统一掉，副本随之复活 |
+| xxix | **优先选「打印真正交给下游的那个值」当观测点**：一次证明配置读到了 + 单位换算对了，还长期服务运维。选运行时行为当观测点通常更贵（要鉴权 / 要等一个周期 / 会往共享库写数据），证明面还更窄 |
+| xxx | **门禁的 rc 不能从管道后面取**：`go build ./... 2>&1 \| head -20; echo "rc=$?"` 里的 `$?` 是 `head` 的退出码，实测在构建真失败时打出 `rc=0`。与 xxi 同族 —— 重定向到文件再单独取 rc |
+
+### 28.7 本批未做 / 遗留
+
+- `moe.world_tick_seconds: 45` 已写进 `config/config.yaml:188`，值与 `gamebiz.defaultWorldTickInterval` 相同。这不构成副本（yaml 里是给运维看的当前生效值，代码里的是缺省），但意味着「改这一行」和「不改」目前等价。真要调 game 节奏时改 yaml 即可、不必重新编译 —— 这正是本批的目的。
+- §16.4 说的「四处硬编码」中，另两处（`types.go:41,44` 的 5 秒、`world_runner.go:13` 的 45 秒）**故意保留**，理由见 28.2 / 28.3。
+- **本机磁盘 180 GB / 228 GB（97%）**：本批构建时先撞上 `link: mapping output file failed: no space left on device`（当时仅剩 319 MiB）。清理只做了 `go clean -cache`（可再生，释放 7.1 GB），**没有**动 module cache、`backend/bin/moe-social`(33M)、`build/*.dill`(80M) 或任何非 Go 数据。剩余压力不是本次改动能解决的，需需求方自行排查，否则后续构建 / Flutter 运行会继续随机失败。
+
+---
+
+## §29 2026-09-17 第十六批（#43）：三份同源的 URL 规范化、九处 GBK 乱码、以及一个被档位闸放行的幽灵工具
+
+**基线**：与 §27 / §28 同一基线 + 工作区改动（#19 / #42 / #43 均未提交）。
+**性质**：配置治理的代码级残项收口。#43 原登记四项，本批完成三项（乱码 / `trimURL` 去重 / `tier` 死工具名）；
+第四项（gradle 签名口令兜底 = #16）**仍未做**，理由见 29.8。
+
+### 29.1 一句话结论
+
+三件事不是三个孤立的脏活，而是**同一个缺陷的三种形态：仓里对同一事物存在两份以上各执一词的描述，且分叉时不报错**。
+
+| 形态 | 两份（以上）描述 | 分叉时的表现 |
+|---|---|---|
+| URL 规范化 | 三份逐字节相同的副本 + 第四份兜底值不同的近似副本 | 管理台显示的地址、客户端拿到的基址、后端拼出的地址三者不一致，图片全裂但无报错 |
+| 档位闸 | `tier.go` 的 `AllowsTool` vs `tools/registry.go` 的注册表 | 请求先过档位闸、再在 `Execute` 的 `default` 分支以「未知工具」失败 —— 失败原因被归到档位之外，排查方向错 |
+| 文档 | `Moe-Intelligence-Stack-v1.md` §4 的工具清单 vs 真实注册表 | 清单列了 5 个不存在的工具，读者照它去调 |
+
+### 29.2 GBK 乱码：§25.7 登记 5 处，实测 **9 处 / 4 文件**
+
+| 文件 | 处数 | 可见性 | 内容 |
+|---|---|---|---|
+| `backend/internal/service/companion/companion_api.go` | 3（`:374`、`:378`、`:385`） | **终端用户可见**（Kratos HTTP 错误的 `message`，直接进 App 弹窗） | `COMPANION_UNAVAILABLE` / `COMPANION_PROACTIVE_NOTIFICATION_INVALID` / `COMPANION_PROACTIVE_NOT_FOUND` |
+| `backend/deploy/config/config.go` | 3（`:53`、`:56`、`:100`） | 运维可见（部署 agent 启动失败信息） | 读取 / 合并 `config.local.yaml`、`workspace_root` 无效 |
+| `backend/internal/server/protohttp/adminapp/adminapp.go` | 2（`:13`、`:23`） | 仅源码注释 | **二次损坏**，机械恢复不可行，按上下文重写 |
+| `lib/pages/checkin/checkin_page.dart` | 1（`:826`） | **终端用户可见**（签到页进度文案） | `'$completedCount / ${tasks.length} 完成'` |
+
+§25.7 只登记了 `deploy/config/config.go` 那一类「运维可见」的，**两处终端用户可见的（companion 的 HTTP 错误、签到页文案）它完全没提** —— 影响面比文档记载的严重。
+
+**恢复正确性的独立证据（比「检测器归零」强得多）**：`companion_api.go` 在 HEAD 上就有**同一条**消息的两个副本 —— `:28` 是干净的 `伙伴服务暂不可用`，`:405` 是乱码的 `浼欎即鏈嶅姟鏆備笉鍙敤`。恢复后的 `:374` 与 HEAD 就干净的 `:28` **逐字节相同**（UTF-8 字节串比对为 `True`）。也就是说这次恢复有一个仓内自带的可信参照物，不是靠我的推断。
+
+**检测器走了两版弯路**，两版都错，且错的方向相反：
+
+| 版 | 规则 | 结果 |
+|---|---|---|
+| v1 | 严格往返 + `常见汉字占比 > 0.05` 才报 | **漏报**：9 处只浮出 1 处（`读取` 二字不在我那 50 个「常见字」集合里）；同时「疑似」兜底桶灌进 **6348 条假阳性**（全是正常中文） |
+| v2 | 去掉占比闸，只要严格往返成功就报 | **误报**：短串上把干净中文判成乱码 —— `统一` 的 gb18030 编码恰好是 2 个非汉字符的合法 UTF-8（`ͳһ`），往返**成功** |
+| v3（最终） | 追加方向判据：`恢复结果的汉字数 >= 原串汉字数 × 0.6` | **7 行命中、0 假阳性**，并翻出两个文档从未登记过的文件 |
+
+v3 的判据来自乱码的成因本身：**乱码恢复回中文，干净中文恢复不回中文**（会变成西里尔/拉丁字母或直接解码失败）。v2 的错误在于只问「往返能不能成」，没问「往返成了之后得到的是不是中文」。
+
+余下 2 处（`adminapp.go` 的两条注释）是**二次损坏**：原始字节里有 ASCII `?`（丢字节留下的），严格往返必然失败，v3 也扫不到，靠有损 `replace` 恢复 + 上下文重写定位。故 `7 + 2 = 9`。
+
+**根因是 Windows 编辑器指纹**，不是某次误操作。全仓扫描：
+
+| 类型 | 文件 | 是否已跟踪 |
+|---|---|---|
+| UTF-8 BOM | `moe-admin/build-out.txt` | ✅ 已跟踪，且**是被 gitignore 漏掉的构建产物**（归 #46） |
+| UTF-8 BOM | `backend/deploy/config/config.go` | ✅ 已跟踪 |
+| UTF-8 BOM | `assets/pet/lpc/README.md` | ✅ 已跟踪 |
+| **双重 CR**（`\r\r\n`，非普通 CRLF） | `backend/internal/service/game/game_session.go` | ✅ 已跟踪 |
+
+四个都留给 #45：`gofmt -w` 会顺带剥 BOM、并把行尾归一为 LF。**本批故意不碰** —— 见 29.3 末尾那条 `gofmt` 判定。
+
+> `game_session.go` 那个要说清楚，因为它不是普通 CRLF：实测 **111 个 CRLF + 112 个孤立 CR + 0 个孤立 LF**，即每行以 `\r\r\n` 结尾（一次 LF→CRLF 转换被应用了两遍）。这意味着 **`dos2unix` 治不了它** —— 该工具只把 CRLF 换成 LF，会留下 112 个孤立 CR。`gofmt` 能彻底归一：实测输出 **0 个 CR**、111 个 LF、体积 3708 → 3485 字节；且 `gofmt -l` **本来就报这个文件**，所以 #45 的批量 `gofmt -w` 会顺手治好它，不需要为它单独做什么。
+
+**编码修改手段**：乱码字节**无法重新敲进 `Edit` 的 `old_string`**，`Edit` 一律报「0 occurrences」。改用脚本按 (路径, 行号) 定位，并在写入前断言「该行把每段非 ASCII 换成 `|` 之后的骨架」与预期相等 —— 行号错一位就中止，而不是把代码改坏。
+
+### 29.3 `trimURL`：不是两份，是**三份**；还有第四份故意不并
+
+§28 之前我只知道 `pkg/conf` 与 `utils/admin_runtime_config.go` 各有一份。本批顺着 `/api/public/client-config` 往回追，发现**第三份**：`internal/biz/appcfg/public.go` 的 `NormalizePublicAPIBaseURL`。三份的「TrimSpace + 循环去尾斜杠」逐字节相同，规范化的是**同一批** `public_base_url` 值。
+
+处置：导出 `conf.TrimURL`（函数体保持逐字节不变，零行为风险），后两份全部委托到它。`utils` 侧 6 个调用点、`appcfg` 侧 1 个调用点。
+
+**第四份近似副本刻意没并**：`internal/biz/media/image.go:66` 的 `normalizeBaseURL` 用 `TrimRight(..., "/")`（与 `TrimURL` 等价），但**兜底值不同** —— 它回落到硬编码 `http://localhost:8888`，而 `conf.ImagePublicBaseURL()` 回落到 `api.public_base_url`。也就是说 `image.public_base_url` 为空时，图片外链存在两个互相矛盾的根。合并它等于改线上图片地址的行为，属 **#44（`public_base_url` 单点派生）** 的范围。这一点已写进 `TrimURL` 的函数注释，避免后来者以为漏了。
+
+> **本批引入的唯一行为变更**（刻意，且已真机验证，见 29.5）：`NormalizePublicAPIBaseURL` 旧实现**先判空、后去斜杠**，输入 `"/"` 会返回 `("", nil)` —— 客户端拿到 HTTP 200 和一个空基址，静默拼不出任何请求。改为委托 `TrimURL` 后顺序变成先去斜杠、后判空，`"/"` 走 `ErrNoPublicAPIBaseURL`，与调用方 `platform.go` 早已存在的 404 分支一致。新增 `internal/biz/appcfg/public_test.go`（该包此前**零测试覆盖**）9 例，其中 2 例专盯这个变更。
+
+**`gofmt` 判定**：改完后 `gofmt -l` 报 `deploy/config/config.go`。没有顺手「修」它，而是先定性 —— `gofmt -d` 显示抱怨的是 **UTF-8 BOM** 与结构体字段对齐，且 `git show HEAD:backend/deploy/config/config.go | gofmt -l` **同样报它**，证明该文件在 HEAD 就不洁，属 #45 的批量重排范围。在一个语义批次里混进整文件重排，会让 diff 无法审阅。
+
+### 29.4 `AllowsTool` 的幽灵工具名：补完 §25.7 没追完的调用方
+
+§25.7（`:2586` 那行「没删」）当时的原话是：*「`AllowsTool` 可能被喂进历史审计记录里的旧工具名，我没有追完全部调用方，不拿猜测当结论」*。这个谨慎是对的，但它把一项零风险清理挂住了整整四批。本批把追踪补完：
+
+| 环节 | 事实 |
+|---|---|
+| `AllowsTool` 的调用方 | **恰好 2 个**：`tools/executor.go:33`、`toolaudit/record.go:90` |
+| 两处喂进去的名字来自哪 | 都来自 `tools.OpenAISchemaList()`，即注册表（**恰好 5 项**） |
+| 历史审计行会不会被喂进来 | **不会**。`flow_run.go:80-114` 只可能把 `post_create` 交给 `Execute` |
+| 唯一可观测差异 | 一条**本就在失败**的路径上的错误文案：`未知工具: X` → `档位 s2 不允许工具 X`，两者 `OK:false` |
+
+于是摘掉 `memory_search` / `memory_get` / `memory_save`，`tier.go` 从 48 行到 51 行（`AllowsTool` 现在在 `:38-51`）。
+
+**新增回归钉 `TestAllowsToolNeverPermitsUnregisteredTool`，并用变异证明它补的是旧套件的盲区**：
+
+| 变异 | 新用例 | 既有 `TestBuildSchemaItemsCoversAllTools` |
+|---|---|---|
+| 把 `memory_search` 加回 `tier.go` 的 S1/S2 分支 | **FAIL**（`record_test.go:116: s1 放行了注册表里不存在的工具 memory_search`） | **PASS** |
+
+右列的 PASS 是直接证据：**这个缺陷在门禁面前隐形了四批**。原因是既有用例只从注册表往档位查（「注册表里的工具至少有一档放行」），而反向的「档位放行的 ⊆ 注册表」查不到 —— `AllowsTool` 是对任意字符串的谓词，无法枚举它放行了哪些名字。所以新用例显式探测真正发生过分叉的那三个名字，并前置断言它们**不在**注册表里（若哪天重回注册表，用例会要求重挑探测名单，而不是静默失效）。变异后 `cmp` 逐字节确认还原，还原重跑全绿。
+
+> `moe-admin/src/lib/moeToolLabels.ts:4-6` 的这三个中文标签**故意保留**：`moe_tool_calls` 表里存着它们还能被调用时留下的历史行，去掉标签会让旧记录显示成裸名字。
+
+### 29.5 连带修正的文档失真（同一缺陷的第三种形态）
+
+`docs/dev/Moe-Intelligence-Stack-v1.md`：
+
+| 位置 | 原文 | 处置 |
+|---|---|---|
+| §2 档位表 | 引 `tier.go:32-45`，S1 行含 `memory_search`/`memory_get`，S2 行含 `memory_save` | 改为 `:38-51`，两行按注册表重列，S2 标注「= 注册表全集」，并加一段注册表不变量说明 |
+| §4 工具清单 | 8 行，其中 `memory_search`/`memory_save`/`memory_get` 标为「已实现的 L1 工具」 | 砍到与注册表逐项相等的 5 行。这三个是**双重死项**：① 注册表从来没有过它们；② 它们声称调用的用户记忆 RPC 已在 #42 整链删除 |
+| §4 尾句 | 「`memory_list` / `memory_read_daily` 仍由 Flutter 本地工具处理；v2 迁入 Executor」 | **实测为假**，已改写（见下） |
+| §2 死键警告 | 引 `config/config.yaml:184` | 改为 `:171`，并注明行号是**上移**的（`local_models` 整块 13 行在 #42 被删），#19 新增的三键在它下面、不影响此行号 —— 防止后来者照 `:184` 改回去 |
+
+**顺带翻出一整篇死文档**：`docs/dev/local-llm-tools.md` 描述的 Flutter 本机 GGUF 工具链**完全不存在**。正向对照通过（`post_search` 能命中 1 文件），而 `pubspec.yaml` 里没有 `llamadart`，`lib/` 下 `MoeLlmMemoryTools` / `LocalLlmChatService` / `AiMemoryTools` / `builtinLocalGguf` / `local_gguf` **逐个都是 0 文件**（`AiChatGatewayService` 确实存在于 7 个文件，但没有 `local_gguf` 分支）。客户端侧唯一真源是 `lib/services/ai_tool_runtime.dart:29-33` 的 `registeredToolNames()`，只注册 `post_search` / `post_get`。
+
+§3 的 8 条 API 路径**逐条实测存在**（6～8 个文件命中），无需修正。
+
+### 29.6 验证
+
+**① 变异（判别力）**
+
+| # | 变异 | 期望 | 实测 |
+|---|---|---|---|
+| M1 | `memory_search` 加回 `tier.go` 的 S1/S2 分支 | 新用例红、旧用例绿 | ✅ 新 `FAIL`（`record_test.go:116`）／旧 `PASS` |
+| M2 | `NormalizePublicAPIBaseURL` 恢复旧判据顺序（先 `TrimSpace` 判空、后去斜杠） | 只有 `"/"` 与 `"///"` 两例红 | ✅ 恰好 2 例 `FAIL`，均为 `err = <nil>`；其余 7 例绿（它们对顺序不敏感，符合预期） |
+
+两次变异后都用 `cmp` 逐字节确认还原（`cmp: BYTE-IDENTICAL`），并确认变异时临时加的 `strings` 导入已随之消失。
+
+**② 真机（含一次误启动的教训）**
+
+| 跑 | 配置 | `GET /api/public/client-config` |
+|---|---|---|
+| A | 真配置 `public_api_base_url: "http://47.106.175.49:8888"` | `200` · `{"api_base_url":"http://47.106.175.49:8888"}` · `message:"操作成功"` |
+| B | 探针配置（**只改一行**）`public_api_base_url: "/"` | **`404`** · `{"reason":"NO_PUBLIC_API_BASE_URL","success":false}` |
+
+跑 B 一次证明了三件事：**①** `conf.TrimURL` 确实拿到了**未加工的**配置值（`"/"` 只有被去掉斜杠才会变空，否则会以 `"/"` 原样返回 200）；**②** 判空现在在去斜杠**之后**（即 29.3 那个刻意的行为变更真的生效）；**③** `platform.go` 的错误映射把它变成了 404 而不是 200 包空值。因此**不必再单独跑一次 `///`** —— 跑 B 已经把「去斜杠在真机上生效」证完了。
+
+跑 A 的 `message:"操作成功"` 还顺带证了一件本批需要的事：**HTTP 传输层不会把中文再弄成乱码**。所以 29.2 那 9 处纯粹是源文件编码问题，改完即彻底，不存在「源码对了、出口又坏」的残留风险。
+
+两跑日志均含 `已跳过 AutoMigrate`（未对**共享测试库**传 `-migrate`），跑完立即 `kill` + `pkill` 并用 `pgrep` 确认（rc=1）。
+
+> ⚠️ **跑 A 是误启动的**：我以为 `make moe-social` 是构建目标，实际它是 `go run ./cmd/moe-social`（`Makefile:76-77`）—— **一条不会返回的服务器启动命令**。结果一个连着共享测试库、`life_engine_enabled: true` 持续往 `life_event_logs` 写行的进程被我挂了 **21 分钟**才发现。发现后立即探针 + 击杀。教训记入 29.7 xxxi。
+
+**③ 门禁**
+
+| 项 | 结果 |
+|---|---|
+| `make check` | **rc=0 · 36 ok · 0 FAIL · 0 个真 `--- SKIP`**（比 §28 的 35 多 1 个 = 新增 `internal/biz/appcfg` 测试包） |
+| `gofmt -l`（本批 8 个 `.go` 改动文件） | 仅 `deploy/config/config.go`，已证明**在 HEAD 就不洁**（BOM + 字段对齐），归 #45 |
+| `flutter analyze` | **0 error · 0 warning** · 38 info（既有 deprecation，rc=1 是 info 造成的，见 §0） |
+| `flutter test` | **rc=0 · 98 passed** |
+| 乱码检测器复跑 | **0 行** |
+| 一次性产物 | 两份探针配置、`/tmp/moe-probe`、变异脚本与 `.bak` 全部删除，未入库 |
+
+### 29.7 本批对方法论的追加
+
+| # | 教训 |
+|---|---|
+| xxxi | **`make <目标>` 不等于「构建」**：先读 Makefile 再跑。本批把 `make moe-social`（实为 `go run`，一条永不返回的启动命令）当构建目标，导致一个连着共享测试库的进程无人看管地跑了 21 分钟。判据：跑完 `ls -la` 看产物时间戳有没有变 —— 本批正是靠「二进制还是 6 月 29 日的」+「`make` 0.0% CPU 且没有 `go build` 子进程」认出它卡住的，再 `pgrep -P` 才看到真正的子孙是 `exe/moe-social` |
+| xxxii | **恢复被损坏的文本时，先在仓里找它自己的干净同胞**：同一条消息在 HEAD 上往往既有乱码副本也有干净副本，逐字节比对恢复结果与干净副本，比「检测器归零」强一个量级 —— 后者只证明「不再像乱码」，前者证明「与作者原意逐字节相同」 |
+| xxxiii | **判定「重复代码该不该合并」要看兜底值，不只看函数体**：第四份 `normalizeBaseURL` 的规范化逻辑与 `TrimURL` 等价，但兜底是硬编码 `localhost` 而非另一个配置键 —— 合并它会静默改变线上图片地址。函数体相同 ≠ 语义相同 |
+| xxxiv | **双向不变量要分别钉**：「注册表 ⊆ 档位放行」与「档位放行 ⊆ 注册表」是两个独立命题，既有用例只覆盖了前者，于是后者的分叉隐形了四批。对「任意字符串谓词」这类无法枚举输出的函数，反向那一半只能靠**显式探测历史上真分叉过的名字**，并前置断言这些名字仍不在注册表里 |
+| xxxv | **检测器的判据要从成因推，不要从表象推**：乱码的成因是「UTF-8 字节被当 GBK 解」，所以判据是「恢复结果应当**变回中文**」，而不是「往返能否成功」。v2 只问后者，于是在 `统一` → `ͳһ` 这种短串上必然误报 |
+
+### 29.8 本批未做 / 遗留
+
+- **#16（gradle 签名口令 `?: "moe123456"` 兜底，`android/app/build.gradle.kts:27,29`）仍未做**，是 #43 原登记四项里唯一剩下的。两个卡点：① 必须做成**惰性**失败 —— `signingConfigs` 在配置阶段对所有构建求值，直接 `throw` 会连 `flutter run` 一起打死；② **本机无 gradlew / gradle，无法验证**，改了等于交一份没跑过的代码。需要先决定用什么方式验证（装 gradle / 交给 CI）。
+- **第四份 `normalizeBaseURL` 的兜底分歧**（`localhost:8888` vs `api.public_base_url`）留给 #44，已写进 `TrimURL` 注释防止被误当遗漏。
+- **`docs/dev/local-llm-tools.md` 整篇是死文档**，本批只在 `Moe-Intelligence-Stack-v1.md` §4 里注明了它为假，**没有删它**（删文档需要需求方确认，且 `docs/dev/memory-system-dashboard.html:354` 等处仍在引用同一批工具名）。
+- **BOM / CRLF 四个文件**（含被 gitignore 漏掉的构建产物 `moe-admin/build-out.txt`）留给 #45 / #46。
+- **本机磁盘仍然吃紧**：本批开始时 `/System/Volumes/Data` 为 181 GB / 228 GB（95%，剩 10 GiB）。§28.7 已披露过同一问题，本批未再清理（`go clean -cache` 释放的 7.1 GB 已被这轮冷构建重新吃掉）。**`make moe-social` 那次冷构建耗时超过 10 分钟，与缓存被清 + 磁盘吃紧都有关**。
+
+---
+
+## §30 2026-09-17 第十七批（#16/#44/#45/#46/#50/#51/#52）：七项遗留修复的逐项验收
+
+本批只做收口登记，不重述实现过程。**验收判据是「跑过并看到」，不是「代码看起来对」**；
+凡未跑到的，一律标为阻塞并写明卡在哪，不折算成通过。
+
+> ⚠️ **本批不构成「全工程无 bug」的结论。** 它只证明这七项登记缺陷各自的判据成立。
+> #47 仍是未修的 P0；下面 30.3 列的每一项都是活着的限制。
+
+### 30.1 逐项验收
+
+| 项 | 分类 | 实测证据 | **没有通过**的验收 |
+|---|---|---|---|
+| **#45** 格式门禁 | ✅ 已修复且验证 | 124 文件纯 gofmt（无语义改动）；`make check` 加入只检查不修改的格式门禁 + `CGO_ENABLED=1 go vet ./...`；`make check` **rc=0 · 0 FAIL** | — |
+| **#52** 可复现生成 | ✅ 已修复且验证（一项判据换了形式，见下） | 工具链版本集中固定并在生成前逐个核对；连续两次生成 **79 个产物字节一致**（含 arena/pet 六份首次入库）；15 个负向场景（缺工具 / 版本错 / 陈旧产物）全部正确失败且**不写工作区**；`make check-gen` 只读通过；静态路由计数包已删、全仓零引用；README 与 `make help` 旧说明已清 | 计划要求「运行时路由枚举」。实际改用**静态判据**：`RegisterArenaHTTPServer` / `RegisterPetHTTPServer` 在 `internal/` 下**零调用方**，生成物不可能引入重复注册。这直接证明了计划真正关心的那件事，但**没有**逐条证明「服务实际暴露的路由集合未变」 |
+| **#44** Agora 归并 + 公共地址派生 | ⚠️ 已修改，验证部分阻塞 | typed `agora.app_id/app_certificate` 入 `pkg/conf`（`config.go:49,73`）；5 处重复且相同的覆盖值清空并**保留 YAML 叶子键**（`feishu.redirect_uri` / `wechat.redirect_uri` / `app_client.public_base_url` / `image.public_base_url` / OSS CDN `public_base_url`），单点收敛到 `api.public_base_url`；`derive.go` 的 `PublicBaseURL` / `ImagePublicBaseURL` / `FeishuRedirectURI` / `WechatRedirectURI` / `TrimURL` 齐备；`make check` **rc=0** | `make test-race` 未跑（磁盘不足）；「实测公共配置 / 媒体 URL」需启动服务，而普通启动会写共享测试库，**未执行** |
+| **#51** 消除假成功 | ✅ 已修复且验证（UI 部分受阻） | 未实现的创建走 Kratos 错误编码 → **真实 HTTP 501 + 外层 `success:false`**，经生产注册与编码器实测；Dart 侧 5 个 HTTP 回归通过；`chat_page.dart:836` 改用 `AiAgent.copyWith` 保留 `createdByUserId`/`isPublic`/`authorName` 元数据 | tavern 聊天页 / 编辑页被 `showGameFeatures=false` 门禁挡住，**「卡片保存失败」「保存成功但同步失败」的界面提示与 loading 恢复未在运行中的 UI 里确认** |
+| **#16** 签名口令 | ⚠️ 已修改，**验证完全阻塞** | 两处明文兜底已删，只剩 `System.getenv(...)?.takeIf { it.isNotBlank() }`（`build.gradle.kts:27,29`）；守卫是**惰性**的——`validateReleaseSigningCredentials` 只被 `validateSigningRelease` / `packageRelease` / `signReleaseBundle` 通过 `dependsOn` 触发（`:66-80`），配置阶段不抛，故不影响 debug | 本机缺 Gradle Kotlin DSL 5.2.0 缓存，计划要求的三项检查（无口令 debug 可构建 / 无口令 release 明确失败 / 有效配置 release 签名）**一项都没进入 app 配置阶段**。不擅自下载大依赖。**这段代码没有经过任何一次 Gradle 执行** |
+| **#46** 部署与仓库清理 | ✅ 已修复且验证（nginx 运行验证缺失） | 四处 `proxy_set_header Host` 统一用 `$moe_api_host`（`nginx-lan.conf:33,43,53,62`），Host 值不变、未换成 `$proxy_host`；6633/11434 登记为**外部推理依赖**（`devports/ports.go:21-26` + `ports.md:33-37`，明确「配置有读者、本仓库不提供监听」）；一次性切模型脚本已删；`moe_social_backend/` 保留并 gitignore（`.gitignore:164`） | 本机无 nginx：`nginx -t` 与实际代理请求的 Host / path / Authorization / WebSocket 行为**均未实测**，静态检查不等同运行验证。另：§29.8 延期过来的 `moe-admin/build-out.txt` 取消跟踪**未做**（见 §30.3 第 10 条） |
+| **#50** OAuth 回跳与登录绑定 | ✅ 已修复且验证（真实供应商与浏览器链路除外） | **服务端**：`internal/oauthflow`（事务存储 + S256 challenge + 回跳白名单 + 一次性 ticket）；本批以 `-count=1` 复跑 `internal/oauthflow` / `internal/biz/user` / `internal/server` 三包 **rc=0 · 0 FAIL**，覆盖成功链路 ×3、取消、恶意回跳、缺失/篡改/过期/跨供应商 state、错误 verifier/flow、重放、并发至多成功一次、重启失效、拒绝 code-only。**客户端**：`flutter test` **144 passed**、`flutter analyze` **0 error · 0 warning**（39 info 均为既有 deprecation）。**跨语言接缝**：Dart 与 Go 共用 RFC 7636 附录 B 向量，本批另用 `openssl` 独立复算确认 `dBjftJeZ…` → `E9Melhoa2…`。**文档**：两份飞书文档已同步新协议，负向冒烟 a~f 每条都对应一个具名用例 | ① **浏览器「刷新后完成链路与失败提示」未验证**——磁盘不足以完成 web 构建，且需启动会写共享测试库的后端，还需真实飞书授权；② **原生 WebView / 微信 SDK 真机未验证**；③ **真实供应商授权未验证**。三者都是计划里单列的设备与人工依赖，**不以单测冒充** |
+| **#17** config.yaml 去跟踪 | ⛔ 不在范围 | 用户明确取消（多机器开发需来回切换） | — |
+| **#47** reset-password 越权 | ⛔ 不在范围（用户暂缓） | 本批**未触碰** `auth_flow_service.dart` 的三个 reset 方法，已逐个确认原样 | **仍是活的 P0 安全风险**，见 30.3 |
+
+### 30.2 对前批记录的纠正
+
+| 位置 | 原记录 | 纠正 |
+|---|---|---|
+| §29.6 | `flutter test` **98 passed** | 是当时的值，不是当前值。本批为 **144 passed**（OAuth 客户端新增 41 例 + 前批增量）。§29.6 作为历史快照**不改写**，读它时要知道它已过期 |
+| §29.6 | `make check` **36 ok** | 同样是当时值。本批实测 **37 ok · 0 FAIL · 0 真 SKIP**，差的那 1 个是 #50 新增的 `internal/oauthflow` 包（`git ls-tree HEAD` 确认不在 HEAD 上）。**包计数会随新增测试包继续变，不要把它当固定基线读** |
+| §29.8 | 「BOM / CRLF 四个文件（含被 gitignore 漏掉的构建产物 `moe-admin/build-out.txt`）留给 #45 / #46」 | **这个延期项没有落地。** 实测：`git ls-files --error-unmatch moe-admin/build-out.txt` 成功（**仍被跟踪**）、`git check-ignore` **rc=1**、`.gitignore` 里没有它；文件首字节仍是 **BOM**，内容仍有 GBK 乱码（`鉁?` = `✓` 被当 GBK 解）。成因：#45 的门禁是 `gofmt`，只管 `.go`，管不到 `.txt`；#46 的批准范围点名了 nginx / ports / 一次性脚本 / `moe_social_backend/`，**没有点名这个文件**，且计划明写「其他纯风格重组不计入本次必做项」。**未擅自删除跟踪文件**（那是需要确认的动作），见 §30.3 第 10 条 |
+| §29.8 | 「#16 仍未做，是 #43 原登记四项里唯一剩下的」 | 本批已改代码，但**验证完全阻塞**；不能读成「#16 已完成」 |
+| 第九批迁移清单（`utils/feishu_oauth_redirect.go` / `utils/wechat_oauth_redirect.go` 各 1 处 `AppReturnURL`） | 记为已迁移到 `pkg/conf` | 这两个文件已随 #50 **整体删除**（回跳地址改由 `oauth.allowed_return_urls` 白名单裁定，`AppReturnURL` 配置键不复存在）。当时的迁移是真的，只是产物后来没了 |
+| §26.5 漏洞证据表（`state=https://evil.example/steal` → `?feishu_code=CODE-ABC`） | 实测 302 到攻击者站并带走授权码 | **保留原文，不改写**——那是 #50 修复前的真实实测记录，是这次修复的依据。只加注：见 §30.4 |
+
+### 30.3 必须保留的限制（不因本批通过而消失）
+
+1. **#47 是活的 P0**：`/api/user/reset-password` 无认证且不校验验证码即可改任意账号密码。用户明确暂缓，本批未动。**在修掉之前，任何「登录相关安全已收口」的说法都是错的。**
+2. **Ollama 模型创建仍未实现**。#51 关闭的是「假成功」这个缺陷——现在它如实返回 501 与 `success:false`。**不要读成「模型管理功能已完成」。**
+3. **Web OAuth 目前开箱不可用**：`oauth.allowed_return_urls` 默认只登记了 `moesocial://feishu/oauth` 与 `moesocial://wechat/oauth` 两个 App 深链。要在浏览器里跑通，**运维必须先把实际页面地址加进这份白名单**。这是批准设计（不自动信任 API origin / 任意 localhost / 局域网 / 隧道域名）的直接后果，不是 bug；服务端错误文案已可操作。
+4. **微信原生 SDK 的 state 字符集待真机确认**：服务端 state 是 base64url（含 `-` / `_`），微信文档写的是 `a-zA-Z0-9`。若微信侧拒绝或改写该字符集，失败模式是 **fail-closed**（state 不一致 → 拒绝登录 + 明确文案），**不构成安全漏洞**，但会让微信原生登录不可用。
+5. **前后端必须一起发布**：旧的 `code`-only 通路已在两侧同时关闭，旧客户端授权会明确失败而非静默降级。
+6. **授权事务在进程内存**（无 DB / Redis）：**后端重启即全部失效**，用户需重新发起授权。与当前单进程架构一致，横向扩容前必须换成共享存储。
+7. **热加载不是全链的**：#44 归并后，哪些配置改完即生效、哪些需重启，未逐项实测，不能承诺全链热加载。
+8. **#16 的签名守卫从未被执行过一次**。它可能在第一次真实 release 构建时才暴露问题。
+9. **`docs/dev/local-llm-tools.md` 整篇仍是死文档**（§29.8 已登记，本批未删）。
+10. **`moe-admin/build-out.txt` 仍是被 git 跟踪的构建产物**（1324 字节，2026-08-03 一次 `npm run build` 的日志，提交于 `da55da53`）。它带 BOM、内容含 GBK 乱码，`.gitignore` 里没有它。§29.8 把它延期给 #45/#46，**两批都没覆盖到**：#45 的门禁是 `gofmt`（只管 `.go`），#46 的批准范围没点名它。本批也没动 —— **取消跟踪一个文件属于需要确认的动作**，不擅自做。推荐处置（待决定）：`git rm --cached moe-admin/build-out.txt` + 往 `.gitignore` 加 `moe-admin/build-out.txt`（或 `moe-admin/*.log`），文件本身留在磁盘上。
+
+### 30.4 §26.5 漏洞的处置结果（加注，不改写原证据）
+
+§26.5 登记的开放重定向 + 授权码外泄 + 无 CSRF 防护，已由 **#50** 修复，机制与原记录的「给 `isAllowedReturnURL` 加 host 白名单」设想**不同**，实际做法更严：
+
+| §26.5 的成因 | #50 的处置 |
+|---|---|
+| 调用方传入的 `state` 被原样当回跳地址 | `state` 字段**完全忽略**（编号保留以免破坏 wire 兼容）；回跳地址改由独立的 `return_url` 提供 |
+| `isAllowedReturnURL` 只校验 scheme，不看 host | 换成 `oauth.allowed_return_urls` **精确命中**（scheme/host/port/path 全比对），并拒绝用户信息段、非预期 query/fragment 与危险协议 |
+| 302 把真实授权码挂到查询串上 | 服务端**原子消费 state**，把 code 封存进一次性 ticket；302 **只带 `oauth_ticket` + `oauth_state`**，授权码从不出进程 |
+| 拿到 code 就能登录（账号接管） | 登录须出示 `ticket` + `code_verifier`，服务端核验 `S256(verifier) == challenge`；`code` 字段非空即拒 |
+| 整条流程无 CSRF 防护 | state 由服务端生成（32 字节 base64url，不可预测），客户端只处理与本次发起配对的事务；陌生深链 / 无事务的 URL 一律拒绝 |
+
+原表里那两行 `?feishu_code=CODE-ABC` / `?wechat_code=CODE-ABC` 现在由 `internal/oauthflow/store_test.go:154` 的
+`TestAppendTicketQueryCarriesNoCode` 反向钉住：回跳查询串里出现 `code=` / `feishu_code` / `wechat_code` / `access_token` / `verifier` 任一即测试失败。
+
+### 30.5 本批门禁复跑（收口时的权威数字）
+
+| 门禁 | 实测 |
+|---|---|
+| `make check-format`（只检查不修改） | **rc=0** |
+| `make check`（格式 + vet + 编译生产入口 + 全仓单测） | **rc=0 · 37 ok · 0 FAIL · 0 个真 `--- SKIP`** |
+| 包计数差 | 比 §29.6 的 **36 ok 多 1 个** = 新增 `internal/oauthflow`（#50 引入，`git ls-tree HEAD` 确认不在 HEAD 上） |
+| OAuth 三包单独复跑（`-count=1`） | `internal/oauthflow` **ok** · `internal/biz/user` **ok** · `internal/server` **ok**，rc=0 |
+| `flutter analyze` | **0 error · 0 warning** · 39 info（均为既有 deprecation，含 `dart:html`，与既有 `oauth_web_history_web.dart` 同口径） |
+| `flutter test` | **rc=0 · 144 passed**（§29.6 记的 98 已过期，见 §30.2） |
+| 磁盘区间 | 本批 `/System/Volumes/Data` 可用 **524 Mi → 328 Mi → 1.1 Gi**（系统回收 purgeable 空间后回升） |
+| 一次性产物 | `/tmp/oauth_test_run.log`、`/tmp/makecheck_final.log` 为本次日志，未入库 |
+
+> 本批收口阶段只改了三份 `.md`（两份飞书文档 + 本文档），`make check` 不读 markdown；
+> 上表是**改完之后**重新跑出来的，不是沿用早先的结果。
+
+### 30.6 环境阻塞（本批实测）
+
+`/System/Volumes/Data` 在本批从 **524 Mi 掉到 328 Mi**（100% 已用）。直接后果：
+
+- 第一次跑 OAuth 三包测试出现一次**无诊断信息的 FAIL**，两次复跑（含 `-count=1`）均 **rc=0 · 0 FAIL**。磁盘在同一区间掉了近 200 Mi，**ENOSPC 打断编译是最可能的成因**，但未能确证 —— 如实记为「一次未复现的失败」，不记为通过也不记为缺陷。
+- `make test-race`（#44）、Flutter web 构建（#50 浏览器验收）、Gradle 依赖解析（#16）均因空间不足无法执行。
+- 按既定约束：**不清理全局缓存、不下载大型依赖、不删 TMPDIR 里属他人工具的 19 G `cursor-sandbox-cache`**。因此上述阻塞在本批内无解，只能登记。
+
+---
+
 ## 相关文档
 
 - [环境配置说明.md](./环境配置说明.md) — 本地 / 线上 API 基址（✅ §14 已重写，与 `ApiEnvConfig` 一致）
@@ -2635,3 +3346,5 @@ toolaudit 重写，2 条变异正确变红：
 - [deploy-platform.md](./deploy-platform.md) — 云平台部署
 - [n100-pipeline.md](./n100-pipeline.md) — n100 预发流水线
 - [security-and-stability-backlog.md](./security-and-stability-backlog.md) — 安全待办
+- [飞书通知与绑定.md](./飞书通知与绑定.md) — 飞书配置 / OAuth 接口 / 代码索引（✅ §30 已同步新协议：`return_url` + PKCE + 一次性 ticket）
+- [飞书OAuth授权验证指南.md](./飞书OAuth授权验证指南.md) — OAuth 联调与验收步骤（✅ §30 已同步；含不需要真实账号的负向冒烟 a~f）

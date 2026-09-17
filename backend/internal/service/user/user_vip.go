@@ -2,9 +2,9 @@
 package userapp
 
 import (
-	"context"
-	userbiz "backend/internal/biz/user"
 	vipv1 "backend/api/vip/v1"
+	userbiz "backend/internal/biz/user"
+	"context"
 )
 
 // Package userapp VIP 状态与订单。

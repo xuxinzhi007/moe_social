@@ -9,6 +9,7 @@ import (
 	"backend/internal/platform/apiconfig"
 	"backend/pkg/llminference"
 
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -34,7 +35,7 @@ func (s *Server) LlmCreateAgent(ctx context.Context, in *platformv1.LlmCreateAge
 		return nil, errLLMAppNil
 	}
 	result := s.deps.LLMApp.CreateAgent(ctx, llmbiz.CreateAgentInput{Name: in.GetName(), BaseModel: in.GetBaseModel(), SystemPrompt: in.GetSystemPrompt()}, s.deps.ModelCache)
-	return platformWriteToBaseResp(result), nil
+	return platformWriteToBaseResp(result)
 }
 
 func (s *Server) LlmChat(ctx context.Context, in *platformv1.LlmChatReq) (*platformv1.LlmChatResp, error) {
@@ -48,22 +49,6 @@ func (s *Server) LlmChat(ctx context.Context, in *platformv1.LlmChatReq) (*platf
 	return &platformv1.LlmChatResp{Code: int32(outcome.Code), Message: outcome.Message, Success: outcome.Success, Content: outcome.Content, RemainingRatio: outcome.RemainingRatio, Summarized: outcome.Summarized}, nil
 }
 
-func (s *Server) LlmDeleteModel(ctx context.Context, in *platformv1.LlmDeleteModelReq) (*platformv1.BaseResp, error) {
-	if s.deps.LLMApp == nil {
-		return nil, errLLMAppNil
-	}
-	result := s.deps.LLMApp.DeleteModel(ctx, in.GetModel(), s.deps.ModelCache)
-	return platformWriteToBaseResp(result), nil
-}
-
-func (s *Server) LlmDownloadModel(ctx context.Context, in *platformv1.LlmDownloadModelReq) (*platformv1.BaseResp, error) {
-	if s.deps.LLMApp == nil {
-		return nil, errLLMAppNil
-	}
-	result := s.deps.LLMApp.DownloadModel(ctx, in.GetModel(), s.deps.ModelCache)
-	return platformWriteToBaseResp(result), nil
-}
-
 func platformInferenceCfgFromConfig(c apiconfig.Config) llminference.Config {
 	inf := c.LLMInference
 	return llminference.ConfigFrom(inf.BaseUrl, inf.ApiStyle, inf.TimeoutSeconds, inf.MemoryModel, inf.ApiKey)
@@ -71,7 +56,7 @@ func platformInferenceCfgFromConfig(c apiconfig.Config) llminference.Config {
 
 func platformConfigSnapshotFromConfig(c apiconfig.Config) llmbiz.ConfigSnapshot {
 	inf := c.LLMInference
-	return llmbiz.ConfigSnapshot{InferenceBaseURL: inf.BaseUrl, InferenceAPIStyle: inf.ApiStyle, InferenceTimeoutSec: inf.TimeoutSeconds, MemoryModel: inf.MemoryModel, HasSummaryPrompt: inf.MemorySummaryPrompt != "", HasExtractPrompt: inf.MemoryExtractPrompt != "", LocalModelsStorageDir: c.LocalModels.StorageDir, LocalModelsCatalogSize: len(c.LocalModels.Catalog), MemoryBudget: llmbiz.DefaultMemoryBudget()}
+	return llmbiz.ConfigSnapshot{InferenceBaseURL: inf.BaseUrl, InferenceAPIStyle: inf.ApiStyle, InferenceTimeoutSec: inf.TimeoutSeconds, MemoryModel: inf.MemoryModel, HasSummaryPrompt: inf.MemorySummaryPrompt != "", HasExtractPrompt: inf.MemoryExtractPrompt != "", MemoryBudget: llmbiz.DefaultMemoryBudget()}
 }
 
 func platformChatInputFromProto(in *platformv1.LlmChatReq) llmbiz.PlatformChatInput {
@@ -85,8 +70,11 @@ func platformChatInputFromProto(in *platformv1.LlmChatReq) llmbiz.PlatformChatIn
 	return out
 }
 
-func platformWriteToBaseResp(result llmbiz.PlatformWriteResult) *platformv1.BaseResp {
-	return &platformv1.BaseResp{Code: int32(result.Code), Message: result.Message, Success: result.Success}
+func platformWriteToBaseResp(result llmbiz.PlatformWriteResult) (*platformv1.BaseResp, error) {
+	if !result.Success {
+		return nil, kerrors.New(result.Code, "LLM_AGENT_CREATE_FAILED", result.Message)
+	}
+	return &platformv1.BaseResp{Code: int32(result.Code), Message: result.Message, Success: result.Success}, nil
 }
 
 func moeToolsListValue(tools []interface{}) (*structpb.ListValue, error) {

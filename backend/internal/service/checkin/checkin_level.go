@@ -1,9 +1,9 @@
 package checkinapp
 
 import (
-	"context"
 	checkinv1 "backend/api/checkin/v1"
 	checkinbiz "backend/internal/biz/checkin"
+	"context"
 )
 
 func (s *AppService) GetExpLogs(ctx context.Context, in *checkinv1.GetExpLogsRequest) (*checkinv1.GetExpLogsReply, error) {

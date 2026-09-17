@@ -10,13 +10,13 @@ import (
 
 // GameSaveSnapshot 存档快照：序列化完整会话状态。
 type GameSaveSnapshot struct {
-	Session      model.GameSession   `json:"session"`
-	Flags        WorldFlags          `json:"flags"`
-	Favor        map[string]int      `json:"favor"`
-	Scene        model.GameScene     `json:"scene"`
-	NPCs         []model.GameNpc     `json:"npcs"`
-	Inventory    []model.GameWorldItem `json:"inventory"`
-	SceneItems   []model.GameWorldItem `json:"scene_items"`
+	Session    model.GameSession     `json:"session"`
+	Flags      WorldFlags            `json:"flags"`
+	Favor      map[string]int        `json:"favor"`
+	Scene      model.GameScene       `json:"scene"`
+	NPCs       []model.GameNpc       `json:"npcs"`
+	Inventory  []model.GameWorldItem `json:"inventory"`
+	SceneItems []model.GameWorldItem `json:"scene_items"`
 }
 
 // SaveGame 保存游戏到指定槽位。

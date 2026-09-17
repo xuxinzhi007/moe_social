@@ -7,7 +7,8 @@
 
 ```bash
 make moe-social    # 单进程 Kratos HTTP :8888
-make gen           # proto + conf + HTTP 路由计数（含 openapi.yaml）
+make gen           # 固定工具链生成 proto pb/grpc/http + openapi.yaml
+make check-gen     # 临时生成，只读比较当前工作树的产物路径和内容
 
 # 指定配置文件（-f 默认值即 config/config.yaml）
 go run ./cmd/moe-social -f config/config.yaml
@@ -39,7 +40,6 @@ internal/server/
   http_docs.go                       # /swagger
   protohttp/<domain>/                # {domain}.go + {domain}_{feature}.go
   transport/                         # OAuth / WS / SSE（非 JSON）
-  routestats/                        # proto HTTP 路由计数（make gen）
 
 internal/platform/
   svc/                               # ServiceContext

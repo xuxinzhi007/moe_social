@@ -1,9 +1,9 @@
 package notifyapp
 
 import (
-	"context"
 	notifyv1 "backend/api/notify/v1"
 	notifybiz "backend/internal/biz/notify"
+	"context"
 )
 
 // GetNotifications 通知列表。

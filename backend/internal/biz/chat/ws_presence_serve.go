@@ -10,8 +10,8 @@ import (
 	"backend/internal/pkg/presence"
 	"backend/utils"
 
-	"github.com/gorilla/websocket"
 	"backend/internal/platform/moelog"
+	"github.com/gorilla/websocket"
 )
 
 var (

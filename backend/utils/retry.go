@@ -7,10 +7,10 @@ import (
 
 // RetryConfig 重试配置
 type RetryConfig struct {
-	MaxRetries    int
-	InitialDelay  time.Duration
-	MaxDelay      time.Duration
-	BackoffFactor float64
+	MaxRetries           int
+	InitialDelay         time.Duration
+	MaxDelay             time.Duration
+	BackoffFactor        float64
 	RetryableStatusCodes []int
 }
 

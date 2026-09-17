@@ -33,8 +33,11 @@ func FeishuOAuthAuthorizeURL(state string) (string, error) {
 	if redirectURI == "" {
 		return "", fmt.Errorf("feishu redirect_uri is empty (set feishu.redirect_uri or api.public_base_url)")
 	}
+	// state 必须是 oauthflow 生成的随机串。旧实现在为空时兜一个固定的 "moe_social"，
+	// 那等于把 CSRF 防护关掉：任何人都能预先构造出同一个 state。
+	state = strings.TrimSpace(state)
 	if state == "" {
-		state = "moe_social"
+		return "", fmt.Errorf("feishu oauth state is empty")
 	}
 	q := url.Values{}
 	q.Set("app_id", appID)

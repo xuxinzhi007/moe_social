@@ -273,13 +273,13 @@ func (s *store) UpsertNpcTemplate(ctx context.Context, tpl *model.GameNpcTemplat
 		return err
 	}
 	return s.db.WithContext(ctx).Model(&existing).Updates(map[string]interface{}{
-		"display_name":          tpl.DisplayName,
-		"persona":               tpl.Persona,
-		"base_favorability":     tpl.BaseFavorability,
-		"dialogue_rules_json":   tpl.DialogueRulesJSON,
+		"display_name":            tpl.DisplayName,
+		"persona":                 tpl.Persona,
+		"base_favorability":       tpl.BaseFavorability,
+		"dialogue_rules_json":     tpl.DialogueRulesJSON,
 		"fallback_responses_json": tpl.FallbackResponsesJSON,
-		"scene_affinity":        tpl.SceneAffinity,
-		"is_active":             tpl.IsActive,
+		"scene_affinity":          tpl.SceneAffinity,
+		"is_active":               tpl.IsActive,
 	}).Error
 }
 
@@ -340,7 +340,7 @@ func (s *store) ListActiveStoryArcs(ctx context.Context) ([]model.GameStoryArc, 
 func (s *store) UpsertWorldState(ctx context.Context, row *model.GameWorldState) error {
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "session_id"}},
+			Columns: []clause.Column{{Name: "session_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{
 				"player_focus", "player_posture", "world_mood",
 				"story_phase", "turn_count", "last_talk_npc", "in_dialogue", "updated_at",
@@ -379,7 +379,7 @@ func (s *store) ListDiscoveredItems(ctx context.Context, sessionID uint) ([]mode
 func (s *store) UpsertVisitedScene(ctx context.Context, row *model.GameVisitedScene) error {
 	return s.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
-			Columns: []clause.Column{{Name: "session_id"}, {Name: "scene_id"}},
+			Columns:   []clause.Column{{Name: "session_id"}, {Name: "scene_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"visit_count", "last_visited_at"}),
 		}).
 		Create(row).Error

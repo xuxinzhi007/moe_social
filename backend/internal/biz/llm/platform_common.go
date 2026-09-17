@@ -11,20 +11,18 @@ import (
 )
 
 type ConfigSnapshot struct {
-	InferenceBaseURL       string
-	InferenceAPIStyle      string
-	InferenceTimeoutSec    int
-	MemoryModel            string
-	HasSummaryPrompt       bool
-	HasExtractPrompt       bool
-	LocalModelsStorageDir  string
-	LocalModelsCatalogSize int
-	MemoryBudget           MemoryBudgetConfig
+	InferenceBaseURL    string
+	InferenceAPIStyle   string
+	InferenceTimeoutSec int
+	MemoryModel         string
+	HasSummaryPrompt    bool
+	HasExtractPrompt    bool
+	MemoryBudget        MemoryBudgetConfig
 }
 
 type MemoryBudgetConfig struct {
-	MaxCtxTokens      int
-	CtxSafeRatio      float64
+	MaxCtxTokens       int
+	CtxSafeRatio       float64
 	MaxHistoryMessages int
 	KeepRecentMessages int
 }
@@ -123,26 +121,11 @@ func proxyRequest(w http.ResponseWriter, r *http.Request, targetURL string, time
 	return nil
 }
 
+// CreateOllamaAgent 明确拒绝当前不支持的服务器模型写入。
 func CreateOllamaAgent(ctx context.Context, cfg llminference.Config, in CreateAgentInput, cache ModelCacheClearer) PlatformWriteResult {
 	return PlatformWriteResult{
-		Code:    501,
-		Message: "未实现",
-		Success: false,
-	}
-}
-
-func DeleteOllamaModel(ctx context.Context, cfg llminference.Config, model string, cache ModelCacheClearer) PlatformWriteResult {
-	return PlatformWriteResult{
-		Code:    501,
-		Message: "未实现",
-		Success: false,
-	}
-}
-
-func DownloadOllamaModel(ctx context.Context, cfg llminference.Config, model string, cache ModelCacheClearer) PlatformWriteResult {
-	return PlatformWriteResult{
-		Code:    501,
-		Message: "未实现",
+		Code:    http.StatusNotImplemented,
+		Message: "当前后端尚不支持创建或同步服务器模型",
 		Success: false,
 	}
 }

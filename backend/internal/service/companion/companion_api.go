@@ -300,37 +300,6 @@ func (s *AppService) GetTimeline(
 	return s.ListEvents(ctx, userID, in)
 }
 
-// GetContextPreview returns safe metadata for the canonical companion context.
-func (s *AppService) GetContextPreview(
-	ctx context.Context,
-	userID uint,
-	in *companionv1.ContextPreviewRequest,
-) (*companionv1.ContextPreviewReply, error) {
-	engine, err := s.requireEngine()
-	if err != nil {
-		return nil, err
-	}
-	scene := strings.TrimSpace(in.GetScene())
-	snapshot, err := engine.BuildContext(ctx, userID, scene)
-	if err != nil {
-		return nil, err
-	}
-	reply := &companionv1.ContextPreviewReply{
-		Scene:                  snapshot.Scene,
-		HistoryCount:           int32(len(snapshot.History)),
-		MemoryCount:            int32(len(snapshot.Memories)),
-		RelationshipEventCount: int32(len(snapshot.RelationshipEvents)),
-		UnfinishedTopicCount:   int32(len(snapshot.UnfinishedTopics)),
-		FirstChat:              snapshot.IsFirstChat,
-	}
-	if snapshot.Profile != nil {
-		reply.RelationshipLevel = int32(snapshot.Profile.RelationshipLevel)
-		reply.IntimacyScore = snapshot.Profile.IntimacyScore
-		reply.WorldBindStatus = snapshot.Profile.WorldBindStatus
-	}
-	return reply, nil
-}
-
 // ListProactiveDeliveries returns rebuildable proactive delivery states.
 func (s *AppService) ListProactiveDeliveries(
 	ctx context.Context,
@@ -402,18 +371,18 @@ func (s *AppService) MarkProactiveRead(
 		return nil, err
 	}
 	if s.db == nil {
-		return nil, kerrors.ServiceUnavailable("COMPANION_UNAVAILABLE", "浼欎即鏈嶅姟鏆備笉鍙敤")
+		return nil, kerrors.ServiceUnavailable("COMPANION_UNAVAILABLE", "伙伴服务暂不可用")
 	}
 	notificationID := uint(in.GetNotificationId())
 	if notificationID == 0 {
-		return nil, kerrors.BadRequest("COMPANION_PROACTIVE_NOTIFICATION_INVALID", "涓诲姩娑堟伅 ID 鏃犳晥")
+		return nil, kerrors.BadRequest("COMPANION_PROACTIVE_NOTIFICATION_INVALID", "主动消息 ID 无效")
 	}
 	var notice model.Notification
 	if err := s.db.WithContext(ctx).
 		Where("id = ? AND user_id = ? AND type = ?", notificationID, userID, 9).
 		First(&notice).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, kerrors.NotFound("COMPANION_PROACTIVE_NOT_FOUND", "涓诲姩娑堟伅涓嶅瓨鍦ㄦ垨鏃犳潈闄")
+			return nil, kerrors.NotFound("COMPANION_PROACTIVE_NOT_FOUND", "主动消息不存在或无权限")
 		}
 		return nil, err
 	}

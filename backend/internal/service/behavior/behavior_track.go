@@ -1,10 +1,10 @@
 package behaviorapp
 
 import (
-	"context"
-	"encoding/json"
 	behaviorv1 "backend/api/behavior/v1"
 	behaviorbiz "backend/internal/biz/behavior"
+	"context"
+	"encoding/json"
 )
 
 // TrackEvents 批量上报行为事件。

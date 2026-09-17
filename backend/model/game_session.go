@@ -4,15 +4,15 @@ import "time"
 
 // GameSession 玩家文字游戏会话。
 type GameSession struct {
-	ID             uint      `gorm:"primarykey" json:"id"`
-	UserID         uint      `gorm:"not null;index:idx_game_session_user" json:"user_id"`
-	SceneID        uint      `gorm:"not null;index" json:"scene_id"`
-	GameTime       string    `gorm:"size:64;not null;default:'上午 10:00'" json:"game_time"`
-	FlagsJSON      string    `gorm:"type:text" json:"flags_json"`
-	NpcFavorJSON   string    `gorm:"type:text" json:"npc_favor_json"`
-	IsActive       bool      `gorm:"not null;default:true;index:idx_game_session_user" json:"is_active"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID           uint      `gorm:"primarykey" json:"id"`
+	UserID       uint      `gorm:"not null;index:idx_game_session_user" json:"user_id"`
+	SceneID      uint      `gorm:"not null;index" json:"scene_id"`
+	GameTime     string    `gorm:"size:64;not null;default:'上午 10:00'" json:"game_time"`
+	FlagsJSON    string    `gorm:"type:text" json:"flags_json"`
+	NpcFavorJSON string    `gorm:"type:text" json:"npc_favor_json"`
+	IsActive     bool      `gorm:"not null;default:true;index:idx_game_session_user" json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func (GameSession) TableName() string { return "game_sessions" }
@@ -32,13 +32,13 @@ func (GameScene) TableName() string { return "game_scenes" }
 
 // GameNpc 场景内 NPC。
 type GameNpc struct {
-	ID              uint      `gorm:"primarykey" json:"id"`
-	SceneID         uint      `gorm:"not null;index" json:"scene_id"`
-	Name            string    `gorm:"size:64;not null" json:"name"`
-	Persona         string    `gorm:"type:text" json:"persona"`
-	BaseFavorability int      `gorm:"not null;default:50" json:"base_favorability"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID               uint      `gorm:"primarykey" json:"id"`
+	SceneID          uint      `gorm:"not null;index" json:"scene_id"`
+	Name             string    `gorm:"size:64;not null" json:"name"`
+	Persona          string    `gorm:"type:text" json:"persona"`
+	BaseFavorability int       `gorm:"not null;default:50" json:"base_favorability"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 func (GameNpc) TableName() string { return "game_npcs" }

@@ -10,17 +10,17 @@ import (
 
 // RemoteCheckResult is a structured VPS path / compose / moe-social binary inspection.
 type RemoteCheckResult struct {
-	OK                 bool     `json:"ok"`
-	Message            string   `json:"message"`
-	BackendDir         string   `json:"backend_dir"`
-	ComposeFile        string   `json:"compose_file"`
-	BackendDirExists   bool     `json:"backend_dir_exists"`
-	ComposeFileExists  bool     `json:"compose_file_exists"`
-	BinaryExists       bool     `json:"binary_exists"`
-	ContainerRunning   string   `json:"container_running"` // yes | no | na
-	SuggestedBackend   string   `json:"suggested_backend_dir,omitempty"`
-	ComposeCandidates  []string `json:"compose_candidates,omitempty"`
-	RawOutput          string   `json:"raw_output,omitempty"`
+	OK                bool     `json:"ok"`
+	Message           string   `json:"message"`
+	BackendDir        string   `json:"backend_dir"`
+	ComposeFile       string   `json:"compose_file"`
+	BackendDirExists  bool     `json:"backend_dir_exists"`
+	ComposeFileExists bool     `json:"compose_file_exists"`
+	BinaryExists      bool     `json:"binary_exists"`
+	ContainerRunning  string   `json:"container_running"` // yes | no | na
+	SuggestedBackend  string   `json:"suggested_backend_dir,omitempty"`
+	ComposeCandidates []string `json:"compose_candidates,omitempty"`
+	RawOutput         string   `json:"raw_output,omitempty"`
 }
 
 // RemoteInspectScript builds a shell script to verify paths on the VPS.

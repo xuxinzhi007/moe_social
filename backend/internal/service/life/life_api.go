@@ -25,10 +25,10 @@ func (s *AppService) GetWorld(ctx context.Context, _ *lifev1.GetLifeWorldRequest
 		return nil, errors.NotFound("LIFE_WORLD", "world not found")
 	}
 	return &lifev1.GetLifeWorldReply{
-		World:        lifeWorldToProto(snap.World),
-		TickCount:    snap.TickCount,
-		EntityCount:  int32(len(snap.Entities)),
-		Summary:      lifeSummaryToProto(snap.Summary),
+		World:       lifeWorldToProto(snap.World),
+		TickCount:   snap.TickCount,
+		EntityCount: int32(len(snap.Entities)),
+		Summary:     lifeSummaryToProto(snap.Summary),
 	}, nil
 }
 

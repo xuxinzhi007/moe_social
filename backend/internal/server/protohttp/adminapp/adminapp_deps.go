@@ -8,6 +8,7 @@ import (
 	aiapp "backend/internal/service/ai"
 )
 
+// RuntimeState 是只读启动快照，保存文件后需重启重建；不可回填到编辑字段。
 type RuntimeState struct {
 	ClientPublicAPIBaseURL string
 	ImagePublicBaseURL     string

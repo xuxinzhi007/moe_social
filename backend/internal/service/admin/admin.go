@@ -2,11 +2,11 @@
 package adminapp
 
 import (
-	"gorm.io/gorm"
-	notifybiz "backend/internal/biz/notify"
-	notifydata "backend/internal/data/notify"
 	adminbiz "backend/internal/biz/admin"
+	notifybiz "backend/internal/biz/notify"
 	admindata "backend/internal/data/admin"
+	notifydata "backend/internal/data/notify"
+	"gorm.io/gorm"
 )
 
 // Package adminapp Admin 只读应用服务（Sprint S3）。

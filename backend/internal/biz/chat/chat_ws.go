@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gorilla/websocket"
 	"backend/internal/platform/moelog"
+	"github.com/gorilla/websocket"
 )
 
 var (

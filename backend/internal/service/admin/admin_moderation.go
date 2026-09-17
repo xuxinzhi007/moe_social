@@ -1,10 +1,10 @@
 package adminapp
 
 import (
-	"context"
-	communitydata "backend/internal/data/community"
 	adminv1 "backend/api/admin/v1"
 	adminbiz "backend/internal/biz/admin"
+	communitydata "backend/internal/data/community"
+	"context"
 )
 
 func (s *AppService) ListFollows(ctx context.Context, in *adminv1.AdminListFollowsReq) (*adminv1.AdminListFollowsResp, error) {
