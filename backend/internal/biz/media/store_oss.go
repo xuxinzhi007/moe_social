@@ -15,10 +15,10 @@ import (
 )
 
 type ossBlobStore struct {
-	bucket        *oss.Bucket
-	prefix        string
-	publicBase    string
-	proxyViaAPI   bool
+	bucket      *oss.Bucket
+	prefix      string
+	publicBase  string
+	proxyViaAPI bool
 }
 
 func newOSSBlobStore(cfg ImageConfig) (*ossBlobStore, error) {

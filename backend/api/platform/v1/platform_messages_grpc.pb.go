@@ -31,8 +31,6 @@ const (
 	Platform_GetVoiceToken_FullMethodName         = "/platform.v1.Platform/GetVoiceToken"
 	Platform_LlmCreateAgent_FullMethodName        = "/platform.v1.Platform/LlmCreateAgent"
 	Platform_LlmChat_FullMethodName               = "/platform.v1.Platform/LlmChat"
-	Platform_LlmDeleteModel_FullMethodName        = "/platform.v1.Platform/LlmDeleteModel"
-	Platform_LlmDownloadModel_FullMethodName      = "/platform.v1.Platform/LlmDownloadModel"
 	Platform_ListAnnouncements_FullMethodName     = "/platform.v1.Platform/ListAnnouncements"
 	Platform_GetAnnouncement_FullMethodName       = "/platform.v1.Platform/GetAnnouncement"
 	Platform_GetLatestAppRelease_FullMethodName   = "/platform.v1.Platform/GetLatestAppRelease"
@@ -52,10 +50,12 @@ type PlatformClient interface {
 	VoiceCancel(ctx context.Context, in *VoiceCancelReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
 	VoiceReject(ctx context.Context, in *VoiceRejectReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
 	GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq, opts ...grpc.CallOption) (*GetVoiceTokenResp, error)
+	// LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
 	LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*BaseResp, error)
 	LlmChat(ctx context.Context, in *LlmChatReq, opts ...grpc.CallOption) (*LlmChatResp, error)
-	LlmDeleteModel(ctx context.Context, in *LlmDeleteModelReq, opts ...grpc.CallOption) (*BaseResp, error)
-	LlmDownloadModel(ctx context.Context, in *LlmDownloadModelReq, opts ...grpc.CallOption) (*BaseResp, error)
 	ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...grpc.CallOption) (*ListAnnouncementsResp, error)
 	GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...grpc.CallOption) (*GetAnnouncementResp, error)
 	GetLatestAppRelease(ctx context.Context, in *GetLatestAppReleaseReq, opts ...grpc.CallOption) (*GetLatestAppReleaseResp, error)
@@ -189,26 +189,6 @@ func (c *platformClient) LlmChat(ctx context.Context, in *LlmChatReq, opts ...gr
 	return out, nil
 }
 
-func (c *platformClient) LlmDeleteModel(ctx context.Context, in *LlmDeleteModelReq, opts ...grpc.CallOption) (*BaseResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BaseResp)
-	err := c.cc.Invoke(ctx, Platform_LlmDeleteModel_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *platformClient) LlmDownloadModel(ctx context.Context, in *LlmDownloadModelReq, opts ...grpc.CallOption) (*BaseResp, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BaseResp)
-	err := c.cc.Invoke(ctx, Platform_LlmDownloadModel_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *platformClient) ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...grpc.CallOption) (*ListAnnouncementsResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAnnouncementsResp)
@@ -253,10 +233,12 @@ type PlatformServer interface {
 	VoiceCancel(context.Context, *VoiceCancelReq) (*VoiceSimpleResp, error)
 	VoiceReject(context.Context, *VoiceRejectReq) (*VoiceSimpleResp, error)
 	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
+	// LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
+	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
+	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
+	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
 	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*BaseResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
-	LlmDeleteModel(context.Context, *LlmDeleteModelReq) (*BaseResp, error)
-	LlmDownloadModel(context.Context, *LlmDownloadModelReq) (*BaseResp, error)
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error)
 	GetLatestAppRelease(context.Context, *GetLatestAppReleaseReq) (*GetLatestAppReleaseResp, error)
@@ -305,12 +287,6 @@ func (UnimplementedPlatformServer) LlmCreateAgent(context.Context, *LlmCreateAge
 }
 func (UnimplementedPlatformServer) LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method LlmChat not implemented")
-}
-func (UnimplementedPlatformServer) LlmDeleteModel(context.Context, *LlmDeleteModelReq) (*BaseResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method LlmDeleteModel not implemented")
-}
-func (UnimplementedPlatformServer) LlmDownloadModel(context.Context, *LlmDownloadModelReq) (*BaseResp, error) {
-	return nil, status.Error(codes.Unimplemented, "method LlmDownloadModel not implemented")
 }
 func (UnimplementedPlatformServer) ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAnnouncements not implemented")
@@ -558,42 +534,6 @@ func _Platform_LlmChat_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Platform_LlmDeleteModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LlmDeleteModelReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformServer).LlmDeleteModel(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Platform_LlmDeleteModel_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformServer).LlmDeleteModel(ctx, req.(*LlmDeleteModelReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Platform_LlmDownloadModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LlmDownloadModelReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PlatformServer).LlmDownloadModel(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Platform_LlmDownloadModel_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PlatformServer).LlmDownloadModel(ctx, req.(*LlmDownloadModelReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Platform_ListAnnouncements_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAnnouncementsReq)
 	if err := dec(in); err != nil {
@@ -702,14 +642,6 @@ var Platform_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LlmChat",
 			Handler:    _Platform_LlmChat_Handler,
-		},
-		{
-			MethodName: "LlmDeleteModel",
-			Handler:    _Platform_LlmDeleteModel_Handler,
-		},
-		{
-			MethodName: "LlmDownloadModel",
-			Handler:    _Platform_LlmDownloadModel_Handler,
 		},
 		{
 			MethodName: "ListAnnouncements",

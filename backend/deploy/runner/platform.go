@@ -12,20 +12,20 @@ import (
 
 // HostInfo describes the machine running the Deploy Agent.
 type HostInfo struct {
-	OS           string `json:"os"`
-	Arch         string `json:"arch"`
-	Platform     string `json:"platform"`
-	Shell        string `json:"shell"`
-	HasMake      bool   `json:"has_make"`
-	DockerCLI    string `json:"docker_cli"`
-	ComposeCLI   string `json:"compose_cli"`
-	GoVersion    string `json:"go_version"`
-	DockerVersion string `json:"docker_version"`
-	GitVersion   string `json:"git_version"`
+	OS             string `json:"os"`
+	Arch           string `json:"arch"`
+	Platform       string `json:"platform"`
+	Shell          string `json:"shell"`
+	HasMake        bool   `json:"has_make"`
+	DockerCLI      string `json:"docker_cli"`
+	ComposeCLI     string `json:"compose_cli"`
+	GoVersion      string `json:"go_version"`
+	DockerVersion  string `json:"docker_version"`
+	GitVersion     string `json:"git_version"`
 	FlutterVersion string `json:"flutter_version"`
-	WorkspaceRoot string `json:"workspace_root"`
-	BackendDir   string `json:"backend_dir"`
-	ComposeFile  string `json:"compose_file"`
+	WorkspaceRoot  string `json:"workspace_root"`
+	BackendDir     string `json:"backend_dir"`
+	ComposeFile    string `json:"compose_file"`
 }
 
 // Platform wraps OS-specific command construction.
@@ -270,10 +270,10 @@ func (p *Platform) DockerLogs(service string, tail int) CommandSpec {
 		tail = 100
 	}
 	return CommandSpec{
-		Dir:     p.backendDir,
-		Label:   "docker logs " + name,
-		Argv:    []string{"docker", "logs", "--tail", fmt.Sprintf("%d", tail), name},
-		Shell:   false,
+		Dir:   p.backendDir,
+		Label: "docker logs " + name,
+		Argv:  []string{"docker", "logs", "--tail", fmt.Sprintf("%d", tail), name},
+		Shell: false,
 	}
 }
 

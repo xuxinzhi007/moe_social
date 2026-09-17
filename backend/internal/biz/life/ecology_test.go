@@ -51,11 +51,11 @@ func TestWorldCellForEntity(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		posX    float64
-		posY    float64
-		wantX   int
-		wantY   int
+		name  string
+		posX  float64
+		posY  float64
+		wantX int
+		wantY int
 	}{
 		{"原点", 0, 0, 0, 0},
 		{"最大值", 1280, 720, 31, 17},

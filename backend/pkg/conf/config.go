@@ -41,12 +41,38 @@ type Config struct {
 	AppClient      AppClient      `mapstructure:"app_client"`
 	LLMInference   LLMInference   `mapstructure:"llm_inference"`
 	Ollama         Ollama         `mapstructure:"ollama"`
-	LocalModels    LocalModels    `mapstructure:"local_models"`
 	TempMail       TempMail       `mapstructure:"temp_mail"`
 	PrivateMessage PrivateMessage `mapstructure:"private_message"`
 	Feishu         Feishu         `mapstructure:"feishu"`
 	Wechat         Wechat         `mapstructure:"wechat"`
+	OAuth          OAuth          `mapstructure:"oauth"`
+	Agora          Agora          `mapstructure:"agora"`
 	Moe            Moe            `mapstructure:"moe"`
+}
+
+// OAuth 第三方登录（飞书 / 微信）的授权事务参数。
+//
+// AllowedReturnURLs 是**精确**回跳白名单：授权成功后服务端只会 302 到这份列表里的地址，
+// 客户端提交的 return_url 必须与其中一项规范化后完全相等（scheme/host/port/path 全等，
+// 不接受 userinfo、query、fragment，不接受 http/https/moesocial 以外的协议）。
+//
+// 换开发机、换隧道就改这份列表 —— 不要放宽成「信任 API origin」「信任任意 localhost /
+// 局域网 / 隧道域名」或「拿 state 当回跳地址」。那三种做法正是 #50 修掉的开放重定向：
+// 攻击者构造一个 state 指向自己站点，服务端就会把用户的授权码 302 送过去。
+type OAuth struct {
+	AllowedReturnURLs []string `mapstructure:"allowed_return_urls"`
+	// AuthTTLSeconds 授权事务（服务端 state）有效期，缺省 600 秒。
+	AuthTTLSeconds int64 `mapstructure:"auth_ttl_seconds"`
+	// TicketTTLSeconds 回调签发的一次性 ticket 有效期，缺省 60 秒。
+	TicketTTLSeconds int64 `mapstructure:"ticket_ttl_seconds"`
+	// MaxPendingAuths 内存中并存的授权事务上限，缺省 4096；满时淘汰最早到期的一条。
+	MaxPendingAuths int `mapstructure:"max_pending_auths"`
+}
+
+// Agora RTC 凭证；缺失键保留 API 片段值，显式空值禁用对应凭证。
+type Agora struct {
+	AppID          string `mapstructure:"app_id"`
+	AppCertificate string `mapstructure:"app_certificate"`
 }
 
 // Runtime 进程运行时（对外端口、启动片段路径）。
@@ -142,24 +168,6 @@ type Ollama struct {
 	APIKey         string `mapstructure:"api_key"`
 }
 
-// LocalModels 手机可下载的离线 GGUF 目录与清单。
-type LocalModels struct {
-	StorageDir string                   `mapstructure:"storage_dir"`
-	Catalog    []LocalModelCatalogEntry `mapstructure:"catalog"`
-}
-
-// LocalModelCatalogEntry 单个离线模型条目。
-type LocalModelCatalogEntry struct {
-	ID          string  `mapstructure:"id"`
-	Name        string  `mapstructure:"name"`
-	Filename    string  `mapstructure:"filename"`
-	SizeBytes   int64   `mapstructure:"size_bytes"`
-	SHA256      string  `mapstructure:"sha256"`
-	Description string  `mapstructure:"description"`
-	ParametersB float64 `mapstructure:"parameters_b"`
-	Recommended bool    `mapstructure:"recommended"`
-}
-
 // TempMail 临时邮箱（make temp-mail-password 与 App 注册用）。
 type TempMail struct {
 	Enabled        bool   `mapstructure:"enabled"`
@@ -186,7 +194,6 @@ type Feishu struct {
 	ReceiveIDType       string `mapstructure:"receive_id_type"`
 	RedirectURI         string `mapstructure:"redirect_uri"`
 	OAuthScope          string `mapstructure:"oauth_scope"`
-	AppReturnURL        string `mapstructure:"app_return_url"`
 	AutoAddToDirectory  bool   `mapstructure:"auto_add_to_directory"`
 	DefaultDepartmentID string `mapstructure:"default_department_id"`
 	EnterpriseInviteURL string `mapstructure:"enterprise_invite_url"`
@@ -196,13 +203,12 @@ type Feishu struct {
 // Wechat 微信开放平台登录。三条 flow（app / website / mp）各自独立凭证，
 // 历史扁平键（mobile_app_id、web_app_id、mp_app_id…）的回退见 derive.go。
 type Wechat struct {
-	Enabled      bool             `mapstructure:"enabled"`
-	RedirectURI  string           `mapstructure:"redirect_uri"`
-	AppReturnURL string           `mapstructure:"app_return_url"`
-	OAuthScope   string           `mapstructure:"oauth_scope"`
-	App          WechatCredential `mapstructure:"app"`
-	Website      WechatCredential `mapstructure:"website"`
-	MP           WechatCredential `mapstructure:"mp"`
+	Enabled     bool             `mapstructure:"enabled"`
+	RedirectURI string           `mapstructure:"redirect_uri"`
+	OAuthScope  string           `mapstructure:"oauth_scope"`
+	App         WechatCredential `mapstructure:"app"`
+	Website     WechatCredential `mapstructure:"website"`
+	MP          WechatCredential `mapstructure:"mp"`
 }
 
 // WechatCredential 一条微信 flow 的 AppID / AppSecret。
@@ -222,6 +228,18 @@ type Moe struct {
 	DreamSchedulerTickSeconds int64 `mapstructure:"dream_scheduler_tick_seconds"`
 	BotSmartRetryMinutes      int   `mapstructure:"bot_smart_retry_minutes"`
 	BotSmartMinIntervalHours  int   `mapstructure:"bot_smart_min_interval_hours"`
+
+	// Life 引擎的 tick / flush 间隔（秒）。迁移前是 moewiring/api_life.go 里的编译期常量
+	// livingWorldIntervalSeconds = 5*60，且两者共用同一个数 —— 调一次世界节奏就得改代码
+	// 重新编译整个后端。缺省值放在 derive.go 的 LifeIntervals()，仍是 300 秒。
+	LifeTickSeconds  int64 `mapstructure:"life_tick_seconds"`
+	LifeFlushSeconds int64 `mapstructure:"life_flush_seconds"`
+
+	// game 后台世界时钟的间隔（秒）。这个键**故意不在这里给缺省**：
+	// gamebiz.defaultWorldTickInterval 已经是那个 45 秒的唯一副本，
+	// derive.go 的 WorldTickInterval() 未配置时返回 0，由 StartWorldRunner 的
+	// `interval <= 0` 守卫兜底 —— 再写一个 45 就会变成第三份副本。
+	WorldTickSeconds int64 `mapstructure:"world_tick_seconds"`
 
 	Production MoeProduction `mapstructure:"production"`
 

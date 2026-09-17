@@ -2,11 +2,11 @@
 package vipadmin
 
 import (
-	"context"
-	"gorm.io/gorm"
-	"backend/model"
 	vipbiz "backend/internal/biz/vip"
 	vipdata "backend/internal/data/vip"
+	"backend/model"
+	"context"
+	"gorm.io/gorm"
 )
 
 // Package vipadmin VIP 管理端应用服务（Hybrid：API in_process / RPC 可复用 biz）。

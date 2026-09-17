@@ -3,9 +3,9 @@ package userapp
 import (
 	"strconv"
 
+	userv1 "backend/api/user/v1"
 	chatbiz "backend/internal/biz/chat"
 	"backend/model"
-	userv1 "backend/api/user/v1"
 )
 
 const (

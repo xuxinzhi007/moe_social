@@ -10,7 +10,7 @@ import (
 	vipadmin "backend/internal/service/vip"
 )
 
-// Server 闂佽楠稿﹢閬嶅磻閻旇偐宓?admin.v1.AdminApp HTTP/gRPC 闂傚倷绶￠崑鍕磹閸ф鍌ㄩ柕鍫濐槹閺咁剟鏌? 闂佸搫顦弲娆撴嚄閺堢數鏄傞梻浣瑰缁嬫垿藝椤撱垹鐒?
+// Server 是 admin.v1.AdminApp 的 HTTP 适配层，把请求转交给注入的各个 service。
 type Server struct {
 	adminv1.UnimplementedAdminAppServer
 	app         *adminapp.AppService
@@ -20,7 +20,7 @@ type Server struct {
 	recordAudit func(ctx context.Context, action, resource, resourceID, detail string)
 }
 
-// New 闂備礁鎼鍛偓姘嵆閸┾偓?AdminApp 闂備礁鎼悧鍡欑矓鐎涙ɑ鍙忛柣鏃傚帶杩?
+// New 构造 AdminApp 适配层，其余依赖经 Option 注入。
 func New(app *adminapp.AppService, vip *vipadmin.AdminService, opts ...Option) *Server {
 	s := &Server{app: app, vip: vip}
 	for _, o := range opts {

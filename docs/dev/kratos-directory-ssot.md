@@ -39,10 +39,11 @@ backend/
 
 | 命令 | 作用 |
 |------|------|
-| **`make gen`** | 日常：**足够**。跑 proto pb/grpc/http + conf + 路由表 |
-| `make init-proto-tools` | **仅新机器一次**（可选）：手动预装 `protoc-gen-go` / `grpc` / `go-http` |
+| **`make gen`** | 固定工具链预检 → proto pb/grpc/http → openapi.yaml |
+| `make check-gen` | 临时生成并只读比较当前工作树产物 |
+| `make init-proto-tools` | 显式安装 `backend/scripts/gen/proto-tools.sh` 固定版本的四个插件 |
 
-`gen-moe-proto` 若发现未安装 `protoc-gen-go-http`，会**自动 `go install`**，无需每次先跑 `init-proto-tools`。
+生成不会自动安装或静默跳过：protoc 或任一插件缺失、版本不符都会在写产物前失败。protoc 本体需自行安装并加入 PATH；现行版本与用法见 [new-api-kratos.md](./new-api-kratos.md)。
 
 ```bash
 cd backend && make gen    # 改 proto 后日常用这个

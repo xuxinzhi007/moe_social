@@ -12,7 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// RuntimeConfigView 供 Moe Admin 展示/编辑的非敏感运行时配置。
+// RuntimeConfigView 供 Moe Admin 编辑的非敏感文件原值，不填入派生值或片段回退。
+// 保存会刷新 conf，但已注入的 post/media/client-config 快照需重启才能生效。
 type RuntimeConfigView struct {
 	PublicApiBaseUrl   string `json:"public_api_base_url"`
 	ApiPublicBaseUrl   string `json:"api_public_base_url"`
@@ -292,14 +293,6 @@ func leafValues(node *yaml.Node) map[string]string {
 	return out
 }
 
-func trimURL(u string) string {
-	u = strings.TrimSpace(u)
-	for strings.HasSuffix(u, "/") {
-		u = strings.TrimSuffix(u, "/")
-	}
-	return u
-}
-
 // ReadRuntimeConfig 读取统一 config.yaml 中的 App/图片相关配置。
 // 用 Reload 而不是 Get：这个视图要反映磁盘上的当前值，包括运维手改文件的情况
 // （迁移前每次都新开一个 viper 读盘，语义等价；管理台是低频端点，读盘开销可接受）。
@@ -309,9 +302,9 @@ func ReadRuntimeConfig() (RuntimeConfigView, error) {
 		return RuntimeConfigView{}, err
 	}
 	return RuntimeConfigView{
-		PublicApiBaseUrl:   trimURL(cfg.AppClient.PublicAPIBaseURL),
-		ApiPublicBaseUrl:   trimURL(cfg.API.PublicBaseURL),
-		ImagePublicBaseUrl: trimURL(cfg.Image.PublicBaseURL),
+		PublicApiBaseUrl:   conf.TrimURL(cfg.AppClient.PublicAPIBaseURL),
+		ApiPublicBaseUrl:   conf.TrimURL(cfg.API.PublicBaseURL),
+		ImagePublicBaseUrl: conf.TrimURL(cfg.Image.PublicBaseURL),
 		ImageLocalDir:      strings.TrimSpace(cfg.Image.LocalDir),
 		ImageMaxBytes:      cfg.Image.MaxBytes,
 		ConfigFile:         conf.Path(),
@@ -328,13 +321,13 @@ func ApplyRuntimeConfigPatch(patch RuntimeConfigPatch) (RuntimeConfigView, error
 	// 无下划线的 publicbaseurl 死键，运行时优先读 public_base_url，改动静默丢失。
 	var edits []yamlEdit
 	if patch.PublicApiBaseUrl != nil {
-		edits = append(edits, yamlEdit{"app_client.public_api_base_url", trimURL(*patch.PublicApiBaseUrl)})
+		edits = append(edits, yamlEdit{"app_client.public_api_base_url", conf.TrimURL(*patch.PublicApiBaseUrl)})
 	}
 	if patch.ApiPublicBaseUrl != nil {
-		edits = append(edits, yamlEdit{"api.public_base_url", trimURL(*patch.ApiPublicBaseUrl)})
+		edits = append(edits, yamlEdit{"api.public_base_url", conf.TrimURL(*patch.ApiPublicBaseUrl)})
 	}
 	if patch.ImagePublicBaseUrl != nil {
-		edits = append(edits, yamlEdit{"image.public_base_url", trimURL(*patch.ImagePublicBaseUrl)})
+		edits = append(edits, yamlEdit{"image.public_base_url", conf.TrimURL(*patch.ImagePublicBaseUrl)})
 	}
 	if patch.ImageLocalDir != nil {
 		edits = append(edits, yamlEdit{"image.local_dir", strings.TrimSpace(*patch.ImageLocalDir)})

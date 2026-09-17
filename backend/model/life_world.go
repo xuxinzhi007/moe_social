@@ -6,7 +6,7 @@ import "time"
 type LifeWorld struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	Name      string    `json:"name" gorm:"size:128;uniqueIndex;not null"` // 世界名称，如 "default"
-	TickCount int64     `json:"tick_count" gorm:"default:0"`              // 累计 tick 数
+	TickCount int64     `json:"tick_count" gorm:"default:0"`               // 累计 tick 数
 	IsRunning bool      `json:"is_running" gorm:"default:true"`
 	GridData  string    `json:"grid_data,omitempty" gorm:"type:longtext"` // 生态网格 JSON 序列化数据
 	UpdatedAt time.Time `json:"updated_at"`

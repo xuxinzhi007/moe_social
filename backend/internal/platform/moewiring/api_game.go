@@ -27,5 +27,6 @@ func NewAPIGameService() (*gameapp.AppService, error) {
 		Inference: inf,
 		Model:     gameModel,
 		LlmMode:   gameMode,
+		WorldTick: conf.WorldTickInterval(),
 	}), nil
 }

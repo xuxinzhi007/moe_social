@@ -19,8 +19,8 @@ const (
 	ActionTalking     LifeAction = "talking"
 	ActionReproducing LifeAction = "reproducing"
 	ActionDying       LifeAction = "dying"
-	ActionFleeing     LifeAction = "fleeing"  // 逃跑（躲避捕食者）
-	ActionPlaying     LifeAction = "playing"  // 玩耍（与朋友互动）
+	ActionFleeing     LifeAction = "fleeing" // 逃跑（躲避捕食者）
+	ActionPlaying     LifeAction = "playing" // 玩耍（与朋友互动）
 )
 
 // LifeConfig controls the in-process life engine.
@@ -75,9 +75,9 @@ const (
 	WorldEventStorm     WorldEventType = "disaster_storm"
 	WorldEventDepletion WorldEventType = "resource_depletion"
 	WorldEventHeatwave  WorldEventType = "weather_heatwave"   // 热浪
-	WorldEventFog       WorldEventType = "weather_fog"         // 大雾
-	WorldEventAbundance WorldEventType = "resource_abundance"  // 资源丰饶
-	WorldEventMigration WorldEventType = "event_migration"     // 迁徙潮
+	WorldEventFog       WorldEventType = "weather_fog"        // 大雾
+	WorldEventAbundance WorldEventType = "resource_abundance" // 资源丰饶
+	WorldEventMigration WorldEventType = "event_migration"    // 迁徙潮
 )
 
 // GridPos 网格坐标
@@ -122,8 +122,8 @@ type WorldSummary struct {
 // ActiveEffect 活跃持续效果（buff）
 type ActiveEffect struct {
 	ItemID         uint    `json:"item_id"`
-	EffectKey      string  `json:"effect_key"`      // hunger/energy/mood/experience/all
-	EffectValue    float64 `json:"effect_value"`     // 每 tick 效果值
+	EffectKey      string  `json:"effect_key"`   // hunger/energy/mood/experience/all
+	EffectValue    float64 `json:"effect_value"` // 每 tick 效果值
 	RemainingTicks int     `json:"remaining_ticks"`
 }
 
@@ -247,7 +247,7 @@ func DeserializeActiveEffects(data string) ([]ActiveEffect, error) {
 // key 为捕食者 emoji，value 为猎物 emoji 列表
 var SpeciesPredators = map[string][]string{
 	"🐱": {"🐟", "🐦", "🐰"}, // 猫捕食鱼/鸟/兔
-	"🐶": {"🐰", "🐦"},       // 狗捕食兔/鸟
+	"🐶": {"🐰", "🐦"},      // 狗捕食兔/鸟
 }
 
 // IsPredatorOf 检查 predator 是否捕食 prey

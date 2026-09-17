@@ -12,11 +12,11 @@ import (
 
 // dialoguePromptContext NPC 对话专用 prompt（比开放世界 prompt 更短、更聚焦）。
 type dialoguePromptContext struct {
-	block              string
-	action             string
-	npcName            string
-	opening            bool
-	agentSystemPrompt  string // NPC 绑定 Agent 的 system prompt（可选）
+	block             string
+	action            string
+	npcName           string
+	opening           bool
+	agentSystemPrompt string // NPC 绑定 Agent 的 system prompt（可选）
 }
 
 func buildDialoguePromptContext(

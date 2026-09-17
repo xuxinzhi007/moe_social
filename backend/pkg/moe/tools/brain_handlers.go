@@ -16,8 +16,8 @@ func (e *Executor) execBrainRefineEpisode(ctx context.Context, req core.ExecuteR
 		return fail("未配置 llm_inference，无法润色记忆")
 	}
 	var args struct {
-		EpisodeID   uint   `json:"episode_id"`
-		MaxAttempts int    `json:"max_attempts"`
+		EpisodeID   uint `json:"episode_id"`
+		MaxAttempts int  `json:"max_attempts"`
 	}
 	if err := parseArgs(req.ArgumentsJSON, &args); err != nil {
 		return fail(err.Error())

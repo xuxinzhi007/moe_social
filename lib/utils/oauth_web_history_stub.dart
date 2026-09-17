@@ -1,1 +1,1 @@
-void clearOAuthCodeFromBrowserUrl() {}
+void clearOAuthParamsFromBrowserUrl() {}

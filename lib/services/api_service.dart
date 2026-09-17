@@ -24,6 +24,7 @@ import '../models/exp_log.dart';
 import '../models/achievement_badge.dart';
 import '../models/achievement_unlock.dart';
 import '../models/feishu_public_config.dart';
+import '../models/oauth_authorize_url.dart';
 import '../models/life_state.dart';
 import '../utils/jwt_exp.dart';
 import '../utils/config.dart';
@@ -1369,56 +1370,98 @@ class ApiService {
     return FeishuPublicConfig.fromJson(data);
   }
 
-  /// 获取飞书 OAuth 授权页 URL（登录页 WebView 使用）。
-  /// [state] Web 端传当前页 origin，授权成功后服务端跳回并带上 feishu_code。
-  static Future<String> getFeishuAuthorizeUrl({required String state}) async {
+  /// 飞书 OAuth 授权页 URL + 服务端生成的一次性 state。
+  ///
+  /// [returnUrl] 必须精确命中服务端 `oauth.allowed_return_urls`，否则授权直接失败
+  /// —— 服务端不再把「API 自己的 origin」当默认可信回跳。
+  /// [codeChallenge] = `BASE64URL(SHA256(code_verifier))`，verifier 由调用方本地保管。
+  static Future<OauthAuthorizeUrl> getFeishuAuthorizeUrl({
+    required String returnUrl,
+    required String codeChallenge,
+  }) async {
     final result = await _request(
-      '/api/auth/feishu/authorize-url?state=${Uri.encodeQueryComponent(state)}',
+      '/api/auth/feishu/authorize-url?${_query({
+        'return_url': returnUrl,
+        'code_challenge': codeChallenge,
+      })}',
     );
-    final data = _map(result);
-    final url = (data['authorize_url'] as String?)?.trim() ?? '';
-    if (url.isEmpty) {
-      throw ApiException('飞书授权地址为空', 500);
-    }
-    return url;
+    return OauthAuthorizeUrl.fromJson(_map(result));
   }
 
-  /// 飞书 OAuth 登录（code 换 JWT）。
-  static Future<Map<String, dynamic>> feishuLogin(String code) async {
+  /// 飞书 OAuth 登录：回调带回的一次性 ticket + 本地 verifier 换 JWT。
+  ///
+  /// 旧的 code-only 通路已关闭（`code` 字段非空即被拒），
+  /// 授权码现在由服务端在回调时封存进 ticket，不再经回跳 URL 暴露。
+  static Future<Map<String, dynamic>> feishuLogin({
+    required String ticket,
+    required String codeVerifier,
+  }) {
     return _request(
       '/api/auth/feishu/login',
       method: 'POST',
-      body: {'code': code.trim()},
+      body: {
+        'ticket': ticket.trim(),
+        'code_verifier': codeVerifier.trim(),
+      },
     );
   }
 
-  /// 微信授权地址。 [flow]：`website` 扫码（Web/PC），`mp` 公众号网页（仅微信内）。
-  static Future<String> getWechatAuthorizeUrl({
-    required String state,
-    String flow = 'website',
+  /// 微信授权地址 + state。[flow]：`website` 扫码 · `mp` 公众号网页（仅微信内）·
+  /// `app` 原生 SDK（此 flow 不下发 authorize_url，只下发绑定 challenge 的 state）。
+  static Future<OauthAuthorizeUrl> getWechatAuthorizeUrl({
+    required String flow,
+    required String codeChallenge,
+    String returnUrl = '',
   }) async {
     final result = await _request(
-      '/api/auth/wechat/authorize-url?state=${Uri.encodeQueryComponent(state)}&flow=${Uri.encodeQueryComponent(flow)}',
+      '/api/auth/wechat/authorize-url?${_query({
+        'flow': flow,
+        'code_challenge': codeChallenge,
+        if (returnUrl.isNotEmpty) 'return_url': returnUrl,
+      })}',
     );
-    final data = _map(result);
-    final url = (data['authorize_url'] as String?)?.trim() ?? '';
-    if (url.isEmpty) {
-      throw ApiException('微信授权地址为空', 500);
-    }
-    return url;
+    return OauthAuthorizeUrl.fromJson(_map(result));
   }
 
-  /// 微信 OAuth 登录（code 换 JWT）。 [flow]：`app` | `website` | `mp`。
-  static Future<Map<String, dynamic>> wechatLogin(
-    String code, {
-    String flow = 'app',
-  }) async {
+  /// 微信浏览器 flow（`website` / `mp`）登录：ticket + verifier 换 JWT。
+  static Future<Map<String, dynamic>> wechatLoginWithTicket({
+    required String flow,
+    required String ticket,
+    required String codeVerifier,
+  }) {
     return _request(
       '/api/auth/wechat/login',
       method: 'POST',
-      body: {'code': code.trim(), 'flow': flow.trim()},
+      body: {
+        'flow': flow.trim(),
+        'ticket': ticket.trim(),
+        'code_verifier': codeVerifier.trim(),
+      },
     );
   }
+
+  /// 微信原生 flow（`app`）登录：SDK 在进程内返回 code，没有浏览器回调因而没有 ticket。
+  /// [state] 必须是 [getWechatAuthorizeUrl] 在 `flow=app` 时下发的那一个，
+  /// 服务端用它找回授权事务并校验 verifier —— 只靠客户端比对 state 是不够的。
+  static Future<Map<String, dynamic>> wechatLoginWithSdkCode({
+    required String code,
+    required String state,
+    required String codeVerifier,
+  }) {
+    return _request(
+      '/api/auth/wechat/login',
+      method: 'POST',
+      body: {
+        'flow': 'app',
+        'code': code.trim(),
+        'state': state.trim(),
+        'code_verifier': codeVerifier.trim(),
+      },
+    );
+  }
+
+  static String _query(Map<String, String> params) =>
+      Uri(queryParameters: params).query;
 
   // 更新用户信息
   static Future<User> updateUserInfo(

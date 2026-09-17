@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	turnContextTimeout  = 3 * time.Minute
+	turnContextTimeout   = 3 * time.Minute
 	commitContextTimeout = 20 * time.Second
 )
 

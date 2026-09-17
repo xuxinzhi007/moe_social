@@ -10,8 +10,12 @@ import (
 )
 
 // fixture 覆盖迁移前 20 处读取点会碰到的全部形状：驼峰键（database.parseTime）、
-// 字符串端口（moe.production.external_http_port）、列表（local_models.catalog）、
-// 历史扁平键（wechat.mobile_app_id）、以及「显式 false」与「未设置」两种开关。
+// 字符串端口（moe.production.external_http_port）、历史扁平键（wechat.mobile_app_id）、
+// 以及「显式 false」与「未设置」两种开关。
+//
+// 「列表套结构体」这一形状已不再被覆盖：唯一载体 local_models.catalog 随离线 GGUF
+// 链路在 #42 整条删除，pkg/conf 现在没有任何切片型配置键。将来新增列表型键时，
+// 这里没有现成的钉子 —— 记得补一条 fixture 与断言。
 const fixture = `
 runtime:
   http_host: "0.0.0.0"
@@ -73,18 +77,6 @@ llm_inference:
   game_model: ""
   game_llm_mode: "narrator"
   context_tokens: 32768
-
-local_models:
-  storage_dir: "data/local_models"
-  catalog:
-    - id: qwen2.5-0.5b-instruct-q4
-      name: "Qwen2.5 0.5B 离线助手"
-      filename: "qwen2.5-0.5b-instruct-q4_k_m.gguf"
-      size_bytes: 0
-      sha256: ""
-      description: "轻量离线对话"
-      parameters_b: 0.5
-      recommended: true
 
 temp_mail:
   enabled: true
@@ -201,12 +193,6 @@ func TestTypedMirror(t *testing.T) {
 	if c.LLMInference.ContextTokens != 32768 || c.LLMInference.GameLLMMode != "narrator" {
 		t.Errorf("LLMInference = %+v", c.LLMInference)
 	}
-	if len(c.LocalModels.Catalog) != 1 {
-		t.Fatalf("LocalModels.Catalog 长度 = %d, want 1", len(c.LocalModels.Catalog))
-	}
-	if c.LocalModels.Catalog[0].ParametersB != 0.5 || !c.LocalModels.Catalog[0].Recommended {
-		t.Errorf("Catalog[0] = %+v", c.LocalModels.Catalog[0])
-	}
 	if c.PrivateMessage.BodyMaxRunes != 8000 || c.PrivateMessage.RetentionDaysVIP != 90 {
 		t.Errorf("PrivateMessage = %+v", c.PrivateMessage)
 	}
@@ -267,6 +253,57 @@ func TestPublicBaseURL(t *testing.T) {
 	// wechat.redirect_uri 已显式配置，不应被覆盖
 	if got := WechatRedirectURI(); got != "http://api.example.com:8888/api/auth/wechat/callback" {
 		t.Errorf("WechatRedirectURI() = %q", got)
+	}
+}
+
+func TestPublicURLDerivationMatrix(t *testing.T) {
+	const public = "https://api.example.test"
+	const client = "https://client.example.test"
+	const image = "https://images.example.test"
+	for _, tt := range []struct {
+		name, body            string
+		public, client, image string
+		feishu, wechat        string
+	}{
+		{name: "missing", body: "{}"},
+		{name: "empty", body: "api: {public_base_url: ''}\napp_client: {public_api_base_url: ''}\nimage: {public_base_url: ''}"},
+		{name: "canonical only", body: "api: {public_base_url: ' https://api.example.test/// '}", public: public, client: public, image: public},
+		{name: "empty overrides", body: "api: {public_base_url: 'https://api.example.test'}\napp_client: {public_api_base_url: ''}\nimage: {public_base_url: ''}\nfeishu: {redirect_uri: ''}\nwechat: {redirect_uri: ''}", public: public, client: public, image: public},
+		{name: "historical client", body: "app_client: {public_api_base_url: 'https://client.example.test/'}", public: client, client: client, image: client},
+		{name: "independent overrides", body: "api: {public_base_url: 'https://api.example.test'}\napp_client: {public_api_base_url: 'https://client.example.test/'}\nimage: {public_base_url: 'https://images.example.test/'}\nfeishu: {redirect_uri: 'https://oauth.example.test/feishu/'}\nwechat: {redirect_uri: 'https://oauth.example.test/wechat/'}", public: public, client: client, image: image, feishu: "https://oauth.example.test/feishu/", wechat: "https://oauth.example.test/wechat/"},
+		{name: "slash canonical falls back", body: "api: {public_base_url: '///'}\napp_client: {public_api_base_url: 'https://client.example.test'}", public: client, client: client, image: client},
+		{name: "slash overrides derive", body: "api: {public_base_url: 'https://api.example.test'}\napp_client: {public_api_base_url: '/'}\nimage: {public_base_url: '///'}\nfeishu: {redirect_uri: '/'}\nwechat: {redirect_uri: '///'}", public: public, client: public, image: public},
+		{name: "only slashes", body: "api: {public_base_url: '/'}\napp_client: {public_api_base_url: '///'}\nimage: {public_base_url: '/'}\nfeishu: {redirect_uri: '///'}\nwechat: {redirect_uri: '/'}"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			loadBody(t, tt.body)
+			if tt.public != "" {
+				if tt.feishu == "" {
+					tt.feishu = tt.public + "/api/auth/feishu/callback"
+				}
+				if tt.wechat == "" {
+					tt.wechat = tt.public + "/api/auth/wechat/callback"
+				}
+			}
+			got := []string{PublicBaseURL(), ClientPublicBaseURL(), ImagePublicBaseURL(), FeishuRedirectURI(), WechatRedirectURI()}
+			want := []string{tt.public, tt.client, tt.image, tt.feishu, tt.wechat}
+			for i := range want {
+				if got[i] != want[i] {
+					t.Errorf("derived URL %d = %q, want %q", i, got[i], want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestAgoraTypedConfig(t *testing.T) {
+	loadBody(t, "agora: {app_id: 'fake-id', app_certificate: 'fake-certificate'}")
+	if Get().Agora.AppID != "fake-id" || Get().Agora.AppCertificate != "fake-certificate" {
+		t.Fatal("typed Agora keys were not decoded")
+	}
+	loadBody(t, "agora: {app_id: ''}")
+	if !IsSet("agora.app_id") || IsSet("agora.app_certificate") {
+		t.Fatal("explicit empty and absent credentials must remain distinguishable")
 	}
 }
 
@@ -514,6 +551,16 @@ func TestRealConfigYAMLLoads(t *testing.T) {
 	if !c.Database.ParseTime {
 		t.Error("database.parseTime 应为 true（驼峰键识别失败）")
 	}
+	// 这三个键是 #19 新加的。断言它们在真实文件里**确实解出了非零值**：
+	// mapstructure tag 写错一个字母不会报错，只会静默拿到 0，
+	// 于是「改了 yaml 但不生效」（§0 第 4 行那一类）会一路带到线上。
+	if c.Moe.LifeTickSeconds <= 0 || c.Moe.LifeFlushSeconds <= 0 {
+		t.Errorf("moe.life_tick_seconds/life_flush_seconds = %d/%d, want 均 > 0（键名或 tag 写错？）",
+			c.Moe.LifeTickSeconds, c.Moe.LifeFlushSeconds)
+	}
+	if c.Moe.WorldTickSeconds <= 0 {
+		t.Errorf("moe.world_tick_seconds = %d, want > 0（键名或 tag 写错？）", c.Moe.WorldTickSeconds)
+	}
 	if Path() == "" {
 		t.Error("Path() 为空，应返回实际使用的绝对路径")
 	}
@@ -725,6 +772,53 @@ func TestSchedulersInheritTrueWhenUnset(t *testing.T) {
 	}
 	if _, tick := DreamScheduler(); tick != 300*time.Second {
 		t.Errorf("tick_seconds=-5 时 DreamScheduler() tick = %v, want 300s", tick)
+	}
+}
+
+// TestLifeIntervalsNeverFallThroughToBizDefault 钉住 #19 里最容易踩空的一处：
+// LifeIntervals 未配置时**必须**给 300 秒，不能给 0。
+//
+// 给 0 看着无害，实际会让 lifeapp.engineConfig 的 `if > 0` 守卫放行
+// lifebiz.DefaultConfig() 的 **5 秒** —— 生产世界节奏凭空快 60 倍，
+// 而迁移前 moewiring 一直是显式传 300 把那个 5 秒盖掉的。
+// 判别力：把 lifeInterval 的兜底改成 return 0，本测试立刻红。
+func TestLifeIntervalsNeverFallThroughToBizDefault(t *testing.T) {
+	loadBody(t, "runtime:\n  http_port: 8888\n")
+	if tick, flush := LifeIntervals(); tick != 300*time.Second || flush != 300*time.Second {
+		t.Errorf("未设置时 LifeIntervals() = (%v, %v), want (300s, 300s)；"+
+			"若拿到 0 说明会穿透到 biz 层的 5 秒缺省", tick, flush)
+	}
+
+	loadBody(t, "moe:\n  life_tick_seconds: 0\n  life_flush_seconds: -5\n")
+	if tick, flush := LifeIntervals(); tick != 300*time.Second || flush != 300*time.Second {
+		t.Errorf("非正数时 LifeIntervals() = (%v, %v), want (300s, 300s)", tick, flush)
+	}
+
+	loadBody(t, "moe:\n  life_tick_seconds: 30\n  life_flush_seconds: 120\n")
+	if tick, flush := LifeIntervals(); tick != 30*time.Second || flush != 120*time.Second {
+		t.Errorf("已配置时 LifeIntervals() = (%v, %v), want (30s, 120s)", tick, flush)
+	}
+}
+
+// TestWorldTickIntervalUnsetMeansZero 钉住与 LifeIntervals **相反**的契约：
+// 这里未配置时返回 0，让 gamebiz.StartWorldRunner 的 `interval <= 0` 守卫去兜底。
+// 45 秒只该有一份副本（biz 层的 defaultWorldTickInterval）；
+// 若这里也返回 45s，就成了第三份，改一处忘另一处必然分叉。
+// 判别力：把 WorldTickInterval 的兜底改成 45*time.Second，本测试立刻红。
+func TestWorldTickIntervalUnsetMeansZero(t *testing.T) {
+	loadBody(t, "runtime:\n  http_port: 8888\n")
+	if got := WorldTickInterval(); got != 0 {
+		t.Errorf("未设置时 WorldTickInterval() = %v, want 0（由 biz 层兜底，别在这里抄第二份 45s）", got)
+	}
+
+	loadBody(t, "moe:\n  world_tick_seconds: -1\n")
+	if got := WorldTickInterval(); got != 0 {
+		t.Errorf("负数时 WorldTickInterval() = %v, want 0", got)
+	}
+
+	loadBody(t, "moe:\n  world_tick_seconds: 90\n")
+	if got := WorldTickInterval(); got != 90*time.Second {
+		t.Errorf("已配置时 WorldTickInterval() = %v, want 90s", got)
 	}
 }
 

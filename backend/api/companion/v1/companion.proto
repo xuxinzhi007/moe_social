@@ -259,22 +259,6 @@ message ListEventsReply {
   repeated CompanionEventMsg events = 1;
 }
 
-message ContextPreviewRequest {
-  string scene = 1;
-}
-
-message ContextPreviewReply {
-  string scene = 1;
-  int32 history_count = 2;
-  int32 memory_count = 3;
-  int32 relationship_level = 4;
-  double intimacy_score = 5;
-  string world_bind_status = 6;
-  bool first_chat = 7;
-  int32 relationship_event_count = 8;
-  int32 unfinished_topic_count = 9;
-}
-
 message CompanionProactiveDeliveryMsg {
   string delivery_key = 1;
   uint64 notification_id = 2;
@@ -391,9 +375,6 @@ service Companion {
   }
   rpc GetTimeline(ListEventsRequest) returns (ListEventsReply) {
     option (google.api.http) = {get: "/api/companion/timeline"};
-  }
-  rpc GetContextPreview(ContextPreviewRequest) returns (ContextPreviewReply) {
-    option (google.api.http) = {get: "/api/companion/context/preview"};
   }
   rpc ListProactiveDeliveries(ListProactiveDeliveriesRequest) returns (ListProactiveDeliveriesReply) {
     option (google.api.http) = {get: "/api/companion/proactive-deliveries"};

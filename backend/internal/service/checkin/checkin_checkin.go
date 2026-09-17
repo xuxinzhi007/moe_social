@@ -1,9 +1,9 @@
 package checkinapp
 
 import (
-	"context"
 	checkinv1 "backend/api/checkin/v1"
 	checkinbiz "backend/internal/biz/checkin"
+	"context"
 )
 
 func (s *AppService) GetCheckInStatus(ctx context.Context, in *checkinv1.GetCheckInStatusRequest) (*checkinv1.GetCheckInStatusReply, error) {

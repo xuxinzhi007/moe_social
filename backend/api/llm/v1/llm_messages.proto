@@ -5,15 +5,25 @@ import "google/api/annotations.proto";
 
 option go_package = "backend/api/llm/v1;llmv1";
 
-// P6: extracted from rpc/defs/common.proto (28 messages)
-
-message DeleteUserMemoryReq {
-  string user_id = 1;
-  string key = 2;
-}
-
-message DeleteUserMemoryResp {
-}
+// 2026-09-17（#42 死接口清理）：这里原先有 15 个 RPC、39 个 message，其中 12 个 RPC 与
+// 全部「用户记忆 / 聊天记录 / 离线模型清单」相关的 message 都已删除。
+//
+// 删除依据（三条同时成立，逐条实测）：
+//   1. 后端实现早在提交 14edac0e「移除了一些不需要的能力」(2026-06-29) 就被整文件删掉了
+//      （internal/biz/llm/memory_*.go、chat_turn.go、catalog.go、ollama_write.go 共 ~1900 行），
+//      只剩 proto 壳；没有适配方法，内嵌的 UnimplementedLlmChatServer 顶上，线上永远回 501。
+//   2. 前端零调用方：lib/ moe-admin/src/ website/ moe-avatar/ 全量扫描
+//      /api/llm/chat/turn、/api/ai/memory/settings、/api/user/*/memories*、
+//      /api/llm/local-models 命中数均为 0（阳性对照：同期 /api/ 命中 256+94+3 条）。
+//   3. 非生成代码零引用：39 个待删 message 类型在 *.pb.go 之外的 Go 文件里引用数为 0，
+//      适配层只实现了下面留下的 3 个 RPC。
+//
+// 保留的 3 个 RPC 都是活的：GetAiUserConfig / UpsertAiUserConfig（角色卡云端同步，
+// 含 Provider API Key 密文）与 ListLlmModels（客户端真的在打，曾漏实现，已补齐）。
+//
+// 注意 LlmCreateAgent（POST /api/llm/agents）不在本文件、也不在删除范围内：它属于
+// platform.v1，前端有两个活调用点，只是 biz 层是 501 桩 —— 那是「活接口坏掉」而非
+// 「死接口」，已单独登记为 #51。
 
 message GetAiUserConfigReq {
   string user_id = 1;
@@ -24,81 +34,6 @@ message GetAiUserConfigResp {
   string preferences_json = 2;
   // 已明确开启账号同步的 Provider API Key；服务端只保存密文。
   string provider_api_keys_json = 3;
-}
-
-message GetUserMemoriesReq {
-  string user_id = 1;
-  int32 limit = 2;
-  int32 offset = 3;
-}
-
-message GetUserMemoriesResp {
-  repeated UserMemory memories = 1;
-  int64 total = 2;
-  int32 limit = 3;
-  int32 offset = 4;
-  bool has_more = 5;
-}
-
-message GetUserMemoryProfilesReq {
-  string user_id = 1;
-  int32 limit = 2;
-}
-
-message GetUserMemoryProfilesResp {
-  repeated UserMemoryProfile profiles = 1;
-}
-
-message ListUserMemoryEmbeddingsReq {
-  string user_id = 1;
-}
-
-message ListUserMemoryEmbeddingsResp {
-  repeated UserMemoryEmbeddingItem items = 1;
-}
-
-message ListUserMemoryRelationsReq {
-  string user_id = 1;
-}
-
-message ListUserMemoryRelationsResp {
-  repeated UserMemoryRelationItem items = 1;
-}
-
-message RebuildUserMemoryEmbeddingsReq {
-  string user_id = 1;
-}
-
-message RebuildUserMemoryEmbeddingsResp {
-  int32 indexed = 1;
-  string provider = 2;
-  string model = 3;
-}
-
-message RecordLlmChatTurnReq {
-  uint64 user_id = 1;
-  string session_id = 2;
-  string source_msg_id = 3;
-  string model = 4;
-  string role = 5;
-  string content = 6;
-}
-
-message RecordLlmChatTurnResp {
-  bool ok = 1;
-}
-
-message SubmitUserMemoryFeedbackReq {
-  string user_id = 1;
-  string key = 2;
-  // accept | reject | correct
-  string feedback_type = 3;
-  string corrected_value = 4;
-  string reason = 5;
-}
-
-message SubmitUserMemoryFeedbackResp {
-  UserMemory memory = 1;
 }
 
 message UpsertAiUserConfigReq {
@@ -118,205 +53,20 @@ message UpsertAiUserConfigResp {
   string provider_api_keys_json = 3;
 }
 
-message UpsertUserMemoryEmbeddingReq {
-  string user_id = 1;
-  string memory_key = 2;
-  repeated float values = 3;
-  string provider = 4;
-  string model = 5;
-  string chunk_text = 6;
-}
-
-message UpsertUserMemoryEmbeddingResp {
-}
-
-message UpsertUserMemoryReq {
-  string user_id = 1;
-  string key = 2;
-  string value = 3;
-  string memory_type = 4;
-  double confidence = 5;
-  string source = 6;
-  string source_msg_id = 7;
-  string session_id = 8;
-}
-
-message UpsertUserMemoryResp {
-  UserMemory memory = 1;
-}
-
-message UserMemory {
-  string id = 1;
-  string user_id = 2;
-  string key = 3;
-  string value = 4;
-  string memory_type = 5;
-  double confidence = 6;
-  string source = 7;
-  string created_at = 8;
-  string updated_at = 9;
-  string source_msg_id = 10;
-  string session_id = 11;
-}
-
-message UserMemoryEmbeddingItem {
-  string memory_key = 1;
-  repeated float values = 2;
-  string provider = 3;
-  string model = 4;
-}
-
-message UserMemoryProfile {
-  string memory_type = 1;
-  string summary = 2;
-  int32 item_count = 3;
-  double confidence = 4;
-}
-
-message UserMemoryRelationItem {
-  string from_key = 1;
-  string to_key = 2;
-  string relation = 3;
-  double weight = 4;
-}
-
-message GetUserMemoriesDisplayReq {
-  string user_id = 1;
-}
-
-message UserMemoryDisplayProfile {
-  string title = 1;
-  string summary = 2;
-  int32 item_count = 3;
-}
-
-message UserMemoryDisplayItem {
-  string id = 1;
-  string key = 2;
-  string title = 3;
-  string content = 4;
-  string category = 5;
-  string updated_at = 6;
-}
-
-message UserMemoryDisplayData {
-  string headline = 1;
-  repeated UserMemoryDisplayProfile profiles = 2;
-  repeated UserMemoryDisplayItem items = 3;
-  int32 total = 4;
-}
-
-message GetUserMemoriesDisplayResp {
-  UserMemoryDisplayData data = 1;
-}
-
-message SearchUserMemoriesReq {
-  string user_id = 1;
-  string q = 2;
-  int32 limit = 3;
-}
-
-message SearchUserMemoriesData {
-  string query = 1;
-  repeated UserMemoryDisplayItem items = 2;
-  int32 total = 3;
-}
-
-message SearchUserMemoriesResp {
-  SearchUserMemoriesData data = 1;
-}
-
-message GetAiMemorySettingsReq {}
-
-message GetAiMemorySettingsResp {
-  bool auto_learn = 1;
-}
-
-message PutAiMemorySettingsReq {
-  bool auto_learn = 1;
-}
-
-message PutAiMemorySettingsResp {
-  bool auto_learn = 1;
-}
-
 message ListLlmModelsReq {}
 
 message ListLlmModelsResp {
   repeated string models = 1;
 }
 
-message LlmLocalModelCatalogItem {
-  string id = 1;
-  string name = 2;
-  string filename = 3;
-  int64 size_bytes = 4;
-  string sha256 = 5;
-  string description = 6;
-  double parameters_b = 7;
-  bool recommended = 8;
-  string download_path = 9;
-}
-
-message ListLlmLocalModelsCatalogReq {}
-
-message ListLlmLocalModelsCatalogResp {
-  repeated LlmLocalModelCatalogItem items = 1;
-}
-
 service LlmChat {
-  rpc RecordLlmChatTurn(RecordLlmChatTurnReq) returns (RecordLlmChatTurnResp) {
-    option (google.api.http) = { post: "/api/llm/chat/turn" body: "*" };
-  }
-  rpc UpsertUserMemory(UpsertUserMemoryReq) returns (UpsertUserMemoryResp) {
-    option (google.api.http) = {
-      post: "/api/user/{user_id}/memories"
-      body: "*"
-    };
-  }
-  rpc GetUserMemories(GetUserMemoriesReq) returns (GetUserMemoriesResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/memories" };
-  }
-  rpc DeleteUserMemory(DeleteUserMemoryReq) returns (DeleteUserMemoryResp) {
-    option (google.api.http) = { delete: "/api/user/{user_id}/memories" };
-  }
-  rpc GetUserMemoriesDisplay(GetUserMemoriesDisplayReq) returns (GetUserMemoriesDisplayResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/memories/display" };
-  }
-  rpc SubmitUserMemoryFeedback(SubmitUserMemoryFeedbackReq) returns (SubmitUserMemoryFeedbackResp) {
-    option (google.api.http) = {
-      post: "/api/user/{user_id}/memories/feedback"
-      body: "*"
-    };
-  }
-  rpc GetUserMemoryProfiles(GetUserMemoryProfilesReq) returns (GetUserMemoryProfilesResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/memories/profiles" };
-  }
-  rpc RebuildUserMemoryEmbeddings(RebuildUserMemoryEmbeddingsReq) returns (RebuildUserMemoryEmbeddingsResp) {
-    option (google.api.http) = {
-      post: "/api/user/{user_id}/memories/reindex"
-      body: "*"
-    };
-  }
-  rpc SearchUserMemories(SearchUserMemoriesReq) returns (SearchUserMemoriesResp) {
-    option (google.api.http) = { get: "/api/user/{user_id}/memories/search" };
-  }
   rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp) {
     option (google.api.http) = { get: "/api/ai/config" };
   }
   rpc UpsertAiUserConfig(UpsertAiUserConfigReq) returns (UpsertAiUserConfigResp) {
     option (google.api.http) = { put: "/api/ai/config" body: "*" };
   }
-  rpc GetAiMemorySettings(GetAiMemorySettingsReq) returns (GetAiMemorySettingsResp) {
-    option (google.api.http) = { get: "/api/ai/memory/settings" };
-  }
-  rpc PutAiMemorySettings(PutAiMemorySettingsReq) returns (PutAiMemorySettingsResp) {
-    option (google.api.http) = { put: "/api/ai/memory/settings" body: "*" };
-  }
   rpc ListLlmModels(ListLlmModelsReq) returns (ListLlmModelsResp) {
     option (google.api.http) = { get: "/api/llm/models" };
-  }
-  rpc ListLlmLocalModelsCatalog(ListLlmLocalModelsCatalogReq) returns (ListLlmLocalModelsCatalogResp) {
-    option (google.api.http) = { get: "/api/llm/local-models/catalog" };
   }
 }

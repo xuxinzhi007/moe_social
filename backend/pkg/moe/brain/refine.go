@@ -53,8 +53,8 @@ type RefineResult struct {
 }
 
 type refineLLMJSON struct {
-	Content  string `json:"content"`
-	MoodTag  string `json:"mood_tag"`
+	Content   string `json:"content"`
+	MoodTag   string `json:"mood_tag"`
 	Rationale string `json:"rationale"`
 }
 

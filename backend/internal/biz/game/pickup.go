@@ -91,7 +91,7 @@ func pickupNarrateOutput(itemName string, item model.GameWorldItem, created bool
 	}
 	if item.Name != "" && !item.IsTakeable && !item.InInventory {
 		return turnLLMOutput{
-			Prose: fmt.Sprintf("你试图拿取%s，但它似乎固定在这里，拿不动。", name),
+			Prose:            fmt.Sprintf("你试图拿取%s，但它似乎固定在这里，拿不动。", name),
 			SuggestedActions: []string{"观察周围", "检查环境", "和附近的人说话"},
 		}
 	}

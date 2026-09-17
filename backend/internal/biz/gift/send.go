@@ -10,8 +10,8 @@ import (
 	giftv1 "backend/api/gift/v1"
 	notifybiz "backend/internal/biz/notify"
 	"backend/internal/platform/socialhook"
-	"backend/pkg/achievement"
 	"backend/model"
+	"backend/pkg/achievement"
 
 	"gorm.io/gorm"
 )

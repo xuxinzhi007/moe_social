@@ -216,7 +216,7 @@ func (s *Server) AdminGetRuntimeConfig(ctx context.Context, _ *adminv1.AdminGetR
 	if err != nil {
 		return nil, err
 	}
-	return runtimeConfigToProto(view, s.runtime), nil
+	return runtimeConfigToProto(view), nil
 }
 
 func (s *Server) AdminUpdateRuntimeConfig(ctx context.Context, in *adminv1.AdminUpdateRuntimeConfigReq) (*adminv1.AdminUpdateRuntimeConfigResp, error) {
@@ -252,20 +252,9 @@ func (s *Server) AdminUpdateRuntimeConfig(ctx context.Context, in *adminv1.Admin
 	if err != nil {
 		return nil, err
 	}
-	if patch.PublicApiBaseUrl != nil {
-		s.runtime.ClientPublicAPIBaseURL = view.PublicApiBaseUrl
-	}
-	if patch.ImagePublicBaseUrl != nil {
-		s.runtime.ImagePublicBaseURL = view.ImagePublicBaseUrl
-	}
-	if patch.ImageLocalDir != nil {
-		s.runtime.ImageLocalDir = view.ImageLocalDir
-	}
-	if patch.ImageMaxBytes != nil {
-		s.runtime.ImageMaxBytes = view.ImageMaxBytes
-	}
+	// post/media/client-config 持有启动快照；此处也保持快照，重启后统一生效。
 	s.recordAudit(actx, "update", "runtime_config", "", "update runtime config")
-	cfg := runtimeConfigToProto(view, s.runtime)
+	cfg := runtimeConfigToProto(view)
 	return &adminv1.AdminUpdateRuntimeConfigResp{
 		PublicApiBaseUrl:   cfg.PublicApiBaseUrl,
 		ApiPublicBaseUrl:   cfg.ApiPublicBaseUrl,
@@ -292,30 +281,17 @@ func (s *Server) AdminRuntimeOverview(ctx context.Context, _ *adminv1.AdminGetRu
 	return runtimeOverviewToProto(data), nil
 }
 
-func runtimeConfigToProto(view utils.RuntimeConfigView, runtime *RuntimeState) *adminv1.AdminGetRuntimeConfigResp {
-	out := &adminv1.AdminGetRuntimeConfigResp{
+func runtimeConfigToProto(view utils.RuntimeConfigView) *adminv1.AdminGetRuntimeConfigResp {
+	// 编辑字段只返回文件原值；派生值或片段回退不能写回为空的覆盖键。
+	return &adminv1.AdminGetRuntimeConfigResp{
 		PublicApiBaseUrl:   view.PublicApiBaseUrl,
 		ApiPublicBaseUrl:   view.ApiPublicBaseUrl,
 		ImagePublicBaseUrl: view.ImagePublicBaseUrl,
 		ImageLocalDir:      view.ImageLocalDir,
 		ImageMaxBytes:      view.ImageMaxBytes,
 		ConfigFile:         view.ConfigFile,
+		RequiresRestart:    true,
 	}
-	if runtime != nil {
-		if out.PublicApiBaseUrl == "" {
-			out.PublicApiBaseUrl = runtime.ClientPublicAPIBaseURL
-		}
-		if out.ImagePublicBaseUrl == "" {
-			out.ImagePublicBaseUrl = runtime.ImagePublicBaseURL
-		}
-		if out.ImageLocalDir == "" {
-			out.ImageLocalDir = runtime.ImageLocalDir
-		}
-		if out.ImageMaxBytes == 0 {
-			out.ImageMaxBytes = runtime.ImageMaxBytes
-		}
-	}
-	return out
 }
 
 func runtimeOverviewToProto(data *adminbiz.RuntimeOverviewResult) *adminv1.AdminGetRuntimeOverviewResp {

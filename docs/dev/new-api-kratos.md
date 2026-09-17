@@ -32,7 +32,6 @@ backend/
     auth.go · cors.go · request_log.go · http_ops.go · http_docs.go · deps.go
     protohttp/<domain>/     # 27 个域的 Server + handler
     transport/              # websocket / sse / oauth / bind 等非 proto 通道
-    routestats/             # protoHTTPRouteCount（make gen-proto-route-count 产出）
     swaggerdoc/             # /swagger UI + openapi.yaml 静态服务
 
   internal/platform/{svc,wiring,moesocial,moewiring,apicomm,apiconfig,appdb,yamlconf,moelog,chatdelivery,socialhook,bootstrap}/
@@ -57,10 +56,10 @@ Client → :8888
 
 | 修改 | 命令 | 产出 |
 |------|------|------|
-| 域 proto + conf + 路由计数 | **`make gen`** | `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go`、**`openapi.yaml`**、`routestats/proto_routes_gen.go` |
+| 域 proto | **`make gen`** | `*.pb.go`、`*_grpc.pb.go`、`*_http.pb.go`、**`openapi.yaml`** |
 | 仅 OpenAPI 文档 | `make gen-swagger` | `openapi.yaml`（OpenAPI 3.0.3） |
-| 仅路由计数 | `make gen-proto-route-count` | `internal/server/routestats/proto_routes_gen.go` |
-| 单模块 proto | `make api-one PROTO=api/<mod>/v1/<mod>.proto` | 该模块三个 `.pb.go` |
+| 只读产物检查 | `make check-gen` | 临时生成并比较当前工作树路径和内容，检测新增、缺失、陈旧产物 |
+| 单模块 proto | `make api-one PROTO=api/<mod>/v1/<mod>.proto` | 该模块三个 `.pb.go`（OpenAPI 用 `make gen` 同步） |
 | 管理台 gen + 编译 | `make gen-moe-admin` | 见 `scripts/gen/moe-admin.sh` |
 
 > ✗ 已删除的 target：`make gen-api`、`make gen-rpc`、`make gen-http-routes`、`make audit-logic-orphans`（goctl 链，见 [goctl-generation-hygiene.md](./goctl-generation-hygiene.md) 归档说明）。
@@ -70,10 +69,11 @@ Client → :8888
 **日常只改 proto 时：`make gen` 足够。**
 
 - 工具链是 `protoc` + `protoc-gen-go` / `-go-grpc` / `-go-http` / `-openapi`，**不再需要 goctl**。
-- 新机器先 `make init-proto-tools`（`go install` 四个插件）。`protoc` 本体需自行安装。
-- ⚠️ 仓库内 `.pb.go` 由 protoc v5.29.3 / protoc-gen-go-grpc v1.6.2 生成。本机版本不同会让 `make gen` 产生**只改版本注释行**的噪音 diff，提交前请检查 `git diff` 是否只有注释变化。
+- 版本唯一来源为 `backend/scripts/gen/proto-tools.sh`：protoc 33.1、Go 插件 v1.36.11、gRPC 插件 v1.6.0、HTTP 插件模块 v2.0.0-20260327083312-4ed1bedbb024、gnostic v0.7.1。
+- `make init-proto-tools` 显式安装固定版本的四个插件；protoc 本体自行安装。将它们加入本次命令的 PATH。生成不会自动安装；任一工具缺失或版本不符，写产物前即失败。插件用 `go version -m` 校验模块版本，不使用 HTTP 插件的显示 banner。
+- 输入按稳定顺序排序，先生成 Go 契约再生成 OpenAPI；涉及生成的 Make 调用即使传 `-j` 也串行执行。`make check-gen` 不比较 HEAD，也不覆盖脏工作树；多余旧产物会报错，需要审阅后处理。
 
-`make gen` **不会**生成 `internal/service` 或 HTTP 注册代码——需在 `http_proto.go` 增加 `Register*HTTPServer`。
+`make gen` **不会**生成 `internal/service` 或服务装配代码——需在 `http_proto.go` 增加 `Register*HTTPServer`。arena/pet 的契约产物正常生成，但仍用该文件中的手写路由注册，不追加生成路由。
 
 ---
 
@@ -133,7 +133,8 @@ if d.ExampleApp != nil {
 
 ```bash
 cd backend
-make check          # go build ./cmd/moe-social + moesocial/routestats 单测
+make check-gen      # 当前工作树契约产物的只读检查
+make check          # 格式、vet、生产入口编译与全仓单测（CGO 开启）
 make moe-social
 curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 ```
@@ -176,7 +177,7 @@ curl -s "http://127.0.0.1:8888/api/v1/example/items?page=1"
 
 业务维护在 `internal/biz` + `internal/service`。
 
-迁移进度指标：`internal/server/routestats`（`make gen-proto-route-count` 从 `api/**/v1/*_http.pb.go` 统计）。
+静态路由计数包及生成器已移除：生成函数数量不是实际注册路由数。需要路由集合时应枚举装配后的 HTTP server，不能从 `.pb.go` 推断生产启用情况。
 ⚠️ 旧文档提到的 `GET :8888/migration` 路由**已不存在**；`internal/server/http.go:35-37` 只直挂 `/health` 与 `/kratos/v1/moe/runtimes`。
 
 ---

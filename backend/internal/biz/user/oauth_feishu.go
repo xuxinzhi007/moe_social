@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	userv1 "backend/api/user/v1"
+	"backend/internal/oauthflow"
 	"backend/model"
 	"backend/pkg/conf"
 	"backend/utils"
@@ -18,14 +19,29 @@ import (
 )
 
 // FeishuLogin OAuth 登录或注册。
-func FeishuLogin(ctx context.Context, store UserStore, in *userv1.FeishuLoginReq) (*userv1.FeishuLoginResp, error) {
+//
+// 只接受回调签发的一次性 ticket 加客户端本地保管的 code_verifier；授权码本身
+// 由服务端在回调时封存进 ticket，客户端从头到尾拿不到它。旧的「直接提交 code」
+// 通路已关闭 —— 那条路上任何截获到回跳 URL 的人都能登录成别人。
+func FeishuLogin(ctx context.Context, store UserStore, txs *oauthflow.Store, in *userv1.FeishuLoginReq) (*userv1.FeishuLoginResp, error) {
 	if store == nil {
 		return nil, gorm.ErrInvalidDB
 	}
 	if !conf.Get().Feishu.Enabled {
 		return nil, ErrOAuthDisabled
 	}
-	info, err := utils.ExchangeFeishuOAuthCode(ctx, in.GetCode())
+	if strings.TrimSpace(in.GetCode()) != "" {
+		return nil, errLegacyOAuthCodeOnly
+	}
+	ticket, err := txs.ConsumeTicket(in.GetTicket(), in.GetCodeVerifier())
+	if err != nil {
+		return nil, mapOAuthFlowError(err)
+	}
+	if ticket.Provider != oauthflow.ProviderFeishu {
+		return nil, mapOAuthFlowError(oauthflow.ErrTicketUnknown)
+	}
+
+	info, err := utils.ExchangeFeishuOAuthCode(ctx, ticket.Code)
 	if err != nil {
 		return nil, fmt.Errorf("%w: 飞书授权失败，请重试", ErrUnauthorized)
 	}
@@ -51,16 +67,24 @@ func FeishuLogin(ctx context.Context, store UserStore, in *userv1.FeishuLoginReq
 	}, nil
 }
 
-// FeishuAuthorizeURL 生成飞书授权链接。
-func FeishuAuthorizeURL(_ context.Context, in *userv1.FeishuAuthorizeURLReq) (*userv1.FeishuAuthorizeURLResp, error) {
+// FeishuAuthorizeURL 生成飞书授权链接，并登记服务端授权事务。
+//
+// 请求里的 state 字段被**完全忽略**：旧协议拿它当回跳地址，是开放重定向的根源。
+// 回跳地址改由 return_url 提供并须精确命中白名单，state 换成服务端生成的随机串，
+// 与 return_url / code_challenge / 供应商配置身份 / 期限一起存在服务端事务里。
+func FeishuAuthorizeURL(_ context.Context, txs *oauthflow.Store, in *userv1.FeishuAuthorizeURLReq) (*userv1.FeishuAuthorizeURLResp, error) {
 	if !conf.Get().Feishu.Enabled {
 		return nil, ErrOAuthDisabled
 	}
-	url, err := utils.FeishuOAuthAuthorizeURL(in.GetState())
+	tx, err := txs.BeginAuth(oauthflow.ProviderFeishu, "", in.GetReturnUrl(), in.GetCodeChallenge())
+	if err != nil {
+		return nil, mapOAuthFlowError(err)
+	}
+	url, err := utils.FeishuOAuthAuthorizeURL(tx.State)
 	if err != nil {
 		return nil, ErrInvalidArgument
 	}
-	return &userv1.FeishuAuthorizeURLResp{AuthorizeUrl: url}, nil
+	return &userv1.FeishuAuthorizeURLResp{AuthorizeUrl: url, State: tx.State}, nil
 }
 
 // BindFeishu 绑定飞书邮箱。

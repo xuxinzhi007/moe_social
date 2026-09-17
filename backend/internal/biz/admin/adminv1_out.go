@@ -28,7 +28,7 @@ func UpdateAnnouncementV1(item *adminv1.AdminAnnouncementItem) *adminv1.AdminUpd
 
 func PublishAnnouncementV1(item *adminv1.AdminAnnouncementItem, notificationsCreated, wsSent int32) *adminv1.AdminPublishAnnouncementResp {
 	return &adminv1.AdminPublishAnnouncementResp{
-		Announcement:          item,
+		Announcement:         item,
 		NotificationsCreated: notificationsCreated,
 		WsSent:               wsSent,
 	}

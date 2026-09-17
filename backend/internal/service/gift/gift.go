@@ -2,11 +2,11 @@
 package giftapp
 
 import (
-	"gorm.io/gorm"
 	giftbiz "backend/internal/biz/gift"
 	notifybiz "backend/internal/biz/notify"
 	giftdata "backend/internal/data/gift"
 	notifydata "backend/internal/data/notify"
+	"gorm.io/gorm"
 )
 
 // AppService 礼物应用层。

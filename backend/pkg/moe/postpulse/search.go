@@ -29,12 +29,12 @@ type SearchHit struct {
 
 // SearchOptions Post Pulse P0 检索参数。
 type SearchOptions struct {
-	Query       string
-	Limit       int
-	ViewerUID   uint
-	MoodTag     string
-	TopicTagID  uint
-	Explain     bool
+	Query      string
+	Limit      int
+	ViewerUID  uint
+	MoodTag    string
+	TopicTagID uint
+	Explain    bool
 }
 
 // KeywordSearch 站内动态关键词检索（审核通过、非删除）。

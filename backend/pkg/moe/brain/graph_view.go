@@ -34,12 +34,12 @@ type GraphEdge struct {
 
 // GraphView Bot 大脑知识图谱视图。
 type GraphView struct {
-	AgentKey      string      `json:"agent_key"`
-	Nodes         []GraphNode `json:"nodes"`
-	Edges         []GraphEdge `json:"edges"`
-	EpisodeCount  int         `json:"episode_count"`
-	MemoryCount   int         `json:"memory_count"`
-	TagCount      int         `json:"tag_count"`
+	AgentKey     string      `json:"agent_key"`
+	Nodes        []GraphNode `json:"nodes"`
+	Edges        []GraphEdge `json:"edges"`
+	EpisodeCount int         `json:"episode_count"`
+	MemoryCount  int         `json:"memory_count"`
+	TagCount     int         `json:"tag_count"`
 }
 
 func clipSummary(s string, max int) string {

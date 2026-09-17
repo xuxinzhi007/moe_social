@@ -35,29 +35,22 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 		c.LLMInference.ApiKey = inf.APIKey
 	}
 
-	// local_models 段改走 pkg/conf：此前 v.UnmarshalKey 解到只有 json/yaml tag 的
-	// apiconfig.LocalModelCatalogEntry，而 mapstructure 默认按字段名匹配，size_bytes 与
-	// parameters_b 因下划线对不上而静默丢值（sha256 这类单词键反而能过）。
-	// 这也是全仓唯一一处拿 apiconfig 结构当 mapstructure 解码目标的地方，改掉之后
-	// 「apiconfig 41 json / 0 mapstructure」不再构成隐患。
-	lm := conf.Get().LocalModels
-	if dir := strings.TrimSpace(lm.StorageDir); dir != "" {
-		c.LocalModels.StorageDir = dir
+	// Agora 逐键区分缺失与显式清空；不能用非空判断使旧凭证复活。
+	agora := conf.Get().Agora
+	if conf.IsSet("agora.app_id") {
+		c.Agora.AppId = strings.TrimSpace(agora.AppID)
 	}
-	if len(lm.Catalog) > 0 {
-		c.LocalModels.Catalog = localModelCatalog(lm.Catalog)
+	if conf.IsSet("agora.app_certificate") {
+		c.Agora.AppCertificate = strings.TrimSpace(agora.AppCertificate)
 	}
-	// —— 序2：以下各段改由 pkg/conf 读取。
-	// 「仅当值非空/为正才覆盖」的语义必须保留：c 来自 api/etc/moe.yaml 片段，
-	// 片段里的值（如 Image.MaxBytes、Auth.AccessExpire）要在 config.yaml 未设置时存活。
-	if u := conf.Get().AppClient.PublicAPIBaseURL; u != "" {
+	if u := conf.ClientPublicBaseURL(); u != "" {
 		c.ClientPublicApiBaseUrl = u
 	}
 	img := conf.Get().Image
 	if d := strings.TrimSpace(img.LocalDir); d != "" {
 		c.Image.LocalDir = d
 	}
-	if u := strings.TrimSpace(img.PublicBaseURL); u != "" {
+	if u := conf.ImagePublicBaseURL(); u != "" {
 		c.Image.PublicBaseUrl = u
 	}
 	if n := img.MaxBytes; n > 0 {
@@ -104,22 +97,4 @@ func ApplyUnifiedConfigOverrides(c *apiconfig.Config) {
 	if secret, hours := conf.AdminJWT(); secret != "" {
 		_ = utils.ConfigureAdminJWT(secret, hours)
 	}
-}
-
-// localModelCatalog 把 pkg/conf 的清单转成 API 片段的传输形状。
-func localModelCatalog(in []conf.LocalModelCatalogEntry) []apiconfig.LocalModelCatalogEntry {
-	out := make([]apiconfig.LocalModelCatalogEntry, 0, len(in))
-	for _, e := range in {
-		out = append(out, apiconfig.LocalModelCatalogEntry{
-			Id:          e.ID,
-			Name:        e.Name,
-			Filename:    e.Filename,
-			SizeBytes:   e.SizeBytes,
-			Sha256:      e.SHA256,
-			Description: e.Description,
-			ParametersB: e.ParametersB,
-			Recommended: e.Recommended,
-		})
-	}
-	return out
 }

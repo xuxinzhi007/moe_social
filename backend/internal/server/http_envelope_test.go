@@ -4,11 +4,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	platformv1 "backend/api/platform/v1"
 	postv1 "backend/api/post/v1"
+	platformhttp "backend/internal/server/protohttp/platform"
+	llmapp "backend/internal/service/llm"
 
 	"github.com/go-kratos/kratos/v2/errors"
+	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
 func TestEnvelopeResponseEncoder_getPosts(t *testing.T) {
@@ -69,5 +74,38 @@ func TestEnvelopeErrorEncoder(t *testing.T) {
 	}
 	if body["reason"] != "POST_NOT_FOUND" {
 		t.Fatalf("reason=%v", body["reason"])
+	}
+}
+
+func TestLlmCreateAgentReturnsFailureEnvelope(t *testing.T) {
+	t.Parallel()
+	srv := khttp.NewServer(
+		khttp.ResponseEncoder(EnvelopeResponseEncoder),
+		khttp.ErrorEncoder(EnvelopeErrorEncoder),
+	)
+	platformv1.RegisterPlatformHTTPServer(srv, platformhttp.New(platformhttp.Deps{
+		LLMApp: llmapp.New(nil, llmapp.Deps{}),
+	}))
+	httpServer := httptest.NewServer(srv)
+	defer httpServer.Close()
+
+	resp, err := http.Post(httpServer.URL+"/api/llm/agents", "application/json",
+		strings.NewReader(`{"name":"test-agent","base_model":"test-model","system_prompt":"be kind"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var body map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusNotImplemented || body["success"] != false || body["code"] != float64(http.StatusNotImplemented) {
+		t.Fatalf("status=%d body=%v", resp.StatusCode, body)
+	}
+	if body["reason"] != "LLM_AGENT_CREATE_FAILED" || body["message"] != "当前后端尚不支持创建或同步服务器模型" {
+		t.Fatalf("body=%v", body)
+	}
+	if _, ok := body["data"]; ok {
+		t.Fatalf("failure must not be nested in a success payload: %v", body)
 	}
 }

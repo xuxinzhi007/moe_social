@@ -2,15 +2,15 @@ package flowexec
 
 // GraphNode 编排图节点（与 layout_json 对齐，避免 pkg 依赖 internal）。
 type GraphNode struct {
-	ID        string
-	Type      string // core | step | tool
-	Kind      string // load_runtime | gather_memory | llm_generate | ...
-	StepKey   string
-	ToolName  string
-	Label     string
-	Enabled   bool
-	OnFail    string
-	RetryMax  int
+	ID       string
+	Type     string // core | step | tool
+	Kind     string // load_runtime | gather_memory | llm_generate | ...
+	StepKey  string
+	ToolName string
+	Label    string
+	Enabled  bool
+	OnFail   string
+	RetryMax int
 }
 
 // GraphEdge 编排图边。

@@ -25,14 +25,17 @@ Deploy Agent 配置：`backend/deploy/config.yaml` → `listen` / `rpc_debug_ups
 | **19011** | RPC `-debug` pprof API | ✗ 无监听。`devports.RpcDebugPort` 仍被 Deploy Agent 当作 `/debug/*` 上游代理，但已无进程提供 |
 | **18888** | Kratos 内部 HTTP | ✗ 无监听，**且残留已清除**。原 `moewiring/config.go:169` 的硬编码兜底随 15 个过渡开关（含 `KratosInternalHTTPPort()`）于 2026-09-08 整族删除，现全仓零命中 |
 | **19032** | Kratos Admin 试点 HTTP | ✗ 无监听，**且残留已清除**。原 `moewiring/config.go:184,189` 硬编码兜底同批删除，现全仓零命中 |
-| **6633** | 文字游戏推理端点 | ✗ 无监听。仅 `config.yaml:97` `llm_inference.game_base_url: "http://127.0.0.1:6633"` 的占位值 |
 
 ## 外部依赖端口（非本仓库进程）
 
 | 端口 | 服务 | 配置项 | 读取入口 |
 |------|------|--------|----------|
-| **11434** | Ollama（n100 小主机 `192.168.124.77`） | `config.yaml:91` `llm_inference.base_url` | `conf.Inference().BaseURL` |
+| **11434** | Ollama（n100 小主机 `192.168.124.77`） | `config.yaml:91` `llm_inference.base_url` | `conf.Inference().BaseURL`；登记于 `devports.OllamaPort` |
+| **6633** | llama-server（文字游戏推理，开发者本机启动） | `config.yaml:97` `llm_inference.game_base_url` | `conf.GameInference()`（`moewiring/api_game.go`）；登记于 `devports.GameInferencePort` |
 | **3306** | MySQL（测试库 `47.106.175.49`） | `config.yaml:244-252` `database.*` | `conf.DSN()` |
+
+> 6633/11434 均为「配置有读者、本仓库不提供监听」：后端只按配置的 base_url 发请求，
+> 进程由开发者自行启动。`backend/devports/ports.go` 登记这两个常量仅为文档化，不构成任何 bind。
 
 > 8888 同理走 `conf.HTTPPort()`。全仓已无第二处 `viper.New()` 读这些键（第九批后硬编码 searchDirs 的文件数 = 0），
 > 因此 `-f` 指定的配置文件对以上每一项都权威。

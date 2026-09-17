@@ -3,13 +3,17 @@ package utils
 import (
 	"net/http"
 	"strings"
+
+	"backend/pkg/conf"
 )
 
 // ResolveMediaPublicBase 拼图片对外 URL 的 base。
-// 优先 Image.PublicBaseUrl；否则用当前 HTTP 请求的 Host（Admin 列表与预览同源）；
-// 再回退 app_client.public_api_base_url（Flutter 线上地址）。
+// 注入生效的图片根（含公共地址派生）→ 客户端根 → 请求 Host → 本地兜底。
 func ResolveMediaPublicBase(r *http.Request, imagePublicBase, clientPublicBase string) string {
-	if u := strings.TrimRight(strings.TrimSpace(imagePublicBase), "/"); u != "" {
+	if u := conf.TrimURL(imagePublicBase); u != "" {
+		return u
+	}
+	if u := conf.TrimURL(clientPublicBase); u != "" {
 		return u
 	}
 	if r != nil {
@@ -24,9 +28,6 @@ func ResolveMediaPublicBase(r *http.Request, imagePublicBase, clientPublicBase s
 			}
 			return scheme + "://" + host
 		}
-	}
-	if u := strings.TrimRight(strings.TrimSpace(clientPublicBase), "/"); u != "" {
-		return u
 	}
 	return "http://localhost:8888"
 }

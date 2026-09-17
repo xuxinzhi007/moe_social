@@ -58,13 +58,13 @@ type BuildCacheArtifact struct {
 
 // BuildCacheStatus is returned by GET /api/deploy/build-cache.
 type BuildCacheStatus struct {
-	Root            string               `json:"root"`
-	GoCacheDir      string               `json:"go_cache_dir"`
-	TmpDir          string               `json:"tmp_dir"`
-	CacheBytes      int64                `json:"cache_bytes"`
-	LinuxBinaries   []BuildCacheArtifact `json:"linux_binaries"`
-	BinaryBytes     int64                `json:"binary_bytes"`
-	TotalReclaimable int64               `json:"total_reclaimable_bytes"`
+	Root             string               `json:"root"`
+	GoCacheDir       string               `json:"go_cache_dir"`
+	TmpDir           string               `json:"tmp_dir"`
+	CacheBytes       int64                `json:"cache_bytes"`
+	LinuxBinaries    []BuildCacheArtifact `json:"linux_binaries"`
+	BinaryBytes      int64                `json:"binary_bytes"`
+	TotalReclaimable int64                `json:"total_reclaimable_bytes"`
 }
 
 // BuildCacheInfo inspects cache dirs and optional linux binaries under backendDir.

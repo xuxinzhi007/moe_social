@@ -18,7 +18,7 @@ func wireCommunityServices(rep *wireReporter, ctx *svc.ServiceContext) {
 		}
 	}
 	if moewiring.PostAPIInProcessEnabled() {
-		postApp, err := moewiring.NewAPIPostService()
+		postApp, err := moewiring.NewAPIPostService(moewiring.ImageConfigFromAPI(ctx.Config.Image))
 		if err != nil {
 			rep.domainWarn("post", "db", err.Error())
 		} else if postApp != nil {

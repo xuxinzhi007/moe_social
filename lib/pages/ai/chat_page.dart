@@ -796,28 +796,33 @@ class _ChatPageState extends State<ChatPage> {
     if (ok != true) return;
     if (!mounted) return;
     final nextPrompt = controller.text.trim();
-    setState(() {
-      _systemPrompt = nextPrompt;
-    });
-    unawaited(_persistWebCache());
-    await _persistAgentSystemPrompt(nextPrompt);
-
-    if (!_isBackendProviderAgent) {
-      await _createNewSession();
-      if (!mounted) return;
-      MoeToast.success(context, '系统提示词已写入角色卡（已开启新对话）');
-      return;
-    }
-
+    var cardSaved = false;
+    var modelSynced = false;
     setState(() => _isSyncingModelPrompt = true);
     try {
-      await _syncPromptToServerModel(nextPrompt);
+      await _persistAgentSystemPrompt(nextPrompt);
+      cardSaved = true;
+      if (!mounted) return;
+      setState(() => _systemPrompt = nextPrompt);
+      unawaited(_persistWebCache());
+      if (_isBackendProviderAgent) {
+        await _syncPromptToServerModel(nextPrompt);
+        modelSynced = true;
+      }
       await _createNewSession();
       if (!mounted) return;
-      MoeToast.success(context, '系统提示词已更新并同步到服务器模型（已开启新对话）');
+      MoeToast.success(
+        context,
+        modelSynced ? '系统提示词已更新并同步到服务器模型（已开启新对话）' : '系统提示词已写入角色卡（已开启新对话）',
+      );
     } catch (e) {
       if (!mounted) return;
-      MoeToast.error(context, '提示词已保存到角色卡，但同步服务器模型失败：$e');
+      final message = !cardSaved
+          ? '角色卡保存失败：$e'
+          : _isBackendProviderAgent && !modelSynced
+              ? '提示词已保存到角色卡，但同步服务器模型失败：$e'
+              : '提示词已保存，但开启新对话失败：$e';
+      MoeToast.error(context, message);
     } finally {
       if (mounted) {
         setState(() => _isSyncingModelPrompt = false);
@@ -826,24 +831,10 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _persistAgentSystemPrompt(String prompt) async {
-    final updated = AiAgent(
-      id: widget.agent.id,
-      name: widget.agent.name,
-      description: widget.agent.description,
-      systemPrompt: prompt,
-      modelName: widget.agent.modelName,
-      avatarPath: widget.agent.avatarPath,
-      providerProfileId: widget.agent.providerProfileId,
-      lorebookId: widget.agent.lorebookId,
-      persona: widget.agent.persona,
-      scenario: widget.agent.scenario,
-      openingMessage: widget.agent.openingMessage,
-      exampleDialogues: widget.agent.exampleDialogues,
-      createdAt: widget.agent.createdAt,
-    );
-    try {
-      await AiAgentCloudService().updateAgent(updated);
-    } catch (_) {}
+    // copyWith 保留 createdByUserId/isPublic/authorName 等元数据；
+    // 手工重建会把这些字段丢成默认值，把公开卡悄悄改回私有。
+    final updated = widget.agent.copyWith(systemPrompt: prompt);
+    await AiAgentCloudService().updateAgent(updated);
   }
 
   Future<void> _syncPromptToServerModel(String prompt) async {

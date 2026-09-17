@@ -26,10 +26,10 @@ func TestNarrateEnvironmentCheck(t *testing.T) {
 	}
 	npcs := []model.GameNpc{{Name: "老人", Persona: "坐在长椅上"}}
 	snap := &SessionSnapshot{
-		Scene:  scene,
-		NPCs:   npcs,
-		Flags:  defaultWorldFlags(),
-		Favor:  map[string]int{},
+		Scene: scene,
+		NPCs:  npcs,
+		Flags: defaultWorldFlags(),
+		Favor: map[string]int{},
 	}
 	state := TurnState{Scene: scene, NPCs: npcs, Flags: snap.Flags}
 	out, _, err := narrateTurn(t.Context(), nil, TurnDeps{}, snap, Command{Kind: CmdInspectScene, Raw: "检查环境"}, state, nil)

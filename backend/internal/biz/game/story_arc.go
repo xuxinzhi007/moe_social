@@ -21,15 +21,15 @@ type StoryArc struct {
 
 // StoryArcConfig DB 故事线配置的阶段触发器。
 type StageTrigger struct {
-	MinPhase     int    `json:"min_phase"`
-	Beat         string `json:"beat"`
-	Butterfly    string `json:"butterfly,omitempty"`
+	MinPhase  int    `json:"min_phase"`
+	Beat      string `json:"beat"`
+	Butterfly string `json:"butterfly,omitempty"`
 }
 
 // StageNarrative DB 故事线配置的阶段叙事。
 type StageNarrative struct {
-	Stage       int    `json:"stage"`
-	Narrative   string `json:"narrative"`
+	Stage     int    `json:"stage"`
+	Narrative string `json:"narrative"`
 }
 
 // loadStoryArcsFromDB 从 DB 加载活跃故事线配置，失败时返回 nil。

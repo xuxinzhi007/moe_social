@@ -16,19 +16,19 @@ type LivePipelineStatus struct {
 
 // PresenceView Bot 在场状态（游戏化 UI）。
 type PresenceView struct {
-	AgentKey        string `json:"agent_key"`
-	DisplayName     string `json:"display_name"`
-	Activity        string `json:"activity"`
-	Mood            string `json:"mood"`
-	Thought         string `json:"thought"`
-	PipelineStep    string `json:"pipeline_step"`
-	PipelineRunning bool   `json:"pipeline_running"`
-	DreamEnabled    bool   `json:"dream_enabled"`
-	DreamCron       string `json:"dream_cron"`
-	NextDreamAt             string `json:"next_dream_at"`
-	Dreaming                bool   `json:"dreaming"`
-	AutonomousMindEnabled   bool   `json:"autonomous_mind_enabled"`
-	ThoughtSource           string `json:"thought_source"`
+	AgentKey              string `json:"agent_key"`
+	DisplayName           string `json:"display_name"`
+	Activity              string `json:"activity"`
+	Mood                  string `json:"mood"`
+	Thought               string `json:"thought"`
+	PipelineStep          string `json:"pipeline_step"`
+	PipelineRunning       bool   `json:"pipeline_running"`
+	DreamEnabled          bool   `json:"dream_enabled"`
+	DreamCron             string `json:"dream_cron"`
+	NextDreamAt           string `json:"next_dream_at"`
+	Dreaming              bool   `json:"dreaming"`
+	AutonomousMindEnabled bool   `json:"autonomous_mind_enabled"`
+	ThoughtSource         string `json:"thought_source"`
 }
 
 // BuildPresence 根据流水线、RPG 与自传快照合成 Bot 当前想法与动作。

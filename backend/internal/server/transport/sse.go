@@ -26,11 +26,9 @@ func streamMoeBrainPipeline(admin *moeadmin.AdminService) func(khttp.Context) er
 	return func(ctx khttp.Context) error {
 		w := ctx.Response()
 		r := ctx.Request()
-		var req types.AdminGetMoeBrainPipelineReq
-		if err := bindRequest(ctx, &req); err != nil {
-			return err
-		}
-		agentKey := req.AgentKey
+		// GET + EventSource 不带 Content-Type，不能用 ctx.Bind（body 解码器会回 400 CODEC）；
+		// 也不能用 ctx.BindQuery（它认 json tag，而这个 legacy 结构体只有 form tag）。
+		agentKey := r.URL.Query().Get("agent_key")
 		if agentKey == "" {
 			_ = apicomm.WriteSSE(w, "error", types.AdminGetMoeBrainPipelineResp{
 				BaseResp: apicomm.HandleError(fmt.Errorf("agent_key is required")),

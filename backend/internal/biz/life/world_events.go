@@ -134,7 +134,7 @@ func (e *WorldEventEngine) checkDepletion(grid *WorldGrid, enqueueEvent func(*mo
 		return
 	}
 	totalFood := 0.0
-	maxFood := float64(grid.Width * grid.Height) * maxCellFood
+	maxFood := float64(grid.Width*grid.Height) * maxCellFood
 	for y := 0; y < grid.Height; y++ {
 		for x := 0; x < grid.Width; x++ {
 			totalFood += grid.Cells[y][x].Food

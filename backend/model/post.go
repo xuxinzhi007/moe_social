@@ -8,10 +8,10 @@ import (
 
 // Post 帖子模型
 type Post struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	UserID    uint           `gorm:"not null;index" json:"user_id"`     // 用户ID
-	Content   string         `gorm:"type:text;not null" json:"content"` // 帖子内容
-	Images    string         `gorm:"type:text" json:"images"`           // 图片URL列表，JSON格式
+	ID      uint   `gorm:"primarykey" json:"id"`
+	UserID  uint   `gorm:"not null;index" json:"user_id"`     // 用户ID
+	Content string `gorm:"type:text;not null" json:"content"` // 帖子内容
+	Images  string `gorm:"type:text" json:"images"`           // 图片URL列表，JSON格式
 	// 手绘卡片 JSON（列表接口不下发，仅详情/懒加载接口需要）
 	HandDrawCard string `gorm:"type:longtext" json:"hand_draw_card"`
 	// 列表缩略图 URL（静态图，减轻列表体积）
@@ -19,13 +19,13 @@ type Post struct {
 	// HasHandDraw 列表查询计算列（CHAR_LENGTH(hand_draw_card)>0），不入库。
 	HasHandDraw bool `gorm:"->;column:has_hand_draw" json:"has_hand_draw"`
 	// 审核状态：ok | pending | rejected；手绘帖创建时为 pending
-	ModerationStatus string `gorm:"size:32;default:ok;index" json:"moderation_status"`
+	ModerationStatus string         `gorm:"size:32;default:ok;index" json:"moderation_status"`
 	MoodTag          string         `gorm:"size:32;index" json:"mood_tag"` // 情绪标签（可选）
-	Likes     int            `gorm:"default:0" json:"likes"`            // 点赞数
-	Comments  int            `gorm:"default:0" json:"comments"`         // 评论数
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Likes            int            `gorm:"default:0" json:"likes"`        // 点赞数
+	Comments         int            `gorm:"default:0" json:"comments"`     // 评论数
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// 关联关系
 	User       User        `gorm:"foreignKey:UserID" json:"-"`               // 用户关联

@@ -24,7 +24,7 @@ const (
 
 // VipReadAdmin — PK-1 域 SSOT（勿再扩 api/defs/common.api）。
 // HTTP: GET /api/admin/vip/plans?page=&page_size=&keyword=&include_deleted=
-// 试点: make moe-kratos → :19032；生产灰度: moe.kratos_vip_http_enabled
+// 灰度开关: moe.kratos_vip_http_enabled（由 moewiring.KratosVipHTTPEnabled 读取）
 type VipPlanView struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`

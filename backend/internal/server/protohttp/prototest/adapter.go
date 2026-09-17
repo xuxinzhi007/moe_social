@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sort"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -27,7 +28,12 @@ import (
 // 而不是碰巧被别的东西挡住。传 nil 则只断言「不是 Unimplemented」。
 //
 // pendingDeletion 里的方法名允许仍是 Unimplemented —— 用于已判定为死接口、
-// 等着从 proto 里删掉的那些。方法删掉后条目自动失效，不需要回来改测试。
+// 等着从 proto 里删掉的那些。
+//
+// 但登记项**不会自动失效**：真把 RPC 从 proto 删掉之后必须回来把名字一起删掉，
+// 否则测试会在末尾报「登记项已失效」。早先这里是静默忽略未命中的登记项的，
+// 于是一份陈旧白名单可以无限期地堆下去，每多一条就多一个「将来某个 RPC 悄悄退回
+// 501 也没人发现」的口子 —— 白名单越长门禁越松，而且没有任何信号提示该收尾了。
 func AssertRPCsAdapted(t *testing.T, srv, stub any, wantErr error, pendingDeletion ...string) {
 	t.Helper()
 
@@ -78,6 +84,7 @@ func AssertRPCsAdapted(t *testing.T, srv, stub any, wantErr error, pendingDeleti
 
 		if status.Code(err) == codes.Unimplemented {
 			if pending[name] {
+				pending[name] = false
 				skipped++
 				t.Logf("%s: 仍是 Unimplemented，已登记为待删死接口", name)
 				continue
@@ -95,6 +102,19 @@ func AssertRPCsAdapted(t *testing.T, srv, stub any, wantErr error, pendingDeleti
 	if checked == 0 {
 		t.Fatalf("一个 RPC 都没核对到（stub=%s），这个测试是空转的", stubType)
 	}
+
+	var stale []string
+	for name, unconsumed := range pending {
+		if unconsumed {
+			stale = append(stale, name)
+		}
+	}
+	if len(stale) > 0 {
+		sort.Strings(stale)
+		t.Errorf("待删登记项已失效（stub=%s，这些方法已不在 proto 里）：%v —— 请把它们从登记表中删掉，"+
+			"留着的白名单只会让门禁越来越松", stubType, stale)
+	}
+
 	t.Logf("已核对 %d 个 RPC 适配方法，跳过 %d 个待删死接口", checked, skipped)
 }
 

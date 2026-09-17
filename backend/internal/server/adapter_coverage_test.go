@@ -56,37 +56,6 @@ import (
 	vipreadhttp "backend/internal/server/protohttp/vipread"
 )
 
-// 下面两批 RPC 在 proto 里声明了、路由也注册了，但既没有适配方法也没有活的调用方，
-// 线上永远回 501。已定为整条删除，删掉后这里的条目会自动失效（方法名不再存在于桩上），
-// 不需要回来改这个测试。
-//
-// 注意 ListLlmModels 不在表内：它是客户端真的在打的活接口，已经补上实现了。
-var (
-	adminMemoryRPCsPendingDeletion = []string{
-		"AdminDeleteMemory",
-		"AdminExportLearningDataset",
-		"AdminGetMemoryHealth",
-		"AdminGetMemoryStats",
-		"AdminListMemories",
-		"AdminRebuildMemoryEmbeddings",
-	}
-
-	llmDeadRPCsPendingDeletion = []string{
-		"DeleteUserMemory",
-		"GetAiMemorySettings",
-		"GetUserMemories",
-		"GetUserMemoriesDisplay",
-		"GetUserMemoryProfiles",
-		"ListLlmLocalModelsCatalog",
-		"PutAiMemorySettings",
-		"RebuildUserMemoryEmbeddings",
-		"RecordLlmChatTurn",
-		"SearchUserMemories",
-		"SubmitUserMemoryFeedback",
-		"UpsertUserMemory",
-	}
-)
-
 // 全仓扫描：每个 proto service 的每个 RPC 都必须有 HTTP 适配方法。
 //
 // 漏写不会编译报错、不会路由 404、不会被鉴权拦截 —— 嵌入的 Unimplemented* 桩会顶上，
@@ -95,46 +64,54 @@ var (
 //
 // pet 与 arena 不在表内：它们用手写路由（pethttp.RegisterRoutes / arenahttp.RegisterRoutes），
 // 从不嵌入桩，任何基于桩的扫描都看不见它们。
+//
+// 这里曾经挂着两份「待删死接口」白名单（AdminApp 的 6 个记忆 RPC、LlmChat 的 12 个
+// 记忆/聊天记录/离线模型 RPC），已于 #42 连同 proto 定义一起删除。白名单清空后
+// pending 字段对 28 个 service 全是 nil，所以连字段一起摘掉了 —— 现在 28 个 service
+// 一律零豁免，任何 RPC 落回嵌入桩都会让测试直接红。将来若真要加豁免，得把
+// AssertRPCsAdapted 的 pendingDeletion 参数重新引进来，那个动作在 review 里看得见，
+// 不像往某一行末尾追加一个方法名那样悄无声息。
+//
+// 注意 ListLlmModels 不是死接口：它是客户端真的在打的活接口，曾漏写适配方法，已补齐。
 func TestEveryProtoRPCHasHTTPAdapter(t *testing.T) {
 	services := []struct {
-		name    string
-		srv     any
-		stub    any
-		pending []string
+		name string
+		srv  any
+		stub any
 	}{
-		{"Achievement", achievementhttp.New(nil), achievementv1.UnimplementedAchievementServer{}, nil},
-		{"AdminApp", adminapphttp.New(nil, nil), adminv1.UnimplementedAdminAppServer{}, adminMemoryRPCsPendingDeletion},
-		{"AdminInsights", admininsightshttp.New(nil), adminv1.UnimplementedAdminInsightsServer{}, nil},
-		{"AiResources", aihttp.New(nil), aiv1.UnimplementedAiResourcesServer{}, nil},
-		{"BattleService", battlehttp.New(nil), battlev1.UnimplementedBattleServiceServer{}, nil},
-		{"BehaviorApp", behaviorhttp.New(nil), behaviorv1.UnimplementedBehaviorAppServer{}, nil},
-		{"ChatPresenceService", chathttp.NewPresence(), chatv1.UnimplementedChatPresenceServiceServer{}, nil},
-		{"PrivateMessageService", chathttp.New(nil), chatv1.UnimplementedPrivateMessageServiceServer{}, nil},
-		{"PushNotificationService", chathttp.New(nil), chatv1.UnimplementedPushNotificationServiceServer{}, nil},
-		{"Checkin", checkinhttp.New(nil), checkinv1.UnimplementedCheckinServer{}, nil},
-		{"CommentService", commenthttp.New(nil), commentv1.UnimplementedCommentServiceServer{}, nil},
-		{"Community", communityhttp.New(nil), communityv1.UnimplementedCommunityServer{}, nil},
-		{"Companion", companionhttp.New(nil), companionv1.UnimplementedCompanionServer{}, []string{"GetContextPreview"}},
-		{"ContentService", contenthttp.New(nil), contentv1.UnimplementedContentServiceServer{}, nil},
-		{"Game", gamehttp.New(nil), gamev1.UnimplementedGameServer{}, nil},
-		{"GiftService", gifthttp.New(nil), giftv1.UnimplementedGiftServiceServer{}, nil},
-		{"Landing", landinghttp.New(nil), landingv1.UnimplementedLandingServer{}, nil},
-		{"Life", lifehttp.New(nil), lifev1.UnimplementedLifeServer{}, nil},
-		{"LlmChat", llmhttp.New(nil), llmv1.UnimplementedLlmChatServer{}, llmDeadRPCsPendingDeletion},
-		{"Media", mediahttp.New(nil), mediav1.UnimplementedMediaServer{}, nil},
-		{"MoeAdmin", moeadminhttp.New(nil), moepb.UnimplementedMoeAdminServer{}, nil},
-		{"NotifyService", notifyhttp.New(nil), notifyv1.UnimplementedNotifyServiceServer{}, nil},
-		{"Platform", platformhttp.New(platformhttp.Deps{}), platformv1.UnimplementedPlatformServer{}, nil},
-		{"PostService", posthttp.New(nil), postv1.UnimplementedPostServiceServer{}, nil},
-		{"UserService", userhttp.New(nil), userv1.UnimplementedUserServiceServer{}, nil},
-		{"VipPlans", vipplanshttp.New(nil), vipv1.UnimplementedVipPlansServer{}, nil},
-		{"VipReadAdmin", vipreadhttp.New(nil), vipv1.UnimplementedVipReadAdminServer{}, nil},
-		{"VipService", viphttp.New(nil), vipv1.UnimplementedVipServiceServer{}, nil},
+		{"Achievement", achievementhttp.New(nil), achievementv1.UnimplementedAchievementServer{}},
+		{"AdminApp", adminapphttp.New(nil, nil), adminv1.UnimplementedAdminAppServer{}},
+		{"AdminInsights", admininsightshttp.New(nil), adminv1.UnimplementedAdminInsightsServer{}},
+		{"AiResources", aihttp.New(nil), aiv1.UnimplementedAiResourcesServer{}},
+		{"BattleService", battlehttp.New(nil), battlev1.UnimplementedBattleServiceServer{}},
+		{"BehaviorApp", behaviorhttp.New(nil), behaviorv1.UnimplementedBehaviorAppServer{}},
+		{"ChatPresenceService", chathttp.NewPresence(), chatv1.UnimplementedChatPresenceServiceServer{}},
+		{"PrivateMessageService", chathttp.New(nil), chatv1.UnimplementedPrivateMessageServiceServer{}},
+		{"PushNotificationService", chathttp.New(nil), chatv1.UnimplementedPushNotificationServiceServer{}},
+		{"Checkin", checkinhttp.New(nil), checkinv1.UnimplementedCheckinServer{}},
+		{"CommentService", commenthttp.New(nil), commentv1.UnimplementedCommentServiceServer{}},
+		{"Community", communityhttp.New(nil), communityv1.UnimplementedCommunityServer{}},
+		{"Companion", companionhttp.New(nil), companionv1.UnimplementedCompanionServer{}},
+		{"ContentService", contenthttp.New(nil), contentv1.UnimplementedContentServiceServer{}},
+		{"Game", gamehttp.New(nil), gamev1.UnimplementedGameServer{}},
+		{"GiftService", gifthttp.New(nil), giftv1.UnimplementedGiftServiceServer{}},
+		{"Landing", landinghttp.New(nil), landingv1.UnimplementedLandingServer{}},
+		{"Life", lifehttp.New(nil), lifev1.UnimplementedLifeServer{}},
+		{"LlmChat", llmhttp.New(nil), llmv1.UnimplementedLlmChatServer{}},
+		{"Media", mediahttp.New(nil), mediav1.UnimplementedMediaServer{}},
+		{"MoeAdmin", moeadminhttp.New(nil), moepb.UnimplementedMoeAdminServer{}},
+		{"NotifyService", notifyhttp.New(nil), notifyv1.UnimplementedNotifyServiceServer{}},
+		{"Platform", platformhttp.New(platformhttp.Deps{}), platformv1.UnimplementedPlatformServer{}},
+		{"PostService", posthttp.New(nil), postv1.UnimplementedPostServiceServer{}},
+		{"UserService", userhttp.New(nil), userv1.UnimplementedUserServiceServer{}},
+		{"VipPlans", vipplanshttp.New(nil), vipv1.UnimplementedVipPlansServer{}},
+		{"VipReadAdmin", vipreadhttp.New(nil), vipv1.UnimplementedVipReadAdminServer{}},
+		{"VipService", viphttp.New(nil), vipv1.UnimplementedVipServiceServer{}},
 	}
 
 	for _, svc := range services {
 		t.Run(svc.name, func(t *testing.T) {
-			prototest.AssertRPCsAdapted(t, svc.srv, svc.stub, nil, svc.pending...)
+			prototest.AssertRPCsAdapted(t, svc.srv, svc.stub, nil)
 		})
 	}
 }

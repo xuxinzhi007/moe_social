@@ -22,16 +22,16 @@ type Group struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// 关联关系
-	Creator  User         `gorm:"foreignKey:CreatorID" json:"-"`  // 创建者关联
-	Members  []GroupMember `gorm:"foreignKey:GroupID" json:"-"`  // 成员关联
-	Posts    []GroupPost   `gorm:"foreignKey:GroupID" json:"-"`  // 群组帖子关联
+	Creator User          `gorm:"foreignKey:CreatorID" json:"-"` // 创建者关联
+	Members []GroupMember `gorm:"foreignKey:GroupID" json:"-"`   // 成员关联
+	Posts   []GroupPost   `gorm:"foreignKey:GroupID" json:"-"`   // 群组帖子关联
 }
 
 // GroupMember 群组成员关系模型
 type GroupMember struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
-	GroupID   uint           `gorm:"not null;index" json:"group_id"`   // 群组ID
-	UserID    uint           `gorm:"not null;index" json:"user_id"`    // 用户ID
+	GroupID   uint           `gorm:"not null;index" json:"group_id"`     // 群组ID
+	UserID    uint           `gorm:"not null;index" json:"user_id"`      // 用户ID
 	Role      string         `gorm:"size:20;default:member" json:"role"` // 角色：admin/member
 	JoinAt    time.Time      `json:"join_at"`
 	CreatedAt time.Time      `json:"created_at"`
@@ -46,8 +46,8 @@ type GroupMember struct {
 // GroupPost 群组帖子模型
 type GroupPost struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
-	GroupID   uint           `gorm:"not null;index" json:"group_id"`   // 群组ID
-	PostID    uint           `gorm:"not null;index" json:"post_id"`    // 帖子ID
+	GroupID   uint           `gorm:"not null;index" json:"group_id"` // 群组ID
+	PostID    uint           `gorm:"not null;index" json:"post_id"`  // 帖子ID
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`

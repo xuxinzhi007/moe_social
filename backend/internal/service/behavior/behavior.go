@@ -2,9 +2,9 @@
 package behaviorapp
 
 import (
-	"gorm.io/gorm"
 	behaviorbiz "backend/internal/biz/behavior"
 	behaviordata "backend/internal/data/behavior"
+	"gorm.io/gorm"
 )
 
 // Package behaviorapp 用户行为埋点应用服务（Sprint S4）。

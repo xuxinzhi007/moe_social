@@ -1,9 +1,9 @@
 package landingapp
 
 import (
-	"gorm.io/gorm"
 	landingbiz "backend/internal/biz/landing"
 	landingdata "backend/internal/data/landing"
+	"gorm.io/gorm"
 )
 
 // AppService Landing HTTP/RPC 应用层。

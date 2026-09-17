@@ -8,8 +8,8 @@ import (
 
 // JobRequest parameters for creating a job.
 type JobRequest struct {
-	Type    string
-	Params  map[string]string
+	Type   string
+	Params map[string]string
 }
 
 // ResolveCommand maps job type to a CommandSpec.

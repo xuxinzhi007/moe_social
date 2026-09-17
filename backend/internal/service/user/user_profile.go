@@ -2,10 +2,10 @@
 package userapp
 
 import (
+	userv1 "backend/api/user/v1"
+	userbiz "backend/internal/biz/user"
 	"context"
 	"strconv"
-	userbiz "backend/internal/biz/user"
-	userv1 "backend/api/user/v1"
 )
 
 // Package userapp 用户信息查询与更新。

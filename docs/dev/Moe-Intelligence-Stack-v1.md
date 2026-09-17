@@ -75,18 +75,26 @@ llama-server **无全局会话**；Bot 发帖用 `moe.bot_post_model` + `post_ru
 
 ## 2. 能力档位（7B = S2）
 
-| 档位 | 常量 | 典型模型 | v1 允许的工具（`core.AllowsTool`，`pkg/moe/core/tier.go:32-45`） |
+| 档位 | 常量 | 典型模型 | v1 允许的工具（`core.AllowsTool`，`pkg/moe/core/tier.go:38-51`） |
 |------|------|----------|----------------|
 | S0 | `s0` | ≤1.5B | **无**（一律 `false`，仅路由，预留） |
-| S1 | `s1` | 2B～3B | `memory_search`, `memory_get`, `post_search`, `post_get` |
-| **S2** | `s2` | **7B 默认** | S1 + `memory_save`, `post_create`, `brain_refine_episode`, `brain_curate_memories` |
+| S1 | `s1` | 2B～3B | `post_search`, `post_get` |
+| **S2** | `s2` | **7B 默认** | S1 + `post_create`, `brain_refine_episode`, `brain_curate_memories`（**= 注册表全集**） |
 | S3 | `s3` | 云端 | 全部（`return true`） |
+
+> 表中每一档的工具名都必须存在于 `pkg/moe/tools/registry.go`。`memory_search` / `memory_get` / `memory_save`
+> 曾长期出现在 S1/S2 两行里，而注册表早已没有它们 —— 请求会通过档位闸、再在 `Executor.Execute` 的
+> `default` 分支以「未知工具」失败。已摘除，并由 `toolaudit.TestAllowsToolNeverPermitsUnregisteredTool` 钉住。
+> 注意 `moe-admin/src/lib/moeToolLabels.ts:4-6` 仍保留这三个名字的中文标签，那是**有意的**：
+> `moe_tool_calls` 里存着它们还能被调用时留下的历史行，去掉标签会让旧记录显示成裸名字。
 
 执行器按 `CapabilityTier` 校验；未配置 Agent 时取**编译期常量** `core.DefaultTier = TierS2`（`tier.go:16`），`ParseTier` 的 `default` 分支同样返回 `TierS2`。
 
-> ⚠️ `moe.default_capability_tier` **是死键**：`config/config.yaml:184` 虽写着 `s2`，但全仓**零读者**
+> ⚠️ `moe.default_capability_tier` **是死键**：`config/config.yaml:171` 虽写着 `s2`，但全仓**零读者**
 > （`pkg/conf/config.go:21` 已把它与 `moe.enabled` / `moe.bot_post_daily_limit_default` 一并记名为不进 struct 的死配置）。
 > 改它不会有任何效果。要让默认档位可配，需先在 `pkg/conf` 里加字段与派生函数、再让执行器读它——目前二者都没有。
+> （行号曾是 `:184`：`local_models` 整块 13 行在批次 #42 被删，它才上移到 `:171`。同批 §28 新增的三个键
+> 在它**下面**，不影响这个行号 —— 别照 `:184` 改回去。）
 
 ---
 
@@ -123,18 +131,26 @@ llama-server **无全局会话**；Bot 发帖用 `moe.bot_post_model` + `post_ru
 
 ## 4. 工具清单（v1）
 
+清单必须与 `backend/pkg/moe/tools/registry.go` **逐项相等**（当前 5 项）。`toolaudit.BuildSchemaItems`
+从注册表推导、`toolaudit.TestBuildSchemaItemsCoversAllTools` 钉住数量与档位一致性。
+
 | 工具 | 层 | 说明 |
 |------|-----|------|
-| `memory_search` | L1 | RPC 拉记忆 + `pkg/memory` 检索 |
-| `memory_save` | L1 | RPC upsert |
-| `memory_get` | L1 | RPC 按 key 读 |
-| `brain_refine_episode` | L1 | 润色单条 Bot 自传/记忆（低分或未认可） |
-| `brain_curate_memories` | L1 | 批量整理低分记忆，LLM 迭代直到认可 |
 | `post_search` | L5 | `postpulse` 关键词检索 |
 | `post_get` | L5 | RPC 帖子详情摘要 |
 | `post_create` | L5 | RPC CreatePost（Bot user_id） |
+| `brain_refine_episode` | L1 | 润色单条 Bot 自传/记忆（低分或未认可） |
+| `brain_curate_memories` | L1 | 批量整理低分记忆，LLM 迭代直到认可 |
 
-`memory_list` / `memory_read_daily` 仍由 Flutter 本地工具处理；v2 迁入 Executor。
+> `memory_search` / `memory_save` / `memory_get` / `memory_list` / `memory_read_daily` **一个都不存在**，
+> 且是双重死项：① 注册表从来没有过前三个（它们只活在 `tier.go` 的档位分支和文档里）；
+> ② 它们声称调用的用户记忆 RPC 已在批次 #42 整链删除。
+> 后两个（`memory_list` / `memory_read_daily`）此前被本文档记为「由 Flutter 本地工具处理」，实测为假：
+> `pubspec.yaml` 里没有 `llamadart`，`lib/` 下 `MoeLlmMemoryTools` / `LocalLlmChatService` /
+> `AiMemoryTools` / `builtinLocalGguf` / `local_gguf` 全部零命中（同批已确认 `AiChatGatewayService`
+> 存在但无 `local_gguf` 分支）。因此 `docs/dev/local-llm-tools.md` 整篇描述的是一条不存在的链路。
+> 客户端侧唯一真源是 `lib/services/ai_tool_runtime.dart:29-33` 的 `registeredToolNames()`，
+> 只注册 `post_search` / `post_get`（`post_create` 仅 Bot/Admin，不在客户端聊天注册）。
 
 ---
 

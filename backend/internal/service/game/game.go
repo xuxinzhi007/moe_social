@@ -16,6 +16,10 @@ type Deps struct {
 	Inference llminference.Config
 	Model     string
 	LlmMode   string
+
+	// WorldTick 后台世界时钟间隔。0 表示未配置，由 gamebiz.StartWorldRunner
+	// 回落到它自己的 defaultWorldTickInterval —— 45 秒这个数只在 biz 层存一份。
+	WorldTick time.Duration
 }
 
 type AppService struct {
@@ -26,7 +30,7 @@ type AppService struct {
 func New(db *gorm.DB, deps Deps) *AppService {
 	s := &AppService{store: gamedata.NewStore(db), deps: deps}
 	if s.store != nil {
-		gamebiz.StartWorldRunner(context.Background(), s.store, 45*time.Second)
+		gamebiz.StartWorldRunner(context.Background(), s.store, s.deps.WorldTick)
 	}
 	return s
 }

@@ -1,7 +1,9 @@
-// Package devports defines local dev tool ports for Moe Social (loopback only).
+// Package devports defines local dev tool ports for Moe Social.
 //
 // Block 19010–19019 is reserved for this repo to avoid clashes with common defaults:
 // Flutter DevTools :9100, cpolar/go pprof :6060, generic docs :8765, etc.
+// 本包同时登记外部推理依赖端口（GameInference/Ollama）：那些端口由外部进程监听，
+// 本仓库只在 config.yaml 里配置读取，从不 bind。
 package devports
 
 import "strconv"
@@ -14,6 +16,14 @@ const (
 	RpcDebugPort = 19011
 	// DocsStaticPort — optional static docs (make dev-docs); Agent hub replaces this in most flows.
 	DocsStaticPort = 19012
+
+	// GameInferencePort — 外部 llama-server（config.yaml llm_inference.game_base_url
+	// 的 127.0.0.1:6633）。本仓库不监听；由开发者本机单独启动的推理进程占用。
+	GameInferencePort = 6633
+	// OllamaPort — 外部 Ollama（config.yaml llm_inference.base_url；llminference
+	// 客户端也按 ":11434" 识别原生 Ollama API 风格）。本仓库不监听；地址可以是
+	// loopback 也可以是局域网主机，取决于配置。
+	OllamaPort = 11434
 
 	AgentAddr    = "127.0.0.1:19010"
 	RpcDebugAddr = "127.0.0.1:19011"

@@ -1,51 +1,44 @@
 # 在 backend 目录执行，例如: make gen | make build | make moe-social
 
-.PHONY: all gen gen-moe-proto gen-proto-route-count gen-swagger gen-moe-admin \
-	api-one init-proto-tools check test test-race temp-mail-password \
+.PHONY: all gen gen-moe-proto gen-swagger gen-moe-admin check-gen \
+	api-one init-proto-tools check check-format vet test test-race temp-mail-password \
 	moe-social moe-social-dev moe-social-stop \
 	build build-moe-social build-linux env-status \
 	db-migrate migrate-moe \
 	deploy-config-init deploy-agent deploy-agent-stop admin \
 	dev-docs help
 
+# Serialize invocations involving generation, including make -j gen check-gen.
+ifneq ($(filter all gen gen-moe-proto gen-swagger gen-moe-admin api-one init-proto-tools check-gen,$(or $(MAKECMDGOALS),all)),)
+.NOTPARALLEL:
+endif
+
 all: gen
 
-# 安装 proto 代码生成工具（对齐 Kratos 官方：含 protoc-gen-go-http）
+# Explicit installation only; versions are shared with the generation preflight.
 init-proto-tools:
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
-	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
+	bash scripts/gen/proto-tools.sh install
 
-# 日常安全生成：域 proto + 路由计数
-# 注：gen-moe-proto 末尾会调用 openapi.sh，因此 openapi.yaml 会一并更新
-gen: gen-moe-proto gen-proto-route-count
+# One ordered pipeline: domain proto pb/grpc/http, then openapi.yaml.
+gen: gen-moe-proto
 
 gen-moe-proto:
 	bash scripts/gen/moe-proto.sh
 
-# 从 api/**/v1/*_http.pb.go 统计 → internal/server/routestats/proto_routes_gen.go
-gen-proto-route-count:
-	cd scripts/gen/proto-route-count && go run .
+check-gen:
+	bash scripts/gen/check-gen.sh
 
 # 仅重生 openapi.yaml（make gen 已包含；单独调试时用）
 gen-swagger:
 	bash scripts/gen/openapi.sh
 
-# Moe 管理台：gen + 删空壳 + 编译（见 scripts/gen/moe-admin.sh）
-gen-moe-admin:
-	bash scripts/gen/moe-admin.sh
+# Moe 管理台：gen + 编译（见 scripts/gen/moe-admin.sh）
+gen-moe-admin: gen
+	bash scripts/gen/moe-admin.sh --skip-gen
 
 # 单模块 proto 生成：make api-one PROTO=api/<module>/v1/<module>.proto
 api-one:
-	@if [ -z "$(PROTO)" ]; then echo "Usage: make api-one PROTO=api/<module>/v1/<module>.proto"; exit 1; fi
-	protoc \
-		--proto_path=. \
-		--proto_path=./third_party \
-		--go_out=. --go_opt=module=backend \
-		--go-grpc_out=. --go-grpc_opt=module=backend \
-		--go-http_out=. --go-http_opt=module=backend \
-		$(PROTO)
+	bash scripts/gen/moe-proto.sh --proto "$(PROTO)"
 
 # 全仓单测。CGO_ENABLED=1 是必须的，不是可选优化：
 # gorm 的 sqlite 驱动依赖 cgo，关掉它 gorm.Open 直接报错，各处 helper 一律 t.Skip，
@@ -57,9 +50,17 @@ test:
 test-race:
 	CGO_ENABLED=1 go test -race ./... -count=1
 
-# 日常检查：编译生产入口 + 全仓单测
+check-format:
+	bash scripts/check-go-format.sh
+
+vet:
+	CGO_ENABLED=1 go vet ./...
+
+# 日常检查：格式、静态分析、生产入口编译与全仓单测。
 check:
-	go build -o /dev/null ./cmd/moe-social
+	$(MAKE) check-format
+	$(MAKE) vet
+	CGO_ENABLED=1 go build -o /dev/null ./cmd/moe-social
 	$(MAKE) test
 
 # 计算临时邮箱对应的 mail.tm 内部密码
@@ -147,12 +148,13 @@ dev-docs:
 	cd ../docs && python -m http.server 19012
 
 help:
-	@echo make gen              - proto + conf + HTTP 路由计数（含 openapi.yaml）
+	@echo make gen              - 固定工具链生成 proto pb/grpc/http + openapi.yaml
+	@echo make check-gen        - 临时生成并只读比较当前工作树产物
 	@echo make gen-swagger      - 仅重生 openapi.yaml
 	@echo make api-one          - 单模块 proto 生成 'PROTO=api/<mod>/v1/<mod>.proto'
 	@echo make build            - 本机编译 bin/moe-social
 	@echo make build-linux      - 交叉编译 Linux bin/moe-social
-	@echo make check            - 编译 + 核心包单测
+	@echo make check            - 格式门禁 + vet + 编译生产入口 + 全仓单测
 	@echo ""
 	@echo --- 生产 / 开发 ---
 	@echo make moe-social         - Kratos HTTP :8888（生产入口）

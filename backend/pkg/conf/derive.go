@@ -28,6 +28,13 @@ const (
 // 迁移前这个 8192 在 apicomm 与 brain 两处各写了一遍，现在只有这一处。
 const DefaultContextTokens = 8192
 
+// defaultLifeInterval 是 moe.life_tick_seconds / life_flush_seconds 缺失时的兜底。
+// 迁移前它是 moewiring/api_life.go 的编译期常量 livingWorldIntervalSeconds = 5*60。
+//
+// 别和 lifebiz.DefaultConfig() 里的 5 秒搞混：那个是单元测试用的引擎缺省，
+// 生产路径从来都是被这里显式盖掉的 —— 详见 LifeIntervals 的注释。
+const defaultLifeInterval = 5 * time.Minute
+
 // RawInference 是 llm_inference 段套用 MOE_LLM_* 覆盖后的**原值**：api_style 还是
 // "ollama"/"openai" 这样的字面量，超时还是秒数，都没经过 llminference 的解析。
 // wiring/config_override.go 要把这些原样写回 apiconfig 片段，用的是这个形状；
@@ -165,12 +172,23 @@ func HTTPPort() int {
 // PublicBaseURL 对外 API 根：api.public_base_url → app_client.public_api_base_url。
 // 已去除末尾斜杠，可直接拼路径。
 func PublicBaseURL() string {
-	return trimURL(firstNonEmpty(Get().API.PublicBaseURL, Get().AppClient.PublicAPIBaseURL))
+	if u := TrimURL(Get().API.PublicBaseURL); u != "" {
+		return u
+	}
+	return TrimURL(Get().AppClient.PublicAPIBaseURL)
+}
+
+// ClientPublicBaseURL 客户端 API 根：显式 app_client 覆盖 → PublicBaseURL。
+func ClientPublicBaseURL() string {
+	if u := TrimURL(Get().AppClient.PublicAPIBaseURL); u != "" {
+		return u
+	}
+	return PublicBaseURL()
 }
 
 // ImagePublicBaseURL 图片外链根；为空时回落 PublicBaseURL。
 func ImagePublicBaseURL() string {
-	if u := trimURL(Get().Image.PublicBaseURL); u != "" {
+	if u := TrimURL(Get().Image.PublicBaseURL); u != "" {
 		return u
 	}
 	return PublicBaseURL()
@@ -178,7 +196,7 @@ func ImagePublicBaseURL() string {
 
 // FeishuRedirectURI 飞书 OAuth 回调：feishu.redirect_uri 留空时由 PublicBaseURL 拼出。
 func FeishuRedirectURI() string {
-	if u := strings.TrimSpace(Get().Feishu.RedirectURI); u != "" {
+	if u := strings.TrimSpace(Get().Feishu.RedirectURI); TrimURL(u) != "" {
 		return u
 	}
 	if base := PublicBaseURL(); base != "" {
@@ -189,13 +207,71 @@ func FeishuRedirectURI() string {
 
 // WechatRedirectURI 微信 OAuth 回调，规则同 FeishuRedirectURI。
 func WechatRedirectURI() string {
-	if u := strings.TrimSpace(Get().Wechat.RedirectURI); u != "" {
+	if u := strings.TrimSpace(Get().Wechat.RedirectURI); TrimURL(u) != "" {
 		return u
 	}
 	if base := PublicBaseURL(); base != "" {
 		return base + "/api/auth/wechat/callback"
 	}
 	return ""
+}
+
+// DefaultOAuthAuthTTL / DefaultOAuthTicketTTL / DefaultOAuthMaxPendingAuths
+// 是 oauth.* 未配置时的兜底。授权事务给 10 分钟（用户可能在供应商页面停留、
+// 或在手机上切到飞书/微信 App 再回来）；ticket 只活 60 秒 —— 它的唯一用途是
+// 把浏览器 302 落地和紧随其后的 login 请求接上，窗口越短重放面越小。
+const (
+	DefaultOAuthAuthTTL        = 10 * time.Minute
+	DefaultOAuthTicketTTL      = 60 * time.Second
+	DefaultOAuthMaxPendingAuth = 4096
+)
+
+// OAuthAllowedReturnURLs 精确回跳白名单：逐项 TrimURL 规范化、丢弃空项、按首次出现去重。
+//
+// 规范化只做「去首尾空白 + 去末尾斜杠」，不做大小写折叠、不补默认端口、不解析重排 ——
+// 匹配方（internal/oauthflow）对客户端提交的 return_url 施加完全相同的规范化，
+// 两边一致就够了；在这里多做一步反而会让「配置里写的」和「实际放行的」产生分歧。
+func OAuthAllowedReturnURLs() []string {
+	raw := Get().OAuth.AllowedReturnURLs
+	out := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, item := range raw {
+		u := TrimURL(item)
+		if u == "" {
+			continue
+		}
+		if _, dup := seen[u]; dup {
+			continue
+		}
+		seen[u] = struct{}{}
+		out = append(out, u)
+	}
+	return out
+}
+
+// OAuthAuthTTL 授权事务（服务端 state）有效期；非正数回落 DefaultOAuthAuthTTL。
+func OAuthAuthTTL() time.Duration {
+	return oauthTTL(Get().OAuth.AuthTTLSeconds, DefaultOAuthAuthTTL)
+}
+
+// OAuthTicketTTL 一次性 ticket 有效期；非正数回落 DefaultOAuthTicketTTL。
+func OAuthTicketTTL() time.Duration {
+	return oauthTTL(Get().OAuth.TicketTTLSeconds, DefaultOAuthTicketTTL)
+}
+
+func oauthTTL(seconds int64, def time.Duration) time.Duration {
+	if seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	return def
+}
+
+// OAuthMaxPendingAuths 待处理授权事务容量上限；非正数回落 DefaultOAuthMaxPendingAuth。
+func OAuthMaxPendingAuths() int {
+	if n := Get().OAuth.MaxPendingAuths; n > 0 {
+		return n
+	}
+	return DefaultOAuthMaxPendingAuth
 }
 
 // WechatFlowCredential 按 flow（app | website | mp）取凭证，保留迁移前的历史扁平键回退：
@@ -273,6 +349,38 @@ func DreamScheduler() (enabled bool, tick time.Duration) {
 	return enabled, tick
 }
 
+// LifeIntervals Life 引擎的 tick / flush 间隔，缺省各 300 秒。
+//
+// 缺省值必须留在这里、不能返回 0 让下游兜底：lifebiz.DefaultConfig() 的
+// TickInterval/FlushInterval 是 **5 秒**，而生产路径一直是 moewiring 显式传 300 秒把它盖掉。
+// 若这里未配置时返回 0，lifeapp.engineConfig 的 `if > 0` 守卫会放行那个 5 秒 ——
+// 世界节奏凭空快 60 倍。所以 300 是这里的缺省，biz 层的 5 秒继续只服务于单元测试。
+//
+// 非正数（含未设置）都回落到缺省，与 engineConfig 的守卫同语义。
+func LifeIntervals() (tick, flush time.Duration) {
+	return lifeInterval(Get().Moe.LifeTickSeconds), lifeInterval(Get().Moe.LifeFlushSeconds)
+}
+
+func lifeInterval(seconds int64) time.Duration {
+	if seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	return defaultLifeInterval
+}
+
+// WorldTickInterval game 后台世界时钟的间隔；**未配置时返回 0**，
+// 由 gamebiz.StartWorldRunner 的 `interval <= 0` 守卫回落到 defaultWorldTickInterval。
+// 45 秒这个数只该有一份副本，就在 biz 层。
+//
+// 迁移前它有两份：gamebiz.defaultWorldTickInterval 与 service/game 调用点里硬写的
+// 45*time.Second —— 后者恰好等于前者，于是那个守卫分支永远走不到，改一处忘另一处就分叉。
+func WorldTickInterval() time.Duration {
+	if s := Get().Moe.WorldTickSeconds; s > 0 {
+		return time.Duration(s) * time.Second
+	}
+	return 0
+}
+
 // SmartRetry 智能发送间隔（分钟）与最小间隔（小时）。返回 0 表示文件里没写或写了非正数，
 // 由调用方保留自身默认 —— 与迁移前 runtime.LoadSmartOptsFromViper 的 `if m > 0` 一致。
 func SmartRetry() (retryMinutes, minIntervalHours int) {
@@ -340,7 +448,8 @@ func firstPositiveInt(values ...int) int {
 	return 0
 }
 
-func trimURL(u string) string {
+// TrimURL 去掉首尾空白与末尾斜杠；纯斜杠视为空，调用方再决定回退。
+func TrimURL(u string) string {
 	u = strings.TrimSpace(u)
 	for strings.HasSuffix(u, "/") {
 		u = strings.TrimSuffix(u, "/")

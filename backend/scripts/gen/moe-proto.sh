@@ -1,37 +1,60 @@
 #!/usr/bin/env bash
-# 扫描 api/**/v1/*.proto → backend/api/<domain>/v1/*.pb.go + *_grpc.pb.go + *_http.pb.go
+# One ordered pipeline for Go contracts and OpenAPI; never installs tools.
 set -euo pipefail
+export LC_ALL=C
 cd "$(dirname "$0")/../.."
+source scripts/gen/proto-tools.sh
 
-if ! command -v protoc >/dev/null 2>&1; then
-  echo "protoc 未安装，跳过 gen-moe-proto（可选）" >&2
-  exit 0
+output=$PWD
+mode=all
+single_proto=
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) output=${2:?--output requires an existing directory}; shift 2 ;;
+    --openapi-only) mode=openapi; shift ;;
+    --proto) mode=proto; single_proto=${2:?--proto requires a file}; shift 2 ;;
+    *) proto_error "unknown argument: $1"; exit 1 ;;
+  esac
+done
+[[ -d "$output" ]] || { proto_error "output directory does not exist: $output"; exit 1; }
+output=$(cd "$output" && pwd)
+
+# Check every plugin before writing even the first output.
+proto_check_tools
+proto_list=$(find api -type f -path '*/v1/*.proto' | sort)
+[[ -n "$proto_list" ]] || { proto_error 'no api/**/v1/*.proto found'; exit 1; }
+proto_files=()
+while IFS= read -r file; do
+  proto_files+=("$file")
+done <<< "$proto_list"
+if [[ "$mode" == proto ]]; then
+  found=false
+  for file in "${proto_files[@]}"; do
+    [[ "$file" != "$single_proto" ]] || found=true
+  done
+  "$found" || { proto_error "not a current api/**/v1/*.proto input: $single_proto"; exit 1; }
+  proto_files=("$single_proto")
 fi
 
-if ! command -v protoc-gen-go-http >/dev/null 2>&1; then
-  echo "protoc-gen-go-http 未安装，自动执行 go install…" >&2
-  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-  go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
+if [[ "$mode" != openapi ]]; then
+  for file in "${proto_files[@]}"; do
+    printf 'protoc: %s\n' "$file"
+    "$PROTOC_BINARY" \
+      --proto_path=. --proto_path=./third_party \
+      "--plugin=protoc-gen-go=${PLUGIN_BINARIES[0]}" \
+      "--plugin=protoc-gen-go-grpc=${PLUGIN_BINARIES[1]}" \
+      "--plugin=protoc-gen-go-http=${PLUGIN_BINARIES[2]}" \
+      "--go_out=$output" --go_opt=module=backend \
+      "--go-grpc_out=$output" --go-grpc_opt=module=backend \
+      "--go-http_out=$output" --go-http_opt=module=backend \
+      "$file"
+  done
 fi
-
-count=0
-while IFS= read -r f; do
-  [ -z "$f" ] && continue
-  echo "protoc: $f"
-  protoc \
-    --proto_path=. \
-    --proto_path=./third_party \
-    --go_out=. --go_opt=module=backend \
-    --go-grpc_out=. --go-grpc_opt=module=backend \
-    --go-http_out=. --go-http_opt=module=backend \
-    "$f"
-  count=$((count + 1))
-done < <(find api -path '*/v1/*.proto' 2>/dev/null | sort)
-
-if [ "$count" -eq 0 ]; then
-  echo "no api/**/v1/*.proto found"
-  exit 0
+if [[ "$mode" != proto ]]; then
+  "$PROTOC_BINARY" \
+    --proto_path=. --proto_path=./third_party \
+    "--plugin=protoc-gen-openapi=${PLUGIN_BINARIES[3]}" \
+    "--openapi_out=fq_schema_naming=true,default_response=false:$output" \
+    "${proto_files[@]}"
 fi
-echo "OK: gen-moe-proto (${count} file(s)) → backend/api/*/v1/*.{pb,grpc.pb,http.pb}.go"
-bash scripts/gen/openapi.sh
+printf 'OK: generated %s (%s proto inputs)\n' "$mode" "${#proto_files[@]}"

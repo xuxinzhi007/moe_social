@@ -27,8 +27,8 @@ NewHTTPServer (internal/server/http.go)
 
 ```text
 make gen
-  → gen-moe-proto            # api/**/v1/*.proto → *.pb.go / *_http.pb.go
-  → gen-proto-route-count    # 统计 *_http.pb.go → routestats/proto_routes_gen.go
+  → gen-moe-proto            # 固定版本预检 → pb/grpc/http → openapi.yaml
+make check-gen              # 独立临时生成，只读比较当前工作树产物
 ```
 
 ## 已退役
@@ -36,7 +36,7 @@ make gen
 | 旧路径 | 替代 |
 |--------|------|
 | `internal/conf/moe/v1` + `gen-moe-conf` | 无（唯一导入方 `moeconf` 已整包删除；配置 SSOT 为 `pkg/conf`） |
-| `internal/server/httplegacy/` | `transport/` + `routestats/` |
+| `internal/server/httplegacy/` | `transport/` |
 | `wave2_misc_compat.go` | `api/media/v1` + `grpc/media` |
-| `scripts/gen/http-routes/` | `scripts/gen/proto-route-count/` |
+| `scripts/gen/http-routes/`、`scripts/gen/proto-route-count/`、`internal/server/routestats/` | 无；静态生成函数计数不能代表实际注册路由 |
 | `rpc/pb/moe` | `api/*/v1` |

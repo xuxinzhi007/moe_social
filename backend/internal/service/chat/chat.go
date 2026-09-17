@@ -2,9 +2,9 @@
 package chatapp
 
 import (
-	"gorm.io/gorm"
 	chatbiz "backend/internal/biz/chat"
 	chatdata "backend/internal/data/chat"
+	"gorm.io/gorm"
 )
 
 // Package chatapp 私信域应用服务（F106 Hybrid）。

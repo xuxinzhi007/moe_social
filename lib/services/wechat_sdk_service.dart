@@ -15,6 +15,7 @@ class WechatSdkService {
   bool _registered = false;
   FluwxCancelable? _subscriber;
   Completer<String>? _authCompleter;
+  String? _expectedState;
 
   Future<void> ensureRegistered() async {
     if (kIsWeb) return;
@@ -45,6 +46,14 @@ class WechatSdkService {
       );
       return;
     }
+    final returned = response.state?.trim() ?? '';
+    final expected = _expectedState?.trim() ?? '';
+    if (expected.isEmpty || returned != expected) {
+      pending.completeError(
+        StateError('微信返回的 state 与本次授权不一致，已中止登录，请重新发起'),
+      );
+      return;
+    }
     final code = response.code?.trim() ?? '';
     if (code.isEmpty) {
       pending.completeError(StateError('微信未返回授权码'));
@@ -54,9 +63,16 @@ class WechatSdkService {
   }
 
   /// 唤起微信授权，返回一次性 code（由后端换取 openid）。
-  Future<String> requestAuthCode() async {
+  ///
+  /// [state] 必须是服务端发起授权时下发的随机值：微信会原样带回，
+  /// 回调里比对通过才接受 code。写死常量等于把这道校验关掉。
+  Future<String> requestAuthCode({required String state}) async {
     if (kIsWeb) {
       throw StateError('微信登录仅支持 Android / iOS 客户端');
+    }
+    final expected = state.trim();
+    if (expected.isEmpty) {
+      throw StateError('缺少服务端下发的 state，无法发起微信授权');
     }
     await ensureRegistered();
     if (!await _fluwx.isWeChatInstalled) {
@@ -68,11 +84,12 @@ class WechatSdkService {
 
     final completer = Completer<String>();
     _authCompleter = completer;
+    _expectedState = expected;
     try {
       final started = await _fluwx.authBy(
         which: NormalAuth(
           scope: 'snsapi_userinfo',
-          state: 'moe_social',
+          state: expected,
         ),
       );
       if (!started) {
@@ -86,6 +103,7 @@ class WechatSdkService {
       );
     } finally {
       _authCompleter = null;
+      _expectedState = null;
     }
   }
 

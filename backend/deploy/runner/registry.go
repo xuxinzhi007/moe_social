@@ -22,7 +22,7 @@ func NewRegistry(cfg *deploycfg.Config) *Registry {
 	InitLocalPathExtra(cfg.LocalPathExtra)
 	SetDeployBuildCacheRoot(cfg.BuildCacheAbs())
 	reg := &Registry{
-		Local: NewPlatform(cfg.WorkspaceAbs(), cfg.BackendAbs(), cfg.ComposeFileAbs()),
+		Local:  NewPlatform(cfg.WorkspaceAbs(), cfg.BackendAbs(), cfg.ComposeFileAbs()),
 		Remote: make(map[string]*RemotePlatform),
 	}
 	for _, t := range cfg.NormalizeTargets() {

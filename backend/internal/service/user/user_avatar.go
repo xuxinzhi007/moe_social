@@ -1,9 +1,9 @@
 package userapp
 
 import (
-	"context"
-	userbiz "backend/internal/biz/user"
 	emojibiz "backend/internal/biz/emoji"
+	userbiz "backend/internal/biz/user"
+	"context"
 )
 
 // ListAvatarOutfits 装扮列表。

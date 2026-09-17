@@ -2,9 +2,9 @@
 package notifyapp
 
 import (
-	"gorm.io/gorm"
 	notifybiz "backend/internal/biz/notify"
 	notifydata "backend/internal/data/notify"
+	"gorm.io/gorm"
 )
 
 // Package notifyapp 通知域应用服务（P4-D4）。

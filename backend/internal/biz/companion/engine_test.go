@@ -513,6 +513,17 @@ func TestResolveMemoryConflictAcceptsCandidateAndIsIdempotent(t *testing.T) {
 
 func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
 	store := newFakeStore()
+	// 必须显式关掉免打扰时段。默认 profile 的 quiet 是 1350→450（22:30–07:30 UTC），
+	// 而 pushProactive 用 time.Now().UTC() 判定 —— 不写死的话这条用例每天有 9 个小时
+	// 会因为落在免打扰窗口里而 messages 为空、直接红（实测：UTC 02:31 失败，17:07 通过）。
+	// 本用例要验的是 24 小时不活跃冷却与每日一条的限额，跟免打扰无关。
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     1,
+		ProactiveQuietStart:     0,
+		ProactiveQuietEnd:       0,
+		ProactiveTimezoneOffset: 0,
+	})
 	store.logs = []model.CompanionChatLog{
 		{
 			UserID:    7,
@@ -542,6 +553,66 @@ func TestPushProactiveOnlyAfterInactivityCooldown(t *testing.T) {
 	}
 	if delivered == nil || delivered.SourceID != 42 || !strings.Contains(delivered.PayloadJSON, `"notification_id":42`) {
 		t.Fatalf("delivered event=%+v, want notification correlation", delivered)
+	}
+}
+
+// TestPushProactiveSkipsInsideQuietHours 守住 pushProactive 里的免打扰早退。
+//
+// 判别力：把 engine.go 那个 `if inQuietHours(...) { return }` 改成恒假，这条用例就会红
+// （实测：改之前全仓没有任何用例能抓到，因为 6 条 pushProactive 用例都把 quiet 置成了 0/0）。
+// 与上一条 TestPushProactiveOnlyAfterInactivityCooldown 正好构成双向对照：
+// 除了免打扰窗口，两条用例的初始状态完全一致，而那条会收到推送、这条不会。
+//
+// 窗口按当前 UTC 分钟现场算，所以不依赖挂钟：取 [minute-1, minute+3) 共 4 分钟，
+// 足够覆盖测试读时钟与 pushProactive 自己读 time.Now().UTC() 之间的亚分钟漂移；
+// 跨零点时 start > end，inQuietHours 走 `minute >= start || minute < end` 分支，
+// 表达的就是这 4 个回绕的连续分钟，同样成立。
+func TestPushProactiveSkipsInsideQuietHours(t *testing.T) {
+	minute := func() int {
+		now := time.Now().UTC()
+		return now.Hour()*60 + now.Minute()
+	}()
+	quietStart := (minute - 1 + 1440) % 1440
+	quietEnd := (minute + 3) % 1440
+	if quietStart == quietEnd {
+		t.Fatalf("quiet 窗口算成了空集（minute=%d start=%d end=%d），用例是空转的", minute, quietStart, quietEnd)
+	}
+	if !inQuietHours(minute, quietStart, quietEnd) {
+		t.Fatalf("窗口 [%d,%d) 没盖住当前分钟 %d，下面的断言没有意义", quietStart, quietEnd, minute)
+	}
+
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{
+		ProactiveEnabled:        true,
+		ProactiveDailyLimit:     1,
+		ProactiveQuietStart:     quietStart,
+		ProactiveQuietEnd:       quietEnd,
+		ProactiveTimezoneOffset: 0,
+	})
+	store.logs = []model.CompanionChatLog{
+		{
+			UserID:    7,
+			Role:      "user",
+			Content:   "我明天要面试",
+			CreatedAt: time.Now().Add(-25 * time.Hour),
+		},
+	}
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+	messages := make([]string, 0, 2)
+	engine.OnProactive = func(_ uint, message, _ string) (uint, bool) {
+		messages = append(messages, message)
+		return 42, true
+	}
+
+	engine.pushProactive(7)
+
+	if len(messages) != 0 {
+		t.Fatalf("免打扰时段内仍然推送了 %v，quiet 窗口被无视了", messages)
+	}
+	for index := range store.companionEvents {
+		if store.companionEvents[index].EventType == "proactive_delivered" {
+			t.Fatalf("免打扰时段内落了一条投递事件：%+v", store.companionEvents[index])
+		}
 	}
 }
 
