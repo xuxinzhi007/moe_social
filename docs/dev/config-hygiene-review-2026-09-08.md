@@ -3260,11 +3260,11 @@ v3 的判据来自乱码的成因本身：**乱码恢复回中文，干净中文
 |---|---|---|---|
 | **#45** 格式门禁 | ✅ 已修复且验证 | 124 文件纯 gofmt（无语义改动）；`make check` 加入只检查不修改的格式门禁 + `CGO_ENABLED=1 go vet ./...`；`make check` **rc=0 · 0 FAIL** | — |
 | **#52** 可复现生成 | ✅ 已修复且验证（一项判据换了形式，见下） | 工具链版本集中固定并在生成前逐个核对；连续两次生成 **79 个产物字节一致**（含 arena/pet 六份首次入库）；15 个负向场景（缺工具 / 版本错 / 陈旧产物）全部正确失败且**不写工作区**；`make check-gen` 只读通过；静态路由计数包已删、全仓零引用；README 与 `make help` 旧说明已清 | 计划要求「运行时路由枚举」。实际改用**静态判据**：`RegisterArenaHTTPServer` / `RegisterPetHTTPServer` 在 `internal/` 下**零调用方**，生成物不可能引入重复注册。这直接证明了计划真正关心的那件事，但**没有**逐条证明「服务实际暴露的路由集合未变」 |
-| **#44** Agora 归并 + 公共地址派生 | ⚠️ 已修改，验证部分阻塞 | typed `agora.app_id/app_certificate` 入 `pkg/conf`（`config.go:49,73`）；5 处重复且相同的覆盖值清空并**保留 YAML 叶子键**（`feishu.redirect_uri` / `wechat.redirect_uri` / `app_client.public_base_url` / `image.public_base_url` / OSS CDN `public_base_url`），单点收敛到 `api.public_base_url`；`derive.go` 的 `PublicBaseURL` / `ImagePublicBaseURL` / `FeishuRedirectURI` / `WechatRedirectURI` / `TrimURL` 齐备；`make check` **rc=0** | `make test-race` 未跑（磁盘不足）；「实测公共配置 / 媒体 URL」需启动服务，而普通启动会写共享测试库，**未执行** |
+| **#44** Agora 归并 + 公共地址派生 | ⚠️ 已修改，验证部分阻塞 | typed `agora.app_id/app_certificate` 入 `pkg/conf`（`config.go:49,73`）；5 处重复且相同的覆盖值清空并**保留 YAML 叶子键**（`feishu.redirect_uri` / `wechat.redirect_uri` / `app_client.public_base_url` / `image.public_base_url` / OSS CDN `public_base_url`），单点收敛到 `api.public_base_url`；`derive.go` 的 `PublicBaseURL` / `ImagePublicBaseURL` / `FeishuRedirectURI` / `WechatRedirectURI` / `TrimURL` 齐备；`make check` **rc=0** | ~~`make test-race` 未跑（磁盘不足）~~ → **定向 race 已过**（`pkg/conf` + `internal/platform/wiring` + `utils`，rc=0 · 3 ok · 0 DATA RACE，见 §30.7）；**全仓 `go test -race ./...` 仍未跑**。「实测公共配置 / 媒体 URL」需启动服务，而普通启动会写共享测试库，**未执行** |
 | **#51** 消除假成功 | ✅ 已修复且验证（UI 部分受阻） | 未实现的创建走 Kratos 错误编码 → **真实 HTTP 501 + 外层 `success:false`**，经生产注册与编码器实测；Dart 侧 5 个 HTTP 回归通过；`chat_page.dart:836` 改用 `AiAgent.copyWith` 保留 `createdByUserId`/`isPublic`/`authorName` 元数据 | tavern 聊天页 / 编辑页被 `showGameFeatures=false` 门禁挡住，**「卡片保存失败」「保存成功但同步失败」的界面提示与 loading 恢复未在运行中的 UI 里确认** |
 | **#16** 签名口令 | ⚠️ 已修改，**验证完全阻塞** | 两处明文兜底已删，只剩 `System.getenv(...)?.takeIf { it.isNotBlank() }`（`build.gradle.kts:27,29`）；守卫是**惰性**的——`validateReleaseSigningCredentials` 只被 `validateSigningRelease` / `packageRelease` / `signReleaseBundle` 通过 `dependsOn` 触发（`:66-80`），配置阶段不抛，故不影响 debug | 本机缺 Gradle Kotlin DSL 5.2.0 缓存，计划要求的三项检查（无口令 debug 可构建 / 无口令 release 明确失败 / 有效配置 release 签名）**一项都没进入 app 配置阶段**。不擅自下载大依赖。**这段代码没有经过任何一次 Gradle 执行** |
-| **#46** 部署与仓库清理 | ✅ 已修复且验证（nginx 运行验证缺失） | 四处 `proxy_set_header Host` 统一用 `$moe_api_host`（`nginx-lan.conf:33,43,53,62`），Host 值不变、未换成 `$proxy_host`；6633/11434 登记为**外部推理依赖**（`devports/ports.go:21-26` + `ports.md:33-37`，明确「配置有读者、本仓库不提供监听」）；一次性切模型脚本已删；`moe_social_backend/` 保留并 gitignore（`.gitignore:164`） | 本机无 nginx：`nginx -t` 与实际代理请求的 Host / path / Authorization / WebSocket 行为**均未实测**，静态检查不等同运行验证。另：§29.8 延期过来的 `moe-admin/build-out.txt` 取消跟踪**未做**（见 §30.3 第 10 条） |
-| **#50** OAuth 回跳与登录绑定 | ✅ 已修复且验证（真实供应商与浏览器链路除外） | **服务端**：`internal/oauthflow`（事务存储 + S256 challenge + 回跳白名单 + 一次性 ticket）；本批以 `-count=1` 复跑 `internal/oauthflow` / `internal/biz/user` / `internal/server` 三包 **rc=0 · 0 FAIL**，覆盖成功链路 ×3、取消、恶意回跳、缺失/篡改/过期/跨供应商 state、错误 verifier/flow、重放、并发至多成功一次、重启失效、拒绝 code-only。**客户端**：`flutter test` **144 passed**、`flutter analyze` **0 error · 0 warning**（39 info 均为既有 deprecation）。**跨语言接缝**：Dart 与 Go 共用 RFC 7636 附录 B 向量，本批另用 `openssl` 独立复算确认 `dBjftJeZ…` → `E9Melhoa2…`。**文档**：两份飞书文档已同步新协议，负向冒烟 a~f 每条都对应一个具名用例 | ① **浏览器「刷新后完成链路与失败提示」未验证**——磁盘不足以完成 web 构建，且需启动会写共享测试库的后端，还需真实飞书授权；② **原生 WebView / 微信 SDK 真机未验证**；③ **真实供应商授权未验证**。三者都是计划里单列的设备与人工依赖，**不以单测冒充** |
+| **#46** 部署与仓库清理 | ✅ 已修复且验证（nginx 运行验证缺失） | 四处 `proxy_set_header Host` 统一用 `$moe_api_host`（`nginx-lan.conf:33,43,53,62`），Host 值不变、未换成 `$proxy_host`；6633/11434 登记为**外部推理依赖**（`devports/ports.go:21-26` + `ports.md:33-37`，明确「配置有读者、本仓库不提供监听」）；一次性切模型脚本已删；`moe_social_backend/` 保留并 gitignore（`.gitignore:164`） | 本机无 nginx：`nginx -t` 与实际代理请求的 Host / path / Authorization / WebSocket 行为**均未实测**，静态检查不等同运行验证。另：§29.8 延期过来的 `moe-admin/build-out.txt` ~~取消跟踪未做~~ → **已做**（`.gitignore:171` + `git rm --cached`，文件留在磁盘，实测见 §30.7） |
+| **#50** OAuth 回跳与登录绑定 | ✅ 已修复且验证（真实供应商与浏览器链路除外） | **服务端**：`internal/oauthflow`（事务存储 + S256 challenge + 回跳白名单 + 一次性 ticket）；本批以 `-count=1` 复跑 `internal/oauthflow` / `internal/biz/user` / `internal/server` 三包 **rc=0 · 0 FAIL**，收口后另以 `-count=5` 与 `-race` 复跑同样三包 **rc=0 · 0 FAIL · 0 DATA RACE**（§30.7），覆盖成功链路 ×3、取消、恶意回跳、缺失/篡改/过期/跨供应商 state、错误 verifier/flow、重放、并发至多成功一次、重启失效、拒绝 code-only。**客户端**：`flutter test` **144 passed**、`flutter analyze` **0 error · 0 warning**（39 info 均为既有 deprecation）。**跨语言接缝**：Dart 与 Go 共用 RFC 7636 附录 B 向量，本批另用 `openssl` 独立复算确认 `dBjftJeZ…` → `E9Melhoa2…`。**文档**：两份飞书文档已同步新协议，负向冒烟 a~f 每条都对应一个具名用例 | ① **浏览器「刷新后完成链路与失败提示」未验证**——磁盘不足以完成 web 构建，且需启动会写共享测试库的后端，还需真实飞书授权；② **原生 WebView / 微信 SDK 真机未验证**；③ **真实供应商授权未验证**。三者都是计划里单列的设备与人工依赖，**不以单测冒充** |
 | **#17** config.yaml 去跟踪 | ⛔ 不在范围 | 用户明确取消（多机器开发需来回切换） | — |
 | **#47** reset-password 越权 | ⛔ 不在范围（用户暂缓） | 本批**未触碰** `auth_flow_service.dart` 的三个 reset 方法，已逐个确认原样 | **仍是活的 P0 安全风险**，见 30.3 |
 
@@ -3274,7 +3274,7 @@ v3 的判据来自乱码的成因本身：**乱码恢复回中文，干净中文
 |---|---|---|
 | §29.6 | `flutter test` **98 passed** | 是当时的值，不是当前值。本批为 **144 passed**（OAuth 客户端新增 41 例 + 前批增量）。§29.6 作为历史快照**不改写**，读它时要知道它已过期 |
 | §29.6 | `make check` **36 ok** | 同样是当时值。本批实测 **37 ok · 0 FAIL · 0 真 SKIP**，差的那 1 个是 #50 新增的 `internal/oauthflow` 包（`git ls-tree HEAD` 确认不在 HEAD 上）。**包计数会随新增测试包继续变，不要把它当固定基线读** |
-| §29.8 | 「BOM / CRLF 四个文件（含被 gitignore 漏掉的构建产物 `moe-admin/build-out.txt`）留给 #45 / #46」 | **这个延期项没有落地。** 实测：`git ls-files --error-unmatch moe-admin/build-out.txt` 成功（**仍被跟踪**）、`git check-ignore` **rc=1**、`.gitignore` 里没有它；文件首字节仍是 **BOM**，内容仍有 GBK 乱码（`鉁?` = `✓` 被当 GBK 解）。成因：#45 的门禁是 `gofmt`，只管 `.go`，管不到 `.txt`；#46 的批准范围点名了 nginx / ports / 一次性脚本 / `moe_social_backend/`，**没有点名这个文件**，且计划明写「其他纯风格重组不计入本次必做项」。**未擅自删除跟踪文件**（那是需要确认的动作），见 §30.3 第 10 条 |
+| §29.8 | 「BOM / CRLF 四个文件（含被 gitignore 漏掉的构建产物 `moe-admin/build-out.txt`）留给 #45 / #46」 | **这个延期项没有落地。** 实测：`git ls-files --error-unmatch moe-admin/build-out.txt` 成功（**仍被跟踪**）、`git check-ignore` **rc=1**、`.gitignore` 里没有它；文件首字节仍是 **BOM**，内容仍有 GBK 乱码（`鉁?` = `✓` 被当 GBK 解）。成因：#45 的门禁是 `gofmt`，只管 `.go`，管不到 `.txt`；#46 的批准范围点名了 nginx / ports / 一次性脚本 / `moe_social_backend/`，**没有点名这个文件**，且计划明写「其他纯风格重组不计入本次必做项」。**未擅自删除跟踪文件**（那是需要确认的动作），见 §30.3 第 10 条。↪️ **收口后已获授权并处置完毕（`.gitignore` 加条目 + `git rm --cached`，文件留在磁盘），实测见 §30.7 (1)** |
 | §29.8 | 「#16 仍未做，是 #43 原登记四项里唯一剩下的」 | 本批已改代码，但**验证完全阻塞**；不能读成「#16 已完成」 |
 | 第九批迁移清单（`utils/feishu_oauth_redirect.go` / `utils/wechat_oauth_redirect.go` 各 1 处 `AppReturnURL`） | 记为已迁移到 `pkg/conf` | 这两个文件已随 #50 **整体删除**（回跳地址改由 `oauth.allowed_return_urls` 白名单裁定，`AppReturnURL` 配置键不复存在）。当时的迁移是真的，只是产物后来没了 |
 | §26.5 漏洞证据表（`state=https://evil.example/steal` → `?feishu_code=CODE-ABC`） | 实测 302 到攻击者站并带走授权码 | **保留原文，不改写**——那是 #50 修复前的真实实测记录，是这次修复的依据。只加注：见 §30.4 |
@@ -3290,7 +3290,7 @@ v3 的判据来自乱码的成因本身：**乱码恢复回中文，干净中文
 7. **热加载不是全链的**：#44 归并后，哪些配置改完即生效、哪些需重启，未逐项实测，不能承诺全链热加载。
 8. **#16 的签名守卫从未被执行过一次**。它可能在第一次真实 release 构建时才暴露问题。
 9. **`docs/dev/local-llm-tools.md` 整篇仍是死文档**（§29.8 已登记，本批未删）。
-10. **`moe-admin/build-out.txt` 仍是被 git 跟踪的构建产物**（1324 字节，2026-08-03 一次 `npm run build` 的日志，提交于 `da55da53`）。它带 BOM、内容含 GBK 乱码，`.gitignore` 里没有它。§29.8 把它延期给 #45/#46，**两批都没覆盖到**：#45 的门禁是 `gofmt`（只管 `.go`），#46 的批准范围没点名它。本批也没动 —— **取消跟踪一个文件属于需要确认的动作**，不擅自做。推荐处置（待决定）：`git rm --cached moe-admin/build-out.txt` + 往 `.gitignore` 加 `moe-admin/build-out.txt`（或 `moe-admin/*.log`），文件本身留在磁盘上。
+10. **`moe-admin/build-out.txt` 仍是被 git 跟踪的构建产物**（1324 字节，2026-08-03 一次 `npm run build` 的日志，提交于 `da55da53`）。它带 BOM、内容含 GBK 乱码，`.gitignore` 里没有它。§29.8 把它延期给 #45/#46，**两批都没覆盖到**：#45 的门禁是 `gofmt`（只管 `.go`），#46 的批准范围没点名它。本批也没动 —— **取消跟踪一个文件属于需要确认的动作**，不擅自做。~~推荐处置（待决定）~~ → **已获授权并执行完毕，见 §30.7 (1)**：`.gitignore` 已加条目 + `git rm --cached`，文件留在磁盘。残留边界：`da55da53` 起的历史里它仍在，磁盘上那份的 BOM / 乱码字节未改（构建产物，不跟踪即为正确处置）。
 
 ### 30.4 §26.5 漏洞的处置结果（加注，不改写原证据）
 
@@ -3327,9 +3327,63 @@ v3 的判据来自乱码的成因本身：**乱码恢复回中文，干净中文
 
 `/System/Volumes/Data` 在本批从 **524 Mi 掉到 328 Mi**（100% 已用）。直接后果：
 
-- 第一次跑 OAuth 三包测试出现一次**无诊断信息的 FAIL**，两次复跑（含 `-count=1`）均 **rc=0 · 0 FAIL**。磁盘在同一区间掉了近 200 Mi，**ENOSPC 打断编译是最可能的成因**，但未能确证 —— 如实记为「一次未复现的失败」，不记为通过也不记为缺陷。
-- `make test-race`（#44）、Flutter web 构建（#50 浏览器验收）、Gradle 依赖解析（#16）均因空间不足无法执行。
+- ~~第一次跑 OAuth 三包测试出现一次无诊断信息的 FAIL……未能确证~~ → **已确证为 ENOSPC，不是代码缺陷**（详见 §30.7）。当时的命令把输出管道给了 `tail -20`，把 5 行 `FAIL <pkg> [build failed]` 连同诊断一起截掉，只剩末尾一个裸 `FAIL`；原始输出后从会话 transcript 里逐字捞回。全部 5 个失败都是**编译/链接阶段**失败，没有任何一条断言被执行过。
+- ~~`make test-race`（#44）因空间不足无法执行~~ → 磁盘回升后已做**定向 race**（#44 涉及的三包 + #50 新增的 OAuth 三包，全部 0 DATA RACE），见 §30.7；**全仓 `make test-race` 仍未跑**（`go test -race ./...`，99% 已用、2.3 Gi 可用时不敢冒险把盘写满）。Flutter web 构建（#50 浏览器验收）、Gradle 依赖解析（#16）仍无法执行。
 - 按既定约束：**不清理全局缓存、不下载大型依赖、不删 TMPDIR 里属他人工具的 19 G `cursor-sandbox-cache`**。因此上述阻塞在本批内无解，只能登记。
+
+### 30.7 收口后的两项残留处置（2026-09-17 晚）
+
+§30 收口时自审翻出两个真实问题，均已处置。
+
+**(1) `moe-admin/build-out.txt` 取消跟踪 —— 已做**
+
+原状态见 §30.2 / §30.3 第 10 条：1324 字节，2026-08-03 一次 `npm run build` 的日志，提交于 `da55da53`，带 BOM、内容含 GBK 乱码（`鉁?` = `✓` 被当 GBK 解），`.gitignore` 里没有它。漏掉的**根因**：`.gitignore:7` 的 `*.log` 盖不到 `.txt` 后缀。
+
+处置与实测：
+
+| 动作 | 实测证据 |
+|---|---|
+| `.gitignore` 在既有「Moe Admin 构建产物」段内加一行（含一行注释说明 `*.log` 为何盖不到） | `git check-ignore -v moe-admin/build-out.txt` → `.gitignore:171:moe-admin/build-out.txt`，**rc=0** |
+| `git rm --cached moe-admin/build-out.txt`（只出索引，**不删磁盘文件**） | `git ls-files --error-unmatch` → **rc=1**「未匹配任何 Git 已知文件」；`git status --short` → `D  moe-admin/build-out.txt` |
+| 文件本身留在磁盘、内容未改 | 处置前后 `ls -l` 一致：**1324 字节 · mtime 8月 3日 10:17** |
+
+**必须写清的边界**：取消跟踪只让它**从此不再进版本库**，`da55da53` 起的**历史里它还在**，BOM 与乱码字节也还在磁盘上的那份文件里 —— 没有改写历史（那需要 `filter-repo`，属破坏性操作，未做也未获授权）。它本质是构建产物，正确处置就是「不跟踪」而不是「修好编码」。
+
+**(2) 那次 FAIL —— 已确证为 ENOSPC，非代码缺陷**
+
+从会话 transcript 逐字捞回被 `tail -20` 截掉的原始输出：
+
+```
+link: mapping output file failed: no space left on device
+backend/internal/server/protohttp/companion: open /var/folders/.../vet.cfg: no space left on device
+backend/internal/server/protohttp/life:     mkdir /var/folders/.../b622/: no space left on device
+backend/internal/server/protohttp/platform: mkdir /var/folders/.../b629/: no space left on device
+backend/internal/server/transport:          mkdir /var/folders/.../b639/: no space left on device
+backend/internal/oauthflow:                 mkdir /var/folders/.../b643/: no space left on device
+```
+
+五个包全是 `[build failed]`，**一条断言都没跑过**；同一次运行里 `biz/user`、`server`、`protohttp/{adminapp,ai,chat}` 仍 `ok`，符合「编译到一半盘满」的形态。
+
+**这里真正暴露的缺陷是我自己的验证方法**：把多包 `go test` 的输出管道给 `tail -20`，等于主动丢掉定位失败所必需的那几行。教训是——门禁输出一律整份落盘再看，`grep -c FAIL` 只能证明有没有失败，不能说明为什么失败。
+
+复跑与 race（磁盘从 **2.6 Gi** 起，跑完最后一道 `make check` 后剩 **2.0 Gi**，全程 99% 已用）：
+
+| 命令 | 实测 |
+|---|---|
+| `make check`（在 §30.7 全部改动之后重跑） | **rc=0 · 37 ok · 0 FAIL · 0 个真 `--- SKIP`**，与 §30.5 同口径同数字 |
+| OAuth 三包 `-count=5` | **rc=0 · 10 ok · 0 FAIL · 0 panic · 0 DATA RACE** |
+| `internal/oauthflow` `-race -count=2` | **rc=0 · ok 2.043s · 0 DATA RACE** |
+| `internal/biz/user` + `internal/server` `-race` | **rc=0 · 2 ok · 0 DATA RACE**（`ld: warning: malformed LC_DYSYMTAB` 是 macOS 链接器既有噪声，非失败） |
+| #44 三包 `pkg/conf` + `internal/platform/wiring` + `utils` `-race` | **rc=0 · 3 ok · 0 DATA RACE** ← 部分闭合 #44 的 race 阻塞 |
+
+**仍不成立的结论**：全仓 `make test-race`（`go test -race ./... -count=1`）没跑过；在 99% 已用、2.3 Gi 可用时跑它，风险是把盘写满、连带影响机器上其他工作，故主动不做。
+
+**(3) 工作区提交状态 —— 与本批工作无关，但记录以免误读**
+
+计划文件 `ardent-ridge-rail.md`「最终状态」里写的「**未提交、未推送**；276 个工作区改动全部保留」已过期（本文档 §30.5 没有这句，别往那里找）：**需求方本人**于 `2026-09-17 20:05:05` 提交了 `718a3c99 chore：全代码库批量清理与重构`（279 文件 · +13735 / −10774），当前 **领先 `origin/feat/kratos-hybrid-migration` 1 个提交、未推送**。本批全程未创建任何提交、未推送。§30.7 的两处改动（`.gitignore` 修改 + `build-out.txt` 索引删除）仍以未提交状态叠在该提交之上。
+
+`718a3c99` 里仍包含被跟踪的 `moe-admin/build-out.txt`（blob `783559f0`），所以 (1) 的取消跟踪是在它**之后**才生效的。
+
 
 ---
 
