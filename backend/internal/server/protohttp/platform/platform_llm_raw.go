@@ -3,8 +3,7 @@ package platformhttp
 import (
 	"net/http"
 
-	llmbiz "backend/internal/biz/llm"
-
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
 
@@ -32,28 +31,22 @@ func RegisterLLMRawHTTP(srv *khttp.Server, deps Deps) {
 type llmRawForwarder func(w http.ResponseWriter, r *http.Request, deps Deps) error
 
 func forwardChatRaw(w http.ResponseWriter, r *http.Request, deps Deps) error {
-	if deps.LLMApp != nil {
-		return deps.LLMApp.ForwardChatRaw(w, r)
-	}
-	return llmbiz.ForwardChatRaw(w, r, deps.InferenceConfig)
+	return deps.LLMApp.ForwardChatRaw(w, r)
 }
 
 func forwardModelsRaw(w http.ResponseWriter, r *http.Request, deps Deps) error {
-	if deps.LLMApp != nil {
-		return deps.LLMApp.ForwardModelsRaw(w, r)
-	}
-	return llmbiz.ForwardModelsRaw(w, r, deps.InferenceConfig)
+	return deps.LLMApp.ForwardModelsRaw(w, r)
 }
 
 func forwardShowRaw(w http.ResponseWriter, r *http.Request, deps Deps) error {
-	if deps.LLMApp != nil {
-		return deps.LLMApp.ForwardShowRaw(w, r)
-	}
-	return llmbiz.ForwardShowRaw(w, r, deps.InferenceConfig)
+	return deps.LLMApp.ForwardShowRaw(w, r)
 }
 
 func llmRawHandler(deps Deps, forward llmRawForwarder) func(ctx khttp.Context) error {
 	return func(ctx khttp.Context) error {
+		if deps.LLMApp == nil {
+			return kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
+		}
 		return forward(ctx.Response(), ctx.Request(), deps)
 	}
 }

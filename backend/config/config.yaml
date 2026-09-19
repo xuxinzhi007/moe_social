@@ -110,6 +110,12 @@ oauth:
 #   openai -> OpenAI 兼容 /v1/chat/completions（llama.cpp/llama-server 等）
 # base_url 必须是后端进程可访问的地址，不是 Flutter 客户端地址。
 llm_inference:
+  model_management:
+    user_quota: 3
+    global_quota: 12
+    write_concurrency: 1
+    model_sync_timeout_seconds: 120
+    allowed_base_models: [] # 空列表仅允许当前默认模型，不代表允许所有模型。
   provider: ollama
   base_url: "http://192.168.124.77:11434"
   api_style: ollama

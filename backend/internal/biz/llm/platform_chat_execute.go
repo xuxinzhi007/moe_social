@@ -37,7 +37,7 @@ func platformOutcomeErr(err error, summarized bool) PlatformChatOutcome {
 
 func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in PlatformChatInput) (PlatformChatOutcome, error) {
 	if strings.TrimSpace(deps.Inference.BaseURL) == "" {
-		return platformOutcomeErr(fmt.Errorf("inference config unavailable"), false), nil
+		return PlatformChatOutcome{}, llmError(503, "推理未配置")
 	}
 
 	messages := make([]llminference.Message, 0, len(in.Messages))
@@ -46,14 +46,15 @@ func ExecutePlatformChat(ctx context.Context, deps PlatformChatDeps, in Platform
 	}
 
 	chatOpts := llminference.ChatOptions{
-		Temperature: in.Temperature,
-		TopP:        in.TopP,
-		MaxTokens:   in.MaxTokens,
+		Temperature:   in.Temperature,
+		TopP:          in.TopP,
+		MaxTokens:     boundedTokens(in.MaxTokens),
+		RepeatPenalty: in.RepeatPenalty,
 	}
 
 	content, chatErr := chatComplete(ctx, deps, in.Model, messages, chatOpts)
 	if chatErr != nil {
-		return platformOutcomeErr(fmt.Errorf("调用推理服务失败: %w", chatErr), false), nil
+		return platformOutcomeErr(fmt.Errorf("调用推理服务失败: %w", chatErr), false), UpstreamStatusError(chatErr)
 	}
 
 	moelog.WithContext(ctx).Infof("llm chat, model=%s, messages=%d", in.Model, len(in.Messages))

@@ -144,18 +144,28 @@ type AppClient struct {
 }
 
 // LLMInference 统一推理端点（Moe Bot / Companion / 记忆共用）。
+// ModelManagement controls single-process derived-model writes and allowed bases.
+type ModelManagement struct {
+	AllowedBaseModels       []string `mapstructure:"allowed_base_models"`
+	UserQuota               int      `mapstructure:"user_quota"`
+	GlobalQuota             int      `mapstructure:"global_quota"`
+	WriteConcurrency        int      `mapstructure:"write_concurrency"`
+	ModelSyncTimeoutSeconds int      `mapstructure:"model_sync_timeout_seconds"`
+}
+
 type LLMInference struct {
-	Provider       string `mapstructure:"provider"`
-	BaseURL        string `mapstructure:"base_url"`
-	APIStyle       string `mapstructure:"api_style"`
-	TimeoutSeconds int    `mapstructure:"timeout_seconds"`
-	MemoryModel    string `mapstructure:"memory_model"`
-	ChatModel      string `mapstructure:"chat_model"`
-	APIKey         string `mapstructure:"api_key"`
-	GameBaseURL    string `mapstructure:"game_base_url"`
-	GameModel      string `mapstructure:"game_model"`
-	GameLLMMode    string `mapstructure:"game_llm_mode"`
-	ContextTokens  int    `mapstructure:"context_tokens"`
+	ModelManagement ModelManagement `mapstructure:"model_management"`
+	Provider        string          `mapstructure:"provider"`
+	BaseURL         string          `mapstructure:"base_url"`
+	APIStyle        string          `mapstructure:"api_style"`
+	TimeoutSeconds  int             `mapstructure:"timeout_seconds"`
+	MemoryModel     string          `mapstructure:"memory_model"`
+	ChatModel       string          `mapstructure:"chat_model"`
+	APIKey          string          `mapstructure:"api_key"`
+	GameBaseURL     string          `mapstructure:"game_base_url"`
+	GameModel       string          `mapstructure:"game_model"`
+	GameLLMMode     string          `mapstructure:"game_llm_mode"`
+	ContextTokens   int             `mapstructure:"context_tokens"`
 }
 
 // Ollama 历史键位。当前 config.yaml 中整段被注释，仅作为 llm_inference 的回退保留；

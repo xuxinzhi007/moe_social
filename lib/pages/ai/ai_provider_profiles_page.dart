@@ -14,6 +14,7 @@ import 'llm_model_config_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../widgets/ai/ai_confirm_sheet.dart';
 import '../../widgets/ai/ai_loading_skeleton.dart';
+import '../../widgets/ai/ai_managed_models_sheet.dart';
 import '../../widgets/ai/ai_scaffold.dart';
 import '../../widgets/ai/ai_sheet.dart';
 import '../../widgets/ai/ai_status_dot.dart';
@@ -1424,6 +1425,15 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
                   _openLlmConfig();
                 },
                 child: const Text('查看后端配置'),
+              ),
+              const SizedBox(height: MoeTokens.spaceSm),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  AiManagedModelsSheet.show(context);
+                },
+                icon: const Icon(Icons.inventory_2_outlined),
+                label: const Text('本人模型管理'),
               ),
             ],
           );

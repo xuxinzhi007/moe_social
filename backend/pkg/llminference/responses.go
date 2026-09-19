@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 )
@@ -36,14 +35,14 @@ func postResponsesChat(
 	if err != nil {
 		return "", err
 	}
-	resp, err := client.Do(req)
+	resp, err := execute(client, req, false)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	responseBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("responses chat failed: %d %s", resp.StatusCode, string(responseBody))
+	responseBody, err := readResponse(resp, false)
+	if err != nil {
+		return "", err
 	}
 	return parseResponsesText(responseBody)
 }
@@ -90,24 +89,18 @@ func responsesPrompt(messages []Message) (string, string) {
 }
 
 func newResponsesRequestHTTP(ctx context.Context, cfg Config, body []byte) (*http.Request, error) {
-	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if !strings.HasSuffix(apiRoot, "/v1") {
-		apiRoot += "/v1"
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiRoot+"/responses", bytes.NewReader(body))
+	target, err := Endpoint(cfg, "", "/responses")
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	return req, nil
+	return NewRequest(ctx, cfg, http.MethodPost, target, bytes.NewReader(body))
 }
 
 func parseResponsesText(raw []byte) (string, error) {
 	var response struct {
-		OutputText string `json:"output_text"`
+		Error      json.RawMessage `json:"error"`
+		Status     string          `json:"status"`
+		OutputText string          `json:"output_text"`
 		Output     []struct {
 			Content []struct {
 				Type string `json:"type"`
@@ -116,7 +109,10 @@ func parseResponsesText(raw []byte) (string, error) {
 		} `json:"output"`
 	}
 	if err := json.Unmarshal(raw, &response); err != nil {
-		return "", err
+		return "", upstreamError("invalid inference response", 200, false)
+	}
+	if (len(response.Error) > 0 && string(response.Error) != "null") || response.Status == "failed" || response.Status == "incomplete" {
+		return "", upstreamError("inference upstream reported error", 200, false)
 	}
 	if text := strings.TrimSpace(response.OutputText); text != "" {
 		return text, nil

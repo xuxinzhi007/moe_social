@@ -40,6 +40,14 @@ class AiAgentCloudService {
     await AiCloudConfigService().upsertAgent(record.toMap());
   }
 
+  /// 聊天页只修改提示词，以最新卡保留服务端模型绑定及其他元数据。
+  Future<void> updateSystemPrompt(String agentId, String prompt) async {
+    final agents = await getAgents();
+    final current = agents.where((agent) => agent.id == agentId).firstOrNull;
+    if (current == null) throw Exception('角色卡已不存在，请刷新后重试');
+    await updateAgent(current.copyWith(systemPrompt: prompt));
+  }
+
   @Deprecated('Use saveAgent / updateAgent')
   Future<void> syncAgentToCloud(AiAgent agent) async {
     final record = await _withServerMetadata(agent, isNew: false);

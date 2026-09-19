@@ -1,18 +1,14 @@
-// Package llminference 提供与具体 API 层解耦的本地推理客户端（OpenAI 兼容 / 遗留 Ollama）。
+// Package llminference provides OpenAI-compatible and native Ollama inference clients.
 package llminference
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 )
 
-// APIStyle 推理服务 API 风格。
+// APIStyle selects the upstream protocol.
 type APIStyle string
 
 const (
@@ -20,7 +16,7 @@ const (
 	APIOllama APIStyle = "ollama"
 )
 
-// Config 推理端点配置。
+// Config contains trusted server-side endpoint configuration.
 type Config struct {
 	BaseURL      string
 	APIStyle     APIStyle
@@ -29,13 +25,13 @@ type Config struct {
 	APIKey       string
 }
 
-// Message 对话消息。
+// Message is a chat message.
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// ChatOptions 采样参数。
+// ChatOptions contains sampling parameters.
 type ChatOptions struct {
 	Temperature   float64
 	TopP          float64
@@ -43,23 +39,14 @@ type ChatOptions struct {
 	RepeatPenalty float64
 }
 
-// ConfigFrom 从统一配置字段构建客户端配置。
-func ConfigFrom(baseURL, apiStyle string, timeoutSec int, defaultModel string, apiKey string) Config {
-	style := ResolveAPIStyle(apiStyle, baseURL)
-	timeout := time.Duration(timeoutSec) * time.Second
-	if timeout <= 0 {
-		timeout = 120 * time.Second
-	}
-	return Config{
-		BaseURL:      strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		APIStyle:     style,
-		Timeout:      timeout,
-		DefaultModel: strings.TrimSpace(defaultModel),
-		APIKey:       strings.TrimSpace(apiKey),
-	}
+// ConfigFrom normalizes application configuration.
+func ConfigFrom(baseURL, apiStyle string, timeoutSec int, defaultModel, apiKey string) Config {
+	return Config{BaseURL: strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		APIStyle: ResolveAPIStyle(apiStyle, baseURL), Timeout: timeoutOrDefault(time.Duration(timeoutSec) * time.Second),
+		DefaultModel: strings.TrimSpace(defaultModel), APIKey: strings.TrimSpace(apiKey)}
 }
 
-// ResolveAPIStyle 决定 API 风格。
+// ResolveAPIStyle selects the explicit protocol or infers the legacy Ollama port.
 func ResolveAPIStyle(configured, baseURL string) APIStyle {
 	switch strings.ToLower(strings.TrimSpace(configured)) {
 	case "ollama":
@@ -73,162 +60,99 @@ func ResolveAPIStyle(configured, baseURL string) APIStyle {
 	return APIOpenAI
 }
 
-// Ready 是否已配置可调用推理服务。
-func (c Config) Ready() bool {
-	return strings.TrimSpace(c.BaseURL) != ""
-}
+// Ready reports whether an endpoint is configured; requests validate it separately.
+func (c Config) Ready() bool { return strings.TrimSpace(c.BaseURL) != "" }
 
-// Ping 探测推理端点是否可达（短超时，用于 UI 在线状态）。
+// Ping probes the model catalog with a short deadline.
 func Ping(ctx context.Context, cfg Config) bool {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 	models, err := ListModels(ctx, cfg)
 	return err == nil && len(models) > 0
 }
 
-// ListModels 列出推理端点可用模型 ID。
+// ListModels returns the complete catalog, including managed models. Authorization
+// of explicitly requested private models belongs to the caller, not this client.
 func ListModels(ctx context.Context, cfg Config) ([]string, error) {
-	if !cfg.Ready() {
-		return nil, fmt.Errorf("llm inference base url is empty")
-	}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	client := &http.Client{Timeout: 5 * time.Second}
-	if cfg.APIStyle == APIOllama {
-		return listOllamaModels(ctx, client, cfg.BaseURL)
-	}
-	return listOpenAIModels(ctx, client, cfg)
-}
-
-// ResolveModelName 将配置模型名解析为端点实际可用的 model id。
-func ResolveModelName(ctx context.Context, cfg Config, preferred string) string {
-	preferred = strings.TrimSpace(preferred)
-	models, err := ListModels(ctx, cfg)
-	if err != nil || len(models) == 0 {
-		return firstNonEmpty(preferred, cfg.DefaultModel, "qwen2")
-	}
-	if preferred == "" {
-		return models[0]
-	}
-	for _, id := range models {
-		if id == preferred {
-			return id
-		}
-	}
-	lowerPreferred := strings.ToLower(preferred)
-	for _, id := range models {
-		lowerID := strings.ToLower(id)
-		if strings.Contains(lowerID, lowerPreferred) || strings.Contains(lowerPreferred, lowerID) {
-			return id
-		}
-	}
-	return models[0]
-}
-
-func listOpenAIModels(ctx context.Context, client *http.Client, cfg Config) ([]string, error) {
-	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if !strings.HasSuffix(apiRoot, "/v1") {
-		apiRoot += "/v1"
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiRoot+"/models", nil)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("list models failed: %d %s", resp.StatusCode, string(body))
-	}
 	var parsed struct {
 		Data []struct {
 			ID string `json:"id"`
 		} `json:"data"`
-	}
-	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, err
-	}
-	out := make([]string, 0, len(parsed.Data))
-	for _, item := range parsed.Data {
-		id := strings.TrimSpace(item.ID)
-		if id != "" {
-			out = append(out, id)
-		}
-	}
-	return out, nil
-}
-
-func listOllamaModels(ctx context.Context, client *http.Client, baseURL string) ([]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/api/tags", nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ollama list models failed: %d %s", resp.StatusCode, string(body))
-	}
-	var parsed struct {
 		Models []struct {
 			Name string `json:"name"`
 		} `json:"models"`
 	}
-	if err := json.Unmarshal(body, &parsed); err != nil {
+	if err := requestJSON(ctx, cfg, http.MethodGet, "/api/tags", "/models", nil, &parsed, false); err != nil {
 		return nil, err
 	}
-	out := make([]string, 0, len(parsed.Models))
-	for _, item := range parsed.Models {
-		name := strings.TrimSpace(item.Name)
-		if name != "" {
-			out = append(out, name)
+	var out []string
+	if cfg.APIStyle == APIOllama {
+		for _, m := range parsed.Models {
+			out = append(out, m.Name)
+		}
+	} else {
+		for _, m := range parsed.Data {
+			out = append(out, m.ID)
 		}
 	}
-	return out, nil
+	return dedupeNonEmpty(out), nil
+}
+
+// ResolveModelName resolves a preference without auto-selecting managed models.
+func ResolveModelName(ctx context.Context, cfg Config, preferred string) string {
+	preferred = strings.TrimSpace(preferred)
+	models, err := ListModels(ctx, cfg)
+	if err == nil && len(models) > 0 {
+		if picked := PickModel(preferred, models).ModelID; picked != "" {
+			return picked
+		}
+	}
+	if preferred != "" {
+		return preferred
+	}
+	if !isManagedModel(cfg.DefaultModel) {
+		return firstNonEmpty(cfg.DefaultModel, "qwen2")
+	}
+	return "qwen2"
 }
 
 func firstNonEmpty(values ...string) string {
 	for _, v := range values {
-		if strings.TrimSpace(v) != "" {
-			return strings.TrimSpace(v)
+		if v = strings.TrimSpace(v); v != "" {
+			return v
 		}
 	}
 	return ""
 }
 
-// Chat 非流式对话补全。
-func Chat(
-	ctx context.Context,
-	cfg Config,
-	model string,
-	messages []Message,
-	opts ChatOptions,
-) (string, error) {
-	if !cfg.Ready() {
-		return "", fmt.Errorf("llm inference base url is empty")
-	}
-	model = strings.TrimSpace(model)
-	if model == "" {
-		model = cfg.DefaultModel
-	}
-	if model == "" {
-		model = "qwen2"
-	}
-	client := &http.Client{Timeout: cfg.Timeout}
+// Chat performs non-streaming completion. Explicit models are not privacy-filtered.
+func Chat(ctx context.Context, cfg Config, model string, messages []Message, opts ChatOptions) (string, error) {
+	model = firstNonEmpty(model, cfg.DefaultModel, "qwen2")
 	if cfg.APIStyle == APIOllama {
-		return postOllamaChat(ctx, client, cfg.BaseURL, model, messages, opts)
+		var parsed ollamaChatResponse
+		if err := requestJSON(ctx, cfg, http.MethodPost, "/api/chat", "", newOllamaChatRequest(model, messages, opts, false), &parsed, false); err != nil {
+			return "", err
+		}
+		if !parsed.Done {
+			return "", upstreamError("incomplete inference response", 200, false)
+		}
+		return strings.TrimSpace(parsed.Message.Content), nil
 	}
 	if usesResponsesAPI(model) {
-		return postResponsesChat(ctx, client, cfg, model, messages, opts)
+		return postResponsesChat(ctx, NewHTTPClient(cfg.Timeout), cfg, model, messages, opts)
 	}
-	return postOpenAIChat(ctx, client, cfg, model, messages, opts)
+	var parsed struct {
+		Choices []struct {
+			Message Message `json:"message"`
+		} `json:"choices"`
+	}
+	if err := requestJSON(ctx, cfg, http.MethodPost, "", "/chat/completions", newOpenAIChatRequest(model, messages, opts, false), &parsed, false); err != nil {
+		return "", err
+	}
+	if len(parsed.Choices) == 0 {
+		return "", upstreamError("inference chat empty choices", 200, false)
+	}
+	return strings.TrimSpace(parsed.Choices[0].Message.Content), nil
 }
 
 func usesResponsesAPI(model string) bool {
@@ -236,23 +160,8 @@ func usesResponsesAPI(model string) bool {
 	return strings.HasPrefix(model, "gpt-") || strings.Contains(model, "codex")
 }
 
-func postOpenAIChat(
-	ctx context.Context,
-	client *http.Client,
-	cfg Config,
-	model string,
-	messages []Message,
-	opts ChatOptions,
-) (string, error) {
-	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if !strings.HasSuffix(apiRoot, "/v1") {
-		apiRoot += "/v1"
-	}
-	body := map[string]any{
-		"model":    model,
-		"messages": messages,
-		"stream":   false,
-	}
+func newOpenAIChatRequest(model string, messages []Message, opts ChatOptions, stream bool) map[string]any {
+	body := map[string]any{"model": model, "messages": messages, "stream": stream}
 	if opts.Temperature > 0 {
 		body["temperature"] = opts.Temperature
 	}
@@ -265,101 +174,30 @@ func postOpenAIChat(
 	if opts.RepeatPenalty > 0 {
 		body["repeat_penalty"] = opts.RepeatPenalty
 	}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return "", err
-	}
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPost, apiRoot+"/chat/completions", bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	respBody, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("inference chat failed: %d %s", resp.StatusCode, string(respBody))
-	}
-	var parsed struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-	}
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
-		return "", err
-	}
-	if len(parsed.Choices) == 0 {
-		return "", fmt.Errorf("inference chat empty choices")
-	}
-	return strings.TrimSpace(parsed.Choices[0].Message.Content), nil
+	return body
+}
+
+type ollamaOptions struct {
+	Temperature   float64 `json:"temperature"`
+	TopP          float64 `json:"top_p,omitempty"`
+	NumPredict    int     `json:"num_predict,omitempty"`
+	RepeatPenalty float64 `json:"repeat_penalty,omitempty"`
 }
 
 type ollamaChatRequest struct {
-	Model         string    `json:"model"`
-	Messages      []Message `json:"messages"`
-	Stream        bool      `json:"stream"`
-	Think         bool      `json:"think"`
-	Temperature   float64   `json:"temperature,omitempty"`
-	TopP          float64   `json:"top_p,omitempty"`
-	MaxTokens     int       `json:"max_tokens,omitempty"`
-	RepeatPenalty float64   `json:"repeat_penalty,omitempty"`
+	Model    string        `json:"model"`
+	Messages []Message     `json:"messages"`
+	Stream   bool          `json:"stream"`
+	Think    bool          `json:"think"`
+	Options  ollamaOptions `json:"options"`
 }
 
-func postOllamaChat(
-	ctx context.Context,
-	client *http.Client,
-	baseURL, model string,
-	messages []Message,
-	opts ChatOptions,
-) (string, error) {
-	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: false, Think: false}
-	if opts.Temperature > 0 {
-		reqBody.Temperature = opts.Temperature
-	}
-	if opts.TopP > 0 {
-		reqBody.TopP = opts.TopP
-	}
-	if opts.MaxTokens > 0 {
-		reqBody.MaxTokens = opts.MaxTokens
-	}
-	if opts.RepeatPenalty > 0 {
-		reqBody.RepeatPenalty = opts.RepeatPenalty
-	}
-	raw, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", err
-	}
-	url := strings.TrimRight(baseURL, "/") + "/api/chat"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("ollama chat failed: %d %s", resp.StatusCode, string(b))
-	}
-	var oResp struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&oResp); err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(oResp.Message.Content), nil
+func newOllamaChatRequest(model string, messages []Message, opts ChatOptions, stream bool) ollamaChatRequest {
+	return ollamaChatRequest{Model: model, Messages: messages, Stream: stream, Think: false,
+		Options: ollamaOptions{Temperature: opts.Temperature, TopP: opts.TopP, NumPredict: opts.MaxTokens, RepeatPenalty: opts.RepeatPenalty}}
+}
+
+type ollamaChatResponse struct {
+	Message Message `json:"message"`
+	Done    bool    `json:"done"`
 }

@@ -7,7 +7,6 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/ai_prompt_defaults.dart';
 import '../../services/llm_endpoint_config.dart';
-import '../../services/llm_api_service.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_context_builder.dart';
@@ -793,11 +792,11 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ),
     );
-    if (ok != true) return;
-    if (!mounted) return;
     final nextPrompt = controller.text.trim();
+    // 等待对话框退出动画再释放输入框 controller。
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
+    if (ok != true || !mounted) return;
     var cardSaved = false;
-    var modelSynced = false;
     setState(() => _isSyncingModelPrompt = true);
     try {
       await _persistAgentSystemPrompt(nextPrompt);
@@ -805,23 +804,16 @@ class _ChatPageState extends State<ChatPage> {
       if (!mounted) return;
       setState(() => _systemPrompt = nextPrompt);
       unawaited(_persistWebCache());
-      if (_isBackendProviderAgent) {
-        await _syncPromptToServerModel(nextPrompt);
-        modelSynced = true;
-      }
+      // 提示词编辑只保存角色卡，不修改共享基座或隐式同步受管模型。
       await _createNewSession();
       if (!mounted) return;
       MoeToast.success(
         context,
-        modelSynced ? '系统提示词已更新并同步到服务器模型（已开启新对话）' : '系统提示词已写入角色卡（已开启新对话）',
+        '系统提示词已写入角色卡（已开启新对话，未修改服务器模型）',
       );
     } catch (e) {
       if (!mounted) return;
-      final message = !cardSaved
-          ? '角色卡保存失败：$e'
-          : _isBackendProviderAgent && !modelSynced
-              ? '提示词已保存到角色卡，但同步服务器模型失败：$e'
-              : '提示词已保存，但开启新对话失败：$e';
+      final message = !cardSaved ? '角色卡保存失败：$e' : '提示词已保存，但开启新对话失败：$e';
       MoeToast.error(context, message);
     } finally {
       if (mounted) {
@@ -830,24 +822,8 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  Future<void> _persistAgentSystemPrompt(String prompt) async {
-    // copyWith 保留 createdByUserId/isPublic/authorName 等元数据；
-    // 手工重建会把这些字段丢成默认值，把公开卡悄悄改回私有。
-    final updated = widget.agent.copyWith(systemPrompt: prompt);
-    await AiAgentCloudService().updateAgent(updated);
-  }
-
-  Future<void> _syncPromptToServerModel(String prompt) async {
-    final baseModel = await _resolveBaseModelFromModel();
-    await LlmApiService.upsertAgentPrompt(
-      name: widget.agent.modelName,
-      baseModel: baseModel,
-      systemPrompt: prompt,
-    );
-  }
-
-  Future<String> _resolveBaseModelFromModel() =>
-      LlmApiService.resolveBaseModelFromShow(widget.agent.modelName);
+  Future<void> _persistAgentSystemPrompt(String prompt) =>
+      AiAgentCloudService().updateSystemPrompt(widget.agent.id, prompt);
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;

@@ -77,7 +77,8 @@ func TestEnvelopeErrorEncoder(t *testing.T) {
 	}
 }
 
-func TestLlmCreateAgentReturnsFailureEnvelope(t *testing.T) {
+// 受管模型写入必须带登录身份；失败要走错误信封，不能包成 200 + data。
+func TestLlmCreateAgentFailureReturnsErrorEnvelope(t *testing.T) {
 	t.Parallel()
 	srv := khttp.NewServer(
 		khttp.ResponseEncoder(EnvelopeResponseEncoder),
@@ -90,7 +91,7 @@ func TestLlmCreateAgentReturnsFailureEnvelope(t *testing.T) {
 	defer httpServer.Close()
 
 	resp, err := http.Post(httpServer.URL+"/api/llm/agents", "application/json",
-		strings.NewReader(`{"name":"test-agent","base_model":"test-model","system_prompt":"be kind"}`))
+		strings.NewReader(`{"agent_id":"a1","request_id":"r1","name":"test-agent","base_model":"test-model","system_prompt":"be kind"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,10 +100,10 @@ func TestLlmCreateAgentReturnsFailureEnvelope(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatal(err)
 	}
-	if resp.StatusCode != http.StatusNotImplemented || body["success"] != false || body["code"] != float64(http.StatusNotImplemented) {
+	if resp.StatusCode != http.StatusUnauthorized || body["success"] != false || body["code"] != float64(http.StatusUnauthorized) {
 		t.Fatalf("status=%d body=%v", resp.StatusCode, body)
 	}
-	if body["reason"] != "LLM_AGENT_CREATE_FAILED" || body["message"] != "当前后端尚不支持创建或同步服务器模型" {
+	if body["reason"] != "LLM_AUTH" {
 		t.Fatalf("body=%v", body)
 	}
 	if _, ok := body["data"]; ok {

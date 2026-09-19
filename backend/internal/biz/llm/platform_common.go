@@ -1,25 +1,18 @@
 package llmbiz
 
-import (
-	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"strings"
-
-	"backend/pkg/llminference"
-)
-
+// ConfigSnapshot contains safe client capability metadata. Base URL is retained
+// for internal compatibility, but never emitted by ConfigAPIPayload.
 type ConfigSnapshot struct {
-	InferenceBaseURL    string
-	InferenceAPIStyle   string
-	InferenceTimeoutSec int
-	MemoryModel         string
-	HasSummaryPrompt    bool
-	HasExtractPrompt    bool
-	MemoryBudget        MemoryBudgetConfig
+	InferenceBaseURL        string
+	InferenceAPIStyle       string
+	InferenceTimeoutSec     int
+	MemoryModel             string
+	HasSummaryPrompt        bool
+	HasExtractPrompt        bool
+	MemoryBudget            MemoryBudgetConfig
+	SupportsModelManagement bool
+	ModelSyncTimeoutSeconds int
 }
-
 type MemoryBudgetConfig struct {
 	MaxCtxTokens       int
 	CtxSafeRatio       float64
@@ -27,29 +20,17 @@ type MemoryBudgetConfig struct {
 	KeepRecentMessages int
 }
 
-func DefaultMemoryBudget() MemoryBudgetConfig {
-	return MemoryBudgetConfig{
-		MaxCtxTokens:       8192,
-		CtxSafeRatio:       0.75,
-		MaxHistoryMessages: 40,
-		KeepRecentMessages: 12,
-	}
-}
-
+func DefaultMemoryBudget() MemoryBudgetConfig { return MemoryBudgetConfig{8192, 0.75, 40, 12} }
 func ConfigAPIPayload(cfg ConfigSnapshot) map[string]interface{} {
 	return map[string]interface{}{
-		"inference_base_url":    cfg.InferenceBaseURL,
-		"inference_api_style":   cfg.InferenceAPIStyle,
-		"inference_timeout_sec": cfg.InferenceTimeoutSec,
-		"memory_model":          cfg.MemoryModel,
-		"has_summary_prompt":    cfg.HasSummaryPrompt,
-		"has_extract_prompt":    cfg.HasExtractPrompt,
-		"memory_budget": map[string]interface{}{
-			"max_ctx_tokens":       cfg.MemoryBudget.MaxCtxTokens,
-			"ctx_safe_ratio":       cfg.MemoryBudget.CtxSafeRatio,
-			"max_history_messages": cfg.MemoryBudget.MaxHistoryMessages,
-			"keep_recent_messages": cfg.MemoryBudget.KeepRecentMessages,
-		},
+		"inference_api_style":        cfg.InferenceAPIStyle,
+		"inference_timeout_sec":      cfg.InferenceTimeoutSec,
+		"supports_model_management":  cfg.SupportsModelManagement,
+		"model_sync_timeout_seconds": cfg.ModelSyncTimeoutSeconds,
+		"memory_model":               cfg.MemoryModel,
+		"has_summary_prompt":         cfg.HasSummaryPrompt,
+		"has_extract_prompt":         cfg.HasExtractPrompt,
+		"memory_budget":              map[string]interface{}{"max_ctx_tokens": cfg.MemoryBudget.MaxCtxTokens, "ctx_safe_ratio": cfg.MemoryBudget.CtxSafeRatio, "max_history_messages": cfg.MemoryBudget.MaxHistoryMessages, "keep_recent_messages": cfg.MemoryBudget.KeepRecentMessages},
 	}
 }
 
@@ -58,74 +39,5 @@ type PlatformWriteResult struct {
 	Message string
 	Success bool
 }
-
-type CreateAgentInput struct {
-	Name         string
-	BaseModel    string
-	SystemPrompt string
-}
-
-type ModelCacheClearer interface {
-	Clear()
-}
-
-func ForwardChatRaw(w http.ResponseWriter, r *http.Request, cfg llminference.Config) error {
-	if !cfg.Ready() {
-		return fmt.Errorf("inference config unavailable")
-	}
-	baseURL := strings.TrimRight(cfg.BaseURL, "/")
-	targetURL := baseURL + "/v1/chat/completions"
-	return proxyRequest(w, r, targetURL, cfg.Timeout)
-}
-
-func ForwardModelsRaw(w http.ResponseWriter, r *http.Request, cfg llminference.Config) error {
-	if !cfg.Ready() {
-		return fmt.Errorf("inference config unavailable")
-	}
-	baseURL := strings.TrimRight(cfg.BaseURL, "/")
-	targetURL := baseURL + "/v1/models"
-	return proxyRequest(w, r, targetURL, cfg.Timeout)
-}
-
-func ForwardShowRaw(w http.ResponseWriter, r *http.Request, cfg llminference.Config) error {
-	if !cfg.Ready() {
-		return fmt.Errorf("inference config unavailable")
-	}
-	baseURL := strings.TrimRight(cfg.BaseURL, "/")
-	targetURL := baseURL + "/v1/models/"
-	return proxyRequest(w, r, targetURL, cfg.Timeout)
-}
-
-func proxyRequest(w http.ResponseWriter, r *http.Request, targetURL string, timeout interface{}) error {
-	client := &http.Client{}
-	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, r.Body)
-	if err != nil {
-		return err
-	}
-	for k, v := range r.Header {
-		if strings.EqualFold(k, "Host") || strings.EqualFold(k, "Content-Length") {
-			continue
-		}
-		req.Header[k] = v
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	for k, v := range resp.Header {
-		w.Header()[k] = v
-	}
-	w.WriteHeader(resp.StatusCode)
-	_, _ = io.Copy(w, resp.Body)
-	return nil
-}
-
-// CreateOllamaAgent 明确拒绝当前不支持的服务器模型写入。
-func CreateOllamaAgent(ctx context.Context, cfg llminference.Config, in CreateAgentInput, cache ModelCacheClearer) PlatformWriteResult {
-	return PlatformWriteResult{
-		Code:    http.StatusNotImplemented,
-		Message: "当前后端尚不支持创建或同步服务器模型",
-		Success: false,
-	}
-}
+type CreateAgentInput struct{ AgentID, RequestID, Name, BaseModel, SystemPrompt string }
+type ModelCacheClearer interface{ Clear() }

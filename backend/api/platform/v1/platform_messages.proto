@@ -157,6 +157,39 @@ message LlmCreateAgentReq {
   string name = 1;
   string base_model = 2;
   string system_prompt = 3;
+  string agent_id = 4;
+  string request_id = 5;
+}
+
+message LlmManagedModelResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  string agent_id = 4;
+  string model_name = 5;
+  string base_model = 6;
+  string state = 7;
+  string request_id = 8;
+  bool binding_applied = 9;
+  bool retryable = 10;
+}
+
+message ListLlmManagedModelsReq {}
+
+message ListLlmManagedModelsResp {
+  int32 code = 1;
+  string message = 2;
+  bool success = 3;
+  repeated LlmManagedModelResp models = 4;
+}
+
+message GetLlmManagedModelReq {
+  string agent_id = 1;
+}
+
+message DeleteLlmManagedModelReq {
+  string agent_id = 1;
+  string request_id = 2;
 }
 
 message LlmChatReq {
@@ -253,12 +286,20 @@ service Platform {
   rpc GetVoiceToken(GetVoiceTokenReq) returns (GetVoiceTokenResp) {
     option (google.api.http) = { get: "/api/voice/token" };
   }
-  // LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-  // lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-  // 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-  // 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-  rpc LlmCreateAgent(LlmCreateAgentReq) returns (BaseResp) {
+  rpc LlmCreateAgent(LlmCreateAgentReq) returns (LlmManagedModelResp) {
     option (google.api.http) = { post: "/api/llm/agents" body: "*" };
+  }
+  rpc ListLlmManagedModels(ListLlmManagedModelsReq) returns (ListLlmManagedModelsResp) {
+    option (google.api.http) = { get: "/api/llm/managed-models" };
+  }
+  rpc GetLlmManagedModel(GetLlmManagedModelReq) returns (LlmManagedModelResp) {
+    option (google.api.http) = { get: "/api/llm/managed-models/{agent_id}" };
+  }
+  rpc ReconcileLlmManagedModel(GetLlmManagedModelReq) returns (LlmManagedModelResp) {
+    option (google.api.http) = { post: "/api/llm/managed-models/{agent_id}/reconcile" body: "*" };
+  }
+  rpc DeleteLlmManagedModel(DeleteLlmManagedModelReq) returns (LlmManagedModelResp) {
+    option (google.api.http) = { delete: "/api/llm/managed-models/{agent_id}" body: "*" };
   }
   rpc LlmChat(LlmChatReq) returns (LlmChatResp) {
     option (google.api.http) = { post: "/api/llm/chat" body: "*" };
