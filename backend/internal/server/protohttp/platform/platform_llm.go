@@ -30,12 +30,75 @@ func (s *Server) GetLlmConfig(ctx context.Context, _ *platformv1.GetLlmConfigReq
 	return &platformv1.GetLlmConfigResp{Code: 200, Message: "获取 LLM 配置成功", Success: true, Data: dataStruct}, nil
 }
 
-func (s *Server) LlmCreateAgent(ctx context.Context, in *platformv1.LlmCreateAgentReq) (*platformv1.BaseResp, error) {
+func (s *Server) LlmCreateAgent(ctx context.Context, in *platformv1.LlmCreateAgentReq) (*platformv1.LlmManagedModelResp, error) {
 	if s.deps.LLMApp == nil {
-		return nil, errLLMAppNil
+		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
 	}
-	result := s.deps.LLMApp.CreateAgent(ctx, llmbiz.CreateAgentInput{Name: in.GetName(), BaseModel: in.GetBaseModel(), SystemPrompt: in.GetSystemPrompt()}, s.deps.ModelCache)
-	return platformWriteToBaseResp(result)
+	result, err := s.deps.LLMApp.UpsertManagedModel(ctx, llmbiz.CreateAgentInput{
+		AgentID: in.GetAgentId(), RequestID: in.GetRequestId(),
+		Name: in.GetName(), BaseModel: in.GetBaseModel(), SystemPrompt: in.GetSystemPrompt(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return managedModelToProto(result), nil
+}
+
+func (s *Server) ListLlmManagedModels(ctx context.Context, _ *platformv1.ListLlmManagedModelsReq) (*platformv1.ListLlmManagedModelsResp, error) {
+	if s.deps.LLMApp == nil {
+		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
+	}
+	models, err := s.deps.LLMApp.ListManagedModels(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := &platformv1.ListLlmManagedModelsResp{Code: 200, Success: true, Message: "获取受管模型成功"}
+	for _, item := range models {
+		resp.Models = append(resp.Models, managedModelToProto(item))
+	}
+	return resp, nil
+}
+
+func (s *Server) GetLlmManagedModel(ctx context.Context, in *platformv1.GetLlmManagedModelReq) (*platformv1.LlmManagedModelResp, error) {
+	if s.deps.LLMApp == nil {
+		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
+	}
+	result, err := s.deps.LLMApp.GetManagedModel(ctx, in.GetAgentId())
+	if err != nil {
+		return nil, err
+	}
+	return managedModelToProto(result), nil
+}
+
+func (s *Server) ReconcileLlmManagedModel(ctx context.Context, in *platformv1.GetLlmManagedModelReq) (*platformv1.LlmManagedModelResp, error) {
+	if s.deps.LLMApp == nil {
+		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
+	}
+	result, err := s.deps.LLMApp.ReconcileManagedModel(ctx, in.GetAgentId())
+	if err != nil {
+		return nil, err
+	}
+	return managedModelToProto(result), nil
+}
+
+func (s *Server) DeleteLlmManagedModel(ctx context.Context, in *platformv1.DeleteLlmManagedModelReq) (*platformv1.LlmManagedModelResp, error) {
+	if s.deps.LLMApp == nil {
+		return nil, kerrors.ServiceUnavailable("LLM_UNAVAILABLE", "模型服务尚未初始化")
+	}
+	result, err := s.deps.LLMApp.DeleteManagedModel(ctx, in.GetAgentId(), in.GetRequestId())
+	if err != nil {
+		return nil, err
+	}
+	return managedModelToProto(result), nil
+}
+
+func managedModelToProto(result llmbiz.ManagedModelView) *platformv1.LlmManagedModelResp {
+	return &platformv1.LlmManagedModelResp{
+		Code: 200, Message: result.Message, Success: result.State == "ready" || result.State == "deleted",
+		AgentId: result.AgentID, ModelName: result.ModelName, BaseModel: result.BaseModel,
+		State: result.State, RequestId: result.RequestID,
+		BindingApplied: result.BindingApplied, Retryable: result.Retryable,
+	}
 }
 
 func (s *Server) LlmChat(ctx context.Context, in *platformv1.LlmChatReq) (*platformv1.LlmChatResp, error) {
@@ -68,13 +131,6 @@ func platformChatInputFromProto(in *platformv1.LlmChatReq) llmbiz.PlatformChatIn
 		}
 	}
 	return out
-}
-
-func platformWriteToBaseResp(result llmbiz.PlatformWriteResult) (*platformv1.BaseResp, error) {
-	if !result.Success {
-		return nil, kerrors.New(result.Code, "LLM_AGENT_CREATE_FAILED", result.Message)
-	}
-	return &platformv1.BaseResp{Code: int32(result.Code), Message: result.Message, Success: result.Success}, nil
 }
 
 func moeToolsListValue(tools []interface{}) (*structpb.ListValue, error) {

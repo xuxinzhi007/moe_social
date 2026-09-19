@@ -2,9 +2,6 @@ package llminference
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -20,7 +17,23 @@ type PickResult struct {
 // PickModel 在 available 中选取与 preferred 最匹配的模型；无精确匹配时自动回退。
 func PickModel(preferred string, available []string) PickResult {
 	preferred = strings.TrimSpace(preferred)
-	clean := dedupeNonEmpty(available)
+	all := dedupeNonEmpty(available)
+	for _, id := range all {
+		if id == preferred || (!isManagedModel(id) && strings.EqualFold(id, preferred)) {
+			return PickResult{ModelID: id, Preferred: preferred}
+		}
+	}
+	// A managed name is usable only when explicitly specified, never by fuzzy
+	// match or catalog ordering. Keep an explicit name even if tags is stale.
+	if isManagedModel(preferred) {
+		return PickResult{ModelID: preferred, Preferred: preferred}
+	}
+	clean := make([]string, 0, len(all))
+	for _, id := range all {
+		if !isManagedModel(id) {
+			clean = append(clean, id)
+		}
+	}
 	if len(clean) == 0 {
 		return PickResult{ModelID: preferred, Preferred: preferred}
 	}
@@ -28,11 +41,6 @@ func PickModel(preferred string, available []string) PickResult {
 		return PickResult{ModelID: clean[0], Preferred: "", AutoDiscovered: true}
 	}
 	lowerPref := strings.ToLower(preferred)
-	for _, id := range clean {
-		if strings.EqualFold(id, preferred) {
-			return PickResult{ModelID: id, Preferred: preferred}
-		}
-	}
 	for _, id := range clean {
 		if modelIDMatches(id, lowerPref) {
 			return PickResult{ModelID: id, Preferred: preferred, AutoDiscovered: true}
@@ -77,55 +85,82 @@ func dedupeNonEmpty(in []string) []string {
 	return out
 }
 
-// ListModelIDs 拉取 OpenAI 兼容 /v1/models 的模型 ID 列表。
+// ListModelIDs is a protocol-aware alias of ListModels.
 func ListModelIDs(ctx context.Context, cfg Config) ([]string, error) {
-	if !cfg.Ready() {
-		return nil, fmt.Errorf("llm inference base url is empty")
-	}
-	client := &http.Client{Timeout: cfg.Timeout}
-	return listOpenAIModelIDs(ctx, client, cfg)
+	return ListModels(ctx, cfg)
 }
 
-// ListModelNames 与 ListModelIDs 同义，供 HTTP biz 层调用。
+// ListModelNames is a protocol-aware alias of ListModels.
 func ListModelNames(ctx context.Context, cfg Config) ([]string, error) {
-	return ListModelIDs(ctx, cfg)
+	return ListModels(ctx, cfg)
 }
 
-func listOpenAIModelIDs(ctx context.Context, client *http.Client, cfg Config) ([]string, error) {
-	root := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	apiRoot := root
-	if !strings.HasSuffix(apiRoot, "/v1") {
-		apiRoot += "/v1"
+func isManagedModel(name string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(name)), "moe-user-")
+}
+
+// ModelInfo is native Ollama model metadata. Callers must authorize access.
+type ModelInfo struct {
+	System     string         `json:"system"`
+	Modelfile  string         `json:"modelfile"`
+	Template   string         `json:"template"`
+	Parameters string         `json:"parameters"`
+	Details    map[string]any `json:"details,omitempty"`
+}
+
+func validateModelName(name string) error {
+	if name == "" || len(name) > 512 || strings.TrimSpace(name) != name {
+		return upstreamError("invalid model name", 0, false)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiRoot+"/models", nil)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("list models failed: %d %s", resp.StatusCode, string(b))
-	}
-	var parsed struct {
-		Data []struct {
-			ID string `json:"id"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return nil, err
-	}
-	out := make([]string, 0, len(parsed.Data))
-	for _, m := range parsed.Data {
-		if id := strings.TrimSpace(m.ID); id != "" {
-			out = append(out, id)
+	for _, r := range name {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("-_./:", r)) {
+			return upstreamError("invalid model name", 0, false)
 		}
 	}
-	return out, nil
+	for _, segment := range strings.Split(name, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return upstreamError("invalid model name", 0, false)
+		}
+	}
+	return nil
+}
+
+// ShowModel fetches native metadata without pulling or modifying the model.
+func ShowModel(ctx context.Context, cfg Config, model string) (ModelInfo, error) {
+	var info ModelInfo
+	if err := validateModelName(model); err != nil {
+		return info, err
+	}
+	err := requestJSON(ctx, cfg, http.MethodPost, "/api/show", "", map[string]string{"model": model}, &info, false)
+	return info, err
+}
+
+// CreateModel derives a model from an already available base; it never auto-pulls.
+// Only an explicit success response is considered a confirmed write.
+func CreateModel(ctx context.Context, cfg Config, name, base, prompt string) error {
+	if err := validateModelName(name); err != nil {
+		return err
+	}
+	if err := validateModelName(base); err != nil {
+		return err
+	}
+	var result struct {
+		Status string `json:"status"`
+	}
+	body := map[string]any{"model": name, "from": base, "system": prompt, "stream": false}
+	if err := requestJSON(ctx, cfg, http.MethodPost, "/api/create", "", body, &result, true); err != nil {
+		return err
+	}
+	if result.Status != "success" {
+		return upstreamError("model creation not confirmed", http.StatusOK, true)
+	}
+	return nil
+}
+
+// DeleteModel deletes an explicitly authorized native model.
+func DeleteModel(ctx context.Context, cfg Config, name string) error {
+	if err := validateModelName(name); err != nil {
+		return err
+	}
+	return requestJSON(ctx, cfg, http.MethodDelete, "/api/delete", "", map[string]string{"model": name}, nil, true)
 }

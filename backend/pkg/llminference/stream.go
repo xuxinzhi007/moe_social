@@ -2,299 +2,160 @@ package llminference
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
 
-// StreamHandler 收到增量文本时回调；返回非 nil error 可中止流。
+// StreamHandler receives text deltas; returning an error stops the stream.
 type StreamHandler func(chunk string) error
 
-// ChatStream 流式对话补全，返回完整拼接文本。
-func ChatStream(
-	ctx context.Context,
-	cfg Config,
-	model string,
-	messages []Message,
-	opts ChatOptions,
-	onChunk StreamHandler,
-) (string, error) {
-	if !cfg.Ready() {
-		return "", fmt.Errorf("llm inference base url is empty")
+// ChatStream returns assembled text, retaining partial text on stream failure.
+func ChatStream(ctx context.Context, cfg Config, model string, messages []Message, opts ChatOptions, onChunk StreamHandler) (string, error) {
+	model = firstNonEmpty(model, cfg.DefaultModel, "qwen2")
+	var body any
+	var nativePath, openAIPath string
+	protocol := "openai"
+	switch {
+	case cfg.APIStyle == APIOllama:
+		body = newOllamaChatRequest(model, messages, opts, true)
+		nativePath, protocol = "/api/chat", "ollama"
+	case usesResponsesAPI(model):
+		body = newResponsesRequest(model, messages, opts, true)
+		openAIPath, protocol = "/responses", "responses"
+	default:
+		body = newOpenAIChatRequest(model, messages, opts, true)
+		openAIPath = "/chat/completions"
 	}
-	model = strings.TrimSpace(model)
-	if model == "" {
-		model = cfg.DefaultModel
-	}
-	if model == "" {
-		model = "qwen2"
-	}
-	client := &http.Client{Timeout: cfg.Timeout}
-	if cfg.APIStyle == APIOllama {
-		return streamOllamaChat(ctx, client, cfg.BaseURL, model, messages, opts, onChunk)
-	}
-	if usesResponsesAPI(model) {
-		return streamResponsesChat(ctx, client, cfg, model, messages, opts, onChunk)
-	}
-	return streamOpenAIChat(ctx, client, cfg, model, messages, opts, onChunk)
-}
-
-func streamResponsesChat(
-	ctx context.Context,
-	client *http.Client,
-	cfg Config,
-	model string,
-	messages []Message,
-	opts ChatOptions,
-	onChunk StreamHandler,
-) (string, error) {
-	body, err := json.Marshal(newResponsesRequest(model, messages, opts, true))
+	req, err := jsonRequest(ctx, cfg, http.MethodPost, nativePath, openAIPath, body)
 	if err != nil {
 		return "", err
 	}
-	req, err := newResponsesRequestHTTP(ctx, cfg, body)
-	if err != nil {
-		return "", err
+	if protocol != "ollama" {
+		req.Header.Set("Accept", "text/event-stream")
 	}
-	req.Header.Set("Accept", "text/event-stream")
-	resp, err := client.Do(req)
+	resp, err := execute(NewHTTPClient(cfg.Timeout), req, false)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		responseBody, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("responses stream failed: %d %s", resp.StatusCode, string(responseBody))
-	}
-	return readResponsesStream(resp.Body, onChunk)
+	return readChatStream(resp.Body, protocol, onChunk)
 }
 
 func readResponsesStream(r io.Reader, onChunk StreamHandler) (string, error) {
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	var full strings.Builder
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if !strings.HasPrefix(line, "data:") {
-			continue
-		}
-		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
-		if payload == "[DONE]" {
-			break
-		}
-		var event struct {
-			Type  string `json:"type"`
-			Delta string `json:"delta"`
-		}
-		if err := json.Unmarshal([]byte(payload), &event); err != nil || event.Type != "response.output_text.delta" || event.Delta == "" {
-			continue
-		}
-		full.WriteString(event.Delta)
-		if onChunk != nil {
-			if err := onChunk(event.Delta); err != nil {
-				return full.String(), err
-			}
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return full.String(), err
-	}
-	if text := strings.TrimSpace(full.String()); text != "" {
-		return text, nil
-	}
-	return "", fmt.Errorf("responses stream empty")
-}
-
-func streamOpenAIChat(
-	ctx context.Context,
-	client *http.Client,
-	cfg Config,
-	model string,
-	messages []Message,
-	opts ChatOptions,
-	onChunk StreamHandler,
-) (string, error) {
-	apiRoot := strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/")
-	if !strings.HasSuffix(apiRoot, "/v1") {
-		apiRoot += "/v1"
-	}
-	body := map[string]any{
-		"model":    model,
-		"messages": messages,
-		"stream":   true,
-	}
-	if opts.Temperature > 0 {
-		body["temperature"] = opts.Temperature
-	}
-	if opts.TopP > 0 {
-		body["top_p"] = opts.TopP
-	}
-	if opts.MaxTokens > 0 {
-		body["max_tokens"] = opts.MaxTokens
-	}
-	if opts.RepeatPenalty > 0 {
-		body["repeat_penalty"] = opts.RepeatPenalty
-	}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return "", err
-	}
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPost, apiRoot+"/chat/completions", bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "text/event-stream")
-	if cfg.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+cfg.APIKey)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("inference stream failed: %d %s", resp.StatusCode, string(b))
-	}
-	return readOpenAIStream(resp.Body, onChunk)
+	return readChatStream(r, "responses", onChunk)
 }
 
 func readOpenAIStream(r io.Reader, onChunk StreamHandler) (string, error) {
-	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	var full strings.Builder
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, ":") {
-			continue
-		}
-		if !strings.HasPrefix(line, "data:") {
-			continue
-		}
-		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
-		if payload == "[DONE]" {
-			break
-		}
-		var parsed struct {
-			Choices []struct {
-				Delta struct {
-					Content string `json:"content"`
-				} `json:"delta"`
-			} `json:"choices"`
-		}
-		if err := json.Unmarshal([]byte(payload), &parsed); err != nil {
-			continue
-		}
-		if len(parsed.Choices) == 0 {
-			continue
-		}
-		chunk := parsed.Choices[0].Delta.Content
-		if chunk == "" {
-			continue
-		}
-		full.WriteString(chunk)
-		if onChunk != nil {
-			if err := onChunk(chunk); err != nil {
-				return full.String(), err
-			}
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return full.String(), err
-	}
-	out := strings.TrimSpace(full.String())
-	if out == "" {
-		return "", fmt.Errorf("inference stream empty")
-	}
-	return out, nil
+	return readChatStream(r, "openai", onChunk)
 }
 
-func streamOllamaChat(
-	ctx context.Context,
-	client *http.Client,
-	baseURL, model string,
-	messages []Message,
-	opts ChatOptions,
-	onChunk StreamHandler,
-) (string, error) {
-	reqBody := ollamaChatRequest{Model: model, Messages: messages, Stream: true, Think: false}
-	if opts.Temperature > 0 {
-		reqBody.Temperature = opts.Temperature
-	}
-	if opts.TopP > 0 {
-		reqBody.TopP = opts.TopP
-	}
-	if opts.MaxTokens > 0 {
-		reqBody.MaxTokens = opts.MaxTokens
-	}
-	if opts.RepeatPenalty > 0 {
-		reqBody.RepeatPenalty = opts.RepeatPenalty
-	}
-	raw, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", err
-	}
-	url := strings.TrimRight(baseURL, "/") + "/api/chat"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("ollama stream failed: %d %s", resp.StatusCode, string(b))
-	}
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+type streamEvent struct {
+	Error    json.RawMessage `json:"error"`
+	Type     string          `json:"type"`
+	Delta    string          `json:"delta"`
+	Message  Message         `json:"message"`
+	Done     bool            `json:"done"`
+	Response struct {
+		Status string          `json:"status"`
+		Error  json.RawMessage `json:"error"`
+	} `json:"response"`
+	Choices []struct {
+		Delta Message `json:"delta"`
+	} `json:"choices"`
+}
+
+func readChatStream(r io.Reader, protocol string, onChunk StreamHandler) (string, error) {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 64<<10), 1<<20)
 	var full strings.Builder
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
+	var total int
+	done := false
+	consume := func(payload string) error {
+		if payload == "[DONE]" && protocol != "ollama" {
+			done = true
+			return nil
 		}
-		var parsed struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-			Done bool `json:"done"`
+		var event streamEvent
+		if json.Unmarshal([]byte(payload), &event) != nil || strings.TrimSpace(payload) == "null" {
+			return upstreamError("invalid inference stream event", 200, false)
 		}
-		if err := json.Unmarshal([]byte(line), &parsed); err != nil {
-			continue
+		hasError := func(raw json.RawMessage) bool { return len(raw) != 0 && string(raw) != "null" && string(raw) != `""` }
+		if hasError(event.Error) || hasError(event.Response.Error) || event.Type == "error" || event.Type == "response.failed" || event.Type == "response.incomplete" || event.Response.Status == "failed" || event.Response.Status == "incomplete" {
+			return upstreamError("inference stream reported error", 200, false)
 		}
-		chunk := parsed.Message.Content
-		if chunk == "" {
-			if parsed.Done {
-				break
+		var chunk string
+		switch protocol {
+		case "ollama":
+			chunk, done = event.Message.Content, event.Done
+		case "responses":
+			if event.Type == "response.output_text.delta" {
+				chunk = event.Delta
 			}
-			continue
+			done = event.Type == "response.completed"
+		default:
+			if len(event.Choices) > 0 {
+				chunk = event.Choices[0].Delta.Content
+			}
 		}
-		full.WriteString(chunk)
-		if onChunk != nil {
-			if err := onChunk(chunk); err != nil {
+		if chunk != "" {
+			full.WriteString(chunk)
+			if onChunk != nil {
+				return onChunk(chunk)
+			}
+		}
+		return nil
+	}
+	// SSE data fields in one event may span multiple lines. NDJSON uses one
+	// event per line. Both protocols require a terminal event, never bare EOF.
+	var data []string
+	for scanner.Scan() {
+		line := scanner.Text()
+		total += len(line) + 1
+		if total > maxResponseBytes {
+			return full.String(), upstreamError("inference stream too large", 200, false)
+		}
+		if protocol == "ollama" {
+			if strings.TrimSpace(line) == "" {
+				continue
+			}
+			if err := consume(line); err != nil {
 				return full.String(), err
 			}
+		} else {
+			if line != "" {
+				if strings.HasPrefix(line, "data:") {
+					data = append(data, strings.TrimPrefix(strings.TrimPrefix(line, "data:"), " "))
+				}
+				continue
+			}
+			if len(data) == 0 {
+				continue
+			}
+			if err := consume(strings.Join(data, "\n")); err != nil {
+				return full.String(), err
+			}
+			data = nil
 		}
-		if parsed.Done {
+		if done {
 			break
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return full.String(), err
+		return full.String(), transportError(err, false)
 	}
-	out := strings.TrimSpace(full.String())
-	if out == "" {
-		return "", fmt.Errorf("ollama stream empty")
+	if !done && len(data) > 0 {
+		if err := consume(strings.Join(data, "\n")); err != nil {
+			return full.String(), err
+		}
 	}
-	return out, nil
+	if !done {
+		return full.String(), upstreamError("incomplete inference stream", 200, false)
+	}
+	if strings.TrimSpace(full.String()) == "" {
+		return "", upstreamError("inference stream empty", 200, false)
+	}
+	return strings.TrimSpace(full.String()), nil
 }

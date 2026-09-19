@@ -39,6 +39,7 @@ func MigrateModelRegistry() []MigrateEntry {
 		{Key: "user_emoji_packs", Model: &model.UserEmojiPack{}},
 		{Key: "user_devices", Model: &model.UserDevice{}},
 		{Key: "ai_user_configs", Model: &model.AiUserConfig{}},
+		{Key: "llm_managed_models", Model: &model.LLMManagedModel{}},
 		{Key: "user_levels", Model: &model.UserLevel{}},
 		{Key: "level_configs", Model: &model.LevelConfig{}},
 		{Key: "user_check_ins", Model: &model.UserCheckIn{}},

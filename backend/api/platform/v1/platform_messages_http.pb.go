@@ -19,38 +19,42 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationPlatformDeleteLlmManagedModel = "/platform.v1.Platform/DeleteLlmManagedModel"
 const OperationPlatformGetAnnouncement = "/platform.v1.Platform/GetAnnouncement"
 const OperationPlatformGetLatestAppRelease = "/platform.v1.Platform/GetLatestAppRelease"
 const OperationPlatformGetLlmConfig = "/platform.v1.Platform/GetLlmConfig"
+const OperationPlatformGetLlmManagedModel = "/platform.v1.Platform/GetLlmManagedModel"
 const OperationPlatformGetPublicClientConfig = "/platform.v1.Platform/GetPublicClientConfig"
 const OperationPlatformGetVoiceToken = "/platform.v1.Platform/GetVoiceToken"
 const OperationPlatformListAnnouncements = "/platform.v1.Platform/ListAnnouncements"
+const OperationPlatformListLlmManagedModels = "/platform.v1.Platform/ListLlmManagedModels"
 const OperationPlatformListUserContent = "/platform.v1.Platform/ListUserContent"
 const OperationPlatformLlmChat = "/platform.v1.Platform/LlmChat"
 const OperationPlatformLlmCreateAgent = "/platform.v1.Platform/LlmCreateAgent"
 const OperationPlatformMoeExecuteTool = "/platform.v1.Platform/MoeExecuteTool"
 const OperationPlatformMoeToolsSchema = "/platform.v1.Platform/MoeToolsSchema"
+const OperationPlatformReconcileLlmManagedModel = "/platform.v1.Platform/ReconcileLlmManagedModel"
 const OperationPlatformVoiceAnswer = "/platform.v1.Platform/VoiceAnswer"
 const OperationPlatformVoiceCall = "/platform.v1.Platform/VoiceCall"
 const OperationPlatformVoiceCancel = "/platform.v1.Platform/VoiceCancel"
 const OperationPlatformVoiceReject = "/platform.v1.Platform/VoiceReject"
 
 type PlatformHTTPServer interface {
+	DeleteLlmManagedModel(context.Context, *DeleteLlmManagedModelReq) (*LlmManagedModelResp, error)
 	GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error)
 	GetLatestAppRelease(context.Context, *GetLatestAppReleaseReq) (*GetLatestAppReleaseResp, error)
 	GetLlmConfig(context.Context, *GetLlmConfigReq) (*GetLlmConfigResp, error)
+	GetLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
 	GetPublicClientConfig(context.Context, *GetPublicClientConfigReq) (*GetPublicClientConfigResp, error)
 	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
+	ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error)
 	ListUserContent(context.Context, *ListUserContentReq) (*ListUserContentResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
-	// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*BaseResp, error)
+	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error)
 	MoeExecuteTool(context.Context, *MoeToolExecuteReq) (*MoeToolExecuteResp, error)
 	MoeToolsSchema(context.Context, *MoeToolSchemaReq) (*MoeToolSchemaResp, error)
+	ReconcileLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
 	VoiceAnswer(context.Context, *VoiceAnswerReq) (*VoiceAnswerResp, error)
 	VoiceCall(context.Context, *VoiceCallReq) (*VoiceCallResp, error)
 	VoiceCancel(context.Context, *VoiceCancelReq) (*VoiceSimpleResp, error)
@@ -70,6 +74,10 @@ func RegisterPlatformHTTPServer(s *http.Server, srv PlatformHTTPServer) {
 	r.POST("/api/voice/reject", _Platform_VoiceReject0_HTTP_Handler(srv))
 	r.GET("/api/voice/token", _Platform_GetVoiceToken0_HTTP_Handler(srv))
 	r.POST("/api/llm/agents", _Platform_LlmCreateAgent0_HTTP_Handler(srv))
+	r.GET("/api/llm/managed-models", _Platform_ListLlmManagedModels0_HTTP_Handler(srv))
+	r.GET("/api/llm/managed-models/{agent_id}", _Platform_GetLlmManagedModel0_HTTP_Handler(srv))
+	r.POST("/api/llm/managed-models/{agent_id}/reconcile", _Platform_ReconcileLlmManagedModel0_HTTP_Handler(srv))
+	r.DELETE("/api/llm/managed-models/{agent_id}", _Platform_DeleteLlmManagedModel0_HTTP_Handler(srv))
 	r.POST("/api/llm/chat", _Platform_LlmChat0_HTTP_Handler(srv))
 	r.GET("/api/announcements", _Platform_ListAnnouncements0_HTTP_Handler(srv))
 	r.GET("/api/announcements/{announcement_id}", _Platform_GetAnnouncement0_HTTP_Handler(srv))
@@ -301,7 +309,98 @@ func _Platform_LlmCreateAgent0_HTTP_Handler(srv PlatformHTTPServer) func(ctx htt
 		if err != nil {
 			return err
 		}
-		reply := out.(*BaseResp)
+		reply := out.(*LlmManagedModelResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Platform_ListLlmManagedModels0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in ListLlmManagedModelsReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformListLlmManagedModels)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ListLlmManagedModels(ctx, req.(*ListLlmManagedModelsReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*ListLlmManagedModelsResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Platform_GetLlmManagedModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetLlmManagedModelReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformGetLlmManagedModel)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetLlmManagedModel(ctx, req.(*GetLlmManagedModelReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LlmManagedModelResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Platform_ReconcileLlmManagedModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetLlmManagedModelReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformReconcileLlmManagedModel)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.ReconcileLlmManagedModel(ctx, req.(*GetLlmManagedModelReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LlmManagedModelResp)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Platform_DeleteLlmManagedModel0_HTTP_Handler(srv PlatformHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteLlmManagedModelReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationPlatformDeleteLlmManagedModel)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteLlmManagedModel(ctx, req.(*DeleteLlmManagedModelReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LlmManagedModelResp)
 		return ctx.Result(200, reply)
 	}
 }
@@ -389,21 +488,21 @@ func _Platform_GetLatestAppRelease0_HTTP_Handler(srv PlatformHTTPServer) func(ct
 }
 
 type PlatformHTTPClient interface {
+	DeleteLlmManagedModel(ctx context.Context, req *DeleteLlmManagedModelReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	GetAnnouncement(ctx context.Context, req *GetAnnouncementReq, opts ...http.CallOption) (rsp *GetAnnouncementResp, err error)
 	GetLatestAppRelease(ctx context.Context, req *GetLatestAppReleaseReq, opts ...http.CallOption) (rsp *GetLatestAppReleaseResp, err error)
 	GetLlmConfig(ctx context.Context, req *GetLlmConfigReq, opts ...http.CallOption) (rsp *GetLlmConfigResp, err error)
+	GetLlmManagedModel(ctx context.Context, req *GetLlmManagedModelReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	GetPublicClientConfig(ctx context.Context, req *GetPublicClientConfigReq, opts ...http.CallOption) (rsp *GetPublicClientConfigResp, err error)
 	GetVoiceToken(ctx context.Context, req *GetVoiceTokenReq, opts ...http.CallOption) (rsp *GetVoiceTokenResp, err error)
 	ListAnnouncements(ctx context.Context, req *ListAnnouncementsReq, opts ...http.CallOption) (rsp *ListAnnouncementsResp, err error)
+	ListLlmManagedModels(ctx context.Context, req *ListLlmManagedModelsReq, opts ...http.CallOption) (rsp *ListLlmManagedModelsResp, err error)
 	ListUserContent(ctx context.Context, req *ListUserContentReq, opts ...http.CallOption) (rsp *ListUserContentResp, err error)
 	LlmChat(ctx context.Context, req *LlmChatReq, opts ...http.CallOption) (rsp *LlmChatResp, err error)
-	// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-	LlmCreateAgent(ctx context.Context, req *LlmCreateAgentReq, opts ...http.CallOption) (rsp *BaseResp, err error)
+	LlmCreateAgent(ctx context.Context, req *LlmCreateAgentReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	MoeExecuteTool(ctx context.Context, req *MoeToolExecuteReq, opts ...http.CallOption) (rsp *MoeToolExecuteResp, err error)
 	MoeToolsSchema(ctx context.Context, req *MoeToolSchemaReq, opts ...http.CallOption) (rsp *MoeToolSchemaResp, err error)
+	ReconcileLlmManagedModel(ctx context.Context, req *GetLlmManagedModelReq, opts ...http.CallOption) (rsp *LlmManagedModelResp, err error)
 	VoiceAnswer(ctx context.Context, req *VoiceAnswerReq, opts ...http.CallOption) (rsp *VoiceAnswerResp, err error)
 	VoiceCall(ctx context.Context, req *VoiceCallReq, opts ...http.CallOption) (rsp *VoiceCallResp, err error)
 	VoiceCancel(ctx context.Context, req *VoiceCancelReq, opts ...http.CallOption) (rsp *VoiceSimpleResp, err error)
@@ -416,6 +515,19 @@ type PlatformHTTPClientImpl struct {
 
 func NewPlatformHTTPClient(client *http.Client) PlatformHTTPClient {
 	return &PlatformHTTPClientImpl{client}
+}
+
+func (c *PlatformHTTPClientImpl) DeleteLlmManagedModel(ctx context.Context, in *DeleteLlmManagedModelReq, opts ...http.CallOption) (*LlmManagedModelResp, error) {
+	var out LlmManagedModelResp
+	pattern := "/api/llm/managed-models/{agent_id}"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationPlatformDeleteLlmManagedModel))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "DELETE", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 func (c *PlatformHTTPClientImpl) GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...http.CallOption) (*GetAnnouncementResp, error) {
@@ -449,6 +561,19 @@ func (c *PlatformHTTPClientImpl) GetLlmConfig(ctx context.Context, in *GetLlmCon
 	pattern := "/api/llm/config"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationPlatformGetLlmConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PlatformHTTPClientImpl) GetLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...http.CallOption) (*LlmManagedModelResp, error) {
+	var out LlmManagedModelResp
+	pattern := "/api/llm/managed-models/{agent_id}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationPlatformGetLlmManagedModel))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
@@ -496,6 +621,19 @@ func (c *PlatformHTTPClientImpl) ListAnnouncements(ctx context.Context, in *List
 	return &out, nil
 }
 
+func (c *PlatformHTTPClientImpl) ListLlmManagedModels(ctx context.Context, in *ListLlmManagedModelsReq, opts ...http.CallOption) (*ListLlmManagedModelsResp, error) {
+	var out ListLlmManagedModelsResp
+	pattern := "/api/llm/managed-models"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationPlatformListLlmManagedModels))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *PlatformHTTPClientImpl) ListUserContent(ctx context.Context, in *ListUserContentReq, opts ...http.CallOption) (*ListUserContentResp, error) {
 	var out ListUserContentResp
 	pattern := "/api/user/{user_id}/content"
@@ -522,12 +660,8 @@ func (c *PlatformHTTPClientImpl) LlmChat(ctx context.Context, in *LlmChatReq, op
 	return &out, nil
 }
 
-// LlmCreateAgent LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-func (c *PlatformHTTPClientImpl) LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...http.CallOption) (*BaseResp, error) {
-	var out BaseResp
+func (c *PlatformHTTPClientImpl) LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...http.CallOption) (*LlmManagedModelResp, error) {
+	var out LlmManagedModelResp
 	pattern := "/api/llm/agents"
 	path := binding.EncodeURL(pattern, in, false)
 	opts = append(opts, http.Operation(OperationPlatformLlmCreateAgent))
@@ -559,6 +693,19 @@ func (c *PlatformHTTPClientImpl) MoeToolsSchema(ctx context.Context, in *MoeTool
 	opts = append(opts, http.Operation(OperationPlatformMoeToolsSchema))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *PlatformHTTPClientImpl) ReconcileLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...http.CallOption) (*LlmManagedModelResp, error) {
+	var out LlmManagedModelResp
+	pattern := "/api/llm/managed-models/{agent_id}/reconcile"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationPlatformReconcileLlmManagedModel))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

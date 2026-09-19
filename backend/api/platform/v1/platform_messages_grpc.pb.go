@@ -19,21 +19,25 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Platform_GetPublicClientConfig_FullMethodName = "/platform.v1.Platform/GetPublicClientConfig"
-	Platform_ListUserContent_FullMethodName       = "/platform.v1.Platform/ListUserContent"
-	Platform_GetLlmConfig_FullMethodName          = "/platform.v1.Platform/GetLlmConfig"
-	Platform_MoeExecuteTool_FullMethodName        = "/platform.v1.Platform/MoeExecuteTool"
-	Platform_MoeToolsSchema_FullMethodName        = "/platform.v1.Platform/MoeToolsSchema"
-	Platform_VoiceAnswer_FullMethodName           = "/platform.v1.Platform/VoiceAnswer"
-	Platform_VoiceCall_FullMethodName             = "/platform.v1.Platform/VoiceCall"
-	Platform_VoiceCancel_FullMethodName           = "/platform.v1.Platform/VoiceCancel"
-	Platform_VoiceReject_FullMethodName           = "/platform.v1.Platform/VoiceReject"
-	Platform_GetVoiceToken_FullMethodName         = "/platform.v1.Platform/GetVoiceToken"
-	Platform_LlmCreateAgent_FullMethodName        = "/platform.v1.Platform/LlmCreateAgent"
-	Platform_LlmChat_FullMethodName               = "/platform.v1.Platform/LlmChat"
-	Platform_ListAnnouncements_FullMethodName     = "/platform.v1.Platform/ListAnnouncements"
-	Platform_GetAnnouncement_FullMethodName       = "/platform.v1.Platform/GetAnnouncement"
-	Platform_GetLatestAppRelease_FullMethodName   = "/platform.v1.Platform/GetLatestAppRelease"
+	Platform_GetPublicClientConfig_FullMethodName    = "/platform.v1.Platform/GetPublicClientConfig"
+	Platform_ListUserContent_FullMethodName          = "/platform.v1.Platform/ListUserContent"
+	Platform_GetLlmConfig_FullMethodName             = "/platform.v1.Platform/GetLlmConfig"
+	Platform_MoeExecuteTool_FullMethodName           = "/platform.v1.Platform/MoeExecuteTool"
+	Platform_MoeToolsSchema_FullMethodName           = "/platform.v1.Platform/MoeToolsSchema"
+	Platform_VoiceAnswer_FullMethodName              = "/platform.v1.Platform/VoiceAnswer"
+	Platform_VoiceCall_FullMethodName                = "/platform.v1.Platform/VoiceCall"
+	Platform_VoiceCancel_FullMethodName              = "/platform.v1.Platform/VoiceCancel"
+	Platform_VoiceReject_FullMethodName              = "/platform.v1.Platform/VoiceReject"
+	Platform_GetVoiceToken_FullMethodName            = "/platform.v1.Platform/GetVoiceToken"
+	Platform_LlmCreateAgent_FullMethodName           = "/platform.v1.Platform/LlmCreateAgent"
+	Platform_ListLlmManagedModels_FullMethodName     = "/platform.v1.Platform/ListLlmManagedModels"
+	Platform_GetLlmManagedModel_FullMethodName       = "/platform.v1.Platform/GetLlmManagedModel"
+	Platform_ReconcileLlmManagedModel_FullMethodName = "/platform.v1.Platform/ReconcileLlmManagedModel"
+	Platform_DeleteLlmManagedModel_FullMethodName    = "/platform.v1.Platform/DeleteLlmManagedModel"
+	Platform_LlmChat_FullMethodName                  = "/platform.v1.Platform/LlmChat"
+	Platform_ListAnnouncements_FullMethodName        = "/platform.v1.Platform/ListAnnouncements"
+	Platform_GetAnnouncement_FullMethodName          = "/platform.v1.Platform/GetAnnouncement"
+	Platform_GetLatestAppRelease_FullMethodName      = "/platform.v1.Platform/GetLatestAppRelease"
 )
 
 // PlatformClient is the client API for Platform service.
@@ -50,11 +54,11 @@ type PlatformClient interface {
 	VoiceCancel(ctx context.Context, in *VoiceCancelReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
 	VoiceReject(ctx context.Context, in *VoiceRejectReq, opts ...grpc.CallOption) (*VoiceSimpleResp, error)
 	GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq, opts ...grpc.CallOption) (*GetVoiceTokenResp, error)
-	// LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-	LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*BaseResp, error)
+	LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
+	ListLlmManagedModels(ctx context.Context, in *ListLlmManagedModelsReq, opts ...grpc.CallOption) (*ListLlmManagedModelsResp, error)
+	GetLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
+	ReconcileLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
+	DeleteLlmManagedModel(ctx context.Context, in *DeleteLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error)
 	LlmChat(ctx context.Context, in *LlmChatReq, opts ...grpc.CallOption) (*LlmChatResp, error)
 	ListAnnouncements(ctx context.Context, in *ListAnnouncementsReq, opts ...grpc.CallOption) (*ListAnnouncementsResp, error)
 	GetAnnouncement(ctx context.Context, in *GetAnnouncementReq, opts ...grpc.CallOption) (*GetAnnouncementResp, error)
@@ -169,10 +173,50 @@ func (c *platformClient) GetVoiceToken(ctx context.Context, in *GetVoiceTokenReq
 	return out, nil
 }
 
-func (c *platformClient) LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*BaseResp, error) {
+func (c *platformClient) LlmCreateAgent(ctx context.Context, in *LlmCreateAgentReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BaseResp)
+	out := new(LlmManagedModelResp)
 	err := c.cc.Invoke(ctx, Platform_LlmCreateAgent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *platformClient) ListLlmManagedModels(ctx context.Context, in *ListLlmManagedModelsReq, opts ...grpc.CallOption) (*ListLlmManagedModelsResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLlmManagedModelsResp)
+	err := c.cc.Invoke(ctx, Platform_ListLlmManagedModels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *platformClient) GetLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LlmManagedModelResp)
+	err := c.cc.Invoke(ctx, Platform_GetLlmManagedModel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *platformClient) ReconcileLlmManagedModel(ctx context.Context, in *GetLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LlmManagedModelResp)
+	err := c.cc.Invoke(ctx, Platform_ReconcileLlmManagedModel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *platformClient) DeleteLlmManagedModel(ctx context.Context, in *DeleteLlmManagedModelReq, opts ...grpc.CallOption) (*LlmManagedModelResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LlmManagedModelResp)
+	err := c.cc.Invoke(ctx, Platform_DeleteLlmManagedModel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -233,11 +277,11 @@ type PlatformServer interface {
 	VoiceCancel(context.Context, *VoiceCancelReq) (*VoiceSimpleResp, error)
 	VoiceReject(context.Context, *VoiceRejectReq) (*VoiceSimpleResp, error)
 	GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error)
-	// LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-	// lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-	// 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-	// 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
-	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*BaseResp, error)
+	LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error)
+	ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error)
+	GetLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
+	ReconcileLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error)
+	DeleteLlmManagedModel(context.Context, *DeleteLlmManagedModelReq) (*LlmManagedModelResp, error)
 	LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error)
 	ListAnnouncements(context.Context, *ListAnnouncementsReq) (*ListAnnouncementsResp, error)
 	GetAnnouncement(context.Context, *GetAnnouncementReq) (*GetAnnouncementResp, error)
@@ -282,8 +326,20 @@ func (UnimplementedPlatformServer) VoiceReject(context.Context, *VoiceRejectReq)
 func (UnimplementedPlatformServer) GetVoiceToken(context.Context, *GetVoiceTokenReq) (*GetVoiceTokenResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetVoiceToken not implemented")
 }
-func (UnimplementedPlatformServer) LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*BaseResp, error) {
+func (UnimplementedPlatformServer) LlmCreateAgent(context.Context, *LlmCreateAgentReq) (*LlmManagedModelResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method LlmCreateAgent not implemented")
+}
+func (UnimplementedPlatformServer) ListLlmManagedModels(context.Context, *ListLlmManagedModelsReq) (*ListLlmManagedModelsResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListLlmManagedModels not implemented")
+}
+func (UnimplementedPlatformServer) GetLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLlmManagedModel not implemented")
+}
+func (UnimplementedPlatformServer) ReconcileLlmManagedModel(context.Context, *GetLlmManagedModelReq) (*LlmManagedModelResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReconcileLlmManagedModel not implemented")
+}
+func (UnimplementedPlatformServer) DeleteLlmManagedModel(context.Context, *DeleteLlmManagedModelReq) (*LlmManagedModelResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteLlmManagedModel not implemented")
 }
 func (UnimplementedPlatformServer) LlmChat(context.Context, *LlmChatReq) (*LlmChatResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method LlmChat not implemented")
@@ -516,6 +572,78 @@ func _Platform_LlmCreateAgent_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Platform_ListLlmManagedModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLlmManagedModelsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).ListLlmManagedModels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_ListLlmManagedModels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).ListLlmManagedModels(ctx, req.(*ListLlmManagedModelsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Platform_GetLlmManagedModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLlmManagedModelReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).GetLlmManagedModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_GetLlmManagedModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).GetLlmManagedModel(ctx, req.(*GetLlmManagedModelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Platform_ReconcileLlmManagedModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLlmManagedModelReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).ReconcileLlmManagedModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_ReconcileLlmManagedModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).ReconcileLlmManagedModel(ctx, req.(*GetLlmManagedModelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Platform_DeleteLlmManagedModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteLlmManagedModelReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlatformServer).DeleteLlmManagedModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Platform_DeleteLlmManagedModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlatformServer).DeleteLlmManagedModel(ctx, req.(*DeleteLlmManagedModelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Platform_LlmChat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LlmChatReq)
 	if err := dec(in); err != nil {
@@ -638,6 +766,22 @@ var Platform_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LlmCreateAgent",
 			Handler:    _Platform_LlmCreateAgent_Handler,
+		},
+		{
+			MethodName: "ListLlmManagedModels",
+			Handler:    _Platform_ListLlmManagedModels_Handler,
+		},
+		{
+			MethodName: "GetLlmManagedModel",
+			Handler:    _Platform_GetLlmManagedModel_Handler,
+		},
+		{
+			MethodName: "ReconcileLlmManagedModel",
+			Handler:    _Platform_ReconcileLlmManagedModel_Handler,
+		},
+		{
+			MethodName: "DeleteLlmManagedModel",
+			Handler:    _Platform_DeleteLlmManagedModel_Handler,
 		},
 		{
 			MethodName: "LlmChat",

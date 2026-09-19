@@ -2,8 +2,12 @@ package aidata
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"strings"
+	"sync"
 
 	aibiz "backend/internal/biz/ai"
 	"backend/model"
@@ -11,6 +15,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+// ConfigWriteMu serializes short config transactions on SQLite as well as MySQL.
+// All managed bindings and resource mutations share it; never hold it during network I/O.
+var ConfigWriteMu sync.Mutex
 
 type store struct {
 	db *gorm.DB
@@ -62,6 +70,8 @@ func (s *store) UpdateConfig(
 	userID uint,
 	mutate func(*model.AiUserConfig) error,
 ) (*model.AiUserConfig, error) {
+	ConfigWriteMu.Lock()
+	defer ConfigWriteMu.Unlock()
 	var config model.AiUserConfig
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
@@ -82,8 +92,39 @@ func (s *store) UpdateConfig(
 		} else if err != nil {
 			return fmt.Errorf("lock ai user config: %w", err)
 		}
+		beforeAgents := config.AgentsJSON
 		if err := mutate(&config); err != nil {
 			return err
+		}
+		if beforeAgents != config.AgentsJSON {
+			var cards, oldCards []map[string]any
+			if err := json.Unmarshal([]byte(config.AgentsJSON), &cards); err != nil {
+				return err
+			}
+			if err := json.Unmarshal([]byte(beforeAgents), &oldCards); err != nil {
+				return err
+			}
+			for _, card := range cards {
+				name, _ := card["model_name"].(string)
+				if !strings.HasPrefix(strings.ToLower(name), "moe-user-") {
+					continue
+				}
+				unchanged := false
+				for _, old := range oldCards {
+					if old["id"] == card["id"] && old["model_name"] == name {
+						unchanged = true
+						break
+					}
+				}
+				var record model.LLMManagedModel
+				query := tx.Where("owner_id = ? AND agent_id = ? AND managed_name = ?", userID, fmt.Sprint(card["id"]), name)
+				if !unchanged {
+					query = query.Where("state = ?", "ready")
+				}
+				if err := query.First(&record).Error; err != nil {
+					return kerrors.Forbidden("MODEL_BINDING", "不能绑定未就绪或非本人受管模型")
+				}
+			}
 		}
 		if err := tx.Save(&config).Error; err != nil {
 			return fmt.Errorf("save ai user config: %w", err)

@@ -47,11 +47,6 @@ var publicReadPrefixes = []string{
 	"/api/public/app-release",
 	"/api/announcements",
 	"/api/llm/config",
-	// 这条同时覆盖 /api/llm/models/raw：终端模式下 Flutter 的 modelsUri() 打的就是它，
-	// 而 ai_chat_gateway_service.dart:146 只 mergeTunnelHeaders、不带 bearer。
-	// 别把它改成精确匹配，否则终端模式的模型列表会静默 401。
-	// 写方法不在这里放行，所以 /api/llm/models/delete 与 /download 已恢复需登录。
-	"/api/llm/models",
 }
 
 // publicWritePrefixes 无需认证即可写入的路径前缀。
@@ -119,12 +114,15 @@ func jwtAuthFilter(next http.Handler) http.Handler {
 			return
 		}
 
+		token := extractBearerToken(r)
 		if !requiresAuth(r) {
-			next.ServeHTTP(w, r)
-			return
+			// 模型目录匿名只返回基座；携带凭据时必须验证后才能追加本人模型。
+			if !isModelCatalogPath(path) || (token == "" && r.Header.Get("Authorization") == "") {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 
-		token := extractBearerToken(r)
 		if token == "" {
 			writeUnauthorized(w, "缺少认证信息，请先登录")
 			return
@@ -164,6 +162,9 @@ func requiresAuth(r *http.Request) bool {
 	path := r.URL.Path
 	prefixes := publicWritePrefixes
 	if isSafeMethod(r.Method) {
+		if isModelCatalogPath(path) {
+			return false
+		}
 		prefixes = publicReadPrefixes
 	}
 	for _, prefix := range prefixes {
@@ -172,6 +173,10 @@ func requiresAuth(r *http.Request) bool {
 		}
 	}
 	return true
+}
+
+func isModelCatalogPath(path string) bool {
+	return path == "/api/llm/models" || path == "/api/llm/models/raw"
 }
 
 func isSafeMethod(method string) bool {

@@ -60,6 +60,8 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   bool _showAdvancedFields = false;
   bool _publishToPlaza = false;
   bool _pageActive = true;
+  bool _supportsModelManagement = false;
+  final String _newAgentId = LlmApiService.newRequestId();
 
   bool get _isEphemeralDraft =>
       widget.agent != null &&
@@ -111,6 +113,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
     _loadProviders();
     _loadLorebooks();
+    _loadModelCapabilities();
+  }
+
+  Future<void> _loadModelCapabilities() async {
+    try {
+      final config = await LlmApiService.getInferenceConfig();
+      if (!mounted) return;
+      setState(() => _supportsModelManagement =
+          config['supports_model_management'] == true);
+    } catch (_) {
+      // 能力未知时只允许保存卡，不猜测服务器支持模型写操作。
+    }
   }
 
   @override
@@ -450,8 +464,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           provider.isBackendOllama && !isNewAgent && _syncModelOnEdit;
 
       final agent = AiAgent(
-        id: (!isNewAgent ? widget.agent?.id : null) ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
+        id: (!isNewAgent ? widget.agent?.id : null) ?? _newAgentId,
         name: name,
         description: desc,
         systemPrompt: prompt,
@@ -478,16 +491,15 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
       }
 
       String? syncError;
+      LlmManagedModel? syncResult;
       if (shouldCreateOllamaModel || shouldSyncOllamaModel) {
         try {
-          await _postSaveOllamaSideEffects(
-            agent: agent,
-            shouldCreate: shouldCreateOllamaModel,
-            shouldSync: shouldSyncOllamaModel,
-            baseModel: modelForChat,
-            prompt: prompt,
-            displayName: name,
-          );
+          syncResult = await _syncSavedAgent(agent);
+          if (!syncResult.isReady || !syncResult.bindingApplied) {
+            syncError = syncResult.outcomeMessage;
+          }
+          // 绑定由服务器 CAS 完成；只重读，绝不把刚保存的旧卡再 PUT 回去。
+          await AiAgentCloudService().syncAgentsFromCloud();
         } catch (e) {
           syncError = e.toString();
         }
@@ -495,11 +507,11 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
 
       if (mounted && _pageActive) {
         if (syncError != null) {
-          MoeToast.error(context, '角色卡已保存，但同步服务器模型失败：$syncError');
+          MoeToast.error(context, '角色卡已保存；$syncError');
         } else {
           MoeToast.success(
             context,
-            isNewAgent ? '角色卡已保存' : '修改已保存',
+            syncResult?.outcomeMessage ?? (isNewAgent ? '角色卡已保存' : '修改已保存'),
           );
         }
         _pageActive = false;
@@ -514,47 +526,26 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
   }
 
-  Future<void> _postSaveOllamaSideEffects({
-    required AiAgent agent,
-    required bool shouldCreate,
-    required bool shouldSync,
-    required String baseModel,
-    required String prompt,
-    required String displayName,
-  }) async {
-    if (!shouldCreate && !shouldSync) {
-      return;
+  Future<LlmManagedModel> _syncSavedAgent(AiAgent agent) async {
+    if (!_supportsModelManagement) throw Exception('后端暂不支持本人模型管理');
+    final models = await LlmApiService.listManagedModels();
+    LlmManagedModel? managed;
+    for (final model in models) {
+      if (model.agentId == agent.id) managed = model;
     }
-    var ollamaModelName = agent.modelName;
-    if (shouldCreate) {
-      var safeName = displayName.toLowerCase();
-      safeName = safeName.replaceAll(RegExp(r'\s+'), '-');
-      safeName = safeName.replaceAll(RegExp(r'[^a-z0-9_\-\.:/]'), '_');
-      if (safeName.isNotEmpty) {
-        ollamaModelName = safeName;
-      }
-    }
-    await _createOrUpdateModelInOllama(
-      modelName: ollamaModelName,
+    if (managed?.isUnresolved == true) return managed!;
+    // 同步本人模型时用记录中的基座；显式另选模型时用所选基座。
+    final baseModel = managed != null && agent.modelName == managed.modelName
+        ? managed.baseModel
+        : agent.modelName;
+    return LlmApiService.upsertAgentPrompt(
+      agentId: agent.id,
+      // 每次用户主动同步都是新意图：复用旧 ID 会被服务端判成幂等重放或 409。
+      // 未决操作在上面已提前返回，所以新 ID 不会造成重复写入。
+      requestId: LlmApiService.newRequestId(),
       baseModel: baseModel,
-      prompt: prompt,
+      systemPrompt: agent.systemPrompt,
     );
-  }
-
-  Future<void> _createOrUpdateModelInOllama({
-    required String modelName,
-    required String baseModel,
-    required String prompt,
-  }) async {
-    try {
-      await LlmApiService.upsertAgentPrompt(
-        name: modelName,
-        baseModel: baseModel,
-        systemPrompt: prompt,
-      );
-    } on TimeoutException {
-      throw Exception('创建 Ollama 模型超时（45 秒），通常是首次拉取基础模型较慢，请稍后重试');
-    }
   }
 
   Future<void> _refreshPromptFromBackend(String modelName) async {
@@ -927,13 +918,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                       if (_showAdvancedFields) ...[
                         const Divider(height: 1),
                         const SizedBox(height: 12),
-                        if (widget.agent == null &&
-                            !_isEphemeralDraft &&
-                            _selectedProviderIsBackend)
+                        if (isCreate &&
+                            _selectedProviderIsBackend &&
+                            _supportsModelManagement)
                           MoeActionRow(
                             icon: Icons.precision_manufacturing_rounded,
-                            title: '【可选】在服务器生成 Ollama 模型',
-                            subtitle: const Text('与身份卡无关；默认关闭。仅内置 Ollama 用户需要'),
+                            title: '【可选】创建本人专属模型',
+                            subtitle:
+                                const Text('先保存角色卡，再从所选基座创建；不会修改共享模型或自动下载基座'),
                             onTap: () => setState(
                                 () => _createRealModel = !_createRealModel),
                             showDefaultTrailing: false,
@@ -945,11 +937,14 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                                   setState(() => _createRealModel = v),
                             ),
                           ),
-                        if (widget.agent != null && _selectedProviderIsBackend)
+                        if (!isCreate &&
+                            _selectedProviderIsBackend &&
+                            _supportsModelManagement)
                           MoeActionRow(
                             icon: Icons.sync_rounded,
-                            title: '同步更新 Ollama 模型',
-                            subtitle: const Text('保存后后台同步，不阻塞界面'),
+                            title: '创建 / 同步本人模型',
+                            subtitle:
+                                const Text('先保存角色卡，再等待同步结果；未决操作请到本人模型管理重查'),
                             onTap: () => setState(
                                 () => _syncModelOnEdit = !_syncModelOnEdit),
                             showDefaultTrailing: false,

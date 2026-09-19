@@ -75,6 +75,32 @@ func Inference() llminference.Config {
 	return llminference.ConfigFrom(r.BaseURL, r.APIStyle, r.TimeoutSeconds, r.MemoryModel, r.APIKey)
 }
 
+// NormalizeModelManagement applies conservative defaults without expanding the base allowlist.
+func NormalizeModelManagement(c ModelManagement, defaultModel string) ModelManagement {
+	if c.UserQuota <= 0 {
+		c.UserQuota = 3
+	}
+	if c.GlobalQuota <= 0 {
+		c.GlobalQuota = 12
+	}
+	if c.WriteConcurrency <= 0 {
+		c.WriteConcurrency = 1
+	}
+	if c.ModelSyncTimeoutSeconds <= 0 {
+		c.ModelSyncTimeoutSeconds = 120
+	}
+	if len(c.AllowedBaseModels) == 0 && strings.TrimSpace(defaultModel) != "" {
+		c.AllowedBaseModels = []string{strings.TrimSpace(defaultModel)}
+	}
+	c.AllowedBaseModels = append([]string(nil), c.AllowedBaseModels...)
+	return c
+}
+
+// InferenceModelManagement resolves typed model-management settings.
+func InferenceModelManagement() ModelManagement {
+	return NormalizeModelManagement(Get().LLMInference.ModelManagement, Inference().DefaultModel)
+}
+
 // GameInference 文字游戏专用端点：game_base_url 留空时复用 Inference。
 // 返回（配置、模型、narrator|agent 模式）；取值与迁移前的
 // moeconfig.GameInferenceFromViper 逐条一致，含 api_style 空→openai、超时 ≤0→300 两个兜底。

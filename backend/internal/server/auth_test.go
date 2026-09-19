@@ -4,7 +4,49 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"backend/utils"
 )
+
+func TestModelCatalogOptionalAuthentication(t *testing.T) {
+	if err := utils.ConfigureJWT("ollama-auth-test-only-secret", 3600); err != nil {
+		t.Fatal(err)
+	}
+	token, err := utils.GenerateToken(42, "model-owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/api/llm/models", "/api/llm/models/raw"} {
+		for _, tc := range []struct {
+			name, authorization, wantUser string
+			wantStatus                    int
+		}{
+			{"anonymous", "", "", http.StatusOK},
+			{"owner", "Bearer " + token, "42", http.StatusOK},
+			{"invalid", "Bearer invalid", "", http.StatusUnauthorized},
+			{"malformed", "Basic invalid", "", http.StatusUnauthorized},
+		} {
+			t.Run(path+"/"+tc.name, func(t *testing.T) {
+				reached := false
+				next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					reached = true
+					uid, _ := r.Context().Value("userId").(string)
+					if uid != tc.wantUser {
+						t.Errorf("userId=%q want=%q", uid, tc.wantUser)
+					}
+					w.WriteHeader(http.StatusOK)
+				})
+				req := httptest.NewRequest(http.MethodGet, path, nil)
+				req.Header.Set("Authorization", tc.authorization)
+				rec := httptest.NewRecorder()
+				jwtAuthFilter(next).ServeHTTP(rec, req)
+				if rec.Code != tc.wantStatus || reached != (tc.wantStatus == http.StatusOK) {
+					t.Fatalf("status=%d reached=%v body=%s", rec.Code, reached, rec.Body.String())
+				}
+			})
+		}
+	}
+}
 
 // TestJWTAuthFilterAdminPaths 钉住管理端免鉴权白名单里只有登录一条路径。
 //
@@ -85,6 +127,12 @@ func TestRequiresAuthSplitsReadAndWrite(t *testing.T) {
 		// ---- 读前缀只对安全方法生效：写方法即使路径落在读前缀下也要鉴权 ----
 		{http.MethodPost, "/api/llm/chat/raw", true, "透传对话是写方法，客户端确实带 bearer"},
 		{http.MethodPost, "/api/llm/show/raw", true, "同上"},
+		{http.MethodGet, "/api/llm/managed-models", true, "本人模型管理不可匿名访问"},
+		{http.MethodGet, "/api/llm/managed-models/card", true, "同步状态需要本人身份"},
+		{http.MethodPost, "/api/llm/managed-models/card/reconcile", true, "重查必须鉴权"},
+		{http.MethodDelete, "/api/llm/managed-models/card", true, "删除必须鉴权"},
+		{http.MethodGet, "/api/llm/models/private", true, "公共目录仅精确匹配"},
+		{http.MethodGet, "/api/llm/models-other", true, "不能通过公共前缀绕过"},
 
 		// ---- OAuth 回调：浏览器重定向的 GET，不可能带 Authorization ----
 		{http.MethodGet, "/api/auth/feishu/callback", false, "曾经只有 wechat 在表里，飞书回调被拦成 401，整条飞书登录走不完"},

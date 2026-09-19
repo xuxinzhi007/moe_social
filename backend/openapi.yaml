@@ -4079,11 +4079,6 @@ paths:
         post:
             tags:
                 - Platform
-            description: |-
-                LlmCreateAgent 的 biz 实现（llmbiz.CreateOllamaAgent）同样是 501 桩，但它**不是死接口**：
-                 lib/pages/ai/chat_page.dart 与 agent_editor_page.dart 有两个活调用点，删掉只会把 501
-                 变成 404，用户照样看到「同步服务器模型失败」。已单独登记为 #51 等产品决定。
-                 同族的 LlmDeleteModel / LlmDownloadModel 客户端零调用，已在 #42 删除。
             operationId: Platform_LlmCreateAgent
             requestBody:
                 content:
@@ -4097,7 +4092,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/platform.v1.BaseResp'
+                                $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
     /api/llm/chat:
         post:
             tags:
@@ -4128,6 +4123,83 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/platform.v1.GetLlmConfigResp'
+    /api/llm/managed-models:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_ListLlmManagedModels
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.ListLlmManagedModelsResp'
+    /api/llm/managed-models/{agentId}:
+        get:
+            tags:
+                - Platform
+            operationId: Platform_GetLlmManagedModel
+            parameters:
+                - name: agentId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
+        delete:
+            tags:
+                - Platform
+            operationId: Platform_DeleteLlmManagedModel
+            parameters:
+                - name: agentId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.DeleteLlmManagedModelReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
+    /api/llm/managed-models/{agentId}/reconcile:
+        post:
+            tags:
+                - Platform
+            operationId: Platform_ReconcileLlmManagedModel
+            parameters:
+                - name: agentId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/platform.v1.GetLlmManagedModelReq'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
     /api/llm/models:
         get:
             tags:
@@ -11965,16 +12037,6 @@ components:
                 publishedAt:
                     type: string
             description: 用户侧公告（仅 published）。
-        platform.v1.BaseResp:
-            type: object
-            properties:
-                code:
-                    type: integer
-                    format: int32
-                message:
-                    type: string
-                success:
-                    type: boolean
         platform.v1.ContentItem:
             type: object
             properties:
@@ -11991,6 +12053,13 @@ components:
                 content:
                     type: string
                 createdAt:
+                    type: string
+        platform.v1.DeleteLlmManagedModelReq:
+            type: object
+            properties:
+                agentId:
+                    type: string
+                requestId:
                     type: string
         platform.v1.GetAnnouncementResp:
             type: object
@@ -12026,6 +12095,11 @@ components:
                     type: boolean
                 data:
                     type: object
+        platform.v1.GetLlmManagedModelReq:
+            type: object
+            properties:
+                agentId:
+                    type: string
         platform.v1.GetPublicClientConfigResp:
             type: object
             properties:
@@ -12055,6 +12129,20 @@ components:
                 total:
                     type: integer
                     format: int32
+        platform.v1.ListLlmManagedModelsResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                models:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/platform.v1.LlmManagedModelResp'
         platform.v1.ListUserContentResp:
             type: object
             properties:
@@ -12127,6 +12215,34 @@ components:
                     type: string
                 systemPrompt:
                     type: string
+                agentId:
+                    type: string
+                requestId:
+                    type: string
+        platform.v1.LlmManagedModelResp:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    format: int32
+                message:
+                    type: string
+                success:
+                    type: boolean
+                agentId:
+                    type: string
+                modelName:
+                    type: string
+                baseModel:
+                    type: string
+                state:
+                    type: string
+                requestId:
+                    type: string
+                bindingApplied:
+                    type: boolean
+                retryable:
+                    type: boolean
         platform.v1.LlmMessage:
             type: object
             properties:

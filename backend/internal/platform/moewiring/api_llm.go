@@ -1,6 +1,7 @@
 package moewiring
 
 import (
+	"backend/internal/platform/apicomm"
 	"backend/internal/platform/appdb"
 	llmapp "backend/internal/service/llm"
 	"backend/pkg/conf"
@@ -19,6 +20,8 @@ func NewAPILLMService() (*llmapp.AppService, error) {
 		return nil, err
 	}
 	return llmapp.New(db, llmapp.Deps{
-		Inference: conf.Inference(),
+		UserID:          apicomm.UserIDUint,
+		Inference:       conf.Inference(),
+		ModelManagement: conf.InferenceModelManagement(),
 	}), nil
 }

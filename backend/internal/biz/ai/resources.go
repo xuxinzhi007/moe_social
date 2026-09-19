@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	aiv1 "backend/api/ai/v1"
+	"backend/model"
 
 	"gorm.io/gorm"
 )
@@ -109,6 +111,20 @@ func (uc *ResourcesUsecase) ListPublicAgents(ctx context.Context, in *aiv1.ListP
 			if !AgentIsPublic(item) {
 				continue
 			}
+			if projector, ok := store.(interface {
+				PublicAgent(context.Context, uint, map[string]any) (map[string]any, error)
+			}); ok {
+				item, err = projector.PublicAgent(ctx, cfg.UserID, item)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				for key, value := range item {
+					if text, ok := value.(string); ok && strings.HasPrefix(strings.ToLower(text), "moe-user-") {
+						delete(item, key)
+					}
+				}
+			}
 			item["created_by_user_id"] = fmt.Sprint(cfg.UserID)
 			if name := store.GetUserDisplayName(ctx, cfg.UserID); name != "" {
 				item["author_name"] = name
@@ -136,40 +152,52 @@ func (uc *ResourcesUsecase) Upsert(ctx context.Context, field string, in *aiv1.U
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := store.LoadOrCreateConfig(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("load AI resource config: %w", err)
+	if field != "agents" && field != "providers" && field != "lorebooks" {
+		return nil, ErrUnknownResourceKind
 	}
 	item := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(in.GetPayloadJson()), &item); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
+	if err := json.Unmarshal([]byte(in.GetPayloadJson()), &item); err != nil || item == nil {
+		return nil, fmt.Errorf("%w: invalid resource object", ErrInvalidPayload)
 	}
-	items := DecodeJSONArray(selectField(cfg, field))
-	id := fmt.Sprint(item["id"])
+	id, ok := item["id"].(string)
+	if !ok || strings.TrimSpace(id) == "" || len(id) > 128 {
+		return nil, ErrInvalidPayload
+	}
+	if field == "agents" {
+		item["created_by_user_id"] = fmt.Sprint(userID)
+	}
 	replaced := false
-	for i, current := range items {
-		if fmt.Sprint(current["id"]) == id {
-			items[i] = item
-			replaced = true
-			break
+	_, err = store.UpdateConfig(ctx, userID, func(cfg *model.AiUserConfig) error {
+		items := DecodeJSONArray(selectField(cfg, field))
+		for i, current := range items {
+			if fmt.Sprint(current["id"]) == id {
+				items[i] = item
+				replaced = true
+				break
+			}
 		}
+		if !replaced {
+			items = append(items, item)
+		}
+		encoded, err := EncodeJSONArray(items)
+		if err != nil {
+			return err
+		}
+		setField(cfg, field, encoded)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("save AI resource config: %w", err)
 	}
-	if !replaced {
-		items = append(items, item)
-	}
-	encoded, err := EncodeJSONArray(items)
+	payload, err := mustJSON(item)
 	if err != nil {
 		return nil, err
-	}
-	setField(cfg, field, encoded)
-	if err := store.SaveConfig(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("save AI resource config: %w", err)
 	}
 	return &UpsertOutcome{
 		Resp: &aiv1.UpsertAiResourceResp{
 			Item: &aiv1.AiJsonResourceItem{
 				Id:          id,
-				PayloadJson: in.GetPayloadJson(),
+				PayloadJson: payload,
 			},
 		},
 		Replaced: replaced,
@@ -189,27 +217,29 @@ func (uc *ResourcesUsecase) Delete(ctx context.Context, field string, in *aiv1.D
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := store.LoadOrCreateConfig(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("load AI resource config: %w", err)
+	if field != "agents" && field != "providers" && field != "lorebooks" {
+		return nil, ErrUnknownResourceKind
 	}
-	items := DecodeJSONArray(selectField(cfg, field))
 	var deletedItem map[string]interface{}
-	next := make([]map[string]interface{}, 0, len(items))
-	for _, item := range items {
-		if fmt.Sprint(item["id"]) == in.GetId() {
-			deletedItem = item
-			continue
+	_, err = store.UpdateConfig(ctx, userID, func(cfg *model.AiUserConfig) error {
+		items := DecodeJSONArray(selectField(cfg, field))
+		next := make([]map[string]interface{}, 0, len(items))
+		for _, item := range items {
+			if fmt.Sprint(item["id"]) == in.GetId() {
+				deletedItem = item
+				continue
+			}
+			next = append(next, item)
 		}
-		next = append(next, item)
-	}
-	encoded, err := EncodeJSONArray(next)
+		encoded, err := EncodeJSONArray(next)
+		if err != nil {
+			return err
+		}
+		setField(cfg, field, encoded)
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	setField(cfg, field, encoded)
-	if err := store.SaveConfig(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("save AI resource config: %w", err)
+		return nil, fmt.Errorf("delete AI resource: %w", err)
 	}
 	return &DeleteOutcome{
 		Resp:        &aiv1.DeleteAiResourceResp{Ok: true},

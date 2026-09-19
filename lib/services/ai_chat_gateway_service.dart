@@ -9,6 +9,7 @@ import 'ai_models_cache_service.dart';
 import 'ai_model_list_parser.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
+import 'llm_api_service.dart';
 import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
 
@@ -130,6 +131,10 @@ class AiChatGatewayService {
     String? apiKey,
     bool allowCachedFallback = true,
   }) async {
+    final accountToken = ApiService.token;
+    final cacheProfileId = profile.isBackendOllama
+        ? AiProviderProfile.builtinBackendId
+        : profile.id;
     try {
       if (profile.isLlamaCppServer || profile.isOpenAiCompatible) {
         final models = await _fetchOpenAiCompatibleModels(
@@ -143,21 +148,42 @@ class AiChatGatewayService {
         final uri = await LlmEndpointConfig.modelsUri();
         ApiService.logDirectHttp('GET', uri);
         final response = await http
-            .get(uri, headers: ApiService.mergeTunnelHeaders(uri))
+            .get(uri,
+                headers: ApiService.mergeTunnelHeaders(uri, headers: {
+                  if (accountToken != null && accountToken.isNotEmpty)
+                    'Authorization': 'Bearer $accountToken',
+                }))
             .timeout(const Duration(seconds: 12));
+        if (ApiService.token != accountToken) {
+          throw ApiException('账号已切换，请重新加载模型');
+        }
         if (response.statusCode != 200) {
-          throw Exception('加载模型失败: ${response.statusCode}');
+          throw ApiException(
+              '加载模型失败: ${response.statusCode}', response.statusCode);
         }
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         final models = _extractModelNames(decoded);
-        if (models.isNotEmpty || !allowCachedFallback) return models;
+        await AiModelsCacheService().write(cacheProfileId, models);
+        if (ApiService.token != accountToken) {
+          throw ApiException('账号已切换，请重新加载模型');
+        }
+        return models;
       }
-    } catch (_) {
-      if (!allowCachedFallback) rethrow;
+    } catch (error) {
+      if (!allowCachedFallback ||
+          (profile.isBackendOllama &&
+              (ApiService.token != accountToken ||
+                  error is ApiException &&
+                      (error.code == 401 || error.code == 403)))) {
+        rethrow;
+      }
     }
 
-    final cached = await AiModelsCacheService().read(profile.id);
-    if (cached.isNotEmpty) return cached;
+    final cached = await AiModelsCacheService().read(cacheProfileId);
+    if (profile.isBackendOllama && ApiService.token != accountToken) {
+      throw ApiException('账号已切换，请重新加载模型');
+    }
+    if (cached.isNotEmpty || profile.isBackendOllama) return cached;
 
     final fallback = <String>[
       if (profile.defaultModel.trim().isNotEmpty) profile.defaultModel.trim(),
@@ -245,6 +271,14 @@ class AiChatGatewayService {
     double? topP,
   }) async {
     final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
+    final inference =
+        terminalMode ? await LlmApiService.getInferenceConfig() : null;
+    final useOllamaOptions =
+        terminalMode && inference?['api_style'] == 'ollama';
+    final sampling = <String, dynamic>{
+      if (temperature != null && temperature >= 0) 'temperature': temperature,
+      if (topP != null && topP > 0) 'top_p': topP,
+    };
     final uri = await LlmEndpointConfig.chatUri();
     ApiService.logDirectHttp('POST', uri);
     final token = ApiService.token;
@@ -263,9 +297,8 @@ class AiChatGatewayService {
             'source_msg_id': sourceMsgId,
             'client_memory_applied': true,
             if (terminalMode) 'stream': false,
-            if (temperature != null && temperature > 0)
-              'temperature': temperature,
-            if (topP != null && topP > 0) 'top_p': topP,
+            if (useOllamaOptions) 'options': sampling,
+            if (!useOllamaOptions) ...sampling,
           }),
         )
         .timeout(const Duration(seconds: 180));
@@ -404,7 +437,8 @@ class AiChatGatewayService {
           )
           .timeout(const Duration(seconds: 180));
       if (retry.statusCode == 200) {
-        final decoded = jsonDecode(utf8.decode(retry.bodyBytes));
+        final decoded =
+            LlmResponseParser.decodeJsonOrNdjson(utf8.decode(retry.bodyBytes));
         final content = _extractOpenAiCompatibleContent(decoded);
         if (content.isNotEmpty) return content;
         throw Exception('Provider 响应格式异常');
@@ -434,7 +468,7 @@ class AiChatGatewayService {
       throw Exception('Provider 请求失败 (${response.statusCode}): $body');
     }
 
-    final decoded = jsonDecode(body);
+    final decoded = LlmResponseParser.decodeJsonOrNdjson(body);
     if (decoded is Map && decoded['error'] != null) {
       _logProviderFailure(
         uri: uri,
@@ -488,7 +522,12 @@ class AiChatGatewayService {
   }
 
   String _extractOpenAiCompatibleContent(dynamic decoded) {
+    if (decoded is List) {
+      return LlmResponseParser.extractChatContent(decoded, terminalMode: true)
+          .trim();
+    }
     if (decoded is! Map) return '';
+    if (decoded['error'] != null) throw FormatException('模型服务返回错误');
     final choices = decoded['choices'];
     if (choices is! List || choices.isEmpty) return '';
     final first = choices.first;

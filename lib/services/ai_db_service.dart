@@ -158,7 +158,8 @@ class AiDbService {
           systemPrompt: '你是一位友好的 AI 助手，能够回答各种问题。',
           modelName: 'qwen2.5:0.5b-instruct',
           createdAt: now,
-        ).toMap());
+        ).toMap()
+          ..['is_public'] = 0); // SQLite 不接受角色卡 JSON 的 bool。
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
