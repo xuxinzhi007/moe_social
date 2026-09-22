@@ -119,7 +119,7 @@ llm_inference:
   provider: ollama
   base_url: "http://192.168.124.77:11434"
   api_style: ollama
-  timeout_seconds: 120
+  timeout_seconds: 300
   memory_model: "qwen2.5:3b-instruct"
   api_key: ""
   # 文字游戏可使用独立推理端点；未填写时复用上面的统一端点。

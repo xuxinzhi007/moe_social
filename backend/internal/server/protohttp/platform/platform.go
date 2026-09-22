@@ -59,7 +59,7 @@ var (
 )
 
 func New(deps Deps) *Server {
-	s := &Server{deps: deps, contentApp: contentapp.New()}
+	s := &Server{deps: deps, contentApp: contentapp.New(deps.LLMApp)}
 	if deps.PublicAPIBaseURL != "" {
 		s.appcfg = appcfgapp.New(deps.PublicAPIBaseURL)
 	}

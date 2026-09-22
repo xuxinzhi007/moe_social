@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,27 +23,27 @@ var safePrivateImageToken = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 // SendPrivateMessage 持久化一条私信并返回 proto 视图。
 func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *chatv1.SendPrivateMessageRequest) (*chatv1.SendPrivateMessageReply, error) {
 	if st == nil {
-		return nil, errors.New("db not ready")
+		return nil, ErrChatStoreUnavailable
 	}
 	senderID, err := strconv.ParseUint(strings.TrimSpace(in.GetSenderId()), 10, 32)
 	if err != nil || senderID == 0 {
-		return nil, errors.New("invalid sender_id")
+		return nil, ErrInvalidSenderID
 	}
 	receiverID, err := strconv.ParseUint(strings.TrimSpace(in.GetReceiverId()), 10, 32)
 	if err != nil || receiverID == 0 {
-		return nil, errors.New("invalid receiver_id")
+		return nil, ErrInvalidReceiverID
 	}
 	if senderID == receiverID {
-		return nil, errors.New("cannot message self")
+		return nil, ErrMessageSelf
 	}
 
 	body := strings.TrimSpace(in.GetBody())
 	if body == "" {
-		return nil, errors.New("empty body")
+		return nil, ErrEmptyMessageBody
 	}
 	maxRunes := utils.PrivateMessageBodyMaxRunes()
 	if utf8.RuneCountInString(body) > maxRunes {
-		return nil, errors.New("body too long")
+		return nil, ErrMessageBodyTooLong
 	}
 
 	paths, err := NormalizePrivateImagePaths(in.GetImagePaths())
@@ -54,15 +55,15 @@ func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *chatv1.
 	sender, err := st.GetUser(ctx, uint(senderID))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("sender not found")
+			return nil, ErrUserNotFound
 		}
-		return nil, errors.New("sender not found")
+		return nil, fmt.Errorf("get private message sender %d: %w", senderID, ErrUserNotFound)
 	}
 	if _, err := st.GetUser(ctx, uint(receiverID)); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("receiver not found")
+			return nil, ErrPeerNotFound
 		}
-		return nil, errors.New("receiver not found")
+		return nil, fmt.Errorf("get private message receiver %d: %w", receiverID, ErrPeerNotFound)
 	}
 
 	days := utils.PrivateMessageRetentionDaysForSender(&sender)
@@ -76,7 +77,7 @@ func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *chatv1.
 	if len(paths) > 0 {
 		b, err := json.Marshal(paths)
 		if err != nil {
-			return nil, errors.New("invalid image paths")
+			return nil, ErrInvalidImagePath
 		}
 		row.ImagePaths = string(b)
 	} else {
@@ -84,7 +85,7 @@ func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *chatv1.
 	}
 
 	if err := st.CreatePrivateMessage(ctx, &row); err != nil {
-		return nil, errors.New("save failed")
+		return nil, fmt.Errorf("save private message: %w", ErrSaveMessage)
 	}
 
 	moeBy, err := st.MoeNoByUserIDs(ctx, []uint{row.SenderID, row.ReceiverID})
@@ -98,7 +99,7 @@ func SendPrivateMessage(ctx context.Context, st PrivateMessageStore, in *chatv1.
 func NormalizePrivateImagePaths(in []string) ([]string, error) {
 	maxN := utils.PrivateMessageImagePathsMax()
 	if len(in) > maxN {
-		return nil, errors.New("too many image_paths")
+		return nil, ErrTooManyImagePaths
 	}
 	out := make([]string, 0, len(in))
 	for _, p := range in {
@@ -107,15 +108,15 @@ func NormalizePrivateImagePaths(in []string) ([]string, error) {
 			continue
 		}
 		if strings.Contains(p, "/") || strings.Contains(p, "\\") || strings.Contains(p, "..") {
-			return nil, errors.New("invalid image path")
+			return nil, ErrInvalidImagePath
 		}
 		if !safePrivateImageToken.MatchString(p) {
-			return nil, errors.New("invalid image path token")
+			return nil, ErrInvalidImagePath
 		}
 		out = append(out, p)
 	}
 	if len(out) > maxN {
-		return nil, errors.New("too many image_paths")
+		return nil, ErrTooManyImagePaths
 	}
 	return out, nil
 }
@@ -177,27 +178,27 @@ func LoadMoeNoByUserID(st PrivateMessageStore, ids ...uint) map[uint]string {
 // ClearPrivateChatHistory 清空双方私信历史（双向删除）。
 func ClearPrivateChatHistory(ctx context.Context, st PrivateMessageStore, userID, peerID uint) error {
 	if st == nil {
-		return errors.New("db not ready")
+		return ErrChatStoreUnavailable
 	}
 	if userID == 0 || peerID == 0 {
-		return errors.New("invalid user_id or peer_id")
+		return ErrInvalidPeerID
 	}
 	if userID == peerID {
-		return errors.New("cannot clear chat with self")
+		return ErrMessageSelf
 	}
 	st = st.WithContext(ctx)
 	// 验证双方用户存在
 	if _, err := st.GetUser(ctx, userID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("user not found")
+			return ErrUserNotFound
 		}
-		return err
+		return fmt.Errorf("get private chat user %d: %w", userID, ErrUserNotFound)
 	}
 	if _, err := st.GetUser(ctx, peerID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("peer not found")
+			return ErrPeerNotFound
 		}
-		return err
+		return fmt.Errorf("get private chat peer %d: %w", peerID, ErrPeerNotFound)
 	}
 	return st.DeletePrivateMessagesBetween(ctx, userID, peerID)
 }

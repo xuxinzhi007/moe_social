@@ -58,6 +58,42 @@ func ApplyAgentChatContext(cfg *model.AiUserConfig, in PlatformChatInput) (Platf
 	return in, nil
 }
 
+// ApplyServerSystemPrompt appends backend-owned task rules to the active system prompt.
+func ApplyServerSystemPrompt(in PlatformChatInput) PlatformChatInput {
+	prompt := strings.TrimSpace(in.ServerSystemPrompt)
+	if prompt == "" {
+		return in
+	}
+	if len(in.Messages) == 0 {
+		in.Messages = []PlatformChatMessage{{Role: "system", Content: prompt}}
+		return in
+	}
+	next := make([]PlatformChatMessage, 0, len(in.Messages)+1)
+	merged := false
+	for _, message := range in.Messages {
+		if strings.TrimSpace(message.Role) != "system" {
+			next = append(next, message)
+			continue
+		}
+		if merged {
+			continue
+		}
+		content := strings.TrimSpace(message.Content)
+		if content == "" {
+			content = prompt
+		} else {
+			content += "\n\n[任务要求]\n" + prompt
+		}
+		next = append(next, PlatformChatMessage{Role: "system", Content: content})
+		merged = true
+	}
+	if !merged {
+		next = append([]PlatformChatMessage{{Role: "system", Content: prompt}}, next...)
+	}
+	in.Messages = next
+	return in
+}
+
 func findChatAgent(raw string, id string) (chatAgentCard, bool) {
 	for _, item := range aibiz.DecodeJSONArray(raw) {
 		if strings.TrimSpace(fmt.Sprint(item["id"])) != id {

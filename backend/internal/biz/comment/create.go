@@ -38,6 +38,10 @@ func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult,
 	if err != nil || userID == 0 {
 		return CreateResult{}, ErrInvalidUserID
 	}
+	content := strings.TrimSpace(in.Content)
+	if content == "" {
+		return CreateResult{}, ErrEmptyContent
+	}
 
 	st = st.WithContext(ctx)
 	post, err := st.GetPost(ctx, uint(postID))
@@ -87,7 +91,7 @@ func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult,
 	}
 
 	comment := model.Comment{
-		PostID: uint(postID), ParentID: parentID, UserID: uint(userID), Content: in.Content,
+		PostID: uint(postID), ParentID: parentID, UserID: uint(userID), Content: content,
 	}
 	if err := tx.CreateComment(&comment); err != nil {
 		tx.Rollback()
@@ -98,7 +102,7 @@ func Create(ctx context.Context, st CommentStore, in CreateInput) (CreateResult,
 		return CreateResult{}, err
 	}
 
-	notifyContent := in.Content
+	notifyContent := content
 	if len(notifyContent) > 200 {
 		notifyContent = notifyContent[:200]
 	}

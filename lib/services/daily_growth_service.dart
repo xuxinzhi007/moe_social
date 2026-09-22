@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../auth_service.dart';
 import '../providers/checkin_provider.dart';
 import '../providers/user_level_provider.dart';
-import '../services/api_service.dart';
+import '../services/growth_service.dart';
 import '../widgets/moe_toast.dart';
 
 /// 登录后自动签到、每日浏览经验等成长侧效应（幂等由服务端 exp_log 保证）。
@@ -51,7 +51,7 @@ class DailyGrowthService {
     if (userId == null || userId.isEmpty || _browseExpPending) return;
     _browseExpPending = true;
     try {
-      final result = await ApiService.claimDailyBrowseExp(userId);
+      final result = await GrowthService.claimDailyBrowseExp(userId);
       if (!context.mounted || !result.granted || result.expGained <= 0) return;
       MoeToast.info(context, '今日浏览奖励 +${result.expGained} 经验');
       unawaited(context.read<UserLevelProvider>().loadUserLevel(userId));

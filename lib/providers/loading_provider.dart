@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart' show ChangeNotifier;
+import '../auth_service.dart';
 import '../services/api_service.dart';
+import '../services/user_service.dart';
 import '../utils/moe_error_copy.dart';
 
 /// 统一加载状态管理Provider
@@ -132,28 +136,28 @@ class LoadingProvider extends ChangeNotifier {
   /// 常用操作的快捷方法
 
   /// 执行登录操作
-  Future<Map<String, dynamic>?> executeLogin(String email, String password) {
+  Future<AuthResult?> executeLogin(String email, String password) {
     return executeOperation(
-      operation: () => ApiService.login(email, password),
+      operation: () => AuthService.login(email, password),
       key: 'login',
       successMessage: '登录成功',
     );
   }
 
   /// 执行注册操作
-  Future<Map<String, dynamic>?> executeRegister(
+  Future<AuthResult?> executeRegister(
       String username, String email, String password) {
     return executeOperation(
-      operation: () => ApiService.register(username, email, password),
+      operation: () => AuthService.register(username, email, password),
       key: 'register',
       successMessage: '注册成功',
     );
   }
 
   /// 执行图片上传操作
-  Future<String?> executeUploadImage(dynamic image) {
+  Future<String?> executeUploadImage(File image) {
     return executeOperation(
-      operation: () => ApiService.uploadImage(image),
+      operation: () => UserService.uploadImage(image),
       key: 'uploadImage',
       successMessage: '图片上传成功',
     );

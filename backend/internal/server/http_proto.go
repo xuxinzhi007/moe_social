@@ -185,7 +185,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	if d.MediaApp != nil {
 		mediahttp.RegisterHTTPServer(srv, mediahttp.New(d.MediaApp))
 	}
-	contentv1.RegisterContentServiceHTTPServer(srv, contenthttp.New(contentapp.New()))
+	contentv1.RegisterContentServiceHTTPServer(srv, contenthttp.New(contentapp.New(d.LLMApp)))
 	if d.VipAdmin != nil {
 		vipv1.RegisterVipReadAdminHTTPServer(srv, vipreadhttp.New(d.VipAdmin))
 		vipv1.RegisterVipPlansHTTPServer(srv, vipplanshttp.New(d.VipAdmin))

@@ -171,3 +171,49 @@ func TestStreamChatFallsBackWhenProviderStreamEndsWithoutContent(t *testing.T) {
 		t.Fatalf("chunks = %#v, want fallback reply", chunks)
 	}
 }
+
+func TestStreamChatFallbackSurvivesCanceledStreamContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var nonStreamRequests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request struct {
+			Stream bool `json:"stream"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if request.Stream {
+			cancel()
+			_, _ = w.Write([]byte("not-json\n"))
+			return
+		}
+		nonStreamRequests++
+		_, _ = w.Write([]byte("{\"choices\":[{\"message\":{\"content\":\"我在，刚刚线路抖了一下。\"}}]}"))
+	}))
+	defer server.Close()
+
+	var chunks []string
+	reply, err := streamChat(
+		ctx,
+		llminference.Config{BaseURL: server.URL, DefaultModel: "test-model", Timeout: time.Second},
+		"test-model",
+		[]llminference.Message{{Role: "user", Content: "hello"}},
+		func(chunk string) error {
+			chunks = append(chunks, chunk)
+			return nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("streamChat() error = %v", err)
+	}
+	if reply != "我在，刚刚线路抖了一下。" {
+		t.Fatalf("streamChat() reply = %q", reply)
+	}
+	if nonStreamRequests != 1 {
+		t.Fatalf("nonStreamRequests = %d, want 1", nonStreamRequests)
+	}
+	if len(chunks) != 1 || chunks[0] != reply {
+		t.Fatalf("chunks = %#v, want fallback reply", chunks)
+	}
+}

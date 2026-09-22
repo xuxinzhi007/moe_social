@@ -62,7 +62,11 @@ func (s *Server) CreatePost(ctx context.Context, in *postv1.CreatePostRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return app.CreatePost(ctx, in)
+	out, err := app.CreatePost(ctx, in)
+	if err != nil {
+		return nil, mapPostError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) LikePost(ctx context.Context, in *postv1.LikePostRequest) (*postv1.LikePostReply, error) {
@@ -78,7 +82,11 @@ func (s *Server) UpdatePost(ctx context.Context, in *postv1.UpdatePostRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return app.UpdatePost(ctx, in)
+	out, err := app.UpdatePost(ctx, in)
+	if err != nil {
+		return nil, mapPostError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) DeletePost(ctx context.Context, in *postv1.DeletePostRequest) (*postv1.DeletePostReply, error) {
@@ -86,7 +94,11 @@ func (s *Server) DeletePost(ctx context.Context, in *postv1.DeletePostRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return app.DeletePost(ctx, in)
+	out, err := app.DeletePost(ctx, in)
+	if err != nil {
+		return nil, mapPostError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) ReportPost(ctx context.Context, in *postv1.ReportPostRequest) (*postv1.ReportPostReply, error) {
@@ -94,5 +106,9 @@ func (s *Server) ReportPost(ctx context.Context, in *postv1.ReportPostRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return app.ReportPost(ctx, in)
+	out, err := app.ReportPost(ctx, in)
+	if err != nil {
+		return nil, mapPostError(err)
+	}
+	return out, nil
 }

@@ -253,18 +253,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
-    if (_vm.isGroupPost && _vm.canPostToGroup != true) {
-      if (_vm.canPostToGroup == null) {
-        await _vm.loadGroupPostPermission();
-      }
-      if (_vm.canPostToGroup != true) {
-        if (mounted) {
-          MoeToast.info(context, '请先加入该群组再发帖');
-        }
-        return;
-      }
-    }
-
     if (!mounted) return;
 
     await _vm.saveDraft(caption);
@@ -395,9 +383,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 width: 76,
                 child: LoadingButton(
                   operationKey: LoadingKeys.createPost,
-                  onPressed: _vm.isGroupPost && _vm.canPostToGroup != true
-                      ? null
-                      : _publishPost,
+                  onPressed: _publishPost,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
@@ -422,10 +408,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (_vm.isGroupPost && _vm.canPostToGroup == false) ...[
-                  _buildGroupWarning(textTheme),
-                  const SizedBox(height: 16),
-                ],
                 if (widget.communityIdentity?.isValid == true) ...[
                   MoeReveal(
                     delay: Duration.zero,
@@ -804,34 +786,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
           if (mood != _moodLabels.keys.last) const SizedBox(width: 10),
         ],
       ],
-    );
-  }
-
-  Widget _buildGroupWarning(TextTheme textTheme) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline_rounded,
-              color: Colors.orange.shade700, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              '你还未加入该群组，请先返回群详情页点击「加入」后再发帖。',
-              style: textTheme.bodySmall?.copyWith(
-                color: Colors.orange.shade900,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

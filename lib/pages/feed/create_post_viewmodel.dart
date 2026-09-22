@@ -10,7 +10,6 @@ import '../../models/hand_draw_card.dart';
 import '../../models/post.dart';
 import '../../models/topic_tag.dart';
 import '../../services/api_client.dart' show ApiException;
-import '../../services/community_service.dart';
 import '../../services/companion_service.dart';
 import '../../services/post_service.dart';
 import '../../services/user_service.dart';
@@ -58,8 +57,6 @@ class CreatePostViewModel extends ChangeNotifier {
   String? userAvatar;
   String? authorUserId;
 
-  /// 发到群组时：null=校验中，true=已加入，false=未加入
-  bool? canPostToGroup;
   bool hasUnsavedChanges = false;
   bool _disposed = false;
 
@@ -77,46 +74,20 @@ class CreatePostViewModel extends ChangeNotifier {
     } else {
       await loadUserInfo();
     }
-    if (isGroupPost) {
-      await loadGroupPostPermission();
-    }
   }
 
   Future<void> loadUserInfo() async {
-    final userId = AuthService.currentUser;
-    if (userId == null) return;
+    final uid = AuthService.currentUser;
+    if (uid == null) return;
     try {
-      final user = await UserService.getUserInfo(userId);
+      final user = await UserService.getUserInfo(uid);
       if (_disposed) return;
-      authorUserId = userId;
+      authorUserId = uid;
       userName = user.username;
       userAvatar = user.avatar.isNotEmpty ? user.avatar : null;
       _notify();
     } catch (e) {
       debugPrint('加载用户信息失败: $e');
-    }
-  }
-
-  Future<void> loadGroupPostPermission() async {
-    final gid = groupId?.trim();
-    if (gid == null || gid.isEmpty) return;
-    final uid = AuthService.currentUser;
-    if (uid == null) {
-      canPostToGroup = false;
-      _notify();
-      return;
-    }
-    try {
-      final group =
-          await CommunityService.getCommunityGroup(groupId: gid, userId: uid);
-      if (_disposed) return;
-      canPostToGroup = group.isJoined;
-      _notify();
-    } catch (e) {
-      debugPrint('校验群成员资格失败: $e');
-      if (_disposed) return;
-      canPostToGroup = false;
-      _notify();
     }
   }
 
@@ -238,8 +209,7 @@ class CreatePostViewModel extends ChangeNotifier {
       }
       final hand = data['handDraw'];
       if (hand is Map) {
-        handDrawCard =
-            HandDrawCardData.tryParseJsonString(jsonEncode(hand));
+        handDrawCard = HandDrawCardData.tryParseJsonString(jsonEncode(hand));
       }
       if (caption.isNotEmpty ||
           selectedImageUrls.isNotEmpty ||
@@ -274,15 +244,6 @@ class CreatePostViewModel extends ChangeNotifier {
         post: post,
         successMessage: '动态已更新 ✨',
       );
-    }
-
-    if (isGroupPost) {
-      if (canPostToGroup == null) {
-        await loadGroupPostPermission();
-      }
-      if (canPostToGroup != true) {
-        throw ApiException('请先加入该群组再发帖', 403);
-      }
     }
 
     final imageUrls = <String>[];

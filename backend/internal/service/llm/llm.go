@@ -91,6 +91,7 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 			return llmbiz.PlatformChatOutcome{}, err
 		}
 	}
+	in = llmbiz.ApplyServerSystemPrompt(in)
 	if in.Model == "" {
 		in.Model = s.deps.Inference.DefaultModel
 	}

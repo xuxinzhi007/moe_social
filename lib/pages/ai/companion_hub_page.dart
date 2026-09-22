@@ -9,7 +9,6 @@ import '../../constants/feature_flags.dart';
 import '../../models/post.dart';
 import '../../pages/life/life_world_page.dart';
 import '../../providers/companion_presence_provider.dart';
-import '../../services/api_client.dart';
 import '../../services/companion_character_card_import.dart';
 import '../../services/companion_chat_launcher.dart';
 import '../../services/companion_service.dart';
@@ -331,7 +330,8 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                 if (picked == null) return;
                 setSheetState(() => uploadingAvatar = true);
                 try {
-                  final url = await ApiClient.uploadImage(File(picked.path));
+                  final url = await CompanionService()
+                      .uploadAvatarImage(File(picked.path));
                   if (!sheetContext.mounted) return;
                   setSheetState(() {
                     avatarUrl = url;
@@ -367,7 +367,7 @@ class _CompanionHubPageState extends State<CompanionHubPage> {
                 if (png != null && png.isNotEmpty) {
                   setSheetState(() => uploadingAvatar = true);
                   try {
-                    final url = await ApiClient.uploadImageBytes(
+                    final url = await CompanionService().uploadAvatarBytes(
                       png,
                       filename: 'character_card.png',
                     );

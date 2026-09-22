@@ -30,7 +30,11 @@ func (s *Server) GetPostComments(ctx context.Context, in *commentv1.GetPostComme
 	if err != nil {
 		return nil, err
 	}
-	return app.GetPostComments(ctx, in)
+	out, err := app.GetPostComments(ctx, in)
+	if err != nil {
+		return nil, mapCommentError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) CreateComment(ctx context.Context, in *commentv1.CreateCommentRequest) (*commentv1.CreateCommentReply, error) {
@@ -38,7 +42,11 @@ func (s *Server) CreateComment(ctx context.Context, in *commentv1.CreateCommentR
 	if err != nil {
 		return nil, err
 	}
-	return app.CreateComment(ctx, in)
+	out, err := app.CreateComment(ctx, in)
+	if err != nil {
+		return nil, mapCommentError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) LikeComment(ctx context.Context, in *commentv1.LikeCommentRequest) (*commentv1.LikeCommentReply, error) {
@@ -46,5 +54,9 @@ func (s *Server) LikeComment(ctx context.Context, in *commentv1.LikeCommentReque
 	if err != nil {
 		return nil, err
 	}
-	return app.LikeComment(ctx, in)
+	out, err := app.LikeComment(ctx, in)
+	if err != nil {
+		return nil, mapCommentError(err)
+	}
+	return out, nil
 }

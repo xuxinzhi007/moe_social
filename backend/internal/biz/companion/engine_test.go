@@ -88,6 +88,24 @@ func TestBuildContextUsesOneCanonicalSnapshot(t *testing.T) {
 	}
 }
 
+func TestBuildContextSkipsRelationshipEventsOnStoreError(t *testing.T) {
+	store := newFakeStore()
+	store.profiles[7] = profileToModel(7, &Profile{Name: "Mochi"})
+	store.relationshipEventsErr = context.DeadlineExceeded
+	engine := NewEngine(store, nil, llminference.Config{}, "")
+
+	snapshot, err := engine.BuildContext(context.Background(), 7, "morning")
+	if err != nil {
+		t.Fatalf("BuildContext() error = %v", err)
+	}
+	if snapshot.Profile.Name != "Mochi" {
+		t.Fatalf("snapshot profile = %+v", snapshot.Profile)
+	}
+	if len(snapshot.RelationshipEvents) != 0 {
+		t.Fatalf("snapshot relationship events = %+v, want empty fallback", snapshot.RelationshipEvents)
+	}
+}
+
 func TestExtractUnfinishedTopicsOnlyUsesExplicitMarkers(t *testing.T) {
 	topics := extractUnfinishedTopics([]ChatLog{
 		{Role: "user", Content: "今天的天气不错"},
@@ -976,13 +994,14 @@ type fakeStore struct {
 	// CreateCompanionEvent，没有锁 go test -race 就报数据竞争 —— 那会让整个仓库
 	// 无法用竞态检测器当门禁。真实 store 走数据库、每个调用各自事务，所以这只是
 	// 测试替身的缺陷，不是生产竞态。所有方法都返回副本而非内部指针，故加锁即完备。
-	mu                 sync.Mutex
-	profiles           map[uint]*model.CompanionProfile
-	memories           []model.CompanionMemory
-	logs               []model.CompanionChatLog
-	relationshipEvents []model.CompanionRelationshipEvent
-	companionEvents    []model.CompanionEvent
-	conflicts          []model.CompanionMemoryConflict
+	mu                    sync.Mutex
+	profiles              map[uint]*model.CompanionProfile
+	memories              []model.CompanionMemory
+	logs                  []model.CompanionChatLog
+	relationshipEvents    []model.CompanionRelationshipEvent
+	relationshipEventsErr error
+	companionEvents       []model.CompanionEvent
+	conflicts             []model.CompanionMemoryConflict
 }
 
 func newFakeStore() *fakeStore {
@@ -1319,6 +1338,10 @@ func (s *fakeStore) ListRelationshipEvents(
 ) ([]model.CompanionRelationshipEvent, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	if s.relationshipEventsErr != nil {
+		return nil, s.relationshipEventsErr
+	}
 
 	out := make([]model.CompanionRelationshipEvent, 0, len(s.relationshipEvents))
 	for index := len(s.relationshipEvents) - 1; index >= 0; index-- {
