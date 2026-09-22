@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../theme/moe_tokens.dart';
 
 import '../../services/llm_api_service.dart';
-import '../../services/llm_endpoint_config.dart';
 
 class LlmModelConfigPage extends StatefulWidget {
   const LlmModelConfigPage({super.key});
@@ -17,7 +16,6 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
   Map<String, dynamic>? _ollama;
   Map<String, dynamic>? _memoryBudget;
   Map<String, dynamic>? _runtime;
-  bool _terminalModeEnabled = false;
 
   @override
   void initState() {
@@ -31,7 +29,6 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
       _error = null;
     });
     try {
-      final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
       final data = await LlmApiService.getConfig();
 
       final inference = data['llm_inference'];
@@ -43,7 +40,6 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
 
       if (!mounted) return;
       setState(() {
-        _terminalModeEnabled = terminalMode;
         _ollama = Map<String, dynamic>.from(inference);
         _memoryBudget = Map<String, dynamic>.from(memoryBudget);
         if (runtime is Map) {
@@ -151,22 +147,14 @@ class _LlmModelConfigPageState extends State<LlmModelConfigPage> {
                             ),
                           ),
                           const SizedBox(height: 10),
-                          _kv('终端同款模式', _terminalModeEnabled ? '已开启' : '已关闭'),
+                          _kv('App 聊天接口', '/api/llm/chat'),
+                          _kv('模型列表接口', '/api/llm/models'),
+                          _kv('服务端记忆是否生效', '是'),
                           _kv(
-                            '聊天接口',
-                            _terminalModeEnabled
-                                ? '/api/llm/chat/raw'
-                                : '/api/llm/chat',
-                          ),
-                          _kv(
-                            '服务端记忆是否生效',
-                            _terminalModeEnabled ? '否（raw 调试）' : '是',
-                          ),
-                          _kv(
-                            'raw 调试边界',
+                            '模型运行时边界',
                             (_runtime?['raw_debug_only'] == true)
-                                ? '仅调试用途'
-                                : '未声明',
+                                ? 'raw 仅后端调试，App 不直连'
+                                : '由后端 AI 网关统一处理',
                           ),
                         ],
                       ),

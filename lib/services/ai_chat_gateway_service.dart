@@ -9,8 +9,6 @@ import 'ai_models_cache_service.dart';
 import 'ai_model_list_parser.dart';
 import 'ai_provider_service.dart';
 import 'api_service.dart';
-import 'llm_api_service.dart';
-import 'llm_endpoint_config.dart';
 import 'llm_response_parser.dart';
 
 class AiChatGatewayService {
@@ -145,23 +143,11 @@ class AiChatGatewayService {
       }
 
       if (profile.isBackendOllama) {
-        final uri = await LlmEndpointConfig.modelsUri();
-        ApiService.logDirectHttp('GET', uri);
-        final response = await http
-            .get(uri,
-                headers: ApiService.mergeTunnelHeaders(uri, headers: {
-                  if (accountToken != null && accountToken.isNotEmpty)
-                    'Authorization': 'Bearer $accountToken',
-                }))
+        final decoded = await ApiService.get('/api/llm/models')
             .timeout(const Duration(seconds: 12));
         if (ApiService.token != accountToken) {
           throw ApiException('账号已切换，请重新加载模型');
         }
-        if (response.statusCode != 200) {
-          throw ApiException(
-              '加载模型失败: ${response.statusCode}', response.statusCode);
-        }
-        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         final models = _extractModelNames(decoded);
         await AiModelsCacheService().write(cacheProfileId, models);
         if (ApiService.token != accountToken) {
@@ -240,9 +226,8 @@ class AiChatGatewayService {
     final profile = await AiProviderService().resolveProfile(
       agent.providerProfileId,
     );
-    // 记忆注入由 AiMemoryOrchestrator 在 messages 中完成；Ollama 请求标记 client_memory_applied 避免服务端重复注入。
     if (profile.isBackendOllama) {
-      return _sendToBackendOllama(
+      return _sendToBackendInference(
         agent: agent,
         messages: messages,
         sessionId: sessionId,
@@ -262,7 +247,7 @@ class AiChatGatewayService {
     );
   }
 
-  Future<String> _sendToBackendOllama({
+  Future<String> _sendToBackendInference({
     required AiAgent agent,
     required List<Map<String, String>> messages,
     String? sessionId,
@@ -270,16 +255,11 @@ class AiChatGatewayService {
     double? temperature,
     double? topP,
   }) async {
-    final terminalMode = await LlmEndpointConfig.isTerminalModeEnabled();
-    final inference =
-        terminalMode ? await LlmApiService.getInferenceConfig() : null;
-    final useOllamaOptions =
-        terminalMode && inference?['api_style'] == 'ollama';
     final sampling = <String, dynamic>{
       if (temperature != null && temperature >= 0) 'temperature': temperature,
       if (topP != null && topP > 0) 'top_p': topP,
     };
-    final uri = await LlmEndpointConfig.chatUri();
+    final uri = Uri.parse('${ApiService.baseUrl}/api/llm/chat');
     ApiService.logDirectHttp('POST', uri);
     final token = ApiService.token;
     final response = await http
@@ -292,13 +272,11 @@ class AiChatGatewayService {
           }),
           body: jsonEncode({
             'model': _effectiveModel(agent, AiProviderProfile.builtinBackend()),
+            'agent_id': agent.id,
             'messages': messages,
             'session_id': sessionId,
             'source_msg_id': sourceMsgId,
-            'client_memory_applied': true,
-            if (terminalMode) 'stream': false,
-            if (useOllamaOptions) 'options': sampling,
-            if (!useOllamaOptions) ...sampling,
+            ...sampling,
           }),
         )
         .timeout(const Duration(seconds: 180));
@@ -317,7 +295,7 @@ class AiChatGatewayService {
     final data = LlmResponseParser.decodeJsonOrNdjson(decodedBody);
     final content = LlmResponseParser.extractChatContent(
       data,
-      terminalMode: terminalMode,
+      terminalMode: false,
     );
     if (content.trim().isNotEmpty) return content.trim();
 

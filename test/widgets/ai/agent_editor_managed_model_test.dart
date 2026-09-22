@@ -111,8 +111,8 @@ void main() {
           () => MockClient((request) async {
                 final path = request.url.path;
                 if (path == '/api/llm/config') return config();
-                if (path == '/api/llm/show/raw') {
-                  return http.Response('{"system":"be kind"}', 200);
+                if (path == '/api/llm/model-prompt') {
+                  return envelope({'system_prompt': 'be kind'});
                 }
                 if (path == '/api/llm/models') {
                   return envelope({

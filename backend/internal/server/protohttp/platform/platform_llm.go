@@ -123,7 +123,7 @@ func platformConfigSnapshotFromConfig(c apiconfig.Config) llmbiz.ConfigSnapshot 
 }
 
 func platformChatInputFromProto(in *platformv1.LlmChatReq) llmbiz.PlatformChatInput {
-	out := llmbiz.PlatformChatInput{Model: in.GetModel(), SessionId: in.GetSessionId(), SourceMsgId: in.GetSourceMsgId(), ClientMemoryApplied: in.GetClientMemoryApplied(), Stream: in.GetStream(), Temperature: in.GetTemperature(), TopP: in.GetTopP(), MaxTokens: int(in.GetMaxTokens()), RepeatPenalty: in.GetRepeatPenalty()}
+	out := llmbiz.PlatformChatInput{Model: in.GetModel(), SessionId: in.GetSessionId(), SourceMsgId: in.GetSourceMsgId(), AgentID: in.GetAgentId(), ClientMemoryApplied: in.GetClientMemoryApplied(), Stream: in.GetStream(), Temperature: in.GetTemperature(), TopP: in.GetTopP(), MaxTokens: int(in.GetMaxTokens()), RepeatPenalty: in.GetRepeatPenalty()}
 	if len(in.GetMessages()) > 0 {
 		out.Messages = make([]llmbiz.PlatformChatMessage, len(in.GetMessages()))
 		for i, m := range in.GetMessages() {

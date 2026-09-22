@@ -20,11 +20,13 @@ var _ = binding.EncodeURL
 const _ = http.SupportPackageIsVersion1
 
 const OperationLlmChatGetAiUserConfig = "/llm.v1.LlmChat/GetAiUserConfig"
+const OperationLlmChatGetLlmModelPrompt = "/llm.v1.LlmChat/GetLlmModelPrompt"
 const OperationLlmChatListLlmModels = "/llm.v1.LlmChat/ListLlmModels"
 const OperationLlmChatUpsertAiUserConfig = "/llm.v1.LlmChat/UpsertAiUserConfig"
 
 type LlmChatHTTPServer interface {
 	GetAiUserConfig(context.Context, *GetAiUserConfigReq) (*GetAiUserConfigResp, error)
+	GetLlmModelPrompt(context.Context, *GetLlmModelPromptReq) (*GetLlmModelPromptResp, error)
 	ListLlmModels(context.Context, *ListLlmModelsReq) (*ListLlmModelsResp, error)
 	UpsertAiUserConfig(context.Context, *UpsertAiUserConfigReq) (*UpsertAiUserConfigResp, error)
 }
@@ -34,6 +36,7 @@ func RegisterLlmChatHTTPServer(s *http.Server, srv LlmChatHTTPServer) {
 	r.GET("/api/ai/config", _LlmChat_GetAiUserConfig0_HTTP_Handler(srv))
 	r.PUT("/api/ai/config", _LlmChat_UpsertAiUserConfig0_HTTP_Handler(srv))
 	r.GET("/api/llm/models", _LlmChat_ListLlmModels0_HTTP_Handler(srv))
+	r.GET("/api/llm/model-prompt", _LlmChat_GetLlmModelPrompt0_HTTP_Handler(srv))
 }
 
 func _LlmChat_GetAiUserConfig0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
@@ -96,8 +99,28 @@ func _LlmChat_ListLlmModels0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.C
 	}
 }
 
+func _LlmChat_GetLlmModelPrompt0_HTTP_Handler(srv LlmChatHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in GetLlmModelPromptReq
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationLlmChatGetLlmModelPrompt)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.GetLlmModelPrompt(ctx, req.(*GetLlmModelPromptReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GetLlmModelPromptResp)
+		return ctx.Result(200, reply)
+	}
+}
+
 type LlmChatHTTPClient interface {
 	GetAiUserConfig(ctx context.Context, req *GetAiUserConfigReq, opts ...http.CallOption) (rsp *GetAiUserConfigResp, err error)
+	GetLlmModelPrompt(ctx context.Context, req *GetLlmModelPromptReq, opts ...http.CallOption) (rsp *GetLlmModelPromptResp, err error)
 	ListLlmModels(ctx context.Context, req *ListLlmModelsReq, opts ...http.CallOption) (rsp *ListLlmModelsResp, err error)
 	UpsertAiUserConfig(ctx context.Context, req *UpsertAiUserConfigReq, opts ...http.CallOption) (rsp *UpsertAiUserConfigResp, err error)
 }
@@ -115,6 +138,19 @@ func (c *LlmChatHTTPClientImpl) GetAiUserConfig(ctx context.Context, in *GetAiUs
 	pattern := "/api/ai/config"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationLlmChatGetAiUserConfig))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+func (c *LlmChatHTTPClientImpl) GetLlmModelPrompt(ctx context.Context, in *GetLlmModelPromptReq, opts ...http.CallOption) (*GetLlmModelPromptResp, error) {
+	var out GetLlmModelPromptResp
+	pattern := "/api/llm/model-prompt"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationLlmChatGetLlmModelPrompt))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {

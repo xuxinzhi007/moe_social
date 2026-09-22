@@ -59,6 +59,14 @@ message ListLlmModelsResp {
   repeated string models = 1;
 }
 
+message GetLlmModelPromptReq {
+  string model = 1;
+}
+
+message GetLlmModelPromptResp {
+  string system_prompt = 1;
+}
+
 service LlmChat {
   rpc GetAiUserConfig(GetAiUserConfigReq) returns (GetAiUserConfigResp) {
     option (google.api.http) = { get: "/api/ai/config" };
@@ -68,5 +76,8 @@ service LlmChat {
   }
   rpc ListLlmModels(ListLlmModelsReq) returns (ListLlmModelsResp) {
     option (google.api.http) = { get: "/api/llm/models" };
+  }
+  rpc GetLlmModelPrompt(GetLlmModelPromptReq) returns (GetLlmModelPromptResp) {
+    option (google.api.http) = { get: "/api/llm/model-prompt" };
   }
 }

@@ -12,7 +12,6 @@ import 'package:moe_social/services/ai_chat_gateway_service.dart';
 import 'package:moe_social/services/ai_models_cache_service.dart';
 import 'package:moe_social/services/api_service.dart';
 import 'package:moe_social/services/llm_api_service.dart';
-import 'package:moe_social/services/llm_endpoint_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'llm_api_config_test.dart' show config, envelope, view;
@@ -125,52 +124,39 @@ void main() {
     });
   }
 
-  for (final style in ['ollama', 'openai']) {
-    test('terminal $style uses backend only and preserves temperature zero',
-        () async {
-      await LlmEndpointConfig.setTerminalModeEnabled(true);
-      await http.runWithClient(() async {
-        final reply = await AiChatGatewayService().sendChat(
-          agent: AiAgent(
-              id: 'a',
-              name: 'a',
-              description: '',
-              systemPrompt: '',
-              modelName: 'base',
-              createdAt: DateTime(2026)),
-          messages: [
-            {'role': 'user', 'content': 'hello'}
-          ],
-          temperature: 0,
-          topP: 0.8,
-        );
-        expect(reply, 'hello');
-      },
-          () => MockClient((request) async {
-                expect(request.url.toString(), startsWith(ApiService.baseUrl));
-                expect(request.headers['authorization'], 'Bearer jwt-1');
-                if (request.url.path == '/api/llm/config') {
-                  return envelope({
-                    'inference_api_style': style,
-                    'inference_base_url': 'http://offline.invalid:11434'
-                  });
-                }
-                expect(request.url.path, '/api/llm/chat/raw');
-                final body = jsonDecode(request.body) as Map;
-                expect(body['stream'], false);
-                if (style == 'ollama') {
-                  expect(body['options'], {'temperature': 0, 'top_p': 0.8});
-                  expect(body.containsKey('temperature'), false);
-                  return http.Response(
-                      '{"message":{"content":"hello"},"done":true}', 200);
-                }
-                expect(body['temperature'], 0);
-                expect(body.containsKey('options'), false);
-                return http.Response(
-                    '{"choices":[{"message":{"content":"hello"}}]}', 200);
-              }));
-    });
-  }
+  test('backend chat uses structured gateway and preserves temperature zero',
+      () async {
+    await http.runWithClient(() async {
+      final reply = await AiChatGatewayService().sendChat(
+        agent: AiAgent(
+            id: 'a',
+            name: 'a',
+            description: '',
+            systemPrompt: '',
+            modelName: 'base',
+            createdAt: DateTime(2026)),
+        messages: [
+          {'role': 'user', 'content': 'hello'}
+        ],
+        temperature: 0,
+        topP: 0.8,
+      );
+      expect(reply, 'hello');
+    },
+        () => MockClient((request) async {
+              expect(request.url.toString(), startsWith(ApiService.baseUrl));
+              expect(request.headers['authorization'], 'Bearer jwt-1');
+              expect(request.url.path, '/api/llm/chat');
+              final body = jsonDecode(request.body) as Map;
+              expect(body['agent_id'], 'a');
+              expect(body['temperature'], 0);
+              expect(body['top_p'], 0.8);
+              expect(body.containsKey('options'), false);
+              expect(body.containsKey('stream'), false);
+              expect(body.containsKey('client_memory_applied'), false);
+              return envelope({'content': 'hello'});
+            }));
+  });
 
   test('prompt save re-reads card and never creates or updates model',
       () async {

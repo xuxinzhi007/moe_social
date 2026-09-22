@@ -3,6 +3,7 @@ package llmapp
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	llmv1 "backend/api/llm/v1"
 	aibiz "backend/internal/biz/ai"
@@ -21,6 +22,8 @@ type Deps struct {
 	Inference       llminference.Config
 	ModelManagement conf.ModelManagement
 	ModelStore      llmbiz.ManagedStore
+	AIStore         aibiz.AiStore
+	ChatComplete    llmbiz.ChatCompleter
 }
 type AppService struct {
 	db     *gorm.DB
@@ -31,6 +34,9 @@ type AppService struct {
 func New(db *gorm.DB, deps Deps) *AppService {
 	if deps.ModelStore == nil && db != nil {
 		deps.ModelStore = llmdata.NewStore(db)
+	}
+	if deps.AIStore == nil && db != nil {
+		deps.AIStore = aidata.NewStore(db)
 	}
 	deps.ModelManagement = conf.NormalizeModelManagement(deps.ModelManagement, deps.Inference.DefaultModel)
 	return &AppService{db: db, deps: deps, models: llmbiz.NewManagedModels(deps.ModelStore, deps.Inference, deps.ModelManagement)}
@@ -67,9 +73,23 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 	if err := s.available(); err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
 	}
-	id, err := s.actor(ctx, false)
+	needsActor := strings.TrimSpace(in.AgentID) != ""
+	id, err := s.actor(ctx, needsActor)
 	if err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
+	}
+	if needsActor {
+		if s.deps.AIStore == nil {
+			return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_AI_CONTEXT", "AI 角色上下文不可用")
+		}
+		cfg, err := s.deps.AIStore.WithContext(ctx).LoadOrCreateConfig(ctx, id)
+		if err != nil {
+			return llmbiz.PlatformChatOutcome{}, kerrors.ServiceUnavailable("LLM_AI_CONTEXT", "读取 AI 角色上下文失败")
+		}
+		in, err = llmbiz.ApplyAgentChatContext(cfg, in)
+		if err != nil {
+			return llmbiz.PlatformChatOutcome{}, err
+		}
 	}
 	if in.Model == "" {
 		in.Model = s.deps.Inference.DefaultModel
@@ -77,7 +97,7 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 	if err := s.models.Authorize(ctx, id, in.Model); err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
 	}
-	return llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: s.deps.Inference}, in)
+	return llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: s.deps.Inference, ChatComplete: s.deps.ChatComplete}, in)
 }
 func (s *AppService) ConfigAPIPayload() map[string]interface{} {
 	return llmbiz.ConfigAPIPayload(s.ConfigSnapshot())
@@ -97,6 +117,26 @@ func (s *AppService) ListModels(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	return s.models.ListModels(ctx, id)
+}
+func (s *AppService) ModelPrompt(ctx context.Context, model string) (string, error) {
+	if err := s.available(); err != nil {
+		return "", err
+	}
+	id, err := s.actor(ctx, false)
+	if err != nil {
+		return "", err
+	}
+	if err := s.models.Authorize(ctx, id, model); err != nil {
+		return "", err
+	}
+	if string(s.deps.Inference.APIStyle) != "ollama" {
+		return "", kerrors.BadRequest("LLM_PROTOCOL", "当前协议不支持 show")
+	}
+	info, err := llminference.ShowModel(ctx, s.deps.Inference, model)
+	if err != nil {
+		return "", llmbiz.UpstreamStatusError(err)
+	}
+	return info.SystemPrompt(), nil
 }
 func (s *AppService) ForwardChatRaw(w http.ResponseWriter, r *http.Request) error {
 	if err := s.available(); err != nil {
