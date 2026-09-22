@@ -17,6 +17,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const chatCompletionPersistTimeout = 8 * time.Second
+
 // Engine Companion 核心引擎：整合 Profile / State / Memory / Chat / LLM。
 type Engine struct {
 	store     Store
@@ -475,7 +477,8 @@ func (e *Engine) BuildContext(ctx context.Context, userID uint, scene string) (*
 	}
 	relationshipEvents, err := e.ListRelationshipEvents(ctx, userID, 3)
 	if err != nil {
-		return nil, fmt.Errorf("build companion context relationship events: %w", err)
+		log.Printf("[companion] skip relationship events in chat context user=%d: %v", userID, err)
+		relationshipEvents = nil
 	}
 	unfinishedTopics := extractUnfinishedTopics(history)
 	return &ContextSnapshot{
@@ -982,25 +985,36 @@ func (e *Engine) ChatStreamWithInputMode(
 	fullReply, err := streamChat(ctx, config, modelName, msgs, onChunk)
 	if err != nil {
 		if strings.TrimSpace(fullReply) != "" {
-			_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
+			persistCtx, cancel := context.WithTimeout(
+				context.WithoutCancel(ctx),
+				chatCompletionPersistTimeout,
+			)
+			defer cancel()
+			_ = e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
 				UserID:  userID,
 				Role:    "assistant",
 				Content: fullReply,
 			})
-			if bumpErr := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); bumpErr != nil {
+			if bumpErr := e.BumpIntimacy(persistCtx, userID, IntimacyDeltaChat); bumpErr != nil {
 				log.Printf("[companion] bump intimacy after partial chat user=%d: %v", userID, bumpErr)
 			}
 			if isFirstChat {
-				e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
+				e.recordRelationshipEvent(persistCtx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 			}
-			e.recordChatCompletedEvent(ctx, userID, scene, "partial", inputMode)
+			e.recordChatCompletedEvent(persistCtx, userID, scene, "partial", inputMode)
 			return fullReply, nil
 		}
 		return "", fmt.Errorf("companion: model response failed: %w", err)
 	}
 
+	persistCtx, cancel := context.WithTimeout(
+		context.WithoutCancel(ctx),
+		chatCompletionPersistTimeout,
+	)
+	defer cancel()
+
 	// 6. 保存助手回复
-	_ = e.store.AppendChatLog(ctx, &model.CompanionChatLog{
+	_ = e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
 		UserID:  userID,
 		Role:    "assistant",
 		Content: fullReply,
@@ -1010,13 +1024,13 @@ func (e *Engine) ChatStreamWithInputMode(
 	go e.asyncExtractMemory(userID, userMessage, fullReply, profile, config, modelName)
 
 	// 8. 聊天成功 → 亲密度微增（失败仅打日志，不影响回复）
-	if err := e.BumpIntimacy(ctx, userID, IntimacyDeltaChat); err != nil {
+	if err := e.BumpIntimacy(persistCtx, userID, IntimacyDeltaChat); err != nil {
 		log.Printf("[companion] bump intimacy after chat user=%d: %v", userID, err)
 	}
 	if isFirstChat {
-		e.recordRelationshipEvent(ctx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
+		e.recordRelationshipEvent(persistCtx, userID, "first_chat", "第一次聊天", "你们开始了第一次对话")
 	}
-	e.recordChatCompletedEvent(ctx, userID, scene, "llm", inputMode)
+	e.recordChatCompletedEvent(persistCtx, userID, scene, "llm", inputMode)
 
 	return fullReply, nil
 }

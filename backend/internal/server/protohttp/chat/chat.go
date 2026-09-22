@@ -34,7 +34,11 @@ func (s *Server) SendPrivateMessage(ctx context.Context, in *chatv1.SendPrivateM
 	if err := fillSendPrivateMessageRequest(ctx, in); err != nil {
 		return nil, err
 	}
-	return app.SendPrivateMessage(ctx, in)
+	out, err := app.SendPrivateMessage(ctx, in)
+	if err != nil {
+		return nil, mapChatError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) ListPrivateMessages(ctx context.Context, in *chatv1.ListPrivateMessagesRequest) (*chatv1.ListPrivateMessagesReply, error) {
@@ -45,7 +49,11 @@ func (s *Server) ListPrivateMessages(ctx context.Context, in *chatv1.ListPrivate
 	if err := fillPrivateMessageListRequest(ctx, in); err != nil {
 		return nil, err
 	}
-	return app.ListPrivateMessages(ctx, in)
+	out, err := app.ListPrivateMessages(ctx, in)
+	if err != nil {
+		return nil, mapChatError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) ListPrivateConversations(ctx context.Context, in *chatv1.ListPrivateConversationsRequest) (*chatv1.ListPrivateConversationsReply, error) {
@@ -56,7 +64,11 @@ func (s *Server) ListPrivateConversations(ctx context.Context, in *chatv1.ListPr
 	if err := fillPrivateConversationsRequest(ctx, in); err != nil {
 		return nil, err
 	}
-	return app.ListPrivateConversations(ctx, in)
+	out, err := app.ListPrivateConversations(ctx, in)
+	if err != nil {
+		return nil, mapChatError(err)
+	}
+	return out, nil
 }
 
 func (s *Server) ClearPrivateChatHistory(ctx context.Context, in *chatv1.ClearPrivateChatHistoryReq) (*chatv1.ClearPrivateChatHistoryResp, error) {
@@ -67,5 +79,9 @@ func (s *Server) ClearPrivateChatHistory(ctx context.Context, in *chatv1.ClearPr
 	if err := fillClearPrivateChatHistoryRequest(ctx, in); err != nil {
 		return nil, err
 	}
-	return app.ClearPrivateChatHistory(ctx, in)
+	out, err := app.ClearPrivateChatHistory(ctx, in)
+	if err != nil {
+		return nil, mapChatError(err)
+	}
+	return out, nil
 }

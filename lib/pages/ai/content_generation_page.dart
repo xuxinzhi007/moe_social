@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../services/ai_chat_gateway_service.dart';
 import '../../models/ai_agent.dart';
 import '../../models/ai_chat_message.dart';
 import '../../models/ai_provider_profile.dart';
+import '../../services/content_generation_service.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
 import '../../theme/moe_tokens.dart';
 import '../../widgets/ai/ai_chat_background.dart';
@@ -48,6 +48,8 @@ class ContentGenerationPage extends StatefulWidget {
 }
 
 class _ContentGenerationPageState extends State<ContentGenerationPage> {
+  final ContentGenerationService _contentService =
+      const ContentGenerationService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -203,37 +205,10 @@ class _ContentGenerationPageState extends State<ContentGenerationPage> {
     String prompt,
     ContentType contentType,
   ) async {
-    String systemPrompt;
-    switch (contentType) {
-      case ContentType.text:
-        systemPrompt = '你是一个专业的内容生成助手，能够根据用户的需求生成高质量的文本内容。';
-        break;
-      case ContentType.image:
-        systemPrompt = '你是一个专业的图像描述助手，能够根据用户的需求生成详细的图像描述，以便用于图像生成。';
-        break;
-      case ContentType.video:
-        systemPrompt = '你是一个专业的视频脚本助手，能够根据用户的需求生成详细的视频脚本。';
-        break;
-      case ContentType.code:
-        systemPrompt = '你是一个专业的代码助手，能够根据用户的需求生成高质量的代码。';
-        break;
-      case ContentType.article:
-        systemPrompt = '你是一个专业的文章撰写助手，能够根据用户的需求生成高质量的文章。';
-        break;
-      case ContentType.story:
-        systemPrompt = '你是一个专业的故事创作助手，能够根据用户的需求生成引人入胜的故事。';
-        break;
-      case ContentType.poem:
-        systemPrompt = '你是一个专业的诗歌创作助手，能够根据用户的需求生成优美的诗歌。';
-        break;
-    }
-
-    return AiChatGatewayService().sendChat(
-      agent: widget.agent,
-      messages: [
-        {'role': 'system', 'content': systemPrompt},
-        {'role': 'user', 'content': prompt},
-      ],
+    return _contentService.generate(
+      type: contentType.name,
+      prompt: prompt,
+      agentId: widget.agent.id,
     );
   }
 

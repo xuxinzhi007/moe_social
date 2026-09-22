@@ -2,7 +2,7 @@ package chatapp
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -29,14 +29,14 @@ func (s *AppService) ListPrivateConversations(ctx context.Context, in *chatv1.Li
 func (s *AppService) ClearPrivateChatHistory(ctx context.Context, in *chatv1.ClearPrivateChatHistoryReq) (*chatv1.ClearPrivateChatHistoryResp, error) {
 	viewerID, err := strconv.ParseUint(strings.TrimSpace(in.GetViewerId()), 10, 32)
 	if err != nil || viewerID == 0 {
-		return nil, errors.New("invalid viewer_id")
+		return nil, chatbiz.ErrInvalidViewerID
 	}
 	peerID, err := strconv.ParseUint(strings.TrimSpace(in.GetPeerId()), 10, 32)
 	if err != nil || peerID == 0 {
-		return nil, errors.New("invalid peer_id")
+		return nil, chatbiz.ErrInvalidPeerID
 	}
 	if err := chatbiz.ClearPrivateChatHistory(ctx, s.pm, uint(viewerID), uint(peerID)); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("clear private chat history: %w", err)
 	}
 	return &chatv1.ClearPrivateChatHistoryResp{}, nil
 }

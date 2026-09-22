@@ -3,7 +3,8 @@ import '../models/checkin_status.dart';
 import '../models/checkin_record.dart';
 import '../models/achievement_unlock.dart';
 import '../models/exp_log.dart';
-import '../services/api_service.dart';
+import '../services/api_service.dart' show ApiException;
+import '../services/growth_service.dart';
 
 /// 签到系统状态管理Provider
 /// 管理签到状态、历史记录、经验日志等功能
@@ -87,7 +88,7 @@ class CheckInProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final status = await ApiService.getCheckInStatus(userId);
+      final status = await GrowthService.getCheckInStatus(userId);
       _checkInStatus = status;
 
       debugPrint('✅ 签到状态加载成功: ${status.statusText}');
@@ -103,15 +104,16 @@ class CheckInProvider extends ChangeNotifier {
 
   /// 执行签到操作
   Future<bool> performCheckIn(String userId) async {
-    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true))
+    if (_isCheckingIn || (_checkInStatus?.hasCheckedToday == true)) {
       return false;
+    }
 
     try {
       _isCheckingIn = true;
       _errorMessage = null;
       notifyListeners();
 
-      final checkInResult = await ApiService.checkInWithUnlocks(userId);
+      final checkInResult = await GrowthService.checkInWithUnlocks(userId);
       final checkInData = checkInResult.data;
       _lastUnlocks = checkInResult.newAchievements;
 
@@ -161,11 +163,13 @@ class CheckInProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final result = await ApiService.getCheckInHistory(userId,
-          page: _historyPage, pageSize: 20);
-
-      final records = result['records'] as List<CheckInRecord>;
-      final total = result['total'] as int;
+      final result = await GrowthService.getCheckInHistory(
+        userId,
+        page: _historyPage,
+        pageSize: 20,
+      );
+      final records = result.records;
+      final total = result.total;
 
       if (refresh) {
         _checkInHistory = records;
@@ -202,11 +206,13 @@ class CheckInProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final result =
-          await ApiService.getExpLogs(userId, page: _expLogPage, pageSize: 20);
-
-      final logs = result['logs'] as List<ExpLogRecord>;
-      final total = result['total'] as int;
+      final result = await GrowthService.getExpLogs(
+        userId,
+        page: _expLogPage,
+        pageSize: 20,
+      );
+      final logs = result.logs;
+      final total = result.total;
 
       if (refresh) {
         _expLogs = logs;

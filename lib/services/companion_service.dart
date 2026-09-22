@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_response.dart';
+import 'api_client.dart';
 import 'api_service.dart';
 import 'ai_provider_service.dart';
 import '../auth_service.dart';
@@ -639,6 +642,19 @@ class CompanionService {
     );
   }
 
+  Future<String> uploadAvatarImage(File image) {
+    _requireUserId();
+    return ApiClient.uploadImage(image);
+  }
+
+  Future<String> uploadAvatarBytes(
+    Uint8List bytes, {
+    String filename = 'companion_avatar.png',
+  }) {
+    _requireUserId();
+    return ApiClient.uploadImageBytes(bytes, filename: filename);
+  }
+
   Future<CompanionProactiveSettingsData> getProactiveSettings() async {
     _requireUserId();
     final result = await ApiService.get('/api/companion/proactive-settings');
@@ -927,7 +943,7 @@ class CompanionService {
           'provider_api_style': provider.isBackendOllama ? 'ollama' : 'openai',
           'provider_model': model,
           'provider_api_key': await AiProviderService().readApiKey(provider.id),
-          'provider_timeout_seconds': 120,
+          'provider_timeout_seconds': 300,
         });
       }
     } catch (_) {

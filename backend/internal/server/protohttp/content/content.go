@@ -7,6 +7,7 @@ import (
 
 	contentv1 "backend/api/content/v1"
 	contentbiz "backend/internal/biz/content"
+	"backend/internal/platform/apicomm"
 	contentapp "backend/internal/service/content"
 
 	"google.golang.org/grpc/codes"
@@ -42,14 +43,21 @@ func (s *Server) GenerateContent(ctx context.Context, in *contentv1.GenerateCont
 	if raw := in.GetOptionsJson(); raw != "" {
 		_ = json.Unmarshal([]byte(raw), &opts)
 	}
+	userID := in.GetUserId()
+	if actorID, actorErr := apicomm.UserIDString(ctx); actorErr == nil {
+		userID = actorID
+	}
 	result, err := app.GenerateContent(ctx, contentbiz.GenerateInput{
-		UserID:  in.GetUserId(),
+		UserID:  userID,
 		Type:    in.GetType(),
 		Prompt:  in.GetPrompt(),
 		Options: opts,
 	})
 	if errors.Is(err, contentbiz.ErrUnsupportedContentType) {
 		return nil, status.Error(codes.InvalidArgument, "不支持的内容类型")
+	}
+	if errors.Is(err, contentbiz.ErrEmptyPrompt) {
+		return nil, status.Error(codes.InvalidArgument, "请输入要生成的内容")
 	}
 	if err != nil {
 		return nil, err

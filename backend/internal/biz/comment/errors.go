@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrInvalidPostID    = errors.New("invalid post id")
 	ErrInvalidUserID    = errors.New("invalid user id")
+	ErrEmptyContent     = errors.New("empty comment content")
 	ErrPostNotFound     = errors.New("post not found")
 	ErrUserNotFound     = errors.New("user not found")
 	ErrInvalidParentID  = errors.New("invalid parent id")

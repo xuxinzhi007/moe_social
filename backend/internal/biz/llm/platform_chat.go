@@ -17,6 +17,7 @@ type PlatformChatInput struct {
 	SessionId           string
 	SourceMsgId         string
 	AgentID             string
+	ServerSystemPrompt  string
 	ClientMemoryApplied bool
 	Stream              bool
 	Temperature         float64

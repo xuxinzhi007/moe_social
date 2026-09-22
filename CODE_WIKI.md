@@ -1,7 +1,7 @@
 # Moe Social (萌社交) Code Wiki
 
 > **项目版本**: 1.0.0+1  
-> **最后更新**: 2026-09-11（配置层修订；§4.6 / §4.7 已按实测重写）  
+> **最后更新**: 2026-09-23（前后端业务事实源收口；§2 / §3 / §6 已补充）
 > **技术栈**: Flutter + Go/Kratos + React
 
 ### 近期变更摘要（2026-09-11）
@@ -11,6 +11,14 @@
 | **配置读取统一** | 唯一入口 `backend/pkg/conf`（49 个反向依赖）。此前散落 10 个文件的 `viper.New()` + 硬编码 searchDirs 已清零，`-f` 指定的配置文件现在对每一项都权威（实测：探针配置里的 `tick=7s/11s` 压过同目录 `./config` 的 60/300） |
 | **过渡键删除** | `moeconf` 整包、`moe.kratos_pure_enabled` / `kratos_admin_base_url` / `super_grpc_retired` / `register_moe_grpc` / `use_moe_grpc`、`api.super_rpc_*`、`runtime.grpc_listen` 均已删除且零读者；18888 / 19032 两个无监听端口的硬编码兜底随之消失 |
 | **LLM 环境变量** | `MOE_LLM_BASE_URL` / `MOE_LLM_API_STYLE` / `MOE_LLM_MODEL` / `MOE_LLM_API_KEY` **四个全部生效**且作用域统一。下方 2026-06-29 摘要只提 `MOE_LLM_API_KEY`，那是当时的实况（另三个到不了 Bot 调度），现已过期 |
+
+### 近期变更摘要（2026-09-23）
+
+| 类别 | 说明 |
+|------|------|
+| **业务事实源收口** | 项目转型方向不是换掉 Flutter，而是把权限、关系、等级阈值、Prompt、记忆、模型路由等业务规则统一收回 Go/Kratos 后端；Flutter 保留页面、输入、动画、草稿、乐观 UI、错误展示和重试 |
+| **AI / Companion** | Companion 正式路径消费后端 SSE；Prompt、记忆、上下文、小主机 Ollama 调用和失败处理由后端 Companion/LLM 域维护 |
+| **成长体系** | Flutter 新增 `GrowthService` 作为客户端适配层；签到、等级、经验日志仍走后端 checkin/level/achievement 规则，不在客户端推算等级阈值 |
 
 ### 近期变更摘要（2026-06-29）
 
@@ -114,6 +122,22 @@ moe_social/
 
 **已退役 / 不存在**：`backend/rpc/`、`backend/api/defs/`、Chrome `integration_test/` 测试栈、`e2e/`（Playwright 视觉冒烟）、`pkg/memory/`。
 
+### 2.3 业务事实源边界
+
+正式产品路径遵循：
+
+```
+Flutter Page / Widget
+  -> ViewModel / Provider
+  -> Domain Service
+  -> Backend API
+  -> service
+  -> biz
+  -> data / pkg / external runtime
+```
+
+Flutter 不作为业务规则事实源。客户端可以决定展示、输入、草稿、滚动位置、乐观插入、失败回滚和重试；不能决定权限、内容可见性、等级阈值、奖励发放、Companion 记忆、Prompt 组装或模型路由。完整方案见 [docs/dev/backend-business-ssot-transition.md](docs/dev/backend-business-ssot-transition.md)。
+
 ---
 
 ## 3. 前端架构（Flutter）
@@ -165,9 +189,13 @@ moe_social/
 | AI 网关 | `ai_chat_gateway_service.dart` | 聊天请求调度 |
 | Provider | `ai_provider_service.dart` | 多 API 来源配置与模型列表 |
 | LLM 网关 | `ai_chat_gateway_service.dart` | App 统一走 `/api/llm/models` 与 `/api/llm/chat`，模型运行细节由后端处理 |
+| 内容生成 | `content_generation_service.dart` | App 统一走 `/api/content/generate`，内容类型提示策略由后端维护 |
 | 推理 | `ai_inference_service.dart` | LLM 调用 |
 | LLM Chat Context | 后端 `internal/biz/llm/chat_context.go` | 角色提示词、用户 Persona、世界书上下文装配 |
+| Companion Chat | `companion_service.dart` | 前端消费后端 SSE；Prompt、记忆、上下文与 Ollama 调用闭环由后端 Companion 域维护 |
 | 帖子/社交 | `post_service.dart` | 动态、评论 |
+| 私信 | `chat_service.dart` | 私信客户端适配；发送、历史、会话、错误裁决由后端 `biz/chat` + `protohttp/chat` 统一 |
+| 成长 | `growth_service.dart` | 签到、等级、经验日志客户端适配；等级阈值与奖励裁决以后端 checkin 域为准 |
 | 实时 | `ws_channel_connector*.dart`、`presence_service.dart` | WebSocket |
 | 成就 | `achievement_hooks.dart` | 前端成就触发 |
 
@@ -321,21 +349,22 @@ Brain 内仍有 `prompt_memory.go` 等**提示词级**记忆辅助，非独立�
 
 ```
 Flutter (chat_page / agent_list / provider profiles)
-        │  /api/llm/*  /api/ai/*
+        │  /api/llm/*  /api/ai/*  /api/companion/*
         ▼
-biz/llm/platform_chat_execute.go
+biz/llm/platform_chat_execute.go · biz/companion
         │  pkg/llminference (OpenAI-compatible + api_key)
         ▼
-DeepSeek / 自建中转 / OpenAI 兼容端点
+Ollama 小主机 / DeepSeek / 自建中转 / OpenAI 兼容端点
 ```
 
 - **Provider 模型**：用户配置 baseUrl、apiKey、默认模型；酒馆 Tab 拉取 `/models` 或手动输入模型 ID  
 - **无独立向量记忆产品**：上下文预算由 `platform_common` 控制；历史消息走会话存储  
 - **Moe Brain**：管理台可观测管线；`pkg/moe/brain` 负责 Bot 心智与 RPG
+- **Companion 正式路径**：Flutter 只消费后端 SSE 和展示错误；Prompt、记忆、上下文、模型选择、小主机 Ollama 超时与兜底由后端维护。
 
 ### 6.2 实时通信
 
-`biz/chat/` — WebSocket Hub、私信、在线状态、匹配队列；客户端 `ws_channel_connector.dart`。
+`biz/chat/` — WebSocket Hub、私信、在线状态、匹配队列；私信输入、用户存在性、自己给自己发、图片参数等业务裁决在后端统一映射为稳定状态码与中文文案；客户端 `ws_channel_connector.dart`。
 
 ### 6.3 虚拟形象与成就
 

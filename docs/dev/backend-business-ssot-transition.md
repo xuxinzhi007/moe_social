@@ -11,6 +11,13 @@ Moe Social 当前同时包含 Flutter App、Go/Kratos 后端、AI 伙伴、本�
 
 本方案的目标不是换掉 Flutter，而是把业务事实源统一收回后端，让 Flutter 回到 App 体验层。
 
+核心结论：
+
+- 继续使用 Flutter。问题不在 Flutter 语言本身，而在前端承担了太多业务判断。
+- 后端作为业务事实源。权限、关系、模型路由、成长奖励、内容可见性等规则只在后端落地。
+- Flutter 作为体验终端。页面、动画、输入、草稿、乐观 UI、错误提示和重试留在客户端。
+- 小主机 Ollama 是推理运行时，不是产品后端。App 不直接依赖它的模型名、地址或协议。
+
 ## 方案
 
 ### 目标架构
@@ -33,6 +40,20 @@ Model Runtime
   - 只做推理，不承载 App 业务规则
 ```
 
+正式调用链：
+
+```text
+Page / Widget
+  -> ViewModel / Provider
+  -> Domain Service
+  -> Backend API
+  -> service
+  -> biz
+  -> data / pkg / external runtime
+```
+
+客户端禁止跨过 `Domain Service` 直接把页面接到底层 HTTP；后端禁止绕过 `biz` 把业务判断写进 HTTP 适配层或 data 层。
+
 ### 分层边界
 
 | 能力 | Flutter 保留 | 后端统一 |
@@ -44,6 +65,8 @@ Model Runtime
 | Companion | 聊天界面、输入体验、状态展示 | 伙伴身份、记忆、上下文、主动陪伴、模型路由 |
 | 模型配置 | 展示当前可用能力和错误提示 | 供应商配置、模型名、连接策略、降级策略 |
 | 本地模型 | 不直接绑定业务规则 | 通过后端 AI 网关调用 |
+| 成长体系 | 签到按钮、等级展示、进度动效 | 经验来源、等级阈值、奖励发放、成就解锁 |
+| 内容生成 | 输入表单、生成中状态、结果展示 | 类型策略、Prompt、角色上下文、模型调用 |
 
 ### Flutter 约束
 
@@ -85,20 +108,39 @@ AI 网关负责：
 - 决定产品权限。
 - 直接暴露给 Flutter 主路径。
 
+### 接口设计原则
+
+- 后端响应直接表达业务结果，不要求 Flutter 二次推断。例如返回 `can_comment`、`level_title`、`next_level_exp`、`retryable`，而不是让客户端用字符串或阈值自己算。
+- 错误由后端映射为稳定状态和中文短文案。Flutter 只负责展示、重试和必要的乐观 UI 回滚。
+- 新增字段优先可选，避免老客户端崩溃。删除字段必须等前端旧路径清干净后再做。
+- 流式接口只传展示事件：`start`、`delta`、`done`、`error`。Prompt、记忆、模型选择不进入事件协议。
+- 诊断接口和正式接口分开命名。`raw`、`debug`、`diagnostics` 只能用于开发排障，不进入正式页面主路径。
+
+### 排障边界
+
+以后遇到“编译起不来、运行闪退、AI 报错”按三段拆开，不混在一起修：
+
+| 类别 | 首查 | 不应该归因到 |
+|------|------|--------------|
+| Flutter/Android 构建失败 | Gradle、Flutter SDK、Android 插件、设备日志 | 小主机模型 |
+| App 运行崩溃 | Flutter runtime log、目标页面 Provider、动画 Ticker、内存峰值 | 后端业务规则 |
+| 后端 API 报错 | 后端日志、HTTP 响应、biz/service 测试 | Flutter 页面布局 |
+| 模型响应失败 | 后端 AI 网关、小主机 `/api/tags` 和 `/api/chat` | Flutter 是否拼 Prompt |
+
+这样做的目的很直接：编译问题先保证 App 能启动；后端问题用 API 直接打通；模型问题只在后端到小主机之间定位。
+
 ## 影响范围
 
-第一批重点域：
+第一批重点域按优先级执行：
 
-- `lib/services/ai_*`
-- `lib/services/companion_*`
-- `lib/providers/*`
-- `lib/pages/feed/*`
-- `lib/pages/chat/*`
-- `backend/api/llm/v1/*`
-- `backend/api/moe/v1/*`
-- `backend/internal/biz/llm`
-- `backend/internal/biz/moe`
-- `backend/internal/service/*`
+| 优先级 | 域 | Flutter 重点 | 后端重点 |
+|--------|----|--------------|----------|
+| P0 | 构建/启动稳定性 | Android 配置、启动日志、主路径崩溃点 | 不参与构建问题 |
+| P0 | Companion / AI | `companion_service.dart`、AI 页面、流式展示 | `biz/companion`、`biz/llm`、`pkg/llminference` |
+| P0 | Feed / 发帖 / 评论 | feed 页面、创建页、评论页 ViewModel | `biz/post`、`biz/comment`、错误映射 |
+| P0 | 私信 | 会话页、乐观发送、断线提示 | `biz/chat`、WebSocket、未读与关系校验 |
+| P1 | 成长体系 | `GrowthService`、签到/等级 Provider | checkin、level、achievement 规则 |
+| P1 | 用户/关系 | profile、follow、friend UI | user/follow/friend biz |
 
 暂不作为第一批：
 
@@ -113,23 +155,27 @@ AI 网关负责：
 - 保持 Android/Flutter 构建稳定配置。
 - 本地模型、小主机和后端连通性单独排查，不和 Flutter 构建问题混在一起。
 - 对开发地址、模型地址、后端地址做一次清点，确认哪些仍然在 Flutter 中承担业务含义。
+- 避免用全量重构验证构建问题；优先跑目标文件 analyze、目标单测、后端小包测试。
 
 验收：
 
 - `flutter run` 能启动。
 - 后端 `make moe-social` 能启动。
 - App 访问后端失败时，错误能明确指向地址或后端运行状态。
+- 小主机 Ollama 不可用时，App 仍能看到后端返回的明确错误，而不是客户端崩溃。
 
 ### 阶段 1：梳理前端业务判断
 
 - 搜索 Flutter 中直接调用 `ApiService` / `ApiClient` 的页面和 Provider。
 - 标记前端正在做的业务判断：权限、可见性、模型选择、记忆写入、默认角色选择。
 - 把判断分类为“体验状态”或“业务事实源”。
+- 每个条目都绑定一个后端 owner：`user`、`post`、`comment`、`chat`、`companion`、`llm`、`checkin`、`achievement`。
 
 验收：
 
 - 形成一张迁移清单。
 - 每个条目都有目标后端域和 Flutter 保留职责。
+- 新增 Flutter 代码不再扩大 `ApiService` 直接调用面。
 
 ### 阶段 2：收敛 Companion 与 AI
 
@@ -137,35 +183,52 @@ AI 网关负责：
 - Flutter 不再直接拼模型 endpoint、模型名和上下文策略。
 - 本地模型和小主机只作为后端 AI 网关的运行时。
 - 保留 Flutter 的聊天输入、流式展示、失败提示和重试体验。
+- 保留 raw/debug 接口用于开发排障，但正式页面不再调用 raw 模型协议。
 
 验收：
 
 - App 只调用后端 Companion/LLM 契约。
 - 断开小主机时，Flutter 看到的是后端返回的可展示错误。
 - Companion 记忆和身份只以后端为准。
+- 后端可用直接 HTTP/SSE 验证 Companion 调用，不依赖 Flutter 才能判断链路是否正常。
 
 ### 阶段 3：收敛社交主路径
 
 - Feed 排序、帖子可见性、评论权限、未读计数以后端为准。
 - Flutter ViewModel 只维护列表展示状态、分页游标、乐观 UI 和错误提示。
 - 对老接口保持兼容，新增字段优先可选，不破坏旧客户端。
+- 发布、评论、私信等写操作以后端错误码为准，Flutter 不再用本地缓存阻断最终业务动作。
 
 验收：
 
 - 主路径页面无新增直接 `ApiService` 调用。
 - 关键业务规则在后端 biz 层可测试。
+- Flutter 失败文案不再解析后端原始错误字符串。
 
 ### 阶段 4：清理前端旧逻辑
 
 - 删除已经迁到后端的前端重复判断。
 - 旧 AI 本地直连路径如果仍需保留，只能作为开发诊断入口，并默认不进正式主路径。
 - 更新相关文档和联调步骤。
+- 对仍保留在 Flutter 的逻辑标注原因：体验状态、离线缓存、动画状态或输入草稿。
 
 验收：
 
 - Flutter 业务 Service 只做客户端适配。
 - 后端拥有业务规则测试。
 - 文档中的边界和代码实际一致。
+
+### 阶段 5：固化质量门禁
+
+- 后端业务规则必须有 biz/service/protohttp 小范围测试。
+- Flutter 只对触及文件跑 analyze 和必要 widget/service 测试，避免每次全量压垮开发机。
+- 文档同步更新 `CODE_WIKI.md` 和本文件的“已落地切片”。
+- 重复踩坑只在确认后写入 `.cursor/LESSONS.md`。
+
+验收：
+
+- 新 PR/提交能说明“业务规则在哪里、客户端只保留什么”。
+- 构建问题、后端问题、模型问题有独立验证命令。
 
 ## 回滚方案
 
@@ -184,11 +247,28 @@ AI 网关负责：
 
 ## 下一步执行清单
 
-1. 建立“前端业务判断迁移清单”，优先扫描 AI、Companion、Feed、Chat。
-2. 对 Companion 聊天定一个正式后端契约，明确请求、响应、错误和流式事件。
-3. 把小主机模型地址移到后端配置，Flutter 只显示连接状态和错误。
-4. 选一个最小闭环先迁移：建议从 Companion 聊天开始，因为它最能暴露“前端业务”和“模型推理”的边界。
-5. 每迁一个域，同步补后端 biz 测试和 Flutter 冒烟检查。
+1. 先把当前构建/运行闪退问题独立收口，保证 `flutter run` 主路径可启动。
+2. 继续清点 Flutter 直接调用 `ApiService` / `ApiClient` 的页面和 Provider，按 P0/P1 排序。
+3. Companion/AI 只保留后端正式契约，raw/debug 留给诊断入口。
+4. Feed、评论、私信、成长体系逐域迁移，规则进入后端 biz，Flutter 删除重复判断。
+5. 每迁一个域，同步补后端小范围测试、Flutter 目标 analyze 和文档“已落地切片”。
+
+## 迁移判定表
+
+遇到一段逻辑时按这张表判断放哪：
+
+| 判断问题 | 放在 Flutter | 放在后端 |
+|----------|--------------|----------|
+| 没网络时是否展示重试按钮？ | 是 | 否 |
+| 用户是否能发这条评论？ | 否 | 是 |
+| 等级 4 到 5 需要多少经验？ | 否 | 是 |
+| 发送消息失败后是否回滚乐观气泡？ | 是 | 否 |
+| AI 应该使用哪个模型？ | 否 | 是 |
+| 这一轮对话要带哪些记忆？ | 否 | 是 |
+| 文本框草稿是否恢复？ | 是 | 否 |
+| 某条帖子是否可见？ | 否 | 是 |
+| 页面按钮是否禁用以防重复点击？ | 是 | 否 |
+| 写操作最终是否允许？ | 否 | 是 |
 
 ## 已落地切片
 
@@ -206,3 +286,57 @@ AI 网关负责：
 - 后端优先使用服务端角色卡上的 `model_name`，避免 Flutter 旧状态决定模型路由。
 - Flutter 聊天页只发送可见聊天历史、会话 ID、消息 ID 和交互采样参数。
 - 删除 Flutter 侧 `AiChatContextBuilder`、`AiRoleplayPromptBuilder`、`AiLorebookService`，避免提示词业务双维护。
+
+### 2026-09-23：内容生成提示策略后端化
+
+- `/api/content/generate` 从占位实现改为调用后端 LLM 网关。
+- 后端统一维护 text/image/video/code/article/story/poem 七类内容生成策略。
+- 内容生成可携带 `agent_id`，后端会把类型任务提示合并到服务端角色上下文。
+- Flutter 内容生成页只提交类型、用户输入和当前 agent，不再拼 system prompt 或调用 `/api/llm/chat`。
+- 移除 `example.com` 图片/视频假返回，LLM 未初始化时明确暴露后端服务不可用。
+
+### 2026-09-23：群组发帖权限裁决后端化
+
+- 发帖到兴趣小组时，后端 `postbiz.Create`/`LinkPostToGroupTx` 统一校验群组存在与成员关系。
+- `protohttp/post` 将未入群、群不存在、内容为空等业务错误映射为稳定 HTTP/gRPC 状态与中文文案。
+- Flutter 发帖页移除 `canPostToGroup` 预检、按钮禁用和本地阻断，只保留发布交互与后端错误提示。
+- 避免客户端 `group.isJoined` 旧缓存决定是否能发帖，权限事实源以后端为准。
+
+### 2026-09-23：评论关系与评论输入裁决后端化
+
+- 评论列表以后端 `parent_id` 与 `reply_to_user_name` 为准。
+- Flutter 评论页移除按 `@昵称` 推断父评论的兼容逻辑，不再从文本猜业务关系。
+- 后端创建评论会 trim 内容并拒绝空评论，避免前端成为唯一校验点。
+- `protohttp/comment` 将空评论、父评论不存在、父评论不属于当前帖子、未登录等错误映射为稳定状态与中文文案。
+
+### 2026-09-23：私信输入与错误裁决后端化
+
+- 私信发送、拉取会话、清理历史的参数与业务错误统一改为 `chatbiz` sentinel errors。
+- `protohttp/chat` 将未登录、自己给自己发、空消息、图片参数、用户不存在等错误映射为稳定状态与中文文案。
+- Flutter 私信页继续只负责输入、乐观插入、回滚和 toast 展示，不再需要根据后端原始错误字符串推断业务含义。
+
+### 2026-09-23：Companion Ollama 调用闭环修复
+
+- 小主机 Ollama `/api/tags`、流式 `/api/chat`、非流式 `/api/chat` 均已直接验证可用。
+- 后端 Companion 流式调用失败后，非流式兜底不再继承已取消的上游 stream context，避免出现 `stream chat failed ... non-stream fallback failed: inference request canceled` 的误导性错误。
+- 本地 Ollama 推理超时调整为 300 秒，适配 CPU 小主机长上下文首包较慢的情况。
+- Flutter Companion 仍只消费后端 SSE 事件并展示交互，不直接拼接 Prompt 或绕过后端调用 Ollama。
+
+### 2026-09-23：成长域前端适配层收口
+
+- 新增 Flutter `GrowthService` 作为签到、等级、经验日志、每日浏览经验的客户端适配层。
+- `CheckInProvider`、`UserLevelProvider`、`DailyGrowthService` 不再直接调用底层 `ApiService`。
+- 移除 `UserLevelProvider.updateExperience` 中本地推算等级阈值的重复业务逻辑，等级结果以后端 `GetUserLevel` 为准。
+
+### 2026-09-23：全局加载 Provider 去业务 API 化
+
+- `LoadingProvider` 不再直接调用登录、注册和图片上传底层 API。
+- 登录/注册统一转交 `AuthService`，确保 token 保存、在线状态、缓存清理等认证副作用只维护一处。
+- 图片上传统一转交 `UserService.uploadImage`，Provider 只负责加载状态、成功/错误消息和回调编排。
+
+### 2026-09-23：Companion 上下文构建降级
+
+- Companion 聊天上下文中的关系事件属于增强上下文，读取失败时不再中断聊天主路径。
+- `BuildContext` 会记录关系事件读取错误并降级为空事件列表，保留 Profile、State、记忆和聊天历史继续进入模型调用。
+- `companion_relationship_events` 增加按 `user_id + created_at` 的查询索引声明，降低“取最近关系事件”在数据增长后拖慢聊天的风险。
+- 模型回复后的助手消息保存、亲密度更新和完成事件记录使用独立短超时上下文，避免 SSE 请求结束后收尾写入被取消。

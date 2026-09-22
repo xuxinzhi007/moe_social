@@ -88,6 +88,50 @@ func TestChatAppliesBackendAgentContext(t *testing.T) {
 	assertServerPrompt(t, capturedMessages)
 }
 
+func TestChatMergesServerSystemPromptWithAgentContext(t *testing.T) {
+	agents := mustJSONForServiceTest(t, []map[string]any{{
+		"id":            "agent-1",
+		"model_name":    "base:latest",
+		"system_prompt": "server prompt",
+	}})
+	var capturedMessages []llminference.Message
+	svc := New(nil, Deps{
+		UserID: func(context.Context) (uint, error) { return 7, nil },
+		Inference: llminference.Config{
+			BaseURL:      "http://inference.invalid",
+			APIStyle:     "ollama",
+			DefaultModel: "base:latest",
+		},
+		ModelManagement: conf.ModelManagement{AllowedBaseModels: []string{"base:latest"}},
+		AIStore:         fakeAIStore{cfg: &model.AiUserConfig{AgentsJSON: agents, LorebooksJSON: "[]"}},
+		ChatComplete: func(_ context.Context, _ string, messages []llminference.Message, _ llminference.ChatOptions) (string, error) {
+			capturedMessages = messages
+			return "hello", nil
+		},
+	})
+
+	_, err := svc.Chat(context.Background(), llmbiz.PlatformChatInput{
+		AgentID:            "agent-1",
+		ServerSystemPrompt: "content policy",
+		Messages: []llmbiz.PlatformChatMessage{
+			{Role: "system", Content: "client prompt"},
+			{Role: "user", Content: "hi"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(capturedMessages) != 2 || capturedMessages[0].Role != "system" {
+		t.Fatalf("messages=%+v", capturedMessages)
+	}
+	systemPrompt := capturedMessages[0].Content
+	if !strings.Contains(systemPrompt, "server prompt") ||
+		!strings.Contains(systemPrompt, "content policy") ||
+		strings.Contains(systemPrompt, "client prompt") {
+		t.Fatalf("system prompt=%q", systemPrompt)
+	}
+}
+
 func mustJSONForServiceTest(t *testing.T, value any) string {
 	t.Helper()
 	raw, err := json.Marshal(value)

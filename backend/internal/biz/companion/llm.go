@@ -332,7 +332,9 @@ func streamChat(
 		return reply, err
 	}
 
-	fallback, fallbackErr := nonStreamChat(ctx, cfg, modelName, messages)
+	fallbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeoutOrDefault(cfg.Timeout))
+	defer cancel()
+	fallback, fallbackErr := nonStreamChat(fallbackCtx, cfg, modelName, messages)
 	if fallbackErr != nil {
 		return "", fmt.Errorf("stream chat failed: %w; non-stream fallback failed: %v", err, fallbackErr)
 	}
@@ -359,6 +361,13 @@ func nonStreamChat(
 			Temperature: 0.85,
 			MaxTokens:   480,
 		})
+}
+
+func timeoutOrDefault(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return 300 * time.Second
+	}
+	return timeout
 }
 
 // ── 记忆提取 ──

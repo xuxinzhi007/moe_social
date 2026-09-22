@@ -124,48 +124,8 @@ class _CommentsPageState extends State<CommentsPage> {
     }
   }
 
-  /// 兼容旧版仅 @昵称、未写 parent_id 的回复
-  List<Comment> get _normalizedComments {
-    return _vm.comments.map(_normalizeCommentParent).toList();
-  }
-
-  Comment _normalizeCommentParent(Comment c) {
-    if (!c.isTopLevel) return c;
-    final inferredParentId = _inferParentForOrphanReply(c);
-    if (inferredParentId == null) return c;
-    Comment? parent;
-    for (final x in _vm.comments) {
-      if (x.id == inferredParentId) {
-        parent = x;
-        break;
-      }
-    }
-    return c.copyWith(
-      parentId: inferredParentId,
-      replyToUserName: parent?.userName ?? c.replyToUserName,
-    );
-  }
-
-  String? _inferParentForOrphanReply(Comment c) {
-    final trimmed = c.content.trim();
-    if (!trimmed.startsWith('@')) return null;
-    final match = RegExp(r'^@(\S+)').firstMatch(trimmed);
-    if (match == null) return null;
-    final targetName = match.group(1)!;
-
-    Comment? best;
-    for (final other in _vm.comments) {
-      if (other.id == c.id || other.userName != targetName) continue;
-      if (other.createdAt.isAfter(c.createdAt)) continue;
-      if (best == null || other.createdAt.isAfter(best.createdAt)) {
-        best = other;
-      }
-    }
-    return best?.id;
-  }
-
   List<Comment> get _topLevelComments {
-    return _normalizedComments.where((c) => c.isTopLevel).toList()
+    return _vm.comments.where((c) => c.isTopLevel).toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
@@ -173,7 +133,7 @@ class _CommentsPageState extends State<CommentsPage> {
   String _threadRootId(Comment c) {
     if (c.isTopLevel) return c.id;
     var pid = c.parentId;
-    final byId = {for (final x in _normalizedComments) x.id: x};
+    final byId = {for (final x in _vm.comments) x.id: x};
     while (pid.isNotEmpty && pid != '0') {
       final p = byId[pid];
       if (p == null) break;
@@ -184,21 +144,10 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   List<Comment> _allRepliesUnderRoot(String rootId) {
-    return _normalizedComments
+    return _vm.comments
         .where((c) => !c.isTopLevel && _threadRootId(c) == rootId)
-        .map(_ensureReplyTargetName)
         .toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
-
-  Comment _ensureReplyTargetName(Comment c) {
-    if (c.replyToUserName.trim().isNotEmpty) return c;
-    for (final x in _normalizedComments) {
-      if (x.id == c.parentId) {
-        return c.copyWith(replyToUserName: x.userName);
-      }
-    }
-    return c;
   }
 
   void _startReply(Comment comment) {
@@ -243,7 +192,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
   String? _replyThreadRootIdForParent(String? parentId) {
     if (parentId == null || parentId.isEmpty) return null;
-    for (final c in _normalizedComments) {
+    for (final c in _vm.comments) {
       if (c.id == parentId) return _threadRootId(c);
     }
     return null;

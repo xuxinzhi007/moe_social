@@ -2,7 +2,7 @@ package chatbiz
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -14,18 +14,18 @@ import (
 // ListPrivateMessages 分页拉取两人私信历史（viewer 视角）。
 func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *chatv1.ListPrivateMessagesRequest) (*chatv1.ListPrivateMessagesReply, error) {
 	if st == nil {
-		return nil, errors.New("db not ready")
+		return nil, ErrChatStoreUnavailable
 	}
 	viewer, err := strconv.ParseUint(strings.TrimSpace(in.GetViewerId()), 10, 32)
 	if err != nil || viewer == 0 {
-		return nil, errors.New("invalid viewer_id")
+		return nil, ErrInvalidViewerID
 	}
 	peer, err := strconv.ParseUint(strings.TrimSpace(in.GetPeerId()), 10, 32)
 	if err != nil || peer == 0 {
-		return nil, errors.New("invalid peer_id")
+		return nil, ErrInvalidPeerID
 	}
 	if viewer == peer {
-		return nil, errors.New("invalid peer")
+		return nil, ErrMessageSelf
 	}
 
 	limit := int(in.GetLimit())
@@ -43,7 +43,7 @@ func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *chatv1
 	if bid := strings.TrimSpace(in.GetBeforeId()); bid != "" {
 		beforeUint, err := strconv.ParseUint(bid, 10, 32)
 		if err != nil {
-			return nil, errors.New("invalid before_id")
+			return nil, ErrInvalidBeforeID
 		}
 		v := uint(beforeUint)
 		beforeID = &v
@@ -51,7 +51,7 @@ func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *chatv1
 
 	rows, err := st.ListPrivateMessages(ctx, uint(viewer), uint(peer), beforeID, limit+1, now)
 	if err != nil {
-		return nil, errors.New("query failed")
+		return nil, fmt.Errorf("list private messages: %w", ErrQueryMessages)
 	}
 
 	hasMore := len(rows) > limit
@@ -81,11 +81,11 @@ func ListPrivateMessages(ctx context.Context, st PrivateMessageStore, in *chatv1
 // ListPrivateConversations 列出 viewer 的私信会话摘要。
 func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *chatv1.ListPrivateConversationsRequest) (*chatv1.ListPrivateConversationsReply, error) {
 	if st == nil {
-		return nil, errors.New("db not ready")
+		return nil, ErrChatStoreUnavailable
 	}
 	viewerID, err := strconv.ParseUint(strings.TrimSpace(in.GetViewerId()), 10, 32)
 	if err != nil || viewerID == 0 {
-		return nil, errors.New("invalid viewer_id")
+		return nil, ErrInvalidViewerID
 	}
 
 	limit := int(in.GetLimit())
@@ -105,12 +105,12 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *c
 
 	total, err := st.CountPrivateConversations(ctx, uint(viewerID), now)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count private conversations: %w", ErrQueryMessages)
 	}
 
 	rows, err := st.ListPrivateConversationPeers(ctx, uint(viewerID), limit, offset, now)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list private conversation peers: %w", ErrQueryMessages)
 	}
 
 	lastIDs := make([]uint, 0, len(rows))
@@ -127,7 +127,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *c
 	if len(lastIDs) > 0 {
 		msgs, err := st.GetPrivateMessagesByIDs(ctx, lastIDs)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get private conversation messages: %w", ErrQueryMessages)
 		}
 		for _, m := range msgs {
 			msgByID[m.ID] = m
@@ -138,7 +138,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *c
 	if len(peerIDs) > 0 {
 		users, err := st.GetUsersByIDs(ctx, peerIDs)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get private conversation peers: %w", ErrQueryMessages)
 		}
 		for _, u := range users {
 			userByID[u.ID] = u
@@ -147,7 +147,7 @@ func ListPrivateConversations(ctx context.Context, st PrivateMessageStore, in *c
 
 	unreadByPeer, err := st.CountPrivateChatUnreadByPeer(ctx, uint(viewerID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("count private chat unread: %w", ErrQueryMessages)
 	}
 
 	moeIDs := append(peerIDs, uint(viewerID))
