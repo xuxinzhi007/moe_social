@@ -95,8 +95,8 @@ func buildSystemPromptWithContext(
 		}
 	}
 	if len(candidateMemories) > 0 {
-		b.WriteString("\n\n[unconfirmed memory candidates]")
-		b.WriteString("\nTreat these as hypotheses only; do not state them as facts unless the user confirms them.")
+		b.WriteString("\n\n[待用户确认的印象]")
+		b.WriteString("\n这些来自最近对话，回答用户“你记得什么”时可以自然提起，但要说成“我有个印象/可能记得”，不要当作已确认事实。")
 		for _, m := range candidateMemories {
 			b.WriteString("\n- ")
 			b.WriteString(m.Content)

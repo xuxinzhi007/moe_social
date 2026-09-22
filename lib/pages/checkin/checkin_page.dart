@@ -702,10 +702,6 @@ class _CheckInPageState extends State<CheckInPage>
   ) {
     final hasChecked = checkInProvider.hasCheckedToday;
     final canCheckIn = checkInProvider.canCheckIn;
-    final streakTarget = math.max(3, checkInProvider.consecutiveDays + 1);
-    final daysLeft =
-        math.max(0, streakTarget - checkInProvider.consecutiveDays);
-    final sideQuestReward = 12 + (streakTarget * 2);
 
     return MoeReveal(
       delay: const Duration(milliseconds: 120),
@@ -735,7 +731,7 @@ class _CheckInPageState extends State<CheckInPage>
             ),
             const SizedBox(height: 6),
             Text(
-              '把签到、连签奖励和成长进度收在一起，像清任务一样把今天的收益拿满。',
+              '这里展示后端已经确认的签到收益和成长状态。',
               style: TextStyle(
                 fontSize: 13,
                 height: 1.45,
@@ -769,17 +765,6 @@ class _CheckInPageState extends State<CheckInPage>
               icon: Icons.calendar_month_rounded,
               stateLabel: '明日解锁',
               accent: const Color(0xFFFFB347),
-            ),
-            const SizedBox(height: 12),
-            _buildQuestRow(
-              title: '支线奖励: 连签里程碑',
-              subtitle: daysLeft == 0
-                  ? '当前已经踩在线上奖励点，下一次签到会继续滚动奖励。'
-                  : '距离 $streakTarget 天里程碑还差 $daysLeft 天，预计可拿额外 +$sideQuestReward EXP。',
-              reward: '+$sideQuestReward EXP',
-              icon: Icons.flag_rounded,
-              stateLabel: daysLeft == 0 ? '进行中' : '差 $daysLeft 天',
-              accent: levelProvider.getLevelColor(levelProvider.currentLevel),
             ),
           ],
         ),
@@ -1206,15 +1191,6 @@ class _CheckInPageState extends State<CheckInPage>
     CheckInProvider checkInProvider,
     UserLevelProvider levelProvider,
   ) {
-    final streak = checkInProvider.consecutiveDays;
-    final streakMilestone = streak < 3
-        ? 3
-        : streak < 5
-            ? 5
-            : streak < 7
-                ? 7
-                : streak + 3;
-    final streakRemaining = math.max(0, streakMilestone - streak);
     final nextLevelExp =
         levelProvider.isMaxLevel ? 0 : math.max(0, levelProvider.expToNext);
 
@@ -1241,21 +1217,10 @@ class _CheckInPageState extends State<CheckInPage>
         completed: checkInProvider.hasCheckedToday,
       ),
       _CheckInTaskViewData(
-        title: '连续签到里程碑',
-        subtitle: streakRemaining == 0
-            ? '你已经站上当前里程碑，继续保持就会滚动解锁下一档奖励。'
-            : '还差 $streakRemaining 天即可触发第 $streakMilestone 天连签奖励。',
-        reward: '+${12 + streakMilestone * 2} EXP',
-        badge: streakRemaining == 0 ? '进行中' : '差 $streakRemaining 天',
-        icon: Icons.local_fire_department_rounded,
-        accent: const Color(0xFFFF8A5B),
-        completed: false,
-      ),
-      _CheckInTaskViewData(
         title: '等级成长',
         subtitle: levelProvider.isMaxLevel
             ? '当前已经达到最高等级，今天继续保持活跃就好。'
-            : '距离下一等级还差 $nextLevelExp EXP，完成日常任务会更快升级。',
+            : '距离下一等级还差 $nextLevelExp EXP，成长结果以后端记录为准。',
         reward: levelProvider.isMaxLevel
             ? '已满级'
             : '目标 Lv.${levelProvider.currentLevel + 1}',
@@ -1265,15 +1230,6 @@ class _CheckInPageState extends State<CheckInPage>
         icon: Icons.auto_awesome_rounded,
         accent: levelProvider.getLevelColor(levelProvider.currentLevel),
         completed: levelProvider.isMaxLevel,
-      ),
-      const _CheckInTaskViewData(
-        title: '更多活跃任务',
-        subtitle: '后续可以在这里接入发动态、逛社区、进入 AI 等日常任务。',
-        reward: '即将开放',
-        badge: '预告',
-        icon: Icons.explore_rounded,
-        accent: Color(0xFF9095A0),
-        completed: false,
       ),
     ];
   }

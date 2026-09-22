@@ -72,24 +72,6 @@ class UserLevelProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 获取等级标题
-  String getLevelTitle(int level) {
-    switch (level) {
-      case 1:
-        return '萌新菜鸟';
-      case 2:
-        return '活跃新手';
-      case 3:
-        return '社区中坚';
-      case 4:
-        return '资深达人';
-      case 5:
-        return '社区大师';
-      default:
-        return '未知等级';
-    }
-  }
-
   /// 获取等级徽章URL
   String getLevelBadgeUrl(int level) {
     // 这里可以返回对应等级的徽章图片URL
@@ -153,44 +135,6 @@ class UserLevelProvider extends ChangeNotifier {
         return [const Color(0xFFFFD700), const Color(0xFFFFA500)];
       default:
         return [const Color(0xFF91EAE4), const Color(0xFF7F7FD5)];
-    }
-  }
-
-  /// 获取等级特权列表
-  List<String> getLevelPrivileges(int level) {
-    switch (level) {
-      case 1:
-        return ['基础发帖功能', '基础评论功能'];
-      case 2:
-        return ['基础发帖功能', '基础评论功能', '点赞功能', '关注功能'];
-      case 3:
-        return ['基础发帖功能', '基础评论功能', '点赞功能', '关注功能', '创建话题', '上传图片'];
-      case 4:
-        return [
-          '基础发帖功能',
-          '基础评论功能',
-          '点赞功能',
-          '关注功能',
-          '创建话题',
-          '上传图片',
-          '专属徽章',
-          'VIP购买优惠'
-        ];
-      case 5:
-        return [
-          '基础发帖功能',
-          '基础评论功能',
-          '点赞功能',
-          '关注功能',
-          '创建话题',
-          '上传图片',
-          '专属徽章',
-          'VIP购买优惠',
-          '管理权限申请',
-          '社区活动优先参与'
-        ];
-      default:
-        return ['基础功能'];
     }
   }
 

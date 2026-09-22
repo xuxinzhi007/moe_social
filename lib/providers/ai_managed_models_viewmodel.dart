@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 
-import '../services/api_client.dart';
+import '../auth_service.dart';
+import '../services/api_service.dart';
 import '../services/llm_api_service.dart';
 
 /// 只管理本站当前账号的受管模型，不依赖角色卡是否仍存在。
 class AiManagedModelsViewModel extends ChangeNotifier {
-  final String? _token = ApiClient.token;
+  final String? _token = AuthService.token;
   bool _disposed = false;
   bool busy = false;
   Object? error;
@@ -13,7 +14,7 @@ class AiManagedModelsViewModel extends ChangeNotifier {
   List<LlmManagedModel> models = [];
   final Map<String, String> _deleteRequests = {};
 
-  bool get accountChanged => ApiClient.token != _token;
+  bool get accountChanged => AuthService.token != _token;
 
   Future<void> load() => _run(() async {
         models = await LlmApiService.listManagedModels();

@@ -1,14 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/ai_prompt_defaults.dart';
-import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
 import '../../services/ai_chat_gateway_service.dart';
+import '../../services/ai_chat_history_service.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_chat_session_prefs.dart';
 import '../../services/ai_tts_helper.dart';
@@ -44,8 +41,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  // Web 端优先走后端与内存会话，避免本地 sqflite 导致页面长时间阻塞。
-  final bool _localPersistenceEnabled = !kIsWeb;
+  final AiChatHistoryService _chatHistory = AiChatHistoryService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -97,6 +93,8 @@ class _ChatPageState extends State<ChatPage> {
       widget.agent.providerProfileId == null ||
       widget.agent.providerProfileId == AiProviderProfile.builtinBackendId;
 
+  bool get _shouldClientPersistChatTurn => !_isBackendProviderAgent;
+
   String get _providerSourceLabel =>
       _isBackendProviderAgent ? '服务器模型' : '我的 API';
 
@@ -112,18 +110,11 @@ class _ChatPageState extends State<ChatPage> {
     _initVoice();
     _loadChatPrefs();
     _loadUserPersona();
-    if (_localPersistenceEnabled) {
-      _loadSessions();
-    } else {
-      _loadWebCachedSession();
-    }
+    _loadSessions();
   }
 
   @override
   void dispose() {
-    if (!_localPersistenceEnabled) {
-      unawaited(_persistWebCache());
-    }
     _scrollController.removeListener(_onScroll);
     _cancelTypewriter();
     _controller.dispose();
@@ -133,85 +124,6 @@ class _ChatPageState extends State<ChatPage> {
     _speech.stop();
     unawaited(_ttsHelper.dispose());
     super.dispose();
-  }
-
-  String get _webCacheKey => 'chat_web_cache_${widget.agent.id}';
-
-  Future<void> _loadWebCachedSession() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_webCacheKey);
-      if (raw != null && raw.isNotEmpty) {
-        final data = jsonDecode(raw);
-        if (data is Map) {
-          final sessionsRaw = data['sessions'];
-          final messagesRaw = data['messages'];
-          final currentSessionId = data['current_session_id'] as String?;
-          final savedPrompt = data['system_prompt'] as String?;
-          final sessions = sessionsRaw is List
-              ? sessionsRaw
-                  .whereType<Map>()
-                  .map((e) =>
-                      AiChatSession.fromMap(Map<String, dynamic>.from(e)))
-                  .toList()
-              : <AiChatSession>[];
-          final messages = messagesRaw is List
-              ? messagesRaw
-                  .whereType<Map>()
-                  .map((e) =>
-                      AiChatMessage.fromMap(Map<String, dynamic>.from(e)))
-                  .toList()
-              : <AiChatMessage>[];
-
-          AiChatSession? current;
-          if (sessions.isNotEmpty && currentSessionId != null) {
-            final idx = sessions.indexWhere((s) => s.id == currentSessionId);
-            if (idx != -1) current = sessions[idx];
-          }
-          current ??= sessions.isNotEmpty ? sessions.first : null;
-
-          if (mounted && current != null) {
-            final sessionMessages =
-                messages.where((m) => m.sessionId == current!.id).toList();
-            setState(() {
-              _sessions = sessions;
-              _currentSession = current;
-              _messages = sessionMessages;
-              if (savedPrompt != null) {
-                _systemPrompt = savedPrompt;
-              }
-              _isLoadingHistory = false;
-            });
-            _markLoadedMessagesSeen(sessionMessages);
-            _scrollToBottom(force: true);
-            if (_messages.isEmpty) {
-              unawaited(_seedOpeningMessageIfNeeded(current));
-            }
-            return;
-          }
-        }
-      }
-    } catch (_) {}
-
-    await _createNewSession();
-    if (mounted) {
-      setState(() => _isLoadingHistory = false);
-    }
-  }
-
-  Future<void> _persistWebCache() async {
-    if (_localPersistenceEnabled) return;
-    if (_currentSession == null) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final payload = {
-        'sessions': _sessions.map((s) => s.toMap()).toList(),
-        'messages': _messages.map((m) => m.toMap()).toList(),
-        'current_session_id': _currentSession!.id,
-        'system_prompt': _systemPrompt,
-      };
-      await prefs.setString(_webCacheKey, jsonEncode(payload));
-    } catch (_) {}
   }
 
   Future<void> _initVoice() async {
@@ -252,14 +164,23 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _loadSessions() async {
-    if (!_localPersistenceEnabled) return;
-    final sessions = await AiDbService().getSessions(widget.agent.id);
-    if (mounted) {
+    try {
+      final sessions = await _chatHistory.listSessions(
+        agentId: widget.agent.id,
+      );
+      if (!mounted) return;
       setState(() => _sessions = sessions);
-      if (_sessions.isNotEmpty) {
-        _loadSession(_sessions.first);
+      if (sessions.isNotEmpty) {
+        unawaited(_loadSession(sessions.first));
       } else {
-        _createNewSession();
+        unawaited(_createNewSession());
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingHistory = false);
+      MoeToast.error(context, '聊天历史加载失败：$e');
+      if (_currentSession == null) {
+        unawaited(_createNewSession(syncToBackend: false));
       }
     }
   }
@@ -364,21 +285,69 @@ class _ChatPageState extends State<ChatPage> {
       ..addAll(messages.map((m) => m.id));
   }
 
-  Future<void> _createNewSession() async {
+  String get _effectiveHistoryModel => widget.agent.modelName.trim();
+
+  Future<void> _saveSession(AiChatSession session) async {
+    await _chatHistory.upsertSession(
+      session: session,
+      model: _effectiveHistoryModel,
+    );
+  }
+
+  Future<void> _saveMessage(AiChatMessage message) async {
+    await _chatHistory.upsertMessage(
+      message: message,
+      model: _effectiveHistoryModel,
+    );
+  }
+
+  Future<void> _deleteMessage(String messageId) async {
+    await _chatHistory.deleteMessage(messageId);
+  }
+
+  Future<void> _saveSessionQuietly(AiChatSession session) async {
+    try {
+      await _saveSession(session);
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '聊天会话保存失败：$e');
+    }
+  }
+
+  Future<void> _saveMessageQuietly(AiChatMessage message) async {
+    try {
+      await _saveMessage(message);
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '聊天历史保存失败：$e');
+    }
+  }
+
+  Future<void> _deleteMessageQuietly(String messageId) async {
+    try {
+      await _deleteMessage(messageId);
+    } catch (e) {
+      if (mounted) MoeToast.error(context, '消息删除失败：$e');
+    }
+  }
+
+  Future<void> _syncCurrentSession() async {
+    final session = _currentSession;
+    if (session == null) return;
+    await _saveSessionQuietly(session);
+  }
+
+  Future<void> _createNewSession({bool syncToBackend = true}) async {
     final session = AiChatSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       agentId: widget.agent.id,
       title: '新对话',
       updatedAt: DateTime.now(),
     );
-    if (_localPersistenceEnabled) {
-      await AiDbService().insertSession(session);
+    if (syncToBackend) {
+      await _saveSession(session);
     }
     if (mounted) {
       setState(() => _sessions.insert(0, session));
       _loadSession(session);
-      unawaited(_seedOpeningMessageIfNeeded(session));
-      unawaited(_persistWebCache());
     }
   }
 
@@ -392,16 +361,11 @@ class _ChatPageState extends State<ChatPage> {
       content: opening,
       createdAt: DateTime.now(),
     );
-    if (_localPersistenceEnabled) {
-      final existing = await AiDbService().getMessages(session.id);
-      if (existing.isNotEmpty) return;
-      await AiDbService().insertMessage(greeting);
-    }
     if (!mounted) return;
     if (_currentSession?.id != session.id) return;
     if (_messages.isNotEmpty) return;
+    unawaited(_saveMessageQuietly(greeting));
     setState(() => _messages = [greeting]);
-    unawaited(_persistWebCache());
     _scrollToBottom(force: true);
   }
 
@@ -410,9 +374,14 @@ class _ChatPageState extends State<ChatPage> {
       _currentSession = session;
       _isLoadingHistory = true;
     });
-    final messages = _localPersistenceEnabled
-        ? await AiDbService().getMessages(session.id)
-        : <AiChatMessage>[];
+    List<AiChatMessage> messages = [];
+    try {
+      messages = await _chatHistory.listMessages(sessionId: session.id);
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '会话消息加载失败：$e');
+      }
+    }
     if (mounted) {
       setState(() {
         _messages = messages;
@@ -421,7 +390,6 @@ class _ChatPageState extends State<ChatPage> {
       });
       _markLoadedMessagesSeen(messages);
       _scrollToBottom(force: true);
-      unawaited(_persistWebCache());
       if (messages.isEmpty) {
         unawaited(_seedOpeningMessageIfNeeded(session));
       }
@@ -429,8 +397,13 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _deleteSession(String id) async {
-    if (_localPersistenceEnabled) {
-      await AiDbService().deleteSession(id);
+    try {
+      await _chatHistory.deleteSession(id);
+    } catch (e) {
+      if (mounted) {
+        MoeToast.error(context, '删除会话失败：$e');
+      }
+      return;
     }
     if (mounted) {
       setState(() {
@@ -443,7 +416,6 @@ class _ChatPageState extends State<ChatPage> {
           }
         }
       });
-      unawaited(_persistWebCache());
     }
   }
 
@@ -474,8 +446,8 @@ class _ChatPageState extends State<ChatPage> {
       _stickToBottom = true;
     });
     _scrollToBottom(force: true);
-    if (_localPersistenceEnabled) {
-      await AiDbService().insertMessage(userMsg);
+    if (_shouldClientPersistChatTurn) {
+      unawaited(_saveMessageQuietly(userMsg));
     }
 
     await _fetchAssistantReply(userMsg, titleSeed: text);
@@ -537,8 +509,8 @@ class _ChatPageState extends State<ChatPage> {
     return completer.future;
   }
 
-  void _insertStreamingPlaceholder() {
-    final id = 'stream_${DateTime.now().millisecondsSinceEpoch}';
+  void _insertStreamingPlaceholder(String userMessageId) {
+    final id = '${userMessageId}_assistant';
     _streamingMessageId = id;
     _messages.add(
       AiChatMessage(
@@ -573,7 +545,7 @@ class _ChatPageState extends State<ChatPage> {
     _cancelTypewriter();
     if (mounted) {
       setState(() {
-        _insertStreamingPlaceholder();
+        _insertStreamingPlaceholder(userMsg.id);
       });
       _scrollToBottom(force: true);
     }
@@ -595,8 +567,8 @@ class _ChatPageState extends State<ChatPage> {
         await _revealTypewriter(streamId, content);
         if (_wasManuallyStopped) return;
         final assistantMsg = _messages.firstWhere((m) => m.id == streamId);
-        if (_localPersistenceEnabled) {
-          await AiDbService().insertMessage(assistantMsg);
+        if (_shouldClientPersistChatTurn) {
+          unawaited(_saveMessageQuietly(assistantMsg));
         }
       } else {
         final assistantMsg = AiChatMessage(
@@ -606,15 +578,14 @@ class _ChatPageState extends State<ChatPage> {
           content: content,
           createdAt: DateTime.now(),
         );
-        if (_localPersistenceEnabled) {
-          await AiDbService().insertMessage(assistantMsg);
+        if (_shouldClientPersistChatTurn) {
+          unawaited(_saveMessageQuietly(assistantMsg));
         }
         if (!mounted) return;
         setState(() => _messages.add(assistantMsg));
       }
       _streamingMessageId = null;
       if (mounted) setState(() {});
-      unawaited(_persistWebCache());
 
       final seed = titleSeed ?? text;
       if (_messages.length <= 2 && _currentSession!.title == '新对话') {
@@ -626,16 +597,13 @@ class _ChatPageState extends State<ChatPage> {
           title: newTitle,
           updatedAt: DateTime.now(),
         );
-        if (_localPersistenceEnabled) {
-          await AiDbService().updateSession(updatedSession);
-        }
+        unawaited(_saveSessionQuietly(updatedSession));
         if (!mounted) return;
         setState(() {
           _currentSession = updatedSession;
           final idx = _sessions.indexWhere((s) => s.id == updatedSession.id);
           if (idx != -1) _sessions[idx] = updatedSession;
         });
-        unawaited(_persistWebCache());
       }
     } catch (e) {
       if (_wasManuallyStopped) return;
@@ -668,8 +636,8 @@ class _ChatPageState extends State<ChatPage> {
       content: '请继续写下去',
       createdAt: DateTime.now(),
     );
-    if (_localPersistenceEnabled) {
-      await AiDbService().insertMessage(userMsg);
+    if (_shouldClientPersistChatTurn) {
+      unawaited(_saveMessageQuietly(userMsg));
     }
     if (!mounted) return;
     setState(() {
@@ -694,9 +662,7 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
 
-    if (_localPersistenceEnabled) {
-      await AiDbService().deleteMessage(message.id);
-    }
+    unawaited(_deleteMessageQuietly(message.id));
     if (!mounted) return;
     setState(() {
       _messages.removeWhere((m) => m.id == message.id);
@@ -719,9 +685,7 @@ class _ChatPageState extends State<ChatPage> {
       return;
     }
 
-    if (_localPersistenceEnabled) {
-      await AiDbService().deleteMessage(errorMessage.id);
-    }
+    unawaited(_deleteMessageQuietly(errorMessage.id));
     if (!mounted) return;
     setState(() {
       _messages.removeWhere((m) => m.id == errorMessage.id);
@@ -741,12 +705,9 @@ class _ChatPageState extends State<ChatPage> {
       content: text,
       createdAt: DateTime.now(),
     );
-    if (_localPersistenceEnabled) {
-      await AiDbService().insertMessage(errorMsg);
-    }
+    unawaited(_saveMessageQuietly(errorMsg));
     if (mounted) {
       setState(() => _messages.add(errorMsg));
-      unawaited(_persistWebCache());
     }
   }
 
@@ -787,7 +748,7 @@ class _ChatPageState extends State<ChatPage> {
       cardSaved = true;
       if (!mounted) return;
       setState(() => _systemPrompt = nextPrompt);
-      unawaited(_persistWebCache());
+      unawaited(_syncCurrentSession());
       // 提示词编辑只保存角色卡，不修改共享基座或隐式同步受管模型。
       await _createNewSession();
       if (!mounted) return;
@@ -1178,9 +1139,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _editMessage(AiChatMessage message) async {
-    if (_localPersistenceEnabled) {
-      await AiDbService().deleteMessage(message.id);
-    }
+    await _deleteMessageQuietly(message.id);
     if (!mounted) return;
     setState(() {
       _controller.text = message.content;
@@ -1225,9 +1184,7 @@ class _ChatPageState extends State<ChatPage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              if (_localPersistenceEnabled) {
-                await AiDbService().deleteMessage(message.id);
-              }
+              await _deleteMessageQuietly(message.id);
               if (!mounted) return;
               setState(() {
                 _messages.removeWhere((msg) => msg.id == message.id);

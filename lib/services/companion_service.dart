@@ -352,10 +352,10 @@ class CompanionMemoryData {
 
   factory CompanionMemoryData.fromMap(Map<String, dynamic> m) {
     return CompanionMemoryData(
-      id: (m['id'] as num?)?.toInt() ?? 0,
+      id: _intValue(m['id']),
       memoryType: m['memory_type']?.toString() ?? '',
       content: m['content']?.toString() ?? '',
-      importance: (m['importance'] as num?)?.toInt() ?? 0,
+      importance: _intValue(m['importance']),
       createdAt: m['created_at']?.toString() ?? '',
       pinned: m['pinned'] == true,
       userConfirmed: m['user_confirmed'] == true,
@@ -410,8 +410,8 @@ class CompanionMemoryConflictData {
 
   factory CompanionMemoryConflictData.fromMap(Map<String, dynamic> m) {
     return CompanionMemoryConflictData(
-      id: (m['id'] as num?)?.toInt() ?? 0,
-      memoryId: (m['memory_id'] as num?)?.toInt() ?? 0,
+      id: _intValue(m['id']),
+      memoryId: _intValue(m['memory_id']),
       memoryType: m['memory_type']?.toString() ?? '',
       memoryKey: m['memory_key']?.toString() ?? '',
       candidateContent: m['candidate_content']?.toString() ?? '',
@@ -438,7 +438,7 @@ class CompanionChatLogData {
 
   factory CompanionChatLogData.fromMap(Map<String, dynamic> m) {
     return CompanionChatLogData(
-      id: (m['id'] as num?)?.toInt() ?? 0,
+      id: _intValue(m['id']),
       role: m['role']?.toString() ?? '',
       content: m['content']?.toString() ?? '',
       createdAt: m['created_at']?.toString() ?? '',
@@ -467,7 +467,7 @@ class CompanionRelationshipEventData {
 
   factory CompanionRelationshipEventData.fromMap(Map<String, dynamic> m) {
     return CompanionRelationshipEventData(
-      id: (m['id'] as num?)?.toInt() ?? 0,
+      id: _intValue(m['id']),
       eventType: m['event_type']?.toString() ?? '',
       title: m['title']?.toString() ?? '',
       content: m['content']?.toString() ?? '',
@@ -507,10 +507,10 @@ class CompanionEventData {
 
   factory CompanionEventData.fromMap(Map<String, dynamic> m) {
     return CompanionEventData(
-      id: (m['id'] as num?)?.toInt() ?? 0,
+      id: _intValue(m['id']),
       eventType: m['event_type']?.toString() ?? '',
       sourceDomain: m['source_domain']?.toString() ?? '',
-      sourceId: (m['source_id'] as num?)?.toInt() ?? 0,
+      sourceId: _intValue(m['source_id']),
       dedupeKey: m['dedupe_key']?.toString() ?? '',
       payloadJson: m['payload_json']?.toString() ?? '',
       visibility: m['visibility']?.toString() ?? 'private',
@@ -520,6 +520,13 @@ class CompanionEventData {
       createdAt: m['created_at']?.toString() ?? '',
     );
   }
+}
+
+int _intValue(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value.trim()) ?? 0;
+  return 0;
 }
 
 class CompanionProactiveDeliveryData {

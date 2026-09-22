@@ -98,7 +98,17 @@ func (s *AppService) Chat(ctx context.Context, in llmbiz.PlatformChatInput) (llm
 	if err := s.models.Authorize(ctx, id, in.Model); err != nil {
 		return llmbiz.PlatformChatOutcome{}, err
 	}
-	return llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: s.deps.Inference, ChatComplete: s.deps.ChatComplete}, in)
+	if err := s.persistChatUserMessage(ctx, id, in); err != nil {
+		return llmbiz.PlatformChatOutcome{}, err
+	}
+	outcome, err := llmbiz.ExecutePlatformChat(ctx, llmbiz.PlatformChatDeps{Inference: s.deps.Inference, ChatComplete: s.deps.ChatComplete}, in)
+	if err != nil {
+		return outcome, err
+	}
+	if err := s.persistChatAssistantMessage(ctx, id, in, outcome.Content); err != nil {
+		return llmbiz.PlatformChatOutcome{}, err
+	}
+	return outcome, nil
 }
 func (s *AppService) ConfigAPIPayload() map[string]interface{} {
 	return llmbiz.ConfigAPIPayload(s.ConfigSnapshot())
