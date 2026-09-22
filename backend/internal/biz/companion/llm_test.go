@@ -58,7 +58,8 @@ func TestSystemPromptSeparatesConfirmedMemoryFromCandidates(t *testing.T) {
 	if !strings.Contains(prompt, "confirmed fact") || !strings.Contains(prompt, "candidate fact") {
 		t.Fatalf("prompt omitted memory content: %s", prompt)
 	}
-	if !strings.Contains(prompt, "[unconfirmed memory candidates]") {
+	if !strings.Contains(prompt, "[待用户确认的印象]") ||
+		!strings.Contains(prompt, "回答用户“你记得什么”时可以自然提起") {
 		t.Fatalf("prompt omitted candidate boundary: %s", prompt)
 	}
 }

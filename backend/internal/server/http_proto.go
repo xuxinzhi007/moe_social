@@ -181,6 +181,7 @@ func RegisterProtoHTTP(srv *khttp.Server, d ProtoHTTPDeps) {
 	}
 	if d.LLMApp != nil {
 		llmv1.RegisterLlmChatHTTPServer(srv, llmhttp.New(d.LLMApp))
+		llmhttp.RegisterChatHistoryRoutes(srv, d.LLMApp)
 	}
 	if d.MediaApp != nil {
 		mediahttp.RegisterHTTPServer(srv, mediahttp.New(d.MediaApp))

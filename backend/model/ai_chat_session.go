@@ -7,6 +7,8 @@ type AiChatSession struct {
 	ID        uint      `gorm:"primarykey" json:"id"`
 	UserID    uint      `gorm:"not null;index:idx_ai_chat_user_session,unique" json:"user_id"`
 	SessionID string    `gorm:"size:64;not null;index:idx_ai_chat_user_session,unique" json:"session_id"`
+	AgentID   string    `gorm:"size:64;index" json:"agent_id"`
+	Title     string    `gorm:"size:128" json:"title"`
 	Model     string    `gorm:"size:128" json:"model"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `gorm:"index" json:"updated_at"`

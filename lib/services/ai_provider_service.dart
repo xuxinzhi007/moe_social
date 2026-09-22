@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/ai_provider_profile.dart';
 import 'ai_cloud_config_service.dart';
 import 'ai_db_service.dart';
+import 'api_service.dart';
 
 class AiCloudSyncException implements Exception {
   final String message;
@@ -55,6 +56,8 @@ class AiProviderService {
 
   String _apiKeyStorageKey(String profileId) =>
       'ai_provider_api_key_$profileId';
+
+  String get backendBaseUrl => ApiService.baseUrl;
 
   Future<List<AiProviderProfile>> listProfiles() async {
     final out = await _listLocalProfiles();

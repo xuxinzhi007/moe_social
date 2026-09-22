@@ -8,7 +8,6 @@ import '../../services/ai_models_cache_service.dart';
 import '../../services/ai_provider_connectivity_cache.dart';
 import '../../services/ai_provider_detector.dart';
 import '../../services/ai_provider_service.dart';
-import '../../services/api_service.dart';
 import '../../theme/moe_tokens.dart';
 import 'llm_model_config_page.dart';
 import '../../widgets/ai/ai_brand_tokens.dart';
@@ -207,7 +206,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
     final accent = _accentFor(profile);
     final defaultModel = profile.defaultModel.trim();
     final host = profile.isBuiltin
-        ? _hostFor(ApiService.baseUrl)
+        ? _hostFor(AiProviderService().backendBaseUrl)
         : _hostFor(profile.baseUrl);
     final connectivity = _connectivity[profile.id];
     final isActive = _activeProfileId == profile.id;
@@ -1393,7 +1392,7 @@ class _AiProviderProfilesPageState extends State<AiProviderProfilesPage> {
 
   Future<void> _openBuiltin(AiProviderProfile profile) async {
     if (!mounted) return;
-    final host = _hostFor(ApiService.baseUrl);
+    final host = _hostFor(AiProviderService().backendBaseUrl);
     await AiSheet.show<void>(
       context: context,
       title: 'Moe 后端',
