@@ -6,10 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/ai_prompt_defaults.dart';
-import '../../services/llm_endpoint_config.dart';
 import '../../services/ai_db_service.dart';
 import '../../services/ai_agent_cloud_service.dart';
-import '../../services/ai_chat_context_builder.dart';
 import '../../services/ai_chat_gateway_service.dart';
 import '../../services/ai_user_persona_service.dart';
 import '../../services/ai_chat_session_prefs.dart';
@@ -32,7 +30,6 @@ import '../../widgets/ai/ai_chat_composer.dart';
 import '../../widgets/ai/ai_chat_settings_sheet.dart';
 import '../../widgets/ai/ai_chat_identity_hero.dart';
 import '../../widgets/ai/ai_chat_session_drawer.dart';
-import '../../widgets/ai/ai_chat_status_banners.dart';
 import '../../widgets/moe_action_row.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_toast.dart';
@@ -58,7 +55,6 @@ class _ChatPageState extends State<ChatPage> {
   List<AiChatMessage> _messages = [];
   final Set<String> _revealedMessageIds = {};
   double _temperature = 0.85;
-  final bool _terminalModeEnabled = false;
   String _systemPrompt = '';
   String _userPersona = '';
 
@@ -585,22 +581,10 @@ class _ChatPageState extends State<ChatPage> {
     try {
       final history = _buildChatApiHistory();
 
-      final chatContext = await AiChatContextBuilder().build(
-        agent: widget.agent,
-        history: history,
-        latestUserMessage: text,
-        recentConversation: _messages
-            .where((m) => m.role != 'system')
-            .map((m) => m.content)
-            .toList(),
-        overrideSystemPrompt: _systemPrompt,
-        userPersona: _userPersona,
-      );
-
       if (_wasManuallyStopped) return;
       final content = await AiChatGatewayService().sendChat(
         agent: widget.agent,
-        messages: chatContext.messages,
+        messages: history,
         sessionId: _currentSession?.id,
         sourceMsgId: userMsg.id,
         temperature: _temperature,
@@ -1651,23 +1635,14 @@ class _ChatPageState extends State<ChatPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: FutureBuilder<bool>(
-                        future: LlmEndpointConfig.isTerminalModeEnabled(),
-                        builder: (context, snapshot) {
-                          final terminal = snapshot.data == true;
-                          final sessionTitle =
-                              _currentSession?.title ?? '加载中...';
-                          final suffix = terminal ? ' · 终端同款' : '';
-                          return Text(
-                            '$_providerSourceLabel · $sessionTitle$suffix',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
+                      child: Text(
+                        '$_providerSourceLabel · ${_currentSession?.title ?? '加载中...'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1781,7 +1756,6 @@ class _ChatPageState extends State<ChatPage> {
                         )
                       : const SizedBox.shrink(),
                 ),
-                if (_terminalModeEnabled) const AiTerminalModeBanner(),
                 Expanded(
                   child: AiChatBackground(child: _buildMessageList()),
                 ),

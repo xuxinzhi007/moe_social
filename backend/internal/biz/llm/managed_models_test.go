@@ -205,6 +205,12 @@ func TestManagedOwnershipIdempotenceAndPublicProjection(t *testing.T) {
 	for _, name := range []string{second.ModelName, "moe-user-guessed:latest"} {
 		_, err = s.Chat(user(1), llmbiz.PlatformChatInput{Model: name})
 		requireCode(t, err, 403)
+		_, err = s.ModelPrompt(user(1), name)
+		requireCode(t, err, 403)
+	}
+	prompt, err := s.ModelPrompt(user(1), first.ModelName)
+	if err != nil || prompt != "prompt" {
+		t.Fatalf("model prompt=%q err=%v", prompt, err)
 	}
 	_, err = s.UpsertManagedModel(context.Background(), create("card", "r2"))
 	requireCode(t, err, 401)

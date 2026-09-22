@@ -22,6 +22,7 @@ const (
 	LlmChat_GetAiUserConfig_FullMethodName    = "/llm.v1.LlmChat/GetAiUserConfig"
 	LlmChat_UpsertAiUserConfig_FullMethodName = "/llm.v1.LlmChat/UpsertAiUserConfig"
 	LlmChat_ListLlmModels_FullMethodName      = "/llm.v1.LlmChat/ListLlmModels"
+	LlmChat_GetLlmModelPrompt_FullMethodName  = "/llm.v1.LlmChat/GetLlmModelPrompt"
 )
 
 // LlmChatClient is the client API for LlmChat service.
@@ -31,6 +32,7 @@ type LlmChatClient interface {
 	GetAiUserConfig(ctx context.Context, in *GetAiUserConfigReq, opts ...grpc.CallOption) (*GetAiUserConfigResp, error)
 	UpsertAiUserConfig(ctx context.Context, in *UpsertAiUserConfigReq, opts ...grpc.CallOption) (*UpsertAiUserConfigResp, error)
 	ListLlmModels(ctx context.Context, in *ListLlmModelsReq, opts ...grpc.CallOption) (*ListLlmModelsResp, error)
+	GetLlmModelPrompt(ctx context.Context, in *GetLlmModelPromptReq, opts ...grpc.CallOption) (*GetLlmModelPromptResp, error)
 }
 
 type llmChatClient struct {
@@ -71,6 +73,16 @@ func (c *llmChatClient) ListLlmModels(ctx context.Context, in *ListLlmModelsReq,
 	return out, nil
 }
 
+func (c *llmChatClient) GetLlmModelPrompt(ctx context.Context, in *GetLlmModelPromptReq, opts ...grpc.CallOption) (*GetLlmModelPromptResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLlmModelPromptResp)
+	err := c.cc.Invoke(ctx, LlmChat_GetLlmModelPrompt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LlmChatServer is the server API for LlmChat service.
 // All implementations must embed UnimplementedLlmChatServer
 // for forward compatibility.
@@ -78,6 +90,7 @@ type LlmChatServer interface {
 	GetAiUserConfig(context.Context, *GetAiUserConfigReq) (*GetAiUserConfigResp, error)
 	UpsertAiUserConfig(context.Context, *UpsertAiUserConfigReq) (*UpsertAiUserConfigResp, error)
 	ListLlmModels(context.Context, *ListLlmModelsReq) (*ListLlmModelsResp, error)
+	GetLlmModelPrompt(context.Context, *GetLlmModelPromptReq) (*GetLlmModelPromptResp, error)
 	mustEmbedUnimplementedLlmChatServer()
 }
 
@@ -96,6 +109,9 @@ func (UnimplementedLlmChatServer) UpsertAiUserConfig(context.Context, *UpsertAiU
 }
 func (UnimplementedLlmChatServer) ListLlmModels(context.Context, *ListLlmModelsReq) (*ListLlmModelsResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListLlmModels not implemented")
+}
+func (UnimplementedLlmChatServer) GetLlmModelPrompt(context.Context, *GetLlmModelPromptReq) (*GetLlmModelPromptResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLlmModelPrompt not implemented")
 }
 func (UnimplementedLlmChatServer) mustEmbedUnimplementedLlmChatServer() {}
 func (UnimplementedLlmChatServer) testEmbeddedByValue()                 {}
@@ -172,6 +188,24 @@ func _LlmChat_ListLlmModels_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LlmChat_GetLlmModelPrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLlmModelPromptReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LlmChatServer).GetLlmModelPrompt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LlmChat_GetLlmModelPrompt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LlmChatServer).GetLlmModelPrompt(ctx, req.(*GetLlmModelPromptReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LlmChat_ServiceDesc is the grpc.ServiceDesc for LlmChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -190,6 +224,10 @@ var LlmChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListLlmModels",
 			Handler:    _LlmChat_ListLlmModels_Handler,
+		},
+		{
+			MethodName: "GetLlmModelPrompt",
+			Handler:    _LlmChat_GetLlmModelPrompt_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

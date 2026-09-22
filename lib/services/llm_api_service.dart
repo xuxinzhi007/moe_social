@@ -8,7 +8,6 @@ import '../models/ai_provider_profile.dart';
 import 'ai_models_cache_service.dart';
 import 'api_client.dart';
 import 'api_response.dart';
-import 'llm_endpoint_config.dart';
 
 /// 本人受管模型的服务端视图；HTTP 200 不代表写操作已完成。
 class LlmManagedModel {
@@ -263,38 +262,13 @@ class LlmApiService {
         : decoded;
   }
 
-  /// 从 Ollama `/api/show` 读取 system prompt（含 modelfile SYSTEM 回退）。
-  static Future<String> fetchOllamaSystemPrompt(String modelName) async {
+  /// 从后端 AI 网关读取模型 system prompt；运行时协议与模型元数据解析留在服务端。
+  static Future<String> fetchBackendModelSystemPrompt(String modelName) async {
     try {
-      final uri = LlmEndpointConfig.showUri();
-      ApiClient.logDirectHttp('POST', uri);
-      final token = ApiClient.token;
-      final headers = ApiClient.mergeTunnelHeaders(uri, headers: {
-        'Content-Type': 'application/json',
-        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      });
-      final response = await http
-          .post(uri, headers: headers, body: jsonEncode({'name': modelName}))
+      final model = Uri.encodeComponent(modelName.trim());
+      final data = await ApiClient.get('/api/llm/model-prompt?model=$model')
           .timeout(const Duration(seconds: 15));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data is Map &&
-            data['system'] is String &&
-            (data['system'] as String).isNotEmpty) {
-          return data['system'] as String;
-        }
-        if (data is Map && data['modelfile'] is String) {
-          final mf = data['modelfile'] as String;
-          final tripleMatch =
-              RegExp(r'SYSTEM\s+"""([\s\S]*?)"""', multiLine: true)
-                  .firstMatch(mf);
-          if (tripleMatch != null) return tripleMatch.group(1)?.trim() ?? '';
-          final singleMatch = RegExp(r'SYSTEM\s+"(.*?)"').firstMatch(mf);
-          if (singleMatch != null) return singleMatch.group(1)?.trim() ?? '';
-        }
-        return '';
-      }
-      return '（读取失败：HTTP ${response.statusCode}）';
+      return ApiResponse.stringField(data, 'system_prompt')?.trim() ?? '';
     } catch (e) {
       return '（读取失败：$e）';
     }

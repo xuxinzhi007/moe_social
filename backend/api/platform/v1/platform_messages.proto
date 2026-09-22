@@ -203,6 +203,7 @@ message LlmChatReq {
   double top_p = 8;
   int32 max_tokens = 9;
   double repeat_penalty = 10;
+  string agent_id = 11;
 }
 
 message LlmChatResp {

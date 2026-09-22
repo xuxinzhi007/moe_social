@@ -164,9 +164,9 @@ moe_social/
 | 认证 | `auth_service.dart` | 登录态、Secure Storage |
 | AI 网关 | `ai_chat_gateway_service.dart` | 聊天请求调度 |
 | Provider | `ai_provider_service.dart` | 多 API 来源配置与模型列表 |
-| LLM 端点 | `llm_endpoint_config.dart` | Terminal/raw vs `/api/llm/*` 切换 |
+| LLM 网关 | `ai_chat_gateway_service.dart` | App 统一走 `/api/llm/models` 与 `/api/llm/chat`，模型运行细节由后端处理 |
 | 推理 | `ai_inference_service.dart` | LLM 调用 |
-| Lorebook | `ai_lorebook_service.dart` | 世界书 |
+| LLM Chat Context | 后端 `internal/biz/llm/chat_context.go` | 角色提示词、用户 Persona、世界书上下文装配 |
 | 帖子/社交 | `post_service.dart` | 动态、评论 |
 | 实时 | `ws_channel_connector*.dart`、`presence_service.dart` | WebSocket |
 | 成就 | `achievement_hooks.dart` | 前端成就触发 |

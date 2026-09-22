@@ -145,6 +145,25 @@ func TestModelOperations(t *testing.T) {
 	}
 }
 
+func TestModelInfoSystemPrompt(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		info ModelInfo
+		want string
+	}{
+		{name: "direct", info: ModelInfo{System: " direct prompt "}, want: " direct prompt "},
+		{name: "triple", info: ModelInfo{Modelfile: "FROM qwen\nSYSTEM \"\"\"triple prompt\nline two\"\"\""}, want: "triple prompt\nline two"},
+		{name: "quoted", info: ModelInfo{Modelfile: "FROM qwen\nSYSTEM \"quoted prompt\""}, want: "quoted prompt"},
+		{name: "empty", info: ModelInfo{Modelfile: "FROM qwen"}, want: ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.info.SystemPrompt(); got != tc.want {
+				t.Fatalf("SystemPrompt() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestModelWriteFailures(t *testing.T) {
 	for _, op := range []string{"create", "delete"} {
 		for _, tc := range []struct {

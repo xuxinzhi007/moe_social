@@ -293,17 +293,18 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
     }
   }
 
-  /// 从 Ollama /api/show 获取模型实际系统提示词
-  Future<String> _fetchOllamaSystemPrompt(String modelName) =>
-      LlmApiService.fetchOllamaSystemPrompt(modelName);
+  /// 从后端 AI 网关获取模型实际系统提示词
+  Future<String> _fetchBackendModelSystemPrompt(String modelName) =>
+      LlmApiService.fetchBackendModelSystemPrompt(modelName);
 
   Widget _buildPromptPreview(String localPrompt, String modelName) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.blue.shade100),
+    return Material(
+      color: Colors.blue.shade50.withValues(alpha: 0.4),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.blue.shade100),
         borderRadius: BorderRadius.circular(MoeTokens.radiusSm),
-        color: Colors.blue.shade50.withValues(alpha: 0.4),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -313,7 +314,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           leading: const Icon(Icons.visibility_outlined,
               size: 18, color: Colors.blueGrey),
           title: const Text(
-            '查看当前提示词（含 Ollama 模型内置）',
+            '查看当前提示词（含后端模型内置）',
             style: TextStyle(
                 fontSize: 13,
                 color: Colors.blueGrey,
@@ -321,7 +322,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
           ),
           children: [
             FutureBuilder<String>(
-              future: _fetchOllamaSystemPrompt(modelName),
+              future: _fetchBackendModelSystemPrompt(modelName),
               builder: (ctx, snap) {
                 final ollamaPrompt = snap.data;
                 final effectivePrompt =
@@ -345,7 +346,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             ),
                             SizedBox(width: 8),
-                            Text('正在从 Ollama 读取...',
+                            Text('正在从后端读取...',
                                 style: TextStyle(
                                     fontSize: 12, color: Colors.grey)),
                           ],
@@ -360,7 +361,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
                               const Icon(Icons.check_circle_outline_rounded,
                                   size: 13, color: Colors.green),
                               const SizedBox(width: 4),
-                              Text('来自 Ollama Modelfile',
+                              Text('来自后端模型配置',
                                   style: TextStyle(
                                       fontSize: 11,
                                       color: Colors.green.shade700)),
@@ -549,7 +550,7 @@ class _AgentEditorPageState extends State<AgentEditorPage> {
   }
 
   Future<void> _refreshPromptFromBackend(String modelName) async {
-    final prompt = await LlmApiService.fetchOllamaSystemPrompt(modelName);
+    final prompt = await LlmApiService.fetchBackendModelSystemPrompt(modelName);
     if (!mounted || prompt.trim().isEmpty || prompt.startsWith('（读取失败')) {
       return;
     }

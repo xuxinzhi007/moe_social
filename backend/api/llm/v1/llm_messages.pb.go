@@ -360,6 +360,94 @@ func (x *ListLlmModelsResp) GetModels() []string {
 	return nil
 }
 
+type GetLlmModelPromptReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Model         string                 `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLlmModelPromptReq) Reset() {
+	*x = GetLlmModelPromptReq{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLlmModelPromptReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLlmModelPromptReq) ProtoMessage() {}
+
+func (x *GetLlmModelPromptReq) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLlmModelPromptReq.ProtoReflect.Descriptor instead.
+func (*GetLlmModelPromptReq) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetLlmModelPromptReq) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+type GetLlmModelPromptResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SystemPrompt  string                 `protobuf:"bytes,1,opt,name=system_prompt,json=systemPrompt,proto3" json:"system_prompt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLlmModelPromptResp) Reset() {
+	*x = GetLlmModelPromptResp{}
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLlmModelPromptResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLlmModelPromptResp) ProtoMessage() {}
+
+func (x *GetLlmModelPromptResp) ProtoReflect() protoreflect.Message {
+	mi := &file_api_llm_v1_llm_messages_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLlmModelPromptResp.ProtoReflect.Descriptor instead.
+func (*GetLlmModelPromptResp) Descriptor() ([]byte, []int) {
+	return file_api_llm_v1_llm_messages_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetLlmModelPromptResp) GetSystemPrompt() string {
+	if x != nil {
+		return x.SystemPrompt
+	}
+	return ""
+}
+
 var File_api_llm_v1_llm_messages_proto protoreflect.FileDescriptor
 
 const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
@@ -385,11 +473,16 @@ const file_api_llm_v1_llm_messages_proto_rawDesc = "" +
 	"\x16provider_api_keys_json\x18\x03 \x01(\tR\x13providerApiKeysJson\"\x12\n" +
 	"\x10ListLlmModelsReq\"+\n" +
 	"\x11ListLlmModelsResp\x12\x16\n" +
-	"\x06models\x18\x01 \x03(\tR\x06models2\xbc\x02\n" +
+	"\x06models\x18\x01 \x03(\tR\x06models\",\n" +
+	"\x14GetLlmModelPromptReq\x12\x14\n" +
+	"\x05model\x18\x01 \x01(\tR\x05model\"<\n" +
+	"\x15GetLlmModelPromptResp\x12#\n" +
+	"\rsystem_prompt\x18\x01 \x01(\tR\fsystemPrompt2\xad\x03\n" +
 	"\aLlmChat\x12b\n" +
 	"\x0fGetAiUserConfig\x12\x1a.llm.v1.GetAiUserConfigReq\x1a\x1b.llm.v1.GetAiUserConfigResp\"\x16\x82\xd3\xe4\x93\x02\x10\x12\x0e/api/ai/config\x12n\n" +
 	"\x12UpsertAiUserConfig\x12\x1d.llm.v1.UpsertAiUserConfigReq\x1a\x1e.llm.v1.UpsertAiUserConfigResp\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\x1a\x0e/api/ai/config\x12]\n" +
-	"\rListLlmModels\x12\x18.llm.v1.ListLlmModelsReq\x1a\x19.llm.v1.ListLlmModelsResp\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/llm/modelsB\x1aZ\x18backend/api/llm/v1;llmv1b\x06proto3"
+	"\rListLlmModels\x12\x18.llm.v1.ListLlmModelsReq\x1a\x19.llm.v1.ListLlmModelsResp\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/api/llm/models\x12o\n" +
+	"\x11GetLlmModelPrompt\x12\x1c.llm.v1.GetLlmModelPromptReq\x1a\x1d.llm.v1.GetLlmModelPromptResp\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/llm/model-promptB\x1aZ\x18backend/api/llm/v1;llmv1b\x06proto3"
 
 var (
 	file_api_llm_v1_llm_messages_proto_rawDescOnce sync.Once
@@ -403,7 +496,7 @@ func file_api_llm_v1_llm_messages_proto_rawDescGZIP() []byte {
 	return file_api_llm_v1_llm_messages_proto_rawDescData
 }
 
-var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_api_llm_v1_llm_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_api_llm_v1_llm_messages_proto_goTypes = []any{
 	(*GetAiUserConfigReq)(nil),     // 0: llm.v1.GetAiUserConfigReq
 	(*GetAiUserConfigResp)(nil),    // 1: llm.v1.GetAiUserConfigResp
@@ -411,16 +504,20 @@ var file_api_llm_v1_llm_messages_proto_goTypes = []any{
 	(*UpsertAiUserConfigResp)(nil), // 3: llm.v1.UpsertAiUserConfigResp
 	(*ListLlmModelsReq)(nil),       // 4: llm.v1.ListLlmModelsReq
 	(*ListLlmModelsResp)(nil),      // 5: llm.v1.ListLlmModelsResp
+	(*GetLlmModelPromptReq)(nil),   // 6: llm.v1.GetLlmModelPromptReq
+	(*GetLlmModelPromptResp)(nil),  // 7: llm.v1.GetLlmModelPromptResp
 }
 var file_api_llm_v1_llm_messages_proto_depIdxs = []int32{
 	0, // 0: llm.v1.LlmChat.GetAiUserConfig:input_type -> llm.v1.GetAiUserConfigReq
 	2, // 1: llm.v1.LlmChat.UpsertAiUserConfig:input_type -> llm.v1.UpsertAiUserConfigReq
 	4, // 2: llm.v1.LlmChat.ListLlmModels:input_type -> llm.v1.ListLlmModelsReq
-	1, // 3: llm.v1.LlmChat.GetAiUserConfig:output_type -> llm.v1.GetAiUserConfigResp
-	3, // 4: llm.v1.LlmChat.UpsertAiUserConfig:output_type -> llm.v1.UpsertAiUserConfigResp
-	5, // 5: llm.v1.LlmChat.ListLlmModels:output_type -> llm.v1.ListLlmModelsResp
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	6, // 3: llm.v1.LlmChat.GetLlmModelPrompt:input_type -> llm.v1.GetLlmModelPromptReq
+	1, // 4: llm.v1.LlmChat.GetAiUserConfig:output_type -> llm.v1.GetAiUserConfigResp
+	3, // 5: llm.v1.LlmChat.UpsertAiUserConfig:output_type -> llm.v1.UpsertAiUserConfigResp
+	5, // 6: llm.v1.LlmChat.ListLlmModels:output_type -> llm.v1.ListLlmModelsResp
+	7, // 7: llm.v1.LlmChat.GetLlmModelPrompt:output_type -> llm.v1.GetLlmModelPromptResp
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -437,7 +534,7 @@ func file_api_llm_v1_llm_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_llm_v1_llm_messages_proto_rawDesc), len(file_api_llm_v1_llm_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

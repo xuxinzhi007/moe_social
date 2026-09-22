@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -106,6 +107,25 @@ type ModelInfo struct {
 	Template   string         `json:"template"`
 	Parameters string         `json:"parameters"`
 	Details    map[string]any `json:"details,omitempty"`
+}
+
+var (
+	tripleSystemPattern = regexp.MustCompile(`(?s)SYSTEM\s+"""(.*?)"""`)
+	quotedSystemPattern = regexp.MustCompile(`SYSTEM\s+"(.*?)"`)
+)
+
+// SystemPrompt extracts the model system prompt from native metadata.
+func (m ModelInfo) SystemPrompt() string {
+	if strings.TrimSpace(m.System) != "" {
+		return m.System
+	}
+	if match := tripleSystemPattern.FindStringSubmatch(m.Modelfile); match != nil {
+		return strings.TrimSpace(match[1])
+	}
+	if match := quotedSystemPattern.FindStringSubmatch(m.Modelfile); match != nil {
+		return strings.TrimSpace(match[1])
+	}
+	return ""
 }
 
 func validateModelName(name string) error {

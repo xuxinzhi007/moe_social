@@ -1915,6 +1915,7 @@ type LlmChatReq struct {
 	TopP                float64                `protobuf:"fixed64,8,opt,name=top_p,json=topP,proto3" json:"top_p,omitempty"`
 	MaxTokens           int32                  `protobuf:"varint,9,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
 	RepeatPenalty       float64                `protobuf:"fixed64,10,opt,name=repeat_penalty,json=repeatPenalty,proto3" json:"repeat_penalty,omitempty"`
+	AgentId             string                 `protobuf:"bytes,11,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -2017,6 +2018,13 @@ func (x *LlmChatReq) GetRepeatPenalty() float64 {
 		return x.RepeatPenalty
 	}
 	return 0
+}
+
+func (x *LlmChatReq) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
 }
 
 type LlmChatResp struct {
@@ -2639,7 +2647,7 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\x18DeleteLlmManagedModelReq\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x02 \x01(\tR\trequestId\"\xe3\x02\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\xfe\x02\n" +
 	"\n" +
 	"LlmChatReq\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x123\n" +
@@ -2654,7 +2662,8 @@ const file_api_platform_v1_platform_messages_proto_rawDesc = "" +
 	"\n" +
 	"max_tokens\x18\t \x01(\x05R\tmaxTokens\x12%\n" +
 	"\x0erepeat_penalty\x18\n" +
-	" \x01(\x01R\rrepeatPenalty\"\xb8\x01\n" +
+	" \x01(\x01R\rrepeatPenalty\x12\x19\n" +
+	"\bagent_id\x18\v \x01(\tR\aagentId\"\xb8\x01\n" +
 	"\vLlmChatResp\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x18\n" +
