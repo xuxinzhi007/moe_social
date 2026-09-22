@@ -94,6 +94,9 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+android/hs_err_pid*.log
+android/replay_pid*.log
+android/java_pid*.hprof
 
 # Secrets / credentials (never commit)
 .env

@@ -1,0 +1,45 @@
+---
+name: digital-life
+description: >-
+  Digital Life domain (entities, tick, care, TA的世界). Use for lib/pages/life/,
+  lib/widgets/life/, LifeProvider, life services, backend life domain. When Flame
+  / GameWidget / lib/game/life / 拖地图 / 镜头 is involved, also load flame-life-world.
+---
+
+# Digital Life Skill
+
+Use this skill when changing `lib/pages/life/`, `lib/widgets/life/`, `lib/providers/life_provider.dart`, `lib/services/life_*`, or backend `life` domain code.  
+Flame 舞台改动 → **必须再读** [flame-life-world](../flame-life-world/SKILL.md)。
+
+## Product Direction
+
+- Digital Life is the user's private personal world: autonomous entities, emergent events, light care actions, and observation.
+- The main UX should answer three questions quickly: who needs attention, what should the user do now, and what changed recently.
+- Keep the primary screen companion-first. World simulation is supporting context, not a dense management dashboard.
+- Do not reintroduce game-hub positioning, combat loops, ranking, multiplayer, or heavy map controls without explicit product approval.
+
+## Frontend Rules
+
+- General Flutter bar: follow unified skill [moe-flutter](../moe-flutter/SKILL.md)（含 §1.1 Ticker 规则）。
+- 正式壳层：底栏关系首页第一眼；`LifeWorldPage` = 「TA 的世界」地图延伸（见 `docs/dev/ai-companion-formal-decisions.md` 决策 10）。
+- Flame 实验：`FeatureFlags.useFlameLifeWorld` → 叠用 [flame-life-world](../flame-life-world/SKILL.md)；`false` 回退 `LifeWorldMap`。
+- 陪伴互动闭环（照料语气 / 日常深链 / 去聊天）：`docs/dev/ai-companion-interaction-loop.md`。
+- `LifeWorldMap` / `LifeWorldCanvas`：多 `AnimationController` 必须用 `TickerProviderStateMixin`；改地图后进页冒烟（analyze 不够）。
+- Preserve the current REST + WebSocket boundary: `LifeProvider` owns state, `LifeService` wraps REST, `LifeWsService` handles realtime updates.
+- Prefer read-only UX improvements before protocol changes: care insight, world pulse, event grouping, resident selection, empty/offline states.
+- Keep action buttons sparse and high intent: feed, companion/pet, detail, story. Avoid adding many low-value buttons.
+- Offline mode must remain usable for reading cached state. Disable mutating actions while offline and explain the state clearly.
+- Avoid rebuilding the whole page every tick. Use `Selector` data classes and coarse buckets for rapidly changing numeric values.
+
+## Backend Rules
+
+- Life engine changes must preserve tick safety, cache replacement, persistence writer behavior, and feature-flag rollback.
+- WebSocket payloads should remain incremental. Add fields only when the frontend cannot derive the information locally.
+- User actions must keep cooldown and clear error semantics. Treat cooldown as a soft UX state, not a fatal error.
+
+## Next Useful Improvements
+
+- Add grouped event summaries: care events, growth events, relationship events, risk events.
+- Add care priority sorting for residents when there are many entities.
+- Add optional item suggestions from inventory based on the selected entity's weakest stat.
+- Add a read-only history view before building playback or speed controls.
