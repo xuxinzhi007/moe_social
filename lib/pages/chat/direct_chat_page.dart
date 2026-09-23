@@ -29,6 +29,7 @@ import '../../widgets/moe_action_row.dart';
 import 'direct_chat_viewmodel.dart';
 import 'chat_skin_picker_page.dart';
 import 'voice_call_launcher.dart';
+import 'widgets/chat_empty_illustration.dart';
 
 class DirectChatPage extends StatefulWidget {
   final String userId;
@@ -784,11 +785,14 @@ class _DirectChatPageState extends State<DirectChatPage> {
                         onRetry: () => _chat.bootstrap(),
                       )
                     : !_chat.isBootstrapping && _chat.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: MoeEmptyState(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              title: '还没有消息',
-                              subtitle: '打个招呼吧',
+                              image: const ChatEmptyIllustration(),
+                              title: widget.username.trim().isEmpty
+                                  ? '从第一句话开始'
+                                  : '和 ${widget.username.trim()} 的对话，从第一句开始',
+                              subtitle: '在下方输入消息，开启你们的对话',
+                              compact: true,
                               showCard: false,
                               animate: false,
                             ),
