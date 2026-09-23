@@ -30,7 +30,15 @@ func runHTTPOnly(opts Options) error {
 	if err != nil {
 		return fmt.Errorf("wire: %w", err)
 	}
-	bootstrap.AfterWire(context.Background(), bootstrap.DepsFromServiceContext(apiRes.Svc))
+	backgroundCtx, cancelBackground := context.WithCancel(context.Background())
+	deps := bootstrap.DepsFromServiceContext(apiRes.Svc)
+	defer func() {
+		cancelBackground()
+		if deps.CompanionApp != nil {
+			deps.CompanionApp.Stop()
+		}
+	}()
+	bootstrap.AfterWire(backgroundCtx, deps)
 
 	port := externalHTTPPort(opts.UnifiedConfigFile, opts.APIConfigFile)
 	httpSrv, err := newKratosPureHTTPServer(apiRes, "0.0.0.0", port)

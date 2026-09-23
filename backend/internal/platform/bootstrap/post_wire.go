@@ -16,7 +16,7 @@ func AfterWire(parent context.Context, deps Deps) {
 	StartMoeBotScheduler(parent, deps)
 	StartDreamScheduler(parent, deps)
 
-	// Companion 后台任务：记忆清理 + 问候广播
+	// Companion 后台任务：记忆提取、记忆清理和问候广播。
 	if deps.CompanionApp != nil {
 		deps.CompanionApp.Start(parent)
 	}

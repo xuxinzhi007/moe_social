@@ -3,6 +3,7 @@ package companiondata
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	companionbiz "backend/internal/biz/companion"
@@ -130,6 +131,18 @@ func (s *store) ListActiveMemories(ctx context.Context, userID uint, limit int) 
 		Where("user_id = ? AND (expires_at IS NULL OR expires_at > ? OR pinned = ?)", userID, time.Now(), true).
 		Order("pinned DESC, importance DESC, created_at DESC").
 		Limit(limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func (s *store) ListMemoriesBySourceChatLogID(
+	ctx context.Context,
+	userID, chatLogID uint,
+) ([]model.CompanionMemory, error) {
+	var rows []model.CompanionMemory
+	err := s.db.WithContext(ctx).
+		Where("user_id = ? AND source_chat_log_id = ?", userID, chatLogID).
+		Order("id ASC").
 		Find(&rows).Error
 	return rows, err
 }
@@ -263,7 +276,9 @@ func (s *store) CleanupExpiredMemories(ctx context.Context) (int64, error) {
 }
 
 func (s *store) CreateMemoryConflict(ctx context.Context, conflict *model.CompanionMemoryConflict) error {
-	return s.db.WithContext(ctx).Create(conflict).Error
+	return s.db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(conflict).Error
 }
 
 func (s *store) ListMemoryConflicts(
@@ -328,6 +343,47 @@ func (s *store) AppendChatLog(ctx context.Context, log *model.CompanionChatLog) 
 	return s.db.WithContext(ctx).Create(log).Error
 }
 
+func (s *store) AppendAssistantReplyWithMemoryJob(
+	ctx context.Context,
+	reply *model.CompanionChatLog,
+	job *model.CompanionMemoryExtractionJob,
+) error {
+	if reply == nil || job == nil || reply.UserID == 0 || job.UserChatLogID == 0 {
+		return fmt.Errorf("append assistant reply with memory job: invalid input")
+	}
+	if reply.Role != "assistant" || job.UserID != 0 && job.UserID != reply.UserID {
+		return fmt.Errorf("append assistant reply with memory job: mismatched user or role")
+	}
+
+	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var userLog model.CompanionChatLog
+		if err := tx.Where(
+			"id = ? AND user_id = ? AND role = ?",
+			job.UserChatLogID,
+			reply.UserID,
+			"user",
+		).First(&userLog).Error; err != nil {
+			return fmt.Errorf("load user chat log %d: %w", job.UserChatLogID, err)
+		}
+		if err := tx.Create(reply).Error; err != nil {
+			return fmt.Errorf("create assistant chat log: %w", err)
+		}
+
+		job.UserID = reply.UserID
+		job.AssistantChatLogID = reply.ID
+		job.Status = model.CompanionMemoryExtractionQueued
+		job.AttemptCount = 0
+		job.NextAttemptAt = time.Now()
+		job.LeaseUntil = nil
+		job.LastError = ""
+		job.CompletedAt = nil
+		if err := tx.Create(job).Error; err != nil {
+			return fmt.Errorf("create memory extraction job: %w", err)
+		}
+		return nil
+	})
+}
+
 func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) ([]model.CompanionChatLog, error) {
 	if limit <= 0 {
 		limit = 20
@@ -346,6 +402,145 @@ func (s *store) ListRecentChatLogs(ctx context.Context, userID uint, limit int) 
 		rows[i], rows[j] = rows[j], rows[i]
 	}
 	return rows, nil
+}
+
+func (s *store) GetChatLogByID(
+	ctx context.Context,
+	userID, chatLogID uint,
+) (*model.CompanionChatLog, error) {
+	var row model.CompanionChatLog
+	err := s.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", chatLogID, userID).
+		First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get companion chat log %d: %w", chatLogID, err)
+	}
+	return &row, nil
+}
+
+func (s *store) ClaimNextMemoryExtractionJob(
+	ctx context.Context,
+	now, leaseUntil time.Time,
+) (*model.CompanionMemoryExtractionJob, error) {
+	var candidate model.CompanionMemoryExtractionJob
+	err := s.db.WithContext(ctx).
+		Where(
+			"((status IN ? AND next_attempt_at <= ?) OR (status = ? AND (lease_until IS NULL OR lease_until <= ?)))",
+			[]string{
+				model.CompanionMemoryExtractionQueued,
+				model.CompanionMemoryExtractionRetrying,
+			},
+			now,
+			model.CompanionMemoryExtractionRunning,
+			now,
+		).
+		Order("id ASC").
+		First(&candidate).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find companion memory extraction job: %w", err)
+	}
+
+	claim := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryExtractionJob{}).
+		Where("id = ? AND attempt_count = ?", candidate.ID, candidate.AttemptCount)
+	if candidate.Status == model.CompanionMemoryExtractionRunning {
+		claim = claim.Where(
+			"status = ? AND (lease_until IS NULL OR lease_until <= ?)",
+			candidate.Status,
+			now,
+		)
+	} else {
+		claim = claim.Where(
+			"status = ? AND next_attempt_at <= ?",
+			candidate.Status,
+			now,
+		)
+	}
+	result := claim.Updates(map[string]interface{}{
+		"status":        model.CompanionMemoryExtractionRunning,
+		"attempt_count": gorm.Expr("attempt_count + ?", 1),
+		"lease_until":   leaseUntil,
+		"updated_at":    now,
+	})
+	if result.Error != nil {
+		return nil, fmt.Errorf("claim companion memory extraction job %d: %w", candidate.ID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	var claimed model.CompanionMemoryExtractionJob
+	if err := s.db.WithContext(ctx).First(&claimed, candidate.ID).Error; err != nil {
+		return nil, fmt.Errorf("reload claimed memory extraction job %d: %w", candidate.ID, err)
+	}
+	return &claimed, nil
+}
+
+func (s *store) CompleteMemoryExtractionJob(
+	ctx context.Context,
+	jobID uint,
+	attemptCount int,
+	completedAt time.Time,
+) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryExtractionJob{}).
+		Where(
+			"id = ? AND status = ? AND attempt_count = ?",
+			jobID,
+			model.CompanionMemoryExtractionRunning,
+			attemptCount,
+		).
+		Updates(map[string]interface{}{
+			"status":       model.CompanionMemoryExtractionCompleted,
+			"lease_until":  nil,
+			"last_error":   "",
+			"completed_at": completedAt,
+			"updated_at":   completedAt,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("complete companion memory extraction job %d: %w", jobID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+func (s *store) RetryMemoryExtractionJob(
+	ctx context.Context,
+	jobID uint,
+	attemptCount int,
+	retryAt time.Time,
+	lastError string,
+) error {
+	result := s.db.WithContext(ctx).
+		Model(&model.CompanionMemoryExtractionJob{}).
+		Where(
+			"id = ? AND status = ? AND attempt_count = ?",
+			jobID,
+			model.CompanionMemoryExtractionRunning,
+			attemptCount,
+		).
+		Updates(map[string]interface{}{
+			"status":          model.CompanionMemoryExtractionRetrying,
+			"next_attempt_at": retryAt,
+			"lease_until":     nil,
+			"last_error":      lastError,
+			"updated_at":      time.Now(),
+		})
+	if result.Error != nil {
+		return fmt.Errorf("retry companion memory extraction job %d: %w", jobID, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // CreateRelationshipEvent persists one meaningful relationship event.

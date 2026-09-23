@@ -61,9 +61,10 @@ func TestFilterMigrateEntries(t *testing.T) {
 
 func TestMigrateRegistryIncludesCompanionTables(t *testing.T) {
 	want := map[string]bool{
-		"companion_profiles":  false,
-		"companion_memories":  false,
-		"companion_chat_logs": false,
+		"companion_profiles":               false,
+		"companion_memories":               false,
+		"companion_chat_logs":              false,
+		"companion_memory_extraction_jobs": false,
 	}
 	for _, entry := range MigrateModelRegistry() {
 		if _, ok := want[entry.Key]; ok {

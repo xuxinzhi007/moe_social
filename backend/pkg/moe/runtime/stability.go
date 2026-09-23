@@ -45,6 +45,9 @@ func ComputeStabilityDelta(ok bool, attempts []GenAttemptRecord, postQuality int
 		case GenOutcomeForbidden:
 			delta -= 5
 			parts = append(parts, "禁标")
+		case GenOutcomeQuality:
+			delta -= 4
+			parts = append(parts, "质量不足")
 		case GenOutcomeNovel:
 			delta -= 3
 			parts = append(parts, "模板腔")

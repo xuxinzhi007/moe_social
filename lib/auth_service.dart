@@ -47,6 +47,8 @@ class AuthService {
   // 内存中的登录状态
   static String? _currentUser;
   static String? _token;
+  static final ValueNotifier<User?> currentUserProfileNotifier =
+      ValueNotifier<User?>(null);
 
   static bool get isLoggedIn =>
       _currentUser != null && _token != null && _token!.isNotEmpty;
@@ -74,6 +76,7 @@ class AuthService {
         !ApiResponse.isValidUserId(_currentUser)) {
       _token = null;
       _currentUser = null;
+      currentUserProfileNotifier.value = null;
       await prefs.remove(_tokenKey);
       await prefs.remove(_userIdKey);
     }
@@ -294,6 +297,7 @@ class AuthService {
     final uid = _currentUser;
     _currentUser = null;
     _token = null;
+    currentUserProfileNotifier.value = null;
     unawaited(_purgeLegacyLocalLikeKeys(uid));
     // 清除持久化存储
     _clearAuthData();
@@ -340,6 +344,9 @@ class AuthService {
       _userInfoPrefsKey(user.id),
       json.encode(user.toJson()),
     );
+    if (user.id == _currentUser) {
+      currentUserProfileNotifier.value = user;
+    }
   }
 
   /// 历史版本在本地存过点赞状态；现已以服务端为准，登出时清掉避免误导。
@@ -388,6 +395,9 @@ class AuthService {
           if (u.id == userId &&
               u.username.trim().isNotEmpty &&
               u.email.trim().isNotEmpty) {
+            if (userId == _currentUser) {
+              currentUserProfileNotifier.value = u;
+            }
             return u;
           }
           await prefs.remove(_userInfoPrefsKey(userId));
@@ -402,6 +412,9 @@ class AuthService {
       _userInfoPrefsKey(userId),
       json.encode(userInfo.toJson()),
     );
+    if (userId == _currentUser) {
+      currentUserProfileNotifier.value = userInfo;
+    }
     return userInfo;
   }
 

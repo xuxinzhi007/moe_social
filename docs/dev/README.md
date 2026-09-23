@@ -45,6 +45,7 @@
 | 文档 | 用途 |
 |------|------|
 | [用户记忆系统-OpenClaw式演进设计.md](./用户记忆系统-OpenClaw式演进设计.md) | **记忆架构 SSOT**（⚠️ 向量/Embedding 半边已于 2026-06-29 移除，仅关键词记忆文本库仍有效；见文首横幅） |
+| [ai-generation-and-memory-reliability.md](./ai-generation-and-memory-reliability.md) | Companion 记忆任务持久化、Bot 生成质检与迁移/回滚 |
 | [Moe-Intelligence-Stack-v1.md](./Moe-Intelligence-Stack-v1.md) | Moe Core v1（⚠️ `moe.default_capability_tier` 是死键，默认档位实为编译期常量） |
 | [memory/README.md](./memory/README.md) | 代码模块地图（⚠️ **历史设计**：`pkg/memory`、`backend/rpc`、`lib/memory` 三个目录均已不存在，勿据此找代码） |
 | [local-llm-tools.md](./local-llm-tools.md) | 本机 GGUF |

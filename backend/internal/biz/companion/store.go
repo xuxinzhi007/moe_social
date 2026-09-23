@@ -21,6 +21,7 @@ type Store interface {
 	// Memory
 	CreateMemory(ctx context.Context, m *model.CompanionMemory) error
 	ListActiveMemories(ctx context.Context, userID uint, limit int) ([]model.CompanionMemory, error)
+	ListMemoriesBySourceChatLogID(ctx context.Context, userID, chatLogID uint) ([]model.CompanionMemory, error)
 	GetMemoryByID(ctx context.Context, userID, memoryID uint) (*model.CompanionMemory, error)
 	DeleteMemory(ctx context.Context, userID, memoryID uint) error
 	UpdateMemoryPinned(ctx context.Context, userID, memoryID uint, pinned bool, importance int, expiresAt *time.Time) error
@@ -37,7 +38,25 @@ type Store interface {
 
 	// Chat Log
 	AppendChatLog(ctx context.Context, log *model.CompanionChatLog) error
+	AppendAssistantReplyWithMemoryJob(
+		ctx context.Context,
+		reply *model.CompanionChatLog,
+		job *model.CompanionMemoryExtractionJob,
+	) error
 	ListRecentChatLogs(ctx context.Context, userID uint, limit int) ([]model.CompanionChatLog, error)
+	GetChatLogByID(ctx context.Context, userID, chatLogID uint) (*model.CompanionChatLog, error)
+	ClaimNextMemoryExtractionJob(
+		ctx context.Context,
+		now, leaseUntil time.Time,
+	) (*model.CompanionMemoryExtractionJob, error)
+	CompleteMemoryExtractionJob(ctx context.Context, jobID uint, attemptCount int, completedAt time.Time) error
+	RetryMemoryExtractionJob(
+		ctx context.Context,
+		jobID uint,
+		attemptCount int,
+		retryAt time.Time,
+		lastError string,
+	) error
 
 	// Relationship Events
 	CreateRelationshipEvent(ctx context.Context, event *model.CompanionRelationshipEvent) error

@@ -17,7 +17,16 @@ import (
 	"gorm.io/gorm"
 )
 
-const chatCompletionPersistTimeout = 8 * time.Second
+const (
+	chatCompletionPersistTimeout       = 8 * time.Second
+	memoryExtractionPollInterval       = 5 * time.Second
+	memoryExtractionRetryBaseDelay     = 15 * time.Second
+	memoryExtractionRetryMaxDelay      = 30 * time.Minute
+	memoryExtractionLeaseGracePeriod   = 30 * time.Second
+	memoryExtractionPersistTimeout     = 5 * time.Second
+	memoryExtractionErrorMaxRunes      = 512
+	memoryExtractionFallbackLLMTimeout = 120 * time.Second
+)
 
 // Engine Companion 核心引擎：整合 Profile / State / Memory / Chat / LLM。
 type Engine struct {
@@ -39,6 +48,9 @@ type Engine struct {
 	// 内部
 	cancelCleanup  context.CancelFunc
 	cancelGreeting context.CancelFunc
+	memoryWorkerMu sync.Mutex
+	cancelMemory   context.CancelFunc
+	memoryWorkerWG sync.WaitGroup
 	proactiveMu    sync.Mutex
 	lastProactive  map[uint]proactiveDelivery
 }
@@ -312,6 +324,185 @@ func (e *Engine) StopCleanup() {
 		e.cancelCleanup()
 		e.cancelCleanup = nil
 	}
+}
+
+// StartMemoryExtractionWorker processes durable memory extraction jobs sequentially.
+func (e *Engine) StartMemoryExtractionWorker(ctx context.Context) {
+	e.memoryWorkerMu.Lock()
+	defer e.memoryWorkerMu.Unlock()
+	if e.cancelMemory != nil {
+		return
+	}
+	workerCtx, cancel := context.WithCancel(ctx)
+	e.cancelMemory = cancel
+	e.memoryWorkerWG.Add(1)
+	go func() {
+		defer e.memoryWorkerWG.Done()
+		e.memoryExtractionLoop(workerCtx)
+	}()
+}
+
+// StopMemoryExtractionWorker cancels memory extraction and waits for the worker to exit.
+func (e *Engine) StopMemoryExtractionWorker() {
+	e.memoryWorkerMu.Lock()
+	defer e.memoryWorkerMu.Unlock()
+	if e.cancelMemory == nil {
+		return
+	}
+	e.cancelMemory()
+	e.memoryWorkerWG.Wait()
+	e.cancelMemory = nil
+}
+
+func (e *Engine) memoryExtractionLoop(ctx context.Context) {
+	ticker := time.NewTicker(memoryExtractionPollInterval)
+	defer ticker.Stop()
+	for {
+		processed, err := e.processNextMemoryExtractionJob(ctx)
+		if err != nil {
+			log.Printf("[companion] memory extraction worker: %v", err)
+		}
+		if processed {
+			continue
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (e *Engine) processNextMemoryExtractionJob(ctx context.Context) (bool, error) {
+	now := time.Now()
+	timeout := e.memoryExtractionTimeout()
+	job, err := e.store.ClaimNextMemoryExtractionJob(
+		ctx,
+		now,
+		now.Add(timeout+memoryExtractionLeaseGracePeriod),
+	)
+	if err != nil {
+		return false, fmt.Errorf("claim memory extraction job: %w", err)
+	}
+	if job == nil {
+		return false, nil
+	}
+
+	jobCtx, cancel := context.WithTimeout(ctx, timeout)
+	err = e.processMemoryExtractionJob(jobCtx, job)
+	cancel()
+	if err == nil {
+		if err := e.store.CompleteMemoryExtractionJob(ctx, job.ID, job.AttemptCount, time.Now()); err != nil {
+			err = fmt.Errorf("mark memory extraction job %d completed: %w", job.ID, err)
+		} else {
+			return true, nil
+		}
+	}
+
+	retryAt := time.Now().Add(memoryExtractionRetryDelay(job.AttemptCount))
+	persistCtx := ctx
+	if ctx.Err() != nil {
+		var persistCancel context.CancelFunc
+		persistCtx, persistCancel = context.WithTimeout(
+			context.WithoutCancel(ctx),
+			memoryExtractionPersistTimeout,
+		)
+		defer persistCancel()
+	}
+	if retryErr := e.store.RetryMemoryExtractionJob(
+		persistCtx,
+		job.ID,
+		job.AttemptCount,
+		retryAt,
+		truncateMemoryExtractionError(err),
+	); retryErr != nil {
+		return true, fmt.Errorf(
+			"process memory extraction job %d: %w; schedule retry: %v",
+			job.ID,
+			err,
+			retryErr,
+		)
+	}
+	log.Printf(
+		"[companion] memory extraction retry scheduled job=%d user=%d attempt=%d retry_at=%s error=%v",
+		job.ID,
+		job.UserID,
+		job.AttemptCount,
+		retryAt.Format(time.RFC3339),
+		err,
+	)
+	return true, nil
+}
+
+func (e *Engine) processMemoryExtractionJob(
+	ctx context.Context,
+	job *model.CompanionMemoryExtractionJob,
+) error {
+	if job == nil {
+		return fmt.Errorf("process memory extraction job: job is nil")
+	}
+	if !e.llmCfg.Ready() {
+		return fmt.Errorf("process memory extraction job %d: inference is not configured", job.ID)
+	}
+	userLog, err := e.store.GetChatLogByID(ctx, job.UserID, job.UserChatLogID)
+	if err != nil {
+		return fmt.Errorf("load user chat log for memory job %d: %w", job.ID, err)
+	}
+	if userLog == nil || userLog.Role != "user" {
+		return fmt.Errorf("load user chat log for memory job %d: log is missing or has an invalid role", job.ID)
+	}
+	assistantLog, err := e.store.GetChatLogByID(ctx, job.UserID, job.AssistantChatLogID)
+	if err != nil {
+		return fmt.Errorf("load assistant chat log for memory job %d: %w", job.ID, err)
+	}
+	if assistantLog == nil || assistantLog.Role != "assistant" {
+		return fmt.Errorf("load assistant chat log for memory job %d: log is missing or has an invalid role", job.ID)
+	}
+
+	extracted, err := ExtractMemories(ctx, e.llmCfg, e.model, userLog.Content, assistantLog.Content)
+	if err != nil {
+		return fmt.Errorf("extract memories for job %d: %w", job.ID, err)
+	}
+	if len(extracted) == 0 {
+		return nil
+	}
+	if err := e.saveExtractedMemories(ctx, job.UserID, assistantLog.ID, extracted); err != nil {
+		return fmt.Errorf("save memories for job %d: %w", job.ID, err)
+	}
+	return nil
+}
+
+func (e *Engine) memoryExtractionTimeout() time.Duration {
+	if e.llmCfg.Timeout > 0 {
+		return e.llmCfg.Timeout
+	}
+	return memoryExtractionFallbackLLMTimeout
+}
+
+func memoryExtractionRetryDelay(attempt int) time.Duration {
+	delay := memoryExtractionRetryBaseDelay
+	for index := 1; index < attempt && delay < memoryExtractionRetryMaxDelay; index++ {
+		if delay > memoryExtractionRetryMaxDelay/2 {
+			return memoryExtractionRetryMaxDelay
+		}
+		delay *= 2
+	}
+	if delay > memoryExtractionRetryMaxDelay {
+		return memoryExtractionRetryMaxDelay
+	}
+	return delay
+}
+
+func truncateMemoryExtractionError(err error) string {
+	if err == nil {
+		return ""
+	}
+	message := strings.TrimSpace(err.Error())
+	runes := []rune(message)
+	if len(runes) > memoryExtractionErrorMaxRunes {
+		return string(runes[:memoryExtractionErrorMaxRunes])
+	}
+	return message
 }
 
 // cleanupLoop 定时清理过期记忆。
@@ -960,11 +1151,12 @@ func (e *Engine) ChatStreamWithInputMode(
 	isFirstChat := companionContext.IsFirstChat
 
 	// 4. 保存用户消息
-	if err := e.store.AppendChatLog(ctx, &model.CompanionChatLog{
+	userLog := &model.CompanionChatLog{
 		UserID:  userID,
 		Role:    "user",
 		Content: userMessage,
-	}); err != nil {
+	}
+	if err := e.store.AppendChatLog(ctx, userLog); err != nil {
 		return "", fmt.Errorf("companion: persist user chat message: %w", err)
 	}
 
@@ -1018,18 +1210,18 @@ func (e *Engine) ChatStreamWithInputMode(
 	defer cancel()
 
 	// 6. 保存助手回复
-	if err := e.store.AppendChatLog(persistCtx, &model.CompanionChatLog{
+	if err := e.store.AppendAssistantReplyWithMemoryJob(persistCtx, &model.CompanionChatLog{
 		UserID:  userID,
 		Role:    "assistant",
 		Content: fullReply,
+	}, &model.CompanionMemoryExtractionJob{
+		UserID:        userID,
+		UserChatLogID: userLog.ID,
 	}); err != nil {
-		return fullReply, fmt.Errorf("companion: persist assistant reply: %w", err)
+		return fullReply, fmt.Errorf("companion: persist assistant reply and memory job: %w", err)
 	}
 
-	// 7. 异步提取记忆（不阻塞响应）
-	go e.asyncExtractMemory(userID, userMessage, fullReply, profile, config, modelName)
-
-	// 8. 聊天成功 → 亲密度微增（失败仅打日志，不影响回复）
+	// 7. 聊天成功 → 亲密度微增（失败仅打日志，不影响回复）
 	if err := e.BumpIntimacy(persistCtx, userID, IntimacyDeltaChat); err != nil {
 		log.Printf("[companion] bump intimacy after chat user=%d: %v", userID, err)
 	}
@@ -1219,123 +1411,155 @@ func (e *Engine) recordCompanionEvent(
 	return nil
 }
 
-// asyncExtractMemory 异步从对话中提取记忆并持久化。
-func (e *Engine) asyncExtractMemory(
-	userID uint,
-	userMsg, assistantReply string,
-	profile *Profile,
-	config llminference.Config,
-	modelName string,
-) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	extracted, err := ExtractMemories(ctx, config, modelName, userMsg, assistantReply)
-	if err != nil {
-		log.Printf("[companion] extract memory error: %v", err)
-		return
-	}
-	if len(extracted) == 0 {
-		return
-	}
-
+func (e *Engine) saveExtractedMemories(
+	ctx context.Context,
+	userID, sourceChatLogID uint,
+	extracted []extractedMemory,
+) error {
 	existing, err := e.store.ListActiveMemories(ctx, userID, 50)
 	if err != nil {
-		log.Printf("[companion] list memories for dedupe user=%d: %v", userID, err)
+		return fmt.Errorf("list active memories for user %d: %w", userID, err)
 	}
-	seen := make(map[string]struct{}, len(existing)+len(extracted))
-	existingByMemoryKey := make(map[string]model.CompanionMemory)
-	for _, memory := range existing {
-		seen[memoryDedupeKey(memory.MemoryType, memory.Content)] = struct{}{}
+	fromSource, err := e.store.ListMemoriesBySourceChatLogID(ctx, userID, sourceChatLogID)
+	if err != nil {
+		return fmt.Errorf("list memories from chat log %d: %w", sourceChatLogID, err)
+	}
+
+	seen := make(map[string]struct{}, len(existing)+len(fromSource)+len(extracted))
+	sourceByContent := make(map[string]model.CompanionMemory, len(fromSource))
+	existingByMemoryKey := make(map[string]model.CompanionMemory, len(existing)+len(fromSource))
+	for _, memory := range append(existing, fromSource...) {
+		contentKey := memoryDedupeKey(memory.MemoryType, memory.Content)
+		seen[contentKey] = struct{}{}
+		if memory.SourceChatLogID == sourceChatLogID {
+			sourceByContent[contentKey] = memory
+		}
 		if memoryKey := normalizeMemoryKey(memory.MemoryKey); memoryKey != "" {
 			existingByMemoryKey[memoryKey] = memory
 		}
 	}
 
-	for _, m := range extracted {
-		if strings.TrimSpace(m.Content) == "" {
+	for _, candidate := range extracted {
+		if strings.TrimSpace(candidate.Content) == "" {
 			continue
 		}
-		key := memoryDedupeKey(m.MemoryType, m.Content)
-		if _, exists := seen[key]; exists {
+		contentKey := memoryDedupeKey(candidate.MemoryType, candidate.Content)
+		if _, exists := seen[contentKey]; exists {
+			if previous, exists := sourceByContent[contentKey]; exists {
+				if err := e.recordCompanionEvent(
+					ctx,
+					userID,
+					"memory_created",
+					"memory",
+					previous.ID,
+					fmt.Sprintf("memory_created:%d", previous.ID),
+					map[string]interface{}{
+						"memory_type": previous.MemoryType,
+						"memory_key":  previous.MemoryKey,
+					},
+				); err != nil {
+					return fmt.Errorf("restore memory-created event %d: %w", previous.ID, err)
+				}
+			}
 			continue
 		}
-		memoryKey := normalizeMemoryKey(m.MemoryKey)
-		importance := m.Importance
-		if importance < 0 {
-			importance = 0
-		}
-		if importance > 2 {
-			importance = 2
-		}
-		confidence := m.Confidence
+
+		memoryKey := normalizeMemoryKey(candidate.MemoryKey)
+		importance := clampInt(candidate.Importance, 0, 2)
+		confidence := candidate.Confidence
 		if confidence <= 0 {
 			confidence = 0.5
 		}
 		if confidence > 1 {
 			confidence = 1
 		}
+
 		if memoryKey != "" {
 			if previous, exists := existingByMemoryKey[memoryKey]; exists {
 				if previous.UserConfirmed {
-					e.recordMemoryConflict(ctx, userID, previous, m)
+					if err := e.recordMemoryConflict(ctx, userID, previous, candidate); err != nil {
+						return fmt.Errorf("record conflict for memory %d: %w", previous.ID, err)
+					}
 					continue
 				}
 				if err := e.store.UpdateMemoryRecord(
 					ctx,
 					userID,
 					previous.ID,
-					m.MemoryType,
+					candidate.MemoryType,
 					memoryKey,
-					m.Content,
+					candidate.Content,
 					importance,
 					memoryExpiresAt(importance),
 					confidence,
-				); err == nil {
-					e.recordCompanionEvent(ctx, userID, "memory_updated", "memory", previous.ID,
-						fmt.Sprintf("memory_updated:%d", previous.ID), map[string]interface{}{
-							"memory_type": m.MemoryType,
-							"memory_key":  memoryKey,
-						})
-					existingByMemoryKey[memoryKey] = model.CompanionMemory{
-						ID:         previous.ID,
-						UserID:     userID,
-						MemoryType: m.MemoryType,
-						MemoryKey:  memoryKey,
-						Content:    m.Content,
-						Importance: importance,
-						Confidence: confidence,
-						CreatedAt:  previous.CreatedAt,
-					}
-					seen[key] = struct{}{}
-					continue
+				); err != nil {
+					return fmt.Errorf("update extracted memory %d: %w", previous.ID, err)
 				}
+				if err := e.recordCompanionEvent(
+					ctx,
+					userID,
+					"memory_updated",
+					"memory",
+					previous.ID,
+					fmt.Sprintf("memory_updated:%d", previous.ID),
+					map[string]interface{}{
+						"memory_type": candidate.MemoryType,
+						"memory_key":  memoryKey,
+					},
+				); err != nil {
+					return fmt.Errorf("record memory-updated event %d: %w", previous.ID, err)
+				}
+				updated := model.CompanionMemory{
+					ID:              previous.ID,
+					UserID:          userID,
+					MemoryType:      candidate.MemoryType,
+					MemoryKey:       memoryKey,
+					Content:         candidate.Content,
+					Importance:      importance,
+					Confidence:      confidence,
+					SourceChatLogID: previous.SourceChatLogID,
+					CreatedAt:       previous.CreatedAt,
+				}
+				existingByMemoryKey[memoryKey] = updated
+				seen[contentKey] = struct{}{}
+				continue
 			}
 		}
-		mem := &model.CompanionMemory{
-			UserID:     userID,
-			MemoryType: m.MemoryType,
-			MemoryKey:  memoryKey,
-			Content:    m.Content,
-			Importance: importance,
-			Confidence: confidence,
-			ExpiresAt:  memoryExpiresAt(importance),
+
+		memory := &model.CompanionMemory{
+			UserID:          userID,
+			MemoryType:      candidate.MemoryType,
+			MemoryKey:       memoryKey,
+			Content:         candidate.Content,
+			Importance:      importance,
+			Confidence:      confidence,
+			SourceChatLogID: sourceChatLogID,
+			ExpiresAt:       memoryExpiresAt(importance),
 		}
-		if err := e.store.CreateMemory(ctx, mem); err != nil {
-			log.Printf("[companion] save extracted memory: %v", err)
-			continue
+		if err := e.store.CreateMemory(ctx, memory); err != nil {
+			return fmt.Errorf("create extracted memory: %w", err)
 		}
-		e.recordCompanionEvent(ctx, userID, "memory_created", "memory", mem.ID,
-			fmt.Sprintf("memory_created:%d", mem.ID), map[string]interface{}{
-				"memory_type": mem.MemoryType,
-				"memory_key":  mem.MemoryKey,
-			})
-		seen[key] = struct{}{}
+		if err := e.recordCompanionEvent(
+			ctx,
+			userID,
+			"memory_created",
+			"memory",
+			memory.ID,
+			fmt.Sprintf("memory_created:%d", memory.ID),
+			map[string]interface{}{
+				"memory_type": memory.MemoryType,
+				"memory_key":  memory.MemoryKey,
+			},
+		); err != nil {
+			return fmt.Errorf("record memory-created event %d: %w", memory.ID, err)
+		}
+		seen[contentKey] = struct{}{}
+		sourceByContent[contentKey] = *memory
 		if memoryKey != "" {
-			existingByMemoryKey[memoryKey] = *mem
+			existingByMemoryKey[memoryKey] = *memory
 		}
 	}
-	log.Printf("[companion] extracted %d memories for user %d", len(extracted), userID)
+	return nil
 }
 
 func (e *Engine) recordMemoryConflict(
@@ -1343,9 +1567,9 @@ func (e *Engine) recordMemoryConflict(
 	userID uint,
 	previous model.CompanionMemory,
 	candidate extractedMemory,
-) {
+) error {
 	if normalizeMemoryContent(previous.Content) == normalizeMemoryContent(candidate.Content) {
-		return
+		return nil
 	}
 	conflict := &model.CompanionMemoryConflict{
 		UserID:     userID,
@@ -1360,16 +1584,19 @@ func (e *Engine) recordMemoryConflict(
 	}
 	if err := e.store.CreateMemoryConflict(ctx, conflict); err != nil {
 		if !errors.Is(err, gorm.ErrDuplicatedKey) {
-			log.Printf("[companion] save memory conflict user=%d memory=%d: %v", userID, previous.ID, err)
+			return fmt.Errorf("save memory conflict for user %d memory %d: %w", userID, previous.ID, err)
 		}
 	}
-	e.recordCompanionEvent(ctx, userID, "memory_conflict_detected", "memory", previous.ID,
+	if err := e.recordCompanionEvent(ctx, userID, "memory_conflict_detected", "memory", previous.ID,
 		conflict.DedupeKey, map[string]interface{}{
 			"memory_id":            previous.ID,
 			"memory_type":          previous.MemoryType,
 			"memory_key":           previous.MemoryKey,
 			"candidate_confidence": candidate.Confidence,
-		})
+		}); err != nil {
+		return fmt.Errorf("record memory conflict event for memory %d: %w", previous.ID, err)
+	}
+	return nil
 }
 
 var ErrMemoryConflictNotFound = fmt.Errorf("companion memory conflict not found")

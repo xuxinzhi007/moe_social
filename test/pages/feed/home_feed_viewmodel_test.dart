@@ -71,4 +71,45 @@ void main() {
     expect(viewModel.mode, HomeFeedMode.latest);
     expect(viewModel.displayPosts.map((post) => post.id), ['latest']);
   });
+
+  test('rapid mode changes apply the latest selection and ignore stale errors',
+      () async {
+    final hotResponse = Completer<Map<String, dynamic>>();
+    final followingResponse = Completer<Map<String, dynamic>>();
+    final requestedModes = <String?>[];
+    final viewModel = HomeFeedViewModel(
+      postsLoader: ({
+        required page,
+        required pageSize,
+        viewerUserId,
+        feedMode,
+        topicTagId,
+      }) {
+        requestedModes.add(feedMode);
+        return feedMode == 'hot'
+            ? hotResponse.future
+            : followingResponse.future;
+      },
+    );
+    addTearDown(viewModel.dispose);
+
+    final initialLoad = viewModel.fetchPosts();
+    viewModel.setMode(HomeFeedMode.latest);
+    viewModel.setMode(HomeFeedMode.following);
+
+    expect(viewModel.mode, HomeFeedMode.following);
+
+    hotResponse.completeError(StateError('outdated hot request'));
+    await initialLoad;
+    await Future<void>.delayed(Duration.zero);
+
+    expect(requestedModes, ['hot', 'following']);
+    expect(viewModel.feedError, isNull);
+
+    followingResponse.complete(_page([_post('following')], 1));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(viewModel.displayPosts.map((post) => post.id), ['following']);
+    expect(viewModel.feedError, isNull);
+  });
 }

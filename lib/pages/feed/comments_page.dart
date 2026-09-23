@@ -14,10 +14,14 @@ import '../../widgets/moe_toast.dart';
 import '../../widgets/moe_loading.dart';
 import '../../widgets/moe_empty_state.dart';
 import '../../widgets/moe_error_state.dart';
+import '../../widgets/moe_like_action_button.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/motion/moe_stagger.dart';
+import '../../widgets/motion/moe_pressable.dart';
 import '../../theme/moe_tokens.dart';
 import 'comments_viewmodel.dart';
+
+const double _detailContentMaxWidth = 600;
 
 class CommentsPage extends StatefulWidget {
   final String postId;
@@ -228,326 +232,356 @@ class _CommentsPageState extends State<CommentsPage> {
         Navigator.of(context).pop(_vm.commentCount);
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(kToolbarHeight),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [MoeTokens.primary, MoeTokens.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: MoeTokens.primary.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                title: Text(
-                  widget.embeddedPost != null
-                      ? '动态详情'
-                      : '评论 (${_vm.commentCount})',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: Colors.white,
-                  ),
-                ),
-                centerTitle: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: () => Navigator.pop(context, _vm.commentCount),
-                ),
-              ),
+        backgroundColor: MoeTokens.pageBackground,
+        appBar: AppBar(
+          backgroundColor: MoeTokens.pageBackground,
+          foregroundColor: MoeTokens.inkDark,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+          shape: const Border(
+            bottom: BorderSide(color: MoeTokens.surfaceBorder),
+          ),
+          title: Text(
+            widget.embeddedPost != null ? '帖子对话' : '评论 (${_vm.commentCount})',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: MoeTokens.textMd,
+              color: MoeTokens.inkDark,
             ),
           ),
+          leading: IconButton(
+            tooltip: '返回',
+            icon: const Icon(Icons.arrow_back_rounded, size: 22),
+            onPressed: () => Navigator.pop(context, _vm.commentCount),
+          ),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: RefreshIndicator(
-                color: MoeTokens.primary,
-                onRefresh: () async {
-                  if (widget.onRefreshPreamble != null) {
-                    await widget.onRefreshPreamble!();
-                  }
-                  await _vm.fetchComments();
-                },
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  slivers: [
-                    if (widget.embeddedPost != null)
-                      SliverToBoxAdapter(
-                        child: PostCard(
-                          post: widget.embeddedPost!,
-                          heroTagPrefix: 'cdetail_',
-                          mediaPresentation: PostCardMediaPresentation.detail,
-                          onComment: () {
-                            _commentFocus.requestFocus();
-                          },
-                          onShare: () => Share.share(
-                            widget.embeddedPost!.displayCaption.trim().isEmpty
-                                ? '分享了一条动态'
-                                : widget.embeddedPost!.displayCaption.trim(),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final contentWidth = constraints.maxWidth > _detailContentMaxWidth
+                ? _detailContentMaxWidth
+                : constraints.maxWidth;
+            return Center(
+              child: SizedBox(
+                width: contentWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: RefreshIndicator(
+                        color: MoeTokens.primary,
+                        onRefresh: () async {
+                          if (widget.onRefreshPreamble != null) {
+                            await widget.onRefreshPreamble!();
+                          }
+                          await _vm.fetchComments();
+                        },
+                        child: CustomScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
                           ),
-                        ),
-                      ),
-                    if (_vm.isLoading)
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: widget.embeddedPost != null ? 140 : 400,
-                          child: const Center(child: MoeLoading()),
-                        ),
-                      )
-                    else if (_vm.loadError != null && _vm.comments.isEmpty)
-                      SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: MoeErrorState.fromError(
-                          _vm.loadError,
-                          scene: MoeErrorScene.feed,
-                          onRetry: _vm.fetchComments,
-                        ),
-                      )
-                    else ...[
-                      if (widget.embeddedPost != null)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                            child: Row(
-                              children: [
-                                Icon(Icons.chat_bubble_rounded,
-                                    size: 18, color: scheme.primary),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '全部评论 · ${_vm.commentCount} 条',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15,
-                                    color: scheme.onSurface,
+                          slivers: [
+                            if (widget.embeddedPost != null)
+                              SliverToBoxAdapter(
+                                child: PostCard(
+                                  post: widget.embeddedPost!,
+                                  heroTagPrefix: 'cdetail_',
+                                  mediaPresentation:
+                                      PostCardMediaPresentation.detail,
+                                  onComment: () {
+                                    _commentFocus.requestFocus();
+                                  },
+                                  onShare: () => Share.share(
+                                    widget.embeddedPost!.displayCaption
+                                            .trim()
+                                            .isEmpty
+                                        ? '分享了一条动态'
+                                        : widget.embeddedPost!.displayCaption
+                                            .trim(),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      if (_vm.isEmpty)
-                        const SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: MoeEmptyState(
-                              icon: Icons.chat_bubble_outline_rounded,
-                              title: '暂无评论',
-                              subtitle: '快来抢沙发吧～',
-                              showCard: false,
-                            ),
-                          ),
-                        )
-                      else
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 20),
-                          sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final comment = _topLevelComments[index];
-                                return KeyedSubtree(
-                                  key: ValueKey('comment_${comment.id}'),
-                                  child: MoeStaggerReveal(
-                                    index: index,
-                                    itemKey: 'cmt_${comment.id}',
-                                    revealedKeys: _revealedCommentKeys,
-                                    child: _buildTopLevelThread(comment),
-                                  ),
-                                );
-                              },
-                              childCount: _topLevelComments.length,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-
-            // 底部悬浮输入区域
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.communityIdentity?.isValid == true) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF7F8FC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: scheme.primary.withValues(alpha: 0.12),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.smart_toy_rounded,
-                              size: 18,
-                              color: MoeTokens.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                '当前以 ${widget.communityIdentity!.userName.isNotEmpty ? widget.communityIdentity!.userName : 'AI 伙伴'} 回复',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: scheme.onSurface,
-                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
+                            SliverToBoxAdapter(
+                              child: _buildConversationHeading(scheme),
                             ),
-                            AiBotBadge(
-                              compact: true,
-                              agentKey: widget.communityIdentity!
-                                      .authorBotAgentKey.isNotEmpty
-                                  ? widget.communityIdentity!.authorBotAgentKey
-                                  : widget.communityIdentity!.agentId,
-                            ),
+                            if (_vm.isLoading)
+                              const SliverToBoxAdapter(
+                                child: SizedBox(
+                                  height: 120,
+                                  child: Center(child: MoeLoading()),
+                                ),
+                              )
+                            else if (_vm.loadError != null &&
+                                _vm.comments.isEmpty)
+                              SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: MoeErrorState.fromError(
+                                  _vm.loadError,
+                                  scene: MoeErrorScene.feed,
+                                  onRetry: _vm.fetchComments,
+                                ),
+                              )
+                            else if (_vm.isEmpty)
+                              const SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Center(
+                                  child: MoeEmptyState(
+                                    icon: Icons.chat_bubble_outline_rounded,
+                                    title: '还没有回应',
+                                    subtitle: '说说你的想法，开启这段对话',
+                                    showCard: false,
+                                  ),
+                                ),
+                              )
+                            else
+                              SliverPadding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  MoeTokens.spaceLg,
+                                  MoeTokens.spaceSm,
+                                  MoeTokens.spaceLg,
+                                  MoeTokens.spaceLg,
+                                ),
+                                sliver: SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) {
+                                      final comment = _topLevelComments[index];
+                                      return KeyedSubtree(
+                                        key: ValueKey('comment_${comment.id}'),
+                                        child: MoeStaggerReveal(
+                                          index: index,
+                                          itemKey: 'cmt_${comment.id}',
+                                          revealedKeys: _revealedCommentKeys,
+                                          child: _buildTopLevelThread(comment),
+                                        ),
+                                      );
+                                    },
+                                    childCount: _topLevelComments.length,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
                     ),
+                    _buildCommentComposer(scheme),
                   ],
-                  if (_vm.replyParentId != null && _vm.replyToUserName != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '回复 @${_vm.replyToUserName}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: scheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: _cancelReply,
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 18,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConversationHeading(ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MoeTokens.spaceLg,
+        MoeTokens.spaceSm,
+        MoeTokens.spaceLg,
+        MoeTokens.spaceXs,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.forum_rounded,
+            size: 18,
+            color: scheme.primary,
+          ),
+          const SizedBox(width: MoeTokens.spaceSm),
+          Text(
+            widget.embeddedPost != null ? '对话' : '评论',
+            style: TextStyle(
+              color: MoeTokens.titleText,
+              fontSize: MoeTokens.textLg,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: MoeTokens.spaceSm),
+          Text(
+            '${_vm.commentCount} 条回应',
+            style: TextStyle(
+              color: MoeTokens.inkMuted.withValues(alpha: 0.8),
+              fontSize: MoeTokens.textSm,
+            ),
+          ),
+          const SizedBox(width: MoeTokens.spaceMd),
+          Expanded(
+            child: Divider(
+              height: 1,
+              color: MoeTokens.lineSoft.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentComposer(ColorScheme scheme) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: MoeTokens.surface1,
+        border: Border(top: BorderSide(color: MoeTokens.surfaceBorder)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            MoeTokens.spaceLg,
+            MoeTokens.spaceSm,
+            MoeTokens.spaceLg,
+            MoeTokens.spaceSm,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (widget.communityIdentity?.isValid == true) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MoeTokens.spaceSm),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: MoeTokens.spaceMd,
+                      vertical: MoeTokens.spaceSm,
                     ),
-                  Row(
+                    decoration: BoxDecoration(
+                      color: MoeTokens.softChipBg,
+                      borderRadius: BorderRadius.circular(MoeTokens.radiusMd),
+                      border: Border.all(color: MoeTokens.surfaceBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.smart_toy_rounded,
+                          size: 18,
+                          color: MoeTokens.primary,
+                        ),
+                        const SizedBox(width: MoeTokens.spaceSm),
+                        Expanded(
+                          child: Text(
+                            '当前以 ${widget.communityIdentity!.userName.isNotEmpty ? widget.communityIdentity!.userName : 'AI 伙伴'} 回复',
+                            style: TextStyle(
+                              fontSize: MoeTokens.textSm,
+                              color: scheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        AiBotBadge(
+                          compact: true,
+                          agentKey: widget.communityIdentity!.authorBotAgentKey
+                                  .isNotEmpty
+                              ? widget.communityIdentity!.authorBotAgentKey
+                              : widget.communityIdentity!.agentId,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              if (_vm.replyParentId != null && _vm.replyToUserName != null)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: MoeTokens.spaceXs,
+                    left: MoeTokens.spaceXs,
+                    right: MoeTokens.spaceXs,
+                  ),
+                  child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: MoeTokens.primary.withValues(alpha: 0.3),
-                              width: 1.5),
-                        ),
-                        child: NetworkAvatarImage(
-                          imageUrl: _vm.userAvatar,
-                          radius: 16,
-                          placeholderIcon: Icons.person,
-                        ),
+                      Icon(
+                        Icons.reply_rounded,
+                        size: 16,
+                        color: scheme.primary,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: MoeTokens.spaceXs),
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: MoeTokens.pageBackground,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: TextField(
-                            controller: _commentController,
-                            focusNode: _commentFocus,
-                            decoration: InputDecoration(
-                              hintText: _vm.replyToUserName != null
-                                  ? '回复 @${_vm.replyToUserName}'
-                                  : '写下你的想法...',
-                              border: InputBorder.none,
-                              isDense: true,
-                              hintStyle: const TextStyle(
-                                  color: Colors.grey, fontSize: 14),
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                            minLines: 1,
-                            maxLines: 3,
+                        child: Text(
+                          '回复 @${_vm.replyToUserName}',
+                          style: TextStyle(
+                            fontSize: MoeTokens.textSm,
+                            color: scheme.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      _vm.isSubmitting
-                          ? const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: MoeSmallLoading(size: 22),
-                            )
-                          : InkWell(
-                              onTap: _addComment,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      MoeTokens.primary,
-                                      MoeTokens.secondary
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.arrow_upward_rounded,
-                                    color: Colors.white, size: 20),
-                              ),
-                            ),
+                      IconButton(
+                        tooltip: '取消回复',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: _cancelReply,
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
                     ],
                   ),
+                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  NetworkAvatarImage(
+                    imageUrl: _vm.userAvatar,
+                    radius: 16,
+                    placeholderIcon: Icons.person,
+                  ),
+                  const SizedBox(width: MoeTokens.spaceSm),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: MoeTokens.pageBackground,
+                        borderRadius: BorderRadius.circular(MoeTokens.radiusXl),
+                        border: Border.all(color: MoeTokens.surfaceBorder),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MoeTokens.spaceMd,
+                      ),
+                      child: TextField(
+                        controller: _commentController,
+                        focusNode: _commentFocus,
+                        decoration: InputDecoration(
+                          hintText: _vm.replyToUserName != null
+                              ? '回复 @${_vm.replyToUserName}'
+                              : '回复这条动态...',
+                          border: InputBorder.none,
+                          isDense: true,
+                          hintStyle: const TextStyle(
+                            color: MoeTokens.hintText,
+                            fontSize: MoeTokens.textBase,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: MoeTokens.spaceSm,
+                          ),
+                        ),
+                        minLines: 1,
+                        maxLines: 3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: MoeTokens.spaceSm),
+                  _vm.isSubmitting
+                      ? const Padding(
+                          padding: EdgeInsets.all(MoeTokens.spaceXs),
+                          child: MoeSmallLoading(size: 22),
+                        )
+                      : MoePressable(
+                          onTap: _addComment,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              color: MoeTokens.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_upward_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -582,6 +616,35 @@ class _CommentsPageState extends State<CommentsPage> {
     );
   }
 
+  Widget _buildCommentLikeAction(Comment comment) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: LikeStateManager().getCommentStatusNotifier(
+        comment.id,
+        initialValue: comment.isLiked,
+      ),
+      builder: (context, isLiked, _) {
+        return ValueListenableBuilder<int>(
+          valueListenable: LikeStateManager().getCommentCountNotifier(
+            comment.id,
+            initialValue: comment.likes,
+          ),
+          builder: (context, likeCount, _) {
+            return MoeLikeActionButton(
+              key: ValueKey('comment_like_${comment.id}'),
+              isLiked: isLiked,
+              likeCount: likeCount,
+              compact: true,
+              showCountWhenZero: false,
+              onPressed: _vm.isCommentLikePending(comment.id)
+                  ? null
+                  : () => _toggleCommentLike(comment.id),
+            );
+          },
+        );
+      },
+    );
+  }
+
   /// 一级评论 + 可收起楼中楼（紧凑样式，与主评论气泡区分）。
   Widget _buildTopLevelThread(Comment root) {
     final replies = _allRepliesUnderRoot(root.id);
@@ -598,7 +661,10 @@ class _CommentsPageState extends State<CommentsPage> {
           _buildCommentRow(root, isReply: false),
           if (replies.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(left: 50, top: 2),
+              padding: const EdgeInsets.only(
+                left: MoeTokens.space3xl + MoeTokens.spaceLg,
+                top: MoeTokens.spaceXs,
+              ),
               child: expanded
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -701,49 +767,7 @@ class _CommentsPageState extends State<CommentsPage> {
                       ),
                     ),
                     const Spacer(),
-                    ValueListenableBuilder<bool>(
-                      valueListenable:
-                          LikeStateManager().getCommentStatusNotifier(
-                        comment.id,
-                        initialValue: comment.isLiked,
-                      ),
-                      builder: (context, isLiked, _) {
-                        return ValueListenableBuilder<int>(
-                          valueListenable:
-                              LikeStateManager().getCommentCountNotifier(
-                            comment.id,
-                            initialValue: comment.likes,
-                          ),
-                          builder: (context, likeCount, _) {
-                            return GestureDetector(
-                              onTap: () => _toggleCommentLike(comment.id),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isLiked
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    size: 14,
-                                    color: isLiked ? Colors.red : Colors.grey,
-                                  ),
-                                  if (likeCount > 0) ...[
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      '$likeCount',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color:
-                                            isLiked ? Colors.red : Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                    _buildCommentLikeAction(comment),
                     const SizedBox(width: 12),
                     GestureDetector(
                       onTap: () => _startReply(comment),
@@ -823,26 +847,18 @@ class _CommentsPageState extends State<CommentsPage> {
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(
-                  horizontal: isReply ? 12 : 16,
-                  vertical: isReply ? 8 : 12,
+                  horizontal: isReply ? MoeTokens.spaceMd : MoeTokens.spaceLg,
+                  vertical: isReply ? MoeTokens.spaceSm : MoeTokens.spaceMd,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: MoeTokens.cardBackground,
                   borderRadius: BorderRadius.only(
-                    topRight: const Radius.circular(16),
-                    bottomLeft: const Radius.circular(16),
-                    bottomRight: const Radius.circular(16),
-                    topLeft: Radius.circular(isReply ? 12 : 4),
+                    topRight: const Radius.circular(MoeTokens.radiusLg),
+                    bottomLeft: const Radius.circular(MoeTokens.radiusLg),
+                    bottomRight: const Radius.circular(MoeTokens.radiusLg),
+                    topLeft: const Radius.circular(MoeTokens.radiusSm),
                   ),
-                  boxShadow: isReply
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: MoeTokens.primary.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(2, 4),
-                          ),
-                        ],
+                  border: Border.all(color: MoeTokens.surfaceBorder),
                 ),
                 child: _buildCommentBody(comment, isReply),
               ),
@@ -850,47 +866,7 @@ class _CommentsPageState extends State<CommentsPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  ValueListenableBuilder<bool>(
-                    valueListenable:
-                        LikeStateManager().getCommentStatusNotifier(
-                      comment.id,
-                      initialValue: comment.isLiked,
-                    ),
-                    builder: (context, isLiked, _) {
-                      return ValueListenableBuilder<int>(
-                        valueListenable:
-                            LikeStateManager().getCommentCountNotifier(
-                          comment.id,
-                          initialValue: comment.likes,
-                        ),
-                        builder: (context, likeCount, _) {
-                          return GestureDetector(
-                            onTap: () => _toggleCommentLike(comment.id),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isLiked
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isLiked ? Colors.red : Colors.grey,
-                                  size: isReply ? 16 : 18,
-                                ),
-                                const SizedBox(width: 4),
-                                if (likeCount > 0)
-                                  Text(
-                                    likeCount.toString(),
-                                    style: TextStyle(
-                                      color: isLiked ? Colors.red : Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  _buildCommentLikeAction(comment),
                   const SizedBox(width: 12),
                   InkWell(
                     onTap: () => _startReply(comment),
